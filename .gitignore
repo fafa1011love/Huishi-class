@@ -1,0 +1,36 @@
+# Logs
+logs
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+lerna-debug.log*
+
+node_modules
+models/asr/
+dist
+dist-ssr
+.git-local/
+*.local
+.claude/
+.workbuddy/
+scripts/__pycache__/
+__pycache__/
+scripts/.geo_cache/
+services/GPT-SoVITS
+services/GPT-SoVITS/
+services/tts.log
+server/storage/resource-models/
+
+# Editor directories and files
+
+.vscode/*
+!.vscode/extensions.json
+.idea
+.DS_Store
+*.suo
+*.ntvs*
+*.njsproj
+*.sln
+*.sw?
