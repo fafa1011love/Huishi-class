@@ -2,6 +2,16 @@
 
 数智课堂是一个多智能体驱动的 3D 互动教学系统，支持 3D 教具展示、手势与语音控制、课堂测验和 AI 助教。
 
+## 界面预览
+
+### 产品首页
+
+![数智课堂产品首页](docs/images/readme-landing.png)
+
+### 3D 互动课堂
+
+![数智课堂 3D 互动课堂](docs/images/readme-classroom.png)
+
 ## 环境要求
 
 - Node.js 20 LTS 或 22+

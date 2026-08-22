@@ -92,6 +92,7 @@ interface PendingModelActivity {
 
 const LOCAL_MODELS_CATEGORY_KEY = 'local-models';
 const SIDEBAR_TAB_STORAGE_PREFIX = 'classroom.sidebar-tab.v1';
+const HIDDEN_RESOURCE_TAG_NAMES = new Set(['周田孩子作品']);
 
 const RESOURCE_TAG_ICONS = {
   box: Box,
@@ -977,11 +978,12 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
     fetchResourceLibrary()
       .then((tags) => {
         if (cancelled) return;
-        setResourceTags(tags);
+        const visibleTags = tags.filter((tag) => !HIDDEN_RESOURCE_TAG_NAMES.has(tag.name));
+        setResourceTags(visibleTags);
         setResourceLibraryError('');
         setExpandedCategories((current) => {
           const next = new Set(current);
-          tags.filter((tag) => tag.name === '地理').forEach((tag) => next.add(resourceCategoryKey(tag.id)));
+          visibleTags.filter((tag) => tag.name === '地理').forEach((tag) => next.add(resourceCategoryKey(tag.id)));
           return next;
         });
       })
