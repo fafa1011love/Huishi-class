@@ -8,6 +8,7 @@ import {
   ChevronRight,
   Loader2,
   RefreshCw,
+  SkipForward,
   Sparkles,
   Trash2,
   Trophy,
@@ -22,7 +23,7 @@ import {
   fetchWrongBook,
   markWrongQuestionMastered,
 } from '../services/quizWrongBook';
-import { speakXiaozhi } from '../services/xiaozhiSpeechService';
+import { speakXiaozhi, stopXiaozhiSpeech } from '../services/xiaozhiSpeechService';
 
 interface WrongQuestionBookProps {
   onBack: () => void;
@@ -163,6 +164,12 @@ const WrongQuestionBook: React.FC<WrongQuestionBookProps> = ({ onBack }) => {
   };
 
   const handleXiaozhiExplain = (entry: WrongQuestionEntry) => {
+    // 正在讲解这条时再点一次 = 跳过播报
+    if (explainingId === entry.id) {
+      stopXiaozhiSpeech();
+      setExplainingId(null);
+      return;
+    }
     setExplainingId(entry.id);
     const userAnsText =
       entry.userAnswerIndex >= 0 && entry.options[entry.userAnswerIndex]
@@ -400,19 +407,32 @@ const WrongQuestionBook: React.FC<WrongQuestionBookProps> = ({ onBack }) => {
                                         <p className="mt-1">{entry.explanation || '（暂无解析）'}</p>
                                       </div>
                                       <div className="flex flex-wrap items-center justify-between gap-2 pt-1">
-                                        <button
-                                          type="button"
-                                          onClick={() => void handleXiaozhiExplain(entry)}
-                                          disabled={isExplaining}
-                                          className="inline-flex items-center gap-2 rounded-xl border border-cyan-300/40 bg-cyan-300/10 px-3 py-1.5 text-xs font-semibold text-cyan-100 transition hover:border-cyan-300/60 hover:bg-cyan-400/20 disabled:opacity-60"
-                                        >
-                                          {isExplaining ? (
-                                            <Loader2 size={14} className="animate-spin" />
-                                          ) : (
-                                            <Sparkles size={14} />
+                                        <div className="flex flex-wrap items-center gap-2">
+                                          <button
+                                            type="button"
+                                            onClick={() => void handleXiaozhiExplain(entry)}
+                                            className="inline-flex items-center gap-2 rounded-xl border border-cyan-300/40 bg-cyan-300/10 px-3 py-1.5 text-xs font-semibold text-cyan-100 transition hover:border-cyan-300/60 hover:bg-cyan-400/20"
+                                            title={isExplaining ? '再点一次停止播报' : '让小智讲解'}
+                                          >
+                                            {isExplaining ? (
+                                              <Loader2 size={14} className="animate-spin" />
+                                            ) : (
+                                              <Sparkles size={14} />
+                                            )}
+                                            {isExplaining ? '小智讲解中…' : '让小智讲解'}
+                                          </button>
+                                          {isExplaining && (
+                                            <button
+                                              type="button"
+                                              onClick={() => { stopXiaozhiSpeech(); setExplainingId(null); }}
+                                              className="inline-flex items-center gap-2 rounded-xl border border-amber-300/50 bg-amber-400/10 px-3 py-1.5 text-xs font-semibold text-amber-100 transition hover:border-amber-300/70 hover:bg-amber-400/20"
+                                              title="跳过播报"
+                                            >
+                                              <SkipForward size={14} />
+                                              跳过
+                                            </button>
                                           )}
-                                          让小智讲解
-                                        </button>
+                                        </div>
                                         <div className="flex items-center gap-2">
                                           <button
                                             type="button"

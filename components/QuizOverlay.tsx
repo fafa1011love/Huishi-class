@@ -3,7 +3,7 @@ import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { ControlRefs } from '../types';
 import { createQuizSession, getQuizResult, QuizSession, QuizQuestion } from '../services/quizData';
 import { prepareXiaozhiSpeech, speakXiaozhi, stopXiaozhiSpeech } from '../services/xiaozhiSpeechService';
-import { X, Trophy, Star, Clock, CheckCircle2, XCircle, Zap, Sparkles, Loader2 } from 'lucide-react';
+import { X, Trophy, Star, Clock, CheckCircle2, XCircle, Zap, Sparkles, Loader2, SkipForward } from 'lucide-react';
 
 interface QuizOverlayProps {
   stageRef: React.RefObject<HTMLElement>;
@@ -430,6 +430,12 @@ const QuizOverlay: React.FC<QuizOverlayProps> = ({ stageRef, controlRef, cameraA
 
   // ─── Xiaozhi explain wrong question ────────────────────
   const handleXiaozhiExplain = (q: QuizQuestion) => {
+    // 正在讲解这道题时再点一次 = 跳过播报
+    if (xiaozhiExplainingId === q.id) {
+      stopXiaozhiSpeech();
+      setXiaozhiExplainingId(null);
+      return;
+    }
     setXiaozhiExplainingId(q.id);
     const text = `这道题「${q.question}」的正确答案是 ${String.fromCharCode(65 + q.correctIndex)}：${q.options[q.correctIndex]}。${q.explanation}`;
     speakXiaozhi(text, {
@@ -696,18 +702,30 @@ const QuizOverlay: React.FC<QuizOverlayProps> = ({ stageRef, controlRef, cameraA
                               <div className="mb-3 rounded-lg border border-slate-700/40 bg-slate-800/60 p-2 text-xs text-slate-200 leading-relaxed">
                                 {q.explanation}
                               </div>
-                              <button
-                                type="button"
-                                onClick={(e) => { e.stopPropagation(); handleXiaozhiExplain(q); }}
-                                disabled={isExplaining}
-                                className={`quiz-xiaozhi-explain-btn ${isExplaining ? 'is-loading' : ''}`}
-                              >
-                                {isExplaining ? (
-                                  <><Loader2 size={14} className="animate-spin" /><span>小智讲解中…</span></>
-                                ) : (
-                                  <><Sparkles size={14} /><span>让小智讲解</span></>
+                              <div className="flex flex-wrap items-center gap-2">
+                                <button
+                                  type="button"
+                                  onClick={(e) => { e.stopPropagation(); handleXiaozhiExplain(q); }}
+                                  className={`quiz-xiaozhi-explain-btn ${isExplaining ? 'is-loading' : ''}`}
+                                  title={isExplaining ? '再点一次停止播报' : '让小智讲解'}
+                                >
+                                  {isExplaining ? (
+                                    <><Loader2 size={14} className="animate-spin" /><span>小智讲解中…</span></>
+                                  ) : (
+                                    <><Sparkles size={14} /><span>让小智讲解</span></>
+                                  )}
+                                </button>
+                                {isExplaining && (
+                                  <button
+                                    type="button"
+                                    onClick={(e) => { e.stopPropagation(); stopXiaozhiSpeech(); setXiaozhiExplainingId(null); }}
+                                    className="quiz-xiaozhi-skip-btn"
+                                    title="跳过播报"
+                                  >
+                                    <SkipForward size={14} /><span>跳过</span>
+                                  </button>
                                 )}
-                              </button>
+                              </div>
                             </div>
                           )}
                         </div>
