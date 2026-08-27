@@ -364,6 +364,23 @@ const QuizOverlay: React.FC<QuizOverlayProps> = ({ stageRef, controlRef, cameraA
     });
   }, [currentQuestion]);
 
+  // ─── Advance to next question (shared by auto-advance & skip) ───
+  const advanceToNextQuestion = useCallback(() => {
+    const nextIndex = sessionRef.current.currentIndex + 1;
+    if (nextIndex >= sessionRef.current.questions.length) {
+      setPhase('summary');
+    } else {
+      setSession(prev => ({ ...prev, currentIndex: nextIndex }));
+      setPhase('reading');
+    }
+  }, []);
+
+  // Skip the current result narration: stop speaking and jump to the next question.
+  const skipResult = useCallback(() => {
+    stopXiaozhiSpeech();
+    advanceToNextQuestion();
+  }, [advanceToNextQuestion]);
+
   // ─── Phase: RESULT ───────────────────────────────────────
   useEffect(() => {
     if (phase !== 'result' || !currentQuestion || selectedAnswer === null) return;
@@ -374,13 +391,7 @@ const QuizOverlay: React.FC<QuizOverlayProps> = ({ stageRef, controlRef, cameraA
     
     const advanceNext = () => {
       if (cancelled) return;
-      const nextIndex = sessionRef.current.currentIndex + 1;
-      if (nextIndex >= sessionRef.current.questions.length) {
-        setPhase('summary');
-      } else {
-        setSession(prev => ({ ...prev, currentIndex: nextIndex }));
-        setPhase('reading');
-      }
+      advanceToNextQuestion();
     };
 
     if (correct) {
@@ -413,7 +424,7 @@ const QuizOverlay: React.FC<QuizOverlayProps> = ({ stageRef, controlRef, cameraA
         if (advanceTimer !== null) window.clearTimeout(advanceTimer);
       };
     }
-  }, [phase, currentQuestion, selectedAnswer, speakQuiz]);
+  }, [phase, currentQuestion, selectedAnswer, speakQuiz, advanceToNextQuestion]);
 
   // ─── Speak summary on enter ────────────────────────────
   useEffect(() => {
@@ -528,7 +539,11 @@ const QuizOverlay: React.FC<QuizOverlayProps> = ({ stageRef, controlRef, cameraA
 
       {/* ─── READING / ANSWERING / RESULT ─── */}
       {(phase === 'reading' || phase === 'answering' || phase === 'result') && currentQuestion && (
-        <div className="quiz-game-container quiz-fade-in">
+        <div
+          className="quiz-game-container quiz-fade-in"
+          onClick={phase === 'result' ? skipResult : undefined}
+          title={phase === 'result' ? '点击屏幕任意处跳过播报' : undefined}
+        >
           {/* Progress bar */}
           <div className="quiz-progress-bar">
             {session.questions.map((_, i) => (
@@ -614,6 +629,19 @@ const QuizOverlay: React.FC<QuizOverlayProps> = ({ stageRef, controlRef, cameraA
             <div className="quiz-explanation quiz-fade-in">
               <p>{currentQuestion.explanation}</p>
             </div>
+          )}
+
+          {/* Skip / next button */}
+          {phase === 'result' && (
+            <button
+              type="button"
+              onClick={(e) => { e.stopPropagation(); skipResult(); }}
+              className="quiz-skip-advance-btn"
+              title="跳过播报，进入下一题"
+            >
+              <SkipForward size={15} />
+              <span>跳过 · 下一题</span>
+            </button>
           )}
 
           {/* Gesture hint */}
