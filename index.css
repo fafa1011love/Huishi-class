@@ -507,6 +507,18 @@ html, body {
   backdrop-filter: blur(22px);
 }
 
+.knowledge-narration-scroll {
+  overscroll-behavior: contain;
+  touch-action: pan-y;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-gutter: stable;
+}
+
+.knowledge-narration-scroll:focus-visible {
+  outline: 1px solid rgba(251, 191, 36, 0.42);
+  outline-offset: 3px;
+}
+
 .lab-detail-tabs {
   display: grid;
   grid-template-columns: 1fr 1fr 40px;
@@ -1522,15 +1534,15 @@ html, body {
   gap: 12px;
   padding: 28px 24px;
   border-radius: 24px;
-  border: 2px solid rgba(255, 255, 255, 0.12);
+  border: 2px solid rgba(var(--theme-accent-rgb), 0.26);
   background:
-    radial-gradient(circle at 50% 100%, rgba(var(--theme-accent-rgb), 0.06), transparent 50%),
-    rgba(8, 22, 38, 0.82);
+    radial-gradient(circle at 50% 100%, rgba(var(--theme-accent-rgb), 0.1), transparent 58%),
+    rgba(5, 26, 46, 0.96);
   backdrop-filter: blur(20px);
   -webkit-backdrop-filter: blur(20px);
   cursor: pointer;
   transition: border-color 300ms ease, box-shadow 300ms ease, transform 300ms ease, background 300ms ease;
-  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.3), 0 0 30px rgba(var(--theme-accent-rgb), 0.04);
+  box-shadow: 0 12px 40px rgba(0, 0, 0, 0.34), inset 0 1px 0 rgba(255, 255, 255, 0.06), 0 0 30px rgba(var(--theme-accent-rgb), 0.06);
   overflow: hidden;
   transform: translateZ(0);
   will-change: transform, box-shadow;
@@ -1550,10 +1562,10 @@ html, body {
 }
 
 .quiz-option-card:hover {
-  border-color: rgba(var(--theme-accent-rgb), 0.3);
+  border-color: rgba(var(--theme-accent-rgb), 0.58);
   background:
-    radial-gradient(circle at 50% 100%, rgba(var(--theme-accent-rgb), 0.08), transparent 50%),
-    rgba(8, 22, 38, 0.85);
+    radial-gradient(circle at 50% 100%, rgba(var(--theme-accent-rgb), 0.16), transparent 58%),
+    rgba(7, 38, 65, 0.98);
   transform: translateY(-4px) scale(1.02);
   box-shadow: 0 20px 60px rgba(0, 0, 0, 0.35), 0 0 30px rgba(var(--theme-accent-rgb), 0.08);
 }
@@ -1561,17 +1573,17 @@ html, body {
 .quiz-option-card.is-hovered {
   border-color: rgba(var(--theme-accent-rgb), 0.6) !important;
   background:
-    radial-gradient(circle at 50% 50%, rgba(var(--theme-accent-rgb), 0.12), transparent 60%),
-    rgba(8, 30, 52, 0.9) !important;
+    radial-gradient(circle at 50% 50%, rgba(var(--theme-accent-rgb), 0.16), transparent 60%),
+    rgba(7, 38, 65, 0.98) !important;
   transform: translateY(-6px) scale(1.05) !important;
-  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.4), 0 0 50px rgba(var(--theme-accent-rgb), 0.15) !important;
+  box-shadow: 0 24px 70px rgba(0, 0, 0, 0.42), inset 0 1px 0 rgba(255, 255, 255, 0.07), 0 0 50px rgba(var(--theme-accent-rgb), 0.16) !important;
 }
 
 .quiz-option-card.is-correct {
   border-color: rgba(52, 211, 153, 0.7) !important;
   background:
-    radial-gradient(circle at 50% 50%, rgba(52, 211, 153, 0.15), transparent 60%),
-    rgba(6, 32, 24, 0.85) !important;
+    radial-gradient(circle at 50% 50%, rgba(52, 211, 153, 0.2), transparent 60%),
+    rgba(6, 35, 28, 0.96) !important;
   box-shadow: 0 0 60px rgba(52, 211, 153, 0.2) !important;
   animation: quiz-correct-pulse 600ms ease-out;
 }
@@ -1579,8 +1591,8 @@ html, body {
 .quiz-option-card.is-wrong {
   border-color: rgba(248, 113, 113, 0.7) !important;
   background:
-    radial-gradient(circle at 50% 50%, rgba(248, 113, 113, 0.12), transparent 60%),
-    rgba(32, 6, 6, 0.85) !important;
+    radial-gradient(circle at 50% 50%, rgba(248, 113, 113, 0.16), transparent 60%),
+    rgba(38, 8, 12, 0.96) !important;
   animation: quiz-wrong-shake 500ms ease-out;
 }
 
@@ -1607,9 +1619,9 @@ html, body {
   align-items: center;
   justify-content: center;
   border-radius: 50%;
-  background: rgba(var(--theme-accent-rgb), 0.08);
-  border: 1px solid rgba(var(--theme-accent-rgb), 0.2);
-  color: #7dd3fc;
+  background: rgba(var(--theme-accent-rgb), 0.16);
+  border: 1px solid rgba(var(--theme-accent-rgb), 0.42);
+  color: var(--theme-accent-strong);
   font-size: 18px;
   font-weight: 900;
   letter-spacing: 0;

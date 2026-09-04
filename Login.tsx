@@ -38,11 +38,11 @@ const modeConfig = {
     submit: '登录',
   },
   register: {
-    title: '用户注册',
-    subtitle: '创建普通用户账号后直接进入课堂',
+    title: '注册账号',
+    subtitle: '创建普通用户账号，进入 3D 智慧课堂',
     icon: UserPlus,
     endpoint: '/api/auth/register',
-    submit: '注册并进入',
+    submit: '注册',
   },
   admin: {
     title: '管理员登录',
@@ -163,6 +163,7 @@ const Login: React.FC<LoginProps> = ({ onAuthenticated, onBack }) => {
   const [username, setUsername] = useState('');
   const [school, setSchool] = useState('');
   const [password, setPassword] = useState('');
+  const [confirmPassword, setConfirmPassword] = useState('');
   const [showPassword, setShowPassword] = useState(false);
   const [message, setMessage] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -171,14 +172,20 @@ const Login: React.FC<LoginProps> = ({ onAuthenticated, onBack }) => {
   const config = modeConfig[mode];
   const ModeIcon = config.icon;
   const helperText = useMemo(() => {
-    if (mode === 'register') return '用户名支持中文、字母、数字、下划线、短横线，或邮箱地址。';
     if (mode === 'admin') return '管理员账号由系统管理员创建。';
+    if (mode === 'register') return '注册成功后会自动进入课堂。学校为选填项，密码需为 6-128 位。';
     return '使用已注册的普通用户账号登录。';
   }, [mode]);
 
   const submit = async (event: FormEvent) => {
     event.preventDefault();
     setMessage('');
+
+    if (mode === 'register' && password !== confirmPassword) {
+      setMessage('两次输入的密码不一致');
+      return;
+    }
+
     setIsSubmitting(true);
 
     try {
@@ -200,7 +207,7 @@ const Login: React.FC<LoginProps> = ({ onAuthenticated, onBack }) => {
       const data = await response.json();
       onAuthenticated(data.user);
     } catch (error) {
-      setMessage(error instanceof Error ? error.message : '登录失败，请稍后重试');
+      setMessage(error instanceof Error ? error.message : mode === 'register' ? '注册失败，请稍后重试' : '登录失败，请稍后重试');
     } finally {
       setIsSubmitting(false);
     }
@@ -264,7 +271,7 @@ const Login: React.FC<LoginProps> = ({ onAuthenticated, onBack }) => {
           <div className="relative z-10 mt-6 grid grid-cols-3 gap-2 rounded-lg border border-line/10 bg-white/[0.03] p-1">
             {([
               ['login', '用户登录'],
-              ['register', '注册'],
+              ['register', '注册账号'],
               ['admin', '管理员'],
             ] as const).map(([value, label]) => {
               const isActive = mode === value;
@@ -276,6 +283,8 @@ const Login: React.FC<LoginProps> = ({ onAuthenticated, onBack }) => {
                 onClick={() => {
                   setMode(value);
                   setMessage('');
+                  setConfirmPassword('');
+                  if (value !== 'register') setSchool('');
                 }}
                 className={`h-10 rounded-md text-sm font-semibold transition ${isActive ? 'bg-white text-black' : 'text-ink/60 hover:bg-white/8 hover:text-ink'}`}
               >
@@ -322,17 +331,31 @@ const Login: React.FC<LoginProps> = ({ onAuthenticated, onBack }) => {
             </label>
 
             {mode === 'register' && (
+              <>
               <label className="block">
-                <span className="text-sm font-medium text-ink/70">学校（选填）</span>
+                <span className="text-sm font-medium text-ink/70">确认密码</span>
+                <input
+                  value={confirmPassword}
+                  onChange={(event) => setConfirmPassword(event.target.value)}
+                  className="mt-2 h-12 w-full rounded-lg border border-line/10 bg-white/[0.04] px-4 text-ink outline-none transition placeholder:text-ink/28 focus:border-cyan/60 focus:bg-white/[0.07]"
+                  placeholder="请再次输入密码"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  required
+                />
+              </label>
+              <label className="block">
+                <span className="text-sm font-medium text-ink/70">学校（可选）</span>
                 <input
                   value={school}
                   onChange={(event) => setSchool(event.target.value)}
                   maxLength={128}
                   className="mt-2 h-12 w-full rounded-lg border border-line/10 bg-white/[0.04] px-4 text-ink outline-none transition placeholder:text-ink/28 focus:border-cyan/60 focus:bg-white/[0.07]"
-                  placeholder="请输入学校名称"
+                  placeholder="请输入学校名称（可选）"
                   autoComplete="organization"
                 />
               </label>
+              </>
             )}
 
             <p className="h-10 text-sm text-ink/45 flex items-start">{helperText}</p>
@@ -352,36 +375,6 @@ const Login: React.FC<LoginProps> = ({ onAuthenticated, onBack }) => {
               {isSubmitting ? '处理中...' : config.submit}
             </button>
 
-            <div className="h-6 flex flex-col items-center justify-center">
-              {mode === 'login' && (
-                <button
-                  type="button"
-                  onClick={() => {
-                    setMode('register');
-                    setMessage('');
-                  }}
-                  className="text-sm font-semibold text-cyan/80 transition hover:text-ink"
-                >
-                  注册
-                </button>
-              )}
-
-              {mode === 'register' && (
-                <div className="text-sm text-ink/45">
-                  已有账号？
-                  <button
-                    type="button"
-                    onClick={() => {
-                      setMode('login');
-                      setMessage('');
-                    }}
-                    className="ml-1 font-semibold text-cyan/80 transition hover:text-ink"
-                  >
-                    登录
-                  </button>
-                </div>
-              )}
-            </div>
           </form>
         </section>
       </div>

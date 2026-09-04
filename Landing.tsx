@@ -1,7 +1,7 @@
 import React, { useRef, useState, useEffect, useMemo } from 'react';
 import { motion } from 'motion/react';
 import { Canvas, useFrame } from '@react-three/fiber';
-import { Float, OrbitControls } from '@react-three/drei';
+import { Float } from '@react-three/drei';
 import * as THREE from 'three';
 import { 
   Search, ChevronRight, Sparkles, Folder, BarChart2, 
@@ -14,8 +14,8 @@ import { useTheme } from './components/ThemeProvider';
 export type MarketingPage = 'home' | 'solutions' | 'cases' | 'pricing' | 'docs' | 'join';
 
 const NAV_ITEMS: { page: Exclude<MarketingPage, 'home'>; label: string; path: string }[] = [
-  { page: 'solutions', label: '教学方案', path: '/solutions' },
-  { page: 'cases', label: '案例', path: '/cases' },
+  { page: 'solutions', label: '教学辅助', path: '/solutions' },
+  { page: 'cases', label: '教学反馈', path: '/cases' },
   { page: 'pricing', label: '价格', path: '/pricing' },
   { page: 'docs', label: '文档', path: '/docs' },
   { page: 'join', label: '加入我们', path: '/join' },
@@ -25,7 +25,7 @@ const PAGE_INTROS: Record<Exclude<MarketingPage, 'home'>, { eyebrow: string; tit
   solutions: {
     eyebrow: 'AI × 空间计算',
     title: '为每一堂课提供',
-    accent: '可触摸的教学方案',
+    accent: '可触摸的教学辅助',
     description: '从 3D 教具管理、空间手势到 AI 课堂助教，把抽象知识转化为可观察、可操作、可讨论的学习体验。',
   },
   cases: {
@@ -224,31 +224,6 @@ function BackgroundScene({ primary, accent }: { primary: string; accent: string 
   );
 }
 
-// === 3D Heart Mockup Component ===
-function HeartMockup({ accent }: { accent: string }) {
-  const meshRef = useRef<any>(null);
-  useFrame(({ clock }) => {
-    if (meshRef.current) {
-      meshRef.current.rotation.y = clock.getElapsedTime() * 0.5;
-      meshRef.current.scale.setScalar(1 + Math.sin(clock.getElapsedTime() * 3) * 0.05);
-    }
-  });
-
-  return (
-    <group position={[0, 0, 0]}>
-      <ambientLight intensity={0.8} />
-      <pointLight position={[10, 10, 10]} color="#ff4081" intensity={2} />
-      <pointLight position={[-10, -10, -10]} color={accent} intensity={1} />
-      <Float speed={4} rotationIntensity={0.5} floatIntensity={0.5}>
-        <mesh ref={meshRef}>
-          <sphereGeometry args={[1.5, 32, 32]} />
-          <meshStandardMaterial color="#e91e63" roughness={0.3} metalness={0.1} wireframe />
-        </mesh>
-      </Float>
-    </group>
-  );
-}
-
 // === Primitive UI Components ===
 const LogoMark = () => (
   <img src="/brand/smart-cube-tech/mark.svg" alt="数智课堂 Logo" className="w-8 h-8 drop-shadow-[0_0_8px_rgba(var(--theme-accent-rgb),0.4)]" />
@@ -307,6 +282,13 @@ export default function LandingPage({
   const [time, setTime] = useState("");
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [selectedDoc, setSelectedDoc] = useState<{ title: string; description: string; meta: string } | null>(null);
+  const [selectedScenario, setSelectedScenario] = useState<{
+    label: string;
+    title: string;
+    description: string;
+    model: string;
+  } | null>(null);
   const { themeDef } = useTheme();
 
   const handleEnterClick = () => {
@@ -336,6 +318,15 @@ export default function LandingPage({
       ? '数智课堂 · AI 互动教学平台'
       : `${NAV_ITEMS.find((item) => item.page === page)?.label || '数智课堂'} · 数智课堂`;
   }, [page]);
+
+  useEffect(() => {
+    if (!selectedDoc) return undefined;
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') setSelectedDoc(null);
+    };
+    window.addEventListener('keydown', onKeyDown);
+    return () => window.removeEventListener('keydown', onKeyDown);
+  }, [selectedDoc]);
 
   const navigateTo = (nextPage: MarketingPage) => (event: React.MouseEvent<HTMLAnchorElement>) => {
     event.preventDefault();
@@ -624,22 +615,23 @@ export default function LandingPage({
               <div className="col-span-1 md:col-span-7 border-r border-line/10 relative bg-cyan/20 flex flex-col">
                 <div className="h-10 border-b border-line/10 px-4 flex items-center justify-end bg-cyan/40 backdrop-blur-sm z-10">
                   <div className="flex gap-2">
-                    <button className="text-xs text-ink/60 hover:text-ink px-2 py-1 rounded hover:bg-white/10 flex items-center gap-1">
+                    <button type="button" disabled aria-disabled="true" className="cursor-not-allowed text-xs text-ink/35 px-2 py-1 rounded flex items-center gap-1">
                       <Glasses className="w-3.5 h-3.5" /> AR 预览
                     </button>
-                    <button className="text-xs text-ink/60 hover:text-ink px-2 py-1 rounded hover:bg-white/10 flex items-center gap-1">
+                    <button type="button" disabled aria-disabled="true" className="cursor-not-allowed text-xs text-ink/35 px-2 py-1 rounded flex items-center gap-1">
                       <Share2 className="w-3.5 h-3.5" /> 投屏
                     </button>
                   </div>
                 </div>
 
                 <div className="flex-1 relative overflow-hidden">
-                  {/* 3D 渲染区域 */}
-                  <div className="absolute inset-0 cursor-move">
-                    <Canvas camera={{ position: [0, 0, 4] }}>
-                      <OrbitControls enableZoom={false} autoRotate autoRotateSpeed={0.5} />
-                      <HeartMockup accent={themeDef.accent} />
-                    </Canvas>
+                  {/* 使用系统已有模型图片，案例页本身不承诺交互控制 */}
+                  <div className="absolute inset-0 flex items-center justify-center p-10">
+                    <img
+                      src="/images/model-info/organs/heart.webp"
+                      alt="心脏模型示意图"
+                      className="h-full w-full object-contain drop-shadow-[0_18px_35px_rgba(0,0,0,0.45)]"
+                    />
                   </div>
 
                   {/* UI 叠加层：手势识别状态 */}
@@ -789,20 +781,45 @@ export default function LandingPage({
           <div className="text-center text-[10px] md:text-xs uppercase tracking-[0.2em] text-ink/40 font-semibold mb-12">
             适用于未来智慧课堂的各种教学场景
           </div>
-          <div className="flex flex-wrap justify-center gap-x-12 gap-y-8">
-            {['地理环境模拟', '生物微观实验', '化学分子解析', '力学物理模型', '古建历史重构', 'AI数字人助教', '空间手势黑板', '课堂多维数据'].map((name, i) => (
-              <motion.div
-                key={name}
+          <div className="flex flex-wrap justify-center gap-3 md:gap-4">
+            {[
+              { label: '地理', title: '地理环境模拟', model: '地球内部结构', description: '通过地球内部结构与地形模型，观察圈层关系、地势起伏和地表过程。' },
+              { label: '生物', title: '生物结构实验', model: '心脏模型', description: '用可观察的器官模型理解结构、功能和血液循环等关键知识。' },
+              { label: '化学', title: '化学分子解析', model: '金刚石模型', description: '旋转、缩放分子与晶体模型，建立键角、配位和空间构型概念。' },
+            ].map((scenario, i) => (
+              <motion.button
+                type="button"
+                key={scenario.label}
                 initial={{ opacity: 0, y: 10 }}
                 whileInView={{ opacity: 1, y: 0 }}
                 viewport={{ once: true }}
                 transition={{ delay: i * 0.05 }}
-                className="text-sm md:text-base font-bold text-ink/50 hover:text-ink transition-colors cursor-default"
+                onClick={() => setSelectedScenario((current) => current?.label === scenario.label ? null : scenario)}
+                aria-expanded={selectedScenario?.label === scenario.label}
+                className={`rounded-full border px-5 py-2.5 text-sm md:text-base font-bold transition-colors ${selectedScenario?.label === scenario.label ? 'border-cyan/60 bg-cyan/10 text-cyan' : 'border-line/10 bg-white/[0.03] text-ink/55 hover:border-cyan/35 hover:text-ink'}`}
               >
-                {name}
-              </motion.div>
+                {scenario.label}
+              </motion.button>
             ))}
           </div>
+          {selectedScenario && (
+            <motion.div
+              initial={{ opacity: 0, y: 8 }}
+              animate={{ opacity: 1, y: 0 }}
+              className="mx-auto mt-8 max-w-2xl rounded-2xl border border-cyan/20 bg-cyan-50/10 p-6 text-left backdrop-blur-md"
+            >
+              <div className="flex flex-col gap-5 sm:flex-row sm:items-center sm:justify-between">
+                <div>
+                  <p className="text-xs font-black uppercase tracking-[0.2em] text-cyan">{selectedScenario.label} · {selectedScenario.model}</p>
+                  <h3 className="mt-2 text-lg font-black text-ink">{selectedScenario.title}</h3>
+                  <p className="mt-2 text-sm leading-6 text-ink/60">{selectedScenario.description}</p>
+                </div>
+                <button type="button" onClick={handleEnterClick} className="shrink-0 rounded-lg bg-white px-4 py-2.5 text-sm font-black text-black transition hover:bg-cyan-100">
+                  进入数智课堂
+                </button>
+              </div>
+            </motion.div>
+          )}
         </section>
         </>
         )}
@@ -908,7 +925,7 @@ export default function LandingPage({
                 { icon: BarChart2, title: '课堂数据', description: '查看互动记录与学习反馈，用数据帮助下一次备课。', meta: '教学分析' },
                 { icon: Download, title: '部署与设备', description: '查看浏览器、摄像头、投屏设备及学校网络环境建议。', meta: '环境配置' },
               ].map((doc) => (
-                <article key={doc.title} className="liquid-glass rounded-2xl p-7 min-h-56 flex flex-col group">
+                <button type="button" key={doc.title} onClick={() => setSelectedDoc(doc)} className="liquid-glass rounded-2xl p-7 min-h-56 flex flex-col text-left group focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan/70">
                   <div className="w-11 h-11 rounded-xl bg-cyan/10 border border-cyan/20 flex items-center justify-center">
                     <doc.icon className="w-5 h-5 text-cyan" />
                   </div>
@@ -918,7 +935,7 @@ export default function LandingPage({
                     <span>{doc.meta}</span>
                     <ArrowUpRight className="w-4 h-4" />
                   </div>
-                </article>
+                </button>
               ))}
             </div>
             <div className="mt-10 liquid-glass rounded-2xl p-7 md:p-9 flex flex-col md:flex-row md:items-center justify-between gap-6">
@@ -931,6 +948,20 @@ export default function LandingPage({
               </button>
             </div>
           </section>
+        )}
+
+        {selectedDoc && (
+          <div className="fixed inset-0 z-[80] grid place-items-center bg-black/65 px-5 backdrop-blur-sm" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedDoc(null); }}>
+            <section role="dialog" aria-modal="true" aria-labelledby="doc-dialog-title" className="w-full max-w-lg rounded-2xl border border-line/15 bg-[var(--theme-bg-soft)] p-7 shadow-2xl">
+              <div className="flex items-start justify-between gap-5">
+                <div><div className="text-xs font-bold uppercase tracking-widest text-cyan">{selectedDoc.meta}</div><h2 id="doc-dialog-title" className="mt-2 text-2xl font-black text-ink">{selectedDoc.title}</h2></div>
+                <button type="button" onClick={() => setSelectedDoc(null)} aria-label="关闭说明" title="关闭说明" className="grid h-9 w-9 place-items-center rounded-full border border-line/10 text-ink/60 hover:bg-white/10 hover:text-ink"><X size={17} /></button>
+              </div>
+              <p className="mt-5 text-sm leading-7 text-ink/70">{selectedDoc.description}</p>
+              <p className="mt-4 rounded-xl border border-cyan/15 bg-cyan/5 px-4 py-3 text-xs leading-6 text-ink/55">进入数智课堂后，可在对应模块直接完成这项操作，并将过程记录到课堂活动日志。</p>
+              <div className="mt-6 flex justify-end"><button type="button" onClick={() => setSelectedDoc(null)} className="rounded-lg bg-white px-4 py-2 text-sm font-bold text-black hover:bg-white/90">知道了</button></div>
+            </section>
+          </div>
         )}
 
         {page === 'join' && (
@@ -973,7 +1004,7 @@ export default function LandingPage({
             </p>
             <div className="mt-12 flex flex-col sm:flex-row items-center justify-center gap-4 relative z-10">
               <button onClick={() => onNavigate('solutions')} className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-full bg-white text-black text-sm font-bold px-8 py-4 transition-all hover:scale-105 active:scale-95 shadow-[0_0_20px_rgba(255,255,255,0.4)]">
-                查看教学方案
+                查看教学辅助
               </button>
               <button onClick={handleEnterClick} className="w-full sm:w-auto flex items-center justify-center gap-2 rounded-full border border-line/20 text-ink text-sm font-bold px-8 py-4 hover:bg-white/10 transition-colors">
                 立即体验产品

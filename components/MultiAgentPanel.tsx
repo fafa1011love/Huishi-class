@@ -172,7 +172,7 @@ const MultiAgentPanel: React.FC<MultiAgentPanelProps> = ({ statuses, timeline, s
           </div>
         ) : (
           timeline.map((item) => (
-            <div key={item.id} className={`rounded-2xl border px-3 py-2 ${embedded ? 'border-cyan/10 bg-cyan-950/25' : 'border-cyan/10 bg-cyan-50/72 shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]'}`}>
+            <div key={item.id} className={`rounded-2xl border px-3 py-2 transition-colors ${embedded ? 'border-cyan/15 bg-[rgba(var(--theme-bg-rgb),0.72)] shadow-[inset_0_1px_0_rgba(255,255,255,0.045),0_6px_18px_rgba(0,0,0,0.14)] hover:border-cyan/25 hover:bg-[rgba(var(--theme-bg-rgb),0.86)]' : 'border-cyan/10 bg-cyan-50/72 shadow-[inset_0_1px_0_rgba(255,255,255,0.025)]'}`}>
               <div className="flex items-center justify-between gap-2">
                 <span className={`text-[9px] font-black ${embedded ? 'text-cyan/70' : 'text-cyan/55'}`}>{roleMeta[item.agent].title}</span>
                 <span className={`text-[9px] font-black uppercase ${item.status === 'error' ? 'text-rose-400' : item.status === 'done' ? 'text-emerald-400' : item.status === 'running' ? 'text-cyan' : 'text-gray-400'}`}>{statusText[item.status === 'pending' ? 'idle' : item.status === 'running' ? 'running' : item.status === 'error' ? 'error' : 'done']}</span>

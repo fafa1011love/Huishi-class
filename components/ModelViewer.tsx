@@ -55,10 +55,9 @@ interface ModelViewerProps {
   onLoadComplete?: () => void;
   onLoadError?: (error: ModelLoadError) => void;
   onPartMoved?: (partName: string) => void;
+  onDisassemblyAvailabilityChange?: (available: boolean) => void;
   quizMode?: boolean;  // 新增：是否处于答题模式
   presentationSplitActive?: boolean;
-  crossSectionEnabled?: boolean;
-  wireframeEnabled?: boolean;
 }
 
 const MODEL_BASE_Y = -0.49;
@@ -1014,12 +1013,12 @@ const LocalEnvironment: React.FC = () => {
 };
 
 // Unified model component. FBX / GLB / GLTF all use the same layer-based disassembly path.
-const LayeredModel: React.FC<{ url: string; modelType: ModelType; assetUrls?: Record<string, string>; controlRef: React.MutableRefObject<ControlRefs>; cameraTarget: CameraTarget; showEarthLabels?: boolean; crossSectionEnabled?: boolean; wireframeEnabled?: boolean; accent?: string; onLoadProgress?: (progress: LoadProgress) => void; onLoadComplete?: () => void; onLoadError?: (error: ModelLoadError) => void; onPartMoved?: (partName: string) => void }> = ({ url, modelType, assetUrls, controlRef, cameraTarget, showEarthLabels = false, crossSectionEnabled = false, wireframeEnabled = false, accent = '#86e3ce', onLoadProgress, onLoadComplete, onLoadError, onPartMoved }) => {
+const LayeredModel: React.FC<{ url: string; modelType: ModelType; assetUrls?: Record<string, string>; controlRef: React.MutableRefObject<ControlRefs>; cameraTarget: CameraTarget; showEarthLabels?: boolean; accent?: string; onLoadProgress?: (progress: LoadProgress) => void; onLoadComplete?: () => void; onLoadError?: (error: ModelLoadError) => void; onPartMoved?: (partName: string) => void; onDisassemblyAvailabilityChange?: (available: boolean) => void }> = ({ url, modelType, assetUrls, controlRef, cameraTarget, showEarthLabels = false, accent = '#86e3ce', onLoadProgress, onLoadComplete, onLoadError, onPartMoved, onDisassemblyAvailabilityChange }) => {
   const [modelScene, setModelScene] = useState<THREE.Object3D | null>(null);
   const [modelParts, setModelParts] = useState<GrabbablePart[]>([]);
   const [grabbableParts, setGrabbableParts] = useState<GrabbablePart[]>([]);
   const groupRef = useRef<THREE.Group>(null);
-  const { camera, raycaster, scene, gl } = useThree();
+  const { camera, raycaster, scene } = useThree();
   const orbitControls = useThree((threeState) => (threeState as any).controls as {
     enabled?: boolean;
     target?: THREE.Vector3;
@@ -1081,76 +1080,6 @@ const LayeredModel: React.FC<{ url: string; modelType: ModelType; assetUrls?: Re
   // Smoothed rotation velocity to prevent abrupt camera start/stop stutter
   const smoothedRotVelRef = useRef({ x: 0, y: 0 });
   const smoothedZoomRef = useRef(0);
-  const clippingPlaneRef = useRef(new THREE.Plane(new THREE.Vector3(-1, 0, 0), -1.8));
-  const clippingConstantRef = useRef(-1.8);
-  const clippingAppliedRef = useRef(false);
-
-  useEffect(() => {
-    const previous = gl.localClippingEnabled;
-    gl.localClippingEnabled = true;
-    return () => {
-      gl.localClippingEnabled = previous;
-    };
-  }, [gl]);
-
-  useEffect(() => {
-    if (!modelScene) return undefined;
-    const materials = new Set<THREE.Material>();
-    modelScene.traverse((child) => {
-      if (!isMeshObject(child) || !child.material) return;
-      (Array.isArray(child.material) ? child.material : [child.material]).forEach((material) => materials.add(material));
-    });
-    const originalState = new Map(Array.from(materials, (material) => [material, {
-      clippingPlanes: material.clippingPlanes,
-      wireframe: 'wireframe' in material ? Boolean((material as THREE.MeshBasicMaterial).wireframe) : undefined,
-    }]));
-
-    return () => {
-      originalState.forEach((state, material) => {
-        material.clippingPlanes = state.clippingPlanes;
-        if (state.wireframe !== undefined && 'wireframe' in material) {
-          (material as THREE.MeshBasicMaterial).wireframe = state.wireframe;
-        }
-        material.needsUpdate = true;
-      });
-      clippingAppliedRef.current = false;
-      clippingConstantRef.current = -1.8;
-      clippingPlaneRef.current.constant = -1.8;
-    };
-  }, [modelScene]);
-
-  useEffect(() => {
-    if (!modelScene) return;
-    modelScene.traverse((child) => {
-      if (!isMeshObject(child) || !child.material) return;
-      (Array.isArray(child.material) ? child.material : [child.material]).forEach((material) => {
-        if ('wireframe' in material) {
-          (material as THREE.MeshBasicMaterial).wireframe = wireframeEnabled;
-          material.needsUpdate = true;
-        }
-      });
-    });
-  }, [modelScene, wireframeEnabled]);
-
-  useEffect(() => {
-    if (!modelScene) return;
-    if (crossSectionEnabled) {
-      if (!clippingAppliedRef.current) {
-        clippingConstantRef.current = -1.8;
-        clippingPlaneRef.current.constant = -1.8;
-      }
-      modelScene.traverse((child) => {
-        if (!isMeshObject(child) || !child.material) return;
-        (Array.isArray(child.material) ? child.material : [child.material]).forEach((material) => {
-          material.clippingPlanes = [clippingPlaneRef.current];
-          material.clipShadows = true;
-          material.needsUpdate = true;
-        });
-      });
-      clippingAppliedRef.current = true;
-    }
-  }, [crossSectionEnabled, modelScene]);
-
   // Load model and detect whether the file contains detachable internal layers.
   useEffect(() => {
     let disposed = false;
@@ -1240,6 +1169,7 @@ const LayeredModel: React.FC<{ url: string; modelType: ModelType; assetUrls?: Re
       setModelParts(parts);
       setGrabbableParts(interactionParts);
       setModelScene(root);
+      onDisassemblyAvailabilityChange?.(parts.length > 1);
 
       const format = modelType.toUpperCase();
       const message = parts.length > 0
@@ -1457,23 +1387,6 @@ const LayeredModel: React.FC<{ url: string; modelType: ModelType; assetUrls?: Re
 
   useFrame((state, delta) => {
     if (!modelScene || !groupRef.current) return;
-
-    if (clippingAppliedRef.current) {
-      const target = crossSectionEnabled ? 0 : -1.8;
-      clippingConstantRef.current = THREE.MathUtils.damp(clippingConstantRef.current, target, 5.5, delta);
-      clippingPlaneRef.current.constant = clippingConstantRef.current;
-      if (!crossSectionEnabled && Math.abs(clippingConstantRef.current + 1.8) < 0.005) {
-        modelScene.traverse((child) => {
-          if (!isMeshObject(child) || !child.material) return;
-          (Array.isArray(child.material) ? child.material : [child.material]).forEach((material) => {
-            material.clippingPlanes = null;
-            material.clipShadows = false;
-            material.needsUpdate = true;
-          });
-        });
-        clippingAppliedRef.current = false;
-      }
-    }
 
     const { rotationVelocity, rotationLocked, zoomSpeed, interactionHandLandmarks } = controlRef.current;
 
@@ -2132,7 +2045,7 @@ const CameraPresentationTransition: React.FC<{ active: boolean; target: CameraTa
   return null;
 };
 
-const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl, modelType, assetUrls, controlRef, showLabels: externalShowLabels, onShowLabelsChange, onLoadProgress, onLoadComplete, onLoadError, onPartMoved, quizMode = false, presentationSplitActive = false, crossSectionEnabled = false, wireframeEnabled = false }) => {
+const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl, modelType, assetUrls, controlRef, showLabels: externalShowLabels, onShowLabelsChange, onLoadProgress, onLoadComplete, onLoadError, onPartMoved, onDisassemblyAvailabilityChange, quizMode = false, presentationSplitActive = false }) => {
   const { themeDef } = useTheme();
   const dirLightRef = useRef<THREE.DirectionalLight>(null);
   const [internalShowLabels, setInternalShowLabels] = useState(false);
@@ -2237,8 +2150,7 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl, modelType, assetUrl
                 cameraTarget={cameraTarget}
                 accent={themeDef.accent}
                 showEarthLabels={lowerModelUrl.includes('earth-layers') && showLabels}
-                crossSectionEnabled={crossSectionEnabled}
-                wireframeEnabled={wireframeEnabled}
+                onDisassemblyAvailabilityChange={onDisassemblyAvailabilityChange}
                 onLoadProgress={onLoadProgress}
                 onLoadComplete={onLoadComplete}
                 onLoadError={onLoadError}

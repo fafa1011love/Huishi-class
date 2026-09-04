@@ -45,6 +45,8 @@ const QuizOverlay: React.FC<QuizOverlayProps> = ({ stageRef, controlRef, cameraA
   const exitProgressRef = useRef<HTMLDivElement>(null);
   const pointerRef = useRef<HTMLDivElement>(null);
   const pointerSmoothRef = useRef({ x: 0, y: 0, initialized: false });
+  const pointerStableRef = useRef({ x: 0, y: 0, initialized: false });
+  const pointerStableSinceRef = useRef(0);
   const hoverStartRef = useRef<number>(0);
   const hoverOptionRef = useRef<number | null>(null);
   const lastProgressPctRef = useRef<number>(-1);
@@ -101,6 +103,9 @@ const QuizOverlay: React.FC<QuizOverlayProps> = ({ stageRef, controlRef, cameraA
     setHoverProgress(0);
     setShowExplanation(false);
     hoverOptionRef.current = null;
+    pointerSmoothRef.current.initialized = false;
+    pointerStableRef.current.initialized = false;
+    pointerStableSinceRef.current = 0;
 
     const qText = currentQuestion.question;
 
@@ -124,20 +129,13 @@ const QuizOverlay: React.FC<QuizOverlayProps> = ({ stageRef, controlRef, cameraA
 
       let hitOption: number | null = null;
 
-      // 1. Check hand landmark (use palm centroid instead of index tip for stability)
+      // 1. Check the index fingertip; the palm center is too coarse for adjacent answers.
       if (cameraActive) {
         const handLm = controlRef.current.interactionHandLandmarks;
         if (handLm && handLm.length > 17) {
-          // Calculate palm centroid using wrist and MCP joints
-          let centerX = 0;
-          let centerY = 0;
-          const palmPoints = [0, 5, 9, 13, 17];
-          palmPoints.forEach(idx => {
-            centerX += handLm[idx].x;
-            centerY += handLm[idx].y;
-          });
-          centerX /= palmPoints.length;
-          centerY /= palmPoints.length;
+          // Use the index fingertip as the pointer; the palm center is too coarse for adjacent answers.
+          const centerX = handLm[8].x;
+          const centerY = handLm[8].y;
 
           const stageEl = stageRef.current;
           if (stageEl) {
@@ -160,6 +158,18 @@ const QuizOverlay: React.FC<QuizOverlayProps> = ({ stageRef, controlRef, cameraA
 
             hitOption = checkHitOnOptions(screenX, screenY, optionCount);
 
+            const now = performance.now();
+            const stable = pointerStableRef.current;
+            const movement = stable.initialized ? Math.hypot(screenX - stable.x, screenY - stable.y) : Infinity;
+            if (!stable.initialized || movement > 20) {
+              stable.x = screenX;
+              stable.y = screenY;
+              stable.initialized = true;
+              pointerStableSinceRef.current = now;
+            } else {
+              stable.x = stable.x * 0.8 + screenX * 0.2;
+              stable.y = stable.y * 0.8 + screenY * 0.2;
+            }
             // Update virtual pointer position
             if (pointerRef.current) {
               pointerRef.current.style.transform = `translate(${screenX}px, ${screenY}px)`;
@@ -168,15 +178,17 @@ const QuizOverlay: React.FC<QuizOverlayProps> = ({ stageRef, controlRef, cameraA
           }
         } else {
           if (pointerRef.current) pointerRef.current.style.opacity = '0';
+          pointerStableRef.current.initialized = false;
+          pointerStableSinceRef.current = 0;
         }
       }
 
       // Update hover state
-      if (hitOption !== null) {
+      if (hitOption !== null && pointerStableRef.current.initialized && performance.now() - pointerStableSinceRef.current >= 140) {
         if (hoverOptionRef.current === hitOption) {
           // Same option — accumulate hover time
           const elapsed = performance.now() - hoverStartRef.current;
-          const progress = Math.min(1, elapsed / HOVER_CONFIRM_MS);
+          const progress = Math.min(1, Math.max(0, elapsed / HOVER_CONFIRM_MS));
           // 只在 progress 的整数 % 变化时才 setState，避免每帧 re-render
           const progressPct = Math.round(progress * 100);
           if (progressPct !== lastProgressPctRef.current) {
@@ -192,7 +204,8 @@ const QuizOverlay: React.FC<QuizOverlayProps> = ({ stageRef, controlRef, cameraA
         } else {
           // Switched to a different option (or first hit)
           hoverOptionRef.current = hitOption;
-          hoverStartRef.current = performance.now();
+          // Require a short settle period after entering a new option.
+          hoverStartRef.current = performance.now() + 140;
           lastProgressPctRef.current = 0;
           setHoveredOption(hitOption);
           setHoverProgress(0);
@@ -228,15 +241,8 @@ const QuizOverlay: React.FC<QuizOverlayProps> = ({ stageRef, controlRef, cameraA
       if (cameraActive) {
         const handLm = controlRef.current.interactionHandLandmarks;
         if (handLm && handLm.length > 17) {
-          let centerX = 0;
-          let centerY = 0;
-          const palmPoints = [0, 5, 9, 13, 17];
-          palmPoints.forEach(idx => {
-            centerX += handLm[idx].x;
-            centerY += handLm[idx].y;
-          });
-          centerX /= palmPoints.length;
-          centerY /= palmPoints.length;
+          const centerX = handLm[8].x;
+          const centerY = handLm[8].y;
 
           const stageEl = stageRef.current;
           if (stageEl) {
@@ -332,11 +338,12 @@ const QuizOverlay: React.FC<QuizOverlayProps> = ({ stageRef, controlRef, cameraA
   }, [phase, cameraActive]);
 
   const checkHitOnOptions = (screenX: number, screenY: number, count: number): number | null => {
-    const margin = 10;
+    const activeOption = hoverOptionRef.current;
     for (let idx = 0; idx < count; idx++) {
       const el = optionRefs.current[idx];
       if (!el) continue;
       const rect = el.getBoundingClientRect();
+      const margin = idx === activeOption ? 24 : 10;
       if (
         screenX >= rect.left - margin &&
         screenX <= rect.right + margin &&
@@ -654,7 +661,7 @@ const QuizOverlay: React.FC<QuizOverlayProps> = ({ stageRef, controlRef, cameraA
           {/* Gesture hint */}
           {phase === 'answering' && cameraActive && (
             <div className="quiz-gesture-hint quiz-fade-in">
-              <span>✋ 用手掌指向答案并悬停 1.2 秒确认选择</span>
+              <span>☝ 用食指指向答案，稳定悬停 1.2 秒确认选择</span>
             </div>
           )}
           {phase === 'answering' && !cameraActive && (

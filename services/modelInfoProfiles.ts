@@ -21,6 +21,8 @@ export interface ModelInfoProfile {
   tips: [ModelInfoTip, ModelInfoTip];
   capabilities: {
     organTools: boolean;
+    disassemblyAvailable?: boolean;
+    wireframeAvailable?: boolean;
   };
 }
 
@@ -45,7 +47,7 @@ const organProfile = (
     { title: '医学提示', content: medical },
     { title: '你知道吗', content: funFact },
   ],
-  capabilities: { organTools: true },
+  capabilities: { organTools: true, disassemblyAvailable: true, wireframeAvailable: true },
 });
 
 export const MODEL_INFO_PROFILES: Record<string, ModelInfoProfile> = {
@@ -102,7 +104,7 @@ export const MODEL_INFO_PROFILES: Record<string, ModelInfoProfile> = {
     ], capabilities: { organTools: false },
   },
   'bio-heart': {
-    seedKey: 'bio-heart', category: '生物', title: '心脏模型1', subtitle: '十个部件协作的生命泵站',
+    seedKey: 'bio-heart', category: '生物', title: '心脏模型', subtitle: '十个部件协作的生命泵站',
     description: '这套可拆解心脏模型展示主要腔室、血管与结构部件，适合通过真实部件拆解理解血液循环路径。',
     illustration: '/images/heart-structure.png',
     metrics: [
@@ -111,7 +113,7 @@ export const MODEL_INFO_PROFILES: Record<string, ModelInfoProfile> = {
     ],
     tips: [
       { title: '学习提示', content: '沿腔静脉、右心、肺循环、左心和主动脉追踪血流方向。' },
-      { title: '模型能力', content: '该模型保留原有真实部件拆解，并同时支持剖面与线框观察。' },
+      { title: '模型能力', content: '该模型保留原有真实部件拆解，可按部件观察心脏结构关系。' },
     ], capabilities: { organTools: true },
   },
   'bio-hiv': {

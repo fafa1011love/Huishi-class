@@ -1,4 +1,4 @@
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { BookOpen, Lightbulb, Microscope } from 'lucide-react';
 import type { ModelInfoProfile } from '../services/modelInfoProfiles';
 
@@ -12,10 +12,26 @@ const CATEGORY_STYLES: Record<ModelInfoProfile['category'], string> = {
   地理: 'bg-emerald-500/15 text-emerald-200 border-emerald-300/20',
 };
 
-const ModelInfoCard: React.FC<ModelInfoCardProps> = ({ profile }) => (
+const FALLBACK_ILLUSTRATIONS: Record<ModelInfoProfile['category'], string> = {
+  化学: '/images/diamond-structure.png',
+  生物: '/images/heart-structure.png',
+  地理: '/images/earth-layers-diagram.png',
+};
+
+const ModelInfoCard: React.FC<ModelInfoCardProps> = ({ profile }) => {
+  const [illustration, setIllustration] = useState(profile.illustration || FALLBACK_ILLUSTRATIONS[profile.category]);
+  const disassemblyAvailable = profile.capabilities.disassemblyAvailable ?? profile.capabilities.organTools;
+  const wireframeAvailable = profile.capabilities.wireframeAvailable !== false;
+  const labelsAvailable = profile.seedKey.startsWith('geo-');
+
+  useEffect(() => {
+    setIllustration(profile.illustration || FALLBACK_ILLUSTRATIONS[profile.category]);
+  }, [profile]);
+
+  return (
   <section className="flex min-h-0 flex-1 flex-col" aria-label={`${profile.title}模型说明`}>
     <div className="relative h-36 shrink-0 overflow-hidden sm:h-44">
-      <img src={profile.illustration} alt={`${profile.title}示意图`} className="h-full w-full object-cover" />
+      <img src={illustration} alt={`${profile.title}示意图`} onError={() => setIllustration(FALLBACK_ILLUSTRATIONS[profile.category])} className="h-full w-full object-cover" />
       <div className="absolute inset-0 bg-gradient-to-t from-[#06111d] via-[#06111d]/15 to-transparent" />
       <span className={`absolute bottom-3 left-4 rounded-full border px-2.5 py-1 text-[10px] font-black tracking-widest ${CATEGORY_STYLES[profile.category]}`}>
         {profile.category}模型
@@ -28,6 +44,19 @@ const ModelInfoCard: React.FC<ModelInfoCardProps> = ({ profile }) => (
         <p className="mt-1 text-xs font-bold tracking-wide text-cyan-200">{profile.subtitle}</p>
       </header>
       <p className="text-sm leading-7 text-slate-300">{profile.description}</p>
+
+      <section aria-label="模型能力" className="space-y-2">
+        {[
+          { label: '真实拆解', available: disassemblyAvailable, detail: disassemblyAvailable ? '可按部件拆开展示结构关系' : '当前为单网格模型，暂不支持部件拆解' },
+          { label: '线框观察', available: wireframeAvailable, detail: wireframeAvailable ? '可从网格层面辅助观察模型形态' : '当前模型未提供线框观察数据' },
+          { label: '教学标签', available: labelsAvailable, detail: labelsAvailable ? '可显示模型内置的课堂提示标签' : '当前模型没有预设教学标签' },
+        ].map((capability) => (
+          <div key={capability.label} className="flex items-start gap-2 rounded-lg border border-white/10 bg-white/[0.045] px-3 py-2 text-xs">
+            <span className={`mt-1 h-1.5 w-1.5 shrink-0 rounded-full ${capability.available ? 'bg-cyan-300' : 'bg-slate-500'}`} />
+            <span className="min-w-0"><b className="mr-2 text-slate-200">{capability.label}</b><span className="text-slate-400">{capability.detail}</span></span>
+          </div>
+        ))}
+      </section>
 
       <section aria-label="关键数据">
         <div className="mb-2 flex items-center gap-2 text-[10px] font-black uppercase tracking-[0.18em] text-slate-300">
@@ -56,6 +85,7 @@ const ModelInfoCard: React.FC<ModelInfoCardProps> = ({ profile }) => (
       </section>
     </div>
   </section>
-);
+  );
+};
 
 export default ModelInfoCard;

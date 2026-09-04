@@ -67,14 +67,15 @@ const KnowledgeNarrationPanel: React.FC<KnowledgeNarrationPanelProps> = ({
 
     const containerBounds = container.getBoundingClientRect();
     const tokenBounds = activeToken.getBoundingClientRect();
-    const comfortableTop = containerBounds.top + containerBounds.height * 0.22;
-    const comfortableBottom = containerBounds.bottom - containerBounds.height * 0.22;
-    if (tokenBounds.top >= comfortableTop && tokenBounds.bottom <= comfortableBottom) return;
+    const tokenTop = container.scrollTop + tokenBounds.top - containerBounds.top;
+    const tokenBottom = tokenTop + tokenBounds.height;
+    const visibleTop = container.scrollTop + container.clientHeight * 0.2;
+    const visibleBottom = container.scrollTop + container.clientHeight * 0.72;
+    if (tokenTop >= visibleTop && tokenBottom <= visibleBottom) return;
 
-    container.scrollBy({
-      top: tokenBounds.top - (containerBounds.top + containerBounds.height / 2) + tokenBounds.height / 2,
-      behavior: 'smooth',
-    });
+    // Progress events can arrive every 100 ms. Direct positioning keeps those
+    // updates from repeatedly cancelling an in-flight smooth scroll animation.
+    container.scrollTop = Math.max(0, tokenTop - container.clientHeight * 0.36);
   }, [activeTokenIndex]);
 
   const deferAutoScroll = () => {
@@ -82,7 +83,7 @@ const KnowledgeNarrationPanel: React.FC<KnowledgeNarrationPanelProps> = ({
   };
 
   return (
-    <section className="flex min-h-0 flex-1 flex-col text-slate-100" aria-label="知识讲解">
+    <section className="flex h-full min-h-0 flex-1 flex-col overflow-hidden text-slate-100" aria-label="知识讲解">
       <div className="flex h-full min-h-0 flex-col px-5 py-5">
         <div className="flex shrink-0 items-center justify-between gap-3 border-b border-line/[0.07] pb-5">
           <div className="flex min-w-0 items-center gap-3">
@@ -118,31 +119,34 @@ const KnowledgeNarrationPanel: React.FC<KnowledgeNarrationPanelProps> = ({
           )}
         </div>
 
-        {structureImage && (
-          <button
-            ref={structureImageButtonRef}
-            type="button"
-            onClick={onStructureImageClick}
-            className="group mx-auto mt-4 flex h-[clamp(84px,14vh,132px)] w-full max-w-[180px] shrink-0 cursor-zoom-in items-center justify-center overflow-hidden rounded-2xl border border-line/10 bg-white/90 p-2 shadow-[0_12px_30px_rgba(0,0,0,0.24)] transition hover:border-amber-300/35 hover:bg-white active:scale-[0.98]"
-            aria-label="放大结构图"
-            title="放大结构图"
-          >
-            <img
-              src={structureImage}
-              alt="结构图"
-              className="h-full w-full object-contain transition duration-300 group-hover:scale-[1.04]"
-            />
-          </button>
-        )}
-
         <div
           ref={contentRef}
           onWheel={deferAutoScroll}
           onTouchStart={deferAutoScroll}
           onPointerDown={deferAutoScroll}
-          className="mt-4 min-h-0 flex-1 overflow-y-auto pr-2 [scrollbar-color:rgba(251,191,36,0.28)_transparent]"
+          onKeyDown={deferAutoScroll}
+          tabIndex={0}
+          aria-label="知识讲解正文，可上下滚动"
+          className="knowledge-narration-scroll h-0 min-h-0 flex-1 overflow-y-auto pb-2 pt-4 pr-2 [scrollbar-color:rgba(251,191,36,0.42)_transparent]"
         >
-          <p className="whitespace-pre-wrap text-[clamp(16px,1.15vw,21px)] font-medium leading-[1.75] text-slate-200">
+          {structureImage && (
+            <button
+              ref={structureImageButtonRef}
+              type="button"
+              onClick={onStructureImageClick}
+              className="group mx-auto flex h-[clamp(84px,14vh,132px)] w-full max-w-[180px] shrink-0 cursor-zoom-in items-center justify-center overflow-hidden rounded-2xl border border-line/10 bg-white/90 p-2 shadow-[0_12px_30px_rgba(0,0,0,0.24)] transition hover:border-amber-300/35 hover:bg-white active:scale-[0.98]"
+              aria-label="放大结构图"
+              title="放大结构图"
+            >
+              <img
+                src={structureImage}
+                alt="结构图"
+                className="h-full w-full object-contain transition duration-300 group-hover:scale-[1.04]"
+              />
+            </button>
+          )}
+
+          <p className={`${structureImage ? 'mt-4' : ''} whitespace-pre-wrap text-[clamp(16px,1.15vw,21px)] font-medium leading-[1.75] text-slate-200`}>
             {tokens.map((token, index) => (
               <span
                 key={`${token.start}-${token.end}`}

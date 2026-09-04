@@ -601,6 +601,15 @@ const AdminUsers: React.FC<AdminUsersProps> = ({ currentUser, onEnterDashboard, 
                                 {c.open}
                               </div>
                             )}
+                            {Array.isArray(item.attachments) && item.attachments.length > 0 && (
+                              <div className="mt-3 flex flex-wrap gap-2">
+                                {item.attachments.map((attachment: any) => (
+                                  <a key={attachment.id} href={attachment.url} target="_blank" rel="noreferrer" className="block overflow-hidden rounded-lg border border-line/10 bg-white/5" title={attachment.originalName}>
+                                    <img src={attachment.url} alt={attachment.originalName} className="h-20 w-20 object-cover" />
+                                  </a>
+                                ))}
+                              </div>
+                            )}
                             <div className="mt-2 flex flex-wrap gap-2 text-xs">
                               {Array.isArray(c.features) && c.features.map((f: string) => (
                                 <span key={f} className="rounded border border-line/10 bg-white/5 px-2 py-0.5 text-ink/60">

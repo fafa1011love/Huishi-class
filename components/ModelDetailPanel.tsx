@@ -72,7 +72,7 @@ const ModelDetailPanel: React.FC<ModelDetailPanelProps> = ({
         </button>
       </div>
 
-      <div className="min-h-0 flex-1 overflow-hidden" role="tabpanel">
+      <div className="flex min-h-0 flex-1 flex-col overflow-hidden" role="tabpanel">
         {activeTab === 'info' ? (
           profile ? (
             <ModelInfoCard profile={profile} />

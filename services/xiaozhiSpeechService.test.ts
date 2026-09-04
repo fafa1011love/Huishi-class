@@ -2,6 +2,55 @@ import test from 'node:test';
 import assert from 'node:assert/strict';
 import { createXiaozhiSpeechSession, estimateNarrationCharIndex, isXiaozhiSpeechActive, setXiaozhiVoicePreference, speakXiaozhi, stopXiaozhiSpeech, subscribeXiaozhiSpeechActivity } from './xiaozhiSpeechService.ts';
 
+test('starts the first natural segment before the stream is flushed', async () => {
+  const originalWindow = (globalThis as any).window;
+  const utterances: any[] = [];
+  const progress: number[] = [];
+
+  class MockUtterance {
+    text: string;
+    lang = ''; rate = 1; pitch = 1; volume = 1; voice: unknown = null;
+    onstart: (() => void) | null = null;
+    onboundary: ((event: { charIndex: number }) => void) | null = null;
+    onend: (() => void) | null = null;
+    onerror: (() => void) | null = null;
+    constructor(text: string) { this.text = text; }
+  }
+
+  (globalThis as any).window = {
+    SpeechSynthesisUtterance: MockUtterance,
+    speechSynthesis: { cancel: () => undefined, getVoices: () => [], speak: (utterance: MockUtterance) => utterances.push(utterance) },
+  };
+  setXiaozhiVoicePreference({ mode: 'system', systemVoiceUri: '' });
+
+  try {
+    const session = createXiaozhiSpeechSession({ onProgress: ({ charIndex }) => progress.push(charIndex) });
+    const firstText = '这是第一段完整的心脏模型结构讲解。';
+    session.push(firstText);
+
+    assert.equal(utterances.length, 1, 'a complete first sentence should start before flush');
+    utterances[0].onstart?.();
+    utterances[0].onboundary?.({ charIndex: 4 });
+    session.push('这是第二段继续说明模型结构和功能。');
+    assert.equal(utterances.length, 1, 'the next segment should wait in the same queue while the first speaks');
+
+    utterances[0].onend?.();
+    assert.equal(utterances.length, 2);
+    utterances[1].onstart?.();
+    utterances[1].onboundary?.({ charIndex: 3 });
+    session.flush();
+    utterances[1].onend?.();
+    await session.done;
+    assert.equal(progress.every((offset, index) => index === 0 || offset >= progress[index - 1]), true);
+    assert.equal((progress.at(-1) || 0) < firstText.length + '这是第二段继续说明模型结构和功能。'.length, true);
+  } finally {
+    stopXiaozhiSpeech();
+    await new Promise((resolve) => setTimeout(resolve, 350));
+    if (originalWindow === undefined) delete (globalThis as any).window;
+    else (globalThis as any).window = originalWindow;
+  }
+});
+
 test('maps browser boundary offsets from queued segments to the full narration', async () => {
   const originalWindow = (globalThis as any).window;
   const utterances: any[] = [];
@@ -261,6 +310,127 @@ test('treats a provider close after done as a successful Volcengine session', as
     stopXiaozhiSpeech();
     setXiaozhiVoicePreference({ mode: 'system', providerVoiceId: '' });
     await new Promise((resolve) => setTimeout(resolve, 350));
+    if (originalWebSocket === undefined) delete (globalThis as any).WebSocket;
+    else (globalThis as any).WebSocket = originalWebSocket;
+    if (originalWindow === undefined) delete (globalThis as any).window;
+    else (globalThis as any).window = originalWindow;
+  }
+});
+
+test('buffers streamed Volcengine text into natural segments until the provider is ready', async () => {
+  const originalWindow = (globalThis as any).window;
+  const originalWebSocket = (globalThis as any).WebSocket;
+  const sockets: MockSocket[] = [];
+
+  class MockSocket {
+    static OPEN = 1;
+    readyState = 0;
+    binaryType: BinaryType = 'blob';
+    onopen: (() => void) | null = null;
+    onmessage: ((event: { data: string | ArrayBuffer }) => void) | null = null;
+    onerror: (() => void) | null = null;
+    onclose: ((event: { code: number; reason: string }) => void) | null = null;
+    sent: string[] = [];
+    constructor(_url: string) { sockets.push(this); }
+    send(data: string) { this.sent.push(data); }
+    open() { this.readyState = MockSocket.OPEN; this.onopen?.(); }
+    message(payload: object) { this.onmessage?.({ data: JSON.stringify(payload) }); }
+    close() { this.readyState = 3; }
+  }
+
+  (globalThis as any).WebSocket = MockSocket;
+  (globalThis as any).window = {
+    location: { protocol: 'https:', host: 'class.example' },
+  };
+  setXiaozhiVoicePreference({ mode: 'volcengine', providerVoiceId: 'voice-1' });
+
+  try {
+    const text = '这是一段需要聚合后再发送给真人音色的完整讲解。';
+    const session = createXiaozhiSpeechSession();
+    sockets[0].open();
+    [...text].forEach((token) => session.push(token));
+    session.flush();
+
+    assert.deepEqual(sockets[0].sent.map((item) => JSON.parse(item).type), ['start']);
+
+    sockets[0].message({ type: 'ready', sampleRate: 24000 });
+    const messages = sockets[0].sent.map((item) => JSON.parse(item));
+    assert.deepEqual(messages.map((message) => message.type), ['start', 'text', 'finish']);
+    assert.equal(messages[1].text, text);
+
+    sockets[0].message({ type: 'done' });
+    await session.done;
+  } finally {
+    stopXiaozhiSpeech();
+    setXiaozhiVoicePreference({ mode: 'system', providerVoiceId: '' });
+    if (originalWebSocket === undefined) delete (globalThis as any).WebSocket;
+    else (globalThis as any).WebSocket = originalWebSocket;
+    if (originalWindow === undefined) delete (globalThis as any).window;
+    else (globalThis as any).window = originalWindow;
+  }
+});
+
+test('preserves a split PCM16 sample across Volcengine audio messages', () => {
+  const originalWindow = (globalThis as any).window;
+  const originalWebSocket = (globalThis as any).WebSocket;
+  const sockets: MockSocket[] = [];
+  const scheduledSamples: number[][] = [];
+
+  class MockSocket {
+    static OPEN = 1;
+    readyState = 0;
+    binaryType: BinaryType = 'blob';
+    onopen: (() => void) | null = null;
+    onmessage: ((event: { data: string | ArrayBuffer }) => void) | null = null;
+    onerror: (() => void) | null = null;
+    onclose: ((event: { code: number; reason: string }) => void) | null = null;
+    constructor(_url: string) { sockets.push(this); }
+    send(_data: string) {}
+    open() { this.readyState = MockSocket.OPEN; this.onopen?.(); }
+    message(payload: object) { this.onmessage?.({ data: JSON.stringify(payload) }); }
+    binary(bytes: number[]) { this.onmessage?.({ data: Uint8Array.from(bytes).buffer }); }
+    close() { this.readyState = 3; }
+  }
+
+  class MockAudioContext {
+    state = 'running';
+    currentTime = 0;
+    destination = {};
+    createBuffer(_channels: number, frameCount: number, sampleRate: number) {
+      const samples = new Float32Array(frameCount);
+      return { duration: frameCount / sampleRate, getChannelData: () => samples, samples };
+    }
+    createBufferSource() {
+      const source: any = {
+        buffer: null,
+        onended: null,
+        connect: () => undefined,
+        start: () => scheduledSamples.push(Array.from(source.buffer.samples)),
+        stop: () => source.onended?.(),
+      };
+      return source;
+    }
+    resume() { return Promise.resolve(); }
+  }
+
+  (globalThis as any).WebSocket = MockSocket;
+  (globalThis as any).window = {
+    location: { protocol: 'https:', host: 'class.example' },
+    AudioContext: MockAudioContext,
+  };
+  setXiaozhiVoicePreference({ mode: 'volcengine', providerVoiceId: 'voice-1' });
+
+  try {
+    createXiaozhiSpeechSession();
+    sockets[0].open();
+    sockets[0].message({ type: 'ready', sampleRate: 24000 });
+    sockets[0].binary([0x00, 0x40, 0x00]);
+    sockets[0].binary([0x20, 0x00, 0x10]);
+
+    assert.deepEqual(scheduledSamples, [[0.5], [0.25, 0.125]]);
+  } finally {
+    stopXiaozhiSpeech();
+    setXiaozhiVoicePreference({ mode: 'system', providerVoiceId: '' });
     if (originalWebSocket === undefined) delete (globalThis as any).WebSocket;
     else (globalThis as any).WebSocket = originalWebSocket;
     if (originalWindow === undefined) delete (globalThis as any).window;

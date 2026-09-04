@@ -84,7 +84,7 @@ export function createVolcTtsService({
   return {
     enabled,
     defaultSpeaker,
-    speakers: [...allowedSpeakers].map((id) => ({ id, name: id === defaultSpeaker ? '豆包默认真人音色' : id })),
+    speakers: [...allowedSpeakers].map((id) => ({ id, name: id === defaultSpeaker ? '默认真人音色' : id })),
     open({ speaker = defaultSpeaker, send, close }) {
       if (!enabled) return { error: { type: 'error', code: 'unavailable', message: '豆包真人音色尚未配置' } };
       if (!allowedSpeakers.has(speaker)) return { error: { type: 'error', code: 'invalid_voice', message: '不支持该真人音色' } };

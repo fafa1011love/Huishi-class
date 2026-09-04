@@ -50,6 +50,8 @@ const FollowUpQuestionOverlay: React.FC<FollowUpQuestionOverlayProps> = ({
   const hoverStartRef = useRef(0);
   const hoverOptionRef = useRef<0 | 1 | null>(null);
   const pointerSmoothRef = useRef({ x: 0, y: 0, initialized: false });
+  const pointerStableRef = useRef({ x: 0, y: 0, initialized: false });
+  const pointerStableSinceRef = useRef(0);
   const answeredRef = useRef(false);
   const announcedReadyQuestionIdRef = useRef<string | null>(null);
   const mountedRef = useRef(true);
@@ -123,7 +125,7 @@ const FollowUpQuestionOverlay: React.FC<FollowUpQuestionOverlayProps> = ({
       case 'error':
         return { tone: 'text-rose-100', icon: <XCircle className="h-4 w-4 text-rose-300" />, text: `语音识别不可用：${recognitionState.message || '请检查麦克风后重试'}；仍可点击或使用手势作答。` };
       default:
-        return { tone: 'text-ink/52', icon: <Mic className="h-4 w-4 text-ink/45" />, text: '语音识别尚未开启；你仍可点击选项，或开启摄像头后用手掌悬停作答。' };
+        return { tone: 'text-ink/52', icon: <Mic className="h-4 w-4 text-ink/45" />, text: '语音识别尚未开启；你仍可点击选项，或开启摄像头后用食指悬停作答。' };
     }
   })();
 
@@ -149,8 +151,14 @@ const FollowUpQuestionOverlay: React.FC<FollowUpQuestionOverlayProps> = ({
   const checkHitOnOptions = useCallback((x: number, y: number): 0 | 1 | null => {
     const leftRect = optionLeftRef.current?.getBoundingClientRect();
     const rightRect = optionRightRef.current?.getBoundingClientRect();
-    if (leftRect && x >= leftRect.left && x <= leftRect.right && y >= leftRect.top && y <= leftRect.bottom) return 0;
-    if (rightRect && x >= rightRect.left && x <= rightRect.right && y >= rightRect.top && y <= rightRect.bottom) return 1;
+    const active = hoverOptionRef.current;
+    const hit = (rect: DOMRect | undefined, index: 0 | 1) => {
+      if (!rect) return false;
+      const margin = active === index ? 24 : 10;
+      return x >= rect.left - margin && x <= rect.right + margin && y >= rect.top - margin && y <= rect.bottom + margin;
+    };
+    if (hit(leftRect, 0)) return 0;
+    if (hit(rightRect, 1)) return 1;
     return null;
   }, []);
 
@@ -171,15 +179,8 @@ const FollowUpQuestionOverlay: React.FC<FollowUpQuestionOverlayProps> = ({
       const stageEl = stageRef.current;
 
       if (handLm && handLm.length > 17 && stageEl) {
-        const palmPoints = [0, 5, 9, 13, 17];
-        let centerX = 0;
-        let centerY = 0;
-        palmPoints.forEach((idx) => {
-          centerX += handLm[idx].x;
-          centerY += handLm[idx].y;
-        });
-        centerX /= palmPoints.length;
-        centerY /= palmPoints.length;
+        const centerX = handLm[8].x;
+        const centerY = handLm[8].y;
 
         const stageRect = stageEl.getBoundingClientRect();
         const targetX = stageRect.left + (1 - centerX) * stageRect.width;
@@ -198,6 +199,19 @@ const FollowUpQuestionOverlay: React.FC<FollowUpQuestionOverlayProps> = ({
         const screenY = pointerSmoothRef.current.y;
         hitOption = checkHitOnOptions(screenX, screenY);
 
+        const now = performance.now();
+        const stable = pointerStableRef.current;
+        const movement = stable.initialized ? Math.hypot(screenX - stable.x, screenY - stable.y) : Infinity;
+        if (!stable.initialized || movement > 20) {
+          stable.x = screenX;
+          stable.y = screenY;
+          stable.initialized = true;
+          pointerStableSinceRef.current = now;
+        } else {
+          stable.x = stable.x * 0.8 + screenX * 0.2;
+          stable.y = stable.y * 0.8 + screenY * 0.2;
+        }
+
         if (pointerRef.current) {
           pointerRef.current.style.transform = `translate(${screenX}px, ${screenY}px)`;
           pointerRef.current.style.opacity = '1';
@@ -206,10 +220,10 @@ const FollowUpQuestionOverlay: React.FC<FollowUpQuestionOverlayProps> = ({
         pointerRef.current.style.opacity = '0';
       }
 
-      if (hitOption !== null) {
+      if (hitOption !== null && pointerStableRef.current.initialized && performance.now() - pointerStableSinceRef.current >= 140) {
         if (hoverOptionRef.current === hitOption) {
           const elapsed = performance.now() - hoverStartRef.current;
-          const progress = Math.min(1, elapsed / HOVER_CONFIRM_MS);
+          const progress = Math.min(1, Math.max(0, elapsed / HOVER_CONFIRM_MS));
           setHoverProgress(progress);
           setHoveredOption(hitOption);
 
@@ -219,7 +233,7 @@ const FollowUpQuestionOverlay: React.FC<FollowUpQuestionOverlayProps> = ({
           }
         } else {
           hoverOptionRef.current = hitOption;
-          hoverStartRef.current = performance.now();
+          hoverStartRef.current = performance.now() + 140;
           setHoveredOption(hitOption);
           setHoverProgress(0);
         }
@@ -227,6 +241,11 @@ const FollowUpQuestionOverlay: React.FC<FollowUpQuestionOverlayProps> = ({
         hoverOptionRef.current = null;
         setHoveredOption(null);
         setHoverProgress(0);
+      }
+
+      if (!handLm || handLm.length <= 17 || !stageEl) {
+        pointerStableRef.current.initialized = false;
+        pointerStableSinceRef.current = 0;
       }
 
       animFrame = requestAnimationFrame(checkHover);
@@ -238,7 +257,7 @@ const FollowUpQuestionOverlay: React.FC<FollowUpQuestionOverlayProps> = ({
 
   return (
     <motion.div
-      className="absolute inset-0 z-[75] flex items-center justify-center bg-cyan/45 px-6 backdrop-blur-sm"
+      className="absolute inset-0 z-[75] flex items-center justify-center bg-black/55 px-6 backdrop-blur-[2px]"
       initial={{ opacity: 0 }}
       animate={{ opacity: 1 }}
       exit={{ opacity: 0 }}

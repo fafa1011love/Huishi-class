@@ -444,12 +444,12 @@ const VoiceController: React.FC<VoiceControllerProps> = ({
     <div className="relative flex items-center gap-3">
       {/* 实时识别文字气泡 */}
       {recognizedText && (
-        <div className="absolute bottom-full left-1/2 -translate-x-1/2 mb-3 whitespace-nowrap z-50">
-          <div className="px-4 py-2 rounded-xl bg-cyan-950/80 backdrop-blur-md text-cyan text-sm font-medium shadow-[0_0_15px_rgba(34,211,238,0.2)] border border-cyan/30 max-w-[320px] truncate">
-            <span className="text-cyan mr-1.5">♪</span>
+        <div className="absolute bottom-full left-1/2 z-50 mb-3 w-max max-w-[min(320px,calc(100vw-32px))] -translate-x-1/2">
+          <div className="w-full rounded-xl border border-cyan-300/45 bg-[#071a2d]/95 px-4 py-2 text-sm font-semibold leading-5 text-white shadow-[0_8px_24px_rgba(0,0,0,0.35)] [writing-mode:horizontal-tb]">
+            <span className="mr-1.5 text-cyan-200">♪</span>
             {recognizedText}
           </div>
-          <div className="absolute top-full left-1/2 -translate-x-1/2 w-0 h-0 border-l-[6px] border-r-[6px] border-t-[6px] border-transparent border-t-cyan-950/80" />
+          <div className="absolute left-1/2 top-full h-0 w-0 -translate-x-1/2 border-l-[6px] border-r-[6px] border-t-[6px] border-transparent border-t-[#071a2d]" />
         </div>
       )}
       {isActive && !assistantSpeaking && (

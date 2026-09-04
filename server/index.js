@@ -29,6 +29,11 @@ import {
 import { initializeLearningMemory, registerLearningMemoryRoutes, startLearningMemoryJobs } from './learningMemory.js';
 import { initializeQuizWrongBook, registerQuizWrongBookRoutes } from './quizWrongBook.js';
 import { applyOrganResourceSeed } from './resourceLibrarySeeds.js';
+import {
+  hasFeedbackContent,
+  normalizeFeedback,
+  validateFeedbackAttachments,
+} from './feedback.js';
 import { attachVolcTtsWebSocketServer, createVolcTtsService } from './volcTts.js';
 
 dotenv.config();
@@ -48,6 +53,10 @@ const SERVER_DIRECTORY = path.dirname(fileURLToPath(import.meta.url));
 const RESOURCE_MODEL_STORAGE_DIRECTORY = path.resolve(
   process.env.RESOURCE_MODEL_STORAGE_DIR || path.join(SERVER_DIRECTORY, 'storage', 'resource-models'),
 );
+const FEEDBACK_ATTACHMENT_STORAGE_DIRECTORY = path.resolve(
+  process.env.FEEDBACK_ATTACHMENT_STORAGE_DIR || path.join(SERVER_DIRECTORY, 'storage', 'feedback-attachments'),
+);
+const MAX_FEEDBACK_UPLOAD_SIZE = 16 * 1024 * 1024;
 const MAX_RESOURCE_FILE_SIZE = 200 * 1024 * 1024;
 const MAX_RESOURCE_UPLOAD_SIZE = 260 * 1024 * 1024;
 const RESOURCE_MODEL_EXTENSIONS = new Set(['.glb', '.gltf', '.fbx']);
@@ -533,6 +542,51 @@ async function parseResourceUpload(req) {
   };
 }
 
+async function parseFeedbackRequest(req) {
+  const contentType = String(req.headers['content-type'] || '').toLowerCase();
+  if (!contentType.startsWith('multipart/form-data')) {
+    return { body: req.body || {}, files: [] };
+  }
+  const contentLength = Number(req.headers['content-length'] || 0);
+  if (contentLength > MAX_FEEDBACK_UPLOAD_SIZE) {
+    throw httpError(413, '反馈附件总大小不能超过 16MB');
+  }
+
+  let formData;
+  try {
+    const request = new Request('http://localhost/feedback', {
+      method: 'POST',
+      headers: { 'content-type': String(req.headers['content-type']) },
+      body: Readable.toWeb(req),
+      duplex: 'half',
+    });
+    formData = await request.formData();
+  } catch {
+    throw httpError(400, '反馈表单无法解析');
+  }
+
+  let body = {};
+  const payload = formData.get('payload');
+  if (typeof payload === 'string' && payload.trim()) {
+    try { body = JSON.parse(payload); } catch { throw httpError(400, '反馈数据格式无效'); }
+  } else {
+    for (const key of ['content', 'rating', 'scene', 'sceneOther', 'features', 'voiceAccuracy', 'modelClarity']) {
+      const value = formData.get(key);
+      if (value !== null) body[key] = value;
+    }
+    if (typeof body.rating === 'string') body.rating = Number(body.rating);
+    if (typeof body.features === 'string') {
+      try { body.features = JSON.parse(body.features); } catch { body.features = []; }
+    }
+  }
+
+  const files = formData.getAll('attachments').filter(
+    (value) => typeof value !== 'string' && typeof value?.arrayBuffer === 'function',
+  );
+  validateFeedbackAttachments(files);
+  return { body, files };
+}
+
 async function removeStoredResourceFiles(storageNames) {
   await Promise.all(storageNames.map(async (storageName) => {
     try {
@@ -641,7 +695,7 @@ async function initializeResourceLibrary() {
         { seedKey: 'chem-diamond-cell', tag: '化学', name: '金刚石晶胞', url: '/models/diamond-unit-cell_NIH3D.glb', sortOrder: 20 },
         { seedKey: 'chem-dichlorotoluene', tag: '化学', name: '1,4-二氯甲基苯', url: '/models/pubchem-6233-bas-color-print_NIH3D.glb', sortOrder: 30 },
         { seedKey: 'chem-nitrobenzene', tag: '化学', name: '硝基苯', url: '/models/7416-bas-color-print_NIH3D.glb', sortOrder: 40 },
-        { seedKey: 'bio-heart', tag: '生物', name: '心脏模型1', url: '/models/heart-optimized.glb', sortOrder: 10 },
+        { seedKey: 'bio-heart', tag: '生物', name: '心脏模型', url: '/models/heart-optimized.glb', sortOrder: 10 },
         { seedKey: 'bio-hiv', tag: '生物', name: 'HIV 病毒模型', url: '/models/hiv-virus.glb', sortOrder: 20 },
         { seedKey: 'geo-earth-layers', tag: '地理', name: '地球内部结构', url: '/models/earth-layers.glb', sortOrder: 10 },
         { seedKey: 'geo-terrain', tag: '地理', name: '地形地貌总览', url: '/models/terrain-topography.glb', sortOrder: 20 },
@@ -667,6 +721,7 @@ async function initializeResourceLibrary() {
       connection.release();
     }
   }
+  await pool.execute('UPDATE resource_models SET name = "心脏模型" WHERE seed_key = "bio-heart"');
 
   const [organSeedRows] = await pool.execute(
     'SELECT meta_key FROM app_metadata WHERE meta_key = "resource_library_seed_v2_organs" LIMIT 1',
@@ -722,6 +777,35 @@ async function initializeDatabase() {
       KEY users_last_access_index (last_access_at)
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS user_feedback (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      user_id BIGINT UNSIGNED NULL,
+      content TEXT NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (id),
+      KEY user_feedback_user_index (user_id),
+      CONSTRAINT user_feedback_user_fk FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE SET NULL
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+
+  await pool.query(`
+    CREATE TABLE IF NOT EXISTS feedback_attachments (
+      id BIGINT UNSIGNED NOT NULL AUTO_INCREMENT,
+      feedback_id BIGINT UNSIGNED NOT NULL,
+      original_name VARCHAR(255) NOT NULL,
+      storage_name VARCHAR(96) NOT NULL,
+      mime_type VARCHAR(64) NOT NULL,
+      size BIGINT UNSIGNED NOT NULL,
+      created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
+      PRIMARY KEY (id),
+      UNIQUE KEY feedback_attachments_storage_unique (storage_name),
+      KEY feedback_attachments_feedback_index (feedback_id),
+      CONSTRAINT feedback_attachments_feedback_fk FOREIGN KEY (feedback_id) REFERENCES user_feedback(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+  await mkdir(FEEDBACK_ATTACHMENT_STORAGE_DIRECTORY, { recursive: true });
 
   await ensureUsersColumn('school', 'VARCHAR(128) NULL AFTER username');
   await ensureUsersColumn('display_name', 'VARCHAR(64) NULL AFTER username');
@@ -823,6 +907,12 @@ app.post('/api/auth/register', async (req, res) => {
     const [result] = await pool.execute(
       'INSERT INTO users (username, school, display_name, password_hash, role, status) VALUES (:username, :school, :username, :passwordHash, "user", "active")',
       { username, school: schoolValidation.value, passwordHash },
+    );
+    const defaultVoice = defaultVoicePreference(volcTtsService);
+    await pool.execute(
+      `INSERT INTO user_voice_preferences (user_id, mode, system_voice_uri, provider_voice_id)
+       VALUES (:userId, :mode, :systemVoiceUri, :providerVoiceId)`,
+      { userId: result.insertId, ...defaultVoice },
     );
     const user = await persistCurrentAccessMetadata(req, await findUserById(result.insertId));
     req.activityLogUser = user;
@@ -960,43 +1050,79 @@ app.patch('/api/profile/password', requireAuth, async (req, res) => {
   }
 });
 
-app.post('/api/feedback', requireAuth, async (req, res) => {
-  const body = req.body || {};
-  const content = typeof body.content === 'string' ? body.content.trim() : '';
-  const contentLength = Array.from(content).length;
-  if (contentLength > 2000) {
-    return res.status(400).json({ message: '自由反馈需为 0-2000 个字符' });
+app.post('/api/feedback', requireAuth, async (req, res, next) => {
+  const storedNames = [];
+  let connection;
+  try {
+    const parsed = await parseFeedbackRequest(req);
+    const structured = normalizeFeedback(parsed.body);
+    if (!hasFeedbackContent(structured, parsed.files.length)) {
+      throw httpError(400, '至少填写一项反馈');
+    }
+
+    connection = await pool.getConnection();
+    await connection.beginTransaction();
+    const [result] = await connection.execute(
+      'INSERT INTO user_feedback (user_id, content) VALUES (:userId, :content)',
+      { userId: req.user.id, content: JSON.stringify(structured) },
+    );
+    const feedbackId = Number(result.insertId);
+    for (const file of parsed.files) {
+      const extension = file.type === 'image/png' ? '.png' : file.type === 'image/webp' ? '.webp' : '.jpg';
+      const storageName = `${randomUUID()}${extension}`;
+      const buffer = Buffer.from(await file.arrayBuffer());
+      await writeFile(path.join(FEEDBACK_ATTACHMENT_STORAGE_DIRECTORY, storageName), buffer, { flag: 'wx' });
+      storedNames.push(storageName);
+      await connection.execute(
+        `INSERT INTO feedback_attachments
+          (feedback_id, original_name, storage_name, mime_type, size)
+         VALUES (:feedbackId, :originalName, :storageName, :mimeType, :size)`,
+        {
+          feedbackId,
+          originalName: normalizeUploadFileName(file.name || 'feedback-image'),
+          storageName,
+          mimeType: file.type,
+          size: buffer.length,
+        },
+      );
+    }
+    await connection.commit();
+    return res.status(201).json({ ok: true });
+  } catch (error) {
+    if (connection) await connection.rollback().catch(() => {});
+    await Promise.all(storedNames.map((name) => unlink(path.join(FEEDBACK_ATTACHMENT_STORAGE_DIRECTORY, name)).catch(() => {})));
+    if (error?.status) return res.status(error.status).json({ message: error.message });
+    return next(error);
+  } finally {
+    connection?.release();
   }
+});
 
-  // 打包所有结构化字段为 JSON，存入 content 或 open_content 字段
-  const structured = {
-    rating: typeof body.rating === 'number' ? body.rating : null,
-    scene: typeof body.scene === 'string' ? body.scene : null,
-    sceneOther: typeof body.sceneOther === 'string' && body.sceneOther.trim() ? body.sceneOther.trim() : null,
-    features: Array.isArray(body.features) ? body.features : [],
-    voiceAccuracy: typeof body.voiceAccuracy === 'string' ? body.voiceAccuracy : null,
-    modelClarity: typeof body.modelClarity === 'string' ? body.modelClarity : null,
-    open: content || null,
-  };
-
-  // 至少要有一项反馈
-  const hasAny = structured.rating !== null
-    || structured.scene !== null
-    || structured.sceneOther !== null
-    || structured.features.length > 0
-    || structured.voiceAccuracy !== null
-    || structured.modelClarity !== null
-    || structured.open !== null;
-
-  if (!hasAny) {
-    return res.status(400).json({ message: '至少填写一项反馈' });
+app.get('/api/feedback-attachments/:id', requireAuth, async (req, res, next) => {
+  try {
+    const id = parsePositiveInteger(req.params.id, null);
+    if (!id) return res.status(400).json({ message: '无效的附件 ID' });
+    const [rows] = await pool.execute(
+      `SELECT a.*, f.user_id
+       FROM feedback_attachments a
+       INNER JOIN user_feedback f ON f.id = a.feedback_id
+       WHERE a.id = :id LIMIT 1`,
+      { id },
+    );
+    const attachment = rows[0];
+    if (!attachment) return res.status(404).json({ message: '反馈附件不存在' });
+    if (req.user.role !== 'admin' && Number(attachment.user_id) !== Number(req.user.id)) {
+      return res.status(403).json({ message: '无权访问该反馈附件' });
+    }
+    const filePath = path.join(FEEDBACK_ATTACHMENT_STORAGE_DIRECTORY, attachment.storage_name);
+    res.setHeader('Content-Type', attachment.mime_type);
+    res.setHeader('Content-Disposition', `inline; filename*=UTF-8''${encodeURIComponent(attachment.original_name)}`);
+    return res.sendFile(filePath, { dotfiles: 'deny', maxAge: 0 }, (error) => {
+      if (error && !res.headersSent) next(error);
+    });
+  } catch (error) {
+    return next(error);
   }
-
-  await pool.execute(
-    'INSERT INTO user_feedback (user_id, content) VALUES (:userId, :content)',
-    { userId: req.user.id, content: JSON.stringify(structured) },
-  );
-  return res.status(201).json({ ok: true });
 });
 
 const normalizeVoicePreference = (body, service) => {
@@ -1009,14 +1135,24 @@ const normalizeVoicePreference = (body, service) => {
   return { mode, systemVoiceUri: mode === 'system' ? systemVoiceUri : null, providerVoiceId: mode === 'volcengine' ? providerVoiceId : null };
 };
 
+const defaultVoicePreference = (service) => service.enabled && service.defaultSpeaker
+  ? { mode: 'volcengine', systemVoiceUri: '', providerVoiceId: service.defaultSpeaker }
+  : { mode: 'system', systemVoiceUri: '', providerVoiceId: '' };
+
 const readVoicePreference = async (userId) => {
   await pool.execute('INSERT IGNORE INTO user_voice_preferences (user_id) VALUES (:userId)', { userId });
   const [rows] = await pool.execute('SELECT mode, system_voice_uri, provider_voice_id FROM user_voice_preferences WHERE user_id = :userId', { userId });
   const row = rows[0];
+  const providerVoiceId = row?.provider_voice_id || '';
+  const providerAvailable = volcTtsService.enabled
+    && volcTtsService.speakers.some((speaker) => speaker.id === providerVoiceId);
+  if (row?.mode === 'volcengine' && !providerAvailable) {
+    return { mode: 'system', systemVoiceUri: '', providerVoiceId: '' };
+  }
   return {
-    mode: row?.mode || 'system',
+    mode: row?.mode === 'volcengine' ? 'volcengine' : 'system',
     systemVoiceUri: row?.system_voice_uri || '',
-    providerVoiceId: row?.provider_voice_id || '',
+    providerVoiceId,
   };
 };
 
@@ -1155,8 +1291,31 @@ app.get('/api/admin/feedback', requireAuth, requireAdmin, async (req, res) => {
       displayName: row.display_name || null,
       content: parsed,
       createdAt: row.created_at,
+      attachments: [],
     };
   });
+
+  if (items.length > 0) {
+    const ids = items.map((item) => item.id);
+    const placeholders = ids.map(() => '?').join(',');
+    const [attachmentRows] = await pool.query(
+      `SELECT id, feedback_id, original_name, mime_type, size, created_at
+       FROM feedback_attachments WHERE feedback_id IN (${placeholders}) ORDER BY id ASC`,
+      ids,
+    );
+    const byFeedback = new Map(items.map((item) => [item.id, item]));
+    for (const attachment of attachmentRows) {
+      const item = byFeedback.get(Number(attachment.feedback_id));
+      item?.attachments.push({
+        id: Number(attachment.id),
+        originalName: attachment.original_name,
+        mimeType: attachment.mime_type,
+        size: Number(attachment.size),
+        createdAt: attachment.created_at,
+        url: `/api/feedback-attachments/${Number(attachment.id)}`,
+      });
+    }
+  }
 
   // 统计
   const [allRows] = await pool.execute(

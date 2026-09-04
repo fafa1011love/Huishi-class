@@ -16,7 +16,7 @@ export type VoiceMode = 'system' | 'volcengine';
 export type VoicePreference = { mode: VoiceMode; systemVoiceUri: string; providerVoiceId: string; };
 export type XiaozhiSpeechSession = { push: (text: string) => void; flush: () => void; stop: () => void; done: Promise<void>; };
 
-const PLAYBACK_LEAD_SECONDS = 0.06;
+const PLAYBACK_LEAD_SECONDS = 0.25;
 const PLAYBACK_TAIL_MS = 300;
 const PROVIDER_DONE_QUIET_MS = 120;
 const BROWSER_BOUNDARY_FALLBACK_DELAY_MS = 450;
@@ -237,7 +237,9 @@ class VolcSpeechSession implements XiaozhiSpeechSession {
   private resolveDone!: () => void;
   private socket: WebSocket | null = null;
   private queued: string[] = [];
+  private textBuffer = '';
   private fullText = '';
+  private providerReady = false;
   private flushed = false;
   private stopped = false;
   private started = false;
@@ -250,6 +252,7 @@ class VolcSpeechSession implements XiaozhiSpeechSession {
   private playbackProgressTimer: ReturnType<typeof setInterval> | null = null;
   private lastProgressCharIndex = -1;
   private sampleRate = 24000;
+  private pendingPcmByte: number | null = null;
   private fallback: BrowserSpeechSession | null = null;
   private options: SpeakOptions;
   constructor(options: SpeakOptions) {
@@ -261,19 +264,25 @@ class VolcSpeechSession implements XiaozhiSpeechSession {
     if (this.stopped || this.flushed) return;
     const value = String(text || ''); if (!value) return;
     this.fullText += value;
-    if (this.socket?.readyState === WebSocket.OPEN) this.socket.send(JSON.stringify({ type: 'text', text: value }));
-    else this.queued.push(value);
+    this.textBuffer += value;
+    const segments = extractSpeechSegments(this.textBuffer);
+    this.textBuffer = segments.remainder;
+    segments.segments.forEach(this.enqueueText);
   };
   flush = () => {
     if (this.stopped || this.flushed) return;
     this.flushed = true;
-    if (this.socket?.readyState === WebSocket.OPEN) this.socket.send(JSON.stringify({ type: 'finish' }));
+    const segments = extractSpeechSegments(this.textBuffer, true);
+    this.textBuffer = '';
+    segments.segments.forEach(this.enqueueText);
+    this.sendFinish();
   };
   stop = () => {
     if (this.stopped) return;
     this.stopped = true;
     if (this.completionTimer) clearTimeout(this.completionTimer);
     this.stopPlaybackProgress();
+    this.pendingPcmByte = null;
     try { this.socket?.send(JSON.stringify({ type: 'cancel' })); } catch { /* socket closed */ }
     this.socket?.close();
     this.audioSources.forEach((source) => { try { source.stop(); } catch { /* already stopped */ } });
@@ -299,9 +308,10 @@ class VolcSpeechSession implements XiaozhiSpeechSession {
     if (typeof data === 'string') {
       let message: any; try { message = JSON.parse(data); } catch { return this.fail(new Error('豆包语音响应无效')); }
       if (message.type === 'ready') {
+        this.providerReady = true;
         this.sampleRate = Number(message.sampleRate) || 24000;
-        this.queued.splice(0).forEach((text) => this.socket?.send(JSON.stringify({ type: 'text', text })));
-        if (this.flushed) this.socket?.send(JSON.stringify({ type: 'finish' }));
+        this.queued.splice(0).forEach(this.sendText);
+        this.sendFinish();
       } else if (message.type === 'done') {
         this.providerDone = true;
         this.emitPlaybackProgress();
@@ -312,12 +322,42 @@ class VolcSpeechSession implements XiaozhiSpeechSession {
     }
     if (data instanceof ArrayBuffer) this.schedulePcm(new Uint8Array(data));
   }
+  private enqueueText = (text: string) => {
+    const value = text.trim();
+    if (!value) return;
+    if (this.providerReady) this.sendText(value);
+    else this.queued.push(value);
+  };
+  private sendText = (text: string) => {
+    if (!this.providerReady || this.socket?.readyState !== WebSocket.OPEN) {
+      this.queued.push(text);
+      return;
+    }
+    this.socket.send(JSON.stringify({ type: 'text', text }));
+  };
+  private sendFinish = () => {
+    if (this.flushed && this.providerReady && this.socket?.readyState === WebSocket.OPEN) {
+      this.socket.send(JSON.stringify({ type: 'finish' }));
+    }
+  };
   private schedulePcm(bytes: Uint8Array) {
     const context = getAudioContext();
-    if (!context || bytes.length < 2 || this.stopped || this.finished) return this.fail(new Error('当前浏览器无法播放真人音色'));
+    if (!context || bytes.length === 0 || this.stopped || this.finished) return this.fail(new Error('当前浏览器无法播放真人音色'));
     if (this.completionTimer) { clearTimeout(this.completionTimer); this.completionTimer = null; }
-    const frameCount = Math.floor(bytes.length / 2); const buffer = context.createBuffer(1, frameCount, this.sampleRate);
-    const samples = buffer.getChannelData(0); const view = new DataView(bytes.buffer, bytes.byteOffset, bytes.byteLength);
+    let pcm = bytes;
+    if (this.pendingPcmByte !== null) {
+      pcm = new Uint8Array(bytes.length + 1);
+      pcm[0] = this.pendingPcmByte;
+      pcm.set(bytes, 1);
+      this.pendingPcmByte = null;
+    }
+    if (pcm.length % 2 !== 0) {
+      this.pendingPcmByte = pcm[pcm.length - 1];
+      pcm = pcm.subarray(0, pcm.length - 1);
+    }
+    if (pcm.length === 0) return;
+    const frameCount = pcm.length / 2; const buffer = context.createBuffer(1, frameCount, this.sampleRate);
+    const samples = buffer.getChannelData(0); const view = new DataView(pcm.buffer, pcm.byteOffset, pcm.byteLength);
     for (let index = 0; index < frameCount; index += 1) samples[index] = view.getInt16(index * 2, true) / 32768;
     void context.resume(); const source = context.createBufferSource(); source.buffer = buffer; source.connect(context.destination);
     const startAt = Math.max(this.nextPlaybackTime, context.currentTime + PLAYBACK_LEAD_SECONDS);

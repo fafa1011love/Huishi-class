@@ -11,6 +11,7 @@
     "test:voice": "node --experimental-strip-types --test services/*.test.ts",
     "test:resource": "node --test server/resourceLibrarySeeds.test.js",
     "test:memory": "node --test server/learningMemory.test.js",
+    "test:feedback": "node --test server/feedback.test.js",
     "build": "vite build",
     "preview": "vite preview"
   },

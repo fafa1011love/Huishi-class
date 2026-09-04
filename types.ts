@@ -18,6 +18,7 @@ export enum GestureType {
   ZOOM_IN_PALM = 'ZOOM_IN_PALM', // Left Hand: Open Palm
   ZOOM_OUT_FIST = 'ZOOM_OUT_FIST', // Left Hand: Fist
   DUAL_HAND_CONTACT = 'DUAL_HAND_CONTACT', // Both Hands: Contact (Hold to show video)
+  DUAL_HAND_OPEN_STOP = 'DUAL_HAND_OPEN_STOP',
 }
 
 export enum MoveDirection {

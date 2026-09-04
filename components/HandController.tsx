@@ -85,6 +85,8 @@ const HandController: React.FC<HandControllerProps> = ({ controlRef, onStateChan
     smoothRotVelRef.current = { x: 0, y: 0 };
     smoothZoomRef.current = 0;
     wasContactingRef.current = false;
+    openStopStartRef.current = 0;
+    openStopActiveRef.current = false;
     controlRef.current.rotationVelocity = { x: 0, y: 0 };
     controlRef.current.zoomSpeed = 0;
     controlRef.current.isDragging = false;
@@ -105,6 +107,8 @@ const HandController: React.FC<HandControllerProps> = ({ controlRef, onStateChan
     smoothRotVelRef.current = { x: 0, y: 0 };
     smoothZoomRef.current = 0;
     wasContactingRef.current = false;
+    openStopStartRef.current = 0;
+    openStopActiveRef.current = false;
     controlRef.current.rotationVelocity = { x: 0, y: 0 };
     controlRef.current.zoomSpeed = 0;
     controlRef.current.isDragging = false;
@@ -116,6 +120,8 @@ const HandController: React.FC<HandControllerProps> = ({ controlRef, onStateChan
 
   // Previous contact state for hysteresis
   const wasContactingRef = useRef(false);
+  const openStopStartRef = useRef(0);
+  const openStopActiveRef = useRef(false);
 
   // Store previous position for Delta calculation (Rotation)
   const prevRotatePosRef = useRef<{ x: number, y: number } | null>(null);
@@ -133,6 +139,7 @@ const HandController: React.FC<HandControllerProps> = ({ controlRef, onStateChan
   const PINCH_THRESHOLD = 0.05;
   const FINGER_CONTACT_THRESHOLD = 0.05;
   const CONTACT_THRESHOLD = 0.12;
+  const OPEN_STOP_HOLD_MS = 700;
 
   // INCREASED SENSITIVITY: 0.15 -> 0.35
   const ZOOM_SENSITIVITY = 0.35;
@@ -469,7 +476,28 @@ const HandController: React.FC<HandControllerProps> = ({ controlRef, onStateChan
             ? applySingleHandZoom(dualZoomHandLandmarks)
             : false;
 
-          if (isRightDragging) {
+          const isOpenPalm = (landmarks: any[] | null) => Boolean(landmarks)
+            && [8, 12, 16, 20].every((tip) => isFingerExtended(landmarks as any[], tip, tip - 2));
+          const bothHandsOpen = isOpenPalm(leftHandLandmarks) && isOpenPalm(rightHandLandmarks);
+          if (bothHandsOpen) {
+            const now = performance.now();
+            if (!openStopStartRef.current) openStopStartRef.current = now;
+            if (now - openStopStartRef.current >= OPEN_STOP_HOLD_MS) {
+              openStopActiveRef.current = true;
+              rotVelX = 0;
+              rotVelY = 0;
+              newZoomSpeed = 0;
+              isDragging = false;
+              newGesture = GestureType.DUAL_HAND_OPEN_STOP;
+            }
+          } else {
+            openStopStartRef.current = 0;
+            openStopActiveRef.current = false;
+          }
+
+          if (openStopActiveRef.current) {
+            newGesture = GestureType.DUAL_HAND_OPEN_STOP;
+          } else if (isRightDragging) {
             newGesture = GestureType.RIGHT_PINCH_DRAG;
           } else if (fullScreenRotationActive) {
             newGesture = GestureType.RIGHT_TWO_FINGER_ROTATE;
@@ -505,6 +533,10 @@ const HandController: React.FC<HandControllerProps> = ({ controlRef, onStateChan
         smoothRotVelRef.current.x = lerp(smoothRotVelRef.current.x, rotVelX, ROTATION_VEL_SMOOTHING);
         smoothRotVelRef.current.y = lerp(smoothRotVelRef.current.y, rotVelY, ROTATION_VEL_SMOOTHING);
         smoothZoomRef.current = lerp(smoothZoomRef.current, newZoomSpeed, ZOOM_VEL_SMOOTHING);
+        if (openStopActiveRef.current) {
+          smoothRotVelRef.current = { x: 0, y: 0 };
+          smoothZoomRef.current = 0;
+        }
       }
 
       // Apply deadzone on smoothed output

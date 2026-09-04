@@ -1,5 +1,5 @@
 
-import React, { useState, useRef, useCallback, useEffect } from 'react';
+import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { AnimatePresence } from 'motion/react';
 import { AgentRole, AgentStatus, AgentTimelineItem, AgentToolCall, FollowUpQuestion, GestureType, MoveDirection, ControlRefs, InteractionMode, TeachingModelId, type LearningMemory, type MemorySettings } from './types';
 import HandController from './components/HandController';
@@ -15,7 +15,7 @@ import FollowUpQuestionOverlay from './components/FollowUpQuestionOverlay';
 import MultiAgentPanel from './components/MultiAgentPanel';
 import ModelDetailPanel, { type DetailPanelTab } from './components/ModelDetailPanel';
 import { buildTeachingPlan, getTeachingModelName, inferTeachingModel, buildKnowledgeExplanation, buildOrchestratorDecision, buildFollowUpQuestion, getAutonomousDisassemblyArgs } from './services/agentRuntime';
-import { Sparkles, Box, Atom, Globe, ChevronDown, ChevronLeft, ChevronRight, MessageSquare, Hand, ScanFace, Move3d, Maximize2, Minimize2, FlaskConical, Heart, Settings, ShieldCheck, X, ClipboardCheck, Loader2, LockKeyhole, Play, Download, LogOut, Upload, FolderOpen, Trash2, Volume2, ScanLine, Layers3, Info, PanelRightOpen, BookOpenCheck, Mic, Star } from 'lucide-react';
+import { Sparkles, Box, Atom, Globe, ChevronDown, ChevronLeft, ChevronRight, MessageSquare, Hand, ScanFace, Move3d, Maximize2, Minimize2, FlaskConical, Heart, Settings, ShieldCheck, X, ClipboardCheck, Loader2, LockKeyhole, Play, Download, LogOut, Upload, FolderOpen, Trash2, Volume2, Info, PanelRightOpen, BookOpenCheck, Mic, Star } from 'lucide-react';
 import { ModelType } from './types';
 import type { AuthUser } from './Login';
 import { getLocalModel, listLocalModels, deleteLocalModel, hideStaticModel, listHiddenStaticModelIds, saveUploadedModel, type LocalModelSummary } from './services/localModelLibrary';
@@ -27,6 +27,7 @@ import { logUserActivity } from './services/userActivityLog';
 import { shouldNarrateKnowledgeAfterFollowUp, type PendingKnowledgeNarration } from './services/followUpAnswer';
 import { getAssistantStateAfterKnowledgeClose, isVoiceInputLockedByAssistantState, shouldFinishVoiceTurnAfterKnowledgeClose, shouldInterruptTeachingPresentationForFinalUtterance, type VoiceActivationRequest, type VoiceRecognitionState } from './services/voiceInputLifecycle';
 import { getModelInfoProfile, getModelSeedKeyByUrl } from './services/modelInfoProfiles';
+import { decideTeachingModelLoad, isCurrentModelLoadEvent, TeachingModelLoadError } from './services/teachingModelLoadState';
 
 const BIODIGITAL_HEART_URL = 'https://human.biodigital.com/view?id=7F0a&lang=zh&ref=share';
 const BUILT_IN_MODELS = {
@@ -110,6 +111,18 @@ interface PendingModelActivity {
   toModel: string;
   source: ModelActivitySource;
 }
+
+interface PendingTeachingModelLoad {
+  modelId: TeachingModelId;
+  modelUrl: string;
+  promise: Promise<void>;
+  resolve: () => void;
+  reject: (error: Error | DOMException) => void;
+  timer: number;
+  abortHandler?: () => void;
+}
+
+const TEACHING_MODEL_LOAD_TIMEOUT_MS = 30_000;
 
 const LOCAL_MODELS_CATEGORY_KEY = 'local-models';
 const SIDEBAR_TAB_STORAGE_PREFIX = 'classroom.sidebar-tab.v1';
@@ -243,8 +256,50 @@ function resizeAvatarFile(file: File) {
   });
 }
 
+type FeedbackAttachment = { file: File; preview: string; name: string; size: number };
+
+function compressFeedbackImage(file: File): Promise<FeedbackAttachment> {
+  return new Promise((resolve, reject) => {
+    if (!/^image\/(png|jpeg|webp)$/.test(file.type)) {
+      reject(new Error('请选择 PNG、JPEG 或 WebP 图片'));
+      return;
+    }
+    if (file.size > 5 * 1024 * 1024) {
+      reject(new Error('单张图片不能超过 5MB'));
+      return;
+    }
+    const reader = new FileReader();
+    reader.onerror = () => reject(new Error('图片读取失败'));
+    reader.onload = () => {
+      const image = new Image();
+      image.onerror = () => reject(new Error('图片解析失败'));
+      image.onload = () => {
+        const maxDimension = 1600;
+        const scale = Math.min(1, maxDimension / Math.max(image.width, image.height));
+        const canvas = document.createElement('canvas');
+        canvas.width = Math.max(1, Math.round(image.width * scale));
+        canvas.height = Math.max(1, Math.round(image.height * scale));
+        const context = canvas.getContext('2d');
+        if (!context) return reject(new Error('当前浏览器不支持图片处理'));
+        context.drawImage(image, 0, 0, canvas.width, canvas.height);
+        const outputType = file.type === 'image/png' ? 'image/png' : file.type === 'image/webp' ? 'image/webp' : 'image/jpeg';
+        const extension = outputType === 'image/png' ? '.png' : outputType === 'image/webp' ? '.webp' : '.jpg';
+        canvas.toBlob((blob) => {
+          if (!blob) return reject(new Error('图片压缩失败'));
+          const safeName = file.name.replace(/\.[^.]+$/, '') || 'feedback-image';
+          const compressed = new File([blob], `${safeName}${extension}`, { type: outputType });
+          resolve({ file: compressed, preview: URL.createObjectURL(compressed), name: compressed.name, size: compressed.size });
+        }, outputType, outputType === 'image/png' ? undefined : 0.82);
+      };
+      image.src = String(reader.result || '');
+    };
+    reader.readAsDataURL(file);
+  });
+}
+
 const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, onBack, currentUser, onLogout, onUserUpdated, onOpenModelGeneration, onOpenAdmin }) => {
   const [modelUrl, setModelUrl] = useState<string | null>(null);
+  const [modelLoadRevision, setModelLoadRevision] = useState(0);
   const [modelType, setModelType] = useState<ModelType>('glb');
   const [modelAssetUrls, setModelAssetUrls] = useState<Record<string, string>>({});
   const [fileName, setFileName] = useState<string>('');
@@ -275,8 +330,6 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
   const [activeModelSeedKey, setActiveModelSeedKey] = useState<string | null>(null);
   const [detailPanelOpen, setDetailPanelOpen] = useState(() => window.innerWidth >= 900);
   const [detailPanelTab, setDetailPanelTab] = useState<DetailPanelTab>('info');
-  const [crossSectionEnabled, setCrossSectionEnabled] = useState(false);
-  const [wireframeEnabled, setWireframeEnabled] = useState(false);
   const visibleStaticModels = MY_STATIC_MODELS.filter((model) => !hiddenStaticModelIds.includes(model.id));
 
   const handleHideStaticModel = async (e: React.MouseEvent, model: typeof MY_STATIC_MODELS[number]) => {
@@ -331,6 +384,7 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
   const [feedbackText, setFeedbackText] = useState('');
   const [feedbackStatus, setFeedbackStatus] = useState<'idle' | 'submitting' | 'success' | 'error'>('idle');
   const [feedbackMessage, setFeedbackMessage] = useState('');
+  const [feedbackAttachments, setFeedbackAttachments] = useState<FeedbackAttachment[]>([]);
   const [profileName, setProfileName] = useState(userLabel(currentUser));
   const [profileAvatar, setProfileAvatar] = useState(currentUser.avatarUrl || '');
   const [profileMessage, setProfileMessage] = useState('');
@@ -401,6 +455,9 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
   const knowledgeSpeechSessionRef = useRef(0);
   const knowledgeNarrationEpochRef = useRef(0);
   const knowledgeNarrationPlaybackEndedRef = useRef(false);
+  const knowledgeNarrationTextRef = useRef('');
+  const knowledgeNarrationGenerationDoneRef = useRef(false);
+  const knowledgeNarrationErrorRef = useRef(false);
   const interactionAbortRef = useRef<AbortController | null>(null);
   const interactionEpochRef = useRef(0);
   const voiceRequestStartedAtRef = useRef(0);
@@ -418,6 +475,13 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
   const globalSpeechActiveRef = useRef(isXiaozhiSpeechActive());
   const voiceWorkBlockedRef = useRef(false);
   const pendingModelActivityRef = useRef<PendingModelActivity | null>(null);
+  const pendingTeachingModelLoadRef = useRef<PendingTeachingModelLoad | null>(null);
+  const activeContentRef = useRef(activeContent);
+  const currentTeachingModelIdRef = useRef<TeachingModelId | null>(null);
+  const modelUrlRef = useRef<string | null>(null);
+  const loadedModelUrlRef = useRef<string | null>(null);
+  const failedModelUrlRef = useRef<string | null>(null);
+  const activeModelLoadRevisionRef = useRef(0);
   const modelStructureImage = activeContent === 'model' && modelUrl
     ? STRUCTURE_IMAGE_BY_MODEL[modelUrl]
     : undefined;
@@ -426,6 +490,9 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
     : modelUrl
       ? MODEL_ID_BY_URL[modelUrl] || null
       : null;
+  activeContentRef.current = activeContent;
+  currentTeachingModelIdRef.current = currentTeachingModelId;
+  modelUrlRef.current = modelUrl;
   const voiceWorkBlocked = isAgentRequestPending
     || isFollowUpPreparing
     || isXiaozhiSpeaking
@@ -441,7 +508,6 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
   const activeModelProfile = activeContent === 'model' && activeLocalModelId === null
     ? getModelInfoProfile(activeModelSeedKey)
     : null;
-  const organToolsAvailable = Boolean(activeModelProfile?.capabilities.organTools);
 
   const detailPanelVisible = detailPanelOpen
     && !quizMode
@@ -598,6 +664,9 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
   const resetKnowledgeSpeech = useCallback(() => {
     knowledgeNarrationEpochRef.current += 1;
     knowledgeNarrationPlaybackEndedRef.current = false;
+    knowledgeNarrationTextRef.current = '';
+    knowledgeNarrationGenerationDoneRef.current = false;
+    knowledgeNarrationErrorRef.current = false;
     onKnowledgeNarrationCompleteRef.current = null;
     knowledgeSpeechStreamRef.current?.stop();
     knowledgeSpeechStreamRef.current = null;
@@ -626,22 +695,24 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
   }, [voicePreference]);
 
   const enqueueKnowledgeSpeech = useCallback((text: string) => {
-    if (knowledgeSpeechClosedRef.current) return;
-    if (!knowledgeSpeechStreamRef.current) {
+    if (knowledgeSpeechClosedRef.current || knowledgeNarrationErrorRef.current) return;
+    let speechSession = knowledgeSpeechStreamRef.current;
+    if (!speechSession) {
       const voiceTurn = beginVoiceTurn();
       const narrationEpoch = ++knowledgeNarrationEpochRef.current;
       knowledgeNarrationPlaybackEndedRef.current = false;
-      knowledgeSpeechStreamRef.current = createXiaozhiSpeechSession({
+      speechSession = createXiaozhiSpeechSession({
         onStart: () => {
           if (knowledgeNarrationEpochRef.current !== narrationEpoch) return;
           setIsXiaozhiSpeaking(true);
           setIsKnowledgeNarrating(true);
           setKnowledgeNarrationCharIndex(0);
           setXiaozhiState('explaining');
+          setAiAnalysis('正在朗读知识讲解...');
         },
         onProgress: ({ charIndex }) => {
           if (knowledgeNarrationEpochRef.current !== narrationEpoch) return;
-          setKnowledgeNarrationCharIndex(Math.min(Math.max(0, charIndex), Math.max(0, text.length - 1)));
+          setKnowledgeNarrationCharIndex(Math.min(Math.max(0, charIndex), Math.max(0, knowledgeNarrationTextRef.current.length - 1)));
         },
         onEnd: () => {
           if (knowledgeNarrationEpochRef.current !== narrationEpoch) return;
@@ -655,22 +726,29 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
             setIsKnowledgeNarrating(false);
           }
           finishVoiceTurn(voiceTurn);
-          const cb = onKnowledgeNarrationCompleteRef.current;
-          onKnowledgeNarrationCompleteRef.current = null;
-          cb?.();
+          if (knowledgeNarrationGenerationDoneRef.current) {
+            const cb = onKnowledgeNarrationCompleteRef.current;
+            onKnowledgeNarrationCompleteRef.current = null;
+            cb?.();
+          }
         },
         onError: (error) => {
           if (knowledgeNarrationEpochRef.current !== narrationEpoch) return;
+          knowledgeSpeechStreamRef.current = null;
+          knowledgeNarrationErrorRef.current = true;
           knowledgeNarrationPlaybackEndedRef.current = true;
           setKnowledgeNarrationCharIndex(null);
           reportVoicePlaybackError('Knowledge', error);
-          const cb = onKnowledgeNarrationCompleteRef.current;
-          onKnowledgeNarrationCompleteRef.current = null;
-          cb?.();
+          if (knowledgeNarrationGenerationDoneRef.current) {
+            const cb = onKnowledgeNarrationCompleteRef.current;
+            onKnowledgeNarrationCompleteRef.current = null;
+            cb?.();
+          }
         },
       });
+      knowledgeSpeechStreamRef.current = speechSession;
     }
-    knowledgeSpeechStreamRef.current.push(text);
+    speechSession.push(text);
   }, [beginVoiceTurn, finishVoiceTurn, reportVoicePlaybackError]);
 
   const flushKnowledgeSpeech = useCallback(() => {
@@ -747,7 +825,6 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
   }, [beginVoiceTurn, finishVoiceTurn, reportVoicePlaybackError]);
 
   // Refs
-  const preloadedModelRef = useRef<TeachingModelId | null>(null);
   const initialLocalModelLoadedRef = useRef<string | null>(null);
   const stageRef = useRef<HTMLElement>(null);
   const objectUrlsRef = useRef<string[]>([]);
@@ -1095,11 +1172,12 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
       });
     }
     setActiveContent('biodigital');
+    activeModelLoadRevisionRef.current += 1;
+    loadedModelUrlRef.current = null;
+    failedModelUrlRef.current = null;
     setActiveModelSeedKey(null);
     setDetailPanelOpen(true);
     setDetailPanelTab('info');
-    setCrossSectionEnabled(false);
-    setWireframeEnabled(false);
     setCameraActive(false);
     resetControls();
     setAiAnalysis('正在加载心脏模型2：URL 交互展示页面。');
@@ -1107,6 +1185,9 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
 
   const clearLocalModel = () => {
     pendingModelActivityRef.current = null;
+    loadedModelUrlRef.current = null;
+    failedModelUrlRef.current = null;
+    activeModelLoadRevisionRef.current += 1;
     revokeObjectUrls();
     setModelUrl(null);
     setModelType('glb');
@@ -1118,8 +1199,6 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
     setActiveModelSeedKey(null);
     setDetailPanelOpen(window.innerWidth >= 900);
     setDetailPanelTab('info');
-    setCrossSectionEnabled(false);
-    setWireframeEnabled(false);
     resetControls();
   };
 
@@ -1192,7 +1271,14 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
     assets: Record<string, string> = {},
     source: ModelActivitySource = 'manual',
     seedKey?: string | null,
+    forceReload = false,
   ) => {
+    const shouldReload = forceReload || failedModelUrlRef.current === url;
+    if (source !== 'ai') {
+      cancelPendingTeachingModelLoad(new DOMException('Interaction aborted', 'AbortError'));
+      interactionAbortRef.current?.abort();
+      interactionAbortRef.current = null;
+    }
     if (!hasAutoOpenedCameraRef.current) {
       hasAutoOpenedCameraRef.current = true;
       setCameraActive(true);
@@ -1210,7 +1296,7 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
         ? '心脏模型2'
         : undefined;
     const resolvedSeedKey = seedKey || getModelSeedKeyByUrl(url);
-    if (activeContent === 'model' && modelUrl === url && activeLocalModelId === null) {
+    if (!shouldReload && activeContent === 'model' && modelUrl === url && activeLocalModelId === null) {
       pendingModelActivityRef.current = null;
       setActiveModelSeedKey(resolvedSeedKey);
       setDetailPanelOpen(true);
@@ -1224,6 +1310,8 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
       toModel: name,
       source,
     };
+    loadedModelUrlRef.current = null;
+    failedModelUrlRef.current = null;
     revokeObjectUrls();
     const normalizedAssets = Object.fromEntries(
       Object.entries(assets).flatMap(([assetName, assetUrl]) => [
@@ -1231,6 +1319,9 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
         [assetName.toLowerCase(), assetUrl],
       ]),
     );
+    const nextLoadRevision = activeModelLoadRevisionRef.current + 1;
+    activeModelLoadRevisionRef.current = nextLoadRevision;
+    setModelLoadRevision(nextLoadRevision);
     setModelUrl(url);
     setModelType(type);
     setModelAssetUrls(normalizedAssets);
@@ -1241,8 +1332,6 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
     setActiveModelSeedKey(resolvedSeedKey);
     setDetailPanelOpen(true);
     setDetailPanelTab('info');
-    setCrossSectionEnabled(false);
-    setWireframeEnabled(false);
     resetControls();
     setAiAnalysis(`正在演示: ${name}`);
   };
@@ -1264,6 +1353,11 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
           : undefined;
       revokeObjectUrls();
       const url = URL.createObjectURL(record.blob);
+      loadedModelUrlRef.current = null;
+      failedModelUrlRef.current = null;
+      const nextLoadRevision = activeModelLoadRevisionRef.current + 1;
+      activeModelLoadRevisionRef.current = nextLoadRevision;
+      setModelLoadRevision(nextLoadRevision);
       objectUrlsRef.current.push(url);
       const nextAssetUrls: Record<string, string> = {
         [record.name]: url,
@@ -1292,8 +1386,6 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
       setActiveModelSeedKey(null);
       setDetailPanelOpen(true);
       setDetailPanelTab('info');
-      setCrossSectionEnabled(false);
-      setWireframeEnabled(false);
       resetControls();
       if (!hasAutoOpenedCameraRef.current) {
         hasAutoOpenedCameraRef.current = true;
@@ -1314,18 +1406,57 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
   }, [initialLocalModelId]);
 
   const loadHeartFallbackModel = () => {
-    loadDemoModel(BUILT_IN_MODELS.heart, '心脏模型1', 'glb', {}, 'fallback');
+    loadDemoModel(BUILT_IN_MODELS.heart, '心脏模型', 'glb', {}, 'fallback');
   };
 
-  const handleModelLoadError = useCallback((error: { title: string; detail: string }) => {
+  const settlePendingTeachingModelLoad = useCallback((modelUrl: string | null | undefined, error?: Error | DOMException) => {
+    const pending = pendingTeachingModelLoadRef.current;
+    if (!pending || !modelUrl || pending.modelUrl !== modelUrl) return;
+    pendingTeachingModelLoadRef.current = null;
+    window.clearTimeout(pending.timer);
+    pending.abortHandler?.();
+    if (error) pending.reject(error);
+    else pending.resolve();
+  }, []);
+
+  const cancelPendingTeachingModelLoad = useCallback((error: Error | DOMException) => {
+    const pending = pendingTeachingModelLoadRef.current;
+    if (pending) settlePendingTeachingModelLoad(pending.modelUrl, error);
+  }, [settlePendingTeachingModelLoad]);
+
+  const handleModelLoadError = useCallback((modelUrl: string, loadRevision: number, error: { title: string; detail: string }) => {
+    if (!isCurrentModelLoadEvent(modelUrl, modelUrlRef.current, loadRevision, activeModelLoadRevisionRef.current)) return;
     pendingModelActivityRef.current = null;
+    if (loadedModelUrlRef.current === modelUrl) loadedModelUrlRef.current = null;
+    failedModelUrlRef.current = modelUrl;
     setLoadProgress(null);
     setModelLoadError(error);
     setAiAnalysis(`${error.title}：${error.detail}`);
-  }, []);
+    const pending = pendingTeachingModelLoadRef.current;
+    if (pending?.modelUrl === modelUrl) {
+      settlePendingTeachingModelLoad(
+        modelUrl,
+        new TeachingModelLoadError(pending.modelId, modelUrl, `${error.title}：${error.detail}`),
+      );
+    }
+  }, [settlePendingTeachingModelLoad]);
 
-  const loadTeachingModel = (modelId: TeachingModelId, source: ModelActivitySource = 'ai') => {
+  const modelViewerLoadErrorHandler = useMemo(() => {
+    const eventModelUrl = modelUrl;
+    const eventLoadRevision = modelLoadRevision;
+    return (error: { title: string; detail: string }) => {
+      if (!eventModelUrl) return;
+      handleModelLoadError(eventModelUrl, eventLoadRevision, error);
+    };
+  }, [handleModelLoadError, modelLoadRevision, modelUrl]);
+
+  const loadTeachingModel = (modelId: TeachingModelId, source: ModelActivitySource = 'ai', signal?: AbortSignal): Promise<void> => {
+    if (signal?.aborted) {
+      return Promise.reject(new DOMException('Interaction aborted', 'AbortError'));
+    }
+
     if (source !== 'ai') {
+      cancelPendingTeachingModelLoad(new DOMException('Interaction aborted', 'AbortError'));
       interactionAbortRef.current?.abort();
       interactionAbortRef.current = null;
       stopXiaozhiSpeech();
@@ -1347,88 +1478,158 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
       setAgentThinking('');
       setAgentSummary('');
     }
+
+    const targetModelUrl = MODEL_URL_BY_ID[modelId];
+    const pendingLoad = pendingTeachingModelLoadRef.current;
+    const loadAction = decideTeachingModelLoad({
+      targetModelId: modelId,
+      targetModelUrl,
+      activeContent: activeContentRef.current,
+      activeModelId: currentTeachingModelIdRef.current,
+      activeModelUrl: modelUrlRef.current,
+      loadedModelUrl: loadedModelUrlRef.current,
+      failedModelUrl: failedModelUrlRef.current,
+      pendingModelId: pendingLoad?.modelId,
+      pendingModelUrl: pendingLoad?.modelUrl,
+    });
+
+    if (loadAction === 'ready') return Promise.resolve();
+    if (source === 'ai' && loadAction === 'reuse' && pendingLoad) return pendingLoad.promise;
+
+    if (pendingLoad) {
+      cancelPendingTeachingModelLoad(new DOMException('Replaced by a newer model load', 'AbortError'));
+    }
+
+    currentTeachingModelIdRef.current = modelId;
+    activeContentRef.current = modelId === 'biodigital_heart' ? 'biodigital' : 'model';
+    modelUrlRef.current = targetModelUrl || null;
+
+    if (modelId === 'biodigital_heart') {
+      showBioDigitalStage(source);
+      return Promise.resolve();
+    }
+
+    if (!targetModelUrl) return Promise.reject(new Error(`未找到模型 ${modelId} 的资源地址`));
+
+    let resolveLoad!: () => void;
+    let rejectLoad!: (error: Error | DOMException) => void;
+    const loadPromise = new Promise<void>((resolve, reject) => {
+      resolveLoad = resolve;
+      rejectLoad = reject;
+    });
+    const pending: PendingTeachingModelLoad = {
+      modelId,
+      modelUrl: targetModelUrl,
+      promise: loadPromise,
+      resolve: resolveLoad,
+      reject: rejectLoad,
+      timer: window.setTimeout(() => {
+        if (pendingTeachingModelLoadRef.current !== pending) return;
+        failedModelUrlRef.current = targetModelUrl;
+        settlePendingTeachingModelLoad(
+          targetModelUrl,
+          new TeachingModelLoadError(modelId, targetModelUrl, `${getTeachingModelName(modelId)}加载超时，请检查模型资源或网络连接`),
+        );
+      }, TEACHING_MODEL_LOAD_TIMEOUT_MS),
+    };
+    pendingTeachingModelLoadRef.current = pending;
+    if (signal) {
+      const onAbort = () => settlePendingTeachingModelLoad(targetModelUrl, new DOMException('Interaction aborted', 'AbortError'));
+      pending.abortHandler = () => signal.removeEventListener('abort', onAbort);
+      if (signal.aborted) {
+        onAbort();
+        return loadPromise;
+      }
+      signal.addEventListener('abort', onAbort, { once: true });
+    }
+
+    if (loadAction === 'wait') return loadPromise;
+    const forceReload = loadAction === 'retry';
+
     switch (modelId) {
       case 'heart':
         showModelStage();
-        loadDemoModel(BUILT_IN_MODELS.heart, '心脏模型1', 'glb', {}, source);
-        return;
-      case 'biodigital_heart':
-        showBioDigitalStage(source);
-        return;
+        loadDemoModel(BUILT_IN_MODELS.heart, '心脏模型', 'glb', {}, source, undefined, forceReload);
+        return loadPromise;
       case 'hiv':
         showModelStage();
-        loadDemoModel(BUILT_IN_MODELS.hiv, 'HIV 病毒模型', 'glb', {}, source);
-        return;
+        loadDemoModel(BUILT_IN_MODELS.hiv, 'HIV 病毒模型', 'glb', {}, source, undefined, forceReload);
+        return loadPromise;
       case 'diamond':
         showModelStage();
-        loadDemoModel(BUILT_IN_MODELS.diamond, '金刚石模型', 'glb', {}, source);
-        return;
+        loadDemoModel(BUILT_IN_MODELS.diamond, '金刚石模型', 'glb', {}, source, undefined, forceReload);
+        return loadPromise;
       case 'diamond_unit_cell':
         showModelStage();
-        loadDemoModel(BUILT_IN_MODELS.diamondUnitCell, '金刚石晶胞', 'glb', {}, source);
-        return;
+        loadDemoModel(BUILT_IN_MODELS.diamondUnitCell, '金刚石晶胞', 'glb', {}, source, undefined, forceReload);
+        return loadPromise;
       case 'pubchem_6233':
         showModelStage();
-        loadDemoModel(BUILT_IN_MODELS.pubchem6233, '1,4-二氯甲基苯', 'glb', {}, source);
-        return;
+        loadDemoModel(BUILT_IN_MODELS.pubchem6233, '1,4-二氯甲基苯', 'glb', {}, source, undefined, forceReload);
+        return loadPromise;
       case 'nacl':
         showModelStage();
-        loadDemoModel(BUILT_IN_MODELS.nacl, 'NaCl 离子晶体', 'glb', {}, source);
-        return;
+        loadDemoModel(BUILT_IN_MODELS.nacl, 'NaCl 离子晶体', 'glb', {}, source, undefined, forceReload);
+        return loadPromise;
       case 'sio2':
         showModelStage();
-        loadDemoModel(BUILT_IN_MODELS.sio2, 'SiO₂ 二氧化硅网络', 'glb', {}, source);
-        return;
+        loadDemoModel(BUILT_IN_MODELS.sio2, 'SiO₂ 二氧化硅网络', 'glb', {}, source, undefined, forceReload);
+        return loadPromise;
       case 'nitrobenzene':
         showModelStage();
-        loadDemoModel(BUILT_IN_MODELS.nitrobenzene, '硝基苯', 'glb', {}, source);
-        return;
+        loadDemoModel(BUILT_IN_MODELS.nitrobenzene, '硝基苯', 'glb', {}, source, undefined, forceReload);
+        return loadPromise;
       case 'brain':
         showModelStage();
-        loadDemoModel(BUILT_IN_MODELS.brain, '大脑模型', 'glb', {}, source);
-        return;
+        loadDemoModel(BUILT_IN_MODELS.brain, '大脑模型', 'glb', {}, source, undefined, forceReload);
+        return loadPromise;
       case 'organ_heart':
         showModelStage();
-        loadDemoModel(BUILT_IN_MODELS.organHeart, '心脏（解剖）', 'glb', {}, source);
-        return;
+        loadDemoModel(BUILT_IN_MODELS.organHeart, '心脏（解剖）', 'glb', {}, source, undefined, forceReload);
+        return loadPromise;
       case 'lungs':
         showModelStage();
-        loadDemoModel(BUILT_IN_MODELS.organLungs, '肺', 'glb', {}, source);
-        return;
+        loadDemoModel(BUILT_IN_MODELS.organLungs, '肺', 'glb', {}, source, undefined, forceReload);
+        return loadPromise;
       case 'liver':
         showModelStage();
-        loadDemoModel(BUILT_IN_MODELS.organLiver, '肝脏', 'glb', {}, source);
-        return;
+        loadDemoModel(BUILT_IN_MODELS.organLiver, '肝脏', 'glb', {}, source, undefined, forceReload);
+        return loadPromise;
       case 'kidneys':
         showModelStage();
-        loadDemoModel(BUILT_IN_MODELS.organKidneys, '肾脏', 'glb', {}, source);
-        return;
+        loadDemoModel(BUILT_IN_MODELS.organKidneys, '肾脏', 'glb', {}, source, undefined, forceReload);
+        return loadPromise;
       case 'eyeball':
         showModelStage();
-        loadDemoModel(BUILT_IN_MODELS.organEyeball, '眼球', 'glb', {}, source);
-        return;
+        loadDemoModel(BUILT_IN_MODELS.organEyeball, '眼球', 'glb', {}, source, undefined, forceReload);
+        return loadPromise;
       case 'intestine':
         showModelStage();
-        loadDemoModel(BUILT_IN_MODELS.organIntestine, '肠', 'glb', {}, source);
-        return;
+        loadDemoModel(BUILT_IN_MODELS.organIntestine, '肠', 'glb', {}, source, undefined, forceReload);
+        return loadPromise;
       case 'pancreas':
         showModelStage();
-        loadDemoModel(BUILT_IN_MODELS.organPancreas, '胰腺', 'glb', {}, source);
-        return;
+        loadDemoModel(BUILT_IN_MODELS.organPancreas, '胰腺', 'glb', {}, source, undefined, forceReload);
+        return loadPromise;
       case 'skin':
         showModelStage();
-        loadDemoModel(BUILT_IN_MODELS.organSkin, '皮肤', 'glb', {}, source);
-        return;
+        loadDemoModel(BUILT_IN_MODELS.organSkin, '皮肤', 'glb', {}, source, undefined, forceReload);
+        return loadPromise;
       case 'terrain':
         showModelStage();
-        loadDemoModel('/models/terrain-topography.glb', '地形地貌', 'glb', {}, source);
-        return;
+        loadDemoModel('/models/terrain-topography.glb', '地形地貌', 'glb', {}, source, undefined, forceReload);
+        return loadPromise;
       case 'earth_layers':
       default:
         showModelStage();
-        loadDemoModel('/models/earth-layers.glb', '地球内部结构', 'glb', {}, source);
+        loadDemoModel('/models/earth-layers.glb', '地球内部结构', 'glb', {}, source, undefined, forceReload);
+        return loadPromise;
     }
   };
+
+  useEffect(() => () => {
+    cancelPendingTeachingModelLoad(new DOMException('Component unmounted', 'AbortError'));
+  }, [cancelPendingTeachingModelLoad]);
 
   const setTimelineStatus = (id: string, status: AgentTimelineItem['status']) => {
     setAgentTimeline((items) => items.map((item) => item.id === id ? { ...item, status } : item));
@@ -1438,8 +1639,10 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
     setAgentTimeline((items) => [...items, item]);
   };
 
-  const runAgentTool = async (call: AgentToolCall, signal?: AbortSignal): Promise<string> => {
+  const runAgentTool = async (call: AgentToolCall, signal?: AbortSignal, planModelId?: TeachingModelId): Promise<string> => {
     throwIfAborted(signal);
+    const contextModelId = planModelId || currentTeachingModelIdRef.current || 'earth_layers';
+    const contextModelUrl = MODEL_URL_BY_ID[contextModelId] || modelUrlRef.current;
     const timelineId = `${call.id}-${Date.now()}`;
     appendTimeline({
       id: timelineId,
@@ -1452,16 +1655,9 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
     try {
       switch (call.name) {
         case 'load_model': {
-          const modelId = (call.args.modelId || 'earth_layers') as TeachingModelId;
-          if (preloadedModelRef.current === modelId) {
-            preloadedModelRef.current = null;
-            break;
-          }
-          if (activeContent === 'model' && modelUrl && modelId === 'biodigital_heart') {
-            break;
-          }
-          loadTeachingModel(modelId, 'ai');
-          await sleep(700, signal);
+          const modelId = planModelId || (call.args.modelId || 'earth_layers') as TeachingModelId;
+          await loadTeachingModel(modelId, 'ai', signal);
+          throwIfAborted(signal);
           controlRef.current.zoomSpeed = -0.026;
           await sleep(900, signal);
           controlRef.current.zoomSpeed = 0;
@@ -1490,15 +1686,15 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
           break;
         }
         case 'explode_model': {
-          if (modelUrl?.includes('diamond.glb') || modelUrl?.includes('diamond-unit-cell')) {
+          if (contextModelUrl?.includes('diamond.glb') || contextModelUrl?.includes('diamond-unit-cell')) {
             setAiAnalysis('金刚石结构模型为完整结构展示，不支持拆解。');
             break;
           }
           const disassemblyArgs = getAutonomousDisassemblyArgs(
-            currentTeachingModelId || 'earth_layers',
+            contextModelId,
             call.args,
           );
-          const isHeartModel = currentTeachingModelId === 'heart';
+          const isHeartModel = contextModelId === 'heart';
           controlRef.current.agentDisassembly = {
             enabled: true,
             strength: Math.max(0, Math.min(1.4, Number(disassemblyArgs.strength ?? 0.95))),
@@ -1511,7 +1707,7 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
           break;
         }
         case 'reset_model_layout': {
-          if (modelUrl?.includes('earth-layers')) {
+          if (contextModelId === 'earth_layers' || contextModelUrl?.includes('earth-layers')) {
             setAiAnalysis('地球内部结构保持四层拆解展示，便于观众观察。');
           } else {
             controlRef.current.agentDisassembly = {
@@ -1582,6 +1778,7 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
       if ((error as Error).name === 'AbortError') throw error;
       console.error('Agent tool failed:', error);
       setTimelineStatus(timelineId, 'error');
+      if (call.name === 'load_model') throw error;
       return `${call.label}失败`;
     }
   };
@@ -1698,7 +1895,6 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
 
     setSidebarTab('agent');
     setIsSidebarCollapsed(false);
-    await enterStageFullscreen();
 
     setIsAgentRunning(true);
     setXiaozhiState('planning');
@@ -1725,11 +1921,6 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
       const initialThinking = `我正在理解教学需求，先识别关键词并匹配教具：当前判断适合使用“${matchedModelName}”。随后会生成演示步骤并调用工具。`;
       setAgentThinking(initialThinking);
       setAiAnalysis(initialThinking);
-      preloadedModelRef.current = matchedModel;
-      loadTeachingModel(matchedModel, 'ai');
-      controlRef.current.zoomSpeed = -0.026;
-      await sleep(900, signal);
-      controlRef.current.zoomSpeed = 0;
 
       appendTimeline({
         id: `planner-${Date.now()}`,
@@ -1739,7 +1930,7 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
         status: 'running',
       });
 
-      const plan = await buildTeachingPlan(request, signal, modelOverride);
+      const plan = await buildTeachingPlan(request, signal, matchedModel);
       throwIfAborted(signal);
       setXiaozhiState('executing');
       setAgentThinking(`规划完成：已选择“${getTeachingModelName(plan.modelId)}”，准备执行 ${plan.steps.length} 个演示步骤。`);
@@ -1747,13 +1938,6 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
       setAgentStatuses(makeAgentStatuses({ planner: 'done', executor: 'running' }));
       setAgentTimeline((items) => items.map((item) => item.agent === 'planner' ? { ...item, status: 'done', detail: `规划完成：${plan.topic}` } : item));
       setAiAnalysis(`规划完成：${plan.topic}`);
-
-      // Auto zoom into the model
-      setAiAnalysis('正在自动拉近视角...');
-      controlRef.current.zoomSpeed = -0.026;
-      await sleep(1200, signal);
-      controlRef.current.zoomSpeed = 0;
-      await sleep(200, signal);
 
       for (const step of plan.steps) {
         appendTimeline({
@@ -1767,19 +1951,22 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
         executedLogs.push(step.title);
 
         for (const call of step.toolCalls) {
-          const log = await runAgentTool(call, signal);
+          const log = await runAgentTool(call, signal, plan.modelId);
           executedLogs.push(log);
         }
 
         setTimelineStatus(step.id, 'done');
       }
 
-      // Stream knowledge text now, but defer its narration until the follow-up is completed.
+      // Stream knowledge text and start narration as soon as a natural speech segment is ready.
       setAgentStatuses(makeAgentStatuses({ planner: 'done', executor: 'done', evaluator: 'thinking' }));
       setXiaozhiState('explaining');
       setAgentThinking('知识讲解Agent正在生成关于该模型的教学内容...');
       setAiAnalysis('知识讲解Agent正在生成教学内容...');
       setKnowledgeContent('');
+      knowledgeNarrationTextRef.current = '';
+      knowledgeNarrationGenerationDoneRef.current = false;
+      knowledgeNarrationErrorRef.current = false;
       setIsSidebarCollapsed(true);
       setIsKnowledgeStreaming(true);
       appendTimeline({
@@ -1798,10 +1985,28 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
         (token: string) => {
           if (signal?.aborted || interactionEpochRef.current !== runEpoch || knowledgeSpeechClosedRef.current || knowledgeSpeechSessionRef.current !== knowledgeSpeechSession) return;
           accumulatedKnowledge += token;
+          knowledgeNarrationTextRef.current = accumulatedKnowledge;
           setKnowledgeContent(accumulatedKnowledge);
+          enqueueKnowledgeSpeech(token);
         },
         signal,
       );
+
+      // The stream normally ends with the same text returned by the provider. If
+      // a fallback supplies extra text, append only the missing suffix so it is
+      // spoken once and remains part of the same narration session.
+      if (fullKnowledge && fullKnowledge.startsWith(accumulatedKnowledge) && fullKnowledge.length > accumulatedKnowledge.length) {
+        const missingKnowledge = fullKnowledge.slice(accumulatedKnowledge.length);
+        accumulatedKnowledge = fullKnowledge;
+        knowledgeNarrationTextRef.current = accumulatedKnowledge;
+        setKnowledgeContent(accumulatedKnowledge);
+        enqueueKnowledgeSpeech(missingKnowledge);
+      } else if (fullKnowledge && !accumulatedKnowledge) {
+        accumulatedKnowledge = fullKnowledge;
+        knowledgeNarrationTextRef.current = accumulatedKnowledge;
+        setKnowledgeContent(accumulatedKnowledge);
+        enqueueKnowledgeSpeech(fullKnowledge);
+      }
 
       const canNarrate = !signal?.aborted
         && interactionEpochRef.current === runEpoch
@@ -1820,19 +2025,19 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
         }
       }
       setIsKnowledgeStreaming(false);
+      knowledgeNarrationGenerationDoneRef.current = true;
       setAgentThinking('');
       setAgentStatuses(makeAgentStatuses({ planner: 'done', executor: 'done', evaluator: 'done' }));
       setAgentTimeline((items) => items.map((item) => item.agent === 'evaluator'
         ? { ...item, status: 'done', detail: canNarrate ? '正在朗读知识讲解' : '讲解内容已生成' }
         : item));
       throwIfAborted(signal);
-      if (canNarrate) {
+      if (canNarrate && !knowledgeNarrationErrorRef.current && knowledgeSpeechStreamRef.current) {
         onKnowledgeNarrationCompleteRef.current = () => {
           onKnowledgeNarrationCompleteRef.current = null;
           if (signal?.aborted || interactionEpochRef.current !== runEpoch) return;
           void triggerFollowUpQuestion(plan.modelId, signal, runEpoch, '');
         };
-        enqueueKnowledgeSpeech(fullKnowledge);
         flushKnowledgeSpeech();
       } else {
         setXiaozhiState('complete');
@@ -1862,13 +2067,21 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
       }
       console.error('Agent run failed:', error);
       setIsKnowledgeStreaming(false);
-      setAgentThinking('智能体流程异常：请检查网络或 DeepSeek 配置，系统仍可使用本地模型手动演示。');
-      setAiAnalysis('多智能体演示失败，请检查 DeepSeek 配置或网络。');
+      const isModelLoadError = error instanceof TeachingModelLoadError;
+      const failureMessage = error instanceof Error ? error.message : '未知错误';
+      setAgentThinking(isModelLoadError
+        ? `模型加载异常：${failureMessage}`
+        : '智能体流程异常：请检查网络或 DeepSeek 配置，系统仍可使用本地模型手动演示。');
+      setAiAnalysis(isModelLoadError
+        ? `${getTeachingModelName(error.modelId)}未能加载：${failureMessage}`
+        : '多智能体演示失败，请检查 DeepSeek 配置或网络。');
       setAgentStatuses((current) => Object.fromEntries(
         Object.entries(current).map(([role, status]) => [role, status === 'thinking' || status === 'running' ? 'error' : status]),
       ) as Record<AgentRole, AgentStatus>);
       setAgentTimeline((items) => items.map((item) => item.status === 'running'
-        ? { ...item, status: 'error', detail: `${item.detail}（执行异常）` }
+          ? { ...item, status: 'error', detail: isModelLoadError
+            ? `${item.detail}（${failureMessage}）`
+            : `${item.detail}（执行异常）` }
         : item));
       setXiaozhiState('idle');
       voiceConversationLoopRef.current = false;
@@ -1883,6 +2096,7 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
     interactionEpochRef.current += 1;
     interactionAbortRef.current?.abort();
     interactionAbortRef.current = null;
+    cancelPendingTeachingModelLoad(new DOMException('Interaction aborted', 'AbortError'));
     stopXiaozhiSpeech();
     knowledgeSpeechClosedRef.current = true;
     knowledgeSpeechSessionRef.current += 1;
@@ -1909,7 +2123,7 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
     setAgentStatuses(AGENT_STATUS_IDLE);
     setXiaozhiState('analyzing');
     setAiAnalysis(analysisMessage);
-  }, [cancelVoiceTurn, resetKnowledgeSpeech]);
+  }, [cancelPendingTeachingModelLoad, cancelVoiceTurn, resetKnowledgeSpeech]);
 
   const handleVoiceBargeIn = useCallback(() => {
     interruptTeachingPresentation('已打断上一轮回答，正在听新的问题...');
@@ -2046,7 +2260,10 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
         const alreadyActive = currentTeachingModelId === targetModelId;
 
         if (!alreadyActive) {
-          loadTeachingModel(targetModelId, 'ai');
+          void loadTeachingModel(targetModelId, 'ai', controller.signal).catch((error) => {
+            if ((error as Error).name === 'AbortError') return;
+            console.error('Model switch failed:', error);
+          });
         }
 
         setAgentStatuses(makeAgentStatuses({ orchestrator: 'done' }));
@@ -2079,7 +2296,7 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
       if (decision.action === 'control_model') {
         setXiaozhiState('executing');
         for (const call of decision.toolCalls || []) {
-          await runAgentTool(call, controller.signal);
+          await runAgentTool(call, controller.signal, decision.modelId || currentTeachingModelId || undefined);
         }
         setXiaozhiState('complete');
         return;
@@ -2200,6 +2417,10 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
     setFeedbackText('');
     setFeedbackStatus('idle');
     setFeedbackMessage('');
+    setFeedbackAttachments((current) => {
+      current.forEach((attachment) => URL.revokeObjectURL(attachment.preview));
+      return [];
+    });
     setIsFeedbackOpen(true);
   };
 
@@ -2213,6 +2434,8 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
     setFeedbackText('');
     setFeedbackStatus('idle');
     setFeedbackMessage('');
+    feedbackAttachments.forEach((attachment) => URL.revokeObjectURL(attachment.preview));
+    setFeedbackAttachments([]);
   };
 
   const closeFeedback = () => {
@@ -2234,7 +2457,8 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
       || feedbackFeatures.length > 0
       || feedbackVoiceAccuracy !== ''
       || feedbackModelClarity !== ''
-      || content !== '';
+      || content !== ''
+      || feedbackAttachments.length > 0;
     if (!hasAny) {
       setFeedbackStatus('error');
       setFeedbackMessage('请至少填写一项反馈');
@@ -2244,11 +2468,7 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
     setFeedbackStatus('submitting');
     setFeedbackMessage('');
     try {
-      const response = await fetch('/api/feedback', {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
+      const payload = {
           content,
           rating: feedbackRating || null,
           scene: feedbackScene || null,
@@ -2256,7 +2476,14 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
           features: feedbackFeatures,
           voiceAccuracy: feedbackVoiceAccuracy || null,
           modelClarity: feedbackModelClarity || null,
-        }),
+      };
+      const formData = new FormData();
+      formData.append('payload', JSON.stringify(payload));
+      feedbackAttachments.forEach((attachment) => formData.append('attachments', attachment.file, attachment.name));
+      const response = await fetch('/api/feedback', {
+        method: 'POST',
+        credentials: 'include',
+        body: formData,
       });
 
       if (!response.ok) throw new Error(await readError(response));
@@ -2266,6 +2493,34 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
       setFeedbackStatus('error');
       setFeedbackMessage(error instanceof Error ? error.message : '反馈提交失败，请稍后重试');
     }
+  };
+
+  const handleFeedbackAttachmentChange = async (event: React.ChangeEvent<HTMLInputElement>) => {
+    const selected = Array.from(event.target.files || []);
+    event.target.value = '';
+    if (selected.length === 0) return;
+    if (feedbackAttachments.length + selected.length > 3) {
+      setFeedbackStatus('error');
+      setFeedbackMessage('每条反馈最多上传 3 张图片');
+      return;
+    }
+    try {
+      const next = await Promise.all(selected.map(compressFeedbackImage));
+      setFeedbackAttachments((current) => [...current, ...next]);
+      setFeedbackStatus('idle');
+      setFeedbackMessage('');
+    } catch (error) {
+      setFeedbackStatus('error');
+      setFeedbackMessage(error instanceof Error ? error.message : '图片处理失败');
+    }
+  };
+
+  const removeFeedbackAttachment = (index: number) => {
+    setFeedbackAttachments((current) => {
+      const removed = current[index];
+      if (removed) URL.revokeObjectURL(removed.preview);
+      return current.filter((_, itemIndex) => itemIndex !== index);
+    });
   };
 
   const loadMemoryCenter = async () => {
@@ -2841,6 +3096,27 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
                   />
                   <span className="mt-2 block text-right text-xs text-ink/35">{feedbackText.length} / 2000</span>
                 </label>
+                <div>
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-sm font-bold text-ink/75">图片附件（可选）</span>
+                    <label className="inline-flex cursor-pointer items-center gap-2 rounded-lg border border-cyan/30 bg-cyan-300/10 px-3 py-2 text-xs font-bold text-cyan hover:bg-cyan-300/20">
+                      <Upload size={14} /> 添加图片
+                      <input type="file" accept="image/png,image/jpeg,image/webp" multiple className="sr-only" onChange={handleFeedbackAttachmentChange} disabled={feedbackStatus === 'submitting' || feedbackAttachments.length >= 3} />
+                    </label>
+                  </div>
+                  <p className="mt-1 text-xs text-ink/40">支持 PNG、JPEG、WebP，单张不超过 5MB，最多 3 张</p>
+                  {feedbackAttachments.length > 0 && (
+                    <div className="mt-3 grid grid-cols-3 gap-3">
+                      {feedbackAttachments.map((attachment, index) => (
+                        <div key={`${attachment.name}-${index}`} className="group relative overflow-hidden rounded-lg border border-line/10 bg-black/10">
+                          <img src={attachment.preview} alt={attachment.name} className="aspect-square w-full object-cover" />
+                          <button type="button" onClick={() => removeFeedbackAttachment(index)} disabled={feedbackStatus === 'submitting'} className="absolute right-1 top-1 grid h-7 w-7 place-items-center rounded-full bg-black/70 text-white opacity-0 transition group-hover:opacity-100 focus:opacity-100" aria-label={`删除附件 ${attachment.name}`} title="删除附件"><Trash2 size={14} /></button>
+                          <div className="truncate px-2 py-1 text-[10px] text-ink/60">{attachment.name}</div>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
               </div>
             )}
 
@@ -2897,7 +3173,7 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
       )}
 
       {isProfileOpen && (
-        <div className="fixed inset-0 z-[100] grid place-items-center bg-cyan/55 px-5 backdrop-blur-md">
+        <div className="fixed inset-0 z-[100] grid place-items-center bg-slate-950/70 px-5">
           <div className={`w-full ${profileTab === 'memory' ? 'max-w-2xl' : 'max-w-md'} max-h-[86vh] overflow-y-auto rounded-2xl border border-cyan/18 bg-cyan-50/96 p-6 text-ink shadow-2xl shadow-black/60`}>
             <div className="flex items-start justify-between gap-4">
               <div>
@@ -3028,9 +3304,9 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
                   </label>
                   <label className={`flex items-start gap-3 rounded-lg border p-4 ${isProviderVoiceAvailable ? 'cursor-pointer border-cyan/25 bg-cyan-300/[0.06]' : 'border-line/10 bg-white/[0.02] opacity-55'}`}>
                     <input type="radio" name="voice-mode" disabled={!isProviderVoiceAvailable} checked={voicePreference.mode === 'volcengine'} onChange={() => setVoicePreference((current) => ({ ...current, mode: 'volcengine', providerVoiceId: current.providerVoiceId || providerVoices[0]?.id || '' }))} className="mt-1 accent-cyan-300" />
-                    <span><span className="flex items-center gap-2 font-bold text-ink"><Volume2 className="h-4 w-4 text-cyan" />豆包真人音色</span><span className="mt-1 block text-xs leading-5 text-ink/45">DeepSeek 生成文字时实时合成播放。{isProviderVoiceAvailable ? '' : ' 服务端尚未配置。'}</span></span>
+                    <span><span className="flex items-center gap-2 font-bold text-ink"><Volume2 className="h-4 w-4 text-cyan" />真人音色</span><span className="mt-1 block text-xs leading-5 text-ink/45">DeepSeek 生成文字时实时合成播放。{isProviderVoiceAvailable ? '' : ' 服务端尚未配置，将自动使用系统默认声音。'}</span></span>
                   </label>
-                  {isProviderVoiceAvailable && <label className="block"><span className="text-sm font-bold text-ink/70">真人音色</span><select value={voicePreference.providerVoiceId} onChange={(event) => setVoicePreference((current) => ({ ...current, mode: 'volcengine', providerVoiceId: event.target.value }))} className="mt-2 h-11 w-full rounded-lg border border-line/10 bg-cyan-50 px-3 text-sm text-ink outline-none focus:border-cyan/60">{providerVoices.map((voice) => <option key={voice.id} value={voice.id}>{voice.name}</option>)}</select></label>}
+                  {isProviderVoiceAvailable && <label className="block"><span className="text-sm font-bold text-ink/70">真人音色</span><select value={voicePreference.providerVoiceId} onChange={(event) => setVoicePreference((current) => ({ ...current, mode: 'volcengine', providerVoiceId: event.target.value }))} className="mt-2 h-11 w-full rounded-lg border border-line/10 bg-cyan-50 px-3 text-sm text-ink outline-none focus:border-cyan/60">{providerVoices.map((voice) => <option key={voice.id} value={voice.id}>{voice.name.replace(/^豆包/, '')}</option>)}</select></label>}
                 </div>
                 {voiceMessage && <div className="mt-4 rounded-lg border border-cyan/18 bg-cyan-300/8 px-4 py-3 text-sm text-cyan">{voiceMessage}</div>}
                 <div className="mt-6 flex justify-end gap-3"><button type="button" onClick={() => setProfileTab('profile')} className="h-10 rounded-lg border border-line/10 bg-white/5 px-4 text-sm font-bold text-ink/70">返回</button><button type="button" onClick={() => void saveVoicePreference()} disabled={isSavingVoice} className="h-10 rounded-lg bg-cyan-200 px-5 text-sm font-black text-[#061626] disabled:opacity-55">{isSavingVoice ? '保存中...' : '保存声音'}</button></div>
@@ -3256,7 +3532,7 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
                   type="button"
                   onClick={() => {
                     if (activeContent === 'biodigital') {
-                      setAiAnalysis('心脏模型2 是 URL 交互展示页面；本地手势控制会在心脏模型1等 GLB 模型视图中启用。');
+                      setAiAnalysis('心脏模型2 是 URL 交互展示页面；本地手势控制会在心脏模型等 GLB 模型视图中启用。');
                       return;
                     }
                     setCameraActive(!cameraActive);
@@ -3287,7 +3563,7 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
                         setSidebarTab('resource');
                         setIsSidebarCollapsed(false);
                       }}
-                      className={`group relative flex-1 flex items-center justify-center gap-1 whitespace-nowrap px-2 py-1.5 rounded-lg text-[11px] font-black tracking-wide transition-all duration-200 active:scale-95 ${
+                      className={`group relative order-2 flex-1 flex items-center justify-center gap-1 whitespace-nowrap px-2 py-1.5 rounded-lg text-[11px] font-black tracking-wide transition-all duration-200 active:scale-95 ${
                         sidebarTab === 'resource'
                           ? 'bg-gradient-to-r from-cyan-500/90 to-teal-500/90 text-white shadow-[0_0_10px_rgba(34,211,238,0.5)] ring-1 ring-cyan-300/50'
                           : 'text-slate-400 hover:text-cyan-300 hover:bg-slate-700/50'
@@ -3302,7 +3578,7 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
                         setSidebarTab('agent');
                         setIsSidebarCollapsed(false);
                       }}
-                      className={`group relative flex-1 flex items-center justify-center gap-1 whitespace-nowrap px-2 py-1.5 rounded-lg text-[11px] font-black tracking-wide transition-all duration-200 active:scale-95 ${
+                      className={`group relative order-1 flex-1 flex items-center justify-center gap-1 whitespace-nowrap px-2 py-1.5 rounded-lg text-[11px] font-black tracking-wide transition-all duration-200 active:scale-95 ${
                         sidebarTab === 'agent'
                           ? 'bg-gradient-to-r from-violet-500/90 to-fuchsia-500/90 text-white shadow-[0_0_10px_rgba(167,139,250,0.5)] ring-1 ring-violet-300/50'
                           : 'text-slate-400 hover:text-violet-300 hover:bg-slate-700/50'
@@ -3625,7 +3901,7 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
                   <button
                     onClick={() => {
                       if (activeContent === 'biodigital') {
-                        setAiAnalysis('心脏模型2 是 URL 交互展示页面；本地手势控制会在心脏模型1等 GLB 模型视图中启用。');
+                        setAiAnalysis('心脏模型2 是 URL 交互展示页面；本地手势控制会在心脏模型等 GLB 模型视图中启用。');
                         return;
                       }
                       setCameraActive(!cameraActive);
@@ -3667,29 +3943,6 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
 
           {activeContent === 'model' && modelUrl && !quizMode && (
             <div className="lab-stage-tools" aria-label="模型工具">
-              {organToolsAvailable && (
-                <>
-                  <button
-                    type="button"
-                    onClick={() => setCrossSectionEnabled((enabled) => !enabled)}
-                    aria-pressed={crossSectionEnabled}
-                    title="平面裁切模型；不会拆分真实组织"
-                    className={`lab-stage-tool ${crossSectionEnabled ? 'is-active is-rose' : ''}`}
-                  >
-                    <ScanLine size={18} /> <span>剖面</span>
-                  </button>
-                  <button
-                    type="button"
-                    onClick={() => setWireframeEnabled((enabled) => !enabled)}
-                    aria-pressed={wireframeEnabled}
-                    title="切换线框视图；不代表真实组织分层"
-                    className={`lab-stage-tool ${wireframeEnabled ? 'is-active' : ''}`}
-                  >
-                    <Layers3 size={18} /> <span>分层</span>
-                  </button>
-                </>
-              )}
-
               <button
                 type="button"
                 onClick={() => {
@@ -3745,6 +3998,21 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
                 <Settings size={18} /> <span>设置</span>
               </button>
             </div>
+          )}
+
+          {activeContent === 'model' && modelUrl && !quizMode && !detailPanelVisible && !isStageFullscreen && !isStageAppFullscreen && (
+            <button
+              type="button"
+              onClick={() => {
+                setDetailPanelOpen(true);
+                setDetailPanelTab('info');
+              }}
+              className="absolute right-0 top-1/2 z-40 grid h-12 w-8 -translate-y-1/2 place-items-center rounded-l-xl border border-cyan/25 border-r-0 bg-cyan-950/85 text-cyan shadow-xl backdrop-blur-md transition hover:w-10 hover:bg-cyan-900"
+              aria-label="展开模型资料"
+              title="展开模型资料"
+            >
+              <PanelRightOpen size={17} />
+            </button>
           )}
 
           {showSettings && activeContent === 'model' && (
@@ -3814,6 +4082,7 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
             ) : modelUrl ? (
               <>
                 <ModelViewer
+                  key={`${modelUrl}:${modelLoadRevision}`}
                   modelUrl={modelUrl}
                   modelType={modelType}
                   assetUrls={modelAssetUrls}
@@ -3821,12 +4090,17 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
                   showLabels={showLabels}
                   onShowLabelsChange={setShowLabels}
                   onLoadProgress={(progress) => {
+                    if (!isCurrentModelLoadEvent(modelUrl, modelUrlRef.current, modelLoadRevision, activeModelLoadRevisionRef.current)) return;
                     setModelLoadError(null);
                     setLoadProgress(progress);
                   }}
                   onLoadComplete={() => {
+                    if (!isCurrentModelLoadEvent(modelUrl, modelUrlRef.current, modelLoadRevision, activeModelLoadRevisionRef.current)) return;
+                    loadedModelUrlRef.current = modelUrl;
+                    failedModelUrlRef.current = null;
                     setLoadProgress(null);
                     setModelLoadError(null);
+                    settlePendingTeachingModelLoad(modelUrl);
                     const pendingActivity = pendingModelActivityRef.current;
                     if (pendingActivity && pendingActivity.modelUrl === modelUrl) {
                       pendingModelActivityRef.current = null;
@@ -3840,14 +4114,15 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
                       });
                     }
                   }}
-                  onLoadError={handleModelLoadError}
+                  onDisassemblyAvailabilityChange={(available) => {
+                    if (!available) setAiAnalysis('当前模型为单网格，无法进行真实拆解；可通过旋转、缩放和资料说明继续观察。');
+                  }}
+                  onLoadError={modelViewerLoadErrorHandler}
                   onPartMoved={handlePartMoved}
                   quizMode={quizMode}
-                  crossSectionEnabled={crossSectionEnabled}
-                  wireframeEnabled={wireframeEnabled}
                 />
                 {modelLoadError !== null && (
-                  <div className="absolute inset-0 z-30 flex items-center justify-center bg-cyan/45 backdrop-blur-sm transition-opacity duration-300">
+                  <div className="absolute inset-0 z-30 flex items-center justify-center bg-slate-950/55 transition-opacity duration-300">
                     <div className="w-full max-w-md rounded-2xl border border-red-400/25 bg-slate-950/85 px-8 py-7 text-center shadow-2xl">
                       <div className="mx-auto mb-4 flex h-12 w-12 items-center justify-center rounded-xl border border-red-300/25 bg-red-500/10 text-red-200">
                         <Box size={22} />
@@ -3860,21 +4135,20 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
                     </div>
                   </div>
                 )}
-                {/* 模型加载进度遮罩 */}
+                {/* 模型加载进度：只保留紧凑的中央进度卡片，不遮盖整个舞台。 */}
                 {modelLoadError === null && loadProgress !== null && loadProgress.percent < 100 && (
-                  <div className="absolute inset-0 z-30 flex items-center justify-center bg-cyan/40 backdrop-blur-sm transition-opacity duration-300">
-                    <div className="bg-slate-900/80 backdrop-blur-xl border border-cyan/20 rounded-2xl px-8 py-6 shadow-2xl max-w-xs w-full text-center">
-                      <div className="text-cyan text-sm font-bold mb-1">🫀 正在加载模型</div>
-                      <div className="text-ink-soft text-xs mb-4">{fileName || '3D 模型'}</div>
-                      <div className="w-full bg-slate-700/60 rounded-full h-2.5 mb-3 overflow-hidden">
+                  <div className="pointer-events-none absolute inset-0 z-30 flex items-center justify-center transition-opacity duration-300">
+                    <div className="w-full max-w-xs rounded-2xl border border-cyan/25 bg-slate-950/92 px-6 py-5 text-center shadow-2xl">
+                      <div className="mb-1 text-sm font-bold text-white">正在加载模型</div>
+                      <div className="mb-4 truncate text-xs text-slate-300">{fileName || '3D 模型'}</div>
+                      <div className="mb-3 h-2.5 w-full overflow-hidden rounded-full bg-slate-700/80">
                         <div
                           className="h-full rounded-full bg-gradient-to-r from-cyan-500 to-blue-500 transition-all duration-300 ease-out"
                           style={{ width: `${loadProgress.percent}%` }}
                         />
                       </div>
-                      <div className="flex justify-between text-[11px] text-slate-500">
-                        <span>{loadProgress.total > 0 ? `${(loadProgress.loaded / 1024 / 1024).toFixed(1)}MB / ${(loadProgress.total / 1024 / 1024).toFixed(1)}MB` : '计算中...'}</span>
-                        <span className="text-cyan font-semibold">{loadProgress.percent}%</span>
+                      <div className="text-right text-[11px] font-semibold text-cyan-200">
+                        {loadProgress.percent}%
                       </div>
                     </div>
                   </div>

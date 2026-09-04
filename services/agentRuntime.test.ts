@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { buildOrchestratorDecision, detectDirectClassroomCommand } from './agentRuntime.ts';
+import { buildOrchestratorDecision, buildTeachingPlan, detectDirectClassroomCommand } from './agentRuntime.ts';
 
 test('open-ended Xiaozhi questions are answered through DeepSeek without echoing the user', async () => {
   const originalFetch = globalThis.fetch;
@@ -96,6 +96,69 @@ test('teaching words take priority over model navigation words', async () => {
     const decision = await buildOrchestratorDecision(request);
     assert.equal(decision.action, 'teach_demo', request);
     assert.equal(decision.modelId, modelId, request);
+  }
+});
+
+test('teaching planner locks to the target model supplied by the orchestrator', async () => {
+  const originalFetch = globalThis.fetch;
+  let requestBody: any = null;
+  globalThis.fetch = (async (_input, init) => {
+    requestBody = JSON.parse(String(init?.body || '{}'));
+    return new Response(JSON.stringify({
+      content: JSON.stringify({
+        topic: '错误模型规划',
+        modelId: 'diamond',
+        steps: [{
+          id: 'wrong-load-step',
+          title: '加载错误模型',
+          narration: '这一步不应该切到金刚石。',
+          toolCalls: [{
+            id: 'wrong-load',
+            name: 'load_model',
+            label: '加载金刚石',
+            args: { modelId: 'diamond' },
+          }],
+        }],
+        summaryFocus: ['目标模型锁定'],
+      }),
+    }), {
+      status: 200,
+      headers: { 'Content-Type': 'application/json' },
+    });
+  }) as typeof fetch;
+
+  try {
+    const plan = await buildTeachingPlan('帮我讲解', undefined, 'heart');
+
+    assert.equal(requestBody.task, 'planner');
+    assert.match(requestBody.messages[1].content, /modelId: heart/);
+    assert.equal(plan.modelId, 'heart');
+    assert.ok(plan.steps.length > 0);
+    assert.equal(plan.steps[0].toolCalls[0].name, 'load_model');
+    assert.equal(plan.steps[0].toolCalls[0].args.modelId, 'heart');
+  } finally {
+    globalThis.fetch = originalFetch;
+  }
+});
+
+test('teaching planner fallback also locks to the target model', async () => {
+  const originalFetch = globalThis.fetch;
+  const originalWarn = console.warn;
+  globalThis.fetch = (async () => new Response(JSON.stringify({ message: 'DeepSeek 未配置' }), {
+    status: 503,
+    headers: { 'Content-Type': 'application/json' },
+  })) as typeof fetch;
+  console.warn = () => {};
+
+  try {
+    const plan = await buildTeachingPlan('帮我讲解', undefined, 'heart');
+
+    assert.equal(plan.modelId, 'heart');
+    assert.equal(plan.steps[0].toolCalls[0].name, 'load_model');
+    assert.equal(plan.steps[0].toolCalls[0].args.modelId, 'heart');
+  } finally {
+    globalThis.fetch = originalFetch;
+    console.warn = originalWarn;
   }
 });
 
