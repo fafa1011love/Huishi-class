@@ -49,6 +49,7 @@ const QuizOverlay: React.FC<QuizOverlayProps> = ({ stageRef, controlRef, cameraA
   const pointerStableSinceRef = useRef(0);
   const hoverStartRef = useRef<number>(0);
   const hoverOptionRef = useRef<number | null>(null);
+  const hoverCandidateRef = useRef<{ option: number | null; frames: number }>({ option: null, frames: 0 });
   const lastProgressPctRef = useRef<number>(-1);
   const phaseRef = useRef(phase);
   const sessionRef = useRef(session);
@@ -106,6 +107,7 @@ const QuizOverlay: React.FC<QuizOverlayProps> = ({ stageRef, controlRef, cameraA
     pointerSmoothRef.current.initialized = false;
     pointerStableRef.current.initialized = false;
     pointerStableSinceRef.current = 0;
+    hoverCandidateRef.current = { option: null, frames: 0 };
 
     const qText = currentQuestion.question;
 
@@ -133,6 +135,21 @@ const QuizOverlay: React.FC<QuizOverlayProps> = ({ stageRef, controlRef, cameraA
       if (cameraActive) {
         const handLm = controlRef.current.interactionHandLandmarks;
         if (handLm && handLm.length > 17) {
+          // A bent index finger is not a reliable pointer. Requiring an extended
+          // index prevents the palm/fingertips from selecting an answer while
+          // the user is moving their hand into position.
+          const wrist = handLm[0];
+          const indexTip = handLm[8];
+          const indexPip = handLm[6];
+          const tipDistance = Math.hypot(indexTip.x - wrist.x, indexTip.y - wrist.y);
+          const pipDistance = Math.hypot(indexPip.x - wrist.x, indexPip.y - wrist.y);
+          const isPointing = indexTip.y < indexPip.y - 0.01 || tipDistance > pipDistance * 1.08;
+          if (!isPointing) {
+            hitOption = null;
+            if (pointerRef.current) pointerRef.current.style.opacity = '0';
+            pointerStableRef.current.initialized = false;
+            pointerStableSinceRef.current = 0;
+          } else {
           // Use the index fingertip as the pointer; the palm center is too coarse for adjacent answers.
           const centerX = handLm[8].x;
           const centerY = handLm[8].y;
@@ -176,6 +193,7 @@ const QuizOverlay: React.FC<QuizOverlayProps> = ({ stageRef, controlRef, cameraA
               pointerRef.current.style.opacity = '1';
             }
           }
+          }
         } else {
           if (pointerRef.current) pointerRef.current.style.opacity = '0';
           pointerStableRef.current.initialized = false;
@@ -185,7 +203,20 @@ const QuizOverlay: React.FC<QuizOverlayProps> = ({ stageRef, controlRef, cameraA
 
       // Update hover state
       if (hitOption !== null && pointerStableRef.current.initialized && performance.now() - pointerStableSinceRef.current >= 140) {
-        if (hoverOptionRef.current === hitOption) {
+        // Require a few consecutive frames before switching options. This filters
+        // single-frame detector jitter at the boundary between adjacent cards.
+        const candidate = hoverCandidateRef.current;
+        if (candidate.option === hitOption) candidate.frames += 1;
+        else hoverCandidateRef.current = { option: hitOption, frames: 1 };
+        const candidateReady = hoverOptionRef.current === hitOption || hoverCandidateRef.current.frames >= 4;
+
+        if (!candidateReady) {
+          // Do not let the previous card continue counting while a new card is
+          // being verified at a boundary.
+          hoverStartRef.current = performance.now();
+          lastProgressPctRef.current = 0;
+          setHoverProgress(0);
+        } else if (hoverOptionRef.current === hitOption) {
           // Same option — accumulate hover time
           const elapsed = performance.now() - hoverStartRef.current;
           const progress = Math.min(1, Math.max(0, elapsed / HOVER_CONFIRM_MS));
@@ -201,7 +232,7 @@ const QuizOverlay: React.FC<QuizOverlayProps> = ({ stageRef, controlRef, cameraA
             confirmAnswer(hitOption);
             return;
           }
-        } else {
+        } else if (candidateReady) {
           // Switched to a different option (or first hit)
           hoverOptionRef.current = hitOption;
           // Require a short settle period after entering a new option.
@@ -212,6 +243,7 @@ const QuizOverlay: React.FC<QuizOverlayProps> = ({ stageRef, controlRef, cameraA
         }
       } else {
         // No option hovered
+        hoverCandidateRef.current = { option: null, frames: 0 };
         if (hoverOptionRef.current !== null) {
           hoverOptionRef.current = null;
           lastProgressPctRef.current = -1;
@@ -339,18 +371,35 @@ const QuizOverlay: React.FC<QuizOverlayProps> = ({ stageRef, controlRef, cameraA
 
   const checkHitOnOptions = (screenX: number, screenY: number, count: number): number | null => {
     const activeOption = hoverOptionRef.current;
+    const strictHits: Array<{ index: number; distance: number }> = [];
     for (let idx = 0; idx < count; idx++) {
       const el = optionRefs.current[idx];
       if (!el) continue;
       const rect = el.getBoundingClientRect();
-      const margin = idx === activeOption ? 24 : 10;
       if (
-        screenX >= rect.left - margin &&
-        screenX <= rect.right + margin &&
-        screenY >= rect.top - margin &&
-        screenY <= rect.bottom + margin
+        screenX >= rect.left && screenX <= rect.right &&
+        screenY >= rect.top && screenY <= rect.bottom
       ) {
-        return idx;
+        const cx = (rect.left + rect.right) / 2;
+        const cy = (rect.top + rect.bottom) / 2;
+        strictHits.push({ index: idx, distance: Math.hypot(screenX - cx, screenY - cy) });
+      }
+    }
+    if (strictHits.length) {
+      return strictHits.sort((a, b) => a.distance - b.distance)[0].index;
+    }
+
+    // Keep a modest hysteresis zone for the currently selected card, but never
+    // expand every card at once (which made neighboring options overlap).
+    if (activeOption !== null) {
+      const el = optionRefs.current[activeOption];
+      if (el) {
+        const rect = el.getBoundingClientRect();
+        const margin = 22;
+        if (screenX >= rect.left - margin && screenX <= rect.right + margin &&
+            screenY >= rect.top - margin && screenY <= rect.bottom + margin) {
+          return activeOption;
+        }
       }
     }
     return null;
