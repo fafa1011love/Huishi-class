@@ -4000,7 +4000,7 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
             </div>
           )}
 
-          {activeContent === 'model' && modelUrl && !quizMode && !detailPanelVisible && !isStageFullscreen && !isStageAppFullscreen && (
+          {!quizMode && !followUpQuestion && !detailPanelOpen && !isStageFullscreen && !isStageAppFullscreen && (
             <button
               type="button"
               onClick={() => {
