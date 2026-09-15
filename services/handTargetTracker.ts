@@ -16,6 +16,9 @@ export interface HandCandidate {
   area: number;
   palmWidth: number;
   shape: number[];
+  /** True when this candidate is a short-lived prediction during a missed frame. */
+  stale?: boolean;
+  ageMs?: number;
 }
 
 interface HandTrack extends HandCandidate {
@@ -43,8 +46,13 @@ export interface HandTargetTrackerOptions {
 }
 
 const DEFAULT_CONFIRMATION_MS = 600;
-const DEFAULT_RELEASE_MS = 1200;
+// Keep a missed camera/inference frame continuous without allowing stale input
+// to drive the model indefinitely. This is separate from the UI lock phase.
+const DEFAULT_RELEASE_MS = 120;
 const DEFAULT_COOLDOWN_MS = 300;
+const MAX_PREDICTION_MS = 120;
+const MAX_CENTER_SPEED_PER_MS = 0.006;
+const HANDEDNESS_MISMATCH_PENALTY = 0.5;
 const PALM_POINTS = [0, 5, 9, 13, 17];
 const SHAPE_POINTS = [0, 4, 5, 8, 9, 12, 13, 16, 17, 20];
 
@@ -96,13 +104,18 @@ function toTrack(candidate: HandCandidate, now: number, previous?: HandTrack): H
   const elapsed = previous ? Math.max(1, now - previous.lastSeenAt) : 1;
   const rawVelocity = previous
     ? {
-        x: (candidate.center.x - previous.center.x) / elapsed,
-        y: (candidate.center.y - previous.center.y) / elapsed,
+        x: Math.max(-MAX_CENTER_SPEED_PER_MS, Math.min(MAX_CENTER_SPEED_PER_MS, (candidate.center.x - previous.center.x) / elapsed)),
+        y: Math.max(-MAX_CENTER_SPEED_PER_MS, Math.min(MAX_CENTER_SPEED_PER_MS, (candidate.center.y - previous.center.y) / elapsed)),
       }
     : { x: 0, y: 0 };
 
   return {
     ...candidate,
+    // Once a slot is locked, a single MediaPipe handedness flip must not move
+    // the track to the opposite semantic side.  Matching already uses
+    // handedness as a soft cost, so preserve the slot's established side here
+    // and let the next spatially consistent frame correct the classification.
+    side: previous?.side ?? candidate.side,
     velocity: previous
       ? {
           x: previous.velocity.x * 0.55 + rawVelocity.x * 0.45,
@@ -113,9 +126,34 @@ function toTrack(candidate: HandCandidate, now: number, previous?: HandTrack): H
   };
 }
 
-function matchCost(track: HandTrack, candidate: HandCandidate, now: number, strict: boolean) {
-  if (candidate.side !== track.side) return Number.POSITIVE_INFINITY;
+const clamp01 = (value: number) => Math.max(0, Math.min(1, value));
 
+function predictTrack(track: HandTrack, now: number): HandCandidate | null {
+  const ageMs = Math.max(0, now - track.lastSeenAt);
+  if (ageMs > MAX_PREDICTION_MS) return null;
+
+  const predictionMs = Math.min(ageMs, MAX_PREDICTION_MS);
+  const dx = track.velocity.x * predictionMs;
+  const dy = track.velocity.y * predictionMs;
+  const landmarks = track.landmarks.map((point) => ({
+    ...point,
+    x: clamp01(point.x + dx),
+    y: clamp01(point.y + dy),
+  }));
+
+  return {
+    ...track,
+    landmarks,
+    center: {
+      x: clamp01(track.center.x + dx),
+      y: clamp01(track.center.y + dy),
+    },
+    stale: true,
+    ageMs,
+  };
+}
+
+function matchCost(track: HandTrack, candidate: HandCandidate, now: number, strict: boolean) {
   const predictionMs = Math.min(160, Math.max(0, now - track.lastSeenAt));
   const predicted = {
     x: track.center.x + track.velocity.x * predictionMs,
@@ -140,14 +178,22 @@ function matchCost(track: HandTrack, candidate: HandCandidate, now: number, stri
   return (
     centerDistance / positionGate +
     Math.abs(Math.log(areaRatio)) * 0.35 +
-    handShapeDistance * 0.25
+    handShapeDistance * 0.25 +
+    (candidate.side === track.side ? 0 : HANDEDNESS_MISMATCH_PENALTY)
   );
 }
 
-function bestMatch(track: HandTrack, candidates: HandCandidate[], now: number, strict: boolean) {
+function bestMatch(
+  track: HandTrack,
+  candidates: HandCandidate[],
+  now: number,
+  strict: boolean,
+  excluded?: HandCandidate | null,
+) {
   let match: HandCandidate | null = null;
   let bestCost = Number.POSITIVE_INFINITY;
   for (const candidate of candidates) {
+    if (candidate === excluded) continue;
     const cost = matchCost(track, candidate, now, strict);
     if (cost < bestCost) {
       bestCost = cost;
@@ -250,7 +296,7 @@ export class HandTargetTracker {
 
   private updateConfirmation(candidates: HandCandidate[], now: number) {
     const leftMatch = this.tracks.left ? bestMatch(this.tracks.left, candidates, now, true) : null;
-    const rightMatch = this.tracks.right ? bestMatch(this.tracks.right, candidates, now, true) : null;
+    const rightMatch = this.tracks.right ? bestMatch(this.tracks.right, candidates, now, true, leftMatch) : null;
     const hasRequiredHands = this.mode === 'dual'
       ? Boolean(leftMatch && rightMatch)
       : Boolean(leftMatch || rightMatch);
@@ -269,7 +315,7 @@ export class HandTargetTracker {
 
   private updateLocked(candidates: HandCandidate[], now: number) {
     const leftMatch = this.tracks.left ? bestMatch(this.tracks.left, candidates, now, false) : null;
-    const rightMatch = this.tracks.right ? bestMatch(this.tracks.right, candidates, now, false) : null;
+    const rightMatch = this.tracks.right ? bestMatch(this.tracks.right, candidates, now, false, leftMatch) : null;
 
     if (leftMatch && this.tracks.left) this.tracks.left = toTrack(leftMatch, now, this.tracks.left);
     if (rightMatch && this.tracks.right) this.tracks.right = toTrack(rightMatch, now, this.tracks.right);
@@ -277,27 +323,42 @@ export class HandTargetTracker {
     const visibleCount = Number(Boolean(leftMatch)) + Number(Boolean(rightMatch));
     const expectedCount = Number(Boolean(this.tracks.left)) + Number(Boolean(this.tracks.right));
 
+    // Preserve the last known pose for a short gap. Returning these predicted
+    // candidates keeps pinch/drag and camera motion continuous across an
+    // occasional dropped inference frame; callers can inspect `stale` when
+    // they need to attenuate movement while waiting for a fresh result.
+    // Return the updated track rather than the raw detector candidate.  Apart
+    // from carrying velocity metadata, this preserves the slot's established
+    // handedness when a single frame is mislabeled by MediaPipe.
+    const leftActive = leftMatch && this.tracks.left
+      ? this.tracks.left
+      : (this.tracks.left ? predictTrack(this.tracks.left, now) : null);
+    const rightActive = rightMatch && this.tracks.right
+      ? this.tracks.right
+      : (this.tracks.right ? predictTrack(this.tracks.right, now) : null);
+
     if (visibleCount === expectedCount) {
       this.phase = 'locked';
       this.bothMissingSince = null;
-      return { leftMatch, rightMatch };
+      return { leftMatch: leftActive, rightMatch: rightActive };
     }
 
     if (visibleCount > 0) {
       this.phase = 'partial_lost';
       this.bothMissingSince = null;
-      return { leftMatch, rightMatch };
+      return { leftMatch: leftActive, rightMatch: rightActive };
     }
 
     this.phase = 'lost';
     this.bothMissingSince ??= now;
-    if (now - this.bothMissingSince >= this.releaseMs) {
+    if (!leftActive && !rightActive || now - this.bothMissingSince >= this.releaseMs) {
       this.phase = 'cooldown';
       this.cooldownUntil = now + this.cooldownMs;
       this.tracks = emptySlots();
       this.bothMissingSince = null;
+      return { leftMatch: null, rightMatch: null };
     }
-    return { leftMatch: null, rightMatch: null };
+    return { leftMatch: leftActive, rightMatch: rightActive };
   }
 
   update(candidates: HandCandidate[], now: number, mode: HandTrackingMode): HandTrackingResult {

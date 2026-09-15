@@ -51,10 +51,14 @@ export interface AgentDisassemblyControl {
 
 // Shared ref object to communicate between React components without re-renders
 export interface ControlRefs {
-  rotationVelocity: { x: number; y: number }; // x = pitch (up/down), y = yaw (left/right)
+  // Time-normalized angular rate (radians per second before the consumer's
+  // interaction-speed multiplier). x = pitch, y = yaw. Consumers must apply
+  // this value once with their frame delta; it is not a per-frame increment.
+  rotationVelocity: { x: number; y: number };
   rotationLocked: boolean; // voice lock: blocks any rotation input until unlocked
   voiceRotationActive: boolean; // true = voice spin is running, HandController must NOT overwrite rotationVelocity
-  zoomSpeed: number; // -1 to 1
+  // Time-normalized zoom rate. Consumers apply it once with frame delta.
+  zoomSpeed: number;
   panPosition: { x: number; y: number }; // Target position for dragging
   isDragging: boolean;
   // 3D虚拟手数据

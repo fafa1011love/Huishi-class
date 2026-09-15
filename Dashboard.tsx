@@ -1,7 +1,7 @@
 
 import React, { useState, useRef, useCallback, useEffect, useMemo } from 'react';
 import { AnimatePresence } from 'motion/react';
-import { AgentRole, AgentStatus, AgentTimelineItem, AgentToolCall, FollowUpQuestion, GestureType, MoveDirection, ControlRefs, InteractionMode, TeachingModelId, type LearningMemory, type MemorySettings } from './types';
+import { AgentRole, AgentStatus, AgentTimelineItem, AgentToolCall, FollowUpQuestion, ControlRefs, InteractionMode, TeachingModelId, type LearningMemory, type MemorySettings } from './types';
 import HandController from './components/HandController';
 import ModelViewer from './components/ModelViewer';
 import BioDigitalViewer from './components/BioDigitalViewer';
@@ -364,11 +364,6 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
   const [introReady, setIntroReady] = useState(!playIntro);
   const [streamedInstruction, setStreamedInstruction] = useState(playIntro ? '' : INTRO_INSTRUCTION);
   const [aiAnalysis, setAiAnalysis] = useState('等待指令中...');
-
-  // Hand/Voice state
-  const [gestureStatus, setGestureStatus] = useState<GestureType>(GestureType.NONE);
-  const [directionStatus, setDirectionStatus] = useState<MoveDirection>(MoveDirection.CENTER);
-  const [isDragging, setIsDragging] = useState(false);
 
   // Interaction speed settings
   const [showSettings, setShowSettings] = useState(false);
@@ -1658,13 +1653,13 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
           const modelId = planModelId || (call.args.modelId || 'earth_layers') as TeachingModelId;
           await loadTeachingModel(modelId, 'ai', signal);
           throwIfAborted(signal);
-          controlRef.current.zoomSpeed = -0.026;
+          controlRef.current.zoomSpeed = -1.56;
           await sleep(900, signal);
           controlRef.current.zoomSpeed = 0;
           break;
         }
         case 'auto_rotate': {
-          const speed = Number(call.args.speed ?? 0.016);
+          const speed = Number(call.args.speed ?? 0.96);
           const durationMs = Number(call.args.durationMs ?? 2200);
           if (controlRef.current.rotationLocked && speed !== 0) {
             setAiAnalysis('旋转已锁定，自动旋转指令已忽略。');
@@ -1680,7 +1675,7 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
         case 'auto_zoom': {
           const direction = String(call.args.direction || 'in');
           const durationMs = Number(call.args.durationMs ?? 1200);
-          controlRef.current.zoomSpeed = direction === 'out' ? -0.018 : 0.018;
+          controlRef.current.zoomSpeed = direction === 'out' ? -1.08 : 1.08;
           await sleep(Math.max(100, durationMs), signal);
           controlRef.current.zoomSpeed = 0;
           break;
@@ -1730,7 +1725,6 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
           break;
         case 'disable_gesture':
           setCameraActive(false);
-          setGestureStatus(GestureType.NONE);
           controlRef.current.isDragging = false;
           controlRef.current.zoomSpeed = 0;
           controlRef.current.rotationVelocity = { x: 0, y: 0 };
@@ -2350,11 +2344,10 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
     answeredFollowUpQuestionIdRef.current = followUpQuestion?.id || null;
   };
 
-  const handleGestureUpdate = useCallback((gesture: GestureType, direction: MoveDirection, dragging: boolean) => {
-    setGestureStatus(gesture);
-    setDirectionStatus(direction);
-    setIsDragging(dragging);
-  }, []);
+  // Gesture classification is consumed directly through ControlRefs. Keep a
+  // stable callback for the camera overlay contract without putting the
+  // per-result signal in React state.
+  const handleGestureUpdate = useCallback(() => {}, []);
 
   const handlePartMoved = useCallback((partName: string) => {
     if (activeContent !== 'model' || !modelUrl) return;

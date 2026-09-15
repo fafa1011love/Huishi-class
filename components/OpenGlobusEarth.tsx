@@ -70,7 +70,7 @@ const OpenGlobusEarth: React.FC<OpenGlobusEarthProps> = ({ controlRef }) => {
   // Gesture control integration
   useEffect(() => {
     let rafId: number;
-    let prevZoom = 0;
+    let lastFrameAt = performance.now();
 
     const tick = () => {
       const cam = camRef.current;
@@ -79,26 +79,32 @@ const OpenGlobusEarth: React.FC<OpenGlobusEarthProps> = ({ controlRef }) => {
         return;
       }
 
+      const now = performance.now();
+      const delta = Math.min(Math.max((now - lastFrameAt) / 1000, 0), 0.05);
+      lastFrameAt = now;
+
       const { rotationVelocity, zoomSpeed } = controlRef.current;
       const sensitivity = 0.005;
 
       // Horizontal rotation
       if (Math.abs(rotationVelocity.y) > 0.0001) {
-        cam.rotateRight(rotationVelocity.y * sensitivity * 0.8, false);
+        cam.rotateRight(rotationVelocity.y * sensitivity * 0.8 * delta, false);
       }
       // Vertical rotation (inverted to feel natural)
       if (Math.abs(rotationVelocity.x) > 0.0001) {
-        cam.rotateUp(-rotationVelocity.x * sensitivity * 0.5);
+        cam.rotateUp(-rotationVelocity.x * sensitivity * 0.5 * delta);
       }
 
       // Zoom
       if (zoomSpeed !== 0) {
         const alt = cam.getAltitude();
-        const newAlt = Math.max(1, alt * (1 - zoomSpeed * 0.3));
+        // Zoom is a normalized rate. Exponential integration keeps the
+        // response stable across refresh rates and avoids large jumps after
+        // a delayed frame.
+        const newAlt = Math.max(1, alt * Math.exp(-zoomSpeed * 0.3 * delta));
         cam.setAltitude(newAlt);
       }
 
-      prevZoom = zoomSpeed;
       rafId = requestAnimationFrame(tick);
     };
 

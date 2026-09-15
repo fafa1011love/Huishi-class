@@ -1,5 +1,5 @@
 import React, { useEffect, useRef, useState } from 'react';
-import { FilesetResolver, HandLandmarker, DrawingUtils } from '@mediapipe/tasks-vision';
+import { HandLandmarker, DrawingUtils } from '@mediapipe/tasks-vision';
 import { ControlRefs, GestureType, HandLandmarkPoint, InteractionMode, MoveDirection } from '../types';
 import {
   describeHandCandidate,
@@ -7,16 +7,43 @@ import {
   HandTrackingPhase,
   TrackedHandSide,
 } from '../services/handTargetTracker';
+import {
+  advanceRotationContinuity,
+  applyRateDeadzone,
+  createRotationContinuityState,
+  decayRate,
+  exponentialSmoothingAlpha,
+  hysteresisBelow,
+  normalizeRatePerSecond,
+  RotationContinuityState,
+} from '../services/handGestureMath';
+import {
+  notePublishedHandInput,
+  performanceTelemetry,
+} from '../services/performanceTelemetry';
+
+export interface HandTrackingPerformanceSample {
+  sequence: number;
+  capturedAt: number;
+  processedAt: number;
+  inferenceMs: number;
+  resultAgeMs: number;
+  skippedFrames: number;
+}
 
 interface HandControllerProps {
   controlRef: React.MutableRefObject<ControlRefs>;
   onStateChange: (gesture: GestureType, direction: MoveDirection, isDragging: boolean) => void;
+  onPerformanceSample?: (sample: HandTrackingPerformanceSample) => void;
   interactionMode: InteractionMode;
   quizMode?: boolean;  // 新增：是否处于答题模式
 }
 
 // Simple Low-Pass Filter for smoothing coordinates
 const lerp = (start: number, end: number, factor: number) => start + (end - start) * factor;
+// Keep these exports for callers that previously imported the pure helpers
+// from HandController while the implementation lives in a testable service.
+export { exponentialSmoothingAlpha, normalizeRatePerSecond } from '../services/handGestureMath';
 const toPointList = (landmarks: any[] | null | undefined): HandLandmarkPoint[] =>
   (landmarks ?? []).map((landmark: any) => ({
     x: landmark.x,
@@ -30,33 +57,65 @@ const toUserFacingHandedness = (categoryName: string) => (
 
 const LOCAL_VISION_WASM_PATH = '/mediapipe/wasm';
 const LOCAL_HAND_MODEL_PATH = '/mediapipe/hand_landmarker.task';
-const CDN_VISION_WASM_PATH = 'https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.0/wasm';
-const CDN_HAND_MODEL_PATH = 'https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/1/hand_landmarker.task';
 
-const createHandLandmarker = async (wasmPath: string, modelAssetPath: string) => {
-  const vision = await FilesetResolver.forVisionTasks(wasmPath);
-  return HandLandmarker.createFromOptions(vision, {
-    baseOptions: {
-      modelAssetPath,
-      delegate: "GPU"
-    },
-    runningMode: "VIDEO",
-    numHands: 4,
-    minHandDetectionConfidence: 0.55,
-    minHandPresenceConfidence: 0.5,
-    minTrackingConfidence: 0.55,
-  });
-};
+interface SerializedHandCategory {
+  categoryName?: string;
+  score?: number;
+  index?: number;
+  displayName?: string;
+}
 
-const HandController: React.FC<HandControllerProps> = ({ controlRef, onStateChange, interactionMode, quizMode = false }) => {
+interface HandDetectionResult {
+  type: 'result';
+  sequence: number;
+  capturedAt: number;
+  processedAt: number;
+  inferenceMs: number;
+  landmarks: Array<Array<{ x: number; y: number; z?: number }>>;
+  handedness: Array<SerializedHandCategory[]>;
+}
+
+interface HandWorkerReady {
+  type: 'ready';
+  numHands: number;
+  delegate: 'GPU' | 'CPU';
+}
+
+interface HandWorkerError {
+  type: 'error';
+  sequence?: number;
+  capturedAt?: number;
+  message: string;
+}
+
+type HandWorkerMessage = HandDetectionResult | HandWorkerReady | HandWorkerError;
+
+const HandController: React.FC<HandControllerProps> = ({
+  controlRef,
+  onStateChange,
+  onPerformanceSample,
+  interactionMode,
+  quizMode = false,
+}) => {
   const videoRef = useRef<HTMLVideoElement>(null);
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const handLandmarkerRef = useRef<HandLandmarker | null>(null);
+  const handWorkerRef = useRef<Worker | null>(null);
+  const workerReadyRef = useRef(false);
+  const workerInitFailedRef = useRef(false);
+  const workerInFlightRef = useRef(false);
+  const workerSequenceRef = useRef(0);
+  const skippedFramesRef = useRef(0);
+  const schedulerStartedRef = useRef(false);
+  const videoFrameCallbackRef = useRef<number | null>(null);
   const requestRef = useRef<number>(0);
   const lastVideoTimeRef = useRef(-1);
-  const lastDetectionAtRef = useRef(0);
+  const lastFrameTimestampRef = useRef(0);
+  const lastResultTimestampRef = useRef(0);
+  const lastResultReceivedAtRef = useRef(0);
+  const resultWatchdogTimerRef = useRef<number | null>(null);
+  const lastControlSampleAtRef = useRef(0);
   const drawingUtilsRef = useRef<DrawingUtils | null>(null);
   const targetTrackerRef = useRef(new HandTargetTracker());
   const trackingPhaseRef = useRef<HandTrackingPhase>('searching');
@@ -70,11 +129,19 @@ const HandController: React.FC<HandControllerProps> = ({ controlRef, onStateChan
   useEffect(() => {
     onStateChangeRef.current = onStateChange;
   }, [onStateChange]);
+  const onPerformanceSampleRef = useRef(onPerformanceSample);
+  useEffect(() => {
+    onPerformanceSampleRef.current = onPerformanceSample;
+  }, [onPerformanceSample]);
   const interactionModeRef = useRef(interactionMode);
   const quizModeRef = useRef(quizMode);
   useEffect(() => {
     interactionModeRef.current = interactionMode;
     const trackerMode = quizModeRef.current || interactionMode === 'single' ? 'single' : 'dual';
+    disarmResultWatchdog();
+    // Do not let a result captured before the mode switch mutate the newly
+    // reset tracker when it returns from the worker.
+    lastResultTimestampRef.current = performance.now();
     targetTrackerRef.current.reset(trackerMode);
     trackingPhaseRef.current = 'searching';
     setTrackingStatus({
@@ -82,6 +149,10 @@ const HandController: React.FC<HandControllerProps> = ({ controlRef, onStateChan
       text: trackerMode === 'dual' ? '请将双手置于画面中' : '请将手置于画面中',
     });
     prevRotatePosRef.current = null;
+    prevRotateSampleAtRef.current = 0;
+    rotationContinuityRef.current = createRotationContinuityState();
+    lastValidRotVelRef.current = { x: 0, y: 0 };
+    pinchGestureActiveRef.current = false;
     smoothRotVelRef.current = { x: 0, y: 0 };
     smoothZoomRef.current = 0;
     wasContactingRef.current = false;
@@ -90,13 +161,31 @@ const HandController: React.FC<HandControllerProps> = ({ controlRef, onStateChan
     controlRef.current.rotationVelocity = { x: 0, y: 0 };
     controlRef.current.zoomSpeed = 0;
     controlRef.current.isDragging = false;
+    controlRef.current.panPosition = { x: 0, y: 0 };
+    controlRef.current.handNDCPosition = null;
+    controlRef.current.handLandmarks.left = null;
+    controlRef.current.handLandmarks.right = null;
     controlRef.current.interactionHandLandmarks = null;
+    const worker = handWorkerRef.current;
+    if (worker) {
+      stopFrameScheduler();
+      workerReadyRef.current = false;
+      worker.postMessage({
+        type: 'init',
+        wasmPath: LOCAL_VISION_WASM_PATH,
+        modelAssetPath: LOCAL_HAND_MODEL_PATH,
+        numHands: trackerMode === 'single' ? 1 : 2,
+      });
+    }
   }, [controlRef, interactionMode]);
 
   // Keep latest quizMode to avoid stale closures in RAF loop
   useEffect(() => {
     quizModeRef.current = quizMode;
     const trackerMode = quizMode || interactionModeRef.current === 'single' ? 'single' : 'dual';
+    disarmResultWatchdog();
+    // Drop any in-flight result belonging to the previous gesture mode.
+    lastResultTimestampRef.current = performance.now();
     targetTrackerRef.current.reset(trackerMode);
     trackingPhaseRef.current = 'searching';
     setTrackingStatus({
@@ -104,6 +193,10 @@ const HandController: React.FC<HandControllerProps> = ({ controlRef, onStateChan
       text: trackerMode === 'dual' ? '请将双手置于画面中' : '请将手置于画面中',
     });
     prevRotatePosRef.current = null;
+    prevRotateSampleAtRef.current = 0;
+    rotationContinuityRef.current = createRotationContinuityState();
+    lastValidRotVelRef.current = { x: 0, y: 0 };
+    pinchGestureActiveRef.current = false;
     smoothRotVelRef.current = { x: 0, y: 0 };
     smoothZoomRef.current = 0;
     wasContactingRef.current = false;
@@ -112,6 +205,22 @@ const HandController: React.FC<HandControllerProps> = ({ controlRef, onStateChan
     controlRef.current.rotationVelocity = { x: 0, y: 0 };
     controlRef.current.zoomSpeed = 0;
     controlRef.current.isDragging = false;
+    controlRef.current.panPosition = { x: 0, y: 0 };
+    controlRef.current.handNDCPosition = null;
+    controlRef.current.handLandmarks.left = null;
+    controlRef.current.handLandmarks.right = null;
+    controlRef.current.interactionHandLandmarks = null;
+    const worker = handWorkerRef.current;
+    if (worker) {
+      stopFrameScheduler();
+      workerReadyRef.current = false;
+      worker.postMessage({
+        type: 'init',
+        wasmPath: LOCAL_VISION_WASM_PATH,
+        modelAssetPath: LOCAL_HAND_MODEL_PATH,
+        numHands: trackerMode === 'single' ? 1 : 2,
+      });
+    }
   }, [quizMode]);
 
   // Smoothing refs
@@ -125,8 +234,13 @@ const HandController: React.FC<HandControllerProps> = ({ controlRef, onStateChan
 
   // Store previous position for Delta calculation (Rotation)
   const prevRotatePosRef = useRef<{ x: number, y: number } | null>(null);
+  const prevRotateSampleAtRef = useRef(0);
+  const rotationContinuityRef = useRef<RotationContinuityState>(createRotationContinuityState());
+  const lastValidRotVelRef = useRef({ x: 0, y: 0 });
+  const pinchGestureActiveRef = useRef(false);
 
-  // Smoothed rotation velocity (EMA)
+  // The worker produces sparse samples. These refs hold one time-aware filter
+  // state; the renderer consumes the resulting per-second rates every frame.
   const smoothRotVelRef = useRef({ x: 0, y: 0 });
   const smoothZoomRef = useRef(0);
   const lastPublishedStateRef = useRef<{
@@ -136,96 +250,499 @@ const HandController: React.FC<HandControllerProps> = ({ controlRef, onStateChan
   }>({ gesture: null, direction: null, isDragging: null });
 
   // Constants
-  const PINCH_THRESHOLD = 0.05;
-  const FINGER_CONTACT_THRESHOLD = 0.05;
+  const PINCH_ENTER_RATIO = 0.42;
+  const PINCH_EXIT_RATIO = 0.62;
+  const FINGER_CONTACT_ENTER_RATIO = 0.38;
+  const FINGER_CONTACT_EXIT_RATIO = 0.54;
   const CONTACT_THRESHOLD = 0.12;
   const OPEN_STOP_HOLD_MS = 700;
+  const TRACKING_CONTINUITY_MS = 120;
+  // A result can legitimately be delayed by a busy CPU/GPU, but once this
+  // window expires an old gesture must not keep driving the scene forever.
+  // This watchdog is independent from the tracker because it also covers a
+  // worker that stops responding altogether (where no empty result arrives).
+  const RESULT_STALE_TIMEOUT_MS = 160;
 
-  // INCREASED SENSITIVITY: 0.15 -> 0.35
-  const ZOOM_SENSITIVITY = 0.35;
+  // ControlRefs now carries rates in units per second. The 0.35 legacy
+  // per-render value is converted to an equivalent rate for existing feel;
+  // ModelViewer/other consumers must multiply these values by `delta` once.
+  const ZOOM_SPEED_PER_SECOND = 0.35 * 60;
 
   // Adjusted for better range of motion
   const DRAG_SCALE_X = 7.0;
   const DRAG_SCALE_Y = 5.5;
   const ROTATION_SENSITIVITY = 4.6;
 
-  const SMOOTHING_FACTOR_ROTATION = 0.28;
-  const ROTATION_DEADZONE = 0.0015;
-  const ROTATION_VEL_SMOOTHING = 0.34;
-  const ZOOM_VEL_SMOOTHING = 0.22;
+  const POSITION_FILTER_TIME_CONSTANT_MS = 32;
+  const ZOOM_FILTER_TIME_CONSTANT_MS = 55;
+  const ROTATION_RATE_DEADZONE = 0.0015 * 1000 / 33;
+  const ROTATION_RELEASE_GRACE_MS = 120;
+  const ROTATION_RELEASE_AFTER_MISSES = 2;
+  const ROTATION_GRACE_DECAY_TIME_CONSTANT_MS = 90;
+
+  /**
+   * Publish the filtered pinch center in the coordinate space consumed by
+   * ModelViewer's raycaster.  `panPosition` is kept for legacy consumers,
+   * while `handNDCPosition` is the canonical drag pointer; both values come
+   * from the same time-aware filter state so the model never has to rebuild
+   * an unfiltered pointer from the raw landmarks.
+   */
+  const publishFilteredDragPosition = (x: number, y: number) => {
+    const targetNdcX = (0.5 - x) * 2;
+    const targetNdcY = -(y - 0.5) * 2;
+    const currentNdc = controlRef.current.handNDCPosition;
+    if (currentNdc) {
+      currentNdc.x = targetNdcX;
+      currentNdc.y = targetNdcY;
+    } else {
+      controlRef.current.handNDCPosition = { x: targetNdcX, y: targetNdcY };
+    }
+
+    // Preserve the historical model-space target for any external consumer
+    // that still reads panPosition.  Mutate the existing object when possible
+    // to avoid allocating on every camera sample.
+    const pan = controlRef.current.panPosition;
+    if (pan) {
+      pan.x = (0.5 - x) * DRAG_SCALE_X;
+      pan.y = (0.5 - y) * DRAG_SCALE_Y;
+    } else {
+      controlRef.current.panPosition = {
+        x: (0.5 - x) * DRAG_SCALE_X,
+        y: (0.5 - y) * DRAG_SCALE_Y,
+      };
+    }
+  };
+
+  const clearStalePublishedControls = () => {
+    const controls = controlRef.current;
+    // Voice rotation owns this field while active. A stalled camera worker
+    // must not interrupt an unrelated voice command.
+    if (!controls.voiceRotationActive) {
+      controls.rotationVelocity.x = 0;
+      controls.rotationVelocity.y = 0;
+    }
+    controls.zoomSpeed = 0;
+    controls.isDragging = false;
+    controls.interactionHandLandmarks = null;
+    controls.handLandmarks.left = null;
+    controls.handLandmarks.right = null;
+    controls.handNDCPosition = null;
+    controls.panPosition.x = 0;
+    controls.panPosition.y = 0;
+
+    smoothRotVelRef.current = { x: 0, y: 0 };
+    smoothZoomRef.current = 0;
+    prevRotatePosRef.current = null;
+    prevRotateSampleAtRef.current = 0;
+    rotationContinuityRef.current = createRotationContinuityState();
+    lastValidRotVelRef.current = { x: 0, y: 0 };
+    pinchGestureActiveRef.current = false;
+    wasContactingRef.current = false;
+    openStopStartRef.current = 0;
+    openStopActiveRef.current = false;
+    lastControlSampleAtRef.current = 0;
+
+    const lastPublishedState = lastPublishedStateRef.current;
+    if (
+      lastPublishedState.gesture !== GestureType.NONE
+      || lastPublishedState.direction !== MoveDirection.CENTER
+      || lastPublishedState.isDragging !== false
+    ) {
+      lastPublishedStateRef.current = {
+        gesture: GestureType.NONE,
+        direction: MoveDirection.CENTER,
+        isDragging: false,
+      };
+      onStateChangeRef.current?.(GestureType.NONE, MoveDirection.CENTER, false);
+    }
+  };
+
+  const armResultWatchdog = (receivedAt: number) => {
+    if (resultWatchdogTimerRef.current !== null) {
+      window.clearTimeout(resultWatchdogTimerRef.current);
+    }
+    lastResultReceivedAtRef.current = receivedAt;
+    resultWatchdogTimerRef.current = window.setTimeout(() => {
+      resultWatchdogTimerRef.current = null;
+      const now = performance.now();
+      const age = now - lastResultReceivedAtRef.current;
+      if (age >= RESULT_STALE_TIMEOUT_MS) {
+        // Advance the accepted timestamp so a delayed in-flight frame from
+        // before the timeout is discarded instead of resurrecting stale input.
+        lastResultTimestampRef.current = Math.max(lastResultTimestampRef.current, now);
+        clearStalePublishedControls();
+        return;
+      }
+      armResultWatchdog(lastResultReceivedAtRef.current);
+    }, RESULT_STALE_TIMEOUT_MS);
+  };
+
+  const disarmResultWatchdog = () => {
+    if (resultWatchdogTimerRef.current !== null) {
+      window.clearTimeout(resultWatchdogTimerRef.current);
+      resultWatchdogTimerRef.current = null;
+    }
+    lastResultReceivedAtRef.current = 0;
+  };
+
+  /**
+   * Submit at most one camera frame to the vision worker at a time.  MediaPipe
+   * inference is the expensive part of this pipeline; keeping it single
+   * in-flight prevents a backlog from turning into visible control latency.
+   * The video callback continues to run at camera cadence, but frames arriving
+   * while inference is busy are intentionally discarded (the next frame is
+   * always newer and therefore more useful for direct manipulation).
+   */
+  const dispatchVideoFrame = (capturedAt: number) => {
+    const video = videoRef.current;
+    const worker = handWorkerRef.current;
+    if (!video || !worker || !workerReadyRef.current || workerInitFailedRef.current) return;
+    if (workerInFlightRef.current) {
+      skippedFramesRef.current += 1;
+      return;
+    }
+    // requestVideoFrameCallback may still fire at display cadence when a
+    // camera track is duplicated (for example 60Hz display + 30Hz camera).
+    // Keep inference bounded independently of the source callback rate.
+    if (
+      lastFrameTimestampRef.current > 0
+      && capturedAt - lastFrameTimestampRef.current < (1000 / 30)
+    ) {
+      skippedFramesRef.current += 1;
+      return;
+    }
+
+    // Mark the slot busy before awaiting createImageBitmap.  Otherwise two
+    // adjacent video callbacks can both start an asynchronous bitmap copy and
+    // defeat the single-in-flight guarantee.
+    workerInFlightRef.current = true;
+    // Start the response watchdog at dispatch time as well as on publish. If
+    // the very first inference hangs, there may be no result callback from
+    // which to arm a timeout.
+    armResultWatchdog(performance.now());
+    const sequence = workerSequenceRef.current + 1;
+    workerSequenceRef.current = sequence;
+    const timestamp = Math.max(capturedAt, lastFrameTimestampRef.current + 0.001);
+    lastFrameTimestampRef.current = timestamp;
+    performanceTelemetry.recordCapture(sequence, timestamp, {
+      source: 'camera',
+      width: video.videoWidth || 320,
+      height: video.videoHeight || 240,
+    });
+
+    void (async () => {
+      let bitmap: ImageBitmap | null = null;
+      try {
+        bitmap = await createImageBitmap(video);
+        // The scheduler may have been stopped while the bitmap was being
+        // copied (for example during component unmount or camera restart).
+        if (!schedulerStartedRef.current || handWorkerRef.current !== worker || !workerReadyRef.current) {
+          bitmap.close();
+          workerInFlightRef.current = false;
+          return;
+        }
+        worker.postMessage(
+          {
+            type: 'frame',
+            sequence,
+            capturedAt: timestamp,
+            bitmap,
+          },
+          [bitmap],
+        );
+        // Ownership has moved to the worker.  Do not close the transferred
+        // bitmap here; handLandmarker.worker closes it after inference.
+        bitmap = null;
+      } catch (frameError) {
+        bitmap?.close();
+        workerInFlightRef.current = false;
+        // A transient copy failure should not tear down the entire camera
+        // session.  It is safe to continue with the next video frame.
+        if (!workerInitFailedRef.current) {
+          console.warn('Unable to copy webcam frame for hand tracking:', frameError);
+        }
+      }
+    })();
+  };
+
+  /** Schedule camera-frame sampling using the browser's video-aware callback. */
+  function startFrameScheduler() {
+    if (schedulerStartedRef.current) return;
+    const video = videoRef.current;
+    if (!video) return;
+    schedulerStartedRef.current = true;
+    lastVideoTimeRef.current = -1;
+
+    const videoWithFrameCallback = video as HTMLVideoElement & {
+      requestVideoFrameCallback?: (
+        callback: (now: number, metadata: { mediaTime?: number }) => void,
+      ) => number;
+      cancelVideoFrameCallback?: (handle: number) => void;
+    };
+
+    if (typeof videoWithFrameCallback.requestVideoFrameCallback === 'function') {
+      const scheduleNext = () => {
+        if (!schedulerStartedRef.current) return;
+        videoFrameCallbackRef.current = videoWithFrameCallback.requestVideoFrameCallback((now, metadata) => {
+          videoFrameCallbackRef.current = null;
+          if (!schedulerStartedRef.current) return;
+
+          // requestVideoFrameCallback is already video-cadenced.  The media
+          // time guard is useful on browsers that occasionally repeat a frame
+          // while a camera track is being renegotiated.
+          const mediaTime = metadata?.mediaTime;
+          // Some MediaStream implementations expose a constant mediaTime
+          // (usually 0) for camera frames.  Only use the duplicate guard when
+          // the timeline is actually advancing; otherwise it would process
+          // the first frame and silently stop tracking forever.
+          if (typeof mediaTime === 'number' && mediaTime > 0 && mediaTime === lastVideoTimeRef.current) {
+            scheduleNext();
+            return;
+          }
+          if (typeof mediaTime === 'number' && mediaTime > 0) lastVideoTimeRef.current = mediaTime;
+          dispatchVideoFrame(now);
+          scheduleNext();
+        });
+      };
+      scheduleNext();
+      return;
+    }
+
+    // Firefox/Safari versions without requestVideoFrameCallback still get a
+    // bounded fallback.  RAF drives sampling, while currentTime filtering
+    // avoids submitting the same camera frame more than once.
+    const tick = (now: number) => {
+      requestRef.current = 0;
+      if (!schedulerStartedRef.current) return;
+      const currentTime = video.currentTime;
+      // MediaStream-backed videos often report currentTime === 0 for their
+      // entire lifetime.  Use a monotonic cadence guard in that case so the
+      // RAF fallback still samples at the requested ~30fps instead of
+      // repeatedly copying the same frame at display refresh rate.
+      const cadenceReady = now - lastFrameTimestampRef.current >= (1000 / 30);
+      if (video.readyState >= video.HAVE_CURRENT_DATA
+        && cadenceReady
+        && (currentTime <= 0 || currentTime !== lastVideoTimeRef.current)) {
+        if (currentTime > 0) lastVideoTimeRef.current = currentTime;
+        dispatchVideoFrame(now);
+      }
+      requestRef.current = requestAnimationFrame(tick);
+    };
+    requestRef.current = requestAnimationFrame(tick);
+  }
+
+  function stopFrameScheduler() {
+    schedulerStartedRef.current = false;
+    const video = videoRef.current as (HTMLVideoElement & {
+      cancelVideoFrameCallback?: (handle: number) => void;
+    }) | null;
+    if (video && videoFrameCallbackRef.current !== null && typeof video.cancelVideoFrameCallback === 'function') {
+      video.cancelVideoFrameCallback(videoFrameCallbackRef.current);
+    }
+    videoFrameCallbackRef.current = null;
+    if (requestRef.current) cancelAnimationFrame(requestRef.current);
+    requestRef.current = 0;
+    lastVideoTimeRef.current = -1;
+  }
+
+  function handleVideoLoaded() {
+    // loadeddata can fire more than once as a MediaStream track changes.  The
+    // scheduler guard makes this idempotent and avoids duplicate callbacks.
+    if (workerReadyRef.current) startFrameScheduler();
+  }
 
   useEffect(() => {
     let mounted = true;
     let mediaStream: MediaStream | null = null;
 
-    // 1. 先启动摄像头（不依赖 AI 模型加载）
+    const stopMediaStream = () => {
+      mediaStream?.getTracks().forEach((track) => track.stop());
+      mediaStream = null;
+      const video = videoRef.current;
+      if (video) video.srcObject = null;
+    };
+
+    const stopHandWorker = () => {
+      handWorkerRef.current?.terminate();
+      handWorkerRef.current = null;
+      workerReadyRef.current = false;
+      workerInFlightRef.current = false;
+    };
+
+    const startWorker = () => {
+      try {
+        const worker = new Worker(
+          new URL('../services/handLandmarker.worker.ts', import.meta.url),
+          { type: 'module' },
+        );
+        handWorkerRef.current = worker;
+        workerReadyRef.current = false;
+        workerInitFailedRef.current = false;
+        worker.onmessage = (event: MessageEvent<HandWorkerMessage>) => {
+          if (!mounted) return;
+          const message = event.data;
+          if (message.type === 'ready') {
+            workerReadyRef.current = true;
+            if (videoRef.current?.readyState && videoRef.current.readyState >= videoRef.current.HAVE_CURRENT_DATA) {
+              startFrameScheduler();
+            }
+            return;
+          }
+          if (message.type === 'result') {
+            workerInFlightRef.current = false;
+            if (message.capturedAt <= lastResultTimestampRef.current) return;
+            const receivedAt = performance.now();
+            performanceTelemetry.recordInference(
+              receivedAt - Math.max(0, message.inferenceMs),
+              receivedAt,
+              message.sequence,
+              { resultAgeMs: Math.max(0, receivedAt - message.capturedAt) },
+            );
+            // Keep the previous sample timestamp available while processing
+            // this result.  The drag filter uses that interval to remain
+            // time-aware; advancing it before processDetectionResult would
+            // collapse every sample to a ~1ms interval and add lag.
+            processDetectionResult(message, message.capturedAt);
+            lastResultTimestampRef.current = message.capturedAt;
+            armResultWatchdog(receivedAt);
+            performanceTelemetry.recordPublish(
+              message.sequence,
+              receivedAt,
+              message.sequence,
+              { resultAgeMs: Math.max(0, receivedAt - message.capturedAt) },
+            );
+            notePublishedHandInput(controlRef.current, {
+              sequence: message.sequence,
+              capturedAt: message.capturedAt,
+              processedAt: message.processedAt,
+              inferenceMs: message.inferenceMs,
+            }, receivedAt);
+            onPerformanceSampleRef.current?.({
+              sequence: message.sequence,
+              capturedAt: message.capturedAt,
+              processedAt: message.processedAt,
+              inferenceMs: message.inferenceMs,
+              resultAgeMs: Math.max(0, receivedAt - message.capturedAt),
+              skippedFrames: skippedFramesRef.current,
+            });
+            skippedFramesRef.current = 0;
+            return;
+          }
+          workerInFlightRef.current = false;
+          // Detection failures are isolated to one frame. Keep the worker and
+          // camera alive so a transient bitmap/timestamp issue cannot disable
+          // the whole gesture session; the watchdog will clear any stale
+          // published controls if recovery takes too long.
+          if (message.sequence !== undefined) {
+            if (!/尚未准备完成|not ready|not initialized/i.test(message.message)) {
+              console.warn('MediaPipe frame was dropped:', message.message);
+            }
+            return;
+          }
+          // A frame can arrive while the worker is asynchronously rebuilding
+          // its landmarker after a mode change.  That is a recoverable drop,
+          // not an initialization failure; the next `ready` message will
+          // resume the scheduler.
+          if (!workerInitFailedRef.current) {
+            workerInitFailedRef.current = true;
+            stopFrameScheduler();
+            stopMediaStream();
+            stopHandWorker();
+            console.error('MediaPipe worker error:', message.message);
+            setError('手势识别初始化失败，请刷新页面后重试');
+            setLoading(false);
+          }
+        };
+        worker.onerror = (event) => {
+          if (!mounted) return;
+          workerInFlightRef.current = false;
+          workerInitFailedRef.current = true;
+          stopFrameScheduler();
+          stopMediaStream();
+          stopHandWorker();
+          console.error('MediaPipe worker crashed:', event.message);
+          setError('手势识别线程异常，请刷新页面后重试');
+          setLoading(false);
+        };
+        const numHands = quizModeRef.current || interactionModeRef.current === 'single' ? 1 : 2;
+        worker.postMessage({
+          type: 'init',
+          wasmPath: LOCAL_VISION_WASM_PATH,
+          modelAssetPath: LOCAL_HAND_MODEL_PATH,
+          numHands,
+        });
+      } catch (workerError) {
+        console.error('Unable to start MediaPipe worker:', workerError);
+        workerInitFailedRef.current = true;
+        stopFrameScheduler();
+        stopMediaStream();
+        stopHandWorker();
+        setError('当前浏览器不支持手势识别线程');
+        setLoading(false);
+      }
+    };
+
+    // Keep camera capture bounded: inference is intentionally decoupled from
+    // the display refresh rate and never requests more than 30 source frames/s.
     const startCamera = async () => {
       try {
         const stream = await navigator.mediaDevices.getUserMedia({
           video: {
-            width: { ideal: 320 },
-            height: { ideal: 240 },
-            frameRate: { ideal: 60, max: 60 },
-            facingMode: "user"
-          }
+            width: { ideal: 320, max: 320 },
+            height: { ideal: 240, max: 240 },
+            frameRate: { ideal: 30, max: 30 },
+            facingMode: 'user',
+          },
         });
-        if (!mounted) {
-          stream.getTracks().forEach((t) => t.stop());
+        if (!mounted || workerInitFailedRef.current) {
+          stream.getTracks().forEach((track) => track.stop());
           return;
         }
         mediaStream = stream;
-        if (videoRef.current) {
-          videoRef.current.srcObject = stream;
-          videoRef.current.addEventListener("loadeddata", predictWebcam);
+        const video = videoRef.current;
+        if (video) {
+          video.srcObject = stream;
+          video.addEventListener('loadeddata', handleVideoLoaded);
         }
         setLoading(false);
       } catch (err) {
-        console.error("Webcam error:", err);
+        console.error('Webcam error:', err);
         if (!mounted) return;
-        setError("无法访问摄像头，请检查摄像头权限（需 HTTPS/localhost）");
+        workerInitFailedRef.current = true;
+        stopFrameScheduler();
+        stopMediaStream();
+        stopHandWorker();
+        setError('无法访问摄像头，请检查摄像头权限（需 HTTPS/localhost）');
         setLoading(false);
       }
     };
 
-    // 2. 同时加载 MediaPipe AI 模型（不阻塞摄像头）
-    const loadAIEngine = async () => {
-      try {
-        handLandmarkerRef.current = await createHandLandmarker(
-          LOCAL_VISION_WASM_PATH,
-          LOCAL_HAND_MODEL_PATH
-        );
-        if (!mounted) return;
-      } catch (err) {
-        console.warn("Local MediaPipe init failed, falling back to CDN:", err);
-        try {
-          handLandmarkerRef.current = await createHandLandmarker(
-            CDN_VISION_WASM_PATH,
-            CDN_HAND_MODEL_PATH
-          );
-          if (!mounted) return;
-          return;
-        } catch (fallbackErr) {
-          console.error("MediaPipe init failed (camera still works):", fallbackErr);
-        }
-        // 摄像头已启动，AI 引擎加载失败仅影响手势识别，不影响摄像头
-        if (!mounted) return;
-        controlRef.current.handLandmarks = { left: null, right: null };
-        controlRef.current.interactionHandLandmarks = null;
-      }
-    };
-
+    startWorker();
     startCamera();
-    loadAIEngine();
 
     return () => {
       mounted = false;
-      if (handLandmarkerRef.current) {
-        handLandmarkerRef.current.close();
-      }
-      mediaStream?.getTracks().forEach((track) => track.stop());
-      cancelAnimationFrame(requestRef.current);
+      disarmResultWatchdog();
+      stopFrameScheduler();
+      const video = videoRef.current;
+      video?.removeEventListener('loadeddata', handleVideoLoaded);
+      stopMediaStream();
+      stopHandWorker();
+      workerInitFailedRef.current = false;
+      workerSequenceRef.current = 0;
+      skippedFramesRef.current = 0;
+      lastVideoTimeRef.current = -1;
+      lastFrameTimestampRef.current = 0;
+      lastResultTimestampRef.current = 0;
+      lastResultReceivedAtRef.current = 0;
+      lastControlSampleAtRef.current = 0;
       targetTrackerRef.current.reset();
       trackingPhaseRef.current = 'searching';
+      prevRotatePosRef.current = null;
+      prevRotateSampleAtRef.current = 0;
+      rotationContinuityRef.current = createRotationContinuityState();
+      lastValidRotVelRef.current = { x: 0, y: 0 };
+      smoothRotVelRef.current = { x: 0, y: 0 };
 
       if (controlRef.current) {
         controlRef.current.handLandmarks = { left: null, right: null };
@@ -233,6 +750,8 @@ const HandController: React.FC<HandControllerProps> = ({ controlRef, onStateChan
         controlRef.current.rotationVelocity = { x: 0, y: 0 };
         controlRef.current.zoomSpeed = 0;
         controlRef.current.isDragging = false;
+        controlRef.current.panPosition = { x: 0, y: 0 };
+        controlRef.current.handNDCPosition = null;
       }
       if (onStateChangeRef.current) {
         onStateChangeRef.current(GestureType.NONE, MoveDirection.CENTER, false);
@@ -241,12 +760,18 @@ const HandController: React.FC<HandControllerProps> = ({ controlRef, onStateChan
   }, []);
 
   const isFingerExtended = (landmarks: any[], tipIdx: number, pipIdx: number) => {
-    return landmarks[tipIdx].y < landmarks[pipIdx].y;
+    return Boolean(landmarks[tipIdx] && landmarks[pipIdx])
+      && landmarks[tipIdx].y < landmarks[pipIdx].y;
   };
 
   const getDistance = (p1: any, p2: any) => {
-    return Math.sqrt(Math.pow(p1.x - p2.x, 2) + Math.pow(p1.y - p2.y, 2));
+    return Math.hypot(p1.x - p2.x, p1.y - p2.y);
   };
+
+  const getPalmWidth = (landmarks: any[]) => Math.max(
+    0.02,
+    getDistance(landmarks[5], landmarks[17]),
+  );
 
   const getPinchDistance = (landmarks: any[]) => {
     const thumbTip = landmarks[4];
@@ -255,48 +780,27 @@ const HandController: React.FC<HandControllerProps> = ({ controlRef, onStateChan
   };
 
   const isTwoFingerRotationGesture = (landmarks: any[] | null) => {
-    if (!landmarks) return false;
+    if (!landmarks || landmarks.length < 21) return false;
     const indexTip = landmarks[8];
     const middleTip = landmarks[12];
-    const fingersDist = getDistance(indexTip, middleTip);
+    const fingersDist = getDistance(indexTip, middleTip) / getPalmWidth(landmarks);
+    const threshold = rotationContinuityRef.current.active
+      ? FINGER_CONTACT_EXIT_RATIO
+      : FINGER_CONTACT_ENTER_RATIO;
     const isIndexUp = isFingerExtended(landmarks, 8, 6);
     const isMiddleUp = isFingerExtended(landmarks, 12, 10);
-    return fingersDist < FINGER_CONTACT_THRESHOLD && isIndexUp && isMiddleUp;
+    return isIndexUp && isMiddleUp && fingersDist < threshold;
   };
 
-  const predictWebcam = () => {
-    if (!videoRef.current || !canvasRef.current) return;
-    if (videoRef.current.readyState < videoRef.current.HAVE_CURRENT_DATA) {
-      requestRef.current = requestAnimationFrame(predictWebcam);
-      return;
-    }
-    // AI 模型尚未加载完成时，继续重试（摄像头已独立启动，不阻塞）
-    if (!handLandmarkerRef.current) {
-      requestRef.current = requestAnimationFrame(predictWebcam);
-      return;
-    }
-
-    if (videoRef.current.currentTime === lastVideoTimeRef.current) {
-      requestRef.current = requestAnimationFrame(predictWebcam);
-      return;
-    }
-
-    const startTimeMs = performance.now();
-    // 检测 4 只候选手时限制到约 30 FPS，渲染循环仍保持浏览器刷新率。
-    if (startTimeMs - lastDetectionAtRef.current < 33) {
-      requestRef.current = requestAnimationFrame(predictWebcam);
-      return;
-    }
-    lastDetectionAtRef.current = startTimeMs;
-    lastVideoTimeRef.current = videoRef.current.currentTime;
-    const result = handLandmarkerRef.current.detectForVideo(videoRef.current, startTimeMs);
-
-    const ctx = canvasRef.current.getContext("2d");
+  const processDetectionResult = (result: HandDetectionResult, startTimeMs: number) => {
+    const canvas = canvasRef.current;
+    const ctx = canvas?.getContext('2d') ?? null;
     if (ctx) {
-      ctx.clearRect(0, 0, canvasRef.current.width, canvasRef.current.height);
+      ctx.clearRect(0, 0, canvas.width, canvas.height);
       ctx.save();
       ctx.scale(-1, 1);
-      ctx.translate(-canvasRef.current.width, 0);
+      ctx.translate(-canvas.width, 0);
+    }
 
       // Default States
       let rotVelX = 0;
@@ -305,42 +809,57 @@ const HandController: React.FC<HandControllerProps> = ({ controlRef, onStateChan
       let newDirection = MoveDirection.CENTER;
       let newGesture = GestureType.NONE;
       let isDragging = false;
+      let rotationGraceActive = false;
 
       // 手部landmarks声明在外部，以便传递到3D场景
       let leftHandLandmarks: any[] | null = null;
       let rightHandLandmarks: any[] | null = null;
       const candidates = (result.landmarks ?? []).flatMap((landmarks, index) => {
         const category = result.handedness?.[index]?.[0];
-        if (!category) return [];
+        if (!category?.categoryName) return [];
         const side = toUserFacingHandedness(category.categoryName) as TrackedHandSide;
         const candidate = describeHandCandidate(landmarks, side, category.score ?? 1);
         return candidate ? [candidate] : [];
       });
       const trackerMode = quizModeRef.current || interactionModeRef.current === 'single' ? 'single' : 'dual';
       const trackedHands = targetTrackerRef.current.update(candidates, startTimeMs, trackerMode);
+      const leftHandCandidate = trackedHands.active.left;
+      const rightHandCandidate = trackedHands.active.right;
+      const leftHandStale = Boolean(leftHandCandidate?.stale);
+      const rightHandStale = Boolean(rightHandCandidate?.stale);
+      const activeHandAgeMs = Math.max(
+        leftHandCandidate?.ageMs ?? 0,
+        rightHandCandidate?.ageMs ?? 0,
+      );
+      const staleAttenuation = Math.max(
+        0,
+        1 - activeHandAgeMs / TRACKING_CONTINUITY_MS,
+      );
 
       if (trackingPhaseRef.current !== trackedHands.phase) {
         trackingPhaseRef.current = trackedHands.phase;
         setTrackingStatus({ phase: trackedHands.phase, text: trackedHands.statusText });
       }
 
-      const drawingUtils = drawingUtilsRef.current ?? new DrawingUtils(ctx);
-      drawingUtilsRef.current = drawingUtils;
-      [trackedHands.display.left, trackedHands.display.right].forEach((hand) => {
-        if (!hand) return;
-        const isLocked = trackedHands.phase === 'locked';
-        const isWaiting = trackedHands.phase === 'partial_lost' || trackedHands.phase === 'lost';
-        drawingUtils.drawConnectors(hand.landmarks as any, HandLandmarker.HAND_CONNECTIONS, {
-          color: isWaiting ? '#fbbf24' : isLocked ? '#22d3ee' : '#a78bfa',
-          lineWidth: 3,
+      if (ctx) {
+        const drawingUtils = drawingUtilsRef.current ?? new DrawingUtils(ctx);
+        drawingUtilsRef.current = drawingUtils;
+        [trackedHands.display.left, trackedHands.display.right].forEach((hand) => {
+          if (!hand) return;
+          const isLocked = trackedHands.phase === 'locked';
+          const isWaiting = trackedHands.phase === 'partial_lost' || trackedHands.phase === 'lost';
+          drawingUtils.drawConnectors(hand.landmarks as any, HandLandmarker.HAND_CONNECTIONS, {
+            color: isWaiting ? '#fbbf24' : isLocked ? '#22d3ee' : '#a78bfa',
+            lineWidth: 3,
+          });
+          drawingUtils.drawLandmarks(hand.landmarks as any, {
+            color: '#ffffff', lineWidth: 1, radius: 2,
+          });
         });
-        drawingUtils.drawLandmarks(hand.landmarks as any, {
-          color: '#ffffff', lineWidth: 1, radius: 2,
-        });
-      });
+      }
 
-      leftHandLandmarks = trackedHands.active.left?.landmarks ?? null;
-      rightHandLandmarks = trackedHands.active.right?.landmarks ?? null;
+      leftHandLandmarks = leftHandCandidate?.landmarks ?? null;
+      rightHandLandmarks = rightHandCandidate?.landmarks ?? null;
 
       if (trackedHands.controlEnabled) {
         // Keep semantic aliases available for single-hand fallback logic.
@@ -350,38 +869,90 @@ const HandController: React.FC<HandControllerProps> = ({ controlRef, onStateChan
         const dualZoomHandLandmarks = rightHandLandmarks;
         const dualManipulationHandLandmarks = leftHandLandmarks;
 
-        const applySingleHandRotation = (landmarks: any[]) => {
-          const indexTip = landmarks[8];
-          const middleTip = landmarks[12];
+        const applySingleHandRotation = (landmarks: any[] | null) => {
+          const continuity = advanceRotationContinuity(
+            rotationContinuityRef.current,
+            isTwoFingerRotationGesture(landmarks),
+            startTimeMs,
+            ROTATION_RELEASE_GRACE_MS,
+            ROTATION_RELEASE_AFTER_MISSES,
+          );
+          rotationContinuityRef.current = continuity.state;
 
-          const rawFingerCenterX = (indexTip.x + middleTip.x) / 2;
-          const rawFingerCenterY = (indexTip.y + middleTip.y) / 2;
-
-          if (prevRotatePosRef.current) {
-            smoothRotateFingerCenterRef.current.x = lerp(smoothRotateFingerCenterRef.current.x, rawFingerCenterX, SMOOTHING_FACTOR_ROTATION);
-            smoothRotateFingerCenterRef.current.y = lerp(smoothRotateFingerCenterRef.current.y, rawFingerCenterY, SMOOTHING_FACTOR_ROTATION);
-          } else {
-            smoothRotateFingerCenterRef.current.x = rawFingerCenterX;
-            smoothRotateFingerCenterRef.current.y = rawFingerCenterY;
-          }
-
-          if (!isTwoFingerRotationGesture(landmarks)) {
+          if (continuity.phase === 'inactive' || continuity.phase === 'released') {
             prevRotatePosRef.current = null;
+            prevRotateSampleAtRef.current = 0;
+            lastValidRotVelRef.current = { x: 0, y: 0 };
             return false;
           }
 
           newGesture = GestureType.RIGHT_TWO_FINGER_ROTATE;
 
+          if (continuity.phase === 'grace') {
+            const elapsedSinceValidMs = Math.max(
+              0,
+              startTimeMs - continuity.state.lastValidAtMs,
+            );
+            rotVelX = decayRate(
+              lastValidRotVelRef.current.x,
+              elapsedSinceValidMs,
+              ROTATION_GRACE_DECAY_TIME_CONSTANT_MS,
+            );
+            rotVelY = decayRate(
+              lastValidRotVelRef.current.y,
+              elapsedSinceValidMs,
+              ROTATION_GRACE_DECAY_TIME_CONSTANT_MS,
+            );
+            rotationGraceActive = true;
+            return true;
+          }
+
+          const indexTip = landmarks![8];
+          const middleTip = landmarks![12];
+          const rawFingerCenterX = (indexTip.x + middleTip.x) / 2;
+          const rawFingerCenterY = (indexTip.y + middleTip.y) / 2;
+          const sampleDeltaMs = prevRotateSampleAtRef.current > 0
+            ? Math.max(1, startTimeMs - prevRotateSampleAtRef.current)
+            : 1;
+          const positionAlpha = exponentialSmoothingAlpha(
+            sampleDeltaMs,
+            POSITION_FILTER_TIME_CONSTANT_MS,
+          );
+
+          if (prevRotatePosRef.current) {
+            smoothRotateFingerCenterRef.current.x = lerp(
+              smoothRotateFingerCenterRef.current.x,
+              rawFingerCenterX,
+              positionAlpha,
+            );
+            smoothRotateFingerCenterRef.current.y = lerp(
+              smoothRotateFingerCenterRef.current.y,
+              rawFingerCenterY,
+              positionAlpha,
+            );
+          } else {
+            smoothRotateFingerCenterRef.current.x = rawFingerCenterX;
+            smoothRotateFingerCenterRef.current.y = rawFingerCenterY;
+          }
+
           if (prevRotatePosRef.current) {
             const deltaX = smoothRotateFingerCenterRef.current.x - prevRotatePosRef.current.x;
             const deltaY = smoothRotateFingerCenterRef.current.y - prevRotatePosRef.current.y;
-
-            if (Math.abs(deltaX) > ROTATION_DEADZONE || Math.abs(deltaY) > ROTATION_DEADZONE) {
-              rotVelY = -deltaX * ROTATION_SENSITIVITY;
-              rotVelX = deltaY * ROTATION_SENSITIVITY;
-            }
+            const rateX = applyRateDeadzone(
+              normalizeRatePerSecond(deltaX, sampleDeltaMs),
+              ROTATION_RATE_DEADZONE,
+            );
+            const rateY = applyRateDeadzone(
+              normalizeRatePerSecond(deltaY, sampleDeltaMs),
+              ROTATION_RATE_DEADZONE,
+            );
+            // ModelViewer integrates these time-normalized rates once per frame.
+            rotVelY = -rateX * ROTATION_SENSITIVITY;
+            rotVelX = rateY * ROTATION_SENSITIVITY;
           }
           prevRotatePosRef.current = { ...smoothRotateFingerCenterRef.current };
+          prevRotateSampleAtRef.current = startTimeMs;
+          lastValidRotVelRef.current = { x: rotVelX, y: rotVelY };
           return true;
         };
 
@@ -393,13 +964,13 @@ const HandController: React.FC<HandControllerProps> = ({ controlRef, onStateChan
 
           if (isIndexUp && isMiddleUp && isRingUp && isPinkyUp) {
             newGesture = GestureType.ZOOM_IN_PALM;
-            newZoomSpeed = ZOOM_SENSITIVITY;
+            newZoomSpeed = ZOOM_SPEED_PER_SECOND;
             return true;
           }
 
           if (!isIndexUp && !isMiddleUp && !isRingUp && !isPinkyUp) {
             newGesture = GestureType.ZOOM_OUT_FIST;
-            newZoomSpeed = -ZOOM_SENSITIVITY;
+            newZoomSpeed = -ZOOM_SPEED_PER_SECOND;
             return true;
           }
 
@@ -409,9 +980,16 @@ const HandController: React.FC<HandControllerProps> = ({ controlRef, onStateChan
         const applyPinchDrag = (landmarks: any[], suppressZoom = true) => {
           const thumbTip = landmarks[4];
           const indexTip = landmarks[8];
-          const pinchDist = getPinchDistance(landmarks);
+          const pinchRatio = getPinchDistance(landmarks) / getPalmWidth(landmarks);
+          const isPinching = hysteresisBelow(
+            pinchRatio,
+            pinchGestureActiveRef.current,
+            PINCH_ENTER_RATIO,
+            PINCH_EXIT_RATIO,
+          );
+          pinchGestureActiveRef.current = isPinching;
 
-          if (pinchDist < PINCH_THRESHOLD) {
+          if (isPinching) {
             isDragging = true;
             newGesture = GestureType.RIGHT_PINCH_DRAG;
             if (suppressZoom) {
@@ -423,20 +1001,32 @@ const HandController: React.FC<HandControllerProps> = ({ controlRef, onStateChan
 
             const dx = rawX - smoothDragPinchRef.current.x;
             const dy = rawY - smoothDragPinchRef.current.y;
-            const movementDelta = Math.sqrt(dx * dx + dy * dy);
-            const adaptiveFactor = Math.min(0.85, Math.max(0.1, movementDelta * 15));
+            const movementDelta = Math.hypot(dx, dy);
+            // A single time-aware position filter keeps drag responsive while
+            // avoiding the old movement-dependent double smoothing.
+            const adaptiveFactor = Math.min(0.9, Math.max(
+              0.18,
+              exponentialSmoothingAlpha(
+                Math.max(1, startTimeMs - (lastResultTimestampRef.current || startTimeMs) + 1),
+                POSITION_FILTER_TIME_CONSTANT_MS,
+              ) + movementDelta * 0.35,
+            ));
 
             smoothDragPinchRef.current.x = lerp(smoothDragPinchRef.current.x, rawX, adaptiveFactor);
             smoothDragPinchRef.current.y = lerp(smoothDragPinchRef.current.y, rawY, adaptiveFactor);
 
-            const targetX = (0.5 - smoothDragPinchRef.current.x) * DRAG_SCALE_X;
-            const targetY = (0.5 - smoothDragPinchRef.current.y) * DRAG_SCALE_Y;
-            controlRef.current.panPosition = { x: targetX, y: targetY };
+            publishFilteredDragPosition(
+              smoothDragPinchRef.current.x,
+              smoothDragPinchRef.current.y,
+            );
             return true;
           }
 
-          const wrist = landmarks[0];
-          smoothDragPinchRef.current = { x: wrist.x, y: wrist.y };
+          // Rebase on the next pinch without jumping to the wrist location.
+          smoothDragPinchRef.current = {
+            x: (thumbTip.x + indexTip.x) / 2,
+            y: (thumbTip.y + indexTip.y) / 2,
+          };
           return false;
         };
 
@@ -444,24 +1034,18 @@ const HandController: React.FC<HandControllerProps> = ({ controlRef, onStateChan
           wasContactingRef.current = false;
           const activeHandLandmarks = realLeftHandLandmarks || realRightHandLandmarks;
 
-          if (activeHandLandmarks) {
-            const isRotating = applySingleHandRotation(activeHandLandmarks);
-            if (!isRotating) {
-              const isDraggingPart = applyPinchDrag(activeHandLandmarks);
-              if (!isDraggingPart) {
-                applySingleHandZoom(activeHandLandmarks);
-              }
+          const isRotating = applySingleHandRotation(activeHandLandmarks);
+          if (!isRotating && activeHandLandmarks) {
+            const isDraggingPart = applyPinchDrag(activeHandLandmarks);
+            if (!isDraggingPart) {
+              applySingleHandZoom(activeHandLandmarks);
             }
           }
         } else {
 
         // 2. DUAL HAND LOGIC: reference behavior - left zooms, right rotates/drags.
-          const rotationHandLandmarks = dualManipulationHandLandmarks && isTwoFingerRotationGesture(dualManipulationHandLandmarks)
-            ? dualManipulationHandLandmarks
-            : null;
-          const fullScreenRotationActive = Boolean(rotationHandLandmarks);
-          if (rotationHandLandmarks) {
-            applySingleHandRotation(rotationHandLandmarks);
+          const fullScreenRotationActive = applySingleHandRotation(dualManipulationHandLandmarks);
+          if (fullScreenRotationActive) {
             isDragging = false;
             wasContactingRef.current = false;
           }
@@ -472,7 +1056,7 @@ const HandController: React.FC<HandControllerProps> = ({ controlRef, onStateChan
             : false;
 
           // Left hand: open palm / fist zoom.
-          const isLeftZooming = dualZoomHandLandmarks
+          const isLeftZooming = !rotationGraceActive && dualZoomHandLandmarks
             ? applySingleHandZoom(dualZoomHandLandmarks)
             : false;
 
@@ -522,19 +1106,45 @@ const HandController: React.FC<HandControllerProps> = ({ controlRef, onStateChan
         }
       }
 
-      // 锁定确认或双手完全丢失时立即制动，避免旧速度继续驱动模型。
+      // A predicted candidate is only a short continuity bridge. Attenuate its
+      // motion as it ages, then let the tracker hard-stop after the grace.
+      if (leftHandStale || rightHandStale) {
+        rotVelX *= staleAttenuation;
+        rotVelY *= staleAttenuation;
+        newZoomSpeed *= staleAttenuation;
+      }
+
+      // Locked confirmation or an expired tracking grace stops stale input.
       if (!trackedHands.controlEnabled) {
         smoothRotVelRef.current = { x: 0, y: 0 };
         smoothZoomRef.current = 0;
         prevRotatePosRef.current = null;
+        prevRotateSampleAtRef.current = 0;
+        rotationContinuityRef.current = createRotationContinuityState();
+        lastValidRotVelRef.current = { x: 0, y: 0 };
+        pinchGestureActiveRef.current = false;
         wasContactingRef.current = false;
         isDragging = false;
       } else {
-        smoothRotVelRef.current.x = lerp(smoothRotVelRef.current.x, rotVelX, ROTATION_VEL_SMOOTHING);
-        smoothRotVelRef.current.y = lerp(smoothRotVelRef.current.y, rotVelY, ROTATION_VEL_SMOOTHING);
-        smoothZoomRef.current = lerp(smoothZoomRef.current, newZoomSpeed, ZOOM_VEL_SMOOTHING);
+        // Rotation uses the position filter above as its sole smoothing layer;
+        // do not apply a second fixed-per-sample EMA to the velocity.
+        smoothRotVelRef.current.x = rotVelX;
+        smoothRotVelRef.current.y = rotVelY;
+        const zoomSampleDeltaMs = Math.max(
+          1,
+          startTimeMs - (lastControlSampleAtRef.current || startTimeMs),
+        );
+        const zoomAlpha = exponentialSmoothingAlpha(
+          zoomSampleDeltaMs,
+          ZOOM_FILTER_TIME_CONSTANT_MS,
+        );
+        smoothZoomRef.current = lerp(smoothZoomRef.current, newZoomSpeed, zoomAlpha);
         if (openStopActiveRef.current) {
           smoothRotVelRef.current = { x: 0, y: 0 };
+          prevRotatePosRef.current = null;
+          prevRotateSampleAtRef.current = 0;
+          rotationContinuityRef.current = createRotationContinuityState();
+          lastValidRotVelRef.current = { x: 0, y: 0 };
           smoothZoomRef.current = 0;
         }
       }
@@ -544,6 +1154,9 @@ const HandController: React.FC<HandControllerProps> = ({ controlRef, onStateChan
       if (isRotationLocked) {
         smoothRotVelRef.current = { x: 0, y: 0 };
         prevRotatePosRef.current = null;
+        prevRotateSampleAtRef.current = 0;
+        rotationContinuityRef.current = createRotationContinuityState();
+        lastValidRotVelRef.current = { x: 0, y: 0 };
       }
       const finalRotX = !isRotationLocked && Math.abs(smoothRotVelRef.current.x) > 0.001 ? smoothRotVelRef.current.x : 0;
       const finalRotY = !isRotationLocked && Math.abs(smoothRotVelRef.current.y) > 0.001 ? smoothRotVelRef.current.y : 0;
@@ -584,11 +1197,15 @@ const HandController: React.FC<HandControllerProps> = ({ controlRef, onStateChan
         : dualManipulationHandLandmarks;
 
       // 手势位置数据始终更新（答题和非答题都需要）
+      const mappedInteractionLandmarks = interactionHandLandmarks
+        ? toPointList(interactionHandLandmarks)
+        : null;
       controlRef.current.handLandmarks = {
         left: visibleLeftHandLandmarks ? toPointList(visibleLeftHandLandmarks) : null,
         right: visibleRightHandLandmarks ? toPointList(visibleRightHandLandmarks) : null
       };
-      controlRef.current.interactionHandLandmarks = interactionHandLandmarks ? toPointList(interactionHandLandmarks) : null;
+      controlRef.current.interactionHandLandmarks = mappedInteractionLandmarks;
+      lastControlSampleAtRef.current = startTimeMs;
 
       // Use ref to call the latest callback, only on state changes
       const lastPublishedState = lastPublishedStateRef.current;
@@ -606,9 +1223,7 @@ const HandController: React.FC<HandControllerProps> = ({ controlRef, onStateChan
         onStateChangeRef.current(newGesture, newDirection, isDragging);
       }
 
-      ctx.restore();
-    }
-    requestRef.current = requestAnimationFrame(predictWebcam);
+    if (ctx) ctx.restore();
   };
 
   if (error) return (

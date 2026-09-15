@@ -3,6 +3,10 @@ import { useFrame, useThree } from '@react-three/fiber';
 import { Html, Line } from '@react-three/drei';
 import * as THREE from 'three';
 import { ControlRefs } from '../types';
+import {
+  consumePublishedHandInput,
+  performanceTelemetry,
+} from '../services/performanceTelemetry';
 
 const frameDamping = (delta: number, speed: number) => 1 - Math.exp(-speed * Math.min(delta, 0.05));
 
@@ -246,12 +250,17 @@ export const ProceduralTerrain: React.FC<ProceduralTerrainProps> = ({ controlRef
   }, []);
 
   useFrame((state, delta) => {
+    const frameStartedAt = performance.now();
+    consumePublishedHandInput(controlRef.current, frameStartedAt);
     // 关闭默认自转，只响应语音/手势指令
     // if (groupRef.current && !controlRef.current.rotationLocked && controlRef.current.rotationVelocity.x === 0 && controlRef.current.rotationVelocity.y === 0) {
     //   groupRef.current.rotation.y += 0.0015;
     // }
 
     const { rotationVelocity, zoomSpeed } = controlRef.current;
+    // Control values are rates per second. Clamp long pauses so a background
+    // tab or a debugger break cannot cause a giant camera jump on resume.
+    const frameDelta = Math.min(Math.max(delta, 0), 0.05);
     
     const hasCameraGestureInput =
       Math.abs(rotationVelocity.x) > 0.0001 ||
@@ -269,16 +278,14 @@ export const ProceduralTerrain: React.FC<ProceduralTerrainProps> = ({ controlRef
 
     if (hasCameraGestureInput && (Math.abs(rotationVelocity.x) > 0.0001 || Math.abs(rotationVelocity.y) > 0.0001)) {
       const sensitivity = 0.5 * (controlRef.current.interactionSettings?.rotationSpeed ?? 1.0);
-      const frameScale = Math.min(delta * 60, 2);
-      sph.theta -= rotationVelocity.y * sensitivity * frameScale;
-      sph.phi -= rotationVelocity.x * sensitivity * frameScale;
+      sph.theta -= rotationVelocity.y * sensitivity * frameDelta;
+      sph.phi -= rotationVelocity.x * sensitivity * frameDelta;
       sph.phi = Math.max(0.1, Math.min(Math.PI - 0.1, sph.phi));
       sph.makeSafe();
     }
 
     if (hasCameraGestureInput && zoomSpeed !== 0) {
-      const frameScale = Math.min(delta * 60, 2);
-      sph.radius = Math.max(0.05, sph.radius - zoomSpeed * 0.15 * frameScale * (controlRef.current.interactionSettings?.zoomSpeed ?? 1.0));
+      sph.radius = Math.max(0.05, sph.radius - zoomSpeed * 0.15 * frameDelta * (controlRef.current.interactionSettings?.zoomSpeed ?? 1.0));
     }
 
     if (hasCameraGestureInput) {
@@ -305,6 +312,14 @@ export const ProceduralTerrain: React.FC<ProceduralTerrainProps> = ({ controlRef
     moveMesh(soilRef, scratch.soilTarget.set(0, -0.2, 0), scratch.offset.set(1.0, -0.05, -0.75));
     moveMesh(surfaceRef, scratch.surfaceTarget.set(0, 0, 0), scratch.offset.set(-0.35, 0.3, 0.9));
     moveMesh(waterRef, scratch.waterTarget.set(0, -0.05, 0), scratch.offset.set(1.1, 0.18, 0.9));
+
+    const frameEndedAt = performance.now();
+    performanceTelemetry.recordRendererInfo(state.gl.info);
+    performanceTelemetry.recordFrame(
+      frameEndedAt - frameStartedAt,
+      frameEndedAt,
+      { delta, dpr: state.gl.getPixelRatio?.() ?? 1 },
+    );
   }, -1);
 
   return (

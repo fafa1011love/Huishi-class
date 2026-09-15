@@ -1,5 +1,5 @@
 
-import React, { useRef, Suspense, useState, useEffect, useMemo } from 'react';
+import React, { useRef, Suspense, useState, useEffect, useMemo, useCallback } from 'react';
 import { Canvas, useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls, ContactShadows, Html } from '@react-three/drei';
 import * as THREE from 'three';
@@ -11,6 +11,10 @@ import { RoomEnvironment } from 'three/examples/jsm/environments/RoomEnvironment
 import { clone as cloneSkinnedModel } from 'three/examples/jsm/utils/SkeletonUtils.js';
 import { ControlRefs, ModelType } from '../types';
 import { resolveModelAssetUrl } from '../services/modelAssetUrl';
+import {
+  consumePublishedHandInput,
+  performanceTelemetry,
+} from '../services/performanceTelemetry';
 import { ProceduralTerrain } from './ProceduralTerrain';
 import { useTheme } from './ThemeProvider';
 
@@ -64,6 +68,22 @@ const MODEL_BASE_Y = -0.49;
 const MODEL_TARGET_SIZE = 1.5;
 const EARTH_LAYERS_TARGET_SIZE = 3.0;
 const EARTH_POLITICAL_TARGET_SIZE = 3.5;
+const MODEL_SHADOW_TRIANGLE_BUDGET = 250_000;
+const MAX_RENDER_DPR = 1.25;
+const STABLE_RENDER_DPR = 1.5;
+const INTERACTIVE_LOD_URL_BY_KEY: Record<string, string> = {
+  'heart-optimized.glb': '/models/heart-interactive-lod.glb',
+  'hiv-virus.glb': '/models/hiv-virus-interactive-lod.glb',
+  'organ-brain.glb': '/models/organ-brain-interactive-lod.glb',
+  'organ-eyeball.glb': '/models/organ-eyeball-interactive-lod.glb',
+  'organ-heart.glb': '/models/organ-heart-interactive-lod.glb',
+  'organ-intestine.glb': '/models/organ-intestine-interactive-lod.glb',
+  'organ-kidneys.glb': '/models/organ-kidneys-interactive-lod.glb',
+  'organ-liver.glb': '/models/organ-liver-interactive-lod.glb',
+  'organ-lungs.glb': '/models/organ-lungs-interactive-lod.glb',
+  'organ-pancreas.glb': '/models/organ-pancreas-interactive-lod.glb',
+  'organ-skin.glb': '/models/organ-skin-interactive-lod.glb',
+};
 const PUBCHEM_6233_MODEL_KEY = 'pubchem-6233-bas-color-print_nih3d.glb';
 const NITROBENZENE_MODEL_KEY = '7416-bas-color-print_nih3d.glb';
 const DIAMOND_UNIT_CELL_KEY = 'diamond-unit-cell_nih3d.glb';
@@ -81,7 +101,10 @@ type PubchemPartKind = 'left-methyl' | 'right-methyl' | 'core';
 type NitrobenzenePartKind = 'nitro' | 'remainder';
 
 const vectorFromTarget = (target: CameraTarget) => new THREE.Vector3(target[0], target[1], target[2]);
-const PINCH_RELEASE_GRACE_MS = 0;
+// Keep a grab alive across one or two sparse MediaPipe frames. The tracker
+// bridges misses for ~120ms, so this small grace prevents a visible snap when
+// the hand detector briefly drops a pinch.
+const PINCH_RELEASE_GRACE_MS = 150;
 const PART_MOVE_LOG_THRESHOLD = 0.03;
 
 const isMeshObject = (object: THREE.Object3D): object is THREE.Mesh => {
@@ -246,16 +269,27 @@ const configureModel = (root: THREE.Object3D, targetSize = MODEL_TARGET_SIZE) =>
   const center = box.getCenter(new THREE.Vector3());
   root.position.set(-center.x, MODEL_BASE_Y - box.min.y, -center.z);
 
+  let triangleCount = 0;
+  root.traverse((child) => {
+    if (!isMeshObject(child) || !child.geometry) return;
+    const index = child.geometry.getIndex();
+    const position = child.geometry.getAttribute('position');
+    triangleCount += index ? index.count / 3 : (position?.count ?? 0) / 3;
+  });
+  const canCastRealtimeShadow = triangleCount <= MODEL_SHADOW_TRIANGLE_BUDGET;
+
   root.traverse((child) => {
     if (isMeshObject(child)) {
-      child.castShadow = true;
+      // High-poly models otherwise render their full geometry again for the
+      // shadow map on every frame. Contact/environment lighting still grounds
+      // them visually without that extra multi-million-triangle pass.
+      child.castShadow = canCastRealtimeShadow;
       child.receiveShadow = true;
 
       const materials = Array.isArray(child.material) ? child.material : [child.material];
       materials.forEach((material: any) => {
         if (material) {
           material.envMapIntensity = 1.2;
-          material.side = THREE.DoubleSide;
           // Ensure solid rendering: force depth writes and disable transparency
           // for base earth surfaces so the globe appears solid, not see-through.
           material.depthWrite = true;
@@ -390,7 +424,19 @@ const clonePubchemMaterial = (source: THREE.Mesh): THREE.Material => {
   }
   material.side = THREE.DoubleSide;
   material.depthWrite = true;
+  material.userData.__ownedTextures = false;
   return material;
+};
+
+/**
+ * Use a pre-built interactive mesh for known high-poly built-ins. Uploaded
+ * assets and remote mappings stay untouched: they may have application-
+ * specific semantics (or no safe offline simplification) that we cannot
+ * infer at runtime.
+ */
+const resolveInteractiveModelUrl = (url: string, assetUrls?: Record<string, string>) => {
+  if (assetUrls && Object.keys(assetUrls).length > 0) return url;
+  return INTERACTIVE_LOD_URL_BY_KEY[getAssetKey(url)] || url;
 };
 
 const createPubchemSubsetMesh = (
@@ -465,6 +511,7 @@ const createPubchemSubsetMesh = (
   subsetGeometry.computeBoundingSphere();
 
   const mesh = new THREE.Mesh(subsetGeometry, clonePubchemMaterial(source));
+  mesh.userData.__ownedGeometry = true;
   mesh.name = `${source.name || 'pubchem'}-${partKind}`;
   mesh.castShadow = source.castShadow;
   mesh.receiveShadow = source.receiveShadow;
@@ -556,6 +603,7 @@ const createNitrobenzeneSubsetMesh = (
   subsetGeometry.computeBoundingSphere();
 
   const mesh = new THREE.Mesh(subsetGeometry, clonePubchemMaterial(source));
+  mesh.userData.__ownedGeometry = true;
   mesh.name = `${source.name || 'nitrobenzene'}-${partKind}`;
   mesh.castShadow = source.castShadow;
   mesh.receiveShadow = source.receiveShadow;
@@ -755,8 +803,74 @@ const resolveAssetUrl = (requestedUrl: string, assetUrls?: Record<string, string
 const isLikelyGitLfsPointer = (text: string) => text.startsWith('version https://git-lfs.github.com/spec/v1');
 
 const MAX_SESSION_MODEL_TEMPLATES = 2;
-const sessionModelTemplates = new Map<string, Promise<THREE.Object3D>>();
+type SessionModelTemplateEntry = {
+  promise: Promise<THREE.Object3D>;
+  refs: number;
+  evicted: boolean;
+  template: THREE.Object3D | null;
+};
+
+const sessionModelTemplates = new Map<string, SessionModelTemplateEntry>();
+const sessionTemplateEntriesByRoot = new WeakMap<THREE.Object3D, SessionModelTemplateEntry>();
 const validatedModelAssets = new Set<string>();
+
+/**
+ * Release a model instance without disposing geometry still owned by the
+ * session template cache. Cloned materials are always local to the instance;
+ * textures remain shared when the geometry came from a cached GLB.
+ */
+const disposeModelResources = (root: THREE.Object3D, sharedTemplateGeometry = false) => {
+  const geometries = new Set<THREE.BufferGeometry>();
+  const materials = new Set<THREE.Material>();
+  const textures = new Set<THREE.Texture>();
+
+  root.traverse((child) => {
+    if (!isMeshObject(child)) return;
+    const ownsGeometry = child.userData?.__ownedGeometry === true;
+    if (!sharedTemplateGeometry || ownsGeometry) {
+      if (child.geometry) geometries.add(child.geometry);
+    }
+
+    const childMaterials = Array.isArray(child.material) ? child.material : [child.material];
+    childMaterials.forEach((material) => {
+      if (!material) return;
+      materials.add(material);
+      if (!sharedTemplateGeometry || material.userData?.__ownedTextures === true) {
+        const materialWithTextures = material as THREE.Material & Record<string, unknown>;
+        Object.keys(materialWithTextures).forEach((key) => {
+          const value = materialWithTextures[key];
+          if (value && typeof value === 'object' && (value as THREE.Texture).isTexture) {
+            textures.add(value as THREE.Texture);
+          }
+        });
+      }
+    });
+  });
+
+  geometries.forEach((geometry) => geometry.dispose());
+  materials.forEach((material) => material.dispose());
+  textures.forEach((texture) => texture.dispose());
+};
+
+const disposeSessionTemplateEntry = (entry: SessionModelTemplateEntry) => {
+  if (!entry.template) return;
+  disposeModelResources(entry.template, false);
+  entry.template = null;
+};
+
+const retainSessionTemplate = (template: THREE.Object3D) => {
+  const entry = sessionTemplateEntriesByRoot.get(template);
+  if (entry) entry.refs += 1;
+  return entry;
+};
+
+const releaseSessionTemplate = (entry: SessionModelTemplateEntry | undefined) => {
+  if (!entry) return;
+  entry.refs = Math.max(0, entry.refs - 1);
+  if (entry.evicted && entry.refs === 0) {
+    disposeSessionTemplateEntry(entry);
+  }
+};
 
 const isPublicBuiltInModel = (url: string, modelType: ModelType, assetUrls?: Record<string, string>) => {
   if (modelType !== 'glb' && modelType !== 'gltf') return false;
@@ -772,6 +886,9 @@ const isPublicBuiltInModel = (url: string, modelType: ModelType, assetUrls?: Rec
 
 const cloneModelTemplate = (template: THREE.Object3D) => {
   const clone = cloneSkinnedModel(template);
+  const templateEntry = retainSessionTemplate(template);
+  clone.userData.__sharedTemplateGeometry = true;
+  if (templateEntry) clone.userData.__sessionTemplateEntry = templateEntry;
 
   // Interaction and highlighting mutate materials, so template and live model stay independent.
   clone.traverse((child) => {
@@ -779,6 +896,10 @@ const cloneModelTemplate = (template: THREE.Object3D) => {
     child.material = Array.isArray(child.material)
       ? child.material.map((material) => material.clone())
       : child.material.clone();
+    const materials = Array.isArray(child.material) ? child.material : [child.material];
+    materials.forEach((material) => {
+      material.userData.__ownedTextures = false;
+    });
   });
 
   return clone;
@@ -789,14 +910,15 @@ const loadSessionModelTemplate = (
   loadingManager: THREE.LoadingManager,
   onProgress?: (event: ProgressEvent) => void,
 ) => {
-  const cachedTemplate = sessionModelTemplates.get(url);
-  if (cachedTemplate) {
+  const cachedEntry = sessionModelTemplates.get(url);
+  if (cachedEntry) {
     // Reinsert to keep the map in least-recently-used order.
     sessionModelTemplates.delete(url);
-    sessionModelTemplates.set(url, cachedTemplate);
-    return cachedTemplate;
+    sessionModelTemplates.set(url, cachedEntry);
+    return cachedEntry.promise;
   }
 
+  let entry: SessionModelTemplateEntry;
   const templatePromise = new Promise<THREE.Object3D>((resolve, reject) => {
     const loader = new GLTFLoader(loadingManager);
     loader.setMeshoptDecoder(MeshoptDecoder);
@@ -809,6 +931,8 @@ const loadSessionModelTemplate = (
       url,
       (gltf) => {
         dracoLoader.dispose();
+        entry.template = gltf.scene;
+        sessionTemplateEntriesByRoot.set(gltf.scene, entry);
         resolve(gltf.scene);
       },
       onProgress,
@@ -818,16 +942,30 @@ const loadSessionModelTemplate = (
       },
     );
   });
+  entry = { promise: templatePromise, refs: 0, evicted: false, template: null };
 
-  sessionModelTemplates.set(url, templatePromise);
+  sessionModelTemplates.set(url, entry);
   while (sessionModelTemplates.size > MAX_SESSION_MODEL_TEMPLATES) {
     const oldestUrl = sessionModelTemplates.keys().next().value;
     if (!oldestUrl) break;
+    const oldestEntry = sessionModelTemplates.get(oldestUrl);
     sessionModelTemplates.delete(oldestUrl);
+    if (oldestEntry) {
+      oldestEntry.evicted = true;
+      if (oldestEntry.refs === 0) {
+        oldestEntry.promise.then(() => {
+          // Let any await continuation clone the just-loaded template before
+          // reclaiming an evicted entry that was never retained.
+          setTimeout(() => {
+            if (oldestEntry.refs === 0) disposeSessionTemplateEntry(oldestEntry);
+          }, 0);
+        }).catch(() => undefined);
+      }
+    }
   }
 
   templatePromise.catch(() => {
-    if (sessionModelTemplates.get(url) === templatePromise) {
+    if (sessionModelTemplates.get(url) === entry) {
       sessionModelTemplates.delete(url);
     }
   });
@@ -1077,14 +1215,12 @@ const LayeredModel: React.FC<{ url: string; modelType: ModelType; assetUrls?: Re
   const wasCameraGestureActiveRef = useRef(false);
   const disassemblyTargetsRef = useRef<Map<string, THREE.Vector3>>(new Map());
   const lastDisassemblyActionRef = useRef(-1);
-  // Smoothed rotation velocity to prevent abrupt camera start/stop stutter
-  const smoothedRotVelRef = useRef({ x: 0, y: 0 });
-  const smoothedZoomRef = useRef(0);
   // Load model and detect whether the file contains detachable internal layers.
   useEffect(() => {
     let disposed = false;
     let loadedRoot: THREE.Object3D | null = null;
     let loadedParts: GrabbablePart[] = [];
+    let loadedTemplateEntry: SessionModelTemplateEntry | undefined;
     let dracoLoader: DRACOLoader | null = null;
     const loadingManager = createLocalLoadingManager(assetUrls);
 
@@ -1165,6 +1301,7 @@ const LayeredModel: React.FC<{ url: string; modelType: ModelType; assetUrls?: Re
       dragPickProxiesRef.current = nextDragPickProxies;
 
       loadedRoot = root;
+      loadedTemplateEntry = root.userData.__sessionTemplateEntry as SessionModelTemplateEntry | undefined;
       loadedParts = interactionParts;
       setModelParts(parts);
       setGrabbableParts(interactionParts);
@@ -1196,10 +1333,19 @@ const LayeredModel: React.FC<{ url: string; modelType: ModelType; assetUrls?: Re
     };
 
     const handleLoadedModelAndNotify = (root: THREE.Object3D) => {
+      if (disposed) {
+        const sharedTemplateGeometry = root.userData.__sharedTemplateGeometry === true;
+        disposeModelResources(root, sharedTemplateGeometry);
+        releaseSessionTemplate(root.userData.__sessionTemplateEntry as SessionModelTemplateEntry | undefined);
+        return;
+      }
       try {
         handleLoadedModel(root);
         onLoadComplete?.();
       } catch (error) {
+        const sharedTemplateGeometry = root.userData.__sharedTemplateGeometry === true;
+        disposeModelResources(root, sharedTemplateGeometry);
+        releaseSessionTemplate(root.userData.__sessionTemplateEntry as SessionModelTemplateEntry | undefined);
         handleLoadError(error);
       }
     };
@@ -1240,11 +1386,19 @@ const LayeredModel: React.FC<{ url: string; modelType: ModelType; assetUrls?: Re
           scene.remove(part);
         }
       });
+      if (loadedRoot) {
+        const sharedTemplateGeometry = loadedRoot.userData.__sharedTemplateGeometry === true;
+        disposeModelResources(loadedRoot, sharedTemplateGeometry);
+        releaseSessionTemplate(loadedTemplateEntry);
+      }
     };
   }, [assetUrls, modelType, onLoadError, scene, url]);
 
   // 更新手部状态 (一比一复刻第一版 updateHandState)
-  const updateHandState = (landmarks: { x: number; y: number; z: number }[]) => {
+  const updateHandState = (
+    landmarks: { x: number; y: number; z: number }[],
+    filteredNdc?: { x: number; y: number } | null,
+  ) => {
     const state = interactionHandStateRef.current;
     state.exists = true;
     const scratch = handProjectionScratchRef.current;
@@ -1311,13 +1465,21 @@ const LayeredModel: React.FC<{ url: string; modelType: ModelType; assetUrls?: Re
     const targetNdcX = (0.5 - avgX) * 2;
     const targetNdcY = -(avgY - 0.5) * 2;
 
-    if (!state.ndc) {
-      state.ndc = new THREE.Vector2(targetNdcX, targetNdcY);
-    } else {
-      const alpha = 0.2;
-      state.ndc.x += (targetNdcX - state.ndc.x) * alpha;
-      state.ndc.y += (targetNdcY - state.ndc.y) * alpha;
-    }
+    // HandController already applies the single time-aware position filter.
+    // Consume that filtered sample directly here; another per-render EMA made
+    // dragging lag behind the visible hand by several frames.  Keep the raw
+    // landmarks for gesture shape/pinch classification, but never rebuild the
+    // drag ray from their unfiltered thumb/index center.
+    const filteredTargetNdc = filteredNdc
+      && Number.isFinite(filteredNdc.x)
+      && Number.isFinite(filteredNdc.y)
+      ? filteredNdc
+      : null;
+    if (!state.ndc) state.ndc = new THREE.Vector2();
+    state.ndc.set(
+      filteredTargetNdc?.x ?? targetNdcX,
+      filteredTargetNdc?.y ?? targetNdcY,
+    );
 
   };
 
@@ -1386,30 +1548,40 @@ const LayeredModel: React.FC<{ url: string; modelType: ModelType; assetUrls?: Re
   };
 
   useFrame((state, delta) => {
-    if (!modelScene || !groupRef.current) return;
+    const frameStartedAt = performance.now();
+    const finishFrame = () => {
+      const frameEndedAt = performance.now();
+      const callbackMs = frameEndedAt - frameStartedAt;
+      performanceTelemetry.recordRendererInfo(state.gl.info);
+      performanceTelemetry.recordFrame(
+        Math.max(0, delta * 1000),
+        frameEndedAt,
+        { delta, dpr: state.gl.getPixelRatio?.() ?? 1, callbackMs },
+      );
+    };
 
-    const { rotationVelocity, rotationLocked, zoomSpeed, interactionHandLandmarks } = controlRef.current;
-
-    // 调试：每 60 帧打一次 rotationVelocity
-    if (Math.floor(state.clock.elapsedTime * 10) % 60 === 0 && (rotationVelocity.x !== 0 || rotationVelocity.y !== 0)) {
-      console.log('[ModelViewer] rotationVelocity=', rotationVelocity, 'rotationLocked=', rotationLocked, 'smoothRotY=', smoothedRotVelRef.current.y);
+    if (!modelScene || !groupRef.current) {
+      finishFrame();
+      return;
     }
 
-    // Smooth rotation/zoom velocity to avoid abrupt camera start/stop stutter
-    const smoothFactor = 1 - Math.exp(-delta * 18);
-    if (rotationLocked) {
-      smoothedRotVelRef.current.x = 0;
-      smoothedRotVelRef.current.y = 0;
-    } else {
-      smoothedRotVelRef.current.x += (rotationVelocity.x - smoothedRotVelRef.current.x) * smoothFactor;
-      smoothedRotVelRef.current.y += (rotationVelocity.y - smoothedRotVelRef.current.y) * smoothFactor;
-    }
-    smoothedZoomRef.current += (zoomSpeed - smoothedZoomRef.current) * smoothFactor;
-
-    const smoothRotX = smoothedRotVelRef.current.x;
-    const smoothRotY = smoothedRotVelRef.current.y;
-    const smoothZoom = smoothedZoomRef.current;
-    const frameScale = Math.min(delta * 60, 2);
+    const {
+      rotationVelocity,
+      rotationLocked,
+      zoomSpeed,
+      interactionHandLandmarks,
+      handNDCPosition,
+    } = controlRef.current;
+    // HandController publishes time-normalized rates and performs the single
+    // input low-pass. Do not smooth/integrate the same sample a second time.
+    const smoothRotX = rotationLocked ? 0 : rotationVelocity.x;
+    const smoothRotY = rotationLocked ? 0 : rotationVelocity.y;
+    const smoothZoom = zoomSpeed;
+    consumePublishedHandInput(controlRef.current, frameStartedAt);
+    // rotationVelocity/zoomSpeed are time-normalized rates (per second).
+    // Integrate them once with the actual frame delta; multiplying by 60 here
+    // would amplify input on top of the producer's rate conversion.
+    const frameDelta = Math.min(delta, 0.05);
 
     const hasRotationGestureInput =
       Math.abs(smoothRotX) > 0.0001 ||
@@ -1430,8 +1602,8 @@ const LayeredModel: React.FC<{ url: string; modelType: ModelType; assetUrls?: Re
     // 旋转 — modify angles on persistent spherical (uses smoothed velocity)
     if (hasCameraGestureInput && (Math.abs(smoothRotX) > 0.0001 || Math.abs(smoothRotY) > 0.0001)) {
       const sensitivity = 0.31 * (controlRef.current.interactionSettings?.rotationSpeed ?? 1.0);
-      sph.theta -= smoothRotY * sensitivity * frameScale;
-      sph.phi -= smoothRotX * sensitivity * frameScale;
+      sph.theta -= smoothRotY * sensitivity * frameDelta;
+      sph.phi -= smoothRotX * sensitivity * frameDelta;
       sph.phi = Math.max(0.1, Math.min(Math.PI - 0.1, sph.phi));
       sph.makeSafe();
     }
@@ -1440,7 +1612,7 @@ const LayeredModel: React.FC<{ url: string; modelType: ModelType; assetUrls?: Re
     if (hasCameraGestureInput && Math.abs(smoothZoom) > 0.0001) {
       sph.radius = Math.max(
         3,
-        Math.min(12, sph.radius - smoothZoom * 0.13 * frameScale * (controlRef.current.interactionSettings?.zoomSpeed ?? 1.0))
+        Math.min(12, sph.radius - smoothZoom * 0.13 * frameDelta * (controlRef.current.interactionSettings?.zoomSpeed ?? 1.0))
       );
     }
 
@@ -1501,7 +1673,7 @@ const LayeredModel: React.FC<{ url: string; modelType: ModelType; assetUrls?: Re
     const handState = interactionHandStateRef.current;
 
     if (activeInteractionLandmarks && activeInteractionLandmarks.length >= 21) {
-      updateHandState(activeInteractionLandmarks);
+      updateHandState(activeInteractionLandmarks, handNDCPosition);
       const nowMs = performance.now();
       if (handState.isPinching) {
         lastGrabPinchTimeRef.current = nowMs;
@@ -1579,6 +1751,7 @@ const LayeredModel: React.FC<{ url: string; modelType: ModelType; assetUrls?: Re
     // if (!rotationLocked && !hasCameraGestureInput && !isGrabbingRef.current) {
     //   groupRef.current.rotation.y += Math.sin(state.clock.elapsedTime * 0.3) * 0.001 * frameScale;
     // }
+    finishFrame();
   }, -1);
 
   if (!modelScene) {
@@ -1706,7 +1879,7 @@ const HAND_CONNECTIONS = [
 
 // 3D虚拟手组件 (从第一版移植)
 const HAND_VISIBILITY_GRACE_MS = 180;
-const HAND_POSITION_SMOOTHING = 0.36;
+const HAND_POSITION_FILTER_TIME_CONSTANT_MS = 35;
 const HAND_PLANE_DISTANCE = 2.85;
 const HAND_DEPTH_SCALE = 0.48;
 const HAND_DEPTH_LIMIT = 0.18;
@@ -1715,270 +1888,305 @@ const PINCH_VISUAL_THRESHOLD = 0.055;
 const HAND_FINGERTIPS = new Set([4, 8, 12, 16, 20]);
 const HAND_HIGHLIGHT_JOINTS = new Set([4, 8]);
 
+type VirtualHandRuntime = {
+  leftBody: THREE.InstancedMesh;
+  rightBody: THREE.InstancedMesh;
+  thumbTips: THREE.InstancedMesh;
+  indexTips: THREE.InstancedMesh;
+  lines: THREE.LineSegments;
+  linePositions: Float32Array;
+  leftPositions: THREE.Vector3[];
+  rightPositions: THREE.Vector3[];
+  leftLastSeen: number;
+  rightLastSeen: number;
+  matrix: THREE.Matrix4;
+  identityQuaternion: THREE.Quaternion;
+  scale: THREE.Vector3;
+};
+
+const writeLineSegment = (
+  target: Float32Array,
+  offset: number,
+  start: THREE.Vector3 | undefined,
+  end: THREE.Vector3 | undefined,
+  visible: boolean,
+) => {
+  if (!visible || !start || !end) {
+    target[offset] = 0;
+    target[offset + 1] = 0;
+    target[offset + 2] = 0;
+    target[offset + 3] = 0;
+    target[offset + 4] = 0;
+    target[offset + 5] = 0;
+    return;
+  }
+
+  target[offset] = start.x;
+  target[offset + 1] = start.y;
+  target[offset + 2] = start.z;
+  target[offset + 3] = end.x;
+  target[offset + 4] = end.y;
+  target[offset + 5] = end.z;
+};
+
+const setInstancedJoint = (
+  mesh: THREE.InstancedMesh,
+  index: number,
+  position: THREE.Vector3 | undefined,
+  size: number,
+  visible: boolean,
+  runtime: VirtualHandRuntime,
+) => {
+  if (!visible || !position) {
+    runtime.matrix.makeScale(0, 0, 0);
+  } else {
+    runtime.scale.set(size, size, size);
+    runtime.matrix.compose(position, runtime.identityQuaternion, runtime.scale);
+  }
+  mesh.setMatrixAt(index, runtime.matrix);
+};
+
+const renderVirtualHand = (
+  runtime: VirtualHandRuntime,
+  positions: THREE.Vector3[],
+  side: 0 | 1,
+  visible: boolean,
+  isPinching: boolean,
+) => {
+  const body = side === 0 ? runtime.leftBody : runtime.rightBody;
+  const jointBaseSize = side === 0 ? 0.014 : 0.014;
+
+  // Body instances intentionally keep the thumb/index slots empty. Those two
+  // slots are rendered by the accent instanced meshes below.
+  for (let index = 0; index < 21; index += 1) {
+    const isAccent = index === 4 || index === 8;
+    const isFingertip = HAND_FINGERTIPS.has(index);
+    const size = isFingertip ? 0.022 : jointBaseSize;
+    setInstancedJoint(body, index, positions[index], size, visible && !isAccent, runtime);
+  }
+
+  const thumb = positions[4];
+  const indexTip = positions[8];
+  setInstancedJoint(runtime.thumbTips, side, thumb, 0.022 * (isPinching ? 1.45 : 1), visible, runtime);
+  setInstancedJoint(runtime.indexTips, side, indexTip, 0.022 * (isPinching ? 1.45 : 1), visible, runtime);
+
+  const connectionFloatCount = HAND_CONNECTIONS.length * 2 * 3;
+  const connectionOffset = side * connectionFloatCount;
+  HAND_CONNECTIONS.forEach((connection, index) => {
+    const offset = connectionOffset + index * 6;
+    writeLineSegment(
+      runtime.linePositions,
+      offset,
+      positions[connection[0]],
+      positions[connection[1]],
+      visible,
+    );
+  });
+
+  const pinchOffset = connectionFloatCount * 2 + side * 6;
+  writeLineSegment(runtime.linePositions, pinchOffset, thumb, indexTip, visible && isPinching);
+};
+
 const VirtualHand: React.FC<{ controlRef: React.MutableRefObject<ControlRefs> }> = ({ controlRef }) => {
   const { camera } = useThree();
-
-  // 为每只手创建21个关节点引用
-  const leftJointsRef = useRef<THREE.Mesh[]>([]);
-  const rightJointsRef = useRef<THREE.Mesh[]>([]);
-  const leftLinesRef = useRef<THREE.Line[]>([]);
-  const rightLinesRef = useRef<THREE.Line[]>([]);
-  const leftPinchLineRef = useRef<THREE.Line | null>(null);
-  const rightPinchLineRef = useRef<THREE.Line | null>(null);
-  const leftPositionsRef = useRef<THREE.Vector3[]>(Array.from({ length: 21 }, () => new THREE.Vector3()));
-  const rightPositionsRef = useRef<THREE.Vector3[]>(Array.from({ length: 21 }, () => new THREE.Vector3()));
-  const virtualHandScratchRef = useRef({
-    targetLocal: new THREE.Vector3()
-  });
-  const leftLastSeenRef = useRef(0);
-  const rightLastSeenRef = useRef(0);
-
-  // 初始化关节点和连线
-  const [initialized, setInitialized] = useState(false);
   const groupRef = useRef<THREE.Group>(null);
+  const runtimeRef = useRef<VirtualHandRuntime | null>(null);
+  const scratchRef = useRef({ targetLocal: new THREE.Vector3() });
 
   useEffect(() => {
-    if (!groupRef.current) return;
+    const group = groupRef.current;
+    if (!group) return;
 
-    // 清除旧的对象
-    while (groupRef.current.children.length > 0) {
-      groupRef.current.remove(groupRef.current.children[0]);
-    }
-
-    // 创建关节点材质
     const createJointMaterial = (color: number, opacity: number) => new THREE.MeshBasicMaterial({
       color,
       transparent: true,
       opacity,
       depthTest: false,
       depthWrite: false,
-      toneMapped: false
+      toneMapped: false,
     });
-    const createLineMaterial = (color: number, opacity: number) => new THREE.LineBasicMaterial({
-      color,
+    const createLineMaterial = () => new THREE.LineBasicMaterial({
+      vertexColors: true,
       transparent: true,
-      opacity,
+      opacity: 0.72,
       depthTest: false,
       depthWrite: false,
-      toneMapped: false
+      toneMapped: false,
     });
 
+    // Four instanced meshes replace 42 independent sphere draw calls.
+    const jointGeometry = new THREE.SphereGeometry(1, 8, 8);
     const leftMaterial = createJointMaterial(0xff8a5b, 0.74);
     const rightMaterial = createJointMaterial(0x2dd4ff, 0.76);
     const thumbMaterial = createJointMaterial(0xff4d5a, 0.95);
     const indexMaterial = createJointMaterial(0xffd54a, 0.95);
-
-    const jointGeometry = new THREE.SphereGeometry(1, 12, 12);
-    const lineMaterial = createLineMaterial(0x2dd4ff, 0.58);
-    const leftLineMaterial = createLineMaterial(0xff8a5b, 0.56);
-    const pinchLineMaterial = createLineMaterial(0xfff1a6, 0.92);
-
-    const applyOverlayStyle = (object: THREE.Object3D) => {
-      object.renderOrder = HAND_RENDER_ORDER;
-      object.frustumCulled = false;
-    };
-
-    // 创建左手关节点
-    leftJointsRef.current = [];
-    for (let i = 0; i < 21; i++) {
-      const material = i === 4 ? thumbMaterial : i === 8 ? indexMaterial : leftMaterial;
-      const sphere = new THREE.Mesh(jointGeometry, material);
-      sphere.visible = false;
-      sphere.scale.setScalar(HAND_FINGERTIPS.has(i) ? 0.022 : 0.014);
-      applyOverlayStyle(sphere);
-      groupRef.current.add(sphere);
-      leftJointsRef.current.push(sphere);
-    }
-
-    // 创建右手关节点
-    rightJointsRef.current = [];
-    for (let i = 0; i < 21; i++) {
-      const material = i === 4 ? thumbMaterial : i === 8 ? indexMaterial : rightMaterial;
-      const sphere = new THREE.Mesh(jointGeometry, material);
-      sphere.visible = false;
-      sphere.scale.setScalar(HAND_FINGERTIPS.has(i) ? 0.022 : 0.014);
-      applyOverlayStyle(sphere);
-      groupRef.current.add(sphere);
-      rightJointsRef.current.push(sphere);
-    }
-
-    // 创建连线
-    leftLinesRef.current = [];
-    rightLinesRef.current = [];
-
-    HAND_CONNECTIONS.forEach(() => {
-      // 左手连线
-      const leftGeo = new THREE.BufferGeometry();
-      leftGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(6), 3));
-      const leftLine = new THREE.Line(leftGeo, leftLineMaterial);
-      leftLine.visible = false;
-      applyOverlayStyle(leftLine);
-      groupRef.current!.add(leftLine);
-      leftLinesRef.current.push(leftLine);
-
-      // 右手连线
-      const rightGeo = new THREE.BufferGeometry();
-      rightGeo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(6), 3));
-      const rightLine = new THREE.Line(rightGeo, lineMaterial);
-      rightLine.visible = false;
-      applyOverlayStyle(rightLine);
-      groupRef.current!.add(rightLine);
-      rightLinesRef.current.push(rightLine);
+    const leftBody = new THREE.InstancedMesh(jointGeometry, leftMaterial, 21);
+    const rightBody = new THREE.InstancedMesh(jointGeometry, rightMaterial, 21);
+    const thumbTips = new THREE.InstancedMesh(jointGeometry, thumbMaterial, 2);
+    const indexTips = new THREE.InstancedMesh(jointGeometry, indexMaterial, 2);
+    [leftBody, rightBody, thumbTips, indexTips].forEach((mesh) => {
+      mesh.instanceMatrix.setUsage(THREE.DynamicDrawUsage);
+      mesh.renderOrder = HAND_RENDER_ORDER;
+      mesh.frustumCulled = false;
     });
 
-    const createPinchLine = () => {
-      const geo = new THREE.BufferGeometry();
-      geo.setAttribute('position', new THREE.BufferAttribute(new Float32Array(6), 3));
-      const line = new THREE.Line(geo, pinchLineMaterial);
-      line.visible = false;
-      applyOverlayStyle(line);
-      groupRef.current!.add(line);
-      return line;
+    // One dynamic line buffer carries both skeletons and both pinch guides.
+    const lineSegmentCount = HAND_CONNECTIONS.length * 2 + 2;
+    const linePositions = new Float32Array(lineSegmentCount * 2 * 3);
+    const lineColors = new Float32Array(linePositions.length);
+    const leftColor = new THREE.Color(0xff8a5b);
+    const rightColor = new THREE.Color(0x2dd4ff);
+    const pinchColor = new THREE.Color(0xfff1a6);
+    const setVertexColor = (vertexIndex: number, color: THREE.Color) => {
+      const offset = vertexIndex * 3;
+      lineColors[offset] = color.r;
+      lineColors[offset + 1] = color.g;
+      lineColors[offset + 2] = color.b;
     };
-    leftPinchLineRef.current = createPinchLine();
-    rightPinchLineRef.current = createPinchLine();
+    let vertexIndex = 0;
+    for (let side = 0; side < 2; side += 1) {
+      const color = side === 0 ? leftColor : rightColor;
+      for (let index = 0; index < HAND_CONNECTIONS.length; index += 1) {
+        setVertexColor(vertexIndex, color);
+        setVertexColor(vertexIndex + 1, color);
+        vertexIndex += 2;
+      }
+    }
+    for (let index = 0; index < 2; index += 1) {
+      setVertexColor(vertexIndex, pinchColor);
+      setVertexColor(vertexIndex + 1, pinchColor);
+      vertexIndex += 2;
+    }
 
-    setInitialized(true);
+    const lineGeometry = new THREE.BufferGeometry();
+    const linePositionAttribute = new THREE.BufferAttribute(linePositions, 3);
+    linePositionAttribute.setUsage(THREE.DynamicDrawUsage);
+    lineGeometry.setAttribute('position', linePositionAttribute);
+    lineGeometry.setAttribute('color', new THREE.BufferAttribute(lineColors, 3));
+    const lines = new THREE.LineSegments(lineGeometry, createLineMaterial());
+    lines.renderOrder = HAND_RENDER_ORDER;
+    lines.frustumCulled = false;
+
+    const runtime: VirtualHandRuntime = {
+      leftBody,
+      rightBody,
+      thumbTips,
+      indexTips,
+      lines,
+      linePositions,
+      leftPositions: Array.from({ length: 21 }, () => new THREE.Vector3()),
+      rightPositions: Array.from({ length: 21 }, () => new THREE.Vector3()),
+      leftLastSeen: 0,
+      rightLastSeen: 0,
+      matrix: new THREE.Matrix4(),
+      identityQuaternion: new THREE.Quaternion(),
+      scale: new THREE.Vector3(),
+    };
+    runtimeRef.current = runtime;
+
+    group.add(leftBody, rightBody, thumbTips, indexTips, lines);
+
+    return () => {
+      if (runtimeRef.current === runtime) runtimeRef.current = null;
+      group.remove(leftBody, rightBody, thumbTips, indexTips, lines);
+      lineGeometry.dispose();
+      jointGeometry.dispose();
+      leftMaterial.dispose();
+      rightMaterial.dispose();
+      thumbMaterial.dispose();
+      indexMaterial.dispose();
+      (lines.material as THREE.Material).dispose();
+    };
   }, []);
 
-  useFrame(() => {
-    if (!initialized || !groupRef.current) return;
+  useFrame((_, delta) => {
+    const runtime = runtimeRef.current;
+    const group = groupRef.current;
+    if (!runtime || !group) return;
 
-    const { handLandmarks } = controlRef.current;
-    groupRef.current.position.copy(camera.position);
-    groupRef.current.quaternion.copy(camera.quaternion);
+    group.position.copy(camera.position);
+    group.quaternion.copy(camera.quaternion);
 
-    // 更新手部可视化的辅助函数
+    let halfWidth = 1;
+    let halfHeight = 1;
+    if ((camera as THREE.PerspectiveCamera).isPerspectiveCamera) {
+      const perspectiveCamera = camera as THREE.PerspectiveCamera;
+      halfHeight = Math.tan(THREE.MathUtils.degToRad(perspectiveCamera.fov) / 2) * HAND_PLANE_DISTANCE;
+      halfWidth = halfHeight * perspectiveCamera.aspect;
+    } else if ((camera as THREE.OrthographicCamera).isOrthographicCamera) {
+      const orthographicCamera = camera as THREE.OrthographicCamera;
+      halfWidth = (orthographicCamera.right - orthographicCamera.left) / (2 * orthographicCamera.zoom);
+      halfHeight = (orthographicCamera.top - orthographicCamera.bottom) / (2 * orthographicCamera.zoom);
+    }
+
+    const now = performance.now();
+    // Keep the virtual hand's visual smoothing stable across 30/60/120Hz.
+    // This is intentionally separate from the control filter: the model
+    // consumes the already-filtered pointer/rates, while the hand overlay can
+    // use a slightly softer visual response without adding control latency.
+    const handPositionAlpha = 1 - Math.exp(
+      -Math.min(Math.max(delta, 0), 0.05) * 1000 / HAND_POSITION_FILTER_TIME_CONSTANT_MS,
+    );
+    const scratch = scratchRef.current;
     const updateHand = (
       landmarks: { x: number; y: number; z: number }[] | null,
-      joints: THREE.Mesh[],
-      lines: THREE.Line[],
-      pinchLine: THREE.Line | null,
-      cachedPositionsRef: React.MutableRefObject<THREE.Vector3[]>,
-      lastSeenRef: React.MutableRefObject<number>
+      positions: THREE.Vector3[],
+      side: 0 | 1,
+      lastSeen: number,
     ) => {
-      const hideHand = () => {
-        joints.forEach(j => j.visible = false);
-        lines.forEach(l => l.visible = false);
-        if (pinchLine) pinchLine.visible = false;
-      };
-
-      const renderHand = (positions: THREE.Vector3[], isPinching: boolean) => {
-        if (positions.length < 21) {
-          hideHand();
-          return;
-        }
-
-        positions.forEach((position, i) => {
-          joints[i].position.copy(position);
-          const baseScale = HAND_FINGERTIPS.has(i) ? 0.022 : 0.014;
-          const pinchScale = isPinching && HAND_HIGHLIGHT_JOINTS.has(i) ? 1.45 : 1;
-          joints[i].scale.setScalar(baseScale * pinchScale);
-          joints[i].visible = true;
-        });
-
-        // Update every line from the same cached point set so visible bones stay connected.
-        HAND_CONNECTIONS.forEach((conn, i) => {
-          const start = positions[conn[0]];
-          const end = positions[conn[1]];
-          if (!start || !end) {
-            lines[i].visible = false;
-            return;
-          }
-
-          const line = lines[i];
-          const posArray = line.geometry.attributes.position.array as Float32Array;
-
-          posArray[0] = start.x;
-          posArray[1] = start.y;
-          posArray[2] = start.z;
-          posArray[3] = end.x;
-          posArray[4] = end.y;
-          posArray[5] = end.z;
-
-          line.geometry.attributes.position.needsUpdate = true;
-          line.visible = true;
-        });
-
-        if (pinchLine) {
-          const thumbTip = positions[4];
-          const indexTip = positions[8];
-          if (isPinching && thumbTip && indexTip) {
-            const posArray = pinchLine.geometry.attributes.position.array as Float32Array;
-            posArray[0] = thumbTip.x;
-            posArray[1] = thumbTip.y;
-            posArray[2] = thumbTip.z;
-            posArray[3] = indexTip.x;
-            posArray[4] = indexTip.y;
-            posArray[5] = indexTip.z;
-            pinchLine.geometry.attributes.position.needsUpdate = true;
-            pinchLine.visible = true;
-          } else {
-            pinchLine.visible = false;
-          }
-        }
-      };
-
-      const now = performance.now();
-      if (!landmarks || landmarks.length < 21) {
-        if (lastSeenRef.current > 0 && now - lastSeenRef.current <= HAND_VISIBILITY_GRACE_MS) {
-          renderHand(cachedPositionsRef.current, false);
-        } else {
-          hideHand();
-        }
-        return;
-      }
-      // 虚拟平面设置
-      const scratch = virtualHandScratchRef.current;
-      const positions = cachedPositionsRef.current;
-      const hasPreviousPositions = lastSeenRef.current > 0;
-      const isPerspectiveCamera = (camera as THREE.PerspectiveCamera).isPerspectiveCamera;
-      const isOrthographicCamera = (camera as THREE.OrthographicCamera).isOrthographicCamera;
-      let halfWidth = 1;
-      let halfHeight = 1;
-      if (isPerspectiveCamera) {
-        const perspectiveCamera = camera as THREE.PerspectiveCamera;
-        halfHeight = Math.tan(THREE.MathUtils.degToRad(perspectiveCamera.fov) / 2) * HAND_PLANE_DISTANCE;
-        halfWidth = halfHeight * perspectiveCamera.aspect;
-      } else if (isOrthographicCamera) {
-        const orthographicCamera = camera as THREE.OrthographicCamera;
-        halfWidth = (orthographicCamera.right - orthographicCamera.left) / (2 * orthographicCamera.zoom);
-        halfHeight = (orthographicCamera.top - orthographicCamera.bottom) / (2 * orthographicCamera.zoom);
+      const valid = Boolean(landmarks && landmarks.length >= 21);
+      const withinGrace = lastSeen > 0 && now - lastSeen <= HAND_VISIBILITY_GRACE_MS;
+      if (!valid) {
+        renderVirtualHand(runtime, positions, side, withinGrace, false);
+        // Do not refresh the timestamp while the input is missing; otherwise
+        // the grace window would be extended forever and a lost hand would
+        // remain rendered indefinitely.
+        return lastSeen;
       }
 
-      landmarks.forEach((pt, i) => {
-        // NDC坐标转换 (镜像X轴)
-        const ndcX = (0.5 - pt.x) * 2;
-        const ndcY = -(pt.y - 0.5) * 2;
-
-        const depthOffset = THREE.MathUtils.clamp((pt.z || 0) * HAND_DEPTH_SCALE, -HAND_DEPTH_LIMIT, HAND_DEPTH_LIMIT);
+      const hasPreviousPositions = withinGrace;
+      for (let index = 0; index < 21; index += 1) {
+        const point = landmarks![index];
+        const ndcX = (0.5 - point.x) * 2;
+        const ndcY = -(point.y - 0.5) * 2;
+        const depthOffset = THREE.MathUtils.clamp((point.z || 0) * HAND_DEPTH_SCALE, -HAND_DEPTH_LIMIT, HAND_DEPTH_LIMIT);
         scratch.targetLocal.set(
           ndcX * halfWidth,
           ndcY * halfHeight,
-          -HAND_PLANE_DISTANCE + depthOffset
+          -HAND_PLANE_DISTANCE + depthOffset,
         );
-
         if (hasPreviousPositions) {
-          positions[i].lerp(scratch.targetLocal, HAND_POSITION_SMOOTHING);
+          positions[index].lerp(scratch.targetLocal, handPositionAlpha);
         } else {
-          positions[i].copy(scratch.targetLocal);
+          positions[index].copy(scratch.targetLocal);
         }
-      });
+      }
 
-      const pinchDistance = Math.sqrt(
-        Math.pow(landmarks[4].x - landmarks[8].x, 2) +
-        Math.pow(landmarks[4].y - landmarks[8].y, 2)
-      );
-      const isPinching = pinchDistance < PINCH_VISUAL_THRESHOLD;
-
-      cachedPositionsRef.current = positions;
-      lastSeenRef.current = now;
-      renderHand(positions, isPinching);
+      const thumb = landmarks![4];
+      const indexTip = landmarks![8];
+      const pinchDistance = Math.hypot(thumb.x - indexTip.x, thumb.y - indexTip.y);
+      renderVirtualHand(runtime, positions, side, true, pinchDistance < PINCH_VISUAL_THRESHOLD);
+      return now;
     };
 
-    // 更新左右手
-    updateHand(handLandmarks.left, leftJointsRef.current, leftLinesRef.current, leftPinchLineRef.current, leftPositionsRef, leftLastSeenRef);
-    updateHand(handLandmarks.right, rightJointsRef.current, rightLinesRef.current, rightPinchLineRef.current, rightPositionsRef, rightLastSeenRef);
+    runtime.leftLastSeen = updateHand(
+      controlRef.current.handLandmarks.left,
+      runtime.leftPositions,
+      0,
+      runtime.leftLastSeen,
+    );
+    runtime.rightLastSeen = updateHand(
+      controlRef.current.handLandmarks.right,
+      runtime.rightPositions,
+      1,
+      runtime.rightLastSeen,
+    );
+
+    runtime.leftBody.instanceMatrix.needsUpdate = true;
+    runtime.rightBody.instanceMatrix.needsUpdate = true;
+    runtime.thumbTips.instanceMatrix.needsUpdate = true;
+    runtime.indexTips.instanceMatrix.needsUpdate = true;
+    (runtime.lines.geometry.attributes.position as THREE.BufferAttribute).needsUpdate = true;
   });
 
   return <group ref={groupRef} />;
@@ -2045,21 +2253,95 @@ const CameraPresentationTransition: React.FC<{ active: boolean; target: CameraTa
   return null;
 };
 
+/** Adapt pixel ratio to interaction state: cap fill-rate during gestures and
+ * restore sharper rendering only after a short idle period. This runs inside
+ * R3F without React state churn. */
+const AdaptiveRenderQuality: React.FC<{ controlRef: React.MutableRefObject<ControlRefs> }> = ({ controlRef }) => {
+  const { gl } = useThree();
+  const lastActiveAt = useRef(0);
+  const appliedDpr = useRef(0);
+  const wasActive = useRef(false);
+  const hasInteracted = useRef(false);
+  const shadowRefreshFrames = useRef(0);
+
+  useEffect(() => () => {
+    // Do not leak a paused shadow map if the viewer is unmounted while a
+    // gesture is in progress or while the model is being switched.
+    gl.shadowMap.autoUpdate = true;
+  }, [gl]);
+
+  useFrame(() => {
+    const now = performance.now();
+    const controls = controlRef.current;
+    // A visible hand is not necessarily interacting.  Keep the fill-rate cap
+    // and shadow pause tied to actual motion/dragging so an idle hand can
+    // recover the sharper stable quality after the gesture ends.
+    const active = controls.isDragging ||
+      Math.abs(controls.rotationVelocity.x) > 0.0001 ||
+      Math.abs(controls.rotationVelocity.y) > 0.0001 ||
+      Math.abs(controls.zoomSpeed) > 0.0001;
+    if (active) {
+      lastActiveAt.current = now;
+      hasInteracted.current = true;
+    }
+
+    if (active && !wasActive.current) {
+      gl.shadowMap.autoUpdate = false;
+      shadowRefreshFrames.current = 0;
+    } else if (!active && wasActive.current) {
+      // One shadow refresh after release keeps the resting pose correct while
+      // avoiding a full shadow pass on every interaction frame.
+      gl.shadowMap.autoUpdate = true;
+      gl.shadowMap.needsUpdate = true;
+      shadowRefreshFrames.current = 1;
+    } else if (!active && shadowRefreshFrames.current > 0) {
+      shadowRefreshFrames.current -= 1;
+      if (shadowRefreshFrames.current === 0) gl.shadowMap.autoUpdate = false;
+    }
+    wasActive.current = active;
+
+    const deviceDpr = window.devicePixelRatio || 1;
+    const target = !hasInteracted.current
+      ? 1
+      : now - lastActiveAt.current < 900
+        ? Math.min(deviceDpr, MAX_RENDER_DPR)
+        : Math.min(deviceDpr, STABLE_RENDER_DPR);
+    if (Math.abs(appliedDpr.current - target) > 0.01) {
+      gl.setPixelRatio(target);
+      appliedDpr.current = target;
+    }
+  });
+  return null;
+};
+
 const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl, modelType, assetUrls, controlRef, showLabels: externalShowLabels, onShowLabelsChange, onLoadProgress, onLoadComplete, onLoadError, onPartMoved, onDisassemblyAvailabilityChange, quizMode = false, presentationSplitActive = false }) => {
   const { themeDef } = useTheme();
   const dirLightRef = useRef<THREE.DirectionalLight>(null);
   const [internalShowLabels, setInternalShowLabels] = useState(false);
+  const [contactShadowRevision, setContactShadowRevision] = useState(0);
   const showLabels = externalShowLabels !== undefined ? externalShowLabels : internalShowLabels;
   const setShowLabels = onShowLabelsChange || setInternalShowLabels;
   const lastAutoLabelActionRef = useRef(-1);
   const terrainLoadNotifiedRef = useRef<string | null>(null);
   const lowerModelUrl = modelUrl.toLowerCase();
-  const assetModelUrl = resolveModelAssetUrl(modelUrl);
+  const assetModelUrl = resolveModelAssetUrl(resolveInteractiveModelUrl(modelUrl, assetUrls));
   const cameraTarget = useMemo<CameraTarget>(() => {
     if (lowerModelUrl.includes('earth-layers')) return [0, 1.5, 0];
     if (lowerModelUrl.includes('terrain-topography')) return [0, 0.5, 0];
     return [0, 0.3, 0];
   }, [lowerModelUrl]);
+
+  // ContactShadows is deliberately rendered for one frame at a time. Remount
+  // it after a model finishes loading or a part is released so the expensive
+  // shadow capture is event-driven instead of running on every render frame.
+  const handleModelLoadComplete = useCallback(() => {
+    setContactShadowRevision((revision) => revision + 1);
+    onLoadComplete?.();
+  }, [onLoadComplete]);
+  const handlePartMoved = useCallback((partName: string) => {
+    setContactShadowRevision((revision) => revision + 1);
+    onPartMoved?.(partName);
+  }, [onPartMoved]);
 
   useEffect(() => {
     if (lowerModelUrl.includes('earth-layers')) {
@@ -2077,8 +2359,8 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl, modelType, assetUrl
     }
     if (terrainLoadNotifiedRef.current === modelUrl) return;
     terrainLoadNotifiedRef.current = modelUrl;
-    onLoadComplete?.();
-  }, [lowerModelUrl, modelUrl, onLoadComplete]);
+    handleModelLoadComplete();
+  }, [handleModelLoadComplete, lowerModelUrl, modelUrl]);
 
   useEffect(() => {
     let animationFrame = 0;
@@ -2106,13 +2388,16 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl, modelType, assetUrl
     <div className="w-full h-full bg-transparent relative">
       <Canvas
         shadows
-        dpr={[1, 2]}
+        // Limit render resolution on HiDPI screens; gesture latency is more
+        // sensitive to fill-rate than to a marginally sharper shadow edge.
+        dpr={[1, STABLE_RENDER_DPR]}
         camera={{ position: [3.5, 4, 3.5], fov: 45, near: 0.1, far: 100 }}
         gl={{ antialias: true, toneMapping: THREE.ACESFilmicToneMapping, alpha: true }}
         raycaster={{ far: 100 }}
         onCreated={({ gl }) => { gl.setClearColor('#020812', 0); }}
       >
         <Suspense fallback={null}>
+          <AdaptiveRenderQuality controlRef={controlRef} />
           {/* ---- Lighting — warm & soft (from 环境 package) ---- */}
           <ambientLight intensity={0.6} color="#fff8f0" />
           <directionalLight
@@ -2121,8 +2406,8 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl, modelType, assetUrl
             intensity={1.2}
             color="#ffffff"
             castShadow
-            shadow-mapSize-width={2048}
-            shadow-mapSize-height={2048}
+            shadow-mapSize-width={1024}
+            shadow-mapSize-height={1024}
             shadow-camera-left={-5}
             shadow-camera-right={5}
             shadow-camera-top={5}
@@ -2139,7 +2424,11 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl, modelType, assetUrl
 
           {/* ---- Uploaded Model ---- */}
           {lowerModelUrl.includes('terrain-topography') ? (
-            <ProceduralTerrain controlRef={controlRef} showLabels={showLabels} cameraTarget={cameraTarget} />
+            <ProceduralTerrain
+              controlRef={controlRef}
+              showLabels={showLabels}
+              cameraTarget={cameraTarget}
+            />
           ) : (
             <>
               <LayeredModel
@@ -2152,9 +2441,9 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl, modelType, assetUrl
                 showEarthLabels={lowerModelUrl.includes('earth-layers') && showLabels}
                 onDisassemblyAvailabilityChange={onDisassemblyAvailabilityChange}
                 onLoadProgress={onLoadProgress}
-                onLoadComplete={onLoadComplete}
+                onLoadComplete={handleModelLoadComplete}
                 onLoadError={onLoadError}
-                onPartMoved={onPartMoved}
+                onPartMoved={handlePartMoved}
               />
             </>
           )}
@@ -2164,11 +2453,15 @@ const ModelViewer: React.FC<ModelViewerProps> = ({ modelUrl, modelType, assetUrl
 
           {/* ---- Contact shadows on floor ---- */}
           <ContactShadows
+            key={`${assetModelUrl}:${contactShadowRevision}`}
             position={[0, -0.49, 0]}
             opacity={0.12}
             scale={14}
-            blur={4}
+            blur={3}
             far={4}
+            frames={1}
+            resolution={256}
+            smooth={false}
             color="#cbd5e1"
           />
 

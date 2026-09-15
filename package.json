@@ -12,6 +12,7 @@
     "test:resource": "node --test server/resourceLibrarySeeds.test.js",
     "test:memory": "node --test server/learningMemory.test.js",
     "test:feedback": "node --test server/feedback.test.js",
+    "lod:heart": "node scripts/generate-interactive-lod.mjs --input public/models/heart-optimized.glb --output public/models/heart-interactive-lod.glb --target-triangles 225000",
     "build": "vite build",
     "preview": "vite preview"
   },
