@@ -8,11 +8,13 @@ import {
 import {
   advanceRotationContinuity,
   applyRateDeadzone,
+  clampRate,
   createRotationContinuityState,
   decayRate,
   hysteresisBelow,
   isWithinGracePeriod,
   normalizeRatePerSecond,
+  smoothRateTowardsTarget,
 } from './handGestureMath.ts';
 
 // A compact, deterministic hand-like landmark shape. The absolute geometry is
@@ -183,6 +185,51 @@ test('rotation grace velocity decays smoothly and never reverses direction', () 
     assert.ok(Math.abs(samples[index]) < Math.abs(samples[index - 1]));
     assert.ok(samples[index] < 0);
   }
+});
+
+test('clamps a fast rotation sample before it can create a speed spike', () => {
+  assert.equal(clampRate(12, 3.8), 3.8);
+  assert.equal(clampRate(-12, 3.8), -3.8);
+  assert.equal(clampRate(Number.NaN, 3.8), 0);
+});
+
+test('limits rotation acceleration by elapsed time across different sample gaps', () => {
+  const options = [15, 30, 60].map((hz) => {
+    const elapsedMs = 1000 / hz;
+    let rate = 0;
+    for (let sample = 0; sample < hz; sample += 1) {
+      const next = smoothRateTowardsTarget(rate, 3.8, elapsedMs, 3.8, 30, 42);
+      assert.ok(Math.abs(next - rate) <= 30 * elapsedMs / 1000 + 1e-9);
+      rate = next;
+    }
+    return rate;
+  });
+  for (const value of options) {
+    assert.ok(value > 0);
+    assert.ok(value <= 3.8 + 1e-9);
+  }
+  assert.ok(Math.max(...options) - Math.min(...options) < 0.08);
+});
+
+test('passes through zero before a fast direction reversal', () => {
+  const first = smoothRateTowardsTarget(2, -3.8, 33, 3.8, 30, 42);
+  assert.ok(first >= 0);
+  const second = smoothRateTowardsTarget(first, -3.8, 33, 3.8, 30, 42);
+  assert.ok(second >= 0);
+  const settled = smoothRateTowardsTarget(0, -3.8, 33, 3.8, 30, 42);
+  assert.ok(settled < 0);
+});
+
+test('smoothly settles rotation to zero without residual inertia', () => {
+  let rate = 3.8;
+  let previousMagnitude = Math.abs(rate);
+  for (let elapsed = 0; elapsed < 250; elapsed += 1000 / 30) {
+    rate = smoothRateTowardsTarget(rate, 0, 1000 / 30, 3.8, 30, 42);
+    const magnitude = Math.abs(rate);
+    assert.ok(magnitude <= previousMagnitude + 1e-9);
+    previousMagnitude = magnitude;
+  }
+  assert.ok(Math.abs(rate) < 0.05, `rotation did not settle: ${rate}`);
 });
 
 test('rate deadzone and integrated rotation are invariant at 15/20/30Hz', () => {

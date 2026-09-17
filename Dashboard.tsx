@@ -406,7 +406,7 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
   const [editingMemoryId, setEditingMemoryId] = useState<number | null>(null);
   const [editingMemoryContent, setEditingMemoryContent] = useState('');
   const [zoomSpeedMultiplier, setZoomSpeedMultiplier] = useState(0.8);
-  const [rotationSpeedMultiplier, setRotationSpeedMultiplier] = useState(1.0);
+  const [rotationSpeedMultiplier, setRotationSpeedMultiplier] = useState(5.0);
   const [showLabels, setShowLabels] = useState(false);
   const [agentStatuses, setAgentStatuses] = useState<Record<AgentRole, AgentStatus>>(AGENT_STATUS_IDLE);
   const [agentTimeline, setAgentTimeline] = useState<AgentTimelineItem[]>([]);
@@ -825,6 +825,7 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
   const objectUrlsRef = useRef<string[]>([]);
   const controlRef = useRef<ControlRefs>({
     rotationVelocity: { x: 0, y: 0 },
+    rotationGestureActive: false,
     rotationLocked: false,
     voiceRotationActive: false,
     zoomSpeed: 0,
@@ -833,7 +834,7 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
     handLandmarks: { left: null, right: null },
     interactionHandLandmarks: null,
     handNDCPosition: null,
-    interactionSettings: { zoomSpeed: 0.8, rotationSpeed: 0.5 },
+    interactionSettings: { zoomSpeed: 0.8, rotationSpeed: 5.0 },
     agentDisassembly: {
       enabled: false,
       strength: 0,
@@ -1041,6 +1042,7 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
     const nextActionId = (controlRef.current.agentDisassembly?.actionId ?? 0) + 1;
     controlRef.current = {
       rotationVelocity: { x: 0, y: 0 },
+      rotationGestureActive: false,
       rotationLocked: controlRef.current.rotationLocked,
       voiceRotationActive: false,
       zoomSpeed: 0,
@@ -1665,6 +1667,7 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
             setAiAnalysis('旋转已锁定，自动旋转指令已忽略。');
             break;
           }
+          controlRef.current.rotationGestureActive = false;
           controlRef.current.rotationVelocity = { x: 0, y: speed };
           await sleep(Math.max(100, durationMs), signal);
           if (speed !== 0) {
@@ -1727,6 +1730,7 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
           setCameraActive(false);
           controlRef.current.isDragging = false;
           controlRef.current.zoomSpeed = 0;
+          controlRef.current.rotationGestureActive = false;
           controlRef.current.rotationVelocity = { x: 0, y: 0 };
           setAiAnalysis('手势操纵已关闭。');
           await sleep(300, signal);
@@ -2046,6 +2050,7 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
       if ((error as Error).name === 'AbortError') {
         controlRef.current.zoomSpeed = 0;
         controlRef.current.voiceRotationActive = false;
+        controlRef.current.rotationGestureActive = false;
         controlRef.current.rotationVelocity = { x: 0, y: 0 };
         if (interactionEpochRef.current === runEpoch) {
           setAgentThinking('智能体流程已被新的语音指令中断。');
@@ -2101,6 +2106,7 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
     followUpTimelineIdRef.current = null;
     controlRef.current.zoomSpeed = 0;
     controlRef.current.voiceRotationActive = false;
+    controlRef.current.rotationGestureActive = false;
     controlRef.current.rotationVelocity = { x: 0, y: 0 };
     setIsAgentRunning(false);
     setIsAgentRequestPending(false);

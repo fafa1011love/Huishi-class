@@ -76,7 +76,7 @@ export const ProceduralEarthLayers: React.FC<ProceduralEarthProps> = ({ controlR
     const sph = sphericalRef.current;
 
     if (hasCameraGestureInput && (Math.abs(rotationVelocity.x) > 0.0001 || Math.abs(rotationVelocity.y) > 0.0001)) {
-      const sensitivity = 0.5 * (controlRef.current.interactionSettings?.rotationSpeed ?? 1.0);
+      const sensitivity = 0.5 * (controlRef.current.interactionSettings?.rotationSpeed ?? 5.0);
       // Control values are rates (per second); integrate exactly once per
       // rendered frame so the gesture feels identical at 30/60/120 Hz.
       const frameDelta = Math.min(delta, 0.05);

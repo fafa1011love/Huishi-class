@@ -15,6 +15,11 @@ import {
   consumePublishedHandInput,
   performanceTelemetry,
 } from '../services/performanceTelemetry';
+import {
+  advanceDragGestureSession,
+  createDragGestureSessionState,
+  selectDragPickCandidate,
+} from '../services/dragInteraction';
 import { ProceduralTerrain } from './ProceduralTerrain';
 import { useTheme } from './ThemeProvider';
 
@@ -101,10 +106,6 @@ type PubchemPartKind = 'left-methyl' | 'right-methyl' | 'core';
 type NitrobenzenePartKind = 'nitro' | 'remainder';
 
 const vectorFromTarget = (target: CameraTarget) => new THREE.Vector3(target[0], target[1], target[2]);
-// Keep a grab alive across one or two sparse MediaPipe frames. The tracker
-// bridges misses for ~120ms, so this small grace prevents a visible snap when
-// the hand detector briefly drops a pinch.
-const PINCH_RELEASE_GRACE_MS = 150;
 const PART_MOVE_LOG_THRESHOLD = 0.03;
 
 const isMeshObject = (object: THREE.Object3D): object is THREE.Mesh => {
@@ -1173,7 +1174,7 @@ const LayeredModel: React.FC<{ url: string; modelType: ModelType; assetUrls?: Re
   const grabOffsetRef = useRef(new THREE.Vector3());
   const dragPlaneRef = useRef(new THREE.Plane());
   const dragTargetPositionRef = useRef(new THREE.Vector3());
-  const lastGrabPinchTimeRef = useRef(0);
+  const dragGestureSessionRef = useRef(createDragGestureSessionState(controlRef.current.isDragging));
   const raycastTargetsRef = useRef<THREE.Object3D[]>([]);
   const meshToPartRef = useRef<WeakMap<THREE.Object3D, GrabbablePart>>(new WeakMap());
   const highlightMaterialsRef = useRef<WeakMap<GrabbablePart, HighlightMaterial[]>>(new WeakMap());
@@ -1184,13 +1185,11 @@ const LayeredModel: React.FC<{ url: string; modelType: ModelType; assetUrls?: Re
     exists: boolean;
     isFist: boolean;
     isOpen: boolean;
-    isPinching: boolean;
     ndc: THREE.Vector2 | null;
   }>({
     exists: false,
     isFist: false,
     isOpen: false,
-    isPinching: false,
     ndc: null
   });
 
@@ -1231,7 +1230,7 @@ const LayeredModel: React.FC<{ url: string; modelType: ModelType; assetUrls?: Re
     grabbedParentRef.current = null;
     isGrabbingRef.current = false;
     grabMovedRef.current = false;
-    lastGrabPinchTimeRef.current = 0;
+    dragGestureSessionRef.current = createDragGestureSessionState(controlRef.current.isDragging);
     raycastTargetsRef.current = [];
     meshToPartRef.current = new WeakMap();
     highlightMaterialsRef.current = new WeakMap();
@@ -1269,9 +1268,10 @@ const LayeredModel: React.FC<{ url: string; modelType: ModelType; assetUrls?: Re
         : customParts.length > 0
           ? customParts
           : findLayerRoots(root);
-      const interactionParts = Array.isArray(root.userData.grabbableParts)
+      const candidateInteractionParts = Array.isArray(root.userData.grabbableParts)
         ? root.userData.grabbableParts as GrabbablePart[]
         : parts;
+      const interactionParts = candidateInteractionParts.filter(isDisassemblablePart);
 
       Array.from(new Set([...parts, ...interactionParts])).forEach((part) => {
         part.userData.originalPosition = part.position.clone();
@@ -1437,25 +1437,9 @@ const LayeredModel: React.FC<{ url: string; modelType: ModelType; assetUrls?: Re
     state.isFist = normalizedDist < 1.2;
     state.isOpen = normalizedDist > 1.8;
 
-    // 捏合检测 (一比一复刻第一版)
-    const thumbTip = scratch.points[4];
-    const indexTip = scratch.points[8];
-    const pinchDist = thumbTip.distanceTo(indexTip);
-    const normalizedPinchDist = handScale > 0 ? pinchDist / handScale : 1;
-
-    // 施密特触发器 (Hysteresis)
-    if (state.isPinching) {
-      state.isPinching = normalizedPinchDist < 0.6; // 退出阈值
-    } else {
-      state.isPinching = normalizedPinchDist < 0.4; // 进入阈值
-    }
-
-    // 优先级: 握拳 > 捏合
-    if (state.isFist) {
-      state.isPinching = false;
-    }
-    // 捏合时不算张开
-    if (state.isPinching) {
+    // HandController owns pinch hysteresis; the viewer only consumes its
+    // canonical drag signal so release and reacquisition cannot disagree.
+    if (controlRef.current.isDragging) {
       state.isOpen = false;
     }
 
@@ -1508,43 +1492,35 @@ const LayeredModel: React.FC<{ url: string; modelType: ModelType; assetUrls?: Re
     grabbedPartRef.current = null;
     grabbedParentRef.current = null;
     grabMovedRef.current = false;
-    lastGrabPinchTimeRef.current = 0;
   };
 
   const pickGrabbablePart = (): GrabbablePart | null => {
     const proxies = dragPickProxiesRef.current;
     const scratch = handProjectionScratchRef.current;
+    const raycastTargets = raycastTargetsRef.current;
+    groupRef.current?.updateWorldMatrix(true, true);
+    const preciseHits = raycaster.intersectObjects(
+      raycastTargets.length > 0 ? raycastTargets : grabbableParts,
+      raycastTargets.length === 0,
+    ).flatMap((intersection) => {
+      const part = meshToPartRef.current.get(intersection.object)
+        || grabbableParts.find((candidate) => isDescendantOf(intersection.object, candidate));
+      return part ? [{ part, distanceSq: intersection.distance * intersection.distance }] : [];
+    });
+    const proxyHits: Array<{ part: GrabbablePart; distanceSq: number }> = [];
 
     if (proxies.length > 0) {
-      groupRef.current?.updateWorldMatrix(true, true);
-
-      let bestPart: GrabbablePart | null = null;
-      let bestDistanceSq = Infinity;
-
       proxies.forEach((proxy) => {
         proxy.worldBox.copy(proxy.localBox).applyMatrix4(proxy.part.matrixWorld);
         const hitPoint = raycaster.ray.intersectBox(proxy.worldBox, scratch.pickPoint);
         if (!hitPoint) return;
-
-        const distanceSq = raycaster.ray.origin.distanceToSquared(hitPoint);
-        if (distanceSq < bestDistanceSq) {
-          bestDistanceSq = distanceSq;
-          bestPart = proxy.part;
-        }
+        proxyHits.push({
+          part: proxy.part,
+          distanceSq: raycaster.ray.origin.distanceToSquared(hitPoint),
+        });
       });
-
-      return bestPart;
     }
-
-    const raycastTargets = raycastTargetsRef.current;
-    const intersects = raycaster.intersectObjects(
-      raycastTargets.length > 0 ? raycastTargets : grabbableParts,
-      raycastTargets.length === 0
-    );
-    if (intersects.length === 0) return null;
-
-    const hitObject = intersects[0].object;
-    return meshToPartRef.current.get(hitObject) || grabbableParts.find((part) => isDescendantOf(hitObject, part)) || null;
+    return selectDragPickCandidate(preciseHits, proxyHits);
   };
 
   useFrame((state, delta) => {
@@ -1567,15 +1543,19 @@ const LayeredModel: React.FC<{ url: string; modelType: ModelType; assetUrls?: Re
 
     const {
       rotationVelocity,
+      rotationGestureActive,
       rotationLocked,
       zoomSpeed,
+      isDragging: pinchGestureActive,
       interactionHandLandmarks,
       handNDCPosition,
     } = controlRef.current;
     // HandController publishes time-normalized rates and performs the single
     // input low-pass. Do not smooth/integrate the same sample a second time.
-    const smoothRotX = rotationLocked ? 0 : rotationVelocity.x;
-    const smoothRotY = rotationLocked ? 0 : rotationVelocity.y;
+    const suppressGestureRotation = rotationLocked
+      || (isGrabbingRef.current && !controlRef.current.voiceRotationActive);
+    const smoothRotX = suppressGestureRotation ? 0 : rotationVelocity.x;
+    const smoothRotY = suppressGestureRotation ? 0 : rotationVelocity.y;
     const smoothZoom = zoomSpeed;
     consumePublishedHandInput(controlRef.current, frameStartedAt);
     // rotationVelocity/zoomSpeed are time-normalized rates (per second).
@@ -1586,6 +1566,7 @@ const LayeredModel: React.FC<{ url: string; modelType: ModelType; assetUrls?: Re
     const hasRotationGestureInput =
       Math.abs(smoothRotX) > 0.0001 ||
       Math.abs(smoothRotY) > 0.0001;
+    const hasActiveRotationGesture = !rotationLocked && rotationGestureActive;
     const hasCameraGestureInput =
       hasRotationGestureInput ||
       Math.abs(smoothZoom) > 0.0001;
@@ -1601,7 +1582,7 @@ const LayeredModel: React.FC<{ url: string; modelType: ModelType; assetUrls?: Re
 
     // 旋转 — modify angles on persistent spherical (uses smoothed velocity)
     if (hasCameraGestureInput && (Math.abs(smoothRotX) > 0.0001 || Math.abs(smoothRotY) > 0.0001)) {
-      const sensitivity = 0.31 * (controlRef.current.interactionSettings?.rotationSpeed ?? 1.0);
+      const sensitivity = 0.31 * (controlRef.current.interactionSettings?.rotationSpeed ?? 5.0);
       sph.theta -= smoothRotY * sensitivity * frameDelta;
       sph.phi -= smoothRotX * sensitivity * frameDelta;
       sph.phi = Math.max(0.1, Math.min(Math.PI - 0.1, sph.phi));
@@ -1671,29 +1652,38 @@ const LayeredModel: React.FC<{ url: string; modelType: ModelType; assetUrls?: Re
     // ========== 一比一复刻第一版手部交互 ==========
     const activeInteractionLandmarks = interactionHandLandmarks;
     const handState = interactionHandStateRef.current;
+    const handVisible = Boolean(activeInteractionLandmarks && activeInteractionLandmarks.length >= 21);
 
-    if (activeInteractionLandmarks && activeInteractionLandmarks.length >= 21) {
+    if (handVisible && activeInteractionLandmarks) {
       updateHandState(activeInteractionLandmarks, handNDCPosition);
-      const nowMs = performance.now();
-      if (handState.isPinching) {
-        lastGrabPinchTimeRef.current = nowMs;
-      }
-      const keepGrabAlive =
-        isGrabbingRef.current &&
-        nowMs - lastGrabPinchTimeRef.current <= PINCH_RELEASE_GRACE_MS;
+    } else {
+      handState.exists = false;
+    }
 
-      // 抓取逻辑 (一比一复刻 executeInteractions)
-      if (!hasRotationGestureInput && handState.isPinching && !isGrabbingRef.current && handState.ndc && grabbableParts.length > 0) {
+    const dragSession = advanceDragGestureSession(dragGestureSessionRef.current, {
+      handVisible,
+      pinchActive: pinchGestureActive,
+      rotationActive: hasActiveRotationGesture,
+    });
+    dragGestureSessionRef.current = dragSession.state;
+    if (dragSession.shouldRelease && isGrabbingRef.current) {
+      releaseGrab();
+    }
+
+    if (dragSession.shouldAttemptSelection && !isGrabbingRef.current && handState.ndc && grabbableParts.length > 0) {
         raycaster.setFromCamera(handState.ndc, camera);
         const hitPart = pickGrabbablePart();
 
         if (hitPart) {
+          if (!controlRef.current.voiceRotationActive) {
+            controlRef.current.rotationVelocity.x = 0;
+            controlRef.current.rotationVelocity.y = 0;
+          }
           isGrabbingRef.current = true;
           grabbedPartRef.current = hitPart;
           grabbedParentRef.current = hitPart.parent;
           grabStartPositionRef.current.copy(hitPart.position);
           grabMovedRef.current = false;
-          lastGrabPinchTimeRef.current = nowMs;
 
           // 获取世界坐标
           const { worldPos } = scratch;
@@ -1718,32 +1708,26 @@ const LayeredModel: React.FC<{ url: string; modelType: ModelType; assetUrls?: Re
           grabOffsetRef.current.copy(worldPos).sub(scratch.intersectPoint);
           dragTargetPositionRef.current.copy(worldPos);
         }
-      } else if (!handState.isPinching && isGrabbingRef.current && !keepGrabAlive) {
-        releaseGrab();
-      }
+    }
 
-      // 拖拽
-      if (isGrabbingRef.current && grabbedPartRef.current && handState.ndc) {
-        raycaster.setFromCamera(handState.ndc, camera);
-        if (raycaster.ray.intersectPlane(dragPlaneRef.current, scratch.targetPoint)) {
-          dragTargetPositionRef.current.copy(scratch.targetPoint).add(grabOffsetRef.current);
-          const parent = grabbedParentRef.current || scene;
-          scratch.targetLocal.copy(dragTargetPositionRef.current);
-          parent.worldToLocal(scratch.targetLocal);
-          grabbedPartRef.current.position.copy(scratch.targetLocal);
-          if (grabbedPartRef.current.position.distanceTo(grabStartPositionRef.current) >= PART_MOVE_LOG_THRESHOLD) {
-            grabMovedRef.current = true;
-          }
+    if (
+      handVisible
+      && pinchGestureActive
+      && !hasActiveRotationGesture
+      && isGrabbingRef.current
+      && grabbedPartRef.current
+      && handState.ndc
+    ) {
+      raycaster.setFromCamera(handState.ndc, camera);
+      if (raycaster.ray.intersectPlane(dragPlaneRef.current, scratch.targetPoint)) {
+        dragTargetPositionRef.current.copy(scratch.targetPoint).add(grabOffsetRef.current);
+        const parent = grabbedParentRef.current || scene;
+        scratch.targetLocal.copy(dragTargetPositionRef.current);
+        parent.worldToLocal(scratch.targetLocal);
+        grabbedPartRef.current.position.copy(scratch.targetLocal);
+        if (grabbedPartRef.current.position.distanceTo(grabStartPositionRef.current) >= PART_MOVE_LOG_THRESHOLD) {
+          grabMovedRef.current = true;
         }
-      }
-    } else {
-      // 手部丢失
-      handState.exists = false;
-      if (
-        isGrabbingRef.current &&
-        performance.now() - lastGrabPinchTimeRef.current > PINCH_RELEASE_GRACE_MS
-      ) {
-        releaseGrab();
       }
     }
 

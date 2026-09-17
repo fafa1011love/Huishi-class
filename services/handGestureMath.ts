@@ -31,6 +31,46 @@ export const decayRate = (
   rate * Math.exp(-Math.max(0, elapsedMs) / Math.max(0.001, timeConstantMs))
 );
 
+/** Limit a time-normalized rate to a symmetric maximum. */
+export const clampRate = (rate: number, maxRatePerSecond: number): number => {
+  const safeRate = Number.isFinite(rate) ? rate : 0;
+  const limit = Math.max(0, Math.abs(maxRatePerSecond));
+  return Math.max(-limit, Math.min(limit, safeRate));
+};
+
+/**
+ * Move a rate toward a target without allowing a sampled pose to create an
+ * angular-speed spike.  A sign change always passes through zero first, so a
+ * delayed or mismatched hand result cannot make the model snap backward.
+ */
+export const smoothRateTowardsTarget = (
+  currentRate: number,
+  targetRate: number,
+  elapsedMs: number,
+  maxRatePerSecond: number,
+  maxAccelerationPerSecond: number,
+  timeConstantMs: number,
+): number => {
+  const current = Number.isFinite(currentRate) ? currentRate : 0;
+  const boundedTarget = clampRate(targetRate, maxRatePerSecond);
+  const elapsed = Math.max(0, elapsedMs);
+  if (elapsed <= 0) return current;
+
+  const alpha = exponentialSmoothingAlpha(elapsed, timeConstantMs);
+  const filteredTarget = current + (boundedTarget - current) * alpha;
+  const maxStep = Math.max(0, maxAccelerationPerSecond) * elapsed / 1000;
+
+  // Do not cross zero during a reversal. The next sample can then accelerate
+  // cleanly in the new direction instead of producing an opposite-direction
+  // overshoot.
+  if (current !== 0 && boundedTarget !== 0 && Math.sign(current) !== Math.sign(boundedTarget)) {
+    return Math.abs(current) <= maxStep ? 0 : current - Math.sign(current) * maxStep;
+  }
+
+  const delta = filteredTarget - current;
+  return current + Math.max(-maxStep, Math.min(maxStep, delta));
+};
+
 export interface RotationContinuityState {
   active: boolean;
   lastValidAtMs: number;

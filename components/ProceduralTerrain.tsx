@@ -277,7 +277,7 @@ export const ProceduralTerrain: React.FC<ProceduralTerrainProps> = ({ controlRef
     const sph = sphericalRef.current;
 
     if (hasCameraGestureInput && (Math.abs(rotationVelocity.x) > 0.0001 || Math.abs(rotationVelocity.y) > 0.0001)) {
-      const sensitivity = 0.5 * (controlRef.current.interactionSettings?.rotationSpeed ?? 1.0);
+      const sensitivity = 0.5 * (controlRef.current.interactionSettings?.rotationSpeed ?? 5.0);
       sph.theta -= rotationVelocity.y * sensitivity * frameDelta;
       sph.phi -= rotationVelocity.x * sensitivity * frameDelta;
       sph.phi = Math.max(0.1, Math.min(Math.PI - 0.1, sph.phi));

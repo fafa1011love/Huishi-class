@@ -37,7 +37,7 @@ export interface ControlState {
 
 export interface InteractionSettings {
   zoomSpeed: number;     // 0.1 - 5.0, default 0.8
-  rotationSpeed: number; // 0.1 - 5.0, default 0.5
+  rotationSpeed: number; // 0.1 - 5.0, default 5.0
 }
 
 export interface AgentDisassemblyControl {
@@ -55,6 +55,7 @@ export interface ControlRefs {
   // interaction-speed multiplier). x = pitch, y = yaw. Consumers must apply
   // this value once with their frame delta; it is not a per-frame increment.
   rotationVelocity: { x: number; y: number };
+  rotationGestureActive: boolean; // true only while the camera sees the two-finger rotation pose
   rotationLocked: boolean; // voice lock: blocks any rotation input until unlocked
   voiceRotationActive: boolean; // true = voice spin is running, HandController must NOT overwrite rotationVelocity
   // Time-normalized zoom rate. Consumers apply it once with frame delta.

@@ -50,3 +50,14 @@
 - `applySingleHandRotation` then cleared `prevRotatePosRef`; the first recovered sample could only establish a new baseline. One bad sample therefore removed both that update and the next update from model motion.
 - Dual-hand mode evaluated the hard predicate before calling the rotation handler, so a continuity policy inside the handler would otherwise be bypassed.
 - The displacement deadzone scaled with sample duration before rate normalization. A fixed rate deadzone is needed so equivalent motion behaves the same at 15/20/30Hz.
+
+## Sequential disassembly wrong-part drag (2026-09-18)
+
+- `HandController` already publishes a hysteresis-filtered `isDragging` signal and preserves it across short tracker gaps, but `ModelViewer` independently reclassifies pinch from landmarks with different thresholds.
+- `ModelViewer` treats an explicit non-pinch sample like a detector gap: it keeps the old grab alive for 150ms and continues applying pointer movement during that grace. Moving toward the next part can therefore pull the previously placed part back across the scene.
+- Grab acquisition is level-triggered, so a held pinch can select a part on any later render frame. The agreed behavior is edge-triggered: one fresh pinch gets one selection attempt, and a miss requires release before retry.
+- Part selection currently returns the nearest proxy AABB before testing real mesh intersections. A proxy can therefore override a different part that the user visibly targeted.
+- 可靠修复应区分“明确松开”和“手部数据缺失”：前者当帧固定旧零件，后者才保留 150ms tracker 宽限。
+- PubChem 6233 的 `core` 已标记 `disassemblable=false`，但此前仍进入 `grabbableParts`；从交互零件列表过滤该标记可避免苯环核心的大范围命中干扰两个甲基侧基。
+- 真实 PubChem 6233 浏览器回归验证了完整链路：右侧侧基释放后固定，重新捏合并拖动左侧侧基时不会把右侧旧零件重新带回；两次释放各产生一次零件移动事件。
+- 主应用工作台仍受登录门禁限制，因此回归使用临时本地 `ModelViewer` 入口模拟 `ControlRefs` 的捏合边沿；入口只用于验证并已删除。

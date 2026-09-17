@@ -11,11 +11,13 @@ import {
   advanceRotationContinuity,
   applyRateDeadzone,
   createRotationContinuityState,
+  clampRate,
   decayRate,
   exponentialSmoothingAlpha,
   hysteresisBelow,
   normalizeRatePerSecond,
   RotationContinuityState,
+  smoothRateTowardsTarget,
 } from '../services/handGestureMath';
 import {
   notePublishedHandInput,
@@ -159,6 +161,7 @@ const HandController: React.FC<HandControllerProps> = ({
     openStopStartRef.current = 0;
     openStopActiveRef.current = false;
     controlRef.current.rotationVelocity = { x: 0, y: 0 };
+    controlRef.current.rotationGestureActive = false;
     controlRef.current.zoomSpeed = 0;
     controlRef.current.isDragging = false;
     controlRef.current.panPosition = { x: 0, y: 0 };
@@ -203,6 +206,7 @@ const HandController: React.FC<HandControllerProps> = ({
     openStopStartRef.current = 0;
     openStopActiveRef.current = false;
     controlRef.current.rotationVelocity = { x: 0, y: 0 };
+    controlRef.current.rotationGestureActive = false;
     controlRef.current.zoomSpeed = 0;
     controlRef.current.isDragging = false;
     controlRef.current.panPosition = { x: 0, y: 0 };
@@ -276,6 +280,9 @@ const HandController: React.FC<HandControllerProps> = ({
   const POSITION_FILTER_TIME_CONSTANT_MS = 32;
   const ZOOM_FILTER_TIME_CONSTANT_MS = 55;
   const ROTATION_RATE_DEADZONE = 0.0015 * 1000 / 33;
+  const ROTATION_MAX_RATE = 3.8;
+  const ROTATION_MAX_ACCELERATION = 30;
+  const ROTATION_OUTPUT_FILTER_TIME_CONSTANT_MS = 42;
   const ROTATION_RELEASE_GRACE_MS = 120;
   const ROTATION_RELEASE_AFTER_MISSES = 2;
   const ROTATION_GRACE_DECAY_TIME_CONSTANT_MS = 90;
@@ -321,6 +328,7 @@ const HandController: React.FC<HandControllerProps> = ({
       controls.rotationVelocity.x = 0;
       controls.rotationVelocity.y = 0;
     }
+    controls.rotationGestureActive = false;
     controls.zoomSpeed = 0;
     controls.isDragging = false;
     controls.interactionHandLandmarks = null;
@@ -748,6 +756,7 @@ const HandController: React.FC<HandControllerProps> = ({
         controlRef.current.handLandmarks = { left: null, right: null };
         controlRef.current.interactionHandLandmarks = null;
         controlRef.current.rotationVelocity = { x: 0, y: 0 };
+        controlRef.current.rotationGestureActive = false;
         controlRef.current.zoomSpeed = 0;
         controlRef.current.isDragging = false;
         controlRef.current.panPosition = { x: 0, y: 0 };
@@ -952,7 +961,10 @@ const HandController: React.FC<HandControllerProps> = ({
           }
           prevRotatePosRef.current = { ...smoothRotateFingerCenterRef.current };
           prevRotateSampleAtRef.current = startTimeMs;
-          lastValidRotVelRef.current = { x: rotVelX, y: rotVelY };
+          lastValidRotVelRef.current = {
+            x: clampRate(rotVelX, ROTATION_MAX_RATE),
+            y: clampRate(rotVelY, ROTATION_MAX_RATE),
+          };
           return true;
         };
 
@@ -1126,10 +1138,29 @@ const HandController: React.FC<HandControllerProps> = ({
         wasContactingRef.current = false;
         isDragging = false;
       } else {
-        // Rotation uses the position filter above as its sole smoothing layer;
-        // do not apply a second fixed-per-sample EMA to the velocity.
-        smoothRotVelRef.current.x = rotVelX;
-        smoothRotVelRef.current.y = rotVelY;
+        // The position filter removes landmark noise; this second, explicitly
+        // time-aware stage limits angular speed and acceleration so a sparse
+        // fast hand sample cannot turn into a visible camera snap.
+        const rotationSampleDeltaMs = Math.max(
+          1,
+          startTimeMs - (lastControlSampleAtRef.current || startTimeMs),
+        );
+        smoothRotVelRef.current.x = smoothRateTowardsTarget(
+          smoothRotVelRef.current.x,
+          rotVelX,
+          rotationSampleDeltaMs,
+          ROTATION_MAX_RATE,
+          ROTATION_MAX_ACCELERATION,
+          ROTATION_OUTPUT_FILTER_TIME_CONSTANT_MS,
+        );
+        smoothRotVelRef.current.y = smoothRateTowardsTarget(
+          smoothRotVelRef.current.y,
+          rotVelY,
+          rotationSampleDeltaMs,
+          ROTATION_MAX_RATE,
+          ROTATION_MAX_ACCELERATION,
+          ROTATION_OUTPUT_FILTER_TIME_CONSTANT_MS,
+        );
         const zoomSampleDeltaMs = Math.max(
           1,
           startTimeMs - (lastControlSampleAtRef.current || startTimeMs),
@@ -1140,7 +1171,6 @@ const HandController: React.FC<HandControllerProps> = ({
         );
         smoothZoomRef.current = lerp(smoothZoomRef.current, newZoomSpeed, zoomAlpha);
         if (openStopActiveRef.current) {
-          smoothRotVelRef.current = { x: 0, y: 0 };
           prevRotatePosRef.current = null;
           prevRotateSampleAtRef.current = 0;
           rotationContinuityRef.current = createRotationContinuityState();
@@ -1161,6 +1191,12 @@ const HandController: React.FC<HandControllerProps> = ({
       const finalRotX = !isRotationLocked && Math.abs(smoothRotVelRef.current.x) > 0.001 ? smoothRotVelRef.current.x : 0;
       const finalRotY = !isRotationLocked && Math.abs(smoothRotVelRef.current.y) > 0.001 ? smoothRotVelRef.current.y : 0;
       const finalZoomSpeed = Math.abs(smoothZoomRef.current) > 0.01 ? smoothZoomRef.current : 0;
+      const rotationGestureActive = !quizModeRef.current
+        && !controlRef.current.voiceRotationActive
+        && !isRotationLocked
+        && trackedHands.controlEnabled
+        && newGesture === GestureType.RIGHT_TWO_FINGER_ROTATE;
+      controlRef.current.rotationGestureActive = rotationGestureActive;
 
       // 答题模式下：冻结模型控制，但保留手势位置数据
       if (quizModeRef.current) {

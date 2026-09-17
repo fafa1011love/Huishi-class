@@ -84,7 +84,7 @@ const OpenGlobusEarth: React.FC<OpenGlobusEarthProps> = ({ controlRef }) => {
       lastFrameAt = now;
 
       const { rotationVelocity, zoomSpeed } = controlRef.current;
-      const sensitivity = 0.005;
+      const sensitivity = 0.005 * (controlRef.current.interactionSettings?.rotationSpeed ?? 5.0);
 
       // Horizontal rotation
       if (Math.abs(rotationVelocity.y) > 0.0001) {
