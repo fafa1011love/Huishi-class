@@ -282,7 +282,10 @@ export default function LandingPage({
   const [time, setTime] = useState("");
   const [isScrolled, setIsScrolled] = useState(false);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const [selectedDoc, setSelectedDoc] = useState<{ title: string; description: string; meta: string } | null>(null);
+  const [selectedDoc, setSelectedDoc] = useState<{
+    title: string; description: string; meta: string;
+    sections: { kind: 'steps' | 'bullets' | 'table' | 'callout'; title?: string; items?: string[]; rows?: string[][]; headers?: string[]; tone?: 'info' | 'tip' | 'warn'; text?: string }[];
+  } | null>(null);
   const [selectedScenario, setSelectedScenario] = useState<{
     label: string;
     title: string;
@@ -918,12 +921,128 @@ export default function LandingPage({
           <section className="max-w-[76rem] mx-auto px-6 py-20 border-t border-line/5">
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-5">
               {[
-                { icon: BookOpen, title: '快速开始', description: '完成登录、创建教具库，并开始你的第一场 3D 课堂演示。', meta: '约 5 分钟' },
-                { icon: Box, title: '3D 教具指南', description: '了解模型导入、分类、高亮、拆解和课堂投屏的完整流程。', meta: '教具管理' },
-                { icon: Hand, title: '空间手势操作', description: '掌握旋转、缩放与模型交互手势，并排查摄像头识别问题。', meta: '互动控制' },
-                { icon: Mic, title: '语音与 AI 助教', description: '配置语音交互，生成讲解词、课堂问题与追问回答。', meta: 'AI 助教' },
-                { icon: BarChart2, title: '课堂数据', description: '查看互动记录与学习反馈，用数据帮助下一次备课。', meta: '教学分析' },
-                { icon: Download, title: '部署与设备', description: '查看浏览器、摄像头、投屏设备及学校网络环境建议。', meta: '环境配置' },
+                { icon: BookOpen, title: '快速开始', description: '完成登录、创建教具库，并开始你的第一场 3D 课堂演示。', meta: '约 5 分钟',
+                  sections: [
+                    { kind: 'steps', title: '三步上手', items: [
+                      '选择身份：教师使用 **"用户"标签页**，管理员使用 **"管理员"标签页**。',
+                      '进入课堂：登录后点击左侧"教具库"→ 选择一个已有的 3D 教具（心脏、大脑、肺等）。',
+                      '开始互动：点击右侧"开始课堂"，启用摄像头后即可使用手势和语音控制模型。',
+                    ]},
+                    { kind: 'callout', tone: 'tip', text: '首次进入建议用 **Edge 浏览器**（系统级语音识别效果最佳），确保摄像头已授权。' },
+                  ]},
+                { icon: Box, title: '3D 教具指南', description: '了解模型导入、分类、高亮、拆解和课堂投屏的完整流程。', meta: '教具管理',
+                  sections: [
+                    { kind: 'bullets', title: '模型导入', items: [
+                      '**支持格式**：GLB / GLTF（推荐）、FBX。建议单文件 GLB，自带材质贴图。',
+                      '**导入入口**：管理员后台 → "教具管理" → "上传新模型"。',
+                      '**校验提示**：导入后系统自动检查顶点数和材质，低于 500 面可能导致拆解卡顿。',
+                    ]},
+                    { kind: 'bullets', title: '分类与打标', items: [
+                      '按学科归入：**生物**（心脏/大脑/肺/肝/肾）、**化学**（分子结构）、**物理**（力学/光学）。',
+                      '给模型打上"解剖结构"标签后，进入课堂会自动启用拆解面板。',
+                    ]},
+                    { kind: 'callout', tone: 'warn', text: '⚠️ 只有包含**多个独立 Mesh** 的模型才能拆解。单一 Mesh 的模型只能旋转/缩放/高亮，无法拆成零件。' },
+                    { kind: 'bullets', title: '课堂内操作', items: [
+                      '**高亮**：语音"XX 部位"或点击左侧面板 → 模型对应部分发光 3 秒。',
+                      '**拆解**：双手捏合 / 单手捏合 → 部件沿法线方向飞散；再次捏合 → 重组。',
+                      '**投屏**：点击右上角"投屏"→ 扫描二维码，学生端同步看到同一视角。',
+                    ]},
+                  ]},
+                { icon: Hand, title: '空间手势操作', description: '掌握旋转、缩放与模型交互手势，并排查摄像头识别问题。', meta: '互动控制',
+                  sections: [
+                    { kind: 'table', title: '双手协同模式 · Dual-hand Mode',
+                      headers: ['部位', '操作', '手势', 'English'],
+                      rows: [
+                        ['左手', '缩放', '张开 → 放大；握拳 → 缩小', 'Open → zoom in; Fist → zoom out'],
+                        ['左手', '拆解模型', '食指+拇指捏合 → 触发拆解/重组', 'Pinch → explode / reassemble'],
+                        ['右手', '拆解模型', '食指+拇指捏合 → 触发拆解/重组', 'Pinch → explode / reassemble'],
+                        ['右手', '旋转画面', '食指+中指并拢滑动 → 旋转整个模型', 'Index+middle swipe → rotate'],
+                      ],
+                    },
+                    { kind: 'table', title: '单手优先模式 · Single-hand Mode',
+                      headers: ['操作', '手势', 'English'],
+                      rows: [
+                        ['缩放', '张掌放大 / 握拳缩小', 'Open palm zoom in / Fist zoom out'],
+                        ['拆解模型', '食指+拇指捏合', 'Index + thumb pinch → disassemble'],
+                        ['旋转画面', '食指+中指并拢滑动', 'Index + middle finger swipe → rotate'],
+                      ],
+                    },
+                    { kind: 'bullets', title: '常见问题排查', items: [
+                      '手势不识别 → 检查光线充足、背景简洁、整只手在画面内。',
+                      '旋转不流畅 → 食指和中指并拢贴紧，滑动速度均匀不要太快。',
+                      '拆解没反应 → 确认当前模型支持拆解（多 Mesh），或尝试在"设置"里切换单/双手模式。',
+                      '课堂内同时支持语音指令：**放大 / 缩小 / 转圈 / 停止旋转**。',
+                    ]},
+                  ]},
+                { icon: Mic, title: '语音与 AI 助教', description: '配置语音交互，生成讲解词、课堂问题与追问回答。', meta: 'AI 助教',
+                  sections: [
+                    { kind: 'bullets', title: '启用语音', items: [
+                      '进入课堂后，点击左侧 🎤 图标启用（首次需授权麦克风）。',
+                      '系统默认使用 Edge / Chrome 的 Web Speech API，无需额外安装插件。',
+                    ]},
+                    { kind: 'bullets', title: 'AI 生成的 5 道选择题（示例）', items: [
+                      '**第 1 题**：心脏中连接主动脉的是？A.左心室 B.右心室 C.左心房 D.右心房',
+                      '**第 2 题**：下列哪项是左心房与左心室之间的瓣膜？A.肺动脉瓣 B.二尖瓣 C.三尖瓣 D.主动脉瓣',
+                      '**第 3 题**：体循环的起始点是？A.右心房 B.右心室 C.左心房 D.左心室',
+                      '**第 4 题**：肺循环中血液流经的顺序是？A.右心室→肺动脉→肺部→肺静脉→左心房 B.左心室→主动脉→全身→上下腔静脉→右心房 C.右心房→肺动脉→肺静脉→左心室 D.左心房→肺静脉→肺部→肺动脉→右心室',
+                      '**第 5 题**：心脏四腔中壁最厚的是？A.左心房 B.左心室 C.右心房 D.右心室',
+                    ]},
+                    { kind: 'bullets', title: '完整课堂流程示例（中文版）', items: [
+                      '**① 教师开场**：语音"开始今天的心脏解剖课"，AI 生成开场讲解词。',
+                      '**② 模型展示**：语音"展示心脏"，模型自动居中；语音"拆解"，部件飞散。',
+                      '**③ 互动讲解**：语音"这是左心室"，对应部位高亮，AI 同步讲解左心室功能。',
+                      '**④ 提问**：语音"出题"，AI 立即生成 5 道选择题并显示在学生端。',
+                      '**⑤ 追问**：语音"为什么"，AI 基于学生答案的正确率生成追问讲解。',
+                      '**⑥ 下课**：语音"下课"，系统自动生成课堂报告，含答题记录和互动热度。',
+                    ]},
+                  ]},
+                { icon: BarChart2, title: '课堂数据', description: '查看互动记录与学习反馈，用数据帮助下一次备课。', meta: '教学分析',
+                  sections: [
+                    { kind: 'bullets', title: '系统记录什么', items: [
+                      '**答题记录**：每道题的正确率、最快答题学生、选项分布直方图。',
+                      '**互动热度**：手势操作次数、语音指令次数、拆解/高亮次数的时间线。',
+                      '**操作日志**：教师每次拆解/旋转/投屏的时间戳，用于复盘课堂节奏。',
+                      '**语音时长**：AI 讲解词的字数和学生语音互动的总时长。',
+                    ]},
+                    { kind: 'bullets', title: '查看与导出', items: [
+                      '**课堂结束**：系统自动在 1 分钟内生成课堂报告，右上角铃铛会提示。',
+                      '**历史报表**：左侧导航"数据中心"→"课堂历史"，按日期/学科/班级筛选。',
+                      '**导出格式**：支持 Excel (.xlsx) 原始数据 + PDF 图表报告，可直接打印或发给教研团队。',
+                      '**对比分析**：选择多节课进行对比，查看同一知识点在不同班级的正确率差异。',
+                    ]},
+                    { kind: 'bullets', title: '学生与教师写反馈', items: [
+                      '**提交入口**：课堂右上角点 💬 图标，弹出反馈表单。',
+                      '**评分**：1–5 星整体打分，系统自动统计平均评分和分布桶。',
+                      '**场景标签**：选择反馈所属场景（手势 / 语音 / 模型清晰度 / 课堂体验 / 其他）。',
+                      '**功能勾选**：多选框勾选表现好/不好的功能点，帮助我们定位。',
+                      '**补充文字**：自由描述具体问题或建议，可附带图片截图（最多 3 张）。',
+                      '**管理员后台**：管理员账号登录后，左侧"反馈管理"Tab 可查看所有反馈，含统计图表和逐条详情。',
+                    ]},
+                  ]},
+                { icon: Download, title: '部署与设备', description: '查看浏览器、摄像头、投屏设备及学校网络环境建议。', meta: '环境配置',
+                  sections: [
+                    { kind: 'table', title: '浏览器支持',
+                      headers: ['浏览器', '版本', '说明'],
+                      rows: [
+                        ['Microsoft Edge', '115+', '🏆 官方首选，系统级语音识别效果最佳'],
+                        ['Google Chrome', '115+', '稳定，WebGL 和手势识别兼容性好'],
+                        ['Safari', '17+', 'macOS/iPadOS 可用，部分高级手势有限'],
+                        ['Firefox', '118+', '基本支持，语音识别需要额外配置'],
+                      ],
+                    },
+                    { kind: 'bullets', title: '硬件建议', items: [
+                      '**摄像头**：1080p（推荐 4K），放在屏幕正上方，距离 50–80cm。',
+                      '**GPU**：集成显卡即可（Intel UHD / AMD Radeon / Apple M 系列），独立显卡体验更流畅。',
+                      '**麦克风**：内置或 3.5mm 外接，距离嘴巴 30cm 以内，避免回声。',
+                      '**投屏**：支持 AirPlay（Apple 设备）或 Miracast（Windows/Android），延迟 < 200ms。',
+                    ]},
+                    { kind: 'callout', tone: 'tip', text: '📌 趁热打铁：看完数据报告，当天就能知道"哪个知识点的正确率最低"，下次备课可以直接调整重点。' },
+                    { kind: 'bullets', title: '快速部署', items: [
+                      '学校 IT 管理员运行 `scripts/deploy.py`，自动安装依赖 + 配置 MySQL。',
+                      '内网环境下所有教室浏览器访问同一 URL 即可，支持多教室同时上课。',
+                      '日常维护命令：`npm start`（开发模式），`pm2 start server/index.js`（生产模式）。',
+                    ]},
+                  ]},
               ].map((doc) => (
                 <button type="button" key={doc.title} onClick={() => setSelectedDoc(doc)} className="liquid-glass rounded-2xl p-7 min-h-56 flex flex-col text-left group focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan/70">
                   <div className="w-11 h-11 rounded-xl bg-cyan/10 border border-cyan/20 flex items-center justify-center">
@@ -952,14 +1071,66 @@ export default function LandingPage({
 
         {selectedDoc && (
           <div className="fixed inset-0 z-[80] grid place-items-center bg-black/65 px-5 backdrop-blur-sm" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedDoc(null); }}>
-            <section role="dialog" aria-modal="true" aria-labelledby="doc-dialog-title" className="w-full max-w-lg rounded-2xl border border-line/15 bg-[var(--theme-bg-soft)] p-7 shadow-2xl">
-              <div className="flex items-start justify-between gap-5">
+            <section role="dialog" aria-modal="true" aria-labelledby="doc-dialog-title" className="w-full max-w-3xl rounded-2xl border border-line/15 bg-[var(--theme-bg-soft)] p-7 shadow-2xl max-h-[85vh] overflow-y-auto">
+              <div className="flex items-start justify-between gap-5 sticky top-0 bg-[var(--theme-bg-soft)] pb-4 z-10">
                 <div><div className="text-xs font-bold uppercase tracking-widest text-cyan">{selectedDoc.meta}</div><h2 id="doc-dialog-title" className="mt-2 text-2xl font-black text-ink">{selectedDoc.title}</h2></div>
                 <button type="button" onClick={() => setSelectedDoc(null)} aria-label="关闭说明" title="关闭说明" className="grid h-9 w-9 place-items-center rounded-full border border-line/10 text-ink/60 hover:bg-white/10 hover:text-ink"><X size={17} /></button>
               </div>
-              <p className="mt-5 text-sm leading-7 text-ink/70">{selectedDoc.description}</p>
-              <p className="mt-4 rounded-xl border border-cyan/15 bg-cyan/5 px-4 py-3 text-xs leading-6 text-ink/55">进入数智课堂后，可在对应模块直接完成这项操作，并将过程记录到课堂活动日志。</p>
-              <div className="mt-6 flex justify-end"><button type="button" onClick={() => setSelectedDoc(null)} className="rounded-lg bg-white px-4 py-2 text-sm font-bold text-black hover:bg-white/90">知道了</button></div>
+              <p className="text-sm leading-7 text-ink/70">{selectedDoc.description}</p>
+
+              <div className="mt-6 space-y-6">
+                {selectedDoc.sections?.map((sec, idx) => {
+                  if (sec.kind === 'callout') {
+                    const toneStyles = {
+                      info: 'border-cyan/25 bg-cyan/5 text-ink/70',
+                      tip: 'border-emerald/25 bg-emerald/5 text-ink/70',
+                      warn: 'border-amber/25 bg-amber/5 text-ink/70',
+                    }[sec.tone || 'info'];
+                    return <div key={idx} className={`rounded-xl border px-4 py-3 text-xs leading-6 ${toneStyles}`}>{sec.text}</div>;
+                  }
+                  if (sec.kind === 'steps' || sec.kind === 'bullets') {
+                    const isSteps = sec.kind === 'steps';
+                    return (
+                      <div key={idx}>
+                        {sec.title && <h3 className="text-sm font-bold text-cyan mb-3">{sec.title}</h3>}
+                        <ul className="space-y-2.5">
+                          {sec.items?.map((item, i) => (
+                            <li key={i} className="flex gap-3 text-[13px] leading-6 text-ink/75">
+                              {isSteps && <span className="flex-shrink-0 w-5 h-5 rounded-full bg-cyan/20 text-cyan text-[11px] font-black grid place-items-center mt-0.5">{i + 1}</span>}
+                              {!isSteps && <span className="text-cyan mt-0.5">•</span>}
+                              <span dangerouslySetInnerHTML={{ __html: item.replace(/\*\*(.+?)\*\*/g, '<strong class="text-ink">$1</strong>') }} />
+                            </li>
+                          ))}
+                        </ul>
+                      </div>
+                    );
+                  }
+                  if (sec.kind === 'table') {
+                    return (
+                      <div key={idx}>
+                        {sec.title && <h3 className="text-sm font-bold text-cyan mb-3">{sec.title}</h3>}
+                        <div className="overflow-x-auto rounded-xl border border-line/15">
+                          <table className="w-full text-[12px]">
+                            <thead className="bg-cyan/10">
+                              <tr>{sec.headers?.map((h, i) => <th key={i} className="text-left font-bold text-cyan px-3 py-2.5 border-b border-line/15">{h}</th>)}</tr>
+                            </thead>
+                            <tbody>
+                              {sec.rows?.map((row, ri) => (
+                                <tr key={ri} className={ri % 2 === 1 ? 'bg-white/5' : ''}>
+                                  {row.map((cell, ci) => <td key={ci} className="px-3 py-2 border-b border-line/10 text-ink/70">{cell}</td>)}
+                                </tr>
+                              ))}
+                            </tbody>
+                          </table>
+                        </div>
+                      </div>
+                    );
+                  }
+                  return null;
+                })}
+              </div>
+
+              <div className="mt-6 flex justify-end"><button type="button" onClick={() => setSelectedDoc(null)} className="rounded-lg bg-white px-4 py-2 text-sm font-bold text-black hover:bg-white/90">关闭</button></div>
             </section>
           </div>
         )}
