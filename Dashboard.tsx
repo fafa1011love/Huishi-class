@@ -3840,22 +3840,21 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
                               <div className="lab-instruction-icon rounded-lg p-1.5"><Move3d size={14} className="text-cyan" /></div>
                               <div className="flex flex-col">
                                 <span className="text-[10px] font-black text-ink uppercase">双手协同</span>
-                                <span className="text-[9px] text-cyan font-bold">双手均可捏合拆解 | 右手中指滑动旋转</span>
+                                <span className="text-[9px] text-cyan font-bold">左手缩放 | 右手旋转/拖拽</span>
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
                               <div className="lab-instruction-icon rounded-lg p-1.5"><Hand size={14} className="text-cyan" /></div>
                               <div className="flex flex-col">
-                                <span className="text-[10px] font-black text-ink uppercase">左手</span>
-                                <span className="text-[9px] text-cyan font-bold">捏合 → 拆解/重组</span>
+                                <span className="text-[10px] font-black text-ink uppercase">左手缩放</span>
                                 <span className="text-[9px] text-ink-soft font-bold">张开 → 放大 | 握拳 → 缩小</span>
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
                               <div className="lab-instruction-icon rounded-lg p-1.5"><ScanFace size={14} className="text-cyan" /></div>
                               <div className="flex flex-col">
-                                <span className="text-[10px] font-black text-ink uppercase">右手</span>
-                                <span className="text-[9px] text-cyan font-bold">捏合 → 拆解/重组</span>
+                                <span className="text-[10px] font-black text-ink uppercase">右手交互</span>
+                                <span className="text-[9px] text-cyan font-bold">捏合 → 拖拽零件</span>
                                 <span className="text-[9px] text-ink-soft font-bold">食指+中指并拢滑动 → 旋转画面</span>
                               </div>
                             </div>
