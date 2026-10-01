@@ -327,8 +327,17 @@ export default function LandingPage({
     const onKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') setSelectedDoc(null);
     };
+    document.body.style.overflow = 'hidden';
+    // 切换内容时重置弹窗滚动位置
+    requestAnimationFrame(() => {
+      const dialog = document.querySelector<HTMLElement>('[role="dialog"]');
+      dialog?.scrollTo({ top: 0, behavior: 'auto' });
+    });
     window.addEventListener('keydown', onKeyDown);
-    return () => window.removeEventListener('keydown', onKeyDown);
+    return () => {
+      window.removeEventListener('keydown', onKeyDown);
+      document.body.style.overflow = '';
+    };
   }, [selectedDoc]);
 
   const navigateTo = (nextPage: MarketingPage) => (event: React.MouseEvent<HTMLAnchorElement>) => {
@@ -930,7 +939,7 @@ export default function LandingPage({
                     ]},
                     { kind: 'callout', tone: 'tip', text: '首次进入建议用 **Edge 浏览器**（系统级语音识别效果最佳），确保摄像头已授权。' },
                   ]},
-                { icon: Box, title: '3D 教具指南', description: '了解模型导入、分类、高亮、拆解和课堂投屏的完整流程。', meta: '教具管理',
+                { icon: Box, title: '3D 教具指南', description: '了解模型导入、分类、高亮和拆解的完整流程。', meta: '教具管理',
                   sections: [
                     { kind: 'bullets', title: '模型导入', items: [
                       '**支持格式**：GLB / GLTF（推荐）、FBX。建议单文件 GLB，自带材质贴图。',
@@ -943,9 +952,8 @@ export default function LandingPage({
                     ]},
                     { kind: 'callout', tone: 'warn', text: '⚠️ 只有包含**多个独立 Mesh** 的模型才能拆解。单一 Mesh 的模型只能旋转/缩放/高亮，无法拆成零件。' },
                     { kind: 'bullets', title: '课堂内操作', items: [
-                      '**高亮**：语音"XX 部位"或点击左侧面板 → 模型对应部分发光 3 秒。',
-                      '**拆解**：双手捏合 / 单手捏合 → 部件沿法线方向飞散；再次捏合 → 重组。',
-                      '**投屏**：点击右上角"投屏"→ 扫描二维码，学生端同步看到同一视角。',
+                      '**高亮**：语音"打开 XX 模型"或点击左侧面板 → 模型对应部分持续发光。',
+                      '**拆解**：双手捏合 / 单手捏合 → 部件沿法线方向飞散。',
                     ]},
                   ]},
                 { icon: Hand, title: '空间手势操作', description: '掌握旋转、缩放与模型交互手势，并排查摄像头识别问题。', meta: '互动控制',
@@ -953,20 +961,21 @@ export default function LandingPage({
                     { kind: 'table', title: '双手协同模式 · Dual-hand Mode',
                       headers: ['部位', '操作', '手势', 'English'],
                       rows: [
-                        ['左手', '缩放', '张开 → 放大；握拳 → 缩小', 'Open → zoom in; Fist → zoom out'],
-                        ['左手', '拆解模型', '食指+拇指捏合 → 触发拆解/重组', 'Pinch → explode / reassemble'],
-                        ['右手', '拆解模型', '食指+拇指捏合 → 触发拆解/重组', 'Pinch → explode / reassemble'],
-                        ['右手', '旋转画面', '食指+中指并拢滑动 → 旋转整个模型', 'Index+middle swipe → rotate'],
+                        ['左手', '缩放', '其他三指握拳，拇指和食指拉开→放大；靠近→缩小', 'big / zoom in · small / zoom out'],
+                        ['左手', '拆解模型', '食指+拇指捏合 → 触发拆解', 'pinch → explode'],
+                        ['右手', '拆解模型', '食指+拇指捏合 → 触发拆解', 'pinch → explode'],
+                        ['右手', '旋转画面', '食指+中指并拢滑动 → 旋转整个模型', 'spin / rotate'],
                       ],
                     },
                     { kind: 'table', title: '单手优先模式 · Single-hand Mode',
                       headers: ['操作', '手势', 'English'],
                       rows: [
-                        ['缩放', '张掌放大 / 握拳缩小', 'Open palm zoom in / Fist zoom out'],
-                        ['拆解模型', '食指+拇指捏合', 'Index + thumb pinch → disassemble'],
-                        ['旋转画面', '食指+中指并拢滑动', 'Index + middle finger swipe → rotate'],
+                        ['缩放', '其他三指握拳，拇指和食指拉开放大；靠近缩小', 'big / zoom in · small / zoom out'],
+                        ['拆解模型', '食指+拇指捏合', 'pinch → explode'],
+                        ['旋转画面', '食指+中指并拢滑动', 'spin / rotate'],
                       ],
                     },
+                    { kind: 'callout', tone: 'info', text: '💡 缩放手势采用短滤波平滑：当拇指和食指距离保持不变时，缩放在短暂滤波后自动停止，避免抖动。' },
                     { kind: 'bullets', title: '常见问题排查', items: [
                       '手势不识别 → 检查光线充足、背景简洁、整只手在画面内。',
                       '旋转不流畅 → 食指和中指并拢贴紧，滑动速度均匀不要太快。',
@@ -993,22 +1002,20 @@ export default function LandingPage({
                       '**③ 互动讲解**：语音"这是左心室"，对应部位高亮，AI 同步讲解左心室功能。',
                       '**④ 提问**：语音"出题"，AI 立即生成 5 道选择题并显示在学生端。',
                       '**⑤ 追问**：语音"为什么"，AI 基于学生答案的正确率生成追问讲解。',
-                      '**⑥ 下课**：语音"下课"，系统自动生成课堂报告，含答题记录和互动热度。',
+                      '**⑥ 下课**：语音"下课"，系统保存本次课堂的操作日志和学习记忆。',
                     ]},
                   ]},
                 { icon: BarChart2, title: '课堂数据', description: '查看互动记录与学习反馈，用数据帮助下一次备课。', meta: '教学分析',
                   sections: [
                     { kind: 'bullets', title: '系统记录什么', items: [
-                      '**答题记录**：每道题的正确率、最快答题学生、选项分布直方图。',
-                      '**互动热度**：手势操作次数、语音指令次数、拆解/高亮次数的时间线。',
-                      '**操作日志**：教师每次拆解/旋转/投屏的时间戳，用于复盘课堂节奏。',
-                      '**语音时长**：AI 讲解词的字数和学生语音互动的总时长。',
+                      '**操作日志**：用户登录/退出、模型切换、小智对话、手势操作事件的语义化日志。',
+                      '**学习记忆**：课堂会话、保存的知识点消息、个性化学习设置。',
+                      '**错题本**：学生答错的题目和选项记录，便于课后复习。',
+                      '**用户反馈**：评分、场景标签、功能勾选和自由文字描述。',
                     ]},
                     { kind: 'bullets', title: '查看与导出', items: [
-                      '**课堂结束**：系统自动在 1 分钟内生成课堂报告，右上角铃铛会提示。',
-                      '**历史报表**：左侧导航"数据中心"→"课堂历史"，按日期/学科/班级筛选。',
-                      '**导出格式**：支持 Excel (.xlsx) 原始数据 + PDF 图表报告，可直接打印或发给教研团队。',
-                      '**对比分析**：选择多节课进行对比，查看同一知识点在不同班级的正确率差异。',
+                      '**管理员后台**：管理员账号登录后，可查看用户操作日志和课堂行为记录。',
+                      '**反馈管理**：管理员后台支持查看所有用户反馈，含评分统计和功能分布。',
                     ]},
                     { kind: 'bullets', title: '学生与教师写反馈', items: [
                       '**提交入口**：课堂右上角点 💬 图标，弹出反馈表单。',
@@ -1019,7 +1026,7 @@ export default function LandingPage({
                       '**管理员后台**：管理员账号登录后，左侧"反馈管理"Tab 可查看所有反馈，含统计图表和逐条详情。',
                     ]},
                   ]},
-                { icon: Download, title: '部署与设备', description: '查看浏览器、摄像头、投屏设备及学校网络环境建议。', meta: '环境配置',
+                { icon: Download, title: '部署与设备', description: '查看浏览器、摄像头及学校网络环境建议。', meta: '环境配置',
                   sections: [
                     { kind: 'table', title: '浏览器支持',
                       headers: ['浏览器', '版本', '说明'],
@@ -1034,9 +1041,8 @@ export default function LandingPage({
                       '**摄像头**：1080p（推荐 4K），放在屏幕正上方，距离 50–80cm。',
                       '**GPU**：集成显卡即可（Intel UHD / AMD Radeon / Apple M 系列），独立显卡体验更流畅。',
                       '**麦克风**：内置或 3.5mm 外接，距离嘴巴 30cm 以内，避免回声。',
-                      '**投屏**：支持 AirPlay（Apple 设备）或 Miracast（Windows/Android），延迟 < 200ms。',
                     ]},
-                    { kind: 'callout', tone: 'tip', text: '📌 趁热打铁：看完数据报告，当天就能知道"哪个知识点的正确率最低"，下次备课可以直接调整重点。' },
+                    { kind: 'callout', tone: 'tip', text: '📌 趁热打铁：通过管理员后台查看操作日志和用户反馈，及时了解课堂互动情况并调整教学方式。' },
                     { kind: 'bullets', title: '快速部署', items: [
                       '学校 IT 管理员运行 `scripts/deploy.py`，自动安装依赖 + 配置 MySQL。',
                       '内网环境下所有教室浏览器访问同一 URL 即可，支持多教室同时上课。',
@@ -1071,8 +1077,8 @@ export default function LandingPage({
 
         {selectedDoc && (
           <div className="fixed inset-0 z-[80] grid place-items-center bg-black/65 px-5 backdrop-blur-sm" role="presentation" onMouseDown={(event) => { if (event.target === event.currentTarget) setSelectedDoc(null); }}>
-            <section role="dialog" aria-modal="true" aria-labelledby="doc-dialog-title" className="w-full max-w-3xl rounded-2xl border border-line/15 bg-[var(--theme-bg-soft)] p-7 shadow-2xl max-h-[85vh] overflow-y-auto">
-              <div className="flex items-start justify-between gap-5 sticky top-0 bg-[var(--theme-bg-soft)] pb-4 z-10">
+            <section role="dialog" aria-modal="true" aria-labelledby="doc-dialog-title" className="w-full max-w-3xl rounded-2xl border border-line/15 bg-[var(--theme-bg-soft)] px-7 pb-7 pt-0 shadow-2xl max-h-[85vh] overflow-y-auto">
+              <div className="flex items-start justify-between gap-5 pt-7 pb-4">
                 <div><div className="text-xs font-bold uppercase tracking-widest text-cyan">{selectedDoc.meta}</div><h2 id="doc-dialog-title" className="mt-2 text-2xl font-black text-ink">{selectedDoc.title}</h2></div>
                 <button type="button" onClick={() => setSelectedDoc(null)} aria-label="关闭说明" title="关闭说明" className="grid h-9 w-9 place-items-center rounded-full border border-line/10 text-ink/60 hover:bg-white/10 hover:text-ink"><X size={17} /></button>
               </div>
