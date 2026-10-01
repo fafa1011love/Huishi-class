@@ -585,8 +585,8 @@ export default function LandingPage({
             <div className="grid grid-cols-1 md:grid-cols-12 h-[600px]">
               
               {/* 左侧 Sidebar */}
-              <div className="hidden md:flex flex-col col-span-2 border-r border-line/10 bg-cyan/40 p-3">
-                <button className="w-full flex items-center justify-center gap-2 rounded-lg bg-white/10 hover:bg-white/15 border border-line/5 text-ink text-xs font-semibold px-3 py-2.5 mb-6 transition-all">
+              <div aria-label="静态界面示意" className="hidden md:flex flex-col col-span-2 border-r border-line/10 bg-cyan/40 p-3 pointer-events-none select-none">
+                <button type="button" disabled aria-disabled="true" className="w-full flex items-center justify-center gap-2 rounded-lg bg-white/10 border border-line/5 text-ink text-xs font-semibold px-3 py-2.5 mb-6 cursor-not-allowed">
                   <Sparkles className="w-3.5 h-3.5 text-cyan" />
                   AI 生成教具
                 </button>
@@ -599,7 +599,7 @@ export default function LandingPage({
                     { icon: Cpu, label: 'AI 助教' },
                     { icon: BarChart2, label: '数据分析' },
                   ].map((item, i) => (
-                    <div key={i} className={`flex items-center gap-3 text-xs px-3 py-2 rounded-md cursor-pointer transition-colors ${item.active ? 'bg-white/10 text-ink font-medium' : 'text-ink/60 hover:bg-white/5 hover:text-ink'}`}>
+                    <div key={i} className={`flex items-center gap-3 text-xs px-3 py-2 rounded-md ${item.active ? 'bg-white/10 text-ink font-medium' : 'text-ink/60'}`}>
                       <item.icon className="w-4 h-4 opacity-80" />
                       <span>{item.label}</span>
                     </div>
@@ -615,7 +615,7 @@ export default function LandingPage({
                     { label: '物理', color: '#8b5cf6' },
                     { label: '历史', color: '#ec4899' },
                   ].map(tag => (
-                    <div key={tag.label} className="flex items-center gap-2 text-xs px-3 py-1.5 text-ink/60 hover:bg-white/5 cursor-pointer rounded-md">
+                    <div key={tag.label} className="flex items-center gap-2 text-xs px-3 py-1.5 text-ink/60 rounded-md">
                       <div className="w-2 h-2 rounded-full shadow-[0_0_8px_currentColor]" style={{ backgroundColor: tag.color, color: tag.color }} />
                       {tag.label}
                     </div>
