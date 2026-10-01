@@ -157,6 +157,7 @@ const HandController: React.FC<HandControllerProps> = ({
     pinchGestureActiveRef.current = false;
     smoothRotVelRef.current = { x: 0, y: 0 };
     smoothZoomRef.current = 0;
+    pinchZoomMotionRef.current = null;
     wasContactingRef.current = false;
     openStopStartRef.current = 0;
     openStopActiveRef.current = false;
@@ -202,6 +203,7 @@ const HandController: React.FC<HandControllerProps> = ({
     pinchGestureActiveRef.current = false;
     smoothRotVelRef.current = { x: 0, y: 0 };
     smoothZoomRef.current = 0;
+    pinchZoomMotionRef.current = null;
     wasContactingRef.current = false;
     openStopStartRef.current = 0;
     openStopActiveRef.current = false;
@@ -242,6 +244,12 @@ const HandController: React.FC<HandControllerProps> = ({
   const rotationContinuityRef = useRef<RotationContinuityState>(createRotationContinuityState());
   const lastValidRotVelRef = useRef({ x: 0, y: 0 });
   const pinchGestureActiveRef = useRef(false);
+  const pinchZoomMotionRef = useRef<{
+    ratio: number;
+    atMs: number;
+    filteredRate: number;
+    active: boolean;
+  } | null>(null);
 
   // The worker produces sparse samples. These refs hold one time-aware filter
   // state; the renderer consumes the resulting per-second rates every frame.
@@ -256,6 +264,10 @@ const HandController: React.FC<HandControllerProps> = ({
   // Constants
   const PINCH_ENTER_RATIO = 0.42;
   const PINCH_EXIT_RATIO = 0.62;
+  const ZOOM_PINCH_RATE_START = 0.14;
+  const ZOOM_PINCH_RATE_STOP = 0.07;
+  const ZOOM_PINCH_RATE_FILTER_MS = 65;
+  const ZOOM_PINCH_RATE_GAIN = 18;
   const FINGER_CONTACT_ENTER_RATIO = 0.38;
   const FINGER_CONTACT_EXIT_RATIO = 0.54;
   const CONTACT_THRESHOLD = 0.12;
@@ -275,14 +287,14 @@ const HandController: React.FC<HandControllerProps> = ({
   // Adjusted for better range of motion
   const DRAG_SCALE_X = 7.0;
   const DRAG_SCALE_Y = 5.5;
-  const ROTATION_SENSITIVITY = 4.6;
+  const ROTATION_SENSITIVITY = 6.4;
 
-  const POSITION_FILTER_TIME_CONSTANT_MS = 32;
+  const POSITION_FILTER_TIME_CONSTANT_MS = 20;
   const ZOOM_FILTER_TIME_CONSTANT_MS = 35;
-  const ROTATION_RATE_DEADZONE = 0.0015 * 1000 / 33;
-  const ROTATION_MAX_RATE = 7.5;
-  const ROTATION_MAX_ACCELERATION = 45;
-  const ROTATION_OUTPUT_FILTER_TIME_CONSTANT_MS = 22;
+  const ROTATION_RATE_DEADZONE = 0.0007 * 1000 / 33;
+  const ROTATION_MAX_RATE = 9;
+  const ROTATION_MAX_ACCELERATION = 65;
+  const ROTATION_OUTPUT_FILTER_TIME_CONSTANT_MS = 16;
   const ROTATION_RELEASE_GRACE_MS = 80;
   const ROTATION_RELEASE_AFTER_MISSES = 2;
   const ROTATION_GRACE_DECAY_TIME_CONSTANT_MS = 45;
@@ -782,6 +794,16 @@ const HandController: React.FC<HandControllerProps> = ({
     getDistance(landmarks[5], landmarks[17]),
   );
 
+  // Judge the rotation pose by finger reach from the wrist, so tilting the
+  // hand while sliding does not make the two-finger gesture drop out.
+  const isRotationFingerExtended = (landmarks: any[], tipIdx: number, pipIdx: number) => {
+    const wrist = landmarks[0];
+    const tip = landmarks[tipIdx];
+    const pip = landmarks[pipIdx];
+    return Boolean(wrist && tip && pip)
+      && getDistance(wrist, tip) > getDistance(wrist, pip) * 1.08;
+  };
+
   const getPinchDistance = (landmarks: any[]) => {
     const thumbTip = landmarks[4];
     const indexTip = landmarks[8];
@@ -796,8 +818,8 @@ const HandController: React.FC<HandControllerProps> = ({
     const threshold = rotationContinuityRef.current.active
       ? FINGER_CONTACT_EXIT_RATIO
       : FINGER_CONTACT_ENTER_RATIO;
-    const isIndexUp = isFingerExtended(landmarks, 8, 6);
-    const isMiddleUp = isFingerExtended(landmarks, 12, 10);
+    const isIndexUp = isRotationFingerExtended(landmarks, 8, 6);
+    const isMiddleUp = isRotationFingerExtended(landmarks, 12, 10);
     return isIndexUp && isMiddleUp && fingersDist < threshold;
   };
 
@@ -878,6 +900,7 @@ const HandController: React.FC<HandControllerProps> = ({
         // Dual-hand behavior is mirrored in the current camera view.
         const dualZoomHandLandmarks = rightHandLandmarks;
         const dualManipulationHandLandmarks = leftHandLandmarks;
+        const activeSingleHandLandmarks = realLeftHandLandmarks || realRightHandLandmarks;
 
         const applySingleHandRotation = (landmarks: any[] | null) => {
           const continuity = advanceRotationContinuity(
@@ -970,20 +993,49 @@ const HandController: React.FC<HandControllerProps> = ({
         };
 
         const applySingleHandZoom = (landmarks: any[]) => {
-          const isIndexUp = isFingerExtended(landmarks, 8, 6);
           const isMiddleUp = isFingerExtended(landmarks, 12, 10);
           const isRingUp = isFingerExtended(landmarks, 16, 14);
           const isPinkyUp = isFingerExtended(landmarks, 20, 18);
+          if (isMiddleUp || isRingUp || isPinkyUp) {
+            pinchZoomMotionRef.current = null;
+            return false;
+          }
 
-          if (isIndexUp && isMiddleUp && isRingUp && isPinkyUp) {
-            newGesture = GestureType.ZOOM_IN_PALM;
-            newZoomSpeed = ZOOM_SPEED_PER_SECOND;
+          const thumbIndexRatio = getPinchDistance(landmarks) / getPalmWidth(landmarks);
+          const previousMotion = pinchZoomMotionRef.current;
+          let filteredRate = 0;
+          let active = false;
+          if (previousMotion) {
+            const sampleDeltaMs = Math.max(1, startTimeMs - previousMotion.atMs);
+            const rawRate = sampleDeltaMs <= TRACKING_CONTINUITY_MS
+              ? (thumbIndexRatio - previousMotion.ratio) * 1000 / sampleDeltaMs
+              : 0;
+            const rateAlpha = exponentialSmoothingAlpha(sampleDeltaMs, ZOOM_PINCH_RATE_FILTER_MS);
+            filteredRate = previousMotion.filteredRate
+              + (rawRate - previousMotion.filteredRate) * rateAlpha;
+            active = previousMotion.active
+              ? Math.abs(filteredRate) >= ZOOM_PINCH_RATE_STOP
+              : Math.abs(filteredRate) >= ZOOM_PINCH_RATE_START;
+          }
+          pinchZoomMotionRef.current = {
+            ratio: thumbIndexRatio,
+            atMs: startTimeMs,
+            filteredRate,
+            active,
+          };
+
+          if (!active) return false;
+
+          const zoomSpeed = clampRate(filteredRate * ZOOM_PINCH_RATE_GAIN, ZOOM_SPEED_PER_SECOND);
+          if (zoomSpeed < 0) {
+            newGesture = GestureType.ZOOM_OUT_FIST;
+            newZoomSpeed = zoomSpeed;
             return true;
           }
 
-          if (!isIndexUp && !isMiddleUp && !isRingUp && !isPinkyUp) {
-            newGesture = GestureType.ZOOM_OUT_FIST;
-            newZoomSpeed = -ZOOM_SPEED_PER_SECOND;
+          if (zoomSpeed > 0) {
+            newGesture = GestureType.ZOOM_IN_PALM;
+            newZoomSpeed = zoomSpeed;
             return true;
           }
 
@@ -1045,7 +1097,7 @@ const HandController: React.FC<HandControllerProps> = ({
 
         if (interactionModeRef.current === 'single') {
           wasContactingRef.current = false;
-          const activeHandLandmarks = realLeftHandLandmarks || realRightHandLandmarks;
+          const activeHandLandmarks = activeSingleHandLandmarks;
 
           const isRotating = applySingleHandRotation(activeHandLandmarks);
           if (!isRotating && activeHandLandmarks) {
@@ -1131,6 +1183,7 @@ const HandController: React.FC<HandControllerProps> = ({
       if (!trackedHands.controlEnabled) {
         smoothRotVelRef.current = { x: 0, y: 0 };
         smoothZoomRef.current = 0;
+        pinchZoomMotionRef.current = null;
         prevRotatePosRef.current = null;
         prevRotateSampleAtRef.current = 0;
         rotationContinuityRef.current = createRotationContinuityState();

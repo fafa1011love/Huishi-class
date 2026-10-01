@@ -3847,7 +3847,7 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
                               <div className="lab-instruction-icon rounded-lg p-1.5"><Hand size={14} className="text-cyan" /></div>
                               <div className="flex flex-col">
                                 <span className="text-[10px] font-black text-ink uppercase">左手缩放</span>
-                                <span className="text-[9px] text-ink-soft font-bold">张开 → 放大 | 握拳 → 缩小</span>
+                                <span className="text-[9px] text-ink-soft font-bold">其余三指握拳：拇食指靠近缩小 | 拉开放大</span>
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
@@ -3865,7 +3865,7 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
                               <div className="lab-instruction-icon rounded-lg p-1.5"><Hand size={14} className="text-cyan" /></div>
                               <div className="flex flex-col">
                                 <span className="text-[10px] font-black text-ink uppercase">右手优先</span>
-                                <span className="text-[9px] text-cyan font-bold">张掌放大 | 握拳缩小</span>
+                                <span className="text-[9px] text-cyan font-bold">拇食指靠近缩小 | 拉开放大</span>
                               </div>
                             </div>
                             <div className="flex items-center gap-2">
