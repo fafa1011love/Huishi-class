@@ -1,4 +1,4 @@
-﻿import React, { useEffect, useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import { HandLandmarker, DrawingUtils } from '@mediapipe/tasks-vision';
 import { ControlRefs, GestureType, HandLandmarkPoint, InteractionMode, MoveDirection } from '../types';
 import {
@@ -1001,7 +1001,13 @@ const HandController: React.FC<HandControllerProps> = ({
           const thumbTip = landmarks[4];
           const indexTip = landmarks[8];
           const pinchRatio = getPinchDistance(landmarks) / getPalmWidth(landmarks);
-          const isPinching = hysteresisBelow(
+          // 拆解条件：中指+无名指+小指必须伸直（拇食弯曲捏合）
+          // 这样跟握拳（全弯）、全张开（全伸直）都明确区分
+          const isMiddleUp = isFingerExtended(landmarks, 12, 10);
+          const isRingUp = isFingerExtended(landmarks, 16, 14);
+          const isPinkyUp = isFingerExtended(landmarks, 20, 18);
+          const threeUp = isMiddleUp && isRingUp && isPinkyUp;
+          const isPinching = threeUp && hysteresisBelow(
             pinchRatio,
             pinchGestureActiveRef.current,
             PINCH_ENTER_RATIO,
@@ -1080,9 +1086,14 @@ const HandController: React.FC<HandControllerProps> = ({
             const thumbTip = rightLandmarks[4];
             const indexTip = rightLandmarks[8];
             const pinchRatio = getPinchDistance(rightLandmarks) / getPalmWidth(rightLandmarks);
+            // 拆解条件：中指+无名指+小指必须伸直（拇食弯曲捏合）
+            const rMiddleUp = isFingerExtended(rightLandmarks, 12, 10);
+            const rRingUp = isFingerExtended(rightLandmarks, 16, 14);
+            const rPinkyUp = isFingerExtended(rightLandmarks, 20, 18);
+            const rThreeUp = rMiddleUp && rRingUp && rPinkyUp;
             rightPinchX = (thumbTip.x + indexTip.x) / 2;
             rightPinchY = (thumbTip.y + indexTip.y) / 2;
-            isRightPinching = hysteresisBelow(
+            isRightPinching = rThreeUp && hysteresisBelow(
               pinchRatio, pinchGestureActiveRef.current,
               PINCH_ENTER_RATIO, PINCH_EXIT_RATIO,
             );
@@ -1100,9 +1111,14 @@ const HandController: React.FC<HandControllerProps> = ({
             const thumbTip = leftLandmarks[4];
             const indexTip = leftLandmarks[8];
             const pinchRatio = getPinchDistance(leftLandmarks) / getPalmWidth(leftLandmarks);
+            // 拆解条件：中指+无名指+小指必须伸直（拇食弯曲捏合）
+            const lMiddleUp = isFingerExtended(leftLandmarks, 12, 10);
+            const lRingUp = isFingerExtended(leftLandmarks, 16, 14);
+            const lPinkyUp = isFingerExtended(leftLandmarks, 20, 18);
+            const lThreeUp = lMiddleUp && lRingUp && lPinkyUp;
             leftPinchX = (thumbTip.x + indexTip.x) / 2;
             leftPinchY = (thumbTip.y + indexTip.y) / 2;
-            isLeftPinching = hysteresisBelow(
+            isLeftPinching = lThreeUp && hysteresisBelow(
               pinchRatio, otherPinchActiveRef.current,
               PINCH_ENTER_RATIO, PINCH_EXIT_RATIO,
             );

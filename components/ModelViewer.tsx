@@ -2204,8 +2204,8 @@ const CameraInit: React.FC<{ modelUrl: string; target: CameraTarget }> = ({ mode
       // 心脏 正面观（大血管朝上，右心室在观众左侧）
       camera.position.set(0, 0.8, 3.0);
     } else if (lower.includes('brain')) {
-      // 大脑 右侧面观（Mesh0=左半球X负，Mesh12=右半球X正；相机放X正看向原点即右侧面）
-      camera.position.set(2.8, 0.8, 1.5);
+      // 大脑 左侧面观（参考医学解剖图：脑回朝左，小脑在下，脑干挂底）
+      camera.position.set(-2.8, 0.8, 1.5);
     } else if (lower.includes('lungs')) {
       // 肺 正面观
       camera.position.set(0, 0.8, 3.0);
