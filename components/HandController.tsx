@@ -155,6 +155,7 @@ const HandController: React.FC<HandControllerProps> = ({
     rotationContinuityRef.current = createRotationContinuityState();
     lastValidRotVelRef.current = { x: 0, y: 0 };
     pinchGestureActiveRef.current = false;
+    otherPinchActiveRef.current = false;
     smoothRotVelRef.current = { x: 0, y: 0 };
     smoothZoomRef.current = 0;
     pinchZoomMotionRef.current = null;
@@ -201,6 +202,7 @@ const HandController: React.FC<HandControllerProps> = ({
     rotationContinuityRef.current = createRotationContinuityState();
     lastValidRotVelRef.current = { x: 0, y: 0 };
     pinchGestureActiveRef.current = false;
+    otherPinchActiveRef.current = false;
     smoothRotVelRef.current = { x: 0, y: 0 };
     smoothZoomRef.current = 0;
     pinchZoomMotionRef.current = null;
@@ -244,6 +246,10 @@ const HandController: React.FC<HandControllerProps> = ({
   const rotationContinuityRef = useRef<RotationContinuityState>(createRotationContinuityState());
   const lastValidRotVelRef = useRef({ x: 0, y: 0 });
   const pinchGestureActiveRef = useRef(false);
+  // Independent pinch state for the other hand so both hands can pinch
+  // simultaneously in dual-hand mode (either hand can trigger drag/disassemble).
+  const otherPinchActiveRef = useRef(false);
+  const otherSmoothDragPinchRef = useRef({ x: 0.5, y: 0.5 });
   const pinchZoomMotionRef = useRef<{
     ratio: number;
     atMs: number;
@@ -357,6 +363,7 @@ const HandController: React.FC<HandControllerProps> = ({
     rotationContinuityRef.current = createRotationContinuityState();
     lastValidRotVelRef.current = { x: 0, y: 0 };
     pinchGestureActiveRef.current = false;
+    otherPinchActiveRef.current = false;
     wasContactingRef.current = false;
     openStopStartRef.current = 0;
     openStopActiveRef.current = false;
@@ -1046,7 +1053,13 @@ const HandController: React.FC<HandControllerProps> = ({
           const thumbTip = landmarks[4];
           const indexTip = landmarks[8];
           const pinchRatio = getPinchDistance(landmarks) / getPalmWidth(landmarks);
-          const isPinching = hysteresisBelow(
+          // 拆解条件：中指+无名指+小指必须伸直（拇食弯曲捏合）
+          // 这样跟握拳（全弯）、全张开（全伸直）都明确区分
+          const isMiddleUp = isFingerExtended(landmarks, 12, 10);
+          const isRingUp = isFingerExtended(landmarks, 16, 14);
+          const isPinkyUp = isFingerExtended(landmarks, 20, 18);
+          const threeUp = isMiddleUp && isRingUp && isPinkyUp;
+          const isPinching = threeUp && hysteresisBelow(
             pinchRatio,
             pinchGestureActiveRef.current,
             PINCH_ENTER_RATIO,
@@ -1108,20 +1121,113 @@ const HandController: React.FC<HandControllerProps> = ({
           }
         } else {
 
-        // 2. DUAL HAND LOGIC: reference behavior - left zooms, right rotates/drags.
+        // 2. DUAL HAND LOGIC.
+        //    Both hands can pinch independently — either or both at the same time.
+        //    Whichever hand(s) pinches will publish its (or their averaged) position.
           const fullScreenRotationActive = applySingleHandRotation(dualManipulationHandLandmarks);
           if (fullScreenRotationActive) {
             isDragging = false;
             wasContactingRef.current = false;
           }
 
-          // Right hand: thumb + index pinch drag/disassemble.
-          const isRightDragging = !fullScreenRotationActive && dualManipulationHandLandmarks
-            ? applyPinchDrag(dualManipulationHandLandmarks, false)
-            : false;
+          // --- Right hand pinch (uses primary refs) ---
+          const rightLandmarks = dualManipulationHandLandmarks;
+          let isRightPinching = false;
+          let rightPinchX = 0, rightPinchY = 0;
+          if (!fullScreenRotationActive && rightLandmarks) {
+            const thumbTip = rightLandmarks[4];
+            const indexTip = rightLandmarks[8];
+            const pinchRatio = getPinchDistance(rightLandmarks) / getPalmWidth(rightLandmarks);
+            // 拆解条件：中指+无名指+小指必须伸直（拇食弯曲捏合）
+            const rMiddleUp = isFingerExtended(rightLandmarks, 12, 10);
+            const rRingUp = isFingerExtended(rightLandmarks, 16, 14);
+            const rPinkyUp = isFingerExtended(rightLandmarks, 20, 18);
+            const rThreeUp = rMiddleUp && rRingUp && rPinkyUp;
+            rightPinchX = (thumbTip.x + indexTip.x) / 2;
+            rightPinchY = (thumbTip.y + indexTip.y) / 2;
+            isRightPinching = rThreeUp && hysteresisBelow(
+              pinchRatio, pinchGestureActiveRef.current,
+              PINCH_ENTER_RATIO, PINCH_EXIT_RATIO,
+            );
+            pinchGestureActiveRef.current = isRightPinching;
+          } else {
+            pinchGestureActiveRef.current = false;
+    otherPinchActiveRef.current = false;
+          }
 
-          // Left hand: open palm / fist zoom.
-          const isLeftZooming = !rotationGraceActive && dualZoomHandLandmarks
+          // --- Left hand pinch (uses *independent* refs) ---
+          const leftLandmarks = dualZoomHandLandmarks;
+          let isLeftPinching = false;
+          let leftPinchX = 0, leftPinchY = 0;
+          if (!fullScreenRotationActive && leftLandmarks) {
+            const thumbTip = leftLandmarks[4];
+            const indexTip = leftLandmarks[8];
+            const pinchRatio = getPinchDistance(leftLandmarks) / getPalmWidth(leftLandmarks);
+            // 拆解条件：中指+无名指+小指必须伸直（拇食弯曲捏合）
+            const lMiddleUp = isFingerExtended(leftLandmarks, 12, 10);
+            const lRingUp = isFingerExtended(leftLandmarks, 16, 14);
+            const lPinkyUp = isFingerExtended(leftLandmarks, 20, 18);
+            const lThreeUp = lMiddleUp && lRingUp && lPinkyUp;
+            leftPinchX = (thumbTip.x + indexTip.x) / 2;
+            leftPinchY = (thumbTip.y + indexTip.y) / 2;
+            isLeftPinching = lThreeUp && hysteresisBelow(
+              pinchRatio, otherPinchActiveRef.current,
+              PINCH_ENTER_RATIO, PINCH_EXIT_RATIO,
+            );
+            otherPinchActiveRef.current = isLeftPinching;
+          } else {
+            otherPinchActiveRef.current = false;
+          }
+
+          // --- Publish pinch position(s) ---
+          const activePinches: { x: number; y: number; smoothRef: { current: { x: number; y: number } } }[] = [];
+          if (isRightPinching) activePinches.push({ x: rightPinchX, y: rightPinchY, smoothRef: smoothDragPinchRef });
+          if (isLeftPinching) activePinches.push({ x: leftPinchX, y: leftPinchY, smoothRef: otherSmoothDragPinchRef });
+
+          if (activePinches.length > 0) {
+            isDragging = true;
+            newGesture = isRightPinching && isLeftPinching
+              ? GestureType.RIGHT_PINCH_DRAG   // simultaneous → treat as right (disassembly toggles once)
+              : isRightPinching ? GestureType.RIGHT_PINCH_DRAG : GestureType.LEFT_PINCH_DRAG;
+
+            // Average raw positions when both hands pinch together
+            const avgRawX = activePinches.reduce((s, p) => s + p.x, 0) / activePinches.length;
+            const avgRawY = activePinches.reduce((s, p) => s + p.y, 0) / activePinches.length;
+
+            // Smooth with right-hand filter (primary path) — consistent with viewer expectations
+            const dx = avgRawX - smoothDragPinchRef.current.x;
+            const dy = avgRawY - smoothDragPinchRef.current.y;
+            const movementDelta = Math.hypot(dx, dy);
+            const adaptiveFactor = Math.min(0.9, Math.max(
+              0.18,
+              exponentialSmoothingAlpha(
+                Math.max(1, startTimeMs - (lastResultTimestampRef.current || startTimeMs) + 1),
+                POSITION_FILTER_TIME_CONSTANT_MS,
+              ) + movementDelta * 0.35,
+            ));
+            smoothDragPinchRef.current.x = lerp(smoothDragPinchRef.current.x, avgRawX, adaptiveFactor);
+            smoothDragPinchRef.current.y = lerp(smoothDragPinchRef.current.y, avgRawY, adaptiveFactor);
+            // Rebase left-hand filter too (keeps both in sync)
+            otherSmoothDragPinchRef.current = { x: avgRawX, y: avgRawY };
+            publishFilteredDragPosition(smoothDragPinchRef.current.x, smoothDragPinchRef.current.y);
+          } else {
+            // No pinching — rebase both smooth refs independently
+            if (rightLandmarks) {
+              smoothDragPinchRef.current = {
+                x: (rightLandmarks[4].x + rightLandmarks[8].x) / 2,
+                y: (rightLandmarks[4].y + rightLandmarks[8].y) / 2,
+              };
+            }
+            if (leftLandmarks) {
+              otherSmoothDragPinchRef.current = {
+                x: (leftLandmarks[4].x + leftLandmarks[8].x) / 2,
+                y: (leftLandmarks[4].y + leftLandmarks[8].y) / 2,
+              };
+            }
+          }
+
+          // --- Zoom: only when *neither* hand is pinching ---
+          const isLeftZooming = !rotationGraceActive && !isRightPinching && !isLeftPinching && dualZoomHandLandmarks
             ? applySingleHandZoom(dualZoomHandLandmarks)
             : false;
 
@@ -1146,15 +1252,19 @@ const HandController: React.FC<HandControllerProps> = ({
 
           if (openStopActiveRef.current) {
             newGesture = GestureType.DUAL_HAND_OPEN_STOP;
-          } else if (isRightDragging) {
+          } else if (isRightPinching && isLeftPinching) {
+            newGesture = GestureType.RIGHT_PINCH_DRAG;  // simultaneous
+          } else if (isRightPinching) {
             newGesture = GestureType.RIGHT_PINCH_DRAG;
+          } else if (isLeftPinching) {
+            newGesture = GestureType.LEFT_PINCH_DRAG;
           } else if (fullScreenRotationActive) {
             newGesture = GestureType.RIGHT_TWO_FINGER_ROTATE;
           }
 
-          // Contact is only a fallback; it must not block independent two-hand control.
+          // Contact fallback — only when neither hand pinches, neither hand rotates, and neither hand zooms.
           let isContacting = false;
-          if (!fullScreenRotationActive && !isRightDragging && !isLeftZooming && leftHandLandmarks && rightHandLandmarks) {
+          if (!fullScreenRotationActive && !isRightPinching && !isLeftPinching && !isLeftZooming && leftHandLandmarks && rightHandLandmarks) {
             const leftWrist = leftHandLandmarks[0];
             const rightWrist = rightHandLandmarks[0];
             const dist = getDistance(leftWrist, rightWrist);
@@ -1189,6 +1299,7 @@ const HandController: React.FC<HandControllerProps> = ({
         rotationContinuityRef.current = createRotationContinuityState();
         lastValidRotVelRef.current = { x: 0, y: 0 };
         pinchGestureActiveRef.current = false;
+    otherPinchActiveRef.current = false;
         wasContactingRef.current = false;
         isDragging = false;
       } else {
@@ -1363,3 +1474,4 @@ const HandController: React.FC<HandControllerProps> = ({
 };
 
 export default HandController;
+

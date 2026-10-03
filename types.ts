@@ -14,6 +14,7 @@ export type InteractionMode = 'dual' | 'single';
 export enum GestureType {
   NONE = 'NONE',
   RIGHT_PINCH_DRAG = 'RIGHT_PINCH_DRAG', // Right Hand: Pinch -> Drag Position
+  LEFT_PINCH_DRAG = 'LEFT_PINCH_DRAG',     // Left Hand: Pinch -> Drag Position
   RIGHT_TWO_FINGER_ROTATE = 'RIGHT_TWO_FINGER_ROTATE', // Right Hand: Index + Middle -> Free 360 Rotation
   ZOOM_IN_PALM = 'ZOOM_IN_PALM', // Left Hand: Thumb/index moving apart, other fingers curled
   ZOOM_OUT_FIST = 'ZOOM_OUT_FIST', // Left Hand: Thumb/index moving together, other fingers curled

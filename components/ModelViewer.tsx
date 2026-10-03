@@ -2291,10 +2291,38 @@ const CameraInit: React.FC<{ modelUrl: string; target: CameraTarget }> = ({ mode
 
   useEffect(() => {
     const lower = modelUrl.toLowerCase();
-    if (lower.includes('心脏模型') || lower.includes('heart')) {
-      camera.position.set(0, 1.5, 4.5);
+    if (lower.includes('heart')) {
+      // 心脏 正面观（大血管朝上，右心室在观众左侧）
+      camera.position.set(0, 0.8, 3.0);
+    } else if (lower.includes('brain')) {
+      // 大脑 左侧面观（参考医学解剖图：脑回朝左，小脑在下，脑干挂底）
+      camera.position.set(-2.8, 0.8, 1.5);
+    } else if (lower.includes('lungs')) {
+      // 肺 正面观
+      camera.position.set(0, 0.8, 3.0);
+    } else if (lower.includes('liver')) {
+      // 肝 正面观
+      camera.position.set(0, 0.8, 3.0);
+    } else if (lower.includes('kidney')) {
+      // 肾 正面观
+      camera.position.set(0, 0.8, 3.0);
+    } else if (lower.includes('pancreas')) {
+      // 胰腺 正面观
+      camera.position.set(0, 0.8, 3.0);
+    } else if (lower.includes('intestine')) {
+      // 肠道 正面观
+      camera.position.set(0, 0.8, 3.0);
+    } else if (lower.includes('eyeball')) {
+      // 眼球 正面观
+      camera.position.set(0, 0.5, 2.5);
+    } else if (lower.includes('skin')) {
+      // 皮肤 正面观
+      camera.position.set(0, 0.8, 3.0);
+    } else if (lower.includes('hiv')) {
+      // HIV 病毒 3/4 视角
+      camera.position.set(2.0, 1.5, 2.0);
     } else {
-      camera.position.set(3.5, 4, 3.5);
+      camera.position.set(2.5, 2.0, 2.5);
     }
     camera.lookAt(...target);
     controls?.update?.();
