@@ -23,7 +23,7 @@ export default function UndergraduateDesignWorkflow({ plan, onChange, onNotice, 
   const [active, setActive] = useState(workflow?.currentStep || 1)
   const [busy, setBusy] = useState('')
   const [aiInstruction, setAiInstruction] = useState('')
-  const [localModel, setLocalModel] = useState<{ available: boolean; model: string; message: string } | null>(null)
+  const [aiStatus, setAiStatus] = useState<{ available: boolean; model: string; message: string } | null>(null)
   const step = workflow?.steps[active - 1]
   const allApproved = Boolean(workflow?.status === 'approved')
   const quality = workflow?.quality
@@ -32,10 +32,10 @@ export default function UndergraduateDesignWorkflow({ plan, onChange, onNotice, 
 
   useEffect(() => {
     let activeRequest = true
-    fetch('/api/prep/local-model/status', { credentials: 'include' })
+    fetch('/api/prep/lesson-ai/status', { credentials: 'include' })
       .then((response) => response.json())
-      .then((data) => { if (activeRequest) setLocalModel(data) })
-      .catch(() => { if (activeRequest) setLocalModel({ available: false, model: 'qwen3:4b', message: 'AI 服务暂不可用' }) })
+      .then((data) => { if (activeRequest) setAiStatus(data) })
+      .catch(() => { if (activeRequest) setAiStatus({ available: false, model: '', message: 'AI 服务暂不可用' }) })
     return () => { activeRequest = false }
   }, [])
 
@@ -155,7 +155,7 @@ export default function UndergraduateDesignWorkflow({ plan, onChange, onNotice, 
   return <section className="design-workflow">
     <header className="design-workflow-head">
       <div><span className="section-kicker">AI-ASSISTED REFINEMENT</span><h3>AI辅助个性化调优</h3><p>AI已根据课程蓝图生成初稿，你可以修改内容，或使用AI辅助完善。</p></div>
-      <div className="design-engine" data-engine={workflow.generation.engine}><Sparkles size={15} /><div><strong>{workflow.generation.engine === 'ollama' ? 'AI 已生成' : 'AI 生成失败，模板回退'}</strong><small>{workflow.generation.engine === 'ollama' ? '已根据课程蓝图生成可编辑内容' : '已使用系统模板保证内容可以继续编辑'}</small></div></div>
+      <div className="design-engine" data-engine={workflow.generation.engine}><Sparkles size={15} /><div><strong>{workflow.generation.engine !== 'builtin-template' ? 'AI 已生成' : 'AI 生成失败，模板回退'}</strong><small>{workflow.generation.engine !== 'builtin-template' ? '已根据课程蓝图生成可编辑内容' : '已使用系统模板保证内容可以继续编辑'}</small></div></div>
     </header>
     <nav className="design-step-nav" aria-label="AI辅助个性化调优">
       {workflow.steps.map((item) => { const locked = workflow.mode === 'guided' && item.number > guidedLimit; return <button key={item.id} disabled={locked} title={locked ? '请先确认前一步' : undefined} className={`${active === item.number ? 'active' : ''} ${item.status === 'stale' ? 'stale' : ''}`} onClick={() => setActive(item.number)}><span>{item.number}</span><strong>{item.title}</strong>{item.approved ? <Check size={13} /> : item.status === 'stale' ? <AlertTriangle size={13} /> : null}</button> })}
@@ -168,9 +168,9 @@ export default function UndergraduateDesignWorkflow({ plan, onChange, onNotice, 
     <div className="design-step-editor">
       <div className="design-step-title"><div><span>步骤 {step.number}</span><h4>{step.title}</h4></div><div>{!allApproved && <><button className="outline-btn compact" onClick={restoreSystem} disabled={Boolean(busy) || !step.systemData}><RotateCcw size={14} />恢复系统版</button><button className="outline-btn compact" onClick={regenerate} disabled={Boolean(busy)}><RefreshCw size={14} />重做本步</button><button className="outline-btn compact" onClick={() => validate(false)} disabled={Boolean(busy)}><Save size={14} />保存并校验</button><button className="primary-btn compact" onClick={approveCurrent} disabled={Boolean(busy) || step.approved}><Check size={14} />{step.approved ? '本步已确认' : step.number === finalStepNumber && workflow.mode === 'guided' ? '确认本步并完成五步设计' : `确认本步${workflow.mode === 'guided' && step.number < finalStepNumber ? '并继续' : ''}`}</button></>}</div></div>
       <div className="design-ai-editor">
-        <div className="design-ai-editor-head"><div><WandSparkles size={16} /><span><strong>AI 编辑</strong><small>{localModel?.available ? 'AI 服务已连接' : 'AI 服务暂不可用'}</small></span></div><em>{aiInstruction.length}/1000</em></div>
+        <div className="design-ai-editor-head"><div><WandSparkles size={16} /><span><strong>AI 编辑</strong><small>{aiStatus?.available ? 'AI 服务已连接' : 'AI 服务暂不可用'}</small></span></div><em>{aiInstruction.length}/1000</em></div>
         <textarea maxLength={1000} rows={3} value={aiInstruction} onChange={(event) => setAiInstruction(event.target.value)} placeholder="例如：把本步改得更适合大一基础层；增加学生可见产出；问题链改为由观察到分析。" />
-        <div className="design-ai-editor-actions"><span>只修改当前步骤；结构、ID 和教师已编辑的其他步骤不会被覆盖。</span><button className="primary-btn compact" onClick={editWithAi} disabled={Boolean(busy) || !aiInstruction.trim() || localModel?.available === false}>{busy === 'ai-edit' ? <LoaderCircle className="spin" size={14} /> : <Sparkles size={14} />}AI 润色</button></div>
+        <div className="design-ai-editor-actions"><span>只修改当前步骤；结构、ID 和教师已编辑的其他步骤不会被覆盖。</span><button className="primary-btn compact" onClick={editWithAi} disabled={Boolean(busy) || !aiInstruction.trim() || aiStatus?.available === false}>{busy === 'ai-edit' ? <LoaderCircle className="spin" size={14} /> : <Sparkles size={14} />}AI 润色</button></div>
       </div>
       <StepEditor step={step} workflow={workflow} updateData={updateData} updateWorkflow={updateWorkflow} />
     </div>

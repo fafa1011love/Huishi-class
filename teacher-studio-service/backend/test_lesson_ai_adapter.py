@@ -42,7 +42,10 @@ class LessonAIAdapterTests(unittest.TestCase):
             result, error = ai.generate_json("System", "User", validator=lambda value: None if value.get("title") else "missing title")
         self.assertEqual(result, {"title": "lesson"})
         self.assertIsNone(error)
-        self.assertIn("missing title", request.call_args.args[1]["input"][0]["content"])
+        retry_prompt = request.call_args.args[1]["input"][0]["content"]
+        self.assertIn("missing title", retry_prompt)
+        # The retry asks for a fix of the previous output, not a fresh rewrite.
+        self.assertIn('{"title": ""}', retry_prompt)
 
     def test_missing_key_never_contacts_network(self):
         with patch.dict(ai.os.environ, {"LESSON_AI_API_KEY": ""}), patch.object(ai, "_request") as request:

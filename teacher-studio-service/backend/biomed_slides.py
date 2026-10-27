@@ -205,7 +205,7 @@ def create_ppt(plan,output_dir):
             notes += ["模型页码："+str(index), "；".join(plan["modelPlan"]["observationTasks"]), plan["modelPlan"]["quality"]]
         notes += [f"来源：{r['title']} | {r['author']} | {r['year']} | {r['license']} | {r['sourceUrl']}" for r in citations]
         slide.notes_slide.notes_text_frame.text="\n".join(notes)
-    filename="biomed_"+uuid.uuid4().hex[:10]+".pptx"
+    filename="shuzhiclass_"+uuid.uuid4().hex[:10]+".pptx"
     path=output_dir/filename
     prs.save(path)
     return path

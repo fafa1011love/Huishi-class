@@ -1,4 +1,5 @@
 """Blender-only renderer: preserve imported meshes/materials, never re-model."""
+import os
 import sys
 from pathlib import Path
 import bpy
@@ -31,7 +32,9 @@ try:
     scene.render.engine = 'BLENDER_EEVEE_NEXT'
 except TypeError:
     scene.render.engine = 'BLENDER_EEVEE'
-scene.render.resolution_x = scene.render.resolution_y = 1024
+# 512 而不是 1024：这台 2 核服务器上渲 4 张 1024 视图会撞上 300 秒超时而失败，
+# 降到 512 后渲染时间约为原来的四分之一。需要更高清时用 MODEL_VIEW_RESOLUTION 覆盖。
+scene.render.resolution_x = scene.render.resolution_y = int(os.environ.get('MODEL_VIEW_RESOLUTION', '512'))
 scene.render.resolution_percentage = 100
 scene.render.image_settings.file_format = 'PNG'
 scene.render.image_settings.color_mode = 'RGBA'

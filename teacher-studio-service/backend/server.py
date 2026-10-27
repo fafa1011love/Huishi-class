@@ -40,7 +40,7 @@ import heart_anatomy
 import image_model
 import lesson_design
 import local_reconstruction
-import ollama_adapter
+import lesson_ai_adapter
 import partfield_adapter
 import triposr_local
 import teaching_benchmarks
@@ -191,14 +191,14 @@ def _warmup_model_context(model):
     return model_url, normalized[:16]
 
 
-def _warmup_question_schema():
+def _warmup_question_schema(count=5):
     return {
         "type": "object",
         "properties": {
             "questions": {
                 "type": "array",
-                "minItems": 5,
-                "maxItems": 5,
+                "minItems": count,
+                "maxItems": count,
                 "items": {
                     "type": "object",
                     "properties": {
@@ -222,9 +222,9 @@ def _warmup_question_schema():
 
 def _validate_warmup_ai(value, valid_part_keys, has_model, expected_types=None):
     questions = value.get("questions") if isinstance(value, dict) else None
-    if not isinstance(questions, list) or len(questions) != 5:
-        return "必须返回恰好 5 道题"
     expected_types = expected_types or WARMUP_TYPES
+    if not isinstance(questions, list) or len(questions) != len(expected_types):
+        return f"必须返回恰好 {len(expected_types)} 道题"
     for index, item in enumerate(questions):
         if not isinstance(item, dict):
             return f"第 {index + 1} 题不是对象"
@@ -280,7 +280,7 @@ def _warmup_with_metadata(items, lesson, model_url, generation):
     return result
 
 
-def generate_warmup_with_ollama(payload, current_questions=None, regenerate_index=None):
+def generate_warmup_with_ai(payload, current_questions=None, regenerate_index=None):
     lesson = payload.get("lessonPlan") or {}
     model_url, normalized_parts = _warmup_model_context(payload.get("model"))
     has_model = bool(model_url and normalized_parts)
@@ -325,16 +325,16 @@ def generate_warmup_with_ollama(payload, current_questions=None, regenerate_inde
     def validate(value):
         return _validate_warmup_ai(value, valid_part_keys, has_model, expected_types)
 
-    result, error = ollama_adapter.generate_json(
+    result, error = lesson_ai_adapter.generate_json(
         "你是严谨的生物医学教师。生成适合课堂开始阶段的可编辑选择题。只返回符合要求的 JSON，不输出解释文字。",
         json.dumps(prompt, ensure_ascii=False),
         validator=validate,
         timeout=180,
-        format_schema=_warmup_question_schema(),
+        format_schema=_warmup_question_schema(len(expected_types)),
     )
     if result is None:
         fallback = template[regenerate_index:regenerate_index + 1] if regenerate_index is not None else template
-        fallback_generation = {"engine": "builtin-template", "model": ollama_adapter.DEFAULT_MODEL, "message": f"本地模型回退：{error}"}
+        fallback_generation = {"engine": "builtin-template", "model": lesson_ai_adapter.DEFAULT_MODEL, "message": f"AI 不可用，已使用模板：{error}"}
         return fallback, fallback_generation, [fallback_generation["message"]]
 
     ai_items = []
@@ -351,7 +351,7 @@ def generate_warmup_with_ollama(payload, current_questions=None, regenerate_inde
         _spread_warmup_answers(ai_items, WARMUP_CORRECT_POSITIONS[regenerate_index:regenerate_index + 1])
         generated = template.copy()
         generated[regenerate_index] = ai_items[0]
-        return generated, {"engine": "ollama", "model": ollama_adapter.DEFAULT_MODEL, "message": f"已使用 {ollama_adapter.DEFAULT_MODEL} 重新生成第 {regenerate_index + 1} 题"}, []
+        return generated, {"engine": lesson_ai_adapter.ENGINE, "model": lesson_ai_adapter.DEFAULT_MODEL, "message": f"已使用 {lesson_ai_adapter.DEFAULT_MODEL} 重新生成第 {regenerate_index + 1} 题"}, []
     _spread_warmup_answers(ai_items)
     merged = []
     for index, item in enumerate(ai_items):
@@ -360,7 +360,7 @@ def generate_warmup_with_ollama(payload, current_questions=None, regenerate_inde
         else:
             merged.append(item)
     warnings = ["已保留教师编辑题目，未自动覆盖"] if any(item.get("source") == "teacher-edited" for item in teacher_questions) else []
-    return merged, {"engine": "ollama", "model": ollama_adapter.DEFAULT_MODEL, "message": f"已使用 {ollama_adapter.DEFAULT_MODEL} 生成 5 道练习题"}, warnings
+    return merged, {"engine": lesson_ai_adapter.ENGINE, "model": lesson_ai_adapter.DEFAULT_MODEL, "message": f"已使用 {lesson_ai_adapter.DEFAULT_MODEL} 生成 5 道练习题"}, warnings
 
 
 def parse_multipart(body, content_type, allow_multiple=False):
@@ -475,6 +475,23 @@ def _hunyuan_json_request(path, payload, api_key, timeout=60):
     if not isinstance(result, dict):
         raise RuntimeError("混元 3D 返回格式无效")
     return result
+
+
+def _hunyuan_face_count():
+    """面数上限，可由 HUNYUAN3D_FACE_COUNT 覆盖；非法值回退到默认 30 万。"""
+    try:
+        value = int(str(env_value("HUNYUAN3D_FACE_COUNT", "300000")).strip())
+    except ValueError:
+        return 300000
+    return value if 10000 <= value <= 1500000 else 300000
+
+
+def _hunyuan_error_text(response):
+    """取出混元返回的失败原因，便于直接看到服务端说了什么。"""
+    error = response.get("error") if isinstance(response, dict) else None
+    if isinstance(error, dict):
+        return error.get("message") or error.get("code") or str(error)
+    return response.get("message") or (str(error) if error else "") or json.dumps(response, ensure_ascii=False)[:300]
 
 
 def _hunyuan_download_glb(url, archive=False):
@@ -622,7 +639,10 @@ def _generate_hunyuan3d(image, fields, view_label, multiview_images=None):
         "image_base64": encoded,
         "enable_pbr": True,
         "generate_type": "Normal",
-        "face_count": 1500000,
+        # 面数直接决定模型体积与后续 Blender 四视图渲染的开销：150 万面会产出
+        # 80 MB 级别的模型，在 2 核服务器上渲染会把整机 CPU 打满。默认降到 30 万面，
+        # 课堂展示足够，需要更高精度时用 HUNYUAN3D_FACE_COUNT 覆盖。
+        "face_count": _hunyuan_face_count(),
     }
     if multiview_images:
         payload["multi_view_images"] = [
@@ -632,32 +652,45 @@ def _generate_hunyuan3d(image, fields, view_label, multiview_images=None):
             }
             for item in multiview_images
         ]
-    # Retry the existing provider task for identical inputs after download failure.
+    # 相同输入复用已经提交过的任务，避免重复扣费。但中转站会清理历史任务
+    # （查一个旧任务号只会得到"任务不存在"），所以复用前必须先确认任务仍然有效，
+    # 失效就删掉缓存重新提交，否则会一直失败在同一个过期的任务号上。
     fingerprint = hashlib.sha256(json.dumps(payload, sort_keys=True).encode("utf-8")).hexdigest()
     task_directory = OUTPUT_DIR / "hunyuan-tasks"
     task_directory.mkdir(exist_ok=True)
     task_path = task_directory / f"{fingerprint}.json"
     stored_task = json.loads(task_path.read_text(encoding="utf-8")) if task_path.exists() else {}
-    if stored_task.get("id") and stored_task.get("fingerprint") == fingerprint:
-        response = _hunyuan_json_request(f"{base_url}/v1/api/3d/query", {"model": model, "id": str(stored_task["id"])}, api_key)
-    else:
+    response = None
+    fresh_enough = time.time() - float(stored_task.get("createdTs") or 0) < 6 * 3600
+    if stored_task.get("id") and stored_task.get("fingerprint") == fingerprint and fresh_enough:
+        try:
+            probed = _hunyuan_json_request(f"{base_url}/v1/api/3d/query", {"model": model, "id": str(stored_task["id"])}, api_key)
+            if str(probed.get("status", "")) not in {"failed", "error"}:
+                response = probed
+        except RuntimeError:
+            response = None
+        if response is None:
+            task_path.unlink(missing_ok=True)
+    if response is None:
         response = _hunyuan_json_request(f"{base_url}/v1/api/3d/submit", payload, api_key)
     task_id = response.get("id")
     if not task_id:
         task_id = stored_task.get("id")
     if not task_id:
         raise RuntimeError("混元 3D 未返回任务编号")
-    task_path.write_text(json.dumps({"id": str(task_id), "model": model, "fingerprint": fingerprint}), encoding="utf-8")
+    task_path.write_text(json.dumps({"id": str(task_id), "model": model, "fingerprint": fingerprint, "createdTs": time.time()}), encoding="utf-8")
     deadline = time.monotonic() + 900
     status = response.get("status", "queued")
+    if status in {"failed", "error"}:
+        raise RuntimeError(f"混元 3D {view_label}任务失败：{_hunyuan_error_text(response)}")
     while status in {"queued", "in_progress"}:
         if time.monotonic() >= deadline:
             raise RuntimeError(f"混元 3D {view_label}任务处理超时（任务号：{task_id}）")
         time.sleep(4)
         queried = _hunyuan_json_request(f"{base_url}/v1/api/3d/query", {"model": model, "id": str(task_id)}, api_key)
         status = queried.get("status", "")
-        if status == "failed":
-            raise RuntimeError(f"混元 3D {view_label}任务失败：{queried.get('message') or queried.get('error') or queried}")
+        if status in {"failed", "error"}:
+            raise RuntimeError(f"混元 3D {view_label}任务失败：{_hunyuan_error_text(queried)}")
         response = queried
     if status != "completed":
         raise RuntimeError(f"混元 3D {view_label}任务返回未知状态：{status}")
@@ -711,8 +744,15 @@ def attach_standard_views(result):
     if model_url and model_url.startswith('/api/'):
         try:
             prepared = courseware.prepare_model_views({'model': {'modelUrl': model_url}, 'scenes': [{'model': {}}]})
-            result.update({key: value for key, value in prepared.items() if key != 'status'})
-            result['viewStatus'] = 'ready'
+            if prepared.get('status') == 'ready':
+                result.update({key: value for key, value in prepared.items() if key != 'status'})
+                result['viewStatus'] = 'ready'
+            elif prepared.get('status') == 'disabled':
+                # 四视图渲染未启用（低配服务器渲不动 Blender）：
+                # 保留生成模型时随 GLB 一起保存的正面照片，不算失败。
+                result['viewStatus'] = 'photo' if (result.get('viewImageUrls') or {}).get('front') else 'disabled'
+            else:
+                result['viewStatus'] = prepared.get('status') or 'failed'
         except (ValueError, RuntimeError, OSError) as exc:
             result['viewStatus'] = 'failed'
             result['viewError'] = str(exc)
@@ -750,6 +790,17 @@ def generate_image_model(body, content_type, mode):
         path.write_bytes(result)
         url = "/api/3d/download/" + path.relative_to(OUTPUT_DIR).as_posix()
         message_suffix = "模型文件已保存到本地。"
+    # 四视图渲染未启用：把用户上传的正面图存成模型的标准照（转 PNG、限 1024），
+    # 作为 previewUrl / viewImageUrls.front 供前端预览与 PPT 嵌入使用。
+    front_source = image if mode == "single" else by_view["front"]
+    front_url = ""
+    try:
+        front_image = Image.open(io.BytesIO(front_source["content"])).convert("RGB")
+        front_image.thumbnail((1024, 1024))
+        front_image.save(directory / "front.png", format="PNG")
+        front_url = "/api/3d/download/" + (directory / "front.png").relative_to(OUTPUT_DIR).as_posix()
+    except (OSError, ValueError):
+        front_url = ""
     packaged = attach_standard_views({
         "status": "generated", "editable": True, "glbUrl": url,
         "appearanceUrl": url, "blendUrl": "", "previewUrl": "",
@@ -757,11 +808,14 @@ def generate_image_model(body, content_type, mode):
         "modelKind": "hunyuan3d-appearance", "engine": "hunyuan3d",
         "model": model, "paidApi": True, "sourceApi": base_url,
         "viewsUsed": views_used, "inputViewCount": len(views_used), "qualityTier": "provider-output-unreviewed",
+        "viewImageUrls": {"front": front_url} if front_url else {},
+        "viewStatus": "photo" if front_url else "disabled",
         "message": f"混元 3D 原始模型；已使用{len(views_used)}个视角输入，未添加模板、未自动拆件。{message_suffix}",
         "workflow": ["hunyuan3d", "preserve-original-glb", "four-view-input" if mode != "single" else "single-view-input", "standard-view-render"],
     })
     packaged["previewUrl"] = (packaged.get("viewImageUrls") or {}).get("front", "")
-    if packaged.get("viewStatus") and packaged.get("viewStatus") != "ready":
+    # photo = 只有正面标准照（这台服务器未启用四视图渲染），是预期状态，不算模型有问题。
+    if packaged.get("viewStatus") and packaged.get("viewStatus") not in ("ready", "disabled", "photo"):
         packaged["status"] = "needs_review"
         packaged["warnings"] = [packaged.get("viewError", "模型截图未通过检查")]
     (directory / "manifest.json").write_text(json.dumps(packaged, ensure_ascii=False), encoding="utf-8")
@@ -1444,25 +1498,9 @@ def create_ppt(plan):
         if request.get("speakerNotes") != "不包含":
             slide.notes_slide.notes_text_frame.text = f"教学意图：{purpose}\n视觉建议：{item.get('visual', '')}\n互动：{item.get('interaction', '')}"
         footer(slide)
-    output = OUTPUT_DIR / f"{re.sub(r'[^a-zA-Z0-9_-]+', '_', plan.get('title', 'lesson'))}_{uuid.uuid4().hex[:8]}.pptx"
+    output = courseware.ppt_output_path(OUTPUT_DIR)
     prs.save(output)
     return output
-
-
-def add_verified_ppt_animations(output, plan):
-    """Add click-triggered animations and reject files with any static slide."""
-    scenes = [
-        {
-            "enabled": True,
-            "pptAnimation": slide.get("pptAnimation") or slide.get("animation") or "fade",
-        }
-        for slide in expanded_slides(plan)
-    ]
-    animation = courseware.add_powerpoint_animations(output, {"scenes": scenes})
-    if animation.get("status") != "animated" or animation.get("verified") is not True:
-        output.unlink(missing_ok=True)
-        raise RuntimeError(animation.get("message") or "PowerPoint 动画未通过逐页验收，未生成下载文件")
-    return animation
 
 
 class Handler(BaseHTTPRequestHandler):
@@ -1519,14 +1557,14 @@ class Handler(BaseHTTPRequestHandler):
                 raise RuntimeError("本地演示建模已停用，请使用 混元 3D 生成模型")
             payload = json.loads(body or b"{}")
             if request_path == "/api/warmup/generate":
-                items, generation, warnings = generate_warmup_with_ollama(payload, payload.get("currentQuestions"))
+                items, generation, warnings = generate_warmup_with_ai(payload, payload.get("currentQuestions"))
                 lesson = payload.get("lessonPlan") or {}
                 model_url, _parts = _warmup_model_context(payload.get("model"))
                 questions = _warmup_with_metadata(items, lesson, model_url, generation)
                 self.send_json({"questions": questions, "count": 5, "generation": generation, "warnings": warnings})
             elif request_path == "/api/warmup/regenerate-question":
                 index = max(0, min(4, int(payload.get("index", 0))))
-                items, generation, warnings = generate_warmup_with_ollama(payload, payload.get("currentQuestions"), index)
+                items, generation, warnings = generate_warmup_with_ai(payload, payload.get("currentQuestions"), index)
                 lesson = payload.get("lessonPlan") or {}
                 model_url, _parts = _warmup_model_context(payload.get("model"))
                 questions = _warmup_with_metadata(items, lesson, model_url, generation)
@@ -1584,8 +1622,8 @@ class Handler(BaseHTTPRequestHandler):
                 if quality["blocking"]:
                     self.send_json({"error": "互动课件质检发现阻断问题", "quality": quality}, 400)
                     return
-                output, animation = courseware.create_ppt(manifest)
-                self.send_json({"fileName": output.name, "downloadUrl": f"/api/courseware/download/{output.name}", "quality": quality, "animation": animation, "sceneCount": animation.get("sceneCount"), "slideCount": animation.get("slideCount"), "aligned": animation.get("aligned", False), "modelViewCount": animation.get("modelViewCount", 0), "warnings": animation.get("warnings", [])})
+                output, report = courseware.create_ppt(manifest)
+                self.send_json({"fileName": courseware.PPT_DOWNLOAD_NAME, "downloadUrl": f"/api/courseware/download/{output.name}", "quality": quality, **report})
             elif request_path == "/api/lesson/preview":
                 self.send_json({"lessonPlan": build_lesson(payload)})
             elif request_path == "/api/biomed/model/generate":
@@ -1598,8 +1636,6 @@ class Handler(BaseHTTPRequestHandler):
                 if quality["blocking"]:
                     self.send_json({"error": "课件质检发现阻断问题", "quality": quality}, 400)
                     return
-                output = create_ppt(plan)
-                animation = add_verified_ppt_animations(output, plan)
                 raise RuntimeError("整套生成接口不再自动调用内置模型；请在当前课程中上传图片并使用 混元 3D 建模")
             elif request_path == "/api/ppt/preview":
                 plan = payload.get("lessonPlan") or build_lesson(payload)
@@ -1647,8 +1683,7 @@ class Handler(BaseHTTPRequestHandler):
                     self.send_json({"error": "课件质检发现阻断问题", "quality": quality}, 400)
                     return
                 output = create_ppt(plan)
-                animation = add_verified_ppt_animations(output, plan)
-                self.send_json({"fileName": output.name, "downloadUrl": f"/api/ppt/download/{output.name}", "quality": quality, "animation": animation})
+                self.send_json({"fileName": courseware.PPT_DOWNLOAD_NAME, "downloadUrl": f"/api/ppt/download/{output.name}", "quality": quality})
             else:
                 self.send_json({"error": "Not found"}, 404)
         except (ValueError, KeyError, zipfile.BadZipFile) as exc:
@@ -1660,8 +1695,8 @@ class Handler(BaseHTTPRequestHandler):
 
     def do_GET(self):
         parsed = urlparse(self.path)
-        if parsed.path == "/api/local-model/status":
-            self.send_json(ollama_adapter.status())
+        if parsed.path == "/api/lesson-ai/status":
+            self.send_json(lesson_ai_adapter.status())
             return
         if parsed.path == "/api/biomed/models":
             self.send_json({"models": biomed_models.catalog(), "blenderAvailable": biomed_models.find_blender() is not None})
@@ -1717,7 +1752,7 @@ class Handler(BaseHTTPRequestHandler):
             file_path = OUTPUT_DIR / unquote(parsed.path[len(prefix):])
             file_path = file_path.resolve()
             if OUTPUT_DIR.resolve() in file_path.parents and file_path.suffix == ".pptx" and file_path.is_file():
-                data = file_path.read_bytes(); self.send_response(200); self._headers("application/vnd.openxmlformats-officedocument.presentationml.presentation", len(data)); self.send_header("Content-Disposition", f'attachment; filename="{file_path.name}"'); self.end_headers(); self.wfile.write(data); return
+                data = file_path.read_bytes(); self.send_response(200); self._headers("application/vnd.openxmlformats-officedocument.presentationml.presentation", len(data)); self.send_header("Content-Disposition", f'attachment; filename="{courseware.PPT_DOWNLOAD_NAME}"'); self.end_headers(); self.wfile.write(data); return
         courseware_prefix = "/api/courseware/download/"
         if parsed.path.startswith(courseware_prefix):
             file_path = (OUTPUT_DIR / unquote(parsed.path[len(courseware_prefix):])).resolve()
@@ -1727,7 +1762,9 @@ class Handler(BaseHTTPRequestHandler):
             }
             content_type = allowed.get(file_path.suffix.lower())
             if content_type and OUTPUT_DIR.resolve() in file_path.parents and file_path.is_file():
-                data = file_path.read_bytes(); self.send_response(200); self._headers(content_type, len(data)); self.send_header("Content-Disposition", f'attachment; filename="{file_path.name}"'); self.end_headers(); self.wfile.write(data); return
+                data = file_path.read_bytes()
+                download_name = courseware.PPT_DOWNLOAD_NAME if file_path.suffix.lower() == ".pptx" else file_path.name
+                self.send_response(200); self._headers(content_type, len(data)); self.send_header("Content-Disposition", f'attachment; filename="{download_name}"'); self.end_headers(); self.wfile.write(data); return
             self.send_json({"error": "互动课件文件不存在"}, 404)
             return
         asset_prefix = "/api/assets/"

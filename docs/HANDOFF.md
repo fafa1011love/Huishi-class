@@ -16,7 +16,7 @@
 
 - 主课堂、备课工作区及课程应用：`Dashboard.tsx`、`prep/IntegratedPrepStudio.tsx`、`prep/PrepStudio.tsx`。
 - 本科生物医学七步教案设计及校验：`teacher-studio-service/backend/lesson_design.py`、`prep/UndergraduateDesignWorkflow.tsx`。
-- 本地 Ollama 文案增强默认模型为 `qwen3:4b`：`teacher-studio-service/backend/ollama_adapter.py`。模型不可用或结构化输出校验失败时会回退到内置模板；界面应保留实际生成来源提示。
+- 教案文案由云端教案 AI 生成（`LESSON_AI_*`）：`teacher-studio-service/backend/lesson_ai_adapter.py`，已不再调用本地 Ollama。模型不可用或结构化输出校验失败时会回退到内置模板；界面应保留实际生成来源提示。
 - 课前五道预热题生成、单题重做和编辑：`teacher-studio-service/backend/server.py`、`prep/PrepStudio.tsx`、`services/quizData.ts`。
 - SF3D 图生模型端点与工作区：`teacher-studio-service/backend/server.py`、`components/IntegratedModelingStudio.tsx`。前端应明确显示实际生成状态，不能用内置示例模型冒充上传图生成结果。
 - 手势控制与测验：`components/HandController.tsx`、`components/QuizOverlay.tsx`、`Dashboard.tsx`。此前约定是左手缩放、右手旋转/拖动；切换到课堂答题复用摄像头。
@@ -71,10 +71,10 @@ Set-Location D:\jjr\shuzhi-class
 ```text
 http://127.0.0.1:3000/
 http://127.0.0.1:4000/api/health
-http://127.0.0.1:8765/api/local-model/status
+http://127.0.0.1:8765/api/lesson-ai/status
 ```
 
-如需本地千问增强，确认 Ollama 服务运行且 `qwen3:4b` 已安装。页面显示“本地模板回退”时，表示模型调用不可用或模型结果没有通过结构校验，不代表千问成功生成。
+如需 AI 生成，确认 `.env.local` 已配置 `LESSON_AI_API_KEY`。页面显示“本地模板回退”时，表示模型调用不可用或模型结果没有通过结构校验，不代表 AI 成功生成。
 
 ## 主要接口与数据流
 

@@ -69,7 +69,7 @@ type ModelOptions = { textureResolution: string; foregroundRatio: string; vertex
 type ModelMode = 'single' | 'multiview'
 type ModelViews = Partial<Record<'front' | 'left' | 'right' | 'back', File>>
 type ImageModelResult = { status: string; editable: boolean; message: string; glbUrl: string; modelUrl?: string; exportModelUrl?: string; localPreviewUrl?: string; remoteModelId?: string; fullGlbUrl?: string; appearanceUrl?: string; blendUrl: string; previewUrl: string; viewImageUrls?: { front?: string; left?: string; right?: string; back?: string }; parts: { name: string; partKey: string; source: string }[]; engine?: string; viewsUsed?: string[]; registration?: { status: string; confidence: number; silhouetteIoU?: Record<string, number> }; textureProjection?: { status: string; viewsUsed: number }; source?: 'imported' | 'generated'; localModelId?: string; modelType?: ModelType; assetUrls?: Record<string, string>; fileName?: string }
-type WarmupGeneration = { engine: 'ollama' | 'builtin-template'; model?: string; message: string; warnings?: string[] }
+type WarmupGeneration = { engine: 'ollama' | 'responses' | 'builtin-template'; model?: string; message: string; warnings?: string[] }
 
 const resolveAppearanceModelUrl = (asset: Record<string, unknown> | null | undefined) => {
   if (!asset) return ''
@@ -81,6 +81,12 @@ const resolveAppearanceModelUrl = (asset: Record<string, unknown> | null | undef
 }
 const hasUsableModelAsset = (asset: Record<string, unknown> | null | undefined, currentUrl = '') => Boolean(currentUrl.trim() || resolveAppearanceModelUrl(asset))
 type WorkbenchStage = 'model' | 'lesson' | 'output'
+
+// 真实的 AI 生成引擎（云端 responses；ollama 已停用，仅用于识别旧记录）；builtin-template 表示降级到系统模板
+const AI_GENERATION_ENGINES = ['ollama', 'responses'] as const
+function isAiGeneration(engine?: string): boolean {
+  return !!engine && (AI_GENERATION_ENGINES as readonly string[]).includes(engine)
+}
 
 const initialForm: FormState = {
   stage: '本科', grade: '', subject: '生物医学', topic: '', lessonType: '新授课', duration: '40', lessonCount: '1', classSize: '40人',
@@ -335,7 +341,7 @@ function PrepStudio({ onBack, embedded = false, onApplyLesson, userId = 0 }: Pre
       .then((response) => response.json())
       .then((data) => {
         if (cancelled) return
-        const available = data.blenderAvailable === true && data.singleImage?.available !== false
+        const available = data.singleImage?.available === true || data.multiview?.available === true
         setThreeDConfigured(available)
         if (!available) retryTimer = window.setTimeout(check, 3000)
       })
@@ -401,7 +407,7 @@ function PrepStudio({ onBack, embedded = false, onApplyLesson, userId = 0 }: Pre
       const payload = formToPayload(form)
       const response = await fetch('/api/prep/lesson-design/generate-draft', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ request: payload, mode: 'quick', model: modelAsset }) })
       const data = await response.json(); if (!response.ok) throw new Error(data.error || '生成失败')
-      setPlan({ ...data.lessonPlan, request: { ...form }, modelAsset: modelAsset || undefined, warmupQuestions: warmupQuestions.length ? warmupQuestions : undefined }); setWarmupGeneration(null); setCoursewareManifest(null); setWorkbenchStage('output'); setShowFullForm(false); setModelRecommendationOpen(false); setModelModalOpen(false); setModelRecommendationShown(false); setModelRecommendationReason(null); setBioResult(null); setArtifacts({}); setPptArtifact(null); setToast(data.generation?.engine === 'ollama' ? 'AI已生成教案初稿，请审核、修改后确认' : 'AI 生成失败，已使用系统模板生成可编辑初稿')
+      setPlan({ ...data.lessonPlan, request: { ...form }, modelAsset: modelAsset || undefined, warmupQuestions: warmupQuestions.length ? warmupQuestions : undefined }); setWarmupGeneration(null); setCoursewareManifest(null); setWorkbenchStage('output'); setShowFullForm(false); setModelRecommendationOpen(false); setModelModalOpen(false); setModelRecommendationShown(false); setModelRecommendationReason(null); setBioResult(null); setArtifacts({}); setPptArtifact(null); setToast(isAiGeneration(data.generation?.engine) ? 'AI已生成教案初稿，请审核、修改后确认' : 'AI 生成失败，已使用系统模板生成可编辑初稿')
     } catch (error) { setToast(error instanceof Error ? error.message : '生成失败，请确认本地 API 已启动') } finally { setBusy(null) }
   }
   const saveRecord = async () => {
@@ -478,14 +484,12 @@ function PrepStudio({ onBack, embedded = false, onApplyLesson, userId = 0 }: Pre
       }
       const response = await fetch('/api/prep/courseware/export-pptx', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ manifest }) })
       const data = await response.json(); if (!response.ok) throw new Error(data.error || '配套 PPT 生成失败')
-      if (data.animation?.status !== 'animated' || data.animation?.verified !== true) throw new Error(data.animation?.message || 'PowerPoint 动画未通过逐页验收，已停止下载')
       setPptArtifact(data); setArtifacts((current) => ({ ...current, pptx: 'generated' }))
       triggerDownload(data.downloadUrl, data.fileName)
       return data
     }
     const response = await fetch('/api/prep/ppt/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lessonPlan: plan }) })
     const data = await response.json(); if (!response.ok) throw new Error(data.error || 'PPT 生成失败')
-    if (data.animation?.status !== 'animated' || data.animation?.verified !== true) throw new Error(data.animation?.message || 'PowerPoint 动画未通过逐页验收，已停止下载')
     setPptArtifact(data); setArtifacts((current) => ({ ...current, pptx: 'generated' }))
     triggerDownload(data.downloadUrl, data.fileName)
     return data
@@ -602,7 +606,7 @@ function PrepStudio({ onBack, embedded = false, onApplyLesson, userId = 0 }: Pre
       const response = await fetch('/api/prep/warmup/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lessonPlan: plan, model: sourceModel || null, currentQuestions: existingQuestions }) })
       const data = await response.json(); if (!response.ok) throw new Error(data.error || '练习题生成失败')
       const generated = (data.questions || []) as WarmupQuestion[]
-      setWarmupQuestions(generated); setWarmupGeneration(data.generation || null); setPlan((current) => current ? { ...current, warmupQuestions: generated } : current); setToast(data.generation?.engine === 'ollama' ? 'AI 已生成 5 道练习题，可编辑后应用到课堂' : 'AI 生成失败，已使用系统模板生成练习题')
+      setWarmupQuestions(generated); setWarmupGeneration(data.generation || null); setPlan((current) => current ? { ...current, warmupQuestions: generated } : current); setToast(isAiGeneration(data.generation?.engine) ? 'AI 已生成 5 道练习题，可编辑后应用到课堂' : 'AI 生成失败，已使用系统模板生成练习题')
       return generated
     } catch (error) { setToast(error instanceof Error ? error.message : '练习题生成失败'); return undefined }
     finally { setBusy(null) }
@@ -614,7 +618,7 @@ function PrepStudio({ onBack, embedded = false, onApplyLesson, userId = 0 }: Pre
       const existingQuestions = warmupQuestions.length ? warmupQuestions : (plan.warmupQuestions || [])
       const response = await fetch('/api/prep/warmup/regenerate-question', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lessonPlan: plan, model: modelAsset, index, currentQuestions: existingQuestions }) })
       const data = await response.json(); if (!response.ok) throw new Error(data.error || '题目重做失败')
-      setWarmupQuestions((current) => current.map((question, questionIndex) => questionIndex === index ? data.question : question)); setWarmupGeneration(data.generation || null); setPlan((current) => current ? { ...current, warmupQuestions: (current.warmupQuestions || []).map((question, questionIndex) => questionIndex === index ? data.question : question) } : current); setToast(data.generation?.engine === 'ollama' ? `AI 已重新生成第 ${index + 1} 题` : `第 ${index + 1} 题生成失败，已保留系统模板题目`)
+      setWarmupQuestions((current) => current.map((question, questionIndex) => questionIndex === index ? data.question : question)); setWarmupGeneration(data.generation || null); setPlan((current) => current ? { ...current, warmupQuestions: (current.warmupQuestions || []).map((question, questionIndex) => questionIndex === index ? data.question : question) } : current); setToast(isAiGeneration(data.generation?.engine) ? `AI 已重新生成第 ${index + 1} 题` : `第 ${index + 1} 题生成失败，已保留系统模板题目`)
     } catch (error) { setToast(error instanceof Error ? error.message : '题目重做失败') }
     finally { setBusy(null) }
   }
@@ -937,7 +941,7 @@ function LessonPreview({ plan, onUpdate, onSave, onGenerate, onGenerate3d, onReg
       {activeTab === 'model' && <ModelPanel file={modelFile} setFile={setModelFile} modelUrl={modelUrl} options={modelOptions} setOptions={setModelOptions} configured={threeDConfigured} assetResult={modelAsset as ImageModelResult | null} onGenerate={(file, options, mode, views) => onGenerate3d(file, options, mode, views)} onImport={onImport} busy={busy} disabled={editing} />}
       {activeTab === 'warmup' && <WarmupEditor questions={warmupQuestions} generation={warmupGeneration} onChange={(questions) => { setDraft({ ...draft, warmupQuestions: questions }); onUpdate({ ...draft, warmupQuestions: questions }); onWarmupChange(questions); }} onRegenerate={onRegenerateWarmupQuestion} busy={busy === 'warmup'} />}
     </div>
-    <div className="preview-foot"><span><FileText size={14} />{draft.designWorkflow?.generation.engine === 'ollama' ? 'AI 生成' : 'AI 生成失败，模板回退'} · 可继续修改</span><span>更新于 {draft.createdAt.replace('T', ' ')}</span></div>
+    <div className="preview-foot"><span><FileText size={14} />{isAiGeneration(draft.designWorkflow?.generation.engine) ? 'AI 生成' : 'AI 生成失败，模板回退'} · 可继续修改</span><span>更新于 {draft.createdAt.replace('T', ' ')}</span></div>
   </div>
 }
 
@@ -948,7 +952,7 @@ function ReferenceList({ references }: { references: Reference[] }) {
 function WarmupEditor({ questions, generation, onChange, onRegenerate, busy }: { questions: WarmupQuestion[]; generation: WarmupGeneration | null; onChange: (questions: WarmupQuestion[]) => void; onRegenerate: (index: number) => void; busy: boolean }) {
   if (!questions.length) return <section className="preview-section"><div className="section-title"><span>练习题编辑器</span></div><p className="model-empty">正在准备 5 道可编辑练习题…</p></section>
   const update = (index: number, patch: Partial<WarmupQuestion>) => onChange(questions.map((question, questionIndex) => questionIndex === index ? { ...question, ...patch, source: 'teacher-edited' } : question))
-  return <section className="warmup-editor"><div className="section-title"><span>练习题编辑器</span><small>{questions.filter((question) => question.enabled).length}/5 道启用</small></div><div className={`warmup-generation ${generation?.engine === 'builtin-template' ? 'is-fallback' : ''}`}><Sparkles size={14} /><span><strong>{generation?.engine === 'ollama' ? 'AI 生成' : 'AI 生成失败，模板回退'}</strong><small>{generation?.engine === 'ollama' ? '题目可以继续编辑，教师修改内容不会被覆盖。' : '已使用系统模板生成，题目仍可继续编辑。'}</small></span></div><p className="warmup-note">应用到课堂后沿用摄像头手势选择、语音播题和错题记录。教师修改内容不会被模型同步覆盖。</p>{questions.map((question, index) => <article className={`warmup-question ${question.enabled ? '' : 'is-disabled'}`} key={question.id}><div className="warmup-question-head"><strong>第 {index + 1} 题</strong><label><input type="checkbox" checked={question.enabled} onChange={(event) => update(index, { enabled: event.target.checked })} />启用</label><button type="button" className="outline-btn" onClick={() => onRegenerate(index)} disabled={busy}>重新生成本题</button></div><label className="inline-edit"><span>题干</span><textarea rows={2} value={question.question} onChange={(event) => update(index, { question: event.target.value })} /></label><div className="warmup-options">{question.options.map((option, optionIndex) => <label className="inline-edit" key={`${question.id}-${optionIndex}`}><span>选项 {String.fromCharCode(65 + optionIndex)}{question.correctIndex === optionIndex ? ' · 正确' : ''}</span><input value={option} onChange={(event) => { const options = [...question.options]; options[optionIndex] = event.target.value; update(index, { options }) }} /><input aria-label={`第${index + 1}题选项${String.fromCharCode(65 + optionIndex)}为正确答案`} type="radio" name={`warmup-correct-${question.id}`} checked={question.correctIndex === optionIndex} onChange={() => update(index, { correctIndex: optionIndex })} /></label>)}</div><label className="inline-edit"><span>答案解析</span><textarea rows={2} value={question.explanation} onChange={(event) => update(index, { explanation: event.target.value })} /></label></article>)}</section>
+  return <section className="warmup-editor"><div className="section-title"><span>练习题编辑器</span><small>{questions.filter((question) => question.enabled).length}/5 道启用</small></div><div className={`warmup-generation ${generation?.engine === 'builtin-template' ? 'is-fallback' : ''}`}><Sparkles size={14} /><span><strong>{isAiGeneration(generation?.engine) ? 'AI 生成' : 'AI 生成失败，模板回退'}</strong><small>{isAiGeneration(generation?.engine) ? '题目可以继续编辑，教师修改内容不会被覆盖。' : '已使用系统模板生成，题目仍可继续编辑。'}</small></span></div><p className="warmup-note">应用到课堂后沿用摄像头手势选择、语音播题和错题记录。教师修改内容不会被模型同步覆盖。</p>{questions.map((question, index) => <article className={`warmup-question ${question.enabled ? '' : 'is-disabled'}`} key={question.id}><div className="warmup-question-head"><strong>第 {index + 1} 题</strong><label><input type="checkbox" checked={question.enabled} onChange={(event) => update(index, { enabled: event.target.checked })} />启用</label><button type="button" className="outline-btn" onClick={() => onRegenerate(index)} disabled={busy}>重新生成本题</button></div><label className="inline-edit"><span>题干</span><textarea rows={2} value={question.question} onChange={(event) => update(index, { question: event.target.value })} /></label><div className="warmup-options">{question.options.map((option, optionIndex) => <label className="inline-edit" key={`${question.id}-${optionIndex}`}><span>选项 {String.fromCharCode(65 + optionIndex)}{question.correctIndex === optionIndex ? ' · 正确' : ''}</span><input value={option} onChange={(event) => { const options = [...question.options]; options[optionIndex] = event.target.value; update(index, { options }) }} /><input aria-label={`第${index + 1}题选项${String.fromCharCode(65 + optionIndex)}为正确答案`} type="radio" name={`warmup-correct-${question.id}`} checked={question.correctIndex === optionIndex} onChange={() => update(index, { correctIndex: optionIndex })} /></label>)}</div><label className="inline-edit"><span>答案解析</span><textarea rows={2} value={question.explanation} onChange={(event) => update(index, { explanation: event.target.value })} /></label></article>)}</section>
 }
 
 function UndergraduateDesignPreview({ plan }: { plan: LessonPlan }) {
@@ -1136,8 +1140,8 @@ function ModelPanel({ file, setFile, modelUrl, options, setOptions, configured, 
   const isDualLayerAnatomy = Boolean(result && 'modelKind' in result && (result as ImageModelResult & { modelKind?: string }).modelKind === 'dual-layer-anatomy')
   const previewModelUrl = isDualLayerAnatomy ? (result?.appearanceUrl || '') : modelUrl
   return <section className="model-panel">
-    <div className="model-panel-head"><div><span className="section-kicker">CLASSROOM ASSET</span><h3><Box size={16} />本课教学资产</h3><p>提交图片生成模型，或直接导入已有模型，用于本课教案、课件和课堂活动。</p></div><span className={configured ? 'model-status ready' : 'model-status'}>{configured === null ? '配置连接中' : configured ? '配置已加载' : '配置连接中'}</span></div>
-    {configured === false && <div className="model-warning"><Settings2 size={15} />当前配置正在连接，图片生成暂不可用；仍可直接导入已有模型。</div>}
+    <div className="model-panel-head"><div><span className="section-kicker">CLASSROOM ASSET</span><h3><Box size={16} />本课教学资产</h3><p>提交图片生成模型，或直接导入已有模型，用于本课教案、课件和课堂活动。</p></div><span className={configured ? 'model-status ready' : 'model-status'}>{configured === null ? '配置检测中' : configured ? '配置已加载' : '图生 3D 不可用'}</span></div>
+    {configured === false && <div className="model-warning"><Settings2 size={15} />图生 3D 服务暂不可用（未配置混元 3D Key 或服务未启动），正在自动重试；仍可直接导入已有模型。</div>}
     {onImport && <div className="model-import-row"><label className="outline-btn model-import-button"><UploadCloud size={15} />直接导入模型<input key={importInputKey} type="file" multiple accept=".glb,.gltf,.fbx,.bin,.ktx,.ktx2,.dds,.tga,.bmp,image/*" onChange={(event) => { void importFiles(Array.from(event.target.files || [])); event.currentTarget.value = '' }} /></label><span>支持 GLB、GLTF、FBX 及同批纹理附件，导入后直接预览</span></div>}
     <div className="model-mode-switch" role="tablist" aria-label="3D生成模式"><button type="button" className={mode === 'single' ? 'active' : ''} onClick={() => setMode('single')}><span className="model-mode-label">单张图片生成</span><span className="model-mode-tip" role="tooltip">{singleModelWarningText}</span></button><button type="button" className={mode === 'multiview' ? 'active' : ''} onClick={() => setMode('multiview')}>四视角生成</button></div>
     {mode === 'single' ? <label className={`upload-box ${dragTarget === 'single' ? 'dragging' : ''}`} {...dragProps('single')}><UploadCloud size={18} /><span>{file ? file.name : '提交一张 PNG、JPG 或 WebP 图片'}</span><small>{file ? `${Math.ceil(file.size / 1024)} KB · 已就绪` : '点击选择，或直接拖入图片'}</small><input type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => chooseImage(event.target.files?.[0], 'single')} /></label> : <div className="multiview-grid">{viewKeys.map((key) => <label className={`${views[key] ? 'view-upload ready' : 'view-upload'} ${dragTarget === key ? 'dragging' : ''}`} key={key} {...dragProps(key)}><UploadCloud size={15} /><strong>{viewLabels[key]}</strong><small>{views[key]?.name || '点击选择或拖入图片'}</small><input type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => chooseImage(event.target.files?.[0], key)} /></label>)}</div>}

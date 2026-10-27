@@ -129,7 +129,7 @@ export default function CoursewareStoryboard({ lessonPlan, model, questions, man
       const response = await fetch(`/api/prep/courseware/export-${type}`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ manifest: prepared }) })
       const data = await response.json(); if (!response.ok) throw new Error(data.error || '导出失败')
       download(data.downloadUrl, data.fileName)
-      onNotice(type === 'zip' ? '离线课件 ZIP 已生成' : `配套 PPTX 已生成 · ${data.animation?.message || '静态课件'}`)
+      onNotice(type === 'zip' ? '离线课件 ZIP 已生成' : '配套 PPTX 已生成')
     } catch (error) { onNotice(error instanceof Error ? error.message : '导出失败') }
     finally { setBusy(null) }
   }

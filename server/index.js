@@ -1187,8 +1187,12 @@ async function prepareOwnedModelForExport(manifest, userId) {
 function requestLongRunningModel(target, init) {
   // Node fetch defaults to a five-minute header timeout. Provider generation
   // and model download can exceed that while the local worker is still running.
+  const headers = { ...init.headers };
+  // Unlike fetch, http.request falls back to chunked encoding for string
+  // bodies; the Python service requires an explicit Content-Length.
+  if (typeof init.body === 'string') headers['content-length'] = String(Buffer.byteLength(init.body));
   return new Promise((resolve, reject) => {
-    const transport = httpRequest(target, { method: init.method, headers: init.headers }, (response) => {
+    const transport = httpRequest(target, { method: init.method, headers }, (response) => {
       resolve(new Response(Readable.toWeb(response), {
         status: response.statusCode,
         headers: Object.fromEntries(Object.entries(response.headers).filter(([, value]) => value !== undefined)),
@@ -1226,7 +1230,9 @@ async function proxyTeacherStudioRequest(req, res) {
 
   let upstream;
   try {
-    upstream = targetPath.startsWith('/api/3d/generate')
+    // AI lesson manuscripts can retry the provider several times and exceed
+    // fetch's five-minute header timeout, which used to surface as a 502.
+    upstream = targetPath.startsWith('/api/3d/generate') || targetPath.startsWith('/api/lesson-design/')
       ? await requestLongRunningModel(target, init)
       : await fetch(target, init);
   } catch (error) {

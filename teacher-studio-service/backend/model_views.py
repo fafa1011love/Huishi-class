@@ -1,6 +1,7 @@
 """Content-addressed, atomic standard views of the exact exported GLB."""
 import hashlib
 import json
+import os
 import shutil
 import subprocess
 import tempfile
@@ -12,7 +13,14 @@ import biomed_models
 
 ROOT = Path(__file__).resolve().parents[1]
 CACHE = ROOT / 'generated' / 'model-views'
-VERSION = 'orthographic-v1'
+# 视图分辨率：1024 在这台 2 核服务器上渲 4 张会超过 300 秒而失败，默认用 512。
+RESOLUTION = int(os.environ.get('MODEL_VIEW_RESOLUTION', '512'))
+# 四视图渲染总开关。实测：Blender 渲染混元产出的高质量模型，在 700M 限制下 8.9 秒就被
+# OOM kill，而整机可用内存只有约 1G——这台服务器根本渲不动。因此默认关闭渲染，
+# 模型本身照常生成；将来升配或换轻量渲染方案后设 MODEL_VIEW_RENDER=1 即可恢复。
+RENDER_ENABLED = os.environ.get('MODEL_VIEW_RENDER', '0').strip().lower() in ('1', 'true', 'yes', 'on')
+# 版本号带上分辨率，改分辨率后旧缓存自动失效重渲。
+VERSION = f'orthographic-{RESOLUTION}-v1'
 VIEWS = ('front', 'left', 'right', 'back')
 _locks = {}
 _guard = threading.Lock()
@@ -29,11 +37,11 @@ def fingerprint(path):
 def validate_image(path):
     with Image.open(path) as image:
         image.load()
-        if image.size != (1024, 1024):
+        if image.size != (RESOLUTION, RESOLUTION):
             raise ValueError('视图尺寸不正确')
         alpha = image.convert('RGBA').getchannel('A')
         bounds = alpha.getbbox()
-        if not bounds or bounds[0] <= 0 or bounds[1] <= 0 or bounds[2] >= 1024 or bounds[3] >= 1024:
+        if not bounds or bounds[0] <= 0 or bounds[1] <= 0 or bounds[2] >= RESOLUTION or bounds[3] >= RESOLUTION:
             raise ValueError('模型截图为空或超出画面')
 
 
@@ -70,6 +78,9 @@ def _render(model_path, destination):
 
 
 def ensure_views(model_path, render=True):
+    if not RENDER_ENABLED:
+        # 渲染总开关关闭：直接告知调用方"未启用"，绝不启动 Blender。
+        return {'status': 'disabled', 'viewImageUrls': {}, 'viewRenderVersion': VERSION}
     model_path = Path(model_path)
     digest = fingerprint(model_path)
     directory = CACHE / (VERSION + '-' + digest)

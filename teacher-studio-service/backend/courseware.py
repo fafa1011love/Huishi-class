@@ -4,7 +4,6 @@ from __future__ import annotations
 import html
 import json
 import re
-import sys
 import uuid
 import zipfile
 import hashlib
@@ -226,6 +225,15 @@ def regenerate_scene(manifest, scene_id):
     return manifest
 
 
+# Every exported deck downloads under one fixed name; stored files keep a
+# random suffix so concurrent exports never overwrite each other.
+PPT_DOWNLOAD_NAME = "shuzhiclass.pptx"
+
+
+def ppt_output_path(output_dir):
+    return Path(output_dir) / f"shuzhiclass_{uuid.uuid4().hex[:10]}.pptx"
+
+
 def _safe_name(value):
     return re.sub(r"[^a-zA-Z0-9_-]+", "_", str(value or "courseware")).strip("_") or "courseware"
 
@@ -246,6 +254,9 @@ def _resolve_image(image_url):
     clean_url = unquote(urlsplit(str(image_url or "")).path).replace('/api/prep/', '/api/')
     if "/api/3d/preview/" in clean_url:
         candidate = OUTPUT_DIR / clean_url.split("/api/3d/preview/", 1)[1]
+    elif "/api/3d/download/" in clean_url:
+        # 生成模型时随 model.glb 一起保存的正面照片走这个前缀。
+        candidate = OUTPUT_DIR / clean_url.split("/api/3d/download/", 1)[1]
     elif clean_url.startswith("/images/"):
         candidate = PROJECT_ROOT / "public" / clean_url.lstrip("/")
     else:
@@ -277,7 +288,14 @@ def prepare_model_views(manifest, check_only=False):
     path = _resolve_model(model.get('exportModelUrl') or model.get('modelUrl') or model.get('appearanceUrl') or model.get('glbUrl'))
     if path is None:
         raise ValueError('无法读取本课当前模型，无法自动截图。请重新连接模型后重试，已有模型不会删除。')
-    return model_views.ensure_views(path, render=not check_only)
+    result = model_views.ensure_views(path, render=not check_only)
+    if result.get('status') == 'disabled':
+        # 四视图渲染未启用（低配服务器渲不动）：回退到生成模型时保存的正面照片。
+        stored = model.get('viewImageUrls') if isinstance(model.get('viewImageUrls'), dict) else {}
+        if _cw_text(stored.get('front')):
+            return {'status': 'photo', 'viewImageUrls': {'front': _cw_text(stored.get('front'))},
+                    'viewRenderVersion': result.get('viewRenderVersion'), 'viewImageSource': 'source-front-photo'}
+    return result
 
 
 def _verify_embedded_views(output, expected):
@@ -388,29 +406,45 @@ def create_offline_zip(manifest):
     return output
 
 
+_MEASURE_FONTS = (
+    Path('C:/Windows/Fonts/simsun.ttc'),
+    Path('/usr/share/fonts/truetype/arphic/uming.ttc'),
+    Path('/usr/share/fonts/opentype/noto/NotoSerifCJK-Regular.ttc'),
+    Path('/usr/share/fonts/opentype/noto/NotoSansCJK-Regular.ttc'),
+    Path('/usr/share/fonts/google-noto-cjk/NotoSansCJK-Regular.ttc'),
+)
+
+
+def _measure_font_path():
+    return next((path for path in _MEASURE_FONTS if path.is_file()), None)
+
+
 def _add_text(slide, value, x, y, w, h, size, color, bold=False, align=PP_ALIGN.LEFT):
     box = slide.shapes.add_textbox(Inches(x), Inches(y), Inches(w), Inches(h))
     frame = box.text_frame
     frame.clear(); frame.word_wrap = True
     frame.margin_left = frame.margin_right = frame.margin_top = frame.margin_bottom = 0
     text = _ppt_static_copy(_chinese_copy(str(value)))
-    font_path = Path('C:/Windows/Fonts/simsun.ttc')
-    if font_path.is_file():
-        while size > 8:
-            font = ImageFont.truetype(str(font_path), size * 4)
-            lines = 0
-            for paragraph in text.split('\n'):
-                lines += 1
-                line = ''
-                for char in paragraph:
-                    if line and font.getlength(line + char) > w * 72 * 4:
-                        lines += 1
-                        line = char
-                    else:
-                        line += char
-            if lines * size * 1.5 <= h * 72:
-                break
-            size -= 1
+    font_path = _measure_font_path()
+    # Shrink the type until the wrapped text fits the box. Without a local
+    # CJK font (e.g. a Linux server), estimate widths: full-width glyphs take
+    # one em, everything else roughly 0.58 em.
+    while size > 8:
+        font = ImageFont.truetype(str(font_path), size * 4) if font_path else None
+        measure = (lambda value: font.getlength(value)) if font else (lambda value: sum(size * 4 * (1 if ord(char) > 255 else 0.58) for char in value))
+        lines = 0
+        for paragraph in text.split('\n'):
+            lines += 1
+            line = ''
+            for char in paragraph:
+                if line and measure(line + char) > w * 72 * 4:
+                    lines += 1
+                    line = char
+                else:
+                    line += char
+        if lines * size * 1.5 <= h * 72:
+            break
+        size -= 1
     p = frame.paragraphs[0]; p.alignment = align
     p.line_spacing = 1.2
     p.space_before = p.space_after = Pt(0)
@@ -431,7 +465,6 @@ def create_ppt(manifest):
     image = _resolve_image(manifest.get("model", {}).get("previewImageUrl"))
     view_images = _ppt_view_images(manifest)
     expected_views = {}
-    animation_scenes = []
     labels = {"hook": "问题导入", "outcomes": "学习目标", "content-map": "知识结构",
               "question-chain": "问题链", "activity": "教学活动", "assessment": "学习评价",
               "model-challenge": "结构观察", "model-overview": "整体结构", "gesture-quiz": "课堂答题",
@@ -486,7 +519,6 @@ def create_ppt(manifest):
             slide = prs.slides.add_slide(prs.slide_layouts[6])
             slide.background.fill.solid()
             slide.background.fill.fore_color.rgb = RGBColor.from_string(bg)
-            animation_scenes.append(scene)
             _add_text(slide, "互动课程 · " + labels.get(scene["type"], "课堂学习"), .65, .25, 10, .35, 12, cyan)
             _add_text(slide, str(len(prs.slides)), 12, .25, .65, .35, 12, cyan, align=PP_ALIGN.RIGHT)
             title = _ppt_static_copy(scene["title"]) + (f"（续 {page_index}）" if page_index else "")
@@ -520,9 +552,8 @@ def create_ppt(manifest):
             if scene.get("model"):
                 notes += "\n模型静态视角：" + (("前视、侧/斜视、上方俯视、顶部正交" if "oblique" in view_images else "正面、左侧、右侧、背面") if show_four_views else camera_key)
             slide.notes_slide.notes_text_frame.text = _ppt_static_copy(notes)
-    output = OUTPUT_DIR / f"{_safe_name(manifest['title'])}_courseware_{uuid.uuid4().hex[:8]}.pptx"
+    output = ppt_output_path(OUTPUT_DIR)
     prs.save(output)
-    animation = add_powerpoint_animations(output, {**manifest, "scenes": animation_scenes})
     try:
         _verify_embedded_views(output, expected_views)
     except Exception:
@@ -535,7 +566,8 @@ def create_ppt(manifest):
         if not scene.get("enabled", True) or not scene.get("model"):
             continue
         camera_key = "back" if scene["model"].get("camera") == "posterior" else scene["model"].get("camera", "free")
-        if len(view_images) >= 4:
+        if view_images:
+            # 四视图齐全或正面照片模式（photo）：有图可用即视为满足要求。
             continue
         if scene.get("type") == "model-overview":
             missing = [key for key in ("front", "left", "right", "back") if key not in view_images]
@@ -546,107 +578,8 @@ def create_ppt(manifest):
     if scene_count != slide_count:
         output.unlink(missing_ok=True)
         raise RuntimeError(f"课件与 PPT 页数不一致：课件 {scene_count} 页，PPT {slide_count} 页")
-    animation.update({"sceneCount": scene_count, "slideCount": slide_count, "aligned": True, "modelViewCount": len(view_images), "warnings": export_warnings})
-    if not animation.get("verified"):
-        output.unlink(missing_ok=True)
-        raise RuntimeError(animation.get("message") or "配套课件动画验证失败")
-    return output, animation
-
-
-def _load_powerpoint_client():
-    try:
-        import win32com.client  # type: ignore
-        return win32com.client
-    except ImportError:
-        venv_site = ROOT.parents[1] / ".venv" / "Lib" / "site-packages"
-        for candidate in (venv_site, venv_site / "win32", venv_site / "win32" / "lib", venv_site / "pywin32_system32"):
-            if candidate.is_dir() and str(candidate) not in sys.path:
-                sys.path.insert(0, str(candidate))
-        try:
-            import win32com.client  # type: ignore
-            return win32com.client
-        except ImportError:
-            return None
-
-
-def add_powerpoint_animations(path, manifest):
-    win32com_client = _load_powerpoint_client()
-    if win32com_client is None:
-        return {
-            "status": "failed",
-            "verified": False,
-            "slideEffects": [],
-            "message": "未检测到 pywin32，无法写入并验证 PowerPoint 动画",
-        }
-    app = presentation = None
-    pythoncom = None
-    try:
-        import pythoncom as _pythoncom  # type: ignore
-        pythoncom = _pythoncom
-        pythoncom.CoInitialize()
-        app = win32com_client.DispatchEx("PowerPoint.Application")
-        presentation = app.Presentations.Open(str(path.resolve()), WithWindow=False)
-        scenes = [s for s in manifest.get("scenes", []) if s.get("enabled", True)]
-        for slide_index in range(1, presentation.Slides.Count + 1):
-            scene = scenes[slide_index - 1] if slide_index <= len(scenes) else {}
-            slide = presentation.Slides(slide_index)
-            # PowerPoint's native line metrics differ from image-font measurements.
-            for shape in slide.Shapes:
-                if not shape.HasTextFrame or not shape.TextFrame.HasText:
-                    continue
-                text = shape.TextFrame2.TextRange
-                text.Font.Name = '宋体'
-                text.Font.NameFarEast = '宋体'
-                while (text.BoundHeight > shape.Height + 1 or text.BoundWidth > shape.Width + 1) and text.Font.Size > 8:
-                    text.Font.Size -= 1
-                if text.BoundHeight > shape.Height + 1 or text.BoundWidth > shape.Width + 1:
-                    raise RuntimeError(f'第 {slide_index} 页文字超出文本框，请拆分内容后重试')
-            sequence = slide.TimeLine.MainSequence
-            effect_id = 22 if scene.get("pptAnimation") == "wipe" else 1 if scene.get("pptAnimation") == "appear" else 10
-            first_shape = 2 if slide.Shapes.Count >= 2 else 1
-            for shape_index in range(first_shape, min(slide.Shapes.Count, 8) + 1):
-                if slide.Shapes(shape_index).Type == 13:
-                    continue  # Model pictures must be visible before the first click.
-                effect = sequence.AddEffect(slide.Shapes(shape_index), effect_id, 0, 1)
-                effect.Timing.Duration = 0.45
-        presentation.Save()
-        presentation.Close()
-        presentation = None
-
-        # Reopen the saved file so verification reflects the persisted PPTX.
-        presentation = app.Presentations.Open(str(path.resolve()), WithWindow=False)
-        slide_effects = [
-            int(presentation.Slides(index).TimeLine.MainSequence.Count)
-            for index in range(1, presentation.Slides.Count + 1)
-        ]
-        empty_slides = [index for index, count in enumerate(slide_effects, 1) if count < 1]
-        if empty_slides:
-            return {
-                "status": "failed",
-                "verified": False,
-                "slideEffects": slide_effects,
-                "message": f"PowerPoint 动画逐页验收失败，无动画页：{empty_slides}",
-            }
-        return {
-            "status": "animated",
-            "verified": True,
-            "slideEffects": slide_effects,
-            "message": "已使用本机 PowerPoint 写入动画，并通过逐页验收",
-        }
-    except Exception as exc:
-        return {
-            "status": "failed",
-            "verified": False,
-            "slideEffects": [],
-            "message": f"PowerPoint 动画写入或验收失败：{exc}",
-        }
-    finally:
-        if presentation is not None:
-            presentation.Close()
-        if app is not None:
-            app.Quit()
-        if pythoncom is not None:
-            pythoncom.CoUninitialize()
+    report = {"sceneCount": scene_count, "slideCount": slide_count, "aligned": True, "modelViewCount": len(view_images), "warnings": export_warnings}
+    return output, report
 
 
 # The original heart demonstrator is kept above for backwards compatibility
