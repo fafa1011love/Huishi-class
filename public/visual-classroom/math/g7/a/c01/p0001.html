@@ -1,0 +1,499 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<title>有理数 · 数轴动点 3D 课堂</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; -webkit-user-select:none; user-select:none; -webkit-tap-highlight-color:transparent; }
+  html,body { width:100%; height:100%; overflow:hidden; font-family:"Microsoft YaHei","PingFang SC",sans-serif; background:#eaf3fb; }
+  #stage { position:absolute; left:0; top:0; right:380px; bottom:0; }
+  #cv { display:block; touch-action:none; cursor:grab; }
+  #resetBtn { position:absolute; top:16px; right:16px; z-index:20; font-size:21px; font-weight:bold; padding:10px 22px;
+    background:#e05252; color:#fff; border:none; border-radius:12px; cursor:pointer; box-shadow:0 4px 12px rgba(224,82,82,.4); }
+  #resetBtn:active { transform:scale(.95); }
+  #tip { position:absolute; left:16px; bottom:12px; z-index:20; font-size:16px; color:#5a7191;
+    background:rgba(255,255,255,.8); padding:5px 12px; border-radius:10px; }
+  #caption { position:absolute; left:50%; bottom:44px; transform:translateX(-50%); z-index:20; max-width:88%;
+    background:rgba(255,255,255,.95); border:2px solid #2c6fbb; border-radius:14px; padding:9px 22px;
+    font-size:22px; font-weight:bold; color:#1a4d8f; box-shadow:0 4px 14px rgba(30,60,100,.16); white-space:nowrap; }
+  #caption.warn { border-color:#8e44ad; color:#8e44ad; }
+  #panel { position:absolute; right:0; top:0; width:380px; height:100%; background:#fff;
+    border-left:4px solid #2c6fbb; overflow-y:auto; padding:12px 14px 30px; }
+  #panel h1 { font-size:22px; color:#1a4d8f; text-align:center; margin-bottom:8px; }
+  .sec { background:#f4f8fd; border:2px solid #d7e5f4; border-radius:14px; padding:9px 12px; margin-bottom:10px; }
+  .sec h2 { font-size:19px; color:#1a4d8f; margin-bottom:6px; }
+  .modes { display:grid; grid-template-columns:1fr 1fr; gap:8px; }
+  .mbtn { font-size:20px; padding:9px 4px; border:2px solid #b9cfe8; background:#fff; color:#33547e;
+    border-radius:12px; cursor:pointer; }
+  .mbtn.on { background:#2c6fbb; color:#fff; border-color:#2c6fbb; font-weight:bold; }
+  .row { font-size:20px; color:#2c3e50; line-height:1.55; margin:2px 0; }
+  .row b { color:#1a4d8f; }
+  .vA{color:#1565c0;font-weight:bold;} .vB{color:#2e9e5b;font-weight:bold;} .vP{color:#e08600;font-weight:bold;}
+  .big { font-size:22px; font-weight:bold; background:#fff; border-radius:10px; padding:5px 10px; margin-top:6px; }
+  .hint { font-size:17px; color:#7a4db0; background:#f3ecff; border-radius:8px; padding:6px 8px; margin-top:6px; min-height:30px; }
+  .hint.alert { color:#d63030; background:#ffecec; font-weight:bold; }
+  .btn { display:inline-block; font-size:20px; padding:9px 16px; border:none; border-radius:12px;
+    cursor:pointer; color:#fff; background:#2c6fbb; }
+  .btn:active { transform:scale(.96); }
+  .btn.wide { width:100%; margin-top:8px; background:#8e44ad; font-weight:bold; }
+  .btn.wide.on { background:#c0392b; }
+  .scenes { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:8px; }
+  .btn.scene { background:#5b8dd6; font-size:18px; padding:8px 4px; }
+  #qToggle { display:block; width:100%; font-size:20px; padding:9px; border:none; background:#e67e22;
+    color:#fff; border-radius:12px; cursor:pointer; }
+  #qBody { display:none; background:#fff6e5; border:2px solid #e0b25a; border-radius:10px; padding:10px 12px; margin-top:8px; font-size:18px; line-height:1.6; color:#4a3a20; }
+  #qBody.show { display:block; }
+  #qBody b { color:#c0392b; }
+  @media (max-width:1000px){ #stage{right:0;} #panel{ width:100%; top:auto; height:45%; border-left:none; border-top:4px solid #2c6fbb;} #resetBtn{ top:10px; right:10px; } }
+</style>
+</head>
+<body>
+<div id="stage">
+  <canvas id="cv"></canvas>
+  <button id="resetBtn">⟲ 一键重置</button>
+  <div id="caption"></div>
+  <div id="tip">拖动球体沿线移动 · 轻拖空白处微调视角 · 滚轮/双指缩放</div>
+</div>
+<div id="panel">
+  <h1>数轴 · 有理数 3D 课堂</h1>
+
+  <div class="sec">
+    <h2>教学模式</h2>
+    <div class="modes">
+      <button class="mbtn on" data-m="clean">◻ 简洁视图</button>
+      <button class="mbtn" data-m="opp">⇄ 相反数</button>
+      <button class="mbtn" data-m="abs">↔ 绝对值</button>
+      <button class="mbtn" data-m="motion">🏃 动点距离</button>
+    </div>
+    <div class="hint" id="modeHint">拖动 A、B 比较大小：数轴上右边的数总比左边大</div>
+  </div>
+
+  <div class="sec">
+    <h2>实时数据</h2>
+    <div class="row">A = <span class="vA" id="vA">−4</span>　　B = <span class="vB" id="vB">6</span>　　P = <span class="vP" id="vP">−4</span></div>
+    <div class="row" id="oppRow">A 的相反数：<b id="oppA">4</b>　　B 的相反数：<b id="oppB">−6</b></div>
+    <div class="row" id="absRow">|A| = <b id="absA">4</b>　　|B| = <b id="absB">6</b>（到原点的距离）</div>
+    <div class="row big">A <span id="cmp" style="color:#d63030">＜</span> B　<span style="font-size:19px;font-weight:normal;color:#666" id="cmpWhy">B 在 A 右边</span></div>
+    <div class="hint" id="symHint"></div>
+  </div>
+
+  <div class="sec">
+    <h2>动点 P：从 A 出发，每秒 2 单位向右</h2>
+    <button id="playBtn" class="btn">▶ 播放运动</button>
+    <div class="row" style="margin-top:8px">运动时间 t = <b id="tV">0</b> 秒</div>
+    <div class="row">P = A + 2t = <b id="pF">−4</b></div>
+    <div class="row">AP = <b id="apV">0</b>　　PB = <b id="pbV">10</b>　　AB = <b id="abV">10</b></div>
+    <div class="scenes">
+      <button class="btn scene" data-t="0">出发前 t=0</button>
+      <button class="btn scene" data-t="3">A、B 之间 t=3</button>
+      <button class="btn scene" data-t="5">恰好到 B t=5</button>
+      <button class="btn scene" data-t="7">越过 B t=7</button>
+    </div>
+    <button id="twoBtn" class="btn wide">★ 演示：为什么 PB=4 有两个解</button>
+  </div>
+
+  <div class="sec">
+    <button id="qToggle">📄 课堂练习题（点击展开）</button>
+    <div id="qBody">
+      数轴上 A、B 两点对应的数分别为 <b>−4 和 6</b>。动点 P 从点 A 出发，沿数轴以<b>每秒 2 个单位</b>的速度向右匀速运动，设运动时间为 t 秒。<br><br>
+      (1) 用含 t 的式子表示 P 对应的数：<b>P = −4 + 2t</b>；<br><br>
+      (2) 当 P 运动多少秒时，P、B 两点相距 4 个单位长度？<br>
+      <b>分类讨论：</b>① P 在 B 左侧：−4+2t = 6−4 = 2，t = 3 秒；<br>
+      ② P 在 B 右侧：−4+2t = 6+4 = 10，t = 7 秒。<br>
+      <b>答：3 秒或 7 秒（勿漏解！）</b>——点上方紫色按钮可看两解动画演示。
+    </div>
+  </div>
+</div>
+
+<script>
+'use strict';
+const $=id=>document.getElementById(id);
+const cv=$('cv'), ctx=cv.getContext('2d');
+let W=800, H=600;
+function resize(){
+  const s=$('stage'), dpr=devicePixelRatio||1;
+  W=s.clientWidth; H=s.clientHeight;
+  cv.width=Math.floor(W*dpr); cv.height=Math.floor(H*dpr);
+  cv.style.width=W+'px'; cv.style.height=H+'px';
+}
+addEventListener('resize',resize); resize();
+
+/* ---------- 状态 ---------- */
+const INIT={A:-4,B:6,P:-4};
+let st={A:-4,B:6,P:-4}, t=0, playing=false, mode='clean', twoSol=false, pulse=0;
+const RANGE=10;
+const COL={A:'#1565c0',B:'#2e9e5b',P:'#e08600'};
+const cam={yaw:0,pitch:0.16,userZoom:1};
+const camT={yaw:0,pitch:0.16,userZoom:1};
+
+/* ---------- 投影 ---------- */
+function proj(x,y,z){
+  const cy=Math.cos(cam.yaw), sy=Math.sin(cam.yaw), cp=Math.cos(cam.pitch), sp=Math.sin(cam.pitch);
+  const x1=x*cy+z*sy, z1=-x*sy+z*cy;
+  const y2=y*cp-z1*sp, z2=y*sp+z1*cp;
+  const s=18/(18+z2);
+  const zoom=W*0.040*cam.userZoom;
+  return { sx:W/2+x1*s*zoom, sy:H*0.54-y2*s*zoom, s, z:z2 };
+}
+function axisValueFromScreen(px){
+  let lo=-RANGE-2, hi=RANGE+2;
+  for(let i=0;i<40;i++){ const mid=(lo+hi)/2; if(proj(mid,0,0).sx<px) lo=mid; else hi=mid; }
+  return (lo+hi)/2;
+}
+function fmt(n){ let s=(Math.round(n*100)/100).toString(); return s.replace(/-/g,'−'); }
+function label(txt,x,y,size,color,bold){
+  ctx.font=(bold?'bold ':'')+size+'px "Microsoft YaHei",sans-serif';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.lineWidth=Math.max(4,size/7); ctx.strokeStyle='rgba(255,255,255,.88)'; ctx.lineJoin='round';
+  ctx.strokeText(txt,x,y); ctx.fillStyle=color; ctx.fillText(txt,x,y);
+}
+function quad(pts,fill,stroke,lw){
+  ctx.beginPath();
+  pts.forEach((p,i)=>i?ctx.lineTo(p.sx,p.sy):ctx.moveTo(p.sx,p.sy));
+  ctx.closePath();
+  if(fill){ctx.fillStyle=fill;ctx.fill();}
+  if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw||2;ctx.stroke();}
+}
+function seg2(a,b,color,w,dash){
+  ctx.strokeStyle=color; ctx.lineWidth=w; ctx.lineCap='round';
+  if(dash)ctx.setLineDash(dash);
+  ctx.beginPath(); ctx.moveTo(a.sx,a.sy); ctx.lineTo(b.sx,b.sy); ctx.stroke();
+  ctx.setLineDash([]);
+}
+function ballR(p){ return Math.max(26, 0.40*p.s*W*0.040*cam.userZoom); }
+
+/* ---------- 绘制 ---------- */
+function draw(dt){
+  const dpr=devicePixelRatio||1;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  cam.yaw+=(camT.yaw-cam.yaw)*0.14;
+  cam.pitch+=(camT.pitch-cam.pitch)*0.14;
+  cam.userZoom+=(camT.userZoom-cam.userZoom)*0.14;
+
+  /* 背景 */
+  const bg=ctx.createLinearGradient(0,0,0,H);
+  bg.addColorStop(0,'#dcecf9'); bg.addColorStop(0.55,'#eef6fd'); bg.addColorStop(1,'#f8fbff');
+  ctx.fillStyle=bg; ctx.fillRect(0,0,W,H);
+
+  const o=proj(0,0,0);
+
+  /* 地面光晕 */
+  ctx.save();
+  ctx.translate(o.sx,o.sy+H*0.13); ctx.scale(1,0.20);
+  const gg=ctx.createRadialGradient(0,0,10,0,0,W*0.42);
+  gg.addColorStop(0,'rgba(120,160,210,.30)'); gg.addColorStop(1,'rgba(120,160,210,0)');
+  ctx.fillStyle=gg; ctx.fillRect(-W,-H*2,W*2,H*4);
+  ctx.restore();
+
+  /* 数轴实体（有厚度的长条） */
+  const HT=0.14, HB=-0.14, D=0.26;
+  const top=[proj(-RANGE-0.2,HT,-D),proj(RANGE+0.2,HT,-D),proj(RANGE+0.2,HT,D),proj(-RANGE-0.2,HT,D)];
+  const front=[proj(-RANGE-0.2,HB,D),proj(RANGE+0.2,HB,D),proj(RANGE+0.2,HT,D),proj(-RANGE-0.2,HT,D)];
+  quad(front,'#64809f');
+  quad(top,'#a9c1da');
+  /* 正负区淡色染 */
+  quad([proj(-RANGE-0.2,HT+0.004,-D),proj(0,HT+0.004,-D),proj(0,HT+0.004,D),proj(-RANGE-0.2,HT+0.004,D)],'rgba(91,141,214,.28)');
+  quad([proj(0,HT+0.004,-D),proj(RANGE+0.2,HT+0.004,-D),proj(RANGE+0.2,HT+0.004,D),proj(0,HT+0.004,D)],'rgba(240,150,60,.28)');
+  /* 顶面描边 */
+  quad(top,null,'#41597a',3);
+  /* 箭头（顶面上） */
+  quad([proj(RANGE+0.25,HT,-0.34),proj(RANGE+0.25,HT,0.34),proj(RANGE+0.95,HT,0)],'#41597a');
+  label('正方向',proj(RANGE+0.6,1.05,0).sx,proj(RANGE+0.6,1.05,0).sy,'#41597a',20,true);
+  label('← 负方向',proj(-RANGE-0.9,1.05,0).sx,proj(-RANGE-0.9,1.05,0).sy,'#8aa2bd',17);
+
+  /* 刻度柱（垂直向上） */
+  for(let v=-RANGE;v<=RANGE;v++){
+    const isO=v===0;
+    const p1=proj(v,HT,0), p2=proj(v,isO?0.85:0.62,0);
+    seg2(p1,p2,isO?'#d64545':'#41597a',isO?7:5);
+    const pn=proj(v,-0.62,0);
+    label(fmt(v),pn.sx,pn.sy,v===0?30:(v%2===0?26:22),isO?'#d64545':'#52708f',v%2===0||isO);
+  }
+
+  /* === 模式图层 === */
+  if(mode==='opp'){
+    for(const X of ['A','B']){
+      const v=st[X]; if(v===0) continue;
+      drawGhost(v,COL[X],X);
+    }
+    if(st.A+st.B===0 && st.A!==0){
+      const pa=proj(st.A,0.55,0), pg=proj(st.B,0.55,0), po=proj(0,2.1,0);
+      ctx.strokeStyle='rgba(214,69,69,.92)'; ctx.lineWidth=6; ctx.setLineDash([]);
+      ctx.beginPath(); ctx.moveTo(pa.sx,pa.sy); ctx.quadraticCurveTo(po.sx,po.sy,pg.sx,pg.sy); ctx.stroke();
+      label('互为相反数 · 关于原点对称',po.sx,po.sy-14,'#d63030',26,true);
+    }
+  }
+  if(mode==='abs'){
+    for(const X of ['A','B']){
+      const v=st[X]; if(v===0) continue;
+      const y=1.45;
+      const p1=proj(0,y,0), p2=proj(v,y,0);
+      seg2(p1,p2,COL[X],9);
+      /* 端点小竖线 */
+      seg2(p2,proj(v,0.75,0),COL[X],3,[8,6]);
+      seg2(p1,proj(0,0.85,0),'#d64545',3,[8,6]);
+      const mx=proj(v/2,y+0.32,0);
+      label('|'+X+'| = '+fmt(Math.abs(v)),mx.sx,mx.sy,COL[X],26,true);
+    }
+    label('绝对值 = 到原点的距离',proj(0,2.15,0).sx,proj(0,2.15,0).sy,'#7a4db0',21,true);
+  }
+  if(mode==='motion'||playing||twoSol){
+    /* 轨迹箭头 */
+    if(st.P>st.A){
+      const pa=proj(st.A,1.05,0), pb=proj(st.P,1.05,0);
+      seg2(pa,pb,'rgba(224,134,0,.85)',7,[16,10]);
+      const dx=pb.sx-pa.sx, dy=pb.sy-pa.sy, L=Math.hypot(dx,dy)||1;
+      ctx.fillStyle='rgba(224,134,0,.9)'; ctx.beginPath();
+      ctx.moveTo(pb.sx,pb.sy);
+      ctx.lineTo(pb.sx-dx/L*20-dy/L*9, pb.sy-dy/L*20+dx/L*9);
+      ctx.lineTo(pb.sx-dx/L*20+dy/L*9, pb.sy-dy/L*20-dx/L*9);
+      ctx.fill();
+    }
+    /* AP、PB 距离线段（轴下方） */
+    if(Math.abs(st.P-st.A)>0.01){
+      const a=proj(st.A,-0.95,0), b=proj(st.P,-0.95,0);
+      seg2(a,b,'rgba(224,134,0,.85)',8);
+      const m=proj((st.A+st.P)/2,-1.32,0);
+      label('AP='+fmt(Math.abs(st.P-st.A)),m.sx,m.sy,'#b36b00',23,true);
+    }
+    if(Math.abs(st.P-st.B)>0.01){
+      const a=proj(st.P,-1.7,0), b=proj(st.B,-1.7,0);
+      seg2(a,b,'rgba(214,69,69,.85)',8);
+      const m=proj((st.P+st.B)/2,-2.07,0);
+      label('PB='+fmt(Math.abs(st.P-st.B)),m.sx,m.sy,'#a83232',23,true);
+    }
+  }
+  /* 两解演示：B±4 两个位置脉冲圈 */
+  if(twoSol){
+    const s1=st.B-4, s2=st.B+4;
+    [[s1,'解①'],[s2,'解②']].forEach(([x,nm],i)=>{
+      if(x<-RANGE||x>RANGE) return;
+      const p=proj(x,0.55,0), r=ballR(p);
+      const pr=(1.15+0.25*Math.sin(pulse*4+i))*r;
+      ctx.strokeStyle='rgba(142,68,173,.9)'; ctx.lineWidth=5;
+      ctx.beginPath(); ctx.arc(p.sx,p.sy,pr,0,7); ctx.stroke();
+      const pl=proj(x,1.7,0);
+      label(nm+' t='+fmt((x-st.A)/2)+'s',pl.sx,pl.sy,'#8e44ad',24,true);
+    });
+    label('P 到 B 距离为 4 → B 的两侧各有一个解！',proj(0,-2.55,0).sx,proj(0,-2.55,0).sy,'#8e44ad',22,true);
+  }
+
+  /* 球体（按深度排序绘制） */
+  const names=['A','B','P'].map(n=>({n,v:st[n],p:proj(st[n],0.55,0)}));
+  names.sort((a,b)=>b.p.z-a.p.z);
+  for(const it of names) drawBall(it.v,COL[it.n],it.n);
+
+  requestDraw();
+}
+function drawGhost(v,color,name){
+  const g=proj(-v,0.55,0), p=proj(v,0.55,0);
+  const r=ballR(g)*0.88;
+  ctx.fillStyle=color; ctx.globalAlpha=0.30;
+  ctx.beginPath(); ctx.arc(g.sx,g.sy,r,0,7); ctx.fill();
+  ctx.globalAlpha=1; ctx.strokeStyle=color; ctx.lineWidth=5;
+  ctx.beginPath(); ctx.arc(g.sx,g.sy,r,0,7); ctx.stroke();
+  label('−('+fmt(v)+')='+fmt(-v),g.sx,g.sy+r+26,color,25,true);
+  label(name+'的相反数',g.sx,g.sy-r-24,color,20,true);
+  const mid=proj(0,1.7,0);
+  ctx.setLineDash([12,9]); ctx.strokeStyle=color; ctx.globalAlpha=0.75; ctx.lineWidth=4;
+  ctx.beginPath(); ctx.moveTo(p.sx,p.sy); ctx.quadraticCurveTo(mid.sx,mid.sy,g.sx,g.sy); ctx.stroke();
+  ctx.globalAlpha=1; ctx.setLineDash([]);
+}
+function drawBall(v,color,name){
+  const p=proj(v,0.55,0);
+  const r=ballR(p);
+  /* 影子 */
+  const sh=proj(v,-0.18,0.30);
+  ctx.fillStyle='rgba(30,50,80,.18)';
+  ctx.beginPath(); ctx.ellipse(sh.sx,sh.sy,r*0.85,r*0.22,0,0,7); ctx.fill();
+  /* 球体 */
+  const gr=ctx.createRadialGradient(p.sx-r*0.35,p.sy-r*0.42,r*0.12,p.sx,p.sy,r*1.05);
+  gr.addColorStop(0,'#ffffff'); gr.addColorStop(0.30,color); gr.addColorStop(1,shade(color));
+  if(name==='P'&&playing){ ctx.shadowColor=color; ctx.shadowBlur=26; }
+  ctx.fillStyle=gr; ctx.beginPath(); ctx.arc(p.sx,p.sy,r,0,7); ctx.fill();
+  ctx.shadowBlur=0;
+  ctx.strokeStyle='rgba(0,0,0,.30)'; ctx.lineWidth=2.5; ctx.stroke();
+  /* 高光 */
+  ctx.fillStyle='rgba(255,255,255,.5)';
+  ctx.beginPath(); ctx.ellipse(p.sx-r*0.32,p.sy-r*0.42,r*0.22,r*0.13,-0.6,0,7); ctx.fill();
+  /* 字母 + 数值（字母深色无白边；数值深色字+白描边） */
+  ctx.font='bold 30px "Microsoft YaHei",sans-serif';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillStyle=shade2(color);
+  ctx.fillText(name,p.sx,p.sy-r-24);
+  ctx.font='bold 28px "Microsoft YaHei",sans-serif';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.lineWidth=5; ctx.strokeStyle='rgba(255,255,255,.92)'; ctx.lineJoin='round';
+  ctx.strokeText(fmt(v),p.sx,p.sy+2);
+  ctx.fillStyle='#173049';
+  ctx.fillText(fmt(v),p.sx,p.sy+2);
+}
+function shade(hex){
+  const n=parseInt(hex.slice(1),16);
+  const f=0.62;
+  const r=Math.round(((n>>16)&255)*f), g=Math.round(((n>>8)&255)*f), b=Math.round((n&255)*f);
+  return 'rgb('+r+','+g+','+b+')';
+}
+/* 加深色：字母标签用，白底上更醒目 */
+function shade2(hex){
+  const n=parseInt(hex.slice(1),16);
+  const f=0.55;
+  const r=Math.round(((n>>16)&255)*f), g=Math.round(((n>>8)&255)*f), b=Math.round((n&255)*f);
+  return 'rgb('+r+','+g+','+b+')';
+}
+let rafPending=false;
+function requestDraw(){ if(!rafPending){ rafPending=true; requestAnimationFrame(ts=>{ rafPending=false; frame(ts); }); } }
+let lastTs=0, targetT=null;
+function frame(ts){
+  const dt=Math.min(0.05,(ts-lastTs)/1000||0); lastTs=ts; pulse+=dt;
+  if(playing){
+    t+=dt;
+    if(st.A+2*t>=9.5){ t=(9.5-st.A)/2; playing=false; $('playBtn').textContent='▶ 重新播放'; }
+    st.P=st.A+2*t;
+    updatePanel();
+  } else if(targetT!=null){
+    /* 场景切换平滑滑行 */
+    const d=targetT-t;
+    if(Math.abs(d)<0.012){ t=targetT; targetT=null; }
+    else t+=d*Math.min(1,dt*5);
+    st.P=st.A+2*t;
+    updatePanel();
+  }
+  draw(dt);
+}
+
+/* ---------- 交互 ---------- */
+let drag=null, camDrag=null;
+function evPos(e){ const r=cv.getBoundingClientRect(); return {x:e.clientX-r.left, y:e.clientY-r.top}; }
+function hitBall(x,y){
+  let best=null, bd=1e9;
+  for(const n of ['P','A','B']){
+    const p=proj(st[n],0.55,0), r=ballR(p)+16;
+    const d=Math.hypot(x-p.sx,y-p.sy);
+    if(d<r&&d<bd){ bd=d; best=n; }
+  }
+  return best;
+}
+cv.addEventListener('pointerdown',e=>{
+  cv.setPointerCapture(e.pointerId);
+  const p=evPos(e);
+  const hit=hitBall(p.x,p.y);
+  if(hit){ drag=hit; playing=false; targetT=null; $('playBtn').textContent='▶ 继续播放'; cv.style.cursor='grabbing'; }
+  else { camDrag={x:p.x,y:p.y}; cv.style.cursor='grabbing'; }
+});
+cv.addEventListener('pointermove',e=>{
+  const p=evPos(e);
+  if(drag){
+    let v=Math.round(axisValueFromScreen(p.x));
+    v=Math.max(-RANGE,Math.min(RANGE,v));
+    st[drag]=v;
+    if(drag==='P'){ t=(v-st.A)/2; }
+    updatePanel();
+  } else if(camDrag){
+    camT.yaw=Math.max(-0.35,Math.min(0.35,camT.yaw+(p.x-camDrag.x)*0.0032));
+    camT.pitch=Math.max(0.02,Math.min(0.50,camT.pitch+(p.y-camDrag.y)*0.0026));
+    camDrag=p;
+  }
+});
+function endDrag(){ drag=null; camDrag=null; cv.style.cursor='grab'; }
+cv.addEventListener('pointerup',endDrag);
+cv.addEventListener('pointercancel',endDrag);
+cv.addEventListener('wheel',e=>{
+  e.preventDefault();
+  camT.userZoom=Math.max(0.7,Math.min(1.7,camT.userZoom*(e.deltaY<0?1.08:0.93)));
+},{passive:false});
+
+/* ---------- 面板 ---------- */
+const HINTS={
+  clean:'拖动 A、B 比较大小：数轴上右边的数总比左边大',
+  opp:'拖动任意一点，看它的相反数——关于原点对称、距离相等',
+  abs:'绝对值 = 点到原点的距离，把点拖到原点左侧再看看',
+  motion:'播放动画或拖动 P，观察 AP、PB 距离如何变化'
+};
+function setMode(m){
+  mode=m; twoSol=false;
+  document.querySelectorAll('.mbtn').forEach(b=>b.classList.toggle('on',b.dataset.m===m));
+  const h=$('modeHint'); h.textContent=HINTS[m]; h.classList.remove('alert');
+  updatePanel();
+}
+document.querySelectorAll('.mbtn').forEach(b=>b.onclick=()=>setMode(b.dataset.m));
+
+function updatePanel(){
+  $('vA').textContent=fmt(st.A); $('vB').textContent=fmt(st.B); $('vP').textContent=fmt(st.P);
+  $('oppA').textContent=st.A===0?'0（它自己）':fmt(-st.A);
+  $('oppB').textContent=st.B===0?'0（它自己）':fmt(-st.B);
+  $('absA').textContent=fmt(Math.abs(st.A));
+  $('absB').textContent=fmt(Math.abs(st.B));
+  const c=$('cmp');
+  if(st.A<st.B){ c.textContent='＜'; $('cmpWhy').textContent='B 在 A 右边，右边的数更大'; }
+  else if(st.A>st.B){ c.textContent='＞'; $('cmpWhy').textContent='A 在 B 右边，右边的数更大'; }
+  else { c.textContent='＝'; $('cmpWhy').textContent='两点重合'; }
+  const sh=$('symHint');
+  if(st.A+st.B===0&&st.A!==0){ sh.textContent='★ A、B 互为相反数，关于原点对称！'; sh.classList.add('alert'); }
+  else { sh.textContent=''; sh.classList.remove('alert'); }
+  $('tV').textContent=fmt(Math.round(t*100)/100);
+  $('pF').textContent=fmt(st.A+2*t);
+  $('apV').textContent=fmt(Math.abs(st.P-st.A));
+  $('pbV').textContent=fmt(Math.abs(st.P-st.B));
+  $('abV').textContent=fmt(Math.abs(st.B-st.A));
+
+  /* ---- 教学字幕条：自动生成"此刻该讲的话" ---- */
+  const cap=$('caption');
+  let txt='', warn=false;
+  const tt=fmt(Math.round(t*100)/100);
+  if(mode==='clean'){
+    if(st.A+st.B===0&&st.A!==0){ txt='★ A、B 互为相反数，关于原点对称！'; warn=true; }
+    else if(st.A<st.B) txt='A('+fmt(st.A)+') 在 B('+fmt(st.B)+') 左边　→　A ＜ B';
+    else if(st.A>st.B) txt='A('+fmt(st.A)+') 在 B('+fmt(st.B)+') 右边　→　A ＞ B';
+    else txt='A、B 两点重合　→　A ＝ B';
+  } else if(mode==='opp'){
+    txt='A 的相反数：−('+fmt(st.A)+') = '+fmt(-st.A)+'　　B 的相反数：−('+fmt(st.B)+') = '+fmt(-st.B);
+  } else if(mode==='abs'){
+    txt='|'+fmt(st.A)+'| = '+fmt(Math.abs(st.A))+'（A 到原点的距离）　　|'+fmt(st.B)+'| = '+fmt(Math.abs(st.B))+'（B 到原点的距离）';
+  } else {
+    const P=st.P;
+    if(P<st.A-0.01) txt='P 在 A 左侧（尚未向右出发），此时 t = '+tt;
+    else if(Math.abs(P-st.A)<0.01) txt='P 还在出发点 A，尚未出发：t = 0';
+    else if(Math.abs(P-st.B)<0.01){ txt='P 恰好到达 B！t = '+tt+'，此时 PB = 0'; warn=true; }
+    else if(P<st.B) txt='P = '+fmt(st.A)+'+2×'+tt+' = '+fmt(P)+'，在 B 左侧：PB = '+fmt(st.B)+'−'+fmt(P)+' = '+fmt(st.B-P);
+    else txt='P = '+fmt(st.A)+'+2×'+tt+' = '+fmt(P)+'，已越过 B：PB = '+fmt(P)+'−'+fmt(st.B)+' = '+fmt(P-st.B);
+  }
+  cap.textContent=txt;
+  cap.classList.toggle('warn',warn);
+}
+
+$('playBtn').onclick=()=>{
+  if(playing){ playing=false; $('playBtn').textContent='▶ 继续播放'; return; }
+  if(t>=7||st.P>=9.4){ t=0; st.P=st.A; }
+  playing=true; setMode('motion');
+  $('playBtn').textContent='⏸ 暂停';
+  updatePanel();
+};
+document.querySelectorAll('.scene').forEach(b=>b.onclick=()=>{
+  playing=false; $('playBtn').textContent='▶ 继续播放';
+  targetT=+b.dataset.t;
+  setMode('motion');
+});
+$('twoBtn').onclick=()=>{
+  playing=false; $('playBtn').textContent='▶ 继续播放';
+  twoSol=!twoSol;
+  $('twoBtn').classList.toggle('on',twoSol);
+  $('twoBtn').textContent=twoSol?'✕ 关闭两解演示':'★ 演示：为什么 PB=4 有两个解';
+  if(twoSol) setMode('motion');
+};
+$('qToggle').onclick=()=>$('qBody').classList.toggle('show');
+$('resetBtn').onclick=()=>{
+  playing=false; twoSol=false;
+  st={A:-4,B:6,P:-4}; t=0;
+  camT.yaw=0; camT.pitch=0.16; camT.userZoom=1;
+  $('playBtn').textContent='▶ 播放运动';
+  $('twoBtn').classList.remove('on');
+  $('twoBtn').textContent='★ 演示：为什么 PB=4 有两个解';
+  setMode('clean');
+};
+updatePanel();
+requestDraw();
+</script>
+</body>
+</html>

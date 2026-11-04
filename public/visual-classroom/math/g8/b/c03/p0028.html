@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>21.1-21.2 平行四边形 · 课堂演示</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{min-height:100vh;overflow-x:auto;font-family:"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif;background:#eef2f7;color:#1e293b;display:flex;flex-direction:column}
+header{height:56px;display:flex;align-items:center;gap:12px;padding:0 18px;background:#fff;border-bottom:1px solid #e2e8f0;flex-shrink:0}
+header h1{font-size:18px;font-weight:800}
+header h1 small{font-size:12px;color:#64748b;font-weight:500;margin-left:8px}
+main{flex:1;display:grid;grid-template-columns:minmax(370px,0.95fr) minmax(0,1.6fr);min-height:calc(100vh - 150px)}
+aside{padding:12px 14px 18px;background:#f8fafc;overflow-y:auto;max-height:calc(100vh - 150px)}
+.card{background:#fff;border:2px solid #e2e8f0;border-left-width:8px;border-radius:12px;padding:10px 14px;margin-bottom:10px;font-size:13.5px;line-height:1.85;transition:all .45s;opacity:.72;cursor:pointer}
+.card h4{font-size:15px;margin-bottom:4px}
+.card:hover{border-color:#94a3b8;opacity:1}
+.card.active{opacity:1;transform:scale(1.015);box-shadow:0 4px 16px rgba(15,23,42,.12)}
+.card.done{opacity:.55}
+.card.k1{border-left-color:#2563eb}.card.k1.active{border-color:#2563eb}
+.card.k2{border-left-color:#10b981}.card.k2.active{border-color:#10b981}
+.card.k3{border-left-color:#8b5cf6}.card.k3.active{border-color:#8b5cf6}
+.card.k4{border-left-color:#f97316}.card.k4.active{border-color:#f97316}
+.card.k5{border-left-color:#14b8a6}.card.k5.active{border-color:#14b8a6}
+.card .formula{font-family:Georgia,"Times New Roman",serif;font-size:16px;font-weight:700}
+.warnbox{margin-top:6px;padding:7px 10px;border-radius:9px;background:#fef2f2;border:1px dashed #fca5a5;color:#b91c1c;font-size:12.5px;line-height:1.8}
+.jlist{margin:4px 0 2px 2px;padding-left:2px;list-style:none}
+.jlist li{padding:2px 0;font-weight:600;color:#5b21b6}
+.right{display:flex;flex-direction:column;min-width:0;background:#fff;border-left:1px solid #e2e8f0}
+.right svg{flex:1;width:100%;min-height:400px;display:block}
+.ctrls{flex-shrink:0;padding:10px 16px 14px;border-top:1px solid #e2e8f0;background:#f8fafc}
+.btnrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn{padding:9px 18px;border:1px solid #cbd5e1;background:#fff;border-radius:10px;cursor:pointer;font-size:14px;color:#334155;transition:all .15s}
+.btn:hover{border-color:#2563eb;color:#2563eb}
+.btn.primary{background:#2563eb;color:#fff;border-color:#2563eb;font-weight:600}
+.btn.primary:hover{background:#1d4ed8}
+.btn.warn{color:#dc2626;border-color:#fca5a5}
+.btn.warn:hover{background:#fef2f2}
+.stepchips{margin-left:auto;display:flex;gap:6px}
+.chip{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;background:#e2e8f0;color:#64748b;transition:all .3s;cursor:pointer;border:none;padding:0}
+.chip:hover{transform:scale(1.18);box-shadow:0 2px 8px rgba(15,23,42,.25);background:#cbd5e1;color:#334155}
+.chip.on{color:#fff;transform:scale(1.12)}
+.c1.on{background:#2563eb}.c2.on{background:#10b981}.c3.on{background:#8b5cf6}.c4.on{background:#f97316}.c5.on{background:#14b8a6}
+.sliderrow{display:flex;align-items:center;gap:10px;margin-top:10px;font-size:14px;font-weight:600;flex-wrap:wrap}
+.sliderrow input[type=range]{flex:1;accent-color:#2563eb;min-width:100px}
+.sliderrow .val{min-width:130px;color:#1d4ed8}
+.tgl{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px;align-items:center}
+.tgl .lb{font-size:13px;color:#64748b;font-weight:600}
+.sbtn{padding:6px 12px;border:1px solid #cbd5e1;background:#fff;border-radius:9px;font-size:12.5px;cursor:pointer}
+.sbtn:hover{border-color:#2563eb;color:#2563eb}
+.sbtn.on{background:#dbeafe;border-color:#2563eb;color:#1d4ed8;font-weight:700}
+footer{flex-shrink:0;display:flex;gap:12px;padding:10px 16px;background:#0f172a;color:#fff;align-items:center;flex-wrap:wrap}
+.fbox{flex:1;border-radius:10px;padding:8px 14px;font-size:16px;font-weight:800;display:flex;align-items:center;gap:12px;min-width:380px}
+.fbox small{font-size:12px;font-weight:600;opacity:.92}
+.fbox.gold{background:#713f12;color:#fde047}
+.ftip{font-size:12.5px;color:#fca5a5;font-weight:700}
+text{font-family:"PingFang SC","Microsoft YaHei",sans-serif}
+.mono{font-family:Georgia,"Times New Roman",serif}
+.fadein{animation:fi .6s ease both}
+@keyframes fi{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:none}}
+.pulse{animation:pl 1.5s ease-in-out infinite}
+@keyframes pl{0%,100%{opacity:1}50%{opacity:.35}}
+.handle{fill:#2563eb;stroke:#fff;stroke-width:2.5;cursor:grab}
+.handle:hover{fill:#1d4ed8}
+</style>
+</head>
+<body>
+<header>
+  <h1>21.1-21.2 平行四边形<small>性质 · 5 种判定 · 三角形中位线 · 多边形镶嵌 ｜ 左侧点卡片可跳转，适合投影</small></h1>
+</header>
+<main>
+  <aside>
+    <div class="card k1" id="card1">
+      <h4>① 定义与性质（蓝）</h4>
+      <b>定义：</b>两组对边分别平行的四边形（AB∥CD，AD∥BC）。<br>
+      <b>性质：</b>① 对边平行且相等：<span class="formula">AB=CD，AD=BC</span>；② 对角相等：<span class="formula">∠A=∠C，∠B=∠D</span>（邻角互补）；③ 对角线互相平分。
+      <div class="warnbox">🖐 拖动画布中的<b>蓝色顶点</b>改变形状，性质始终成立！</div>
+    </div>
+    <div class="card k2" id="card2">
+      <h4>② 对角线互相平分（绿）</h4>
+      对角线 AC、BD 交于点 O：<span class="formula">OA=OC，OB=OD</span><br>
+      演示动画：两个中点标记沿两条对角线滑动，<b>恰好重合于同一点 O</b> —— 这就是"互相平分"。
+    </div>
+    <div class="card k3" id="card3">
+      <h4>③ 五种判定方法（紫）</h4>
+      <ul class="jlist">
+        <li>① 两组对边分别平行（定义）</li>
+        <li>② 两组对边分别相等</li>
+        <li>③ 一组对边<b>平行且相等</b></li>
+        <li>④ 两组对角分别相等</li>
+        <li>⑤ 对角线互相平分</li>
+      </ul>
+      <div class="warnbox">⚠ 判定顺序不能乱：<b>"一组对边平行且相等"必须同时满足</b>才可判定！仅一组对边平行（另一组不平行）是<b>梯形</b>，不行；仅一组对边相等同样不行！</div>
+    </div>
+    <div class="card k4" id="card4">
+      <h4>④ 三角形中位线定理（橙）</h4>
+      连接三角形<b>两边中点</b>的线段叫中位线。<br>
+      <span class="formula">DE ∥ BC，且 DE = ½BC</span><br>
+      位置关系（平行）+ 数量关系（一半），缺一不可。
+      <div class="warnbox">⚠ 勿漏系数 <b>½</b>：中位线等于第三边的<b>一半</b>，不是相等！动画中两段 DE 拼起来才等于 BC。</div>
+    </div>
+    <div class="card k5" id="card5">
+      <h4>⑤ 多边形镶嵌探究（青）</h4>
+      任意四边形内角和 = 360°，所以<b>任何四边形都能铺满平面</b>（镶嵌）。<br>
+      平行四边形通过<b>平移</b>即可无缝镶嵌：每个顶点周围恰好拼着 2 个 ∠A 和 2 个 ∠B，2(∠A+∠B)=360°。
+    </div>
+  </aside>
+  <section class="right">
+    <svg id="stage" viewBox="0 0 760 560" preserveAspectRatio="xMidYMid meet"></svg>
+    <div class="ctrls">
+      <div class="btnrow">
+        <button class="btn primary" id="btnPlay">▶ 播放演示</button>
+        <button class="btn" id="btnNext">单步 ▸</button>
+        <button class="btn warn" id="btnReset">↺ 重置</button>
+        <div class="stepchips">
+          <div class="chip c1" id="ch1">1</div><div class="chip c2" id="ch2">2</div><div class="chip c3" id="ch3">3</div>
+          <div class="chip c4" id="ch4">4</div><div class="chip c5" id="ch5">5</div>
+        </div>
+      </div>
+      <div class="tgl">
+        <span class="lb">辅助显示（第1、2步生效）：</span>
+        <button class="sbtn on" id="tgSides">对边相等（刻度/数值）</button>
+        <button class="sbtn" id="tgAngles">对角相等（角的弧）</button>
+        <button class="sbtn" id="tgDiag">对角线平分</button>
+      </div>
+      <div class="sliderrow">
+        <label>每步时长：</label>
+        <input type="range" id="slDur" min="3" max="20" step="1" value="9">
+        <span class="val" id="valDur">9 秒 / 步（可拖动调节）</span>
+      </div>
+    </div>
+  </section>
+</main>
+<footer>
+  <div class="fbox gold">判定口诀：双平行 · 双相等 · 平且等 · 双对角 · 对角线互平分 <small>五法任一，即可判定平行四边形</small></div>
+  <div class="ftip">⚠ 仅"一组对边平行"≠ 判定（可能是梯形）｜ 中位线 = ½第三边，勿漏 ½</div>
+</footer>
+
+<script>
+"use strict";
+const $ = id => document.getElementById(id);
+const NS = "http://www.w3.org/2000/svg";
+const svg = $("stage");
+const fmt = x => String(Number((+x).toFixed(1)));
+const clampN = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+const sub = (a,b) => ({x:a.x-b.x, y:a.y-b.y});
+const add = (a,b) => ({x:a.x+b.x, y:a.y+b.y});
+const mul = (a,k) => ({x:a.x*k, y:a.y*k});
+const len = v => Math.hypot(v.x, v.y);
+const mid = (a,b) => ({x:(a.x+b.x)/2, y:(a.y+b.y)/2});
+const pts = arr => arr.map(p => `${p.x.toFixed(1)},${p.y.toFixed(1)}`).join(" ");
+const rad = d => d*Math.PI/180;
+
+const state = {
+  step: 0, playing: false, dur: 9,
+  sides: true, angles: false, diag: false,
+  midT: 0, midDone: false,            // 第2步：中点重合动画
+  mT: 0, deOn: false, cT: 0, halfOn: false,  // 第4步：中位线动画
+  A: {x:150, y:130}, B: {x:470, y:130}, D: {x:90, y:350}
+};
+const Cp = () => ({x: state.B.x + state.D.x - state.A.x, y: state.B.y + state.D.y - state.A.y});
+
+/* ================= 渲染 ================= */
+function render(){
+  const st = state.step;
+  svg.innerHTML = st === 3 ? drawJudge() : st === 4 ? drawMid() : st === 5 ? drawTess() : drawPara();
+  for (let i = 1; i <= 5; i++){
+    $("ch"+i).classList.toggle("on", st === i);
+    const c = $("card"+i);
+    c.classList.toggle("active", st === i);
+    c.classList.toggle("done", st > i);
+  }
+  ["tgSides","tgAngles","tgDiag"].forEach((id,i)=>{
+    $(id).classList.toggle("on", [state.sides, state.angles, state.diag][i]);
+  });
+}
+function txt(x,y,str,size,fill,w,anchor,cls){
+  return `<text x="${x}" y="${y}" font-size="${size}" fill="${fill}" font-weight="${w||600}" text-anchor="${anchor||"middle"}" class="${cls||""}">${str}</text>`;
+}
+function chevron(p, angDeg, color, dbl){
+  const a = rad(angDeg), c = Math.cos(a), s = Math.sin(a), g = 7;
+  const mk = (ox, oy) => `<path d="M${(p.x-g*c+g*s+ox).toFixed(1)},${(p.y-g*s-g*c+oy).toFixed(1)} L${(p.x+g*c+ox).toFixed(1)},${(p.y+g*s+oy).toFixed(1)} L${(p.x-g*c-g*s+ox).toFixed(1)},${(p.y+g*s-g*c+oy).toFixed(1)}" fill="none" stroke="${color}" stroke-width="2.2" stroke-linecap="round"/>`;
+  return mk(0,0) + (dbl ? mk(-9*c, -9*s) : "");
+}
+function dirDeg(a,b){ return Math.atan2(b.y-a.y, b.x-a.x)*180/Math.PI; }
+function angVal(v,p1,p2){
+  let d = dirDeg(v,p2)-dirDeg(v,p1);
+  while(d>180)d-=360; while(d<-180)d+=360;
+  return Math.abs(d);
+}
+function arcPath(v,p1,p2,r){
+  const a1 = Math.atan2(p1.y-v.y,p1.x-v.x), a2 = Math.atan2(p2.y-v.y,p2.x-v.x);
+  let d = a2-a1; while(d>Math.PI)d-=2*Math.PI; while(d<-Math.PI)d+=2*Math.PI;
+  const sw = d>=0?1:0;
+  return `M${(v.x+r*Math.cos(a1)).toFixed(1)},${(v.y+r*Math.sin(a1)).toFixed(1)} A${r},${r} 0 0 ${sw} ${(v.x+r*Math.cos(a2)).toFixed(1)},${(v.y+r*Math.sin(a2)).toFixed(1)}`;
+}
+function bisector(v,p1,p2){
+  const u1 = sub(p1,v), u2 = sub(p2,v), l1 = len(u1), l2 = len(u2);
+  const b = {x:u1.x/l1+u2.x/l2, y:u1.y/l1+u2.y/l2}, l = len(b)||1;
+  return {x:v.x+b.x/l, y:v.y+b.y/l};
+}
+
+function drawPara(){
+  const A = state.A, B = state.B, D = state.D, C = Cp();
+  const O = mid(A,C), st = state.step;
+  const accent = {0:"#64748b",1:"#2563eb",2:"#10b981"}[st];
+  const title = {0:"平行四边形 ABCD（拖动蓝色顶点改变形状）",
+    1:"性质：对边平行且相等 · 对角相等（下方按钮可切换辅助显示）",
+    2:"对角线互相平分：OA = OC，OB = OD —— 两个中点重合于 O！"}[st];
+  let s = txt(380, 36, title, 19, accent, 800);
+  /* 本体 */
+  s += `<polygon points="${pts([A,B,C,D])}" fill="${st===2?"#d1fae5":"#dbeafe"}" fill-opacity=".5" stroke="#334155" stroke-width="3" stroke-linejoin="round"/>`;
+  /* 对角线 */
+  if (state.diag || st === 2){
+    s += `<line x1="${A.x}" y1="${A.y}" x2="${C.x}" y2="${C.y}" stroke="#7c3aed" stroke-width="2.4"/>`;
+    s += `<line x1="${B.x}" y1="${B.y}" x2="${D.x}" y2="${D.y}" stroke="#f59e0b" stroke-width="2.4"/>`;
+    if (st === 2){
+      const t = state.midT;
+      const m1 = add(A, mul(sub(O,A), t)), m2 = add(B, mul(sub(O,B), t));
+      s += `<circle cx="${m1.x}" cy="${m1.y}" r="9" fill="#7c3aed" stroke="#fff" stroke-width="2"/>`;
+      s += `<circle cx="${m2.x}" cy="${m2.y}" r="9" fill="#f59e0b" stroke="#fff" stroke-width="2"/>`;
+      if (state.midDone){
+        s += `<circle cx="${O.x}" cy="${O.y}" r="13" fill="none" stroke="#10b981" stroke-width="3" class="pulse"/>`;
+        s += txt(O.x, O.y-24, "两个中点重合于 O ✔", 17, "#059669", 800, "middle", "pulse");
+      }
+      s += txt(O.x+46, O.y+42, `OA=OC=${fmt(len(sub(O,A)))}`, 13.5, "#7c3aed", 700, "middle", "mono");
+      s += txt(O.x+46, O.y+60, `OB=OD=${fmt(len(sub(O,B)))}`, 13.5, "#d97706", 700, "middle", "mono");
+    } else {
+      s += `<circle cx="${O.x}" cy="${O.y}" r="5" fill="#334155"/>`;
+      s += txt(O.x, O.y+22, "O", 15, "#334155", 800);
+    }
+  }
+  /* 对边平行且相等 */
+  if (state.sides || st === 1){
+    const mAB = mid(A,B), mDC = mid(D,C), mAD = mid(A,D), mBC = mid(B,C);
+    s += chevron(mAB, dirDeg(A,B), "#2563eb", false) + chevron(mDC, dirDeg(D,C), "#2563eb", false);
+    s += chevron(mAD, dirDeg(A,D), "#059669", true) + chevron(mBC, dirDeg(B,C), "#059669", true);
+    s += txt(mAB.x, mAB.y-14, `AB=${fmt(len(sub(B,A)))}`, 13.5, "#1d4ed8", 700, "middle", "mono");
+    s += txt(mDC.x, mDC.y+22, `DC=${fmt(len(sub(C,D)))}`, 13.5, "#1d4ed8", 700, "middle", "mono");
+    s += txt(mAD.x-16, mAD.y, `AD=${fmt(len(sub(D,A)))}`, 13.5, "#047857", 700, "end", "mono");
+    s += txt(mBC.x+16, mBC.y, `BC=${fmt(len(sub(C,B)))}`, 13.5, "#047857", 700, "start", "mono");
+  }
+  /* 对角相等 */
+  if (state.angles){
+    const pairs = [[A,B,D],[C,B,D],[B,A,C],[D,A,C]];
+    const cols = ["#7c3aed","#7c3aed","#ea580c","#ea580c"];
+    pairs.forEach((pr,i)=>{
+      s += `<path d="${arcPath(pr[0],pr[1],pr[2],26)}" fill="none" stroke="${cols[i]}" stroke-width="2.4"/>`;
+      const bp = bisector(pr[0],pr[1],pr[2]);
+      s += txt(pr[0].x + (bp.x-pr[0].x)*44, pr[0].y + (bp.y-pr[0].y)*44 + 4, fmt(angVal(pr[0],pr[1],pr[2]))+"°", 12.5, cols[i], 700, "middle", "mono");
+    });
+    const aA = fmt(angVal(A,B,D)), aB = fmt(angVal(B,A,C));
+    s += txt(380, 530, `∠A = ∠C = ${aA}° ，∠B = ∠D = ${aB}° （对角相等，∠A+∠B = 180°）`, 15, "#475569", 700, "middle", "mono");
+  } else if (st === 1){
+    s += txt(380, 530, "提示：点上方「对角相等」按钮可显示角的弧与度数", 14.5, "#475569", 700);
+  }
+  /* 顶点标签与手柄 */
+  const vl = [[A,"A",-16,-10],[B,"B",16,-10],[C,"C",16,14],[D,"D",-16,14]];
+  vl.forEach(([p,t,dx,dy]) => { s += txt(p.x+dx, p.y+dy+5, t, 17, "#0f172a", 800); });
+  if (st <= 2){
+    s += `<circle cx="${B.x}" cy="${B.y}" r="9" class="handle" data-h="B"/>`;
+    s += `<circle cx="${D.x}" cy="${D.y}" r="9" class="handle" data-h="D"/>`;
+  }
+  return s;
+}
+function drawJudge(){
+  let s = txt(380, 36, "平行四边形的 5 种判定方法（满足任一条即可）", 19, "#7c3aed", 800);
+  /* 左：对比小图 */
+  const p1 = [{x:50,y:110},{x:210,y:110},{x:250,y:210},{x:90,y:210}];
+  s += `<polygon points="${pts(p1)}" fill="#ede9fe" stroke="#7c3aed" stroke-width="2.5"/>`;
+  s += txt(150, 244, "③ 一组对边平行且相等 ✔", 13.5, "#059669", 800);
+  const p2 = [{x:60,y:320},{x:220,y:320},{x:280,y:430},{x:120,y:430}];
+  s += `<polygon points="${pts(p2)}" fill="#fef2f2" stroke="#dc2626" stroke-width="2.5"/>`;
+  s += `<path d="M160,358 l26,26 M186,358 l-26,26" stroke="#dc2626" stroke-width="3.5"/>`;
+  s += txt(160, 464, "仅一组对边平行 → 梯形 ✗", 13.5, "#dc2626", 800);
+  s += txt(150, 490, "（判定顺序不能乱！）", 13, "#b91c1c", 700);
+  /* 右：五条判定 chips */
+  const items = [
+    ["①", "两组对边分别平行", "（定义）"],
+    ["②", "两组对边分别相等", ""],
+    ["③", "一组对边平行且相等", "（注意：两个条件缺一不可）"],
+    ["④", "两组对角分别相等", ""],
+    ["⑤", "对角线互相平分", ""]
+  ];
+  items.forEach((it, i) => {
+    const y = 70 + i * 88;
+    s += `<g class="fadein" style="animation-delay:${i*0.18}s">
+      <rect x="300" y="${y}" width="430" height="70" rx="12" fill="#ede9fe" stroke="#8b5cf6" stroke-width="2"/>
+      <circle cx="334" cy="${y+35}" r="17" fill="#8b5cf6"/>
+      <text x="334" y="${y+41}" text-anchor="middle" font-size="17" font-weight="800" fill="#fff">${it[0]}</text>
+      <text x="362" y="${it[2] ? y+30 : y+43}" font-size="18" font-weight="800" fill="#4c1d95">${it[1]}</text>
+      ${it[2] ? `<text x="362" y="${y+54}" font-size="13" font-weight="700" fill="#b91c1c">${it[2]}</text>` : ""}
+    </g>`;
+  });
+  s += txt(515, 536, "判定口诀：双平行 · 双相等 · 平且等 · 双对角 · 对角线互平分", 16, "#7c3aed", 800, "middle", "pulse");
+  return s;
+}
+function drawMid(){
+  const A = {x:170,y:110}, B = {x:70,y:470}, C = {x:690,y:470};
+  const D = mid(A,B), E = mid(A,C);
+  const dBC = len(sub(C,B)), dDE = len(sub(E,D));
+  let s = txt(380, 36, "三角形中位线定理：DE ∥ BC，DE = ½BC（D、E 为中点）", 19, "#f97316", 800);
+  s += `<polygon points="${pts([A,B,C])}" fill="#fff7ed" fill-opacity=".8" stroke="#334155" stroke-width="3" stroke-linejoin="round"/>`;
+  /* 中点记号 */
+  s += `<line x1="${(A.x+D.x)/2-6}" y1="${(A.y+D.y)/2}" x2="${(A.x+D.x)/2+6}" y2="${(A.y+D.y)/2}" stroke="#dc2626" stroke-width="2"/>`;
+  s += `<line x1="${(A.x+E.x)/2}" y1="${(A.y+E.y)/2-6}" x2="${(A.x+E.x)/2}" y2="${(A.y+E.y)/2+6}" stroke="#dc2626" stroke-width="2"/>`;
+  /* D、E 标记 */
+  if (state.mT > 0){
+    s += `<g class="fadein"><circle cx="${D.x}" cy="${D.y}" r="8" fill="#2563eb" stroke="#fff" stroke-width="2"/>`;
+    s += `<circle cx="${E.x}" cy="${E.y}" r="8" fill="#2563eb" stroke="#fff" stroke-width="2"/>`;
+    s += txt(D.x-16, D.y+5, "D", 16, "#1d4ed8", 800, "middle");
+    s += txt(E.x+2, E.y-12, "E", 16, "#1d4ed8", 800, "middle");
+    s += txt(D.x-46, (A.y+D.y)/2, "AD=DB", 12, "#dc2626", 700, "middle", "mono");
+    s += txt((A.x+E.x)/2+52, (A.y+E.y)/2, "AE=EC", 12, "#dc2626", 700, "middle", "mono");
+    s += txt(380, 500, "D 是 AB 的中点，E 是 AC 的中点 → DE 是中位线", 15, "#475569", 700);
+  }
+  /* DE */
+  if (state.deOn){
+    s += `<line x1="${D.x}" y1="${D.y}" x2="${E.x}" y2="${E.y}" stroke="#f97316" stroke-width="5" stroke-linecap="round"/>`;
+    s += txt((D.x+E.x)/2, D.y-14, "DE ∥ BC", 15, "#c2410c", 800);
+  }
+  /* 克隆 DE 滑到 BC 上 */
+  if (state.cT > 0){
+    const t = state.cT;
+    const src1 = D, src2 = E;
+    const dst1 = {x:B.x, y:B.y}, dst2 = {x:B.x + (E.x-D.x), y:B.y};
+    const p1 = add(mul(src1,1-t), mul(dst1,t)), p2 = add(mul(src2,1-t), mul(dst2,t));
+    s += `<line x1="${p1.x}" y1="${p1.y}" x2="${p2.x}" y2="${p2.y}" stroke="#dc2626" stroke-width="5" stroke-linecap="round" stroke-dasharray="${t<1?"7 5":"0"}"/>`;
+  }
+  /* 另一半 + 公式 */
+  if (state.halfOn){
+    s += `<line x1="${B.x+(E.x-D.x)}" y1="${B.y}" x2="${C.x}" y2="${C.y}" stroke="#7c3aed" stroke-width="5" stroke-dasharray="10 7" stroke-linecap="round"/>`;
+    s += txt((B.x+C.x)/2, B.y+30, `BC = ${fmt(dBC)}`, 15, "#7c3aed", 800, "middle", "mono");
+    s += txt((D.x+E.x)/2, D.y+28, `DE = ${fmt(dDE)}`, 14, "#c2410c", 800, "middle", "mono");
+    s += `<g class="pulse"><rect x="205" y="60" width="350" height="52" rx="12" fill="#ffedd5" stroke="#f97316" stroke-width="2.5"/>
+      <text x="380" y="94" text-anchor="middle" font-size="21" font-weight="800" fill="#c2410c" class="mono">DE = <tspan fill="#dc2626" font-size="26">½</tspan> BC = ${fmt(dDE)} ✔</text></g>`;
+  }
+  const vl = [[A,"A",-4,-12],[B,"B",-12,22],[C,"C",12,22],[D,""],[E,""]];
+  vl.slice(0,3).forEach(([p,t,dx,dy]) => { s += txt(p.x+dx, p.y+dy, t, 17, "#0f172a", 800); });
+  return s;
+}
+function drawTess(){
+  const u = {x:104, y:0}, v = {x:38, y:78};
+  const cols = ["#dbeafe","#d1fae5","#fde68a"];
+  let s = txt(380, 32, "多边形镶嵌探究：平行四边形（任意四边形）都能铺满平面", 19, "#0d9488", 800);
+  /* 背景：平移镶嵌网格（调淡，作背景） */
+  const O0 = {x:-40, y:50};
+  for (let r = 0; r < 8; r++){
+    for (let c = -1; c < 8; c++){
+      const o = {x: O0.x + c*u.x + r*v.x, y: O0.y + r*v.y};
+      if (o.y > 545 || o.x > 770) continue;
+      const poly = [o, add(o,u), add(add(o,u),v), add(o,v)];
+      s += `<polygon points="${pts(poly)}" fill="${cols[(r+c+6)%3]}" fill-opacity=".35" stroke="#94a3b8" stroke-width="1.3" class="fadein" style="animation-delay:${((r*3+c+24)%9)*0.09}s"/>`;
+    }
+  }
+  /* 高亮一块 + 说明 */
+  const h0 = {x:98, y:128};
+  const hp = [h0, add(h0,u), add(add(h0,u),v), add(h0,v)];
+  s += `<polygon points="${pts(hp)}" fill="#fde68a" fill-opacity=".8" stroke="#0d9488" stroke-width="4"/>`;
+  s += txt(64, 250, "取一块平行四边形", 14, "#0f766e", 800, "start");
+  s += txt(64, 270, "沿两个方向平移", 14, "#0f766e", 800, "start");
+  s += txt(64, 290, "→ 无缝铺满平面", 14, "#0f766e", 800, "start");
+  /* 右侧：放大一个顶点，展示四角拼 360°（角度取自当前平行四边形，实时） */
+  const aA = fmt(angVal(state.A, state.B, state.D));
+  const aB = fmt(angVal(state.B, state.A, Cp()));
+  s += `<rect x="430" y="52" width="315" height="434" rx="16" fill="#fff" stroke="#14b8a6" stroke-width="2.5"/>`;
+  s += txt(587, 88, "🔍 放大一个顶点", 17, "#0f766e", 800);
+  const VP = {x:587, y:268}, r = 92;
+  const seq = [0, +aB, 180, 180 + +aB, 360];
+  const names = ["∠B","∠A","∠B","∠A"], vals = [aB, aA, aB, aA];
+  const cs = ["#10b981","#2563eb","#10b981","#2563eb"];
+  for (let i = 0; i < 4; i++){
+    const t1 = rad(seq[i]), t2 = rad(seq[i+1]);
+    const p1 = {x:VP.x + r*Math.cos(t1), y:VP.y + r*Math.sin(t1)};
+    const p2 = {x:VP.x + r*Math.cos(t2), y:VP.y + r*Math.sin(t2)};
+    s += `<path d="M${VP.x},${VP.y} L${p1.x.toFixed(1)},${p1.y.toFixed(1)} A${r},${r} 0 0 1 ${p2.x.toFixed(1)},${p2.y.toFixed(1)} Z" fill="${cs[i]}" fill-opacity=".45" stroke="${cs[i]}" stroke-width="2" class="fadein" style="animation-delay:${i*0.15}s"/>`;
+    const tm = (t1 + t2)/2;
+    s += txt(VP.x + 128*Math.cos(tm), VP.y + 128*Math.sin(tm) + 5, `${names[i]} = ${vals[i]}°`, 14.5, cs[i], 800, "middle", "mono");
+  }
+  s += `<circle cx="${VP.x}" cy="${VP.y}" r="6" fill="#0f172a"/>`;
+  s += `<rect x="448" y="398" width="279" height="46" rx="10" fill="#ccfbf1" stroke="#14b8a6" stroke-width="2"/>`;
+  s += txt(587, 428, "2∠A + 2∠B = 2×180° = 360°", 16.5, "#0f766e", 800, "middle", "mono");
+  s += txt(587, 466, "四角恰好拼满一周 → 任意四边形都能镶嵌", 13.5, "#0f766e", 700);
+  return s;
+}
+
+/* ================= 交互 ================= */
+function svgCoords(e){
+  const p = svg.createSVGPoint(); p.x = e.clientX; p.y = e.clientY;
+  return p.matrixTransform(svg.getScreenCTM().inverse());
+}
+svg.addEventListener("pointerdown", e => {
+  const h = e.target.closest(".handle");
+  if (!h) return;
+  e.preventDefault();
+  svg.setPointerCapture(e.pointerId);
+  const which = h.dataset.h;
+  const move = ev => {
+    const p = svgCoords(ev);
+    if (which === "B"){
+      state.B.x = clampN(p.x, 300, 620); state.B.y = clampN(p.y, 70, 190);
+    } else {
+      state.D.x = clampN(p.x, 30, 280); state.D.y = clampN(p.y, 270, 470);
+    }
+    render();
+  };
+  const up = () => { svg.removeEventListener("pointermove", move); svg.removeEventListener("pointerup", up); };
+  svg.addEventListener("pointermove", move);
+  svg.addEventListener("pointerup", up);
+});
+
+/* ================= 分步播放（可调速） ================= */
+const SEQ = [1,2,3,4,5];
+let playTimer = null, playIdx = 0, animToken = 0;
+const cancelAnim = () => { animToken++; };
+function tween(key, to, dur, done, delay){
+  const tk = ++animToken, from = state[key];
+  setTimeout(() => {
+    if (tk !== animToken) return;
+    const t0 = performance.now();
+    (function f(t){
+      if (tk !== animToken) return;
+      const p = Math.min(1, (t - t0) / dur);
+      const e = p < .5 ? 2*p*p : 1 - Math.pow(-2*p+2, 2)/2;
+      state[key] = from + (to - from) * e;
+      render();
+      if (p < 1) requestAnimationFrame(f);
+      else { state[key] = to; render(); done && done(); }
+    })(t0);
+  }, delay || 0);
+}
+function at(delay, fn){
+  const tk = ++animToken;
+  setTimeout(() => { if (tk === animToken) fn(); }, delay);
+}
+function applyStep(i){
+  cancelAnim();
+  state.step = i;
+  state.midT = 0; state.midDone = false;
+  state.mT = 0; state.deOn = false; state.cT = 0; state.halfOn = false;
+  render();
+  const d = state.dur * 1000;
+  if (i === 2){
+    at(d * 0.18, () => tween("midT", 1, d * 0.5, () => { state.midDone = true; render(); }));
+  }
+  if (i === 4){
+    at(d * 0.12, () => tween("mT", 1, d * 0.15, () => {
+      state.deOn = true; render();
+      at(d * 0.18, () => tween("cT", 1, d * 0.38, () => { state.halfOn = true; render(); }));
+    }));
+  }
+}
+function tick(){
+  if (playIdx >= SEQ.length){ stopPlay(); return; }
+  applyStep(SEQ[playIdx++]);
+}
+function startPlay(){
+  if (state.playing) return;
+  state.playing = true; $("btnPlay").textContent = "⏸ 暂停";
+  if (playIdx >= SEQ.length) playIdx = 0;
+  applyStep(SEQ[playIdx++]);
+  playTimer = setInterval(tick, state.dur * 1000 + 800);
+}
+function restartTimer(){
+  if (!state.playing) return;
+  clearInterval(playTimer);
+  playTimer = setInterval(tick, state.dur * 1000 + 800);
+}
+function stopPlay(){
+  state.playing = false; clearInterval(playTimer); playTimer = null;
+  cancelAnim();
+  $("btnPlay").textContent = "▶ 播放演示";
+}
+$("btnPlay").addEventListener("click", () => state.playing ? stopPlay() : startPlay());
+$("btnNext").addEventListener("click", () => {
+  stopPlay();
+  const nxt = state.step >= 5 ? 1 : state.step + 1;
+  playIdx = nxt;
+  applyStep(nxt);
+});
+$("btnReset").addEventListener("click", () => {
+  stopPlay(); playIdx = 0;
+  state.step = 0;
+  state.A = {x:150, y:130}; state.B = {x:470, y:130}; state.D = {x:90, y:350};
+  render();
+});
+$("slDur").addEventListener("input", e => {
+  state.dur = +e.target.value;
+  $("valDur").textContent = `${state.dur} 秒 / 步（可拖动调节）`;
+  restartTimer();
+});
+[["tgSides","sides"],["tgAngles","angles"],["tgDiag","diag"]].forEach(([id, key]) => {
+  $(id).addEventListener("click", () => { state[key] = !state[key]; render(); });
+});
+/* 左侧卡片 + 右上角圆形按钮 = 导航：点谁去谁，想到哪个环节就到哪个环节 */
+for (let i = 1; i <= 5; i++){
+  $("card"+i).addEventListener("click", () => { stopPlay(); playIdx = i; applyStep(i); });
+  $("ch"+i).title = "直接跳到第 " + i + " 步";
+  $("ch"+i).addEventListener("click", e => {
+    e.stopPropagation();
+    stopPlay(); playIdx = i - 1; applyStep(i);
+  });
+}
+
+render();
+</script>
+</body>
+</html>

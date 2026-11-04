@@ -1,0 +1,278 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>17.2 公式法 · 课堂演示</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body {
+    font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+    background:#f4f7fb; color:#1e293b; padding:18px 24px;
+  }
+  h1 { font-size:30px; text-align:center; margin-bottom:4px; }
+  .subtitle { text-align:center; color:#64748b; font-size:17px; margin-bottom:14px; }
+
+  /* 知识点卡片区 */
+  .formulas { display:flex; gap:14px; justify-content:center; margin-bottom:16px; flex-wrap:wrap; }
+  .fcard {
+    background:#fff; border-radius:12px; padding:10px 18px; min-width:260px;
+    box-shadow:0 2px 8px rgba(15,23,42,.08); border-top:4px solid #3b82f6;
+    text-align:center;
+  }
+  .fcard:nth-child(2){ border-top-color:#10b981; }
+  .fcard:nth-child(3){ border-top-color:#f59e0b; }
+  .fcard .t { font-size:15px; color:#64748b; }
+  .fcard .f { font-size:21px; font-weight:bold; margin-top:2px; }
+  .fcard .f i { font-family:"Times New Roman", serif; font-style:italic; }
+
+  /* 主体布局 */
+  .main { display:flex; gap:20px; justify-content:center; align-items:flex-start; flex-wrap:wrap; }
+  .panel {
+    background:#fff; border-radius:14px; box-shadow:0 2px 10px rgba(15,23,42,.08);
+    padding:16px 20px;
+  }
+  .panel h2 { font-size:19px; margin-bottom:8px; color:#334155; }
+  .panel h2 span { color:#3b82f6; }
+
+  /* 控制按钮 */
+  .controls { display:flex; gap:10px; justify-content:center; margin:14px 0 6px; flex-wrap:wrap; }
+  button {
+    font-size:17px; padding:9px 20px; border:none; border-radius:9px;
+    background:#3b82f6; color:#fff; cursor:pointer; transition:.2s;
+    font-family:inherit;
+  }
+  button:hover { filter:brightness(1.1); transform:translateY(-1px); }
+  button:disabled { background:#cbd5e1; cursor:not-allowed; transform:none; }
+  button.ghost { background:#fff; color:#3b82f6; border:2px solid #3b82f6; }
+  button.play { background:#10b981; }
+  button.play.playing { background:#f59e0b; }
+  .stepbar { text-align:center; font-size:16px; color:#475569; margin-bottom:8px; }
+  .stepbar b { color:#ef4444; font-size:18px; }
+  .dots { display:flex; gap:8px; justify-content:center; margin-bottom:6px; }
+  .dot { width:12px; height:12px; border-radius:50%; background:#cbd5e1; transition:.3s; }
+  .dot.on { background:#3b82f6; transform:scale(1.25); }
+
+  /* SVG 拼图 */
+  svg text { font-family:"Times New Roman", Georgia, serif; }
+  .tile { transition: fill .6s, stroke .6s, opacity .6s; stroke-width:2.5; }
+  .tile-label { transition: fill .6s, opacity .6s; font-size:26px; font-weight:bold; }
+  .dim { opacity:0; transition: opacity .8s; font-size:24px; font-weight:bold; }
+  .dim.show { opacity:1; }
+  .brace { opacity:0; transition: opacity .8s; }
+  .brace.show { opacity:1; }
+
+  /* 代数推导区 */
+  .alg { font-size:23px; line-height:2.2; font-family:"Times New Roman","Microsoft YaHei",serif; }
+  .alg .ln { opacity:.35; transition:opacity .6s, background .6s; padding:2px 8px; border-radius:6px; display:block; }
+  .alg .ln.on { opacity:1; background:#fef9c3; }
+  .hl-b { color:#2563eb; font-weight:bold; }
+  .hl-g { color:#059669; font-weight:bold; }
+  .hl-o { color:#d97706; font-weight:bold; }
+  .hl-p { color:#7c3aed; font-weight:bold; }
+
+  /* 最终答案 */
+  .answer {
+    margin-top:10px; text-align:center; font-size:32px; font-weight:bold;
+    color:#fff; background:linear-gradient(90deg,#ef4444,#f97316);
+    border-radius:12px; padding:10px 16px; opacity:0; transform:scale(.9);
+    transition:.8s; font-family:"Times New Roman","Microsoft YaHei",serif;
+  }
+  .answer.show { opacity:1; transform:scale(1); animation:pulse 1.6s ease-in-out .8s infinite; }
+  @keyframes pulse { 0%,100%{ box-shadow:0 0 0 0 rgba(239,68,68,.45);} 50%{ box-shadow:0 0 0 14px rgba(239,68,68,0);} }
+
+  .stepdesc {
+    min-height:52px; background:#f1f5f9; border-left:5px solid #3b82f6;
+    border-radius:8px; padding:9px 14px; font-size:17px; line-height:1.55;
+    transition:.3s; margin-bottom:6px;
+  }
+  .tip { text-align:center; color:#94a3b8; font-size:14px; margin-top:10px; }
+</style>
+</head>
+<body>
+
+<h1>17.2 公式法 —— 用公式法解一元二次方程</h1>
+<div class="subtitle">矩形面积逆推分解 · 阅读与思考（人教版八年级下 / 因式分解公式法）</div>
+
+<!-- 核心知识点 -->
+<div class="formulas">
+  <div class="fcard"><div class="t">平方差公式</div><div class="f"><i>a</i>² − <i>b</i>² = (<i>a</i>+<i>b</i>)(<i>a</i>−<i>b</i>)</div></div>
+  <div class="fcard"><div class="t">完全平方公式</div><div class="f"><i>a</i>² ± 2<i>ab</i> + <i>b</i>² = (<i>a</i>±<i>b</i>)²</div></div>
+  <div class="fcard"><div class="t">十字相乘（面积逆推）</div><div class="f"><i>x</i>²+(<i>p</i>+<i>q</i>)<i>x</i>+<i>pq</i> = (<i>x</i>+<i>p</i>)(<i>x</i>+<i>q</i>)</div></div>
+</div>
+
+<div class="controls">
+  <button id="btnPrev" class="ghost">◀ 上一步</button>
+  <button id="btnNext">下一步 ▶</button>
+  <button id="btnPlay" class="play">▶ 自动播放</button>
+  <button id="btnReset" class="ghost">↺ 重置</button>
+</div>
+<div class="dots">
+  <div class="dot" data-s="1"></div><div class="dot" data-s="2"></div>
+  <div class="dot" data-s="3"></div><div class="dot" data-s="4"></div>
+</div>
+<div class="stepbar">当前步骤：<b id="stepNum">0</b> / 4　<span id="stepName">初始状态</span></div>
+
+<div class="main">
+  <!-- 面积拼图 -->
+  <div class="panel">
+    <h2>矩形面积逆推分解：<span>x² + 5x + 6</span></h2>
+    <svg id="svg" width="560" height="420" viewBox="0 0 560 420">
+      <!-- 尺寸标注（第4步显示） -->
+      <text id="dimTop"    class="dim" x="290" y="52"  text-anchor="middle" fill="#ef4444">x + 3</text>
+      <text id="dimLeft"   class="dim" x="120" y="250" text-anchor="middle" fill="#ef4444" transform="rotate(-90 120 250)">x + 2</text>
+      <text id="dimTopX"   class="dim" x="215" y="52"  text-anchor="middle" fill="#334155" opacity="0"></text>
+
+      <!-- 4 块拼图：宽(x+3)=150+... 用 x=130px, 2=40px, 3=60px -->
+      <!-- 左上：x² (130x130) 起点(160,70) -->
+      <rect id="t1" class="tile" x="160" y="70" width="130" height="130" rx="6"
+            fill="#dbeafe" stroke="#93c5fd"/>
+      <text class="tile-label" x="225" y="145" text-anchor="middle" fill="#1d4ed8">x²</text>
+
+      <!-- 右上：3x (60x130) -->
+      <rect id="t2" class="tile" x="294" y="70" width="60" height="130" rx="6"
+            fill="#d1fae5" stroke="#6ee7b7"/>
+      <text class="tile-label" x="324" y="145" text-anchor="middle" fill="#047857" font-size="24">3x</text>
+
+      <!-- 左下：2x (130x40) -->
+      <rect id="t3" class="tile" x="160" y="204" width="130" height="40" rx="6"
+            fill="#d1fae5" stroke="#6ee7b7"/>
+      <text class="tile-label" x="225" y="232" text-anchor="middle" fill="#047857" font-size="22">2x</text>
+
+      <!-- 右下：6 (60x40) -->
+      <rect id="t4" class="tile" x="294" y="204" width="60" height="40" rx="6"
+            fill="#ede9fe" stroke="#c4b5fd"/>
+      <text class="tile-label" x="324" y="232" text-anchor="middle" fill="#6d28d9" font-size="22">6 = 2×3</text>
+
+      <!-- 5x 大括号（第2步显示） -->
+      <g id="brace5x" class="brace">
+        <path d="M 294 262 Q 324 286 354 262" stroke="#059669" stroke-width="2.5" fill="none"/>
+        <text x="324" y="300" text-anchor="middle" fill="#059669" font-size="24" font-weight="bold">5x = 3x + 2x</text>
+      </g>
+
+      <!-- 分组框（第4步显示）：右列一组 x+3，下行一组 x+2 -->
+      <rect id="grpCol" x="286" y="62" width="76" height="190" rx="10"
+            fill="none" stroke="#f97316" stroke-width="3.5" stroke-dasharray="8 5" opacity="0" style="transition:opacity .8s"/>
+      <rect id="grpRow" x="152" y="196" width="210" height="56" rx="10"
+            fill="none" stroke="#7c3aed" stroke-width="3.5" stroke-dasharray="8 5" opacity="0" style="transition:opacity .8s"/>
+
+      <!-- 面积说明 -->
+      <text x="280" y="345" text-anchor="middle" fill="#475569" font-size="17" font-family="Microsoft YaHei">
+        大矩形面积 = x² + 3x + 2x + 6 = x² + 5x + 6
+      </text>
+      <text x="280" y="374" text-anchor="middle" fill="#475569" font-size="17" font-family="Microsoft YaHei">
+        逆推：长 (x+3) × 宽 (x+2) ⇒ 因式分解
+      </text>
+    </svg>
+  </div>
+
+  <!-- 代数推导 -->
+  <div class="panel" style="max-width:440px;">
+    <h2>代数推导（同步高亮）</h2>
+    <div class="stepdesc" id="stepDesc">点击「下一步」或「自动播放」，观察面积拼图如何逆推出因式分解。</div>
+    <div class="alg">
+      <span class="ln" id="l1">x² + 5x + 6</span>
+      <span class="ln" id="l2">= x² + <span class="hl-g">3x</span> + <span class="hl-g">2x</span> + <span class="hl-p">6</span></span>
+      <span class="ln" id="l3">= <span class="hl-b">x</span>(x+3) + <span class="hl-b">2</span>(x+3)</span>
+      <span class="ln" id="l4">= (x+<span class="hl-o">2</span>)(x+<span class="hl-o">3</span>)</span>
+    </div>
+    <div class="answer" id="answer">x² + 5x + 6 = (x + 2)(x + 3) ✔</div>
+    <div class="tip">对应教材「阅读与思考」：x²+(p+q)x+pq = (x+p)(x+q)，此处 p=2, q=3</div>
+  </div>
+</div>
+
+<script>
+// 状态与颜色
+const S = 4; // 总步数
+let cur = 0, timer = null;
+
+const stepInfo = {
+  0:{name:"初始状态", desc:"点击「下一步」或「自动播放」，观察面积拼图如何逆推出因式分解。"},
+  1:{name:"① 二次项 x²", desc:"蓝色大正方形：边长为 x 的正方形，面积 = <b class='hl-b'>x²</b>（二次项）。"},
+  2:{name:"② 一次项 5x", desc:"绿色两块：把一次项 <b class='hl-g'>5x</b> 拆成 <b class='hl-g'>3x + 2x</b>（寻找 p+q=5）。"},
+  3:{name:"③ 常数项 6", desc:"紫色小矩形：面积 <b class='hl-p'>6 = 2×3</b>（寻找 p·q=6，p=2、q=3）。"},
+  4:{name:"④ 分组提取 ⇒ (x+2)(x+3)", desc:"按虚线框分组：右列公共因式 (x+3)，上行宽 (x+3)、高 (x+2)，逆推得 <b class='hl-o'>(x+2)(x+3)</b>！"}
+};
+
+const tiles = {
+  1:["#2563eb","#3b82f6","#bfdbfe"],   // x² 蓝
+  2:["#059669","#10b981","#a7f3d0"],   // 3x,2x 绿
+  3:["#7c3aed","#8b5cf6","#ddd6fe"],   // 6 紫
+  4:["#ea580c","#f97316","#ffedd5"]    // 分组 橙
+};
+const rest = {s:"#94a3b8", st:"#cbd5e1", f:"#f1f5f9"};
+
+function setTile(id, c){
+  const el = document.getElementById(id);
+  el.style.fill = c ? c[2] : rest.f;
+  el.style.stroke = c ? c[1] : rest.st;
+  const lb = el.nextElementSibling;
+  lb.style.fill = c ? c[0] : "#64748b";
+}
+
+function render(){
+  // 拼图颜色
+  setTile("t1", cur>=1 && cur<4 ? tiles[1] : (cur===4?tiles[4]:null));
+  setTile("t2", (cur===2||cur===4) ? tiles[2] : null);
+  setTile("t3", (cur===2||cur===4) ? tiles[2] : null);
+  setTile("t4", (cur===3||cur===4) ? tiles[3] : null);
+
+  // 5x 括号
+  document.getElementById("brace5x").classList.toggle("show", cur>=2);
+  // 分组框
+  document.getElementById("grpCol").style.opacity = cur>=4?1:0;
+  document.getElementById("grpRow").style.opacity = cur>=4?1:0;
+  // 尺寸标注
+  document.getElementById("dimTop").classList.toggle("show", cur>=4);
+  document.getElementById("dimLeft").classList.toggle("show", cur>=4);
+
+  // 代数行
+  for(let i=1;i<=4;i++){
+    document.getElementById("l"+i).classList.toggle("on", cur>=i);
+  }
+  // 最终答案
+  document.getElementById("answer").classList.toggle("show", cur>=4);
+
+  // 步骤条
+  document.getElementById("stepNum").textContent = cur;
+  document.getElementById("stepName").textContent = stepInfo[cur].name;
+  document.getElementById("stepDesc").innerHTML = stepInfo[cur].desc;
+  document.querySelectorAll(".dot").forEach(d=>d.classList.toggle("on", +d.dataset.s<=cur));
+  document.getElementById("btnPrev").disabled = (cur===0);
+  document.getElementById("btnNext").disabled = (cur===S);
+}
+
+function go(n){
+  cur = Math.max(0, Math.min(S, n));
+  render();
+}
+function next(){ if(cur<S) go(cur+1); else stopPlay(); }
+function prev(){ go(cur-1); }
+
+function startPlay(){
+  if(cur>=S) go(0);
+  timer = setInterval(()=>{
+    if(cur<S) go(cur+1); else stopPlay();
+  }, 2000);
+  const b = document.getElementById("btnPlay");
+  b.textContent = "⏸ 暂停播放"; b.classList.add("playing");
+}
+function stopPlay(){
+  clearInterval(timer); timer=null;
+  const b = document.getElementById("btnPlay");
+  b.textContent = "▶ 自动播放"; b.classList.remove("playing");
+}
+
+document.getElementById("btnNext").onclick = ()=>{ stopPlay(); next(); };
+document.getElementById("btnPrev").onclick = ()=>{ stopPlay(); prev(); };
+document.getElementById("btnReset").onclick = ()=>{ stopPlay(); go(0); };
+document.getElementById("btnPlay").onclick = ()=> timer ? stopPlay() : startPlay();
+document.addEventListener("keydown", e=>{
+  if(e.key==="ArrowRight"){ stopPlay(); next(); }
+  if(e.key==="ArrowLeft"){ stopPlay(); prev(); }
+  if(e.key===" "){ e.preventDefault(); timer ? stopPlay() : startPlay(); }
+});
+
+render();
+</script>
+</body>
+</html>

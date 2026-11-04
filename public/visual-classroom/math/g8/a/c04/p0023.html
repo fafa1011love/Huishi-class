@@ -1,0 +1,483 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>16.2 整式的乘法 · 面积矩形分割模型（课堂实验）</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif;background:#eef2f7;color:#1e293b;overflow:hidden}
+.topbar{height:56px;display:flex;align-items:center;gap:14px;padding:0 18px;background:#fff;border-bottom:1px solid #e2e8f0;box-shadow:0 1px 4px rgba(15,23,42,.05)}
+.topbar h1{font-size:17px;font-weight:800;color:#0f172a;white-space:nowrap}
+.topbar h1 small{font-weight:500;color:#64748b;font-size:12px;margin-left:8px}
+.modebtns{display:flex;gap:6px;margin-left:auto}
+.mbtn{padding:7px 14px;border:1px solid #cbd5e1;background:#fff;border-radius:999px;cursor:pointer;font-size:13px;color:#334155;transition:all .15s;white-space:nowrap}
+.mbtn:hover{border-color:#2563eb;color:#2563eb}
+.mbtn.active{background:#2563eb;color:#fff;border-color:#2563eb;font-weight:600}
+.rbtn{padding:7px 14px;border:1px solid #ef4444;color:#ef4444;background:#fff;border-radius:999px;cursor:pointer;font-size:13px}
+.rbtn:hover{background:#fef2f2}
+.stage{display:grid;grid-template-columns:minmax(0,1.6fr) minmax(360px,1fr);height:calc(100vh - 56px)}
+.canvas-wrap{position:relative;background:#fff;overflow:hidden}
+svg#geo{width:100%;height:100%;display:block;user-select:none;-webkit-user-select:none;touch-action:none}
+aside{background:#f8fafc;border-left:1px solid #e2e8f0;overflow-y:auto;padding:14px 16px 24px}
+aside h3{font-size:13px;color:#2563eb;margin:14px 0 8px;font-weight:700}
+aside h3:first-child{margin-top:2px}
+.card{background:#fff;border:1px solid #e2e8f0;border-radius:12px;padding:10px 12px;font-size:13px;line-height:1.9}
+.prow{display:flex;align-items:center;gap:8px;margin:6px 0}
+.prow label{width:86px;font-size:13px;color:#334155;white-space:nowrap}
+.prow input[type=range]{flex:1;accent-color:#2563eb;min-width:60px}
+.prow input[type=number]{width:64px;padding:4px 6px;border:1px solid #cbd5e1;border-radius:8px;font-size:13px;text-align:center}
+.prow .pvar{font-style:italic;font-weight:700;font-family:Georgia,serif}
+.deriv{font-size:14.5px;line-height:2.1;font-family:Georgia,"Times New Roman",serif}
+.deriv .term{cursor:pointer;padding:1px 5px;border-radius:6px;transition:background .15s}
+.deriv .term:hover,.deriv .term.hl{background:#fde68a;box-shadow:0 0 0 1px #f59e0b}
+.deriv b{color:#b91c1c}
+.chip{display:inline-block;padding:2px 9px;border-radius:8px;font-size:12.5px;margin:2px 3px;font-weight:700;color:#1e293b;border:1px solid rgba(15,23,42,.12)}
+.chip.total{background:#1e293b;color:#fff}
+.sbtn{padding:6px 12px;border:1px solid #cbd5e1;background:#fff;border-radius:9px;font-size:12.5px;cursor:pointer;margin:2px 4px 2px 0}
+.sbtn:hover{border-color:#f59e0b;color:#b45309}
+.sbtn.on{background:#fef3c7;border-color:#f59e0b;color:#92400e;font-weight:600}
+.tgl{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:13px}
+.tgl label{display:flex;align-items:center;gap:5px;cursor:pointer}
+.tgl input{accent-color:#2563eb}
+.motto{margin-top:14px;padding:10px 12px;border-radius:10px;background:#ecfdf5;border:1px solid #6ee7b7;color:#065f46;font-size:13px;line-height:1.8}
+.note{margin-top:8px;font-size:12.5px;color:#b45309;background:#fffbeb;border:1px dashed #fcd34d;border-radius:9px;padding:7px 10px;line-height:1.7}
+/* SVG 元素 */
+.cell{cursor:pointer;animation:pop .4s ease}
+@keyframes pop{from{opacity:0}to{opacity:1}}
+.cell.hl{stroke:#f59e0b !important;stroke-width:4 !important}
+.axis{stroke:#64748b;stroke-width:2}
+.gridl{stroke:#e2e8f0;stroke-width:1}
+.diml{stroke:#475569;stroke-width:1.5}
+.dlabel{font-size:13.5px;text-anchor:middle;fill:#0f172a;font-weight:600}
+.dlabel i{font-family:Georgia,serif;font-style:italic}
+.totlabel{font-size:14.5px;text-anchor:middle;fill:#1d4ed8;font-weight:800}
+.bigexp{font-size:17px;font-weight:800;fill:#0f172a;font-family:Georgia,serif}
+.banner{font-size:14px;font-weight:700;fill:#b45309;text-anchor:end}
+.handle{fill:#f59e0b;stroke:#fff;stroke-width:2.5;cursor:pointer}
+.handle:hover{fill:#d97706}
+.dashbox{fill:none;stroke:#ef4444;stroke-width:1.6;stroke-dasharray:6 4}
+</style>
+</head>
+<body>
+<div class="topbar">
+  <h1>16.2 整式的乘法 <small>面积矩形分割模型 · 为乘法公式铺垫</small></h1>
+  <div class="modebtns">
+    <button class="mbtn" data-m="1">模式1 单项式×单项式</button>
+    <button class="mbtn" data-m="2">模式2 单项式×多项式</button>
+    <button class="mbtn active" data-m="3">模式3 多项式×多项式</button>
+    <button class="rbtn" id="btnReset">↺ 一键重置</button>
+  </div>
+</div>
+<div class="stage">
+  <div class="canvas-wrap"><svg id="geo" viewBox="0 0 960 640" preserveAspectRatio="xMidYMid meet"></svg></div>
+  <aside>
+    <h3>① 边长参数（滑块 / 输入系数，双向联动）</h3>
+    <div class="card" id="paramBox"></div>
+    <div id="specialSec">
+      <h3>② 特殊值 · 乘法公式铺垫</h3>
+      <div class="card">
+        <button class="sbtn" id="btnSq">正方形：令 c=a、d=b → (a+b)²</button>
+        <button class="sbtn" id="btnDiff">平方差：令 高=a−b → (a+b)(a−b)</button>
+        <button class="sbtn" id="btnNorm">↺ 返回一般式 (a+b)(c+d)</button>
+        <div class="note" id="specialNote" style="display:none"></div>
+      </div>
+    </div>
+    <h3>③ 代数推导链（悬停文字 ⇄ 高亮图形）</h3>
+    <div class="card"><div class="deriv" id="deriv"></div></div>
+    <h3>④ 面积守恒：整体面积 = 部分面积之和</h3>
+    <div class="card" id="conserve"></div>
+    <h3>⑤ 显示选项</h3>
+    <div class="card tgl">
+      <label><input type="checkbox" id="tgDim" checked>边长标签</label>
+      <label><input type="checkbox" id="tgArea" checked>面积数值</label>
+      <label><input type="checkbox" id="tgSplit" checked>分割线</label>
+      <label><input type="checkbox" id="tgAlg" checked>画布代数式</label>
+    </div>
+    <div class="motto">📌 口诀：多项式乘多项式，<b>逐项相乘再相加</b>；面积分割看得见，整体部分守恒间。<br>🖱️ 画布中可拖动 <b>橙色圆点</b>（分割线 / 边缘顶点），右侧代数式实时联动。</div>
+  </aside>
+</div>
+
+<script>
+"use strict";
+/* ================= 基础 ================= */
+const NS = "http://www.w3.org/2000/svg";
+const svg = document.getElementById("geo");
+const O = { x: 105, y: 575 };          // 坐标原点（像素）
+const AVAIL_W = 945 - O.x - 15;        // 可用宽
+const AVAIL_H = O.y - 70;              // 可用高
+const MAXW = 12, MAXH = 8;             // 单位上限
+const el = (t, a, p) => { const e = document.createElementNS(NS, t); for (const k in a) e.setAttribute(k, a[k]); if (p) p.appendChild(e); return e; };
+const fmt = x => String(Number((+x).toFixed(2)));
+const clamp = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+const state = {
+  mode: 3,
+  special: null,               // null | 'sq' | 'diff'
+  p: { a: 3, b: 2, c: 2, d: 1, m: 4, n: 3 },
+  show: { dim: true, area: true, split: true, alg: true }
+};
+let cells = [];                // 当前所有小矩形 {x,y,w,h(px),term,val,color,k}
+
+/* ============ 模式/特殊值 → 分段与变量 ============ */
+function segs(){
+  const { p, mode, special } = state;
+  if (mode === 1) return { h: [p.m], v: [p.n], hv: ["m"], vv: ["n"] };
+  if (mode === 2) return { h: [p.b, p.c, p.d], v: [p.a], hv: ["b","c","d"], vv: ["a"] };
+  if (special === "sq")   return { h: [p.a, p.b], v: [p.a, p.b], hv: ["a","b"], vv: ["a","b"] };
+  if (special === "diff") return { h: [p.a, p.b], v: [Math.max(0.5, p.a - p.b)], hv: ["a","b"], vv: ["a−b"] };
+  return { h: [p.a, p.b], v: [p.c, p.d], hv: ["a","b"], vv: ["c","d"] };
+}
+function cellColor(i){
+  const m = state.mode, sp = state.special;
+  if (m === 1) return "#ddd6fe";
+  if (m === 2) return ["#bfdbfe", "#bbf7d0", "#fde68a"][i];
+  if (sp === "sq")   return ["#bfdbfe", "#fde68a", "#fde68a", "#bbf7d0"][i]; // 同类项 ab 同色
+  if (sp === "diff") return ["#bfdbfe", "#bbf7d0"][i];
+  return ["#bfdbfe", "#bbf7d0", "#fde68a", "#fbcfe8"][i];
+}
+function cellTerms(){
+  const s = segs(), m = state.mode, sp = state.special, out = [];
+  if (m === 1) return ["mn"];
+  if (sp === "sq")   return ["a²", "ab", "ab", "b²"];
+  if (sp === "diff") return ["a·(a−b)", "b·(a−b)"];
+  s.hv.forEach(hv => s.vv.forEach(vv => out.push(hv + vv)));
+  return out;
+}
+
+/* ============ 绘制 ============ */
+function render(){
+  svg.innerHTML = ""; cells = [];
+  const s0 = segs();
+  const W = s0.h.reduce((a,b)=>a+b,0), H = s0.v.reduce((a,b)=>a+b,0);
+  const sc = Math.min(64, AVAIL_W / W, AVAIL_H / H);
+  const w = W * sc, h = H * sc, x0 = O.x, y0 = O.y;
+
+  /* 网格 */
+  const grid = el("g", {}, svg);
+  for (let gx = 0; gx <= AVAIL_W / sc; gx++)
+    el("line", { x1: x0 + gx*sc, y1: 70, x2: x0 + gx*sc, y2: y0, class: "gridl" }, grid);
+  for (let gy = 0; gy <= AVAIL_H / sc; gy++)
+    el("line", { x1: x0, y1: y0 - gy*sc, x2: 945, y2: y0 - gy*sc, class: "gridl" }, grid);
+  /* 坐标轴（箭头） */
+  el("line", { x1: x0, y1: y0, x2: 940, y2: y0, class: "axis" }, svg);
+  el("path", { d: `M940,${y0} l-11,-5 v10 Z`, fill: "#64748b" }, svg);
+  el("line", { x1: x0, y1: y0, x2: x0, y2: 72, class: "axis" }, svg);
+  el("path", { d: `M${x0},72 l-5,11 h10 Z`, fill: "#64748b" }, svg);
+  el("text", { x: 948, y: y0 + 4, "font-size": 12, fill: "#64748b" }, svg).textContent = "x";
+  el("text", { x: x0 - 4, y: 66, "font-size": 12, fill: "#64748b", "text-anchor": "end" }, svg).textContent = "y";
+
+  /* 小矩形（按列×行） */
+  const terms = cellTerms();
+  let k = 0, cx = x0;
+  const cellsG = el("g", {}, svg);
+  const cellsMeta = [];
+  let accH = 0;
+  s0.v.forEach((vh, r) => {
+    let accW = 0;
+    s0.h.forEach((hw, ci) => {
+      const idx = r * s0.h.length + ci;
+      const X = x0 + accW * sc, Y = y0 - (accH + vh) * sc;
+      const Wp = hw * sc, Hp = vh * sc;
+      const term = terms[idx], val = +(hw * vh).toFixed(4);
+      const color = cellColor(idx);
+      const rect = el("rect", { x: X, y: Y, width: Wp, height: Hp, fill: color, "fill-opacity": .92,
+        stroke: "#475569", "stroke-width": 1.6, class: "cell", "data-k": idx }, cellsG);
+      if (state.show.area){
+        const t = el("text", { x: X + Wp/2, y: Y + Hp/2, "text-anchor": "middle", "pointer-events": "none" }, cellsG);
+        const t1 = el("tspan", { x: X + Wp/2, y: Y + Hp/2 - (Wp > 46 && Hp > 34 ? 7 : 0),
+          "font-size": Math.min(17, Wp/4.2, Hp/2.4), "font-weight": 700, "font-family": "Georgia,serif", "font-style": "italic", fill: "#0f172a" }, t);
+        t1.textContent = term;
+        if (Wp > 46 && Hp > 34){
+          const t2 = el("tspan", { x: X + Wp/2, y: Y + Hp/2 + 12, "font-size": 12, fill: "#475569" }, t);
+          t2.textContent = "= " + fmt(val);
+        }
+      }
+      cells.push({ rect, k: idx });
+      cellsMeta.push({ X, Y, Wp, Hp, term, val, color, idx });
+      accW += hw; k++;
+    });
+    accH += vh;
+  });
+
+  /* 分割线（加粗） */
+  if (state.show.split){
+    let acc = 0;
+    for (let i = 0; i < s0.h.length - 1; i++){
+      acc += s0.h[i];
+      el("line", { x1: x0 + acc*sc, y1: y0 - h, x2: x0 + acc*sc, y2: y0, stroke: "#475569", "stroke-width": 2.4 }, svg);
+    }
+    acc = 0;
+    for (let i = 0; i < s0.v.length - 1; i++){
+      acc += s0.v[i];
+      el("line", { x1: x0, y1: y0 - acc*sc, x2: x0 + w, y2: y0 - acc*sc, stroke: "#475569", "stroke-width": 2.4 }, svg);
+    }
+  }
+
+  /* 边长标注 */
+  if (state.show.dim){
+    let acc = 0;
+    s0.h.forEach((hw, i) => {
+      const mid = x0 + (acc + hw/2) * sc;
+      el("line", { x1: x0 + acc*sc, y1: y0+14, x2: x0 + (acc+hw)*sc, y2: y0+14, class: "diml" }, svg);
+      el("line", { x1: x0 + acc*sc, y1: y0+10, x2: x0 + acc*sc, y2: y0+18, class: "diml" }, svg);
+      el("line", { x1: x0 + (acc+hw)*sc, y1: y0+10, x2: x0 + (acc+hw)*sc, y2: y0+18, class: "diml" }, svg);
+      const t = el("text", { x: mid, y: y0+30, class: "dlabel" }, svg);
+      t.innerHTML = `<i>${s0.hv[i]}</i> = ${fmt(hw)}`;
+      acc += hw;
+    });
+    el("line", { x1: x0, y1: y0+42, x2: x0 + w, y2: y0+42, class: "diml", stroke: "#1d4ed8" }, svg);
+    const tt = el("text", { x: x0 + w/2, y: y0+60, class: "totlabel" }, svg);
+    tt.innerHTML = `<i>${s0.hv.join("+")}</i> = ${fmt(W)}`;
+    acc = 0;
+    s0.v.forEach((vh, i) => {
+      const mid = y0 - (acc + vh/2) * sc;
+      el("line", { x1: x0-14, y1: y0 - acc*sc, x2: x0-14, y2: y0 - (acc+vh)*sc, class: "diml" }, svg);
+      el("line", { x1: x0-18, y1: y0 - acc*sc, x2: x0-10, y2: y0 - acc*sc, class: "diml" }, svg);
+      el("line", { x1: x0-18, y1: y0 - (acc+vh)*sc, x2: x0-10, y2: y0 - (acc+vh)*sc, class: "diml" }, svg);
+      const t = el("text", { x: x0-24, y: mid, class: "dlabel", "text-anchor": "end", "dominant-baseline": "middle" }, svg);
+      t.innerHTML = `<i>${s0.vv[i]}</i> = ${fmt(vh)}`;
+      acc += vh;
+    });
+    el("line", { x1: x0-30, y1: y0 - h, x2: x0-30, y2: y0, class: "diml", stroke: "#1d4ed8" }, svg);
+    const tv = el("text", { x: x0-38, y: y0 - h/2, class: "totlabel", "text-anchor": "end", "dominant-baseline": "middle", transform: `rotate(-90 ${x0-38} ${y0 - h/2})` }, svg);
+    tv.innerHTML = `<i>${s0.vv.join("+")}</i> = ${fmt(H)}`;
+  }
+
+  /* 平方差虚线示意：a×a 方框 与 b×b 角 */
+  if (state.mode === 3 && state.special === "diff"){
+    el("rect", { x: x0, y: y0 - state.p.a*sc, width: state.p.a*sc, height: state.p.a*sc, class: "dashbox" }, svg);
+    el("rect", { x: x0 + (state.p.a-state.p.b)*sc, y: y0 - state.p.a*sc, width: state.p.b*sc, height: state.p.b*sc, class: "dashbox" }, svg);
+  }
+
+  /* 画布代数式 & 铺垫横幅 */
+  const expText = {
+    1: `S = m × n = ${fmt(state.p.m)}×${fmt(state.p.n)} = ${fmt(state.p.m*state.p.n)}`,
+    2: `S = a(b+c+d) = ab+ac+ad = ${fmt(state.p.a*(state.p.b+state.p.c+state.p.d))}`,
+    3: state.special==="sq" ? `S = (a+b)² = a²+2ab+b² = ${fmt((state.p.a+state.p.b)**2)}`
+      : state.special==="diff" ? `S = (a+b)(a−b) = a²−b² = ${fmt((state.p.a+state.p.b)*(state.p.a-state.p.b))}`
+      : `S = (a+b)(c+d) = ac+ad+bc+bd = ${fmt(W*H)}`
+  }[state.mode];
+  if (state.show.alg) el("text", { x: x0, y: 46, class: "bigexp" }, svg).textContent = expText;
+  if (state.mode === 3 && state.special){
+    el("text", { x: 940, y: 44, class: "banner" }, svg).textContent =
+      state.special === "sq" ? "⭐ 为乘法公式铺垫：完全平方 (a+b)²" : "⭐ 为乘法公式铺垫：平方差 (a+b)(a−b)";
+  }
+
+  /* 拖拽手柄：分割点 + 边缘顶点 */
+  const Hx = el("g", {}, svg);
+  const hParams = state.mode===1 ? ["m"] : state.mode===2 ? ["b","c","d"] : ["a","b"];
+  const vParams = state.mode===1 ? ["n"] : state.mode===2 ? ["a"] : (state.special ? null : ["c","d"]);
+  /* 底边分割点 */
+  let accX = 0;
+  for (let i = 0; i < s0.h.length - 1; i++){
+    accX += s0.h[i];
+    const cxi = x0 + accX * sc, before = s0.h.slice(0, i).reduce((a,b)=>a+b,0);
+    const sum2 = s0.h[i] + s0.h[i+1];
+    const hp = hParams[i], hp2 = hParams[i+1];
+    mkDrag(Hx, cxi, y0, "col-resize", ev => {
+      const u = clamp(pxU(ev), before + 0.5, before + sum2 - 0.5);
+      state.p[hp] = +(u - before).toFixed(2);
+      state.p[hp2] = +(sum2 - (u - before)).toFixed(2);
+      syncSpecial(); render(); refreshParamVals();
+    });
+  }
+  /* 左边分割点 */
+  if (vParams){
+    let accY = 0;
+    for (let i = 0; i < s0.v.length - 1; i++){
+      accY += s0.v[i];
+      const cyi = y0 - accY * sc, before = s0.v.slice(0, i).reduce((a,b)=>a+b,0);
+      const sum2 = s0.v[i] + s0.v[i+1];
+      const vp = vParams[i], vp2 = vParams[i+1];
+      mkDrag(Hx, x0, cyi, "row-resize", ev => {
+        const u = clamp(pxV(ev), before + 0.5, before + sum2 - 0.5);
+        state.p[vp] = +(u - before).toFixed(2);
+        state.p[vp2] = +(sum2 - (u - before)).toFixed(2);
+        syncSpecial(); render(); refreshParamVals();
+      });
+    }
+  }
+  /* 右边缘顶点 → 改最后一段横向边长 */
+  {
+    const before = s0.h.slice(0, -1).reduce((a,b)=>a+b,0);
+    const hp = hParams[hParams.length-1];
+    mkDrag(Hx, x0 + w, y0 - h/2, "ew-resize", ev => {
+      state.p[hp] = +clamp(pxU(ev) - before, 0.5, MAXW - before).toFixed(2);
+      syncSpecial(); render(); refreshParamVals();
+    });
+  }
+  /* 上边缘顶点 → 改最后一段纵向边长（特殊模式下锁定） */
+  if (vParams){
+    const before = s0.v.slice(0, -1).reduce((a,b)=>a+b,0);
+    const vp = vParams[vParams.length-1];
+    mkDrag(Hx, x0 + w/2, y0 - h, "ns-resize", ev => {
+      state.p[vp] = +clamp(pxV(ev) - before, 0.5, MAXH - before).toFixed(2);
+      syncSpecial(); render(); refreshParamVals();
+    });
+  }
+
+  buildDeriv(cellsMeta);
+  buildConserve(cellsMeta, W, H);
+}
+function pxU(ev){ const pt = svgCoords(ev); return (pt.x - O.x) / curSC; }
+function pxV(ev){ const pt = svgCoords(ev); return (O.y - pt.y) / curSC; }
+let curSC = 50;
+const _render = render;
+render = function(){
+  const s0 = segs();
+  const W = s0.h.reduce((a,b)=>a+b,0), H = s0.v.reduce((a,b)=>a+b,0);
+  curSC = Math.min(64, AVAIL_W / W, AVAIL_H / H);
+  _render();
+};
+function svgCoords(ev){ const p = svg.createSVGPoint(); p.x = ev.clientX; p.y = ev.clientY; return p.matrixTransform(svg.getScreenCTM().inverse()); }
+function mkDrag(parent, hx, hy, cursor, onMove){
+  const h = el("circle", { cx: hx, cy: hy, r: 7.5, class: "handle" }, parent);
+  h.style.cursor = cursor;
+  h.addEventListener("pointerdown", e => {
+    e.preventDefault();
+    svg.setPointerCapture(e.pointerId);
+    const mv = ev => onMove(ev);
+    const up = () => { svg.removeEventListener("pointermove", mv); svg.removeEventListener("pointerup", up); };
+    svg.addEventListener("pointermove", mv);
+    svg.addEventListener("pointerup", up);
+  });
+}
+
+/* ============ 推导链（悬停联动） ============ */
+function span(txt, ks){ return `<span class="term" data-ks="${ks}">${txt}</span>`; }
+function buildDeriv(cm){
+  const { p, mode, special } = state;
+  const d = document.getElementById("deriv");
+  if (mode === 1){
+    d.innerHTML = `S = m × n<br>= ${span("mn","0")} = ${fmt(p.m)} × ${fmt(p.n)} = <b>${fmt(p.m*p.n)}</b>`;
+  } else if (mode === 2){
+    d.innerHTML = `S = a × (b + c + d)<br>= ${span("a·b","0")} + ${span("a·c","1")} + ${span("a·d","2")}<br>` +
+      `= ${fmt(p.a*p.b)} + ${fmt(p.a*p.c)} + ${fmt(p.a*p.d)} = <b>${fmt(p.a*(p.b+p.c+p.d))}</b>`;
+  } else if (special === "sq"){
+    const A = p.a, B = p.b;
+    d.innerHTML = `S = (a + b)²<br>` +
+      `= ${span("a(a+b)","0,1")} + ${span("b(a+b)","2,3")}<br>` +
+      `= ${span("a²","0")} + ${span("ab","1,2")} + ${span("ba","2,1")} + ${span("b²","3")}<br>` +
+      `= a² + 2ab + b² = ${fmt(A*A)} + 2×${fmt(A*B)} + ${fmt(B*B)} = <b>${fmt((A+B)**2)}</b>` +
+      `<br><span style="font-size:12.5px;color:#92400e">💡 中间两项 ab 与 ba 是<b>同类项</b>（图中同色），合并为 2ab。</span>`;
+  } else if (special === "diff"){
+    const A = p.a, B = p.b;
+    d.innerHTML = `S = (a + b)(a − b)<br>` +
+      `= ${span("a(a−b)","0")} + ${span("b(a−b)","1")}<br>` +
+      `= a² − ab + ab − b² = a² − b² = ${fmt(A*A)} − ${fmt(B*B)} = <b>${fmt(A*A - B*B)}</b>` +
+      `<br><span style="font-size:12.5px;color:#92400e">💡 中间 −ab 与 ab 抵消 → 平方差公式（虚线框：a×a 挖去 b×b）。</span>`;
+  } else {
+    d.innerHTML = `S = (a + b)(c + d)<br>` +
+      `= ${span("a(c+d)","0,1")} + ${span("b(c+d)","2,3")}<br>` +
+      `= ${span("ac","0")} + ${span("ad","1")} + ${span("bc","2")} + ${span("bd","3")}<br>` +
+      `= ${fmt(p.a*p.c)} + ${fmt(p.a*p.d)} + ${fmt(p.b*p.c)} + ${fmt(p.b*p.d)} = <b>${fmt((p.a+p.b)*(p.c+p.d))}</b>`;
+  }
+  /* 悬停联动 */
+  d.querySelectorAll(".term").forEach(t => {
+    const ks = t.dataset.ks.split(",").map(Number);
+    t.addEventListener("mouseenter", () => cells.forEach(c => c.rect.classList.toggle("hl", ks.includes(c.k))));
+    t.addEventListener("mouseleave", () => cells.forEach(c => c.rect.classList.remove("hl")));
+  });
+  cells.forEach(c => {
+    c.rect.addEventListener("mouseenter", () => d.querySelectorAll(".term").forEach(t => {
+      const ks = t.dataset.ks.split(",").map(Number);
+      t.classList.toggle("hl", ks.includes(c.k));
+    }));
+    c.rect.addEventListener("mouseleave", () => d.querySelectorAll(".term").forEach(t => t.classList.remove("hl")));
+  });
+}
+function buildConserve(cm, W, H){
+  const box = document.getElementById("conserve");
+  let html = `<span class="chip total">整体 ${fmt(W*H)}</span> = `;
+  html += cm.map(c => `<span class="chip" style="background:${c.color}">${c.term} = ${fmt(c.val)}</span>`).join(" <b>+</b> ");
+  html += ` = <b style="color:#b91c1c">${fmt(cm.reduce((s,c)=>s+c.val,0))}</b> ✔ 恒成立`;
+  box.innerHTML = html;
+}
+
+/* ============ 参数面板（滑块 + 数字输入，双向） ============ */
+function paramDefs(){
+  const m = state.mode, sp = state.special;
+  if (m === 1) return [["m","<span class='pvar'>m</span>（长）",1,8,.5],["n","<span class='pvar'>n</span>（宽）",1,8,.5]];
+  if (m === 2) return [["a","<span class='pvar'>a</span>（高）",.5,6,.5],["b","<span class='pvar'>b</span>",.5,4,.5],["c","<span class='pvar'>c</span>",.5,4,.5],["d","<span class='pvar'>d</span>",.5,4,.5]];
+  if (sp === "sq")   return [["a","<span class='pvar'>a</span>",.5,5,.5],["b","<span class='pvar'>b</span>",.5,5,.5]];
+  if (sp === "diff") return [["a","<span class='pvar'>a</span>",1,6,.5],["b","<span class='pvar'>b</span>（a−b≥0.5）",.5,5,.5]];
+  return [["a","<span class='pvar'>a</span>",.5,5,.5],["b","<span class='pvar'>b</span>",.5,5,.5],["c","<span class='pvar'>c</span>",.5,5,.5],["d","<span class='pvar'>d</span>",.5,5,.5]];
+}
+function buildParams(){
+  const box = document.getElementById("paramBox");
+  box.innerHTML = "";
+  paramDefs().forEach(([key, label, min, max, step]) => {
+    const row = document.createElement("div"); row.className = "prow";
+    row.innerHTML = `<label>${label}</label><input type="range" data-k="${key}" min="${min}" max="${max}" step="${step}" value="${state.p[key]}">
+      <input type="number" data-k="${key}" min="${min}" max="${max}" step="${step}" value="${state.p[key]}">`;
+    box.appendChild(row);
+  });
+  box.querySelectorAll("input").forEach(inp => inp.addEventListener("input", e => {
+    let v = clamp(parseFloat(e.target.value) || min, +e.target.min, +e.target.max);
+    state.p[e.target.dataset.k] = +v.toFixed(2);
+    syncSpecial();
+    box.querySelectorAll(`input[data-k="${e.target.dataset.k}"]`).forEach(i2 => { if (i2 !== e.target) i2.value = state.p[e.target.dataset.k]; });
+    render();
+  }));
+  const note = document.getElementById("specialNote");
+  if (state.mode === 3 && state.special === "diff"){
+    note.style.display = "block";
+    note.innerHTML = `此时高 = <b>a − b</b> = ${fmt(Math.max(0.5, state.p.a - state.p.b))}（随 a、b 自动更新）`;
+  } else if (state.mode === 3 && state.special === "sq"){
+    note.style.display = "block";
+    note.innerHTML = `此时 c = a、d = b（正方形），边长随 a、b 自动更新`;
+  } else note.style.display = "none";
+}
+function refreshParamVals(){
+  document.querySelectorAll("#paramBox input").forEach(inp => inp.value = state.p[inp.dataset.k]);
+  const note = document.getElementById("specialNote");
+  if (state.mode === 3 && state.special === "diff")
+    note.innerHTML = `此时高 = <b>a − b</b> = ${fmt(Math.max(0.5, state.p.a - state.p.b))}（随 a、b 自动更新）`;
+}
+function syncSpecial(){
+  if (state.mode !== 3 || !state.special) return;
+  if (state.special === "sq"){ state.p.c = state.p.a; state.p.d = state.p.b; }
+  if (state.special === "diff"){ state.p.c = Math.max(0.5, state.p.a - state.p.b); state.p.d = 0; }
+}
+
+/* ============ 事件绑定 ============ */
+document.querySelectorAll(".mbtn").forEach(b => b.addEventListener("click", () => {
+  document.querySelectorAll(".mbtn").forEach(x => x.classList.remove("active"));
+  b.classList.add("active");
+  state.mode = +b.dataset.m; state.special = null;
+  document.getElementById("specialSec").style.display = state.mode === 3 ? "" : "none";
+  buildParams(); render();
+}));
+document.getElementById("btnReset").addEventListener("click", () => {
+  state.p = { a: 3, b: 2, c: 2, d: 1, m: 4, n: 3 };
+  state.special = null; state.mode = 3;
+  document.querySelectorAll(".mbtn").forEach((x, i) => x.classList.toggle("active", i === 2));
+  document.getElementById("specialSec").style.display = "";
+  buildParams(); render();
+});
+document.getElementById("btnSq").addEventListener("click", () => {
+  state.special = "sq"; state.p.c = state.p.a; state.p.d = state.p.b;
+  setSpecialBtn(true, false); buildParams(); render();
+});
+document.getElementById("btnDiff").addEventListener("click", () => {
+  state.special = "diff"; state.p.c = Math.max(.5, state.p.a - state.p.b);
+  setSpecialBtn(false, true); buildParams(); render();
+});
+document.getElementById("btnNorm").addEventListener("click", () => {
+  state.special = null; setSpecialBtn(false, false); buildParams(); render();
+});
+function setSpecialBtn(sq, diff){
+  document.getElementById("btnSq").classList.toggle("on", sq);
+  document.getElementById("btnDiff").classList.toggle("on", diff);
+}
+[["tgDim","dim"],["tgArea","area"],["tgSplit","split"],["tgAlg","alg"]].forEach(([id, key]) => {
+  document.getElementById(id).addEventListener("change", e => { state.show[key] = e.target.checked; render(); });
+});
+
+buildParams();
+render();
+</script>
+</body>
+</html>

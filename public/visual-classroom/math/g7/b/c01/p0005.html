@@ -1,0 +1,1647 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>相交线 · 3D 课堂演示</title>
+<style>
+  :root{
+    --ink:#1B2436;
+    --ink2:#566376;
+    --ink3:#94A3B8;
+    --line:#E6EBF4;
+    --brand:#4361EE;
+    --orange:#F2715C;
+    --teal:#18A79A;
+    --purple:#7E6BF2;
+    --amber:#E5A03A;
+    --card:rgba(255,255,255,.94);
+    --shadow:0 1px 2px rgba(28,37,50,.05), 0 14px 30px rgba(28,37,50,.07);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  html,body{height:100%}
+  body{
+    font-family:"PingFang SC","Microsoft YaHei","Hiragino Sans GB",system-ui,-apple-system,"Segoe UI",sans-serif;
+    color:var(--ink);background:#F5F7FB;overflow:hidden;-webkit-font-smoothing:antialiased;
+  }
+  #app{height:100vh;display:grid;grid-template-columns:1fr 362px;grid-template-rows:auto 1fr}
+
+  header.topbar{
+    grid-column:1/-1;display:flex;align-items:center;justify-content:space-between;gap:20px;
+    padding:11px 22px;background:rgba(255,255,255,.92);
+    border-bottom:1px solid var(--line);backdrop-filter:blur(14px);z-index:6;
+  }
+  .brand{display:flex;align-items:center;gap:12px;min-width:0}
+  .logo{
+    width:38px;height:38px;border-radius:12px;flex:none;
+    background:linear-gradient(140deg,#4E63F0,#7C5CF5);color:#fff;
+    display:flex;align-items:center;justify-content:center;font-size:20px;font-weight:700;
+    box-shadow:0 6px 16px rgba(90,107,240,.28);
+  }
+  .brand h1{font-size:16.5px;font-weight:700;letter-spacing:.3px;white-space:nowrap}
+  .brand p{font-size:11.5px;color:var(--ink3);margin-top:2px;letter-spacing:.4px;white-space:nowrap}
+  .tabs{display:flex;gap:4px;background:#EFF3FA;border:1px solid #E6EBF4;padding:4px;border-radius:12px}
+  .tabs button{
+    border:0;background:transparent;color:var(--ink2);font-size:13px;font-weight:600;
+    padding:8px 15px;border-radius:9px;cursor:pointer;transition:.22s;font-family:inherit;white-space:nowrap;
+  }
+  .tabs button:hover{color:var(--ink);background:rgba(255,255,255,.7)}
+  .tabs button.on{background:#fff;color:var(--brand);box-shadow:0 2px 8px rgba(76,90,232,.16)}
+
+  main#stage{position:relative;overflow:hidden;background:radial-gradient(120% 100% at 45% -12%,#FFFFFF 0%,#FAFBFE 42%,#E7ECF6 100%)}
+  #host{position:absolute;inset:0;z-index:1}
+  #host canvas{display:block;width:100%;height:100%;touch-action:none}
+  .overlay{position:absolute;z-index:3;pointer-events:none}
+  .hint{
+    left:20px;bottom:16px;font-size:12px;color:#8B98AC;letter-spacing:.3px;
+    background:rgba(255,255,255,.8);padding:7px 13px;border-radius:20px;border:1px solid rgba(255,255,255,.9);
+  }
+  .legend{
+    left:18px;top:16px;display:flex;flex-direction:column;gap:7px;
+    background:rgba(255,255,255,.86);border:1px solid rgba(255,255,255,.95);border-radius:14px;
+    padding:11px 14px;box-shadow:0 8px 22px rgba(28,37,50,.08);backdrop-filter:blur(10px);max-width:330px;
+  }
+  .legend .li{display:flex;align-items:center;gap:8px;font-size:12px;color:var(--ink2);font-weight:600;line-height:1.5}
+  .legend .sw{width:13px;height:13px;border-radius:4px;flex:none;border:1.5px solid rgba(255,255,255,.9);box-shadow:0 1px 3px rgba(0,0,0,.08)}
+  .legend .drag{color:var(--brand)}
+  .tools{right:18px;top:16px;display:flex;gap:8px;pointer-events:auto}
+  .tool{
+    font-family:inherit;font-size:12.5px;font-weight:600;color:var(--ink2);
+    background:rgba(255,255,255,.88);border:1px solid #E6EBF4;border-radius:10px;
+    padding:7px 13px;cursor:pointer;transition:.2s;backdrop-filter:blur(8px);
+  }
+  .tool:hover{color:var(--brand);border-color:#C9D5FB;transform:translateY(-1px)}
+  .tool.on{color:#fff;background:linear-gradient(140deg,#4E63F0,#7E6BF2);border-color:transparent;box-shadow:0 6px 16px rgba(90,107,240,.3)}
+
+  aside.panel{
+    background:linear-gradient(180deg,#FDFEFF,#F1F4FB);border-left:1px solid var(--line);
+    padding:16px 16px 26px;overflow-y:auto;display:flex;flex-direction:column;gap:12px;
+  }
+  aside.panel::-webkit-scrollbar{width:8px}
+  aside.panel::-webkit-scrollbar-thumb{background:#D7DEEA;border-radius:8px}
+  .card{
+    background:var(--card);border:1px solid rgba(255,255,255,.95);border-radius:16px;
+    padding:14px 15px;box-shadow:var(--shadow);
+  }
+  .card h3{font-size:13px;font-weight:700;color:var(--ink);letter-spacing:.4px;margin-bottom:11px;display:flex;align-items:center;gap:7px}
+  .card h3::before{content:"";width:3px;height:13px;border-radius:3px;background:linear-gradient(#4E63F0,#7C5CF5)}
+  .card h3 .sub{font-size:11px;color:var(--ink3);font-weight:500;margin-left:auto;letter-spacing:0}
+  .card h4{font-size:12px;font-weight:700;color:var(--ink2);margin:12px 0 7px;display:flex;align-items:center;gap:6px}
+  .card h4:first-of-type{margin-top:0}
+  .card h4 .sw{width:10px;height:10px;border-radius:3px}
+  .card h4 .h4tag{margin-left:auto;font-size:10.5px;font-weight:600;color:#94A3B8;letter-spacing:.2px}
+  .seg{display:flex;gap:4px;background:#EFF3FA;border-radius:11px;padding:4px;margin-bottom:12px}
+  .seg button{
+    flex:1;border:0;background:transparent;font-family:inherit;font-size:12px;font-weight:600;
+    color:var(--ink2);padding:8px 2px;border-radius:8px;cursor:pointer;transition:.2s;white-space:nowrap;
+  }
+  .seg button.on{background:#fff;color:var(--brand);box-shadow:0 2px 8px rgba(76,90,232,.15)}
+  .field{margin-bottom:11px}
+  .field:last-child{margin-bottom:0}
+  .field label{display:flex;align-items:baseline;justify-content:space-between;font-size:12px;color:var(--ink2);font-weight:600;margin-bottom:7px}
+  .field label b{font-size:13px;color:var(--brand);font-variant-numeric:tabular-nums}
+  input[type=range]{
+    -webkit-appearance:none;width:100%;height:5px;border-radius:5px;background:#DFE6F2;outline:none;cursor:pointer;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:17px;height:17px;border-radius:50%;background:#fff;
+    border:3.5px solid var(--brand);box-shadow:0 2px 6px rgba(76,90,232,.3);transition:.15s;
+  }
+  input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.12)}
+  .btn{
+    width:100%;font-family:inherit;font-size:12.5px;font-weight:600;cursor:pointer;
+    border-radius:10px;padding:9px 12px;transition:.2s;border:1px solid transparent;
+    background:linear-gradient(140deg,#4E63F0,#7E6BF2);color:#fff;box-shadow:0 6px 14px rgba(90,107,240,.22);
+  }
+  .btn:hover{transform:translateY(-1px);box-shadow:0 9px 20px rgba(90,107,240,.28)}
+  .btn.ghost{background:#fff;color:var(--ink2);border-color:#E6EBF4;box-shadow:none}
+  .btn.ghost:hover{color:var(--brand);border-color:#C9D5FB;box-shadow:0 4px 12px rgba(76,90,232,.12);transform:none}
+  .btn.on{background:linear-gradient(140deg,#18A79A,#0E8F82);box-shadow:0 6px 14px rgba(18,165,148,.24)}
+  .kv{display:flex;align-items:center;justify-content:space-between;padding:7px 0;border-bottom:1px dashed #E7ECF5;font-size:12.5px;color:var(--ink2)}
+  .kv:last-child{border-bottom:0}
+  .kv b{font-size:14.5px;font-variant-numeric:tabular-nums;color:var(--ink);letter-spacing:.2px}
+  .kv .dotc{width:9px;height:9px;border-radius:50%;display:inline-block;margin-right:7px;vertical-align:1px}
+  .rule{
+    font-size:12.5px;line-height:1.85;color:var(--ink);background:linear-gradient(135deg,#EEF3FE,#F3F1FE);
+    border:1px solid #E2E9FD;border-radius:11px;padding:10px 13px;font-weight:600;
+  }
+  .rule .hi{color:var(--brand)}
+  .rule.second{background:linear-gradient(135deg,#EDF9F6,#F1FBF7);border-color:#D7F0E9}
+  .rule.second .hi{color:#0E8F82}
+  .note p{font-size:12px;line-height:1.8;color:var(--ink2)}
+  .note p b{color:var(--ink)}
+  .tip{font-size:11.5px;color:#8B98AC;line-height:1.7;margin-top:9px;background:#F4F7FD;border-radius:9px;padding:8px 11px}
+  .tip b{color:var(--brand)}
+
+  .q{font-size:13.5px;line-height:1.75;font-weight:600;color:var(--ink);margin-bottom:12px}
+  .opts{display:flex;flex-direction:column;gap:7px}
+  .opt{
+    text-align:left;font-family:inherit;font-size:13px;font-weight:600;color:var(--ink2);
+    background:#F5F8FD;border:1.5px solid #E7ECF5;border-radius:11px;padding:10px 13px;cursor:pointer;transition:.18s;
+  }
+  .opt:hover{border-color:#C9D5FB;background:#fff;color:var(--brand)}
+  .opt.right{background:#E9F8F4;border-color:#8FD5C8;color:#0A7A6C}
+  .opt.wrong{background:#FCEDEF;border-color:#F2B3BD;color:#B63348}
+  .opt:disabled{cursor:default}
+  .explain{font-size:12px;line-height:1.8;color:var(--ink2);background:#F7F6FD;border-left:3px solid var(--brand);border-radius:8px;padding:9px 12px;margin-top:11px;display:none}
+  .score{display:flex;align-items:center;justify-content:space-between;font-size:12px;color:var(--ink2);margin-bottom:11px;font-weight:600}
+  .score b{font-size:17px;color:var(--brand)}
+  .bar{height:5px;background:#E7ECF5;border-radius:5px;overflow:hidden;margin-top:4px}
+  .bar i{display:block;height:100%;background:linear-gradient(90deg,#4E63F0,#7C5CF5);transition:width .3s}
+
+  /* 三种关系的形状卡片 */
+  .fzu{display:grid;grid-template-columns:repeat(3,1fr);gap:8px}
+  .fzu .tile{
+    border:1.5px solid #E7ECF5;border-radius:12px;padding:7px 6px 8px;background:#FAFCFF;
+    text-align:center;transition:.22s;cursor:pointer;
+  }
+  .fzu .tile svg{display:block;width:100%;height:auto}
+  .fzu .tile span{display:block;font-size:11.5px;font-weight:700;color:var(--ink2);margin-top:3px;letter-spacing:.2px}
+  .fzu .tile em{display:block;font-style:normal;font-size:10px;color:var(--ink3);margin-top:1px;line-height:1.4}
+  .fzu .tile.on{background:#fff;box-shadow:0 4px 14px rgba(28,37,50,.1);transform:translateY(-1px)}
+
+  #boot{position:fixed;inset:0;display:none;align-items:center;justify-content:center;background:#F5F7FB;z-index:99;text-align:center;padding:30px}
+  #boot.show{display:flex}
+  #boot div{max-width:420px}
+  #boot h2{font-size:17px;margin-bottom:10px}
+  #boot p{font-size:13px;color:var(--ink2);line-height:1.9}
+
+  @media (max-width:1080px){
+    #app{grid-template-columns:1fr;grid-template-rows:auto 1fr auto}
+    aside.panel{border-left:0;border-top:1px solid var(--line);max-height:44vh;flex-direction:row;flex-wrap:wrap}
+    .card{flex:1 1 260px}
+    .tabs button{padding:7px 10px;font-size:12px}
+    .legend{display:none}
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <header class="topbar">
+    <div class="brand">
+      <div class="logo">∠</div>
+      <div>
+        <h1>相交线 · 3D 课堂演示</h1>
+        <p>七年级下册 · 第七章 相交线与平行线</p>
+      </div>
+    </div>
+    <nav class="tabs" id="tabs">
+      <button data-mod="m1" class="on">对顶角与邻补角</button>
+      <button data-mod="m2">垂线与距离</button>
+      <button data-mod="m3">三线八角</button>
+      <button data-mod="m4">课堂练习</button>
+    </nav>
+  </header>
+
+  <main id="stage">
+    <div id="host"></div>
+    <div class="overlay legend" id="legend"></div>
+    <div class="overlay hint">拖动旋转 · 滚轮缩放 · 双击复位</div>
+    <div class="overlay tools">
+      <button class="tool" id="btn-rotate">自动旋转</button>
+      <button class="tool" id="btn-reset">复位视角</button>
+      <button class="tool" id="btn-full">全屏</button>
+    </div>
+  </main>
+
+  <aside class="panel" id="panel"></aside>
+</div>
+
+<div id="boot"><div>
+  <h2>3D 引擎加载失败</h2>
+  <p>本页面需要联网加载 Three.js 图形库。<br>请检查网络后刷新页面；若在无网络的教室环境，可提前联网打开一次以缓存资源。</p>
+</div></div>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://cdn.jsdelivr.net/npm/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script>
+  window.__booted = false;
+  setTimeout(function(){ if(!window.__booted) document.getElementById('boot').classList.add('show'); }, 6000);
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+
+/* ==================== 基础 ==================== */
+const D2R = Math.PI / 180, R2D = 180 / Math.PI;
+const V = (x, y, z) => new THREE.Vector3(x, y, z);
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const C = {
+  line: 0x3E6BC8, line2: 0x8B7BE0, ink: 0x2C3E6B,
+  orange: 0xF2715C, teal: 0x2BAF9F, purple: 0x7E6BF2,
+  amber: 0xE5A03A, green: 0x1EA982, grey: 0xB7C3D4, accent: 0x4361EE
+};
+const COLOR_HEX = { orange: '#F2715C', teal: '#18A79A', purple: '#7E6BF2', amber: '#E5A03A', green: '#1EA982' };
+
+const host = document.getElementById('host');
+const panel = document.getElementById('panel');
+const legendEl = document.getElementById('legend');
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.setClearColor(0x000000, 0);
+renderer.shadowMap.enabled = false;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+host.appendChild(renderer.domElement);
+
+const scene = new THREE.Scene();
+scene.fog = new THREE.Fog(0xF2F0EA, 24, 50);
+
+const camera = new THREE.PerspectiveCamera(38, 1, 0.1, 400);
+camera.position.set(0, 0.6, 12.5);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.enableDamping = true;
+controls.dampingFactor = 0.075;
+controls.enablePan = false;
+controls.minDistance = 6.5;
+controls.maxDistance = 26;
+controls.minPolarAngle = 0.5;
+controls.maxPolarAngle = 1.545;
+controls.autoRotate = false;
+controls.autoRotateSpeed = 0.38;
+controls.target.set(0, 0, 0);
+
+scene.add(new THREE.HemisphereLight(0xffffff, 0xc7c2b6, 1.4));
+const key = new THREE.DirectionalLight(0xffffff, 1.75);
+key.position.set(7, 15, 9);
+key.castShadow = true;
+key.shadow.mapSize.set(2048, 2048);
+key.shadow.camera.left = -11; key.shadow.camera.right = 11;
+key.shadow.camera.top = 11;   key.shadow.camera.bottom = -11;
+key.shadow.camera.near = 1;   key.shadow.camera.far = 45;
+key.shadow.bias = -0.0009;
+key.shadow.radius = 3;
+key.shadow.camera.updateProjectionMatrix();
+scene.add(key);
+const fill = new THREE.DirectionalLight(0xE8EEFF, 0.7);
+fill.position.set(-9, 7, -7);
+scene.add(fill);
+
+/* 渐隐细网格（正中清晰，边缘淡出） */
+function makeGridTexture() {
+  const S = 1024, cv = document.createElement('canvas');
+  cv.width = cv.height = S;
+  const g2 = cv.getContext('2d');
+  const N = 24;
+  g2.strokeStyle = 'rgba(92,110,136,.26)';
+  g2.lineWidth = 1.7;
+  for (let i = 0; i <= N; i++) {
+    const p = Math.round(i * S / N) + 0.5;
+    g2.beginPath(); g2.moveTo(p, 0); g2.lineTo(p, S); g2.stroke();
+    g2.beginPath(); g2.moveTo(0, p); g2.lineTo(S, p); g2.stroke();
+  }
+  g2.globalCompositeOperation = 'destination-in';
+  const rg = g2.createRadialGradient(S / 2, S / 2, 0, S / 2, S / 2, S * 0.52);
+  rg.addColorStop(0, 'rgba(0,0,0,.95)');
+  rg.addColorStop(0.5, 'rgba(0,0,0,.55)');
+  rg.addColorStop(1, 'rgba(0,0,0,0)');
+  g2.fillStyle = rg;
+  g2.fillRect(0, 0, S, S);
+  const tex = new THREE.CanvasTexture(cv);
+  tex.colorSpace = THREE.SRGBColorSpace;
+  tex.anisotropy = 4;
+  return tex;
+}
+/* 渐隐细网格：改成竖直立在图形背后的“背景纸” */
+const gridPlane = new THREE.Mesh(
+  new THREE.PlaneGeometry(30, 30),
+  new THREE.MeshBasicMaterial({ map: makeGridTexture(), transparent: true, depthWrite: false, opacity: 0.5 })
+);
+gridPlane.position.set(0, 0.4, -1.8);
+scene.add(gridPlane);
+
+/* ==================== 通用工具 ==================== */
+const world = new THREE.Group();
+// 把原本平铺在 xz 平面（桌面）上的图形整体立起来，正对屏幕 —— 平视能看到完整图形
+world.rotation.x = -Math.PI / 2;
+scene.add(world);
+
+let clickables = [];
+let handles = [];
+let anims = [];
+let frameHook = null;
+
+function std(color, extra) {
+  return new THREE.MeshStandardMaterial(Object.assign({ color, roughness: 0.45, metalness: 0.05 }, extra || {}));
+}
+function basic(color, extra) {
+  return new THREE.MeshBasicMaterial(Object.assign({ color }, extra || {}));
+}
+
+function segment(a, b, o) {
+  o = o || {};
+  const r = o.r !== undefined ? o.r : 0.05;
+  const color = o.color !== undefined ? o.color : C.line;
+  const dir = new THREE.Vector3().subVectors(b, a);
+  const len = dir.length();
+  if (len < 1e-6) return new THREE.Group();
+  const geo = new THREE.CylinderGeometry(r, r, len, 18, 1);
+  const m = new THREE.Mesh(geo, std(color, o.opacity !== undefined ? { transparent: true, opacity: o.opacity } : null));
+  m.position.copy(a).add(b).multiplyScalar(0.5);
+  m.quaternion.setFromUnitVectors(V(0, 1, 0), dir.normalize());
+  m.castShadow = o.shadow !== false;
+  return m;
+}
+
+function dot(p, o) {
+  o = o || {};
+  const m = new THREE.Mesh(new THREE.SphereGeometry(o.r || 0.085, 20, 16), std(o.color !== undefined ? o.color : C.accent, { roughness: 0.35 }));
+  m.position.copy(p);
+  m.castShadow = true;
+  return m;
+}
+
+/* 可拖拽手柄（不可见但可被射线拾取） */
+function makeHandle(parent, r, onDrag) {
+  const m = new THREE.Mesh(
+    new THREE.SphereGeometry(r || 0.36, 14, 12),
+    new THREE.MeshBasicMaterial({ transparent: true, opacity: 0, depthWrite: false, depthTest: false })
+  );
+  m.userData.onDrag = onDrag;
+  m.renderOrder = 5;
+  parent.add(m);
+  handles.push(m);
+  return m;
+}
+
+function roundRect(ctx, x, y, w, h, r) {
+  r = Math.min(r, w / 2, h / 2);
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.lineTo(x + w - r, y); ctx.quadraticCurveTo(x + w, y, x + w, y + r);
+  ctx.lineTo(x + w, y + h - r); ctx.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+  ctx.lineTo(x + r, y + h); ctx.quadraticCurveTo(x, y + h, x, y + h - r);
+  ctx.lineTo(x, y + r); ctx.quadraticCurveTo(x, y, x + r, y);
+  ctx.closePath();
+}
+
+class Label {
+  constructor(text, opts) {
+    opts = opts || {};
+    this.o = {
+      color: opts.color || '#1B2436',
+      bg: opts.bg === undefined ? 'rgba(255,255,255,.95)' : opts.bg,
+      size: opts.size || 0.72,
+      fs: opts.fs || 64,
+      weight: opts.weight || 700,
+      border: opts.border || 'rgba(228,223,213,.95)',
+      tall: !!opts.tall,
+      w: opts.w || 720
+    };
+    this.cv = document.createElement('canvas');
+    this.cv.width = this.o.w;
+    this.cv.height = this.o.tall ? 300 : 170;
+    this.ctx = this.cv.getContext('2d');
+    this.tex = new THREE.CanvasTexture(this.cv);
+    this.tex.colorSpace = THREE.SRGBColorSpace;
+    this.tex.anisotropy = 4;
+    this.tex.minFilter = THREE.LinearFilter;
+    this.mat = new THREE.SpriteMaterial({
+      map: this.tex, transparent: true, depthTest: false, depthWrite: false, fog: false
+    });
+    this.sprite = new THREE.Sprite(this.mat);
+    this.sprite.renderOrder = 30;
+    this.sprite.scale.set(this.o.size * this.cv.width / this.cv.height, this.o.size, 1);
+    this.text = null;
+    this.set(text === undefined ? '' : text);
+  }
+  set(t, sub, sub2) {
+    const lines = [];
+    if (t) lines.push(t);
+    if (sub) lines.push(sub);
+    if (sub2) lines.push(sub2);
+    const key = lines.join('\u0001');
+    if (key === this.text) return this;
+    this.text = key;
+    const { color, bg, fs, weight, border, tall } = this.o;
+    const ctx = this.ctx, W = this.cv.width, H = this.cv.height;
+    ctx.clearRect(0, 0, W, H);
+    if (!lines.length) { this.sprite.visible = false; return this; }
+    this.sprite.visible = true;
+    const mkFont = s => weight + ' ' + s + 'px "PingFang SC","Microsoft YaHei",sans-serif';
+    const n = lines.length;
+    const sizes = [fs, Math.round(fs * 0.6), Math.round(fs * 0.54)].slice(0, n);
+    const maxW = W - 56;
+    let widths = lines.map((s2, i) => { ctx.font = mkFont(sizes[i]); return ctx.measureText(s2).width; });
+    const widest = Math.max.apply(null, widths.concat([1]));
+    if (widest > maxW) {
+      const k = maxW / widest;
+      for (let i = 0; i < n; i++) sizes[i] = Math.max(i === 0 ? 22 : 15, Math.floor(sizes[i] * k));
+      widths = lines.map((s2, i) => { ctx.font = mkFont(sizes[i]); return ctx.measureText(s2).width; });
+    }
+    const gap = tall ? 12 : 8;
+    const total = sizes.reduce((a, b) => a + b, 0) + gap * (n - 1);
+    let acc = (H - total) / 2;
+    const centers = sizes.map(s2 => { const c = acc + s2 / 2; acc += s2 + gap; return c; });
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    if (bg) {
+      const pw = Math.max.apply(null, widths.concat([1])) + (tall ? 46 : 40);
+      const ph = total + (tall ? 34 : 30);
+      roundRect(ctx, (W - pw) / 2, (H - ph) / 2, pw, ph, ph / 2);
+      ctx.fillStyle = bg; ctx.fill();
+      ctx.lineWidth = 2.5; ctx.strokeStyle = border; ctx.stroke();
+    }
+    lines.forEach((s2, i) => {
+      ctx.font = mkFont(sizes[i]);
+      if (!bg) {
+        ctx.lineWidth = i === 0 ? 11 : 9;
+        ctx.strokeStyle = 'rgba(255,255,255,.95)';
+        ctx.strokeText(s2, W / 2, centers[i] + 2);
+      }
+      ctx.fillStyle = color;
+      ctx.globalAlpha = i === 0 ? 1 : (i === 1 ? 0.92 : 0.78);
+      ctx.fillText(s2, W / 2, centers[i] + 2);
+      ctx.globalAlpha = 1;
+    });
+    this.tex.needsUpdate = true;
+    return this;
+  }
+  pos(x, y, z) { this.sprite.position.set(x, y, z); return this; }
+  show(v) { this.sprite.visible = v; return this; }
+  restyle(o) {
+    const s = JSON.stringify(o);
+    if (s === this._st) return this;
+    this._st = s;
+    Object.assign(this.o, o);
+    this.text = null;
+    return this;
+  }
+}
+function mkLabel(t, o) { return new Label(t, o); }
+
+function sector(vertex, dirA, dirB, radius, color, opacity) {
+  const a1 = Math.atan2(dirA.z, dirA.x);
+  const a2 = Math.atan2(dirB.z, dirB.x);
+  let d = a2 - a1;
+  while (d > Math.PI) d -= Math.PI * 2;
+  while (d <= -Math.PI) d += Math.PI * 2;
+  const SEG = 64;
+  const pos = [vertex.x, vertex.y, vertex.z];
+  const idx = [];
+  for (let i = 0; i <= SEG; i++) {
+    const t = a1 + d * (i / SEG);
+    pos.push(vertex.x + Math.cos(t) * radius, vertex.y, vertex.z + Math.sin(t) * radius);
+  }
+  for (let i = 1; i <= SEG; i++) idx.push(0, i, i + 1);
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setIndex(idx);
+  const m = new THREE.Mesh(g, basic(color, { transparent: true, opacity: opacity === undefined ? 0.26 : opacity, side: THREE.DoubleSide, depthWrite: false }));
+  m.userData.a1 = a1;
+  m.userData.d = d;
+  return m;
+}
+
+function arcTube(vertex, a1, d, radius, color, r) {
+  const pts = [];
+  const SEG = 44;
+  for (let i = 0; i <= SEG; i++) {
+    const t = a1 + d * (i / SEG);
+    pts.push(new THREE.Vector3(vertex.x + Math.cos(t) * radius, vertex.y + 0.008, vertex.z + Math.sin(t) * radius));
+  }
+  const curve = new THREE.CatmullRomCurve3(pts);
+  const geo = new THREE.TubeGeometry(curve, 56, r || 0.022, 8, false);
+  return new THREE.Mesh(geo, std(color, { roughness: 0.4 }));
+}
+
+/* 环形扇面（用于同一顶点叠放多种关系） */
+function ringSector(vertex, dirA, dirB, rIn, rOut, color, opacity) {
+  const a1 = Math.atan2(dirA.z, dirA.x);
+  const a2 = Math.atan2(dirB.z, dirB.x);
+  let d = a2 - a1;
+  while (d > Math.PI) d -= Math.PI * 2;
+  while (d <= -Math.PI) d += Math.PI * 2;
+  const SEG = 64, pos = [], idx = [];
+  for (let i = 0; i <= SEG; i++) {
+    const t = a1 + d * (i / SEG);
+    pos.push(vertex.x + Math.cos(t) * rIn, vertex.y, vertex.z + Math.sin(t) * rIn);
+    pos.push(vertex.x + Math.cos(t) * rOut, vertex.y, vertex.z + Math.sin(t) * rOut);
+  }
+  for (let i = 0; i < SEG; i++) {
+    const b = i * 2;
+    idx.push(b, b + 1, b + 2, b + 1, b + 3, b + 2);
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setIndex(idx);
+  const m = new THREE.Mesh(g, basic(color, { transparent: true, opacity: opacity === undefined ? 0.3 : opacity, side: THREE.DoubleSide, depthWrite: false }));
+  m.userData.a1 = a1;
+  m.userData.d = d;
+  return m;
+}
+
+function bisectorPos(v, dirA, dirB, r, y) {
+  const a = Math.atan2(dirA.z, dirA.x), b = Math.atan2(dirB.z, dirB.x);
+  let d = b - a;
+  while (d > Math.PI) d -= Math.PI * 2;
+  while (d <= -Math.PI) d += Math.PI * 2;
+  const t = a + d / 2;
+  return V(v.x + Math.cos(t) * r, y === undefined ? v.y : y, v.z + Math.sin(t) * r);
+}
+
+function disposeGroup(g) {
+  const kill = [];
+  g.traverse(o => { if (o !== g) kill.push(o); });
+  kill.forEach(o => {
+    if (o.geometry) o.geometry.dispose();
+    if (o.material) {
+      const ms = Array.isArray(o.material) ? o.material : [o.material];
+      ms.forEach(m => { if (m.map) m.map.dispose(); m.dispose(); });
+    }
+  });
+  while (g.children.length) g.remove(g.children[0]);
+}
+
+function cancelAnims() { anims.forEach(a => a.cancel = true); anims = []; }
+function clearWorld() {
+  cancelAnims();
+  disposeGroup(world);
+  clickables = []; handles = []; frameHook = null;
+}
+
+function tweenValue(from, to, dur, cb, done) {
+  const h = { cancel: false };
+  const t0 = performance.now();
+  (function step() {
+    if (h.cancel) return;
+    const p = Math.min(1, (performance.now() - t0) / dur);
+    const e = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+    cb(from + (to - from) * e);
+    if (p < 1) requestAnimationFrame(step);
+    else if (done) done();
+  })();
+  return h;
+}
+
+/* 线角度（0~180，用于拖动直线） */
+function lineAngleFromPointer(p) {
+  let a = Math.atan2(p.z, p.x) * R2D;
+  if (a < 0) a += 180;
+  return a;
+}
+
+/* ==================== 模块一：对顶角 + 邻补角（同屏双色） ==================== */
+const ANG_NAMES = ['∠BOD', '∠DOA', '∠AOC', '∠COB'];
+
+function buildM1() {
+  const st = { theta: 55 };
+  const L = 4.1, R = 1.35, Y = 0.02;
+
+  world.add(segment(V(-L, Y, 0), V(L, Y, 0), { r: 0.055, color: C.line }));
+  world.add(dot(V(-L, Y, 0), { r: 0.07, color: C.line }));
+  world.add(dot(V(L, Y, 0), { r: 0.07, color: C.line }));
+
+  const cdg = new THREE.Group();
+  cdg.position.y = Y;
+  cdg.add(segment(V(-L, 0, 0), V(L, 0, 0), { r: 0.055, color: C.line2 }));
+  world.add(cdg);
+
+  world.add(dot(V(0, Y, 0), { r: 0.115, color: C.ink }));
+
+  const lA = mkLabel('A', { size: 0.62, bg: null, color: '#2F58AF' }).pos(-L - 0.45, 0.42, 0);
+  const lB = mkLabel('B', { size: 0.62, bg: null, color: '#2F58AF' }).pos(L + 0.45, 0.42, 0);
+  const lC = mkLabel('C', { size: 0.62, bg: null, color: '#6F5DD1' });
+  const lD = mkLabel('D', { size: 0.62, bg: null, color: '#6F5DD1' });
+  const lO = mkLabel('O', { size: 0.58, bg: null, color: '#22345C' }).pos(0, 0.72, 0);
+  cdg.add(lC.sprite, lD.sprite);
+  world.add(lA.sprite, lB.sprite, lO.sprite);
+
+  // 拖动圆环提示
+  const hC = makeHandle(cdg, 0.42, p => onDragPoint(p));
+  const hD = makeHandle(cdg, 0.42, p => onDragPoint(p));
+  const ringC = new THREE.Mesh(new THREE.RingGeometry(0.2, 0.3, 32),
+    basic(0x3a6aa6, { transparent: true, opacity: 0.32, side: THREE.DoubleSide, depthWrite: false }));
+  const ringD = ringC.clone();
+  ringC.rotation.x = -Math.PI / 2; ringD.rotation.x = -Math.PI / 2;
+  cdg.add(hC, hD, ringC, ringD);
+  hC.position.set(-L, 0, 0); hD.position.set(L, 0, 0);
+  ringC.position.set(-L, 0.012, 0); ringD.position.set(L, 0.012, 0);
+
+  // 四个角：小号度数文字（无底色），紧贴各自的弧，不再用大胶囊
+  const degLbls = [0, 1, 2, 3].map(i => {
+    const l = mkLabel('', { size: 0.58, bg: null, fs: 62, color: ['#C7553C', '#0E8F82', '#C7553C', '#0E8F82'][i] });
+    world.add(l.sprite);
+    return l;
+  });
+  // 「对顶角」每个角一个（共 2 个，标在靠观察者一侧的两个角外侧），「邻补角」只标一处
+  const vertLbls = [
+    mkLabel('对顶角', { size: 0.66, fs: 50, color: '#C7553C', bg: 'rgba(255,255,255,.97)', border: 'rgba(234,106,77,.4)' }),
+    mkLabel('对顶角', { size: 0.66, fs: 50, color: '#0E8F82', bg: 'rgba(255,255,255,.97)', border: 'rgba(18,165,148,.4)' })
+  ];
+  const adjLbl = mkLabel('邻补角', { size: 0.62, fs: 48, color: '#5B6B80', bg: 'rgba(255,255,255,.97)', border: 'rgba(223,228,236,1)' });
+  vertLbls.forEach(l => world.add(l.sprite));
+  world.add(adjLbl.sprite);
+
+  const dyn = new THREE.Group();
+  world.add(dyn);
+
+  function onDragPoint(p) {
+    const a = lineAngleFromPointer(p);
+    st.theta = clamp(a, 10, 170);
+    if (elTheta) elTheta.value = Math.round(st.theta);
+    apply(); syncPanel();
+  }
+
+  function apply() {
+    const th = st.theta * D2R;
+    cdg.rotation.y = -th;
+    const d = V(Math.cos(th), 0, Math.sin(th));
+    const nd = d.clone().negate();
+    const px = V(1, 0, 0), nx = V(-1, 0, 0);
+    const dirs = [[px, d], [d, nx], [nx, nd], [nd, px]];
+    const vals = [st.theta, 180 - st.theta, st.theta, 180 - st.theta];
+    const cols = [C.orange, C.teal, C.orange, C.teal];
+    const keys = ['orange', 'teal', 'orange', 'teal'];
+
+    lC.pos(-L - 0.5, 0.5, 0);
+    lD.pos(L + 0.5, 0.5, 0);
+
+    disposeGroup(dyn);
+    for (let i = 0; i < 4; i++) {
+      const s = sector(V(0, Y, 0), dirs[i][0], dirs[i][1], R, cols[i], 0.22);
+      dyn.add(s);
+      dyn.add(arcTube(V(0, Y, 0), s.userData.a1, s.userData.d, R, cols[i], 0.026));
+      const bp = bisectorPos(V(0, Y, 0), dirs[i][0], dirs[i][1], R - 0.28, Y + 0.3);
+      degLbls[i].set(Math.round(vals[i]) + '°').pos(bp.x, bp.y, bp.z);
+    }
+
+    // 「对顶角」标在靠观察者一侧的两个角（角1珊瑚、角2青）的外侧，各自同色
+    [0, 1].forEach((i, k) => {
+      const bp = bisectorPos(V(0, Y, 0), dirs[i][0], dirs[i][1], R + 0.72, Y + 0.5);
+      vertLbls[k].pos(bp.x, bp.y, bp.z);
+    });
+
+    // 「邻补角」只标一处：远侧公共边（射线 nd，角3与角4的公共边），浅灰弧跨过公共边
+    const aNd = Math.atan2(nd.z, nd.x);
+    dyn.add(arcTube(V(0, Y, 0), aNd - Math.PI / 4, Math.PI / 2, R + 0.4, 0xC3CCD9, 0.012));
+    adjLbl.pos(Math.cos(aNd) * (R + 0.92), Y + 0.46, Math.sin(aNd) * (R + 0.92));
+  }
+
+  panel.innerHTML = `
+    <section class="card">
+      <h3>两条直线相交<span class="sub">7.1 相交线</span></h3>
+      <div class="field">
+        <label>旋转直线 CD<b id="m1-deg">55°</b></label>
+        <input type="range" id="m1-theta" min="10" max="170" step="1" value="55">
+      </div>
+      <div class="tip">也可以直接用鼠标<b>拖动场景中的 C 点或 D 点</b>，直线会跟着转，四个角同时变化。</div>
+    </section>
+
+    <section class="card">
+      <h3>四个角</h3>
+      <div id="m1-kvs"></div>
+      <h4><span class="sw" style="background:#F2715C"></span>对顶角<span class="h4tag">相等</span></h4>
+      <div class="rule" id="m1-vert"></div>
+      <h4><span class="sw" style="background:repeating-linear-gradient(45deg,#F2715C 0 3px,#18A79A 3px 6px)"></span>邻补角<span class="h4tag">互补 · 和为 180°</span></h4>
+      <div class="rule second" id="m1-adj"></div>
+    </section>
+
+    <section class="card note">
+      <h3>结论</h3>
+      <p><b>对顶角相等</b>，<b>邻补角互补（和为 180°）</b>。<br>
+      两条直线相交，四个角的度数只由这两条直线的夹角决定：<br>
+      一组对顶角 = 夹角 θ，另一组 = 180° − θ。</p>
+    </section>
+  `;
+
+  const elTheta = panel.querySelector('#m1-theta');
+  const elDeg = panel.querySelector('#m1-deg');
+  const elKvs = panel.querySelector('#m1-kvs');
+  const elVert = panel.querySelector('#m1-vert');
+  const elAdj = panel.querySelector('#m1-adj');
+
+  function syncPanel() {
+    const v = Math.round(st.theta);
+    elDeg.textContent = v + '°';
+    const vals = [v, 180 - v, v, 180 - v];
+    const hex = ['#F2715C', '#18A79A', '#F2715C', '#18A79A'];
+    elKvs.innerHTML = vals.map((x, i) =>
+      `<div class="kv"><span><i class="dotc" style="background:${hex[i]}"></i>${ANG_NAMES[i]}</span><b>${Math.round(x)}°</b></div>`
+    ).join('');
+    elVert.innerHTML = `<span class="hi">${ANG_NAMES[0]} = ${ANG_NAMES[2]} = ${v}°</span><br>${ANG_NAMES[1]} = ${ANG_NAMES[3]} = ${180 - v}°`;
+    elAdj.innerHTML = `<span class="hi">${ANG_NAMES[0]} + ${ANG_NAMES[1]} = ${v}° + ${180 - v}° = 180°</span><br>${ANG_NAMES[1]} + ${ANG_NAMES[2]} = 180°`;
+  }
+
+  elTheta.oninput = () => { st.theta = +elTheta.value; apply(); syncPanel(); };
+
+  apply();
+  syncPanel();
+  setOnClick(null);
+  legendEl.innerHTML = `
+    <div class="li"><span class="sw" style="background:#F2715C"></span>珊瑚色两个角：对顶角（相等）</div>
+    <div class="li"><span class="sw" style="background:#18A79A"></span>青色两个角：对顶角（相等）</div>
+    <div class="li"><span class="sw" style="background:linear-gradient(90deg,#F2715C 50%,#18A79A 50%)"></span>相邻的两个角：邻补角（互补）</div>
+    <div class="li drag">↔ 拖动 C、D 两点旋转直线</div>
+  `;
+}
+
+/* ==================== 模块二：垂线 / 垂线段最短 / 垂线唯一性 ==================== */
+function buildM2() {
+  const st = { px: 0.6, pz: 2.7, qx: 2.7, showRot: false, alpha: 60, sweeping: false, dir: 1, qAuto: false, qDir: 1 };
+  const L = 5.8, Y = 0.02;
+
+  world.add(segment(V(-L, Y, 0), V(L, Y, 0), { r: 0.06, color: C.line }));
+  world.add(dot(V(-L, Y, 0), { r: 0.065, color: C.line }));
+  world.add(dot(V(L, Y, 0), { r: 0.065, color: C.line }));
+  const lLine = mkLabel('l', { size: 0.62, bg: null, color: '#2F58AF' }).pos(L + 0.42, 0.4, 0);
+  world.add(lLine.sprite);
+
+  const dyn = new THREE.Group();
+  world.add(dyn);
+
+  const lP = mkLabel('P', { size: 0.6, bg: null, color: '#C4573A' });
+  const lH = mkLabel('H', { size: 0.6, bg: null, color: '#C4573A' });
+  const lQ = mkLabel('Q', { size: 0.6, bg: null, color: '#0E8F82' });
+  // M、N 的字母与长度合成一个标签，锚定在直线 l 的固定点上（不再单独漂浮）
+  const lM = mkLabel('', { size: 0.74, tall: true, fs: 58, color: '#5F7288', bg: 'rgba(255,255,255,.96)', border: 'rgba(216,226,238,1)' });
+  const lN = mkLabel('', { size: 0.74, tall: true, fs: 58, color: '#5F7288', bg: 'rgba(255,255,255,.96)', border: 'rgba(216,226,238,1)' });
+  const lPH = mkLabel('', { size: 0.56, color: '#C4573A' });
+  const lPQ = mkLabel('', { size: 0.56, color: '#0E8F82' });
+  const lAl = mkLabel('', { size: 0.58, color: '#5B45D6' });
+  const lUniq = mkLabel('', { size: 0.55, color: '#0E8F82' });
+  world.add(lP.sprite, lH.sprite, lQ.sprite, lM.sprite, lN.sprite, lPH.sprite, lPQ.sprite, lAl.sprite, lUniq.sprite);
+
+  const ringP = new THREE.Mesh(new THREE.RingGeometry(0.19, 0.27, 32),
+    basic(C.orange, { transparent: true, opacity: 0.34, side: THREE.DoubleSide, depthWrite: false }));
+  const ringQ = new THREE.Mesh(new THREE.RingGeometry(0.16, 0.24, 32),
+    basic(C.teal, { transparent: true, opacity: 0.34, side: THREE.DoubleSide, depthWrite: false }));
+  ringP.rotation.x = -Math.PI / 2; ringQ.rotation.x = -Math.PI / 2;
+  world.add(ringP, ringQ);
+
+  const hP = makeHandle(world, 0.42, p => {
+    st.px = clamp(p.x, -3.2, 3.2);
+    st.pz = clamp(Math.abs(p.z), 0.9, 3.0) * (p.z < 0 ? -1 : 1);
+    apply();
+  });
+  const hQ = makeHandle(world, 0.36, p => {
+    stopQAuto();
+    st.qx = clamp(p.x, -5.4, 5.4);
+    apply();
+  });
+
+  function apply(updatePanel) {
+    const dist = Math.abs(st.pz);
+    const sgn = st.pz < 0 ? -1 : 1;
+    const P = V(st.px, Y, st.pz), H = V(st.px, Y, 0), Q = V(st.qx, Y, 0);
+    disposeGroup(dyn);
+
+    // 直线 l 上另取两点 M、N，与 P 相连 —— 多条斜线段对比，体现垂线段最短
+    // 长度标签直接锚在 M、N 点上方（主行=长度，副行=点名），不再浮在线段中间
+    [{ x: -2.7, lbl: lM, nm: 'PM' }, { x: 3.3, lbl: lN, nm: 'PN' }].forEach(r => {
+      if (Math.abs(r.x - st.px) < 0.35) { r.lbl.show(false); return; }
+      r.lbl.show(true);
+      const Rp = V(r.x, Y, 0);
+      dyn.add(segment(Rp, P, { r: 0.026, color: 0x93A5BC, shadow: false, opacity: 0.95 }));
+      dyn.add(dot(Rp, { r: 0.075, color: 0x93A5BC }));
+      const len = Math.hypot(r.x - st.px, dist);
+      r.lbl.set(r.nm + ' = ' + len.toFixed(2), r.nm[1]).pos(r.x, Y + 0.62, -0.72);
+    });
+
+    // 垂线段 PH
+    dyn.add(segment(H, P, { r: 0.052, color: C.orange }));
+    const s = 0.3;
+    dyn.add(segment(V(st.px + s, Y, 0.02 * sgn), V(st.px + s, Y, s * sgn), { r: 0.024, color: C.orange, shadow: false }));
+    dyn.add(segment(V(st.px + s, Y, s * sgn), V(st.px, Y, s * sgn), { r: 0.024, color: C.orange, shadow: false }));
+
+    // 斜线段 PQ
+    if (Math.abs(st.qx - st.px) > 0.04) dyn.add(segment(Q, P, { r: 0.04, color: C.teal }));
+
+    // 过 P 的旋转直线
+    if (st.showRot) {
+      const a = st.alpha * D2R;
+      const e = V(Math.cos(a), 0, Math.sin(a));
+      const isPerp = Math.abs(st.alpha - 90) < 1.2;
+      const col = isPerp ? C.green : C.purple;
+      const A1 = P.clone().addScaledVector(e, -3.1);
+      const A2 = P.clone().addScaledVector(e, 3.1);
+      dyn.add(segment(A1, A2, { r: 0.034, color: col }));
+
+      if (Math.abs(e.z) > 0.05) {
+        const t0 = -P.z / e.z;
+        const X = V(P.x + t0 * Math.cos(a), Y, 0);
+        if (Math.abs(X.x) < L - 0.2) {
+          const arc = sector(X, V(1, 0, 0), e, 0.95, col, isPerp ? 0.3 : 0.16);
+          dyn.add(arc);
+          dyn.add(arcTube(X, arc.userData.a1, arc.userData.d, 0.95, col, 0.022));
+          dyn.add(dot(X, { r: 0.07, color: col }));
+          const bp = bisectorPos(X, V(1, 0, 0), e, 0.66, Y + 0.4);
+          lAl.set(st.alpha.toFixed(0) + '°').pos(bp.x, bp.y, bp.z);
+        } else {
+          lAl.set(st.alpha.toFixed(0) + '°').pos(P.x + 0.85, 1.2, P.z + 0.35);
+        }
+      } else {
+        lAl.set(st.alpha.toFixed(0) + '°').pos(P.x + 0.85, 1.2, P.z + 0.35);
+      }
+
+      if (isPerp) {
+        lUniq.set('α = 90°，与 l 垂直 —— 这样的直线只有 1 条').pos(P.x, 1.35, P.z + 0.15);
+        lUniq.show(true);
+      } else {
+        lUniq.show(false);
+      }
+    } else {
+      lAl.show(false);
+      lUniq.show(false);
+    }
+
+    dyn.add(dot(P, { r: 0.115, color: C.orange }));
+    dyn.add(dot(H, { r: 0.08, color: C.orange }));
+    dyn.add(dot(Q, { r: 0.095, color: C.teal }));
+
+    ringP.position.set(P.x, Y + 0.014, P.z);
+    ringQ.position.set(Q.x, Y + 0.014, Q.z);
+    hP.position.set(P.x, Y, P.z);
+    hQ.position.set(Q.x, Y, Q.z);
+
+    lP.pos(st.px, 0.82, st.pz + 0.5 * sgn);
+    lH.pos(st.px - 0.5, 0.42, -0.55 * sgn);
+    lQ.pos(st.qx + 0.05, 0.45, -0.42 * sgn);
+    // PH 标签贴在垂线段中点偏 Q 的反侧，高度压低
+    const side = st.qx >= st.px ? -1 : 1;
+    lPH.set('PH = ' + dist.toFixed(2)).pos(st.px + 0.98 * side, Y + 0.42, st.pz * 0.3);
+
+    const pq = Math.hypot(st.qx - st.px, dist);
+    const dxPQ = st.qx - st.px;
+    if (Math.abs(dxPQ) < 0.15) {
+      // Q 就在垂足附近：标签抬高放在 PH 上方，仍然显示长度
+      lPQ.set('PQ = ' + pq.toFixed(2) + ' ≈ PH').pos(st.px + 1.62, Y + 1.05, st.pz * 0.35);
+    } else {
+      // PQ 标签沿垂线方向外推 0.52，贴在线段中点旁而不是漂在空中
+      const len = Math.hypot(dxPQ, dist) || 1;
+      const s2 = dxPQ >= 0 ? 1 : -1;
+      lPQ.set('PQ = ' + pq.toFixed(2)).pos(
+        (st.px + st.qx) / 2 + s2 * (dist / len) * 0.52,
+        Y + 0.68,
+        st.pz * 0.52 + (Math.abs(dxPQ) / len) * 0.52
+      );
+    }
+
+    syncPanel(pq);
+  }
+
+  panel.innerHTML = `
+    <section class="card">
+      <h3>点到直线的距离<span class="sub">7.1 相交线</span></h3>
+      <div class="field">
+        <label>点 P 的位置<b id="m2-px">0.6</b></label>
+        <input type="range" id="m2-pxr" min="-3.2" max="3.2" step="0.1" value="0.6">
+      </div>
+      <div class="field">
+        <label>点 P 到直线的距离<b id="m2-pdz">2.7</b></label>
+        <input type="range" id="m2-dr" min="0.9" max="3.2" step="0.1" value="2.7">
+      </div>
+      <div class="field">
+        <label>点 Q 在直线 l 上<b id="m2-qx">2.7</b></label>
+        <input type="range" id="m2-qxr" min="-5.4" max="5.4" step="0.1" value="2.7">
+      </div>
+      <button class="btn" id="m2-snap">让 Q 移到垂足 H</button>
+      <button class="btn ghost" id="m2-qauto" style="margin-top:8px">自动演示：Q 来回滑动</button>
+      <div class="tip">也可以直接<b>拖动场景中的 P、Q 两个圆点</b>。</div>
+    </section>
+
+    <section class="card">
+      <h3>比一比：哪条最短？</h3>
+      <div id="m2-cmp"></div>
+      <div class="rule" id="m2-rule" style="margin-top:10px"></div>
+    </section>
+
+    <section class="card">
+      <h3>垂线的唯一性</h3>
+      <button class="btn ghost" id="m2-rot">演示：过点 P 的直线绕 P 旋转</button>
+      <div id="m2-rotbox" style="display:none;margin-top:12px">
+        <div class="field">
+          <label>直线与 l 的夹角 α<b id="m2-av">60°</b></label>
+          <input type="range" id="m2-ar" min="55" max="125" step="1" value="60">
+        </div>
+        <button class="btn" id="m2-sweep">自动扫描</button>
+      </div>
+      <div class="rule second" id="m2-uniq" style="margin-top:11px">过直线外一点 P，有且只有 <b>1</b> 条直线与 l 垂直（α = 90°）。</div>
+    </section>
+  `;
+
+  const ePx = panel.querySelector('#m2-pxr');
+  const eDr = panel.querySelector('#m2-dr');
+  const eQx = panel.querySelector('#m2-qxr');
+  const ePxv = panel.querySelector('#m2-px');
+  const eDrv = panel.querySelector('#m2-pdz');
+  const eQxv = panel.querySelector('#m2-qx');
+  const ePH = panel.querySelector('#m2-cmp');
+  const eCmp = ePH;
+  const eRule = panel.querySelector('#m2-rule');
+  const eRotBox = panel.querySelector('#m2-rotbox');
+  const eRot = panel.querySelector('#m2-rot');
+  const eAr = panel.querySelector('#m2-ar');
+  const eAv = panel.querySelector('#m2-av');
+  const eUniq = panel.querySelector('#m2-uniq');
+
+  function syncPanel(pq) {
+    const dist = Math.abs(st.pz);
+    if (pq === undefined) pq = Math.hypot(st.qx - st.px, dist);
+    const pm = Math.hypot(-2.7 - st.px, dist);
+    const pn = Math.hypot(3.3 - st.px, dist);
+    ePxv.textContent = st.px.toFixed(1);
+    eDrv.textContent = dist.toFixed(1);
+    eQxv.textContent = st.qx.toFixed(1);
+    eAr.value = Math.round(st.alpha);
+    eAv.textContent = Math.round(st.alpha) + '°';
+    const items = [
+      { name: '垂线段 PH', v: dist, c: '#F2715C', best: true },
+      { name: '斜线段 PQ（可拖动）', v: pq, c: '#18A79A' },
+      { name: '斜线段 PM', v: pm, c: '#8FA3BC' },
+      { name: '斜线段 PN', v: pn, c: '#8FA3BC' }
+    ].sort((a, b) => a.v - b.v);
+    eCmp.innerHTML = items.map(it =>
+      `<div class="kv"><span><i class="dotc" style="background:${it.c}"></i>${it.name}${it.best ? '<b style="color:#C7553C;font-size:10px;margin-left:6px">最短 ✓</b>' : ''}</span><b>${it.v.toFixed(2)}</b></div>`
+    ).join('');
+    eRule.innerHTML = `<span class="hi">垂线段最短</span><br>PH = ${dist.toFixed(2)}，其余连线都比它长（Q 移到 H 时相等）。`;
+
+    if (st.showRot) {
+      const isPerp = Math.abs(st.alpha - 90) < 1.2;
+      eUniq.innerHTML = isPerp
+        ? `<span class="hi">α = 90°，此时这条直线与 l 垂直</span><br>过点 P 与 l 垂直的直线<b>有且只有这 1 条</b>。`
+        : `当前 α = ${Math.round(st.alpha)}°，不是 90°，这条直线与 l <b>不垂直</b>。<br>继续转动，看看什么时候才垂直。`;
+    } else {
+      eUniq.innerHTML = `过直线外一点 P，有且只有 <b>1</b> 条直线与 l 垂直（α = 90°）。`;
+    }
+  }
+
+  const eQAuto = panel.querySelector('#m2-qauto');
+  // 手动接管（拖 Q / 滑滑块 / 移到垂足）时自动停止自动演示
+  function stopQAuto() {
+    if (!st.qAuto) return;
+    st.qAuto = false;
+    eQAuto.classList.remove('on');
+    eQAuto.textContent = '自动演示：Q 来回滑动';
+  }
+  eQAuto.onclick = () => {
+    st.qAuto = !st.qAuto;
+    eQAuto.classList.toggle('on', st.qAuto);
+    eQAuto.textContent = st.qAuto ? '暂停自动演示' : '自动演示：Q 来回滑动';
+    if (st.qAuto) st.qDir = st.qx >= st.px ? -1 : 1; // 先朝垂足方向滑
+  };
+
+  ePx.oninput = () => { st.px = +ePx.value; apply(); };
+  eDr.oninput = () => { st.pz = (st.pz < 0 ? -1 : 1) * +eDr.value; apply(); };
+  eQx.oninput = () => { stopQAuto(); st.qx = +eQx.value; apply(); };
+  panel.querySelector('#m2-snap').onclick = () => {
+    stopQAuto();
+    cancelAnims();
+    const from = st.qx, to = st.px;
+    anims.push(tweenValue(from, to, 620, v => { st.qx = v; eQx.value = v; apply(); }));
+  };
+  eRot.onclick = () => {
+    st.showRot = !st.showRot;
+    eRotBox.style.display = st.showRot ? 'block' : 'none';
+    eRot.classList.toggle('on', st.showRot);
+    eRot.textContent = st.showRot ? '收起旋转演示' : '演示：过点 P 的直线绕 P 旋转';
+    st.sweeping = false;
+    panel.querySelector('#m2-sweep').classList.remove('on');
+    panel.querySelector('#m2-sweep').textContent = '自动扫描';
+    apply();
+  };
+  eAr.oninput = () => {
+    st.sweeping = false;
+    panel.querySelector('#m2-sweep').classList.remove('on');
+    st.alpha = +eAr.value;
+    apply();
+  };
+  const eSweep = panel.querySelector('#m2-sweep');
+  eSweep.onclick = () => {
+    st.sweeping = !st.sweeping;
+    eSweep.classList.toggle('on', st.sweeping);
+    eSweep.textContent = st.sweeping ? '暂停扫描' : '自动扫描';
+  };
+
+  frameHook = dt => {
+    if (st.qAuto) {
+      st.qx += st.qDir * 1.3 * dt;
+      const lo = Math.max(-5.2, st.px - 3.8), hi = Math.min(5.2, st.px + 3.8);
+      if (st.qx >= hi) { st.qx = hi; st.qDir = -1; }
+      if (st.qx <= lo) { st.qx = lo; st.qDir = 1; }
+      eQx.value = st.qx;
+      apply();
+    }
+    if (!st.sweeping || !st.showRot) return;
+    st.alpha += st.dir * 16 * dt;
+    if (st.alpha >= 122) { st.alpha = 122; st.dir = -1; }
+    if (st.alpha <= 58) { st.alpha = 58; st.dir = 1; }
+    apply();
+  };
+
+  apply();
+  setOnClick(null);
+  legendEl.innerHTML = `
+    <div class="li"><span class="sw" style="background:#F2715C"></span>PH：垂线段（最短，即点 P 到 l 的距离）</div>
+    <div class="li"><span class="sw" style="background:#18A79A"></span>PQ：斜线段（Q 可拖动，也能自动来回滑动）</div>
+    <div class="li"><span class="sw" style="background:#7E6BF2"></span>过 P 旋转的直线（α = 90° 时才垂直）</div>
+    <div class="li drag">↔ 拖动 P、Q 圆点</div>
+  `;
+}
+
+/* ==================== 模块三：三线八角 ==================== */
+const CATS = {
+  corresponding: { name: '同位角', color: C.orange, hex: '#F2715C', L: 'F', desc: '截线同侧，位置相同' },
+  alternate:     { name: '内错角', color: C.purple, hex: '#7E6BF2', L: 'Z', desc: '截线两侧，都在两线之间' },
+  same:          { name: '同旁内角', color: C.teal,   hex: '#18A79A', L: 'U', desc: '截线同侧，都在两线之间' }
+};
+const CAT_ORDER = ['corresponding', 'alternate', 'same'];
+const R_ALL = { corresponding: 1.04, alternate: 1.40, same: 1.76 };
+
+function fzuSVG(cat) {
+  const hex = CATS[cat].hex;
+  const ln = (a, b, c, d) => `<line x1="${a}" y1="${b}" x2="${c}" y2="${d}"/>`;
+  let lines = ln(10, 18, 62, 18) + ln(10, 54, 62, 54);
+  let arcs = '';
+  if (cat === 'corresponding') {
+    lines += ln(20, 6, 20, 66);
+    arcs = `<path d="M20 18 L36 18 A16 16 0 0 1 20 34 Z" fill="${hex}" fill-opacity=".30" stroke="${hex}" stroke-opacity=".5" stroke-width="1.2"/>
+            <path d="M20 54 L36 54 A16 16 0 0 0 20 38 Z" fill="${hex}" fill-opacity=".30" stroke="${hex}" stroke-opacity=".5" stroke-width="1.2"/>`;
+  } else if (cat === 'alternate') {
+    lines += ln(62, 18, 10, 54);
+    arcs = `<path d="M62 18 L46 18 A16 16 0 0 0 62 34 Z" fill="${hex}" fill-opacity=".30" stroke="${hex}" stroke-opacity=".5" stroke-width="1.2"/>
+            <path d="M10 54 L26 54 A16 16 0 0 1 10 38 Z" fill="${hex}" fill-opacity=".30" stroke="${hex}" stroke-opacity=".5" stroke-width="1.2"/>`;
+  } else {
+    lines += ln(52, 6, 52, 66);
+    arcs = `<path d="M52 18 L36 18 A16 16 0 0 0 52 34 Z" fill="${hex}" fill-opacity=".30" stroke="${hex}" stroke-opacity=".5" stroke-width="1.2"/>
+            <path d="M52 54 L36 54 A16 16 0 0 1 52 38 Z" fill="${hex}" fill-opacity=".30" stroke="${hex}" stroke-opacity=".5" stroke-width="1.2"/>`;
+  }
+  return `<svg viewBox="0 0 72 72"><g stroke="#C9C3B8" stroke-width="2.4" stroke-linecap="round" fill="none">${lines}</g>${arcs}</svg>`;
+}
+
+function buildM3() {
+  const st = { phi: 62, mode: 'corresponding', sel: 0 };
+  const ZA = -1.75, ZB = 1.75, X = 4.5, Y = 0.02;
+
+  world.add(segment(V(-X, Y, ZA), V(X, Y, ZA), { r: 0.055, color: C.line }));
+  world.add(segment(V(-X, Y, ZB), V(X, Y, ZB), { r: 0.055, color: C.line }));
+  world.add(mkLabel('a', { size: 0.6, bg: null, color: '#2F58AF' }).pos(X + 0.4, 0.36, ZA).sprite);
+  world.add(mkLabel('b', { size: 0.6, bg: null, color: '#2F58AF' }).pos(X + 0.4, 0.36, ZB).sprite);
+
+  const cg = new THREE.Group();
+  cg.position.y = Y;
+  cg.add(segment(V(-4.9, 0, 0), V(4.9, 0, 0), { r: 0.058, color: 0x6C5AD8 }));
+  world.add(cg);
+  const lc = mkLabel('c', { size: 0.6, bg: null, color: '#5B45D6' });
+  cg.add(lc.sprite);
+  lc.pos(4.95, 0.42, 0.15);
+
+  const onDragC = p => {
+    const a = lineAngleFromPointer(p);
+    st.phi = clamp(a, 42, 138);
+    if (ePhi) ePhi.value = Math.round(st.phi);
+    apply(); syncPanel();
+  };
+  const hC1 = makeHandle(world, 0.46, onDragC);
+  const hC2 = makeHandle(world, 0.46, onDragC);
+  [hC1, hC2].forEach((h, i) => {
+    const ring = new THREE.Mesh(new THREE.RingGeometry(0.19, 0.28, 32),
+      basic(0x6C5AD8, { transparent: true, opacity: 0.4, side: THREE.DoubleSide, depthWrite: false }));
+    ring.rotation.x = -Math.PI / 2;
+    ring.userData.idx = i;
+    world.add(ring);
+    h.userData.ring = ring;
+  });
+
+  const dyn = new THREE.Group();
+  world.add(dyn);
+
+  const lA = mkLabel('A', { size: 0.55, bg: null, color: '#2F58AF' });
+  const lB = mkLabel('B', { size: 0.55, bg: null, color: '#2F58AF' });
+  const call = mkLabel('', { size: 1.15, tall: true, w: 1500 });
+  world.add(lA.sprite, lB.sprite, call.sprite);
+
+  const NMAP = { 'A': { '1,1': 1, '-1,1': 2, '-1,-1': 3, '1,-1': 4 }, 'B': { '1,1': 5, '-1,1': 6, '-1,-1': 7, '1,-1': 8 } };
+  const PAIRS = {
+    corresponding: [[1, 5], [2, 6], [3, 7], [4, 8]],
+    alternate: [[1, 7], [2, 8]],
+    same: [[1, 8], [2, 7]]
+  };
+  const KEY = [];
+  ['A', 'B'].forEach(I => {
+    [[1, 1], [-1, 1], [-1, -1], [1, -1]].forEach(k => {
+      KEY.push({ num: NMAP[I][k[0] + ',' + k[1]], I: I, uS: k[0], vS: k[1] });
+    });
+  });
+
+  const numLabels = {};
+  KEY.forEach(k => {
+    const l = mkLabel('', { size: 0.98, tall: true, fs: 64 });
+    numLabels[k.num] = l;
+    world.add(l.sprite);
+  });
+
+  function val(uS, vS, phi) {
+    const c = uS * vS * Math.cos(phi * D2R);
+    return Math.acos(Math.max(-1, Math.min(1, c))) * R2D;
+  }
+
+  function activeGroups() {
+    if (st.mode === 'all') return CAT_ORDER.map(c => ({ cat: c, pair: PAIRS[c][0], r: R_ALL[c] }));
+    const list = PAIRS[st.mode];
+    return [{ cat: st.mode, pair: list[st.sel % list.length], r: 1.0 }];
+  }
+
+  let onClick = null;
+
+  function apply() {
+    const phi = st.phi;
+    cg.rotation.y = -phi * D2R;
+    const d = V(Math.cos(phi * D2R), 0, Math.sin(phi * D2R));
+    const cot = Math.cos(phi * D2R) / Math.sin(phi * D2R);
+    const A = V(ZA * cot, Y, ZA), B = V(ZB * cot, Y, ZB);
+
+    hC1.position.set(d.x * 4.9, Y, d.z * 4.9);
+    hC2.position.set(-d.x * 4.9, Y, -d.z * 4.9);
+    hC1.userData.ring.position.set(d.x * 4.9, Y + 0.014, d.z * 4.9);
+    hC2.userData.ring.position.set(-d.x * 4.9, Y + 0.014, -d.z * 4.9);
+
+    disposeGroup(dyn);
+    clickables = clickables.filter(o => o.parent);
+    dyn.add(dot(A, { r: 0.1, color: C.ink }));
+    dyn.add(dot(B, { r: 0.1, color: C.ink }));
+    lA.pos(A.x - 0.78, 0.42, A.z - 0.66);
+    lB.pos(B.x - 0.78, 0.42, B.z + 0.72);
+
+    const groups = activeGroups();
+    const map = {};
+    groups.forEach(g => g.pair.forEach(n => { (map[n] = map[n] || []).push(g); }));
+
+    KEY.forEach(k => {
+      const O = k.I === 'A' ? A : B;
+      const dA = V(k.uS, 0, 0);
+      const dB = d.clone().multiplyScalar(k.vS);
+      const hits = map[k.num];
+      const baseCol = hits ? CATS[hits[0].cat].color : C.grey;
+      const baseR = st.mode === 'all' ? 0.76 : 1.0;
+      const baseOp = hits ? (st.mode === 'all' ? 0.10 : 0.34) : 0.05;
+
+      const fan = sector(O, dA, dB, baseR, baseCol, baseOp);
+      fan.userData.num = k.num;
+      dyn.add(fan);
+      clickables.push(fan);
+
+      if (st.mode === 'all' && hits) {
+        hits.forEach(g => {
+          const col = CATS[g.cat].color;
+          const band = ringSector(O, dA, dB, g.r - 0.15, g.r, col, 0.42);
+          dyn.add(band);
+          dyn.add(arcTube(O, band.userData.a1, band.userData.d, g.r, col, 0.024));
+        });
+      } else {
+        dyn.add(arcTube(O, fan.userData.a1, fan.userData.d, baseR, hits ? baseCol : 0xC7D0DC, hits ? 0.03 : 0.012));
+      }
+
+      const t = fan.userData.a1 + fan.userData.d / 2;
+      const rr = st.mode === 'all' ? 0.52 : 0.68;
+      const px = O.x + Math.cos(t) * rr, pz = O.z + Math.sin(t) * rr;
+      const lab = numLabels[k.num];
+      if (hits) {
+        const many = hits.length > 1;
+        const cat = CATS[hits[0].cat];
+        lab.restyle({
+          color: '#ffffff',
+          bg: many ? 'rgba(28,37,50,.92)' : cat.hex,
+          border: 'rgba(255,255,255,.55)'
+        }).set('∠' + k.num, many ? '三种关系' : cat.name);
+        lab.pos(px, O.y + 0.46, pz);
+      } else {
+        lab.restyle({ color: '#94A3B8', bg: null, border: 'rgba(0,0,0,0)' }).set('∠' + k.num);
+        lab.pos(px, O.y + 0.34, pz);
+      }
+    });
+
+    if (st.mode === 'all') {
+      call.set('看同一个 ∠1 的三种关系', '同位 ∠5 · 内错 ∠7 · 同旁内 ∠8').pos(0, 0.9, 4.5);
+    } else {
+      const g = groups[0];
+      const n1 = g.pair[0], n2 = g.pair[1];
+      const k1 = KEY.find(k => k.num === n1), k2 = KEY.find(k => k.num === n2);
+      const v1 = Math.round(val(k1.uS, k1.vS, phi)), v2 = Math.round(val(k2.uS, k2.vS, phi));
+      if (st.mode === 'same') call.set('∠' + n1 + ' + ∠' + n2 + ' = ' + v1 + '° + ' + v2 + '° = 180°', '同旁内角 · 互补').pos(0, 0.9, 4.5);
+      else call.set('∠' + n1 + ' = ∠' + n2 + ' = ' + v1 + '°', CATS[st.mode].name + ' · ' + (st.mode === 'corresponding' ? '相等' : '相等')).pos(0, 0.9, 4.5);
+    }
+
+    onClick = (obj) => {
+      const n = obj.userData.num;
+      if (n === undefined) return;
+      if (st.mode === 'all') {
+        const cat = CAT_ORDER.find(c => PAIRS[c].some(p => p.indexOf(n) >= 0));
+        if (!cat) return;
+        st.mode = cat;
+        st.sel = Math.max(0, PAIRS[cat].findIndex(p => p.indexOf(n) >= 0));
+        syncButtons(); apply(); syncPanel();
+      } else {
+        const idx = PAIRS[st.mode].findIndex(p => p.indexOf(n) >= 0);
+        if (idx >= 0 && idx !== st.sel) { st.sel = idx; syncButtons(); apply(); syncPanel(); }
+      }
+    };
+  }
+
+  panel.innerHTML = `
+    <section class="card">
+      <h3>三线八角<span class="sub">7.1 相交线</span></h3>
+      <div class="seg" id="m3-rel">
+        <button data-v="corresponding" class="on">同位角</button>
+        <button data-v="alternate">内错角</button>
+        <button data-v="same">同旁内角</button>
+        <button data-v="all">三类同屏</button>
+      </div>
+      <div class="field">
+        <label>截线 c 与 a 的夹角<b id="m3-deg">62°</b></label>
+        <input type="range" id="m3-phi" min="42" max="138" step="1" value="62">
+      </div>
+      <button class="btn ghost" id="m3-next">换一组角</button>
+      <div class="tip">也可以<b>拖动截线 c 的两端</b>改变角度；<b>点场景里任意一个角</b>，能直接找到和它配对的那个角。</div>
+    </section>
+
+    <section class="card">
+      <h3>这一组角</h3>
+      <div id="m3-pairs"></div>
+      <div class="rule" id="m3-rule" style="margin-top:10px"></div>
+    </section>
+
+    <section class="card">
+      <h3>三种关系的形状<span class="sub">F · Z · U</span></h3>
+      <div class="fzu" id="m3-fzu">
+        ${CAT_ORDER.map(c => `<div class="tile" data-v="${c}">${fzuSVG(c)}<span>${CATS[c].name}</span><em>${CATS[c].L} 形</em></div>`).join('')}
+      </div>
+      <div class="tip">同位角像字母 <b>F</b>；内错角像 <b>Z</b>；同旁内角像 <b>U</b>（或 C）。点小卡片可直接切换。</div>
+    </section>
+
+    <section class="card note">
+      <h3>八个角的度数</h3>
+      <div id="m3-all" style="display:grid;grid-template-columns:1fr 1fr;gap:2px 14px;font-size:12.5px;color:#566376"></div>
+    </section>
+  `;
+
+  const ePhi = panel.querySelector('#m3-phi');
+  const eDeg = panel.querySelector('#m3-deg');
+  const ePairs = panel.querySelector('#m3-pairs');
+  const eRule = panel.querySelector('#m3-rule');
+  const eAll = panel.querySelector('#m3-all');
+  const eNext = panel.querySelector('#m3-next');
+
+  function syncButtons() {
+    panel.querySelectorAll('#m3-rel button').forEach(b => b.classList.toggle('on', b.dataset.v === st.mode));
+    panel.querySelectorAll('#m3-fzu .tile').forEach(t => {
+      const isOn = t.dataset.v === st.mode;
+      t.classList.toggle('on', isOn);
+      t.style.borderColor = isOn ? CATS[t.dataset.v].hex : '#E7ECF5';
+      t.style.opacity = (st.mode === 'all' || isOn) ? 1 : 0.5;
+    });
+    if (st.mode === 'all') {
+      eNext.style.display = 'none';
+    } else {
+      eNext.style.display = 'block';
+      eNext.textContent = '换一组角（' + (st.sel + 1) + ' / ' + PAIRS[st.mode].length + '）';
+    }
+  }
+
+  function syncPanel() {
+    eDeg.textContent = Math.round(st.phi) + '°';
+    const groups = activeGroups();
+    let rows = '', rule = '';
+
+    if (st.mode === 'all') {
+      rows = groups.map(g => {
+        const p = g.pair, c = CATS[g.cat];
+        const k1 = KEY.find(k => k.num === p[0]), k2 = KEY.find(k => k.num === p[1]);
+        const v1 = Math.round(val(k1.uS, k1.vS, st.phi)), v2 = Math.round(val(k2.uS, k2.vS, st.phi));
+        const right = g.cat === 'same' ? v1 + '° + ' + v2 + '° = 180°' : v1 + '° = ' + v2 + '°';
+        return `<div class="kv"><span><i class="dotc" style="background:${c.hex}"></i>${c.name}　∠${p[0]} 与 ∠${p[1]}</span><b style="font-size:12.5px">${right}</b></div>`;
+      }).join('');
+      rule = `<span class="hi">同一个 ∠1，三种关系</span><br>和 ∠5 是同位角，和 ∠7 是内错角，和 ∠8 是同旁内角。<br>三条彩色弧＝三种关系，颜色见上方小卡片。`;
+    } else {
+      const c = CATS[st.mode];
+      const pair = groups[0].pair;
+      const k1 = KEY.find(k => k.num === pair[0]), k2 = KEY.find(k => k.num === pair[1]);
+      const v1 = Math.round(val(k1.uS, k1.vS, st.phi)), v2 = Math.round(val(k2.uS, k2.vS, st.phi));
+      rows = `<div class="kv"><span><i class="dotc" style="background:${c.hex}"></i>∠${pair[0]}</span><b>${v1}°</b></div>
+              <div class="kv"><span><i class="dotc" style="background:${c.hex}"></i>∠${pair[1]}</span><b>${v2}°</b></div>`;
+      if (st.mode === 'same') rule = `<span class="hi">同旁内角互补</span><br>∠${pair[0]} + ∠${pair[1]} = ${v1}° + ${v2}° = 180°<br><span style="font-weight:500;color:#8B98AC">${c.desc}（${c.L} 形）</span>`;
+      else rule = `<span class="hi">${c.name}相等</span><br>∠${pair[0]} = ∠${pair[1]} = ${v1}°<br><span style="font-weight:500;color:#8B98AC">${c.desc}（${c.L} 形）</span>`;
+    }
+    ePairs.innerHTML = rows;
+    eRule.innerHTML = rule;
+
+    const sel = new Set();
+    groups.forEach(g => g.pair.forEach(n => sel.add(n)));
+    eAll.innerHTML = KEY
+      .slice()
+      .sort((a, b) => a.num - b.num)
+      .map(k => {
+        const hi = sel.has(k.num);
+        return `<div style="${hi ? 'color:#1B2436;font-weight:700' : ''}">∠${k.num} = ${Math.round(val(k.uS, k.vS, st.phi))}°</div>`;
+      }).join('');
+
+    syncButtons();
+  }
+
+  panel.querySelectorAll('#m3-rel button').forEach(btn => {
+    btn.onclick = () => {
+      st.mode = btn.dataset.v;
+      st.sel = 0;
+      apply(); syncPanel();
+    };
+  });
+  panel.querySelectorAll('#m3-fzu .tile').forEach(t => {
+    t.onclick = () => {
+      st.mode = t.dataset.v;
+      st.sel = 0;
+      apply(); syncPanel();
+    };
+  });
+  ePhi.oninput = () => { st.phi = +ePhi.value; apply(); syncPanel(); };
+  eNext.onclick = () => {
+    if (st.mode === 'all') return;
+    st.sel = (st.sel + 1) % PAIRS[st.mode].length;
+    apply(); syncPanel();
+  };
+
+  apply();
+  syncPanel();
+  setOnClick(obj => onClick && onClick(obj));
+  legendEl.innerHTML = `
+    <div class="li"><span class="sw" style="background:#F2715C"></span>珊瑚色：同位角（F 形）</div>
+    <div class="li"><span class="sw" style="background:#7E6BF2"></span>紫色：内错角（Z 形）</div>
+    <div class="li"><span class="sw" style="background:#18A79A"></span>青色：同旁内角（U 形）</div>
+    <div class="li drag">↔ 拖动截线 c ｜ 点任意角看配对</div>
+  `;
+}
+
+/* ==================== 模块四：课堂练习 ==================== */
+const QUESTIONS = [
+  {
+    q: '两条直线相交所成的四个角中，∠1 与 ∠2 是对顶角。若 ∠1 = 58°，则 ∠2 等于多少？',
+    opts: ['58°', '122°', '32°', '116°'], a: 0,
+    why: '对顶角相等，所以 ∠2 = ∠1 = 58°。'
+  },
+  {
+    q: '两条直线相交，∠1 与 ∠2 是邻补角。若 ∠1 = 74°，则 ∠2 等于多少？',
+    opts: ['74°', '16°', '106°', '286°'], a: 2,
+    why: '邻补角互补，∠2 = 180° − 74° = 106°。'
+  },
+  {
+    q: '点 P 在直线 l 外，PH ⊥ l 于 H，A 是 l 上异于 H 的一点。下列结论一定成立的是：',
+    opts: ['PH > PA', 'PH = PA', 'PH < PA', '无法确定'], a: 2,
+    why: '垂线段最短，所以 PH 一定小于任何一条斜线段 PA。'
+  },
+  {
+    q: '过直线 l 外一点 P 作 l 的垂线，可以作几条？',
+    opts: ['1 条', '2 条', '无数条', '不能确定'], a: 0,
+    why: '过直线外一点，有且只有一条直线与已知直线垂直。'
+  },
+  {
+    q: '两条平行直线被第三条直线所截，下列哪一对角一定相等？',
+    opts: ['同旁内角', '内错角', '邻补角', '任意一对角'], a: 1,
+    why: '两直线平行时，同位角相等、内错角相等；同旁内角互补，不一定相等。'
+  },
+  {
+    q: '两条平行直线被第三条直线所截，一对同旁内角的度数之比为 2 : 3，则这两个角分别是：',
+    opts: ['72° 和 108°', '60° 和 90°', '36° 和 54°', '80° 和 120°'], a: 0,
+    why: '同旁内角互补，和为 180°。180° ÷ 5 = 36°，所以两角为 72° 和 108°。'
+  },
+  {
+    q: '下列说法正确的是：',
+    opts: ['相等的两个角一定是对顶角', '对顶角一定相等', '互补的两个角一定是邻补角', '有公共顶点的两个角是对顶角'], a: 1,
+    why: '对顶角一定相等；但相等的角不一定是对顶角，互补的角也不一定是邻补角（还需有公共边）。'
+  }
+];
+
+function buildM4() {
+  const th = 52 * D2R, L = 4.1, Y = 0.02;
+  world.add(segment(V(-L, Y, 0), V(L, Y, 0), { r: 0.055, color: C.line }));
+  const g2 = new THREE.Group();
+  g2.position.y = Y;
+  g2.rotation.y = -th;
+  g2.add(segment(V(-L, 0, 0), V(L, 0, 0), { r: 0.055, color: C.line2 }));
+  world.add(g2);
+  world.add(dot(V(0, Y, 0), { r: 0.11, color: C.ink }));
+  const d = V(Math.cos(th), 0, Math.sin(th));
+  const dirs = [[V(1, 0, 0), d], [d, V(-1, 0, 0)], [V(-1, 0, 0), d.clone().negate()], [d.clone().negate(), V(1, 0, 0)]];
+  const cols = [C.orange, C.teal, C.orange, C.teal];
+  dirs.forEach((pair, i) => {
+    const s = sector(V(0, Y, 0), pair[0], pair[1], 1.35, cols[i], 0.16);
+    world.add(s);
+    world.add(arcTube(V(0, Y, 0), s.userData.a1, s.userData.d, 1.35, cols[i], 0.017));
+    const bp = bisectorPos(V(0, Y, 0), pair[0], pair[1], 0.88, Y + 0.34);
+    const lb = mkLabel('∠' + (i + 1), { size: 0.5, bg: 'rgba(28,37,50,.9)', color: '#ffffff', fs: 62, border: 'rgba(255,255,255,.5)' });
+    lb.pos(bp.x, bp.y, bp.z);
+    world.add(lb.sprite);
+  });
+
+  let idx = 0, score = 0, answered = false;
+
+  function render() {
+    const q = QUESTIONS[idx];
+    panel.innerHTML = `
+      <section class="card">
+        <h3>课堂练习<span class="sub">第 ${idx + 1} / ${QUESTIONS.length} 题</span></h3>
+        <div class="score"><span>已答对</span><b>${score}</b></div>
+        <div class="bar"><i style="width:${(idx / QUESTIONS.length) * 100}%"></i></div>
+      </section>
+      <section class="card">
+        <div class="q">${q.q}</div>
+        <div class="opts" id="q-opts">
+          ${q.opts.map((o, i) => `<button class="opt" data-i="${i}">${String.fromCharCode(65 + i)}. ${o}</button>`).join('')}
+        </div>
+        <div class="explain" id="q-ex">${q.why}</div>
+      </section>
+      <section class="card">
+        <button class="btn" id="q-next">${idx === QUESTIONS.length - 1 ? '重新开始' : '下一题'}</button>
+      </section>
+    `;
+    answered = false;
+    const opts = panel.querySelectorAll('.opt');
+    opts.forEach(btn => {
+      btn.onclick = () => {
+        if (answered) return;
+        answered = true;
+        const i = +btn.dataset.i;
+        opts.forEach((b, j) => {
+          b.disabled = true;
+          if (j === q.a) b.classList.add('right');
+          else if (j === i) b.classList.add('wrong');
+        });
+        if (i === q.a) score++;
+        panel.querySelector('#q-ex').style.display = 'block';
+        panel.querySelector('.score b').textContent = score;
+      };
+    });
+    panel.querySelector('#q-next').onclick = () => {
+      idx = (idx + 1) % QUESTIONS.length;
+      if (idx === 0) score = 0;
+      render();
+    };
+  }
+  render();
+  setOnClick(null);
+  legendEl.innerHTML = `<div class="li">做完一题点「下一题」，右上分数自动累计</div>`;
+}
+
+/* ==================== 交互 & 切换 ==================== */
+let activeClick = null;
+function setOnClick(fn) { activeClick = fn; }
+
+const raycaster = new THREE.Raycaster();
+const ptr = new THREE.Vector2();
+const dragPlane = new THREE.Plane(new THREE.Vector3(0, 0, 1), -0.02);
+let dragState = null;
+let downInfo = null;
+
+function ndc(e) {
+  const r = renderer.domElement.getBoundingClientRect();
+  ptr.x = ((e.clientX - r.left) / r.width) * 2 - 1;
+  ptr.y = -((e.clientY - r.top) / r.height) * 2 + 1;
+  return ptr;
+}
+
+renderer.domElement.addEventListener('pointerdown', e => {
+  ndc(e);
+  raycaster.setFromCamera(ptr, camera);
+  const hh = raycaster.intersectObjects(handles, false);
+  if (hh.length) {
+    dragState = { obj: hh[0].object, autoRotate: controls.autoRotate };
+    controls.enabled = false;
+    controls.autoRotate = false;
+    renderer.domElement.style.cursor = 'grabbing';
+    e.preventDefault();
+    return;
+  }
+  downInfo = { x: e.clientX, y: e.clientY };
+});
+
+renderer.domElement.addEventListener('pointermove', e => {
+  if (dragState) {
+    ndc(e);
+    raycaster.setFromCamera(ptr, camera);
+    const p = new THREE.Vector3();
+    if (raycaster.ray.intersectPlane(dragPlane, p)) {
+      world.worldToLocal(p);   // 转到图形的局部平面坐标（x, 0, z）
+      const fn = dragState.obj.userData.onDrag;
+      if (fn) fn(p);
+    }
+    return;
+  }
+  // 悬停光标
+  ndc(e);
+  raycaster.setFromCamera(ptr, camera);
+  const hh = raycaster.intersectObjects(handles, false);
+  renderer.domElement.style.cursor = hh.length ? 'grab' : 'default';
+});
+
+renderer.domElement.addEventListener('pointerup', e => {
+  if (dragState) {
+    controls.enabled = true;
+    controls.autoRotate = dragState.autoRotate;
+    dragState = null;
+    renderer.domElement.style.cursor = 'default';
+    return;
+  }
+  if (!downInfo) return;
+  const moved = Math.hypot(e.clientX - downInfo.x, e.clientY - downInfo.y);
+  downInfo = null;
+  if (moved > 7 || !activeClick) return;
+  ndc(e);
+  raycaster.setFromCamera(ptr, camera);
+  const hits = raycaster.intersectObjects(clickables, false);
+  if (hits.length) activeClick(hits[0].object);
+});
+
+renderer.domElement.addEventListener('pointerleave', () => {
+  if (dragState) { controls.enabled = true; controls.autoRotate = dragState.autoRotate; dragState = null; }
+});
+
+renderer.domElement.addEventListener('dblclick', () => flyTo(CAM[CURRENT]));
+
+const CAM = {
+  // 平视：相机几乎与图形同高，只看正面的完整图形
+  m1: { pos: [0, 0.5, 12.6], target: [0, 0, 0] },
+  m2: { pos: [0, 1.6, 15.4], target: [0, 1.0, 0] },
+  m3: { pos: [0, 0.5, 13.6], target: [0, 0, 0] },
+  m4: { pos: [0, 0.5, 12.6], target: [0, 0, 0] }
+};
+
+let CURRENT = 'm1';
+
+function flyTo(preset, dur) {
+  dur = dur || 720;
+  const p0 = camera.position.clone(), t0 = controls.target.clone();
+  const p1 = V(preset.pos[0], preset.pos[1], preset.pos[2]);
+  const t1 = V(preset.target[0], preset.target[1], preset.target[2]);
+  anims.push(tweenValue(0, 1, dur, k => {
+    camera.position.lerpVectors(p0, p1, k);
+    controls.target.lerpVectors(t0, t1, k);
+    controls.update();
+  }));
+}
+
+function setModule(id) {
+  CURRENT = id;
+  clearWorld();
+  controls.enabled = true;
+  document.querySelectorAll('#tabs button').forEach(b => b.classList.toggle('on', b.dataset.mod === id));
+  if (id === 'm1') buildM1();
+  else if (id === 'm2') buildM2();
+  else if (id === 'm3') buildM3();
+  else buildM4();
+  flyTo(CAM[id]);
+}
+
+document.querySelectorAll('#tabs button').forEach(b => {
+  b.onclick = () => setModule(b.dataset.mod);
+});
+
+const btnRotate = document.getElementById('btn-rotate');
+btnRotate.onclick = () => {
+  controls.autoRotate = !controls.autoRotate;
+  btnRotate.classList.toggle('on', controls.autoRotate);
+};
+document.getElementById('btn-reset').onclick = () => flyTo(CAM[CURRENT]);
+document.getElementById('btn-full').onclick = () => {
+  if (!document.fullscreenElement) document.documentElement.requestFullscreen();
+  else document.exitFullscreen();
+};
+
+function resize() {
+  const w = host.clientWidth, h = host.clientHeight;
+  if (!w || !h) return;
+  renderer.setSize(w, h, true);
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+}
+window.addEventListener('resize', resize);
+if (window.ResizeObserver) new ResizeObserver(resize).observe(host);
+
+let lastT = performance.now();
+function loop() {
+  requestAnimationFrame(loop);
+  const now = performance.now();
+  const dt = Math.min(0.06, (now - lastT) / 1000);
+  lastT = now;
+  if (frameHook) frameHook(dt);
+  controls.update();
+  renderer.render(scene, camera);
+}
+
+resize();
+buildM1();
+CURRENT = 'm1';
+flyTo(CAM.m1, 900);
+loop();
+window.__booted = true;
+document.getElementById('boot').classList.remove('show');
+</script>
+</body>
+</html>

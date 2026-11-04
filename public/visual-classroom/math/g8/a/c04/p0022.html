@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>16.1 幂的运算 · 交互实验</title>
+<style>
+  :root{
+    --blue:#2f6fe4; --blue-d:#1d4fb0; --orange:#f08c1e; --green:#18a86a;
+    --red:#e04848; --ink:#243447; --sub:#64788e; --card:#ffffff; --line:#dbe7f3;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:var(--ink);
+    background:linear-gradient(135deg,#dceefd 0%,#eaf5ff 45%,#f6fbff 100%);
+    display:flex; flex-direction:column;
+    min-width:900px; min-height:560px;   /* 太小的窗口允许滚动，绝不重叠 */
+    overflow:auto;
+  }
+  sup{font-size:.6em;}
+
+  /* ===== 头部 ===== */
+  header{
+    flex:none; display:flex; align-items:baseline; gap:12px; flex-wrap:wrap;
+    padding:10px 20px 6px;
+  }
+  header h1{font-size:clamp(18px,2.2vw,26px); letter-spacing:1px; white-space:nowrap;}
+  header h1 .badge{
+    display:inline-block; background:var(--blue); color:#fff; border-radius:8px;
+    font-size:.68em; padding:2px 10px; margin-right:10px; vertical-align:3px;
+  }
+  header .memo{font-size:clamp(12px,1.2vw,14px); color:var(--sub);}
+
+  /* ===== 主体两栏 ===== */
+  main{
+    flex:1; min-height:0;
+    display:grid; grid-template-columns:1.25fr 1fr; gap:12px;
+    padding:4px 16px;
+  }
+  .panel{background:var(--card); border:1px solid var(--line); border-radius:12px;
+         box-shadow:0 2px 8px rgba(47,111,228,.07);}
+
+  /* ---- 左栏 ---- */
+  #left{display:flex; flex-direction:column; gap:8px; min-height:0; min-width:0;}
+  #modeRow{display:grid; grid-template-columns:repeat(4,1fr); gap:6px; padding:8px; flex:none;}
+  .modeBtn{
+    font-family:inherit; font-size:clamp(11px,1.15vw,14px); padding:7px 2px; border-radius:9px; cursor:pointer;
+    border:1.5px solid var(--line); background:#f4f9ff; color:var(--ink); transition:.15s; white-space:nowrap;
+  }
+  .modeBtn:hover{border-color:var(--blue); color:var(--blue);}
+  .modeBtn.on{background:var(--blue); border-color:var(--blue); color:#fff; font-weight:700;}
+
+  #sliders{display:grid; grid-template-columns:repeat(3,1fr); gap:14px; padding:8px 14px; flex:none;}
+  .sl .lab{display:flex; justify-content:space-between; font-size:12.5px; color:var(--sub); margin-bottom:2px;}
+  .sl .val{font-size:16px; font-weight:800; color:var(--blue-d);}
+  input[type=range]{width:100%; appearance:none; height:7px; border-radius:6px; cursor:pointer;
+    background:linear-gradient(90deg,var(--blue) var(--p,50%), #e2ecf8 var(--p,50%)); outline:none;}
+  input[type=range]::-webkit-slider-thumb{
+    appearance:none; width:20px; height:20px; border-radius:50%; background:#fff;
+    border:3px solid var(--blue); box-shadow:0 2px 5px rgba(0,0,0,.18); cursor:grab;}
+  input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:#fff;border:3px solid var(--blue);}
+
+  /* 推导链：占据剩余空间，内部滚动，永不外溢 */
+  #deriveWrap{flex:1 1 auto; min-height:120px; overflow:hidden; display:flex; flex-direction:column;}
+  #derive{flex:1; overflow-y:auto; padding:10px 16px; display:flex; flex-direction:column; gap:6px;}
+  .step{
+    flex:none; font-size:clamp(14px,1.75vw,21px); line-height:1.45; font-weight:600;
+    padding:4px 10px; border-left:4px solid var(--blue); background:#f5faff; border-radius:0 8px 8px 0;
+    opacity:0; transform:translateX(-8px); animation:in .3s forwards; overflow-wrap:anywhere;
+  }
+  @keyframes in{to{opacity:1; transform:none;}}
+  .step .hl{color:var(--orange); font-weight:800;}
+  .step .rs{color:var(--green); font-weight:800;}
+  .step .rs big{font-size:1em; overflow-wrap:anywhere;}
+  .step .op{color:var(--blue); font-weight:800;}
+
+  #warn{flex:none; display:none; margin:0 14px 8px; border:2px solid var(--red); background:#fff1f1;
+        border-radius:9px; padding:6px 12px; font-size:clamp(12px,1.25vw,15px); color:var(--red); font-weight:700;
+        line-height:1.5;}
+  #warn .ok{color:var(--green);}
+
+  /* 直观模型：固定紧凑高度 */
+  #model{flex:none; padding:8px 14px 10px;}
+  #modelTitle{font-size:12.5px; color:var(--sub); margin-bottom:5px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;}
+  #viz{display:flex; flex-direction:column; gap:6px; min-height:56px; justify-content:center;}
+  #grid{display:grid; gap:3px;}
+  .cell{border-radius:3px; height:13px;}
+  .cellA{background:linear-gradient(180deg,#7fb0f2,#4b86e8);}
+  .cellB{background:linear-gradient(180deg,#ffd28a,#f5a94e);}
+  #bar{display:flex; gap:3px; align-items:center;}
+  #bar .seg{height:30px; border-radius:5px; display:flex; align-items:center; justify-content:center;
+            color:#fff; font-size:12px; font-weight:700; white-space:nowrap; padding:0 4px; overflow:hidden;}
+
+  /* ---- 右栏公式墙 ---- */
+  #right{min-height:0; min-width:0; display:flex; flex-direction:column;}
+  #wall{flex:1; min-height:0; overflow-y:auto; padding:10px 14px; display:flex; flex-direction:column; gap:7px;}
+  #wall h2{font-size:clamp(14px,1.4vw,17px); color:var(--blue-d); flex:none;
+           border-bottom:2px solid var(--line); padding-bottom:5px; margin-bottom:2px;}
+  #wall h2 small{font-weight:400; color:var(--sub); font-size:11.5px;}
+  .rule{
+    flex:none; display:grid; grid-template-columns:32px 1fr auto; align-items:center; gap:10px;
+    padding:8px 10px; border-radius:10px; border:1.5px solid var(--line); background:#f8fbff;
+    cursor:pointer; transition:.15s;
+  }
+  .rule:hover{border-color:var(--blue); background:#eef5ff; transform:translateX(3px);}
+  .rule.on{border-color:var(--blue); background:#e7f0ff; box-shadow:0 0 0 2px rgba(47,111,228,.15);}
+  .rule svg{width:30px; height:30px; stroke:var(--blue); stroke-width:1.7; fill:none;
+            stroke-linecap:round; stroke-linejoin:round;}
+  .rule .f{font-size:clamp(14px,1.5vw,19px); font-weight:700; white-space:nowrap;}
+  .rule .try{font-size:clamp(11px,1.05vw,13px); color:var(--sub); margin-top:1px; white-space:nowrap;}
+  .rule .try b{color:var(--orange);}
+  .rule .tag{font-size:11px; background:var(--blue); color:#fff; border-radius:11px; padding:2px 8px; white-space:nowrap;}
+
+  /* ===== 底部口诀 ===== */
+  footer{
+    flex:none; margin:8px 16px 12px; background:linear-gradient(90deg,var(--blue),#5a8ff0);
+    color:#fff; border-radius:12px; display:flex; align-items:center; justify-content:center; gap:22px;
+    font-size:clamp(14px,1.6vw,20px); font-weight:700; letter-spacing:2px; padding:9px 0;
+    box-shadow:0 3px 8px rgba(47,111,228,.3);
+  }
+  footer .dot{opacity:.5;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span class="badge">16.1</span>幂的运算 <small style="font-size:.55em;color:var(--sub);font-weight:400;">交互实验 · 指数滑块实时计算</small></h1>
+  <div class="memo">拖动滑块或点击右侧公式墙示例，所有结果实时联动</div>
+</header>
+
+<main>
+  <!-- 左栏 -->
+  <div id="left">
+    <div class="panel" id="modeRow">
+      <button class="modeBtn on" data-m="0">① 同底数幂乘</button>
+      <button class="modeBtn" data-m="1">② 幂的乘方</button>
+      <button class="modeBtn" data-m="2">③ 积的乘方</button>
+      <button class="modeBtn" data-m="3">④ 同底数幂除</button>
+    </div>
+
+    <div class="panel" id="sliders">
+      <div class="sl">
+        <div class="lab"><span>底数 a</span><span class="val" id="vA">2</span></div>
+        <input type="range" id="sA" min="1" max="5" value="2">
+      </div>
+      <div class="sl">
+        <div class="lab"><span>指数 m</span><span class="val" id="vM">3</span></div>
+        <input type="range" id="sM" min="0" max="6" value="3">
+      </div>
+      <div class="sl">
+        <div class="lab"><span>指数 n</span><span class="val" id="vN">4</span></div>
+        <input type="range" id="sN" min="0" max="6" value="4">
+      </div>
+    </div>
+
+    <div class="panel" id="deriveWrap">
+      <div id="derive"></div>
+    </div>
+    <div id="warn"></div>
+
+    <div class="panel" id="model">
+      <div id="modelTitle"></div>
+      <div id="viz">
+        <div id="grid"></div>
+        <div id="bar"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- 右栏公式墙 -->
+  <div id="right">
+    <div class="panel" id="wall">
+      <h2>四法则公式墙 <small>（点击任意卡片自动套用示例）</small></h2>
+
+      <div class="rule" data-m="0" data-a="2" data-x="3" data-y="4">
+        <svg viewBox="0 0 24 24"><path d="M4 7h10M4 12h10M4 17h10"/><path d="M17 5l5 7-5 7"/></svg>
+        <div><div class="f">a<sup>m</sup> · a<sup>n</sup> = a<sup>m+n</sup></div>
+        <div class="try">试一试：<b>2³·2⁴ = 2⁷ = 128</b></div></div>
+        <span class="tag">幂乘</span>
+      </div>
+
+      <div class="rule" data-m="1" data-a="3" data-x="2" data-y="3">
+        <svg viewBox="0 0 24 24"><rect x="4" y="4" width="12" height="12" rx="2"/><path d="M8 20h12V8"/></svg>
+        <div><div class="f">(a<sup>m</sup>)<sup>n</sup> = a<sup>mn</sup></div>
+        <div class="try">试一试：<b>(3²)³ = 3⁶ = 729</b></div></div>
+        <span class="tag">乘方</span>
+      </div>
+
+      <div class="rule" data-m="2" data-a="2" data-x="3" data-y="0">
+        <svg viewBox="0 0 24 24"><circle cx="7" cy="12" r="3.4"/><circle cx="16" cy="12" r="3.4"/><path d="M20.5 6.5v3M22 8h-3"/></svg>
+        <div><div class="f">(ab)<sup>n</sup> = a<sup>n</sup>·b<sup>n</sup></div>
+        <div class="try">试一试：<b>(2·3)³ = 2³·3³ = 216</b></div></div>
+        <span class="tag">积方</span>
+      </div>
+
+      <div class="rule" data-m="3" data-a="5" data-x="6" data-y="4">
+        <svg viewBox="0 0 24 24"><path d="M4 12h16"/><path d="M16 8l4 4-4 4" opacity=".55"/><path d="M8 16l-4-4 4-4"/></svg>
+        <div><div class="f">a<sup>m</sup> ÷ a<sup>n</sup> = a<sup>m-n</sup></div>
+        <div class="try">试一试：<b>5⁶÷5⁴ = 5² = 25</b></div></div>
+        <span class="tag">幂除</span>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <span>乘法加指数</span><span class="dot">◆</span>
+  <span>乘方乘指数</span><span class="dot">◆</span>
+  <span>积方各乘方</span><span class="dot">◆</span>
+  <span>同底才乘除</span>
+</footer>
+
+<script>
+/* ================= 状态 ================= */
+let mode = 0;              // 0乘 1乘方 2积 3除
+let a = 2, m = 3, n = 4;
+
+const $ = id => document.getElementById(id);
+
+/* ================= 核心：推导链 ================= */
+function powSeq(base, e){
+  if(e === 0) return "1";
+  return Array(e).fill(base).join("·");
+}
+function bigCalc(b, e){ return Math.pow(b, e); }
+
+function buildSteps(){
+  const S = [];
+  if(mode === 0){
+    const p = m + n;
+    S.push(`法则：a<sup>m</sup> · a<sup>n</sup> = a<sup><span class="hl">m+n</span></sup>（底数不变，指数<span class="op">相加</span>）`);
+    S.push(`代入：${a}<sup>${m}</sup> · ${a}<sup>${n}</sup> = ${a}<sup><span class="hl">${m}+${n}</span></sup> = ${a}<sup>${p}</sup>`);
+    S.push(`展开：${powSeq(a,m)} · ${powSeq(a,n)} —— 共 <span class="hl">${p}</span> 个 ${a} 相乘`);
+    S.push(`结果：${a}<sup>${p}</sup> = <span class="rs">${bigCalc(a,p).toLocaleString()}</span>`);
+  }else if(mode === 1){
+    const p = m * n;
+    S.push(`法则：(a<sup>m</sup>)<sup>n</sup> = a<sup><span class="hl">mn</span></sup>（底数不变，指数<span class="op">相乘</span>）`);
+    S.push(`代入：(${a}<sup>${m}</sup>)<sup>${n}</sup> = ${a}<sup><span class="hl">${m}×${n}</span></sup> = ${a}<sup>${p}</sup>`);
+    S.push(`展开：${n} 组「${powSeq(a,m)}」，每组 ${m} 个 ${a}，共 <span class="hl">${p}</span> 个 ${a}`);
+    S.push(`结果：${a}<sup>${p}</sup> = <span class="rs">${bigCalc(a,p).toLocaleString()}</span>`);
+  }else if(mode === 2){
+    const b = a;
+    const v = Math.pow(a*b, n);
+    S.push(`法则：(ab)<sup>n</sup> = a<sup>n</sup> · b<sup>n</sup>（积的乘方＝各因式<span class="op">分别乘方</span>）`);
+    S.push(`代入：(${a}·${b})<sup>${n}</sup> = ${a}<sup>${n}</sup> · ${b}<sup>${n}</sup>`);
+    S.push(`计算：${a}<sup>${n}</sup>·${b}<sup>${n}</sup> = <span class="hl">${bigCalc(a,n)}</span> · <span class="hl">${bigCalc(b,n)}</span>`);
+    S.push(`结果：(${a}·${b})<sup>${n}</sup> = ${a}<sup>${2*n}</sup> = <span class="rs">${v.toLocaleString()}</span>`);
+  }else{
+    const p = m - n;
+    S.push(`法则：a<sup>m</sup> ÷ a<sup>n</sup> = a<sup><span class="hl">m-n</span></sup>（底数不变，指数<span class="op">相减</span>）`);
+    if(p >= 0){
+      S.push(`代入：${a}<sup>${m}</sup> ÷ ${a}<sup>${n}</sup> = ${a}<sup><span class="hl">${m}−${n}</span></sup> = ${a}<sup>${p}</sup>`);
+      S.push(p === 0 ? `意义：约分后不剩任何 ${a} → ${a}<sup>0</sup> = <span class="hl">1</span>（a⁰=1，a≠0）`
+                     : `展开：约去 ${n} 个 ${a}，剩 <span class="hl">${p}</span> 个`);
+      S.push(`结果：${a}<sup>${p}</sup> = <span class="rs">${bigCalc(a,p).toLocaleString()}</span>`);
+    }else{
+      S.push(`代入：${a}<sup>${m}</sup> ÷ ${a}<sup>${n}</sup> = ${a}<sup><span class="hl">${m}−(${n})</span></sup> = ${a}<sup>${p}</sup>`);
+      S.push(`负指数：${a}<sup>−${-p}</sup> = <span class="hl">1 / ${a}<sup>${-p}</sup></span>（负指数 → 取倒数）`);
+      S.push(`结果：= <span class="rs">1/${bigCalc(a,-p).toLocaleString()} ≈ ${(1/bigCalc(a,-p)).toFixed(4)}</span>`);
+    }
+  }
+  return S;
+}
+
+/* ================= 易错点判断 ================= */
+function warnCheck(){
+  const w = $("warn");
+  let msg = "";
+  if(mode === 0 && m === n){
+    msg = `✗ 易错：${a}<sup>${m}</sup>·${a}<sup>${m}</sup> ≠ ${a}<sup>${m*m}</sup>（如 x³·x³ ≠ x⁹）　<span class="ok">✔ 应为 ${a}<sup>${m+m}</sup> = ${bigCalc(a,2*m).toLocaleString()}（指数相加，不是相乘）</span>`;
+  }else if(mode === 1 && m === n){
+    msg = `✗ 易错：(${a}<sup>${m}</sup>)<sup>${m}</sup> ≠ ${a}<sup>${m+m}</sup>　<span class="ok">✔ 应为 ${a}<sup>${m*m}</sup> = ${bigCalc(a,m*m).toLocaleString()}（指数相乘：${m}×${m}=${m*m}）</span>`;
+  }else if(mode === 2 && n >= 2){
+    msg = `✗ 易错：(ab)<sup>n</sup> ≠ a·b<sup>n</sup>（指数只给了一个因式）　<span class="ok">✔ n 要同时作用到 a 和 b：(ab)<sup>${n}</sup> = ${a}<sup>${n}</sup>·b<sup>${n}</sup></span>`;
+  }else if(mode === 3 && m === n && m > 0){
+    msg = `✗ 易错：${a}<sup>${m}</sup>÷${a}<sup>${m}</sup> ≠ 0　<span class="ok">✔ ${a}<sup>0</sup> = 1（任何非零数的 0 次幂都等于 1）</span>`;
+  }else if(mode === 3 && m < n){
+    msg = `⚠ 注意：m−n = <span style="color:var(--red)">${m-n} &lt; 0</span>　<span class="ok">✔ 负指数 ${a}<sup>${m-n}</sup> = 1/${a}<sup>${n-m}</sup>，结果是分数不是负数</span>`;
+  }
+  if(msg){ w.innerHTML = "🚨 " + msg; w.style.display = "block"; }
+  else w.style.display = "none";
+}
+
+/* ================= 直观模型 ================= */
+function renderModel(){
+  const grid = $("grid"), bar = $("bar");
+  grid.innerHTML = ""; bar.innerHTML = "";
+  const MAX = 40;   // 最多画 40 格，防止溢出
+
+  if(mode === 0 || mode === 3){
+    /* 指数条模型 */
+    const seg = (cnt, cls, label) => {
+      const s = document.createElement("div");
+      s.className = "seg";
+      s.style.flex = cnt + " 1 0";
+      s.style.minWidth = "30px";
+      s.style.background = cls==="A" ? "linear-gradient(90deg,#4b86e8,#7fb0f2)"
+                                     : "linear-gradient(90deg,#f5a94e,#ffd28a)";
+      s.textContent = label;
+      bar.appendChild(s);
+    };
+    if(mode === 0){
+      $("modelTitle").textContent = `📐 指数相加：${m} 个 ${a} ＋ ${n} 个 ${a} = ${m+n} 个 ${a}`;
+      if(m>0) seg(m,"A",`a^m：${m}个`);
+      if(n>0) seg(n,"B",`a^n：${n}个`);
+    }else{
+      $("modelTitle").textContent = `📐 指数相减：${m} 个 ${a}，约去 ${n} 个，剩 ${Math.max(m-n,0)} 个`;
+      if(m-n > 0) seg(m-n,"A",`剩 ${m-n} 个`);
+      else bar.innerHTML = `<span style="color:var(--sub);font-size:12.5px;">全部约去 → ${a}<sup>0</sup>=1（或负指数取倒数）</span>`;
+    }
+  }else{
+    /* 方格阵列模型 */
+    let rows, cols, title;
+    if(mode === 1){
+      rows = m || 1; cols = n || 1;
+      title = `📐 阵列：${rows} 行 × ${cols} 列 = ${rows*cols} 个 ${a} → a^${rows*cols}`;
+    }else{
+      rows = n || 1; cols = 2*a;
+      title = `📐 积的乘方：${rows} 组，每组 ${a} 个 a ＋ ${a} 个 b → a^${rows}·b^${rows}`;
+    }
+    $("modelTitle").textContent = title;
+    if(rows*cols <= MAX){
+      grid.style.gridTemplateColumns = `repeat(${cols}, 1fr)`;
+      for(let r=0;r<rows;r++)
+        for(let c=0;c<cols;c++){
+          const d = document.createElement("div");
+          d.className = "cell " + (mode===1 || c < a ? "cellA" : "cellB");
+          grid.appendChild(d);
+        }
+    }else{
+      $("modelTitle").textContent += "（格数过多，仅作示意）";
+      grid.style.gridTemplateColumns = `repeat(10, 1fr)`;
+      for(let i=0;i<20;i++){
+        const d = document.createElement("div");
+        d.className = "cell cellA"; grid.appendChild(d);
+      }
+    }
+  }
+}
+
+/* ================= 渲染总入口 ================= */
+function render(){
+  [["sA",a,"vA"],["sM",m,"vM"],["sN",n,"vN"]].forEach(([id,v,vid])=>{
+    $(id).value = v;
+    $(id).style.setProperty("--p", ((v-$(id).min)/($(id).max-$(id).min)*100)+"%");
+    $(vid).textContent = v;
+  });
+  const dv = $("derive");
+  dv.innerHTML = "";
+  buildSteps().forEach((s,i)=>{
+    const d = document.createElement("div");
+    d.className = "step"; d.style.animationDelay = (i*0.06)+"s";
+    d.innerHTML = s;
+    dv.appendChild(d);
+  });
+  dv.scrollTop = 0;
+  warnCheck();
+  renderModel();
+  document.querySelectorAll(".rule").forEach(r=>
+    r.classList.toggle("on", +r.dataset.m === mode));
+  document.querySelectorAll(".modeBtn").forEach(b=>
+    b.classList.toggle("on", +b.dataset.m === mode));
+}
+
+/* ================= 事件 ================= */
+$("sA").oninput = e => { a = +e.target.value; render(); };
+$("sM").oninput = e => { m = +e.target.value; render(); };
+$("sN").oninput = e => { n = +e.target.value; render(); };
+document.querySelectorAll(".modeBtn").forEach(b =>
+  b.onclick = () => { mode = +b.dataset.m; render(); });
+document.querySelectorAll(".rule").forEach(r =>
+  r.onclick = () => {
+    mode = +r.dataset.m;
+    a = +r.dataset.a; m = +r.dataset.x; n = +r.dataset.y;
+    render();
+  });
+document.addEventListener("keydown", e=>{
+  if(e.key === "ArrowLeft" || e.key === "ArrowRight"){
+    const delta = e.key === "ArrowRight" ? 1 : -1;
+    if(e.shiftKey){ n = Math.min(6, Math.max(0, n+delta)); }
+    else if(e.altKey){ a = Math.min(5, Math.max(1, a+delta)); }
+    else { m = Math.min(6, Math.max(0, m+delta)); }
+    render();
+    e.preventDefault();
+  }
+});
+
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>12.1　电路中的能量转化 ｜ 人教版物理必修第三册</title>
+<style>
+  :root{
+    --blue:#1d4ed8; --blue-soft:#eff6ff; --blue-line:#bfdbfe;
+    --ink:#1e293b; --sub:#64748b; --line:#e2e8f0;
+    --amber-bg:#fffbeb; --amber-line:#fcd34d; --amber-ink:#92400e;
+    --green:#059669; --red:#dc2626;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:#f3f5f9; color:var(--ink);
+    font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif; padding:18px 12px 40px;}
+  .wrap{max-width:1060px; margin:0 auto;}
+  header{background:#fff; border:1px solid var(--line); border-left:6px solid var(--blue);
+    border-radius:12px; padding:16px 22px; box-shadow:0 1px 3px rgba(15,23,42,.06);}
+  header h1{font-size:22px; color:var(--ink);}
+  header .meta{margin-top:6px; font-size:12.5px; color:var(--sub); line-height:1.7;}
+  .mod{background:#fff; border:1px solid var(--line); border-radius:12px;
+    padding:16px 20px 18px; margin-top:16px; box-shadow:0 1px 3px rgba(15,23,42,.05);}
+  .mod-h{display:flex; align-items:center; gap:10px; margin-bottom:10px;}
+  .mod-h .no{background:var(--blue); color:#fff; font-size:12px; border-radius:6px;
+    padding:2px 8px; white-space:nowrap;}
+  .mod-h h2{font-size:16.5px;}
+  .mod-h .kp{margin-left:auto; font-size:12px; color:var(--sub); white-space:nowrap;}
+  .think{background:var(--blue-soft); border:1px solid var(--blue-line); border-radius:8px;
+    padding:8px 12px; font-size:12.5px; color:#1e40af; margin-bottom:10px; line-height:1.7;}
+  .think b{color:var(--blue);}
+  canvas.stage{display:block; width:100%; background:#fbfdff;
+    border:1px solid var(--line); border-radius:10px;}
+  .ctrl{display:flex; flex-wrap:wrap; gap:8px 18px; align-items:center; margin-top:10px;}
+  .row{display:flex; align-items:center; gap:8px; font-size:13px;}
+  .row label{color:var(--sub); white-space:nowrap;}
+  .row input[type=range]{width:150px; accent-color:var(--blue);}
+  .row .val{min-width:64px; font-variant-numeric:tabular-nums; color:var(--ink); font-weight:600;}
+  .btn{border:1px solid var(--blue); color:var(--blue); background:#fff; border-radius:7px;
+    padding:4px 12px; font-size:12.5px; cursor:pointer;}
+  .btn:hover{background:var(--blue-soft);}
+  .btn.on{background:var(--blue); color:#fff;}
+  .note{margin-top:10px; background:var(--amber-bg); border:1px solid var(--amber-line);
+    border-radius:8px; padding:8px 12px; font-size:12.5px; color:var(--amber-ink); line-height:1.8;}
+  .note b{color:#b45309;}
+  .warn{margin-top:10px; background:#fef2f2; border:1px solid #fecaca; border-radius:8px;
+    padding:8px 12px; font-size:12.5px; color:#b91c1c; line-height:1.8;}
+  footer{margin-top:20px; text-align:center; font-size:12px; color:#94a3b8;}
+  .seg{display:inline-flex; border:1px solid var(--blue); border-radius:8px; overflow:hidden;}
+  .seg button{border:none; background:#fff; color:var(--blue); padding:4px 12px;
+    font-size:12.5px; cursor:pointer;}
+  .seg button.on{background:var(--blue); color:#fff;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>12.1　电路中的能量转化</h1>
+  <div class="meta">人教版《物理》必修第三册 · 第十二章 电能 能量守恒定律 · 教材 P79–P82 ｜ 覆盖知识点：电功 W＝UIt 与电功率 P＝UI、焦耳定律 Q＝I²Rt、纯电阻与非纯电阻电路中的能量分配</div>
+</header>
+
+<div class="mod">
+  <div class="mod-h"><span class="no">模块 1</span><h2>电功 W＝UIt 与电功率 P＝UI</h2><span class="kp">交互仿真 · 能量累计</span></div>
+  <div class="think"><b>先想一想：</b>把电压 U 调到原来的 2 倍，电能条上涨的速度会快几倍？电流 I 加倍呢？（先猜，再拖滑块验证）</div>
+  <canvas class="stage" id="cv1" style="height:340px;"></canvas>
+  <div class="ctrl">
+    <div class="row"><label>电压 U</label><input type="range" id="u1" min="1" max="12" step="0.5" value="6"><span class="val" id="u1v"></span></div>
+    <div class="row"><label>电流 I</label><input type="range" id="i1" min="0.2" max="4" step="0.1" value="1.5"><span class="val" id="i1v"></span></div>
+    <div class="row"><label>用电器</label>
+      <span class="seg" id="seg1">
+        <button data-app="lamp" class="on">灯泡</button>
+        <button data-app="wire">电阻丝</button>
+      </span>
+    </div>
+    <button class="btn" id="sw1">开关：闭合</button>
+    <button class="btn" id="cl1">清零重新计时</button>
+  </div>
+  <div class="note"><b>观察要点：</b>能量条上涨的<b>快慢</b>就是电功率 P＝UI（单位 J/s），条子的<b>高度</b>就是电功 W＝UIt。U 加倍或 I 加倍，P 都加倍；断开开关 I＝0，电能条立刻停住 —— 没有电流就不做功。</div>
+</div>
+
+<div class="mod">
+  <div class="mod-h"><span class="no">模块 2</span><h2>焦耳定律 Q＝I²Rt</h2><span class="kp">交互仿真 · 数据图象</span></div>
+  <div class="think"><b>先想一想：</b>电流 I 变成 2 倍，同样时间内电阻丝发出的热量 Q 会变成 2 倍、4 倍还是 8 倍？看右边 Q–I 曲线上的两个点。</div>
+  <canvas class="stage" id="cv2" style="height:360px;"></canvas>
+  <div class="ctrl">
+    <div class="row"><label>电流 I</label><input type="range" id="i2" min="0.5" max="3" step="0.1" value="2"><span class="val" id="i2v"></span></div>
+    <div class="row"><label>电阻 R</label><input type="range" id="r2" min="1" max="10" step="0.5" value="4"><span class="val" id="r2v"></span></div>
+    <div class="row"><label>通电时间 t</label><input type="range" id="t2" min="5" max="120" step="5" value="30"><span class="val" id="t2v"></span></div>
+    <div class="row"><label>用电器</label>
+      <span class="seg" id="seg2">
+        <button data-m="pure" class="on">电热丝（纯电阻）</button>
+        <button data-m="motor">电动机（非纯电阻）</button>
+      </span>
+    </div>
+  </div>
+  <div class="note"><b>观察要点：</b>Q–I 图是一条<b>过原点的抛物线</b>，不是直线 —— 这就是"平方关系"。只有<b>纯电阻</b>（电能全部变成内能）才有 W＝UIt＝I²Rt＝Q；换成电动机，Q 只是 W 的一部分，剩下的变成了机械能。</div>
+</div>
+
+<div class="mod">
+  <div class="mod-h"><span class="no">模块 3</span><h2>纯电阻与非纯电阻电路（电动机）</h2><span class="kp">能量流向图 · 提升重物动画</span></div>
+  <div class="think"><b>先想一想：</b>电动机接上电源却不转（被卡住）时，输入的电能去哪儿了？拖动"负载"到最右端试一试。</div>
+  <canvas class="stage" id="cv3" style="height:400px;"></canvas>
+  <div class="ctrl">
+    <div class="row"><label>电源电压 U</label><input type="range" id="u3" min="4" max="12" step="0.5" value="8"><span class="val" id="u3v"></span></div>
+    <div class="row"><label>线圈电阻 R</label><input type="range" id="r3" min="0.5" max="4" step="0.1" value="2"><span class="val" id="r3v"></span></div>
+    <div class="row"><label>负载轻重</label><input type="range" id="l3" min="0" max="100" step="1" value="45"><span class="val" id="l3v"></span></div>
+    <button class="btn" id="p3a">空载</button>
+    <button class="btn" id="p3b">机械功率最大</button>
+    <button class="btn" id="p3c">卡住（堵转）</button>
+  </div>
+  <div class="note"><b>观察要点：</b>输入电功率 P入＝UI 分成两股：线圈发热 I²R（暖色）和机械功率 UI−I²R（绿色，用来提重物）。负载越重 → 转速越慢 → 电流越大 → 发热猛增、机械功率先增后减。<b>卡住时机械功率为 0，电能全部变成内能</b>，电流 I＝U/R 达到最大，线圈会很快烧坏。</div>
+  <div class="warn" id="warn3" style="display:none;"></div>
+</div>
+
+<footer>人教版高中物理必修第三册 · 可视化交互课件 ｜ 单文件离线运行，双击即可使用</footer>
+</div>
+
+<script>
+(function(){
+'use strict';
+/* ========== 通用工具（与同系列课件统一） ========== */
+function $(id){ return document.getElementById(id); }
+function fmt(x, d){
+  if (d === undefined) d = 2;
+  if (!isFinite(x)) return '—';
+  var a = Math.abs(x);
+  if (a >= 10000 || (a > 0 && a < 0.01)) return x.toExponential(2);
+  return (+x.toFixed(d)).toString();
+}
+function fit(cv){
+  var dpr = window.devicePixelRatio || 1;
+  var w = cv.clientWidth, h = cv.clientHeight;
+  var W = Math.round(w * dpr), H = Math.round(h * dpr);
+  if (cv.width !== W || cv.height !== H){ cv.width = W; cv.height = H; }
+  var ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return ctx;
+}
+function bindRange(id, fn, fmtf){
+  var el = $(id), out = $(id + 'v');
+  function go(){
+    var x = parseFloat(el.value);
+    if (!isFinite(x)) x = 0;
+    if (out) out.textContent = fmtf ? fmtf(x) : x;
+    fn(x);
+  }
+  el.addEventListener('input', go); go();
+  return el;
+}
+function arrow(ctx, x1, y1, x2, y2, color, w){
+  ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = w || 2;
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  var a = Math.atan2(y2 - y1, x2 - x1), s = 7;
+  ctx.beginPath(); ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - s * Math.cos(a - 0.42), y2 - s * Math.sin(a - 0.42));
+  ctx.lineTo(x2 - s * Math.cos(a + 0.42), y2 - s * Math.sin(a + 0.42));
+  ctx.closePath(); ctx.fill();
+}
+/* 直角坐标系：返回带 px / py 映射的对象（自动夹紧，防越界） */
+function axes(c, W, H, pad, xmax, ymax, xlab, ylab, xt, yt){
+  c.clearRect(0, 0, W, H);
+  c.fillStyle = '#fbfdff'; c.fillRect(0, 0, W, H);
+  var x0 = pad + 10, y0 = H - pad, x1 = W - pad * 0.5, y1 = pad * 0.55;
+  c.strokeStyle = '#eef2f7'; c.lineWidth = 1;
+  var i, gx, gy;
+  for (i = 0; i <= 5; i++){
+    gx = x0 + (x1 - x0) * i / 5;
+    c.beginPath(); c.moveTo(gx, y1); c.lineTo(gx, y0); c.stroke();
+  }
+  for (i = 0; i <= 5; i++){
+    gy = y0 - (y0 - y1) * i / 5;
+    c.beginPath(); c.moveTo(x0, gy); c.lineTo(x1, gy); c.stroke();
+  }
+  c.strokeStyle = '#334155'; c.lineWidth = 1.6;
+  c.beginPath(); c.moveTo(x0, y1); c.lineTo(x0, y0); c.lineTo(x1, y0); c.stroke();
+  c.font = '11px Consolas, monospace'; c.fillStyle = '#64748b';
+  c.textAlign = 'center'; c.textBaseline = 'top';
+  for (i = 0; i <= 5; i++){
+    gx = x0 + (x1 - x0) * i / 5;
+    c.fillText((xmax * i / 5).toFixed(xt === undefined ? 1 : xt), gx, y0 + 5);
+  }
+  c.textAlign = 'right'; c.textBaseline = 'middle';
+  for (i = 0; i <= 5; i++){
+    gy = y0 - (y0 - y1) * i / 5;
+    c.fillText((ymax * i / 5).toFixed(yt === undefined ? 1 : yt), x0 - 5, gy);
+  }
+  c.fillStyle = '#334155'; c.textAlign = 'center'; c.textBaseline = 'top';
+  c.fillText(xlab, (x0 + x1) / 2, H - 15);
+  c.save(); c.translate(14, (y0 + y1) / 2); c.rotate(-Math.PI / 2);
+  c.textAlign = 'center'; c.textBaseline = 'top'; c.fillText(ylab, 0, 0); c.restore();
+  return {
+    x0: x0, y0: y0, x1: x1, y1: y1,
+    px: function(v){ return x0 + (x1 - x0) * Math.max(0, Math.min(1, v / xmax)); },
+    py: function(v){ return y0 - (y0 - y1) * Math.max(0, Math.min(1, v / ymax)); }
+  };
+}
+function rrect(c, x, y, w, h, r){
+  c.beginPath(); c.moveTo(x + r, y);
+  c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r);
+  c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
+}
+/* 沿闭合折线运动的小球（琥珀色电流粒子） */
+function flowDots(c, pts, phase, spacing, color){
+  var segs = [], total = 0, i;
+  for (i = 0; i < pts.length; i++){
+    var a = pts[i], b = pts[(i + 1) % pts.length];
+    var len = Math.sqrt((b[0] - a[0]) * (b[0] - a[0]) + (b[1] - a[1]) * (b[1] - a[1]));
+    segs.push({ a: a, b: b, len: len, s: total }); total += len;
+  }
+  if (total <= 0) return;
+  var n = Math.floor(total / spacing);
+  c.fillStyle = color;
+  for (var k = 0; k < n; k++){
+    var d = (phase + k * spacing) % total;
+    for (var s = 0; s < segs.length; s++){
+      var sg = segs[s];
+      if (d >= sg.s && d < sg.s + sg.len){
+        var f = sg.len > 0 ? (d - sg.s) / sg.len : 0;
+        var x = sg.a[0] + (sg.b[0] - sg.a[0]) * f;
+        var y = sg.a[1] + (sg.b[1] - sg.a[1]) * f;
+        c.beginPath(); c.arc(x, y, 3.2, 0, 6.2832); c.fill();
+        break;
+      }
+    }
+  }
+}
+/* ---- 元件 ---- */
+function batV(c, x, y){ /* 竖直放置的电源：长线为正（上） */
+  c.save(); c.strokeStyle = '#0f172a'; c.lineWidth = 3;
+  c.beginPath(); c.moveTo(x - 19, y - 5); c.lineTo(x + 19, y - 5); c.stroke();
+  c.beginPath(); c.moveTo(x - 10, y + 6); c.lineTo(x + 10, y + 6); c.stroke();
+  c.restore();
+  c.font = '11px Consolas, monospace'; c.fillStyle = '#0f172a';
+  c.textAlign = 'right'; c.textBaseline = 'middle';
+  c.fillText('+', x - 23, y - 5); c.fillText('−', x - 23, y + 6);
+  c.textAlign = 'left';
+}
+function meter(c, x, y, sym, txt){
+  c.save();
+  c.beginPath(); c.arc(x, y, 20, 0, 6.2832);
+  c.fillStyle = '#fff'; c.fill(); c.strokeStyle = '#0f172a'; c.lineWidth = 2; c.stroke();
+  c.font = 'bold 13px Consolas, monospace'; c.fillStyle = '#0f172a';
+  c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(sym, x, y);
+  c.font = '11px Consolas, monospace'; c.fillStyle = '#b45309'; c.textBaseline = 'top';
+  c.fillText(txt, x, y + 23); c.restore(); c.textBaseline = 'alphabetic';
+}
+function sw(c, x, y, closed){
+  c.save(); c.strokeStyle = '#0f172a'; c.lineWidth = 2.5; c.fillStyle = '#0f172a';
+  c.beginPath(); c.arc(x - 15, y, 3.5, 0, 6.2832); c.fill();
+  c.beginPath(); c.arc(x + 15, y, 3.5, 0, 6.2832); c.fill();
+  c.beginPath(); c.moveTo(x - 15, y);
+  if (closed) c.lineTo(x + 15, y); else c.lineTo(x + 8, y - 14);
+  c.stroke(); c.restore();
+  c.font = '11px "Microsoft YaHei", sans-serif'; c.fillStyle = '#64748b';
+  c.textAlign = 'center'; c.fillText(closed ? '闭合' : '断开', x, y - 20);
+}
+function lamp(c, x, y, P){
+  var g = Math.max(0, Math.min(1, P / 24));
+  c.save();
+  if (g > 0.02){ /* 光晕 */
+    var rg = c.createRadialGradient(x, y, 4, x, y, 34 + 16 * g);
+    rg.addColorStop(0, 'rgba(253,224,71,' + (0.75 * g).toFixed(3) + ')');
+    rg.addColorStop(1, 'rgba(253,224,71,0)');
+    c.fillStyle = rg; c.beginPath(); c.arc(x, y, 34 + 16 * g, 0, 6.2832); c.fill();
+  }
+  c.beginPath(); c.arc(x, y, 17, 0, 6.2832);
+  c.fillStyle = g > 0.02 ? 'rgba(254,240,138,' + (0.35 + 0.6 * g).toFixed(3) + ')' : '#fff';
+  c.fill(); c.strokeStyle = '#0f172a'; c.lineWidth = 2; c.stroke();
+  c.strokeStyle = '#b45309'; c.lineWidth = 1.8;
+  c.beginPath(); c.moveTo(x - 9, y - 4); c.lineTo(x - 4, y + 6);
+  c.lineTo(x, y - 6); c.lineTo(x + 4, y + 6); c.lineTo(x + 9, y - 4); c.stroke();
+  c.restore();
+  c.font = '11px "Microsoft YaHei", sans-serif'; c.fillStyle = '#64748b';
+  c.textAlign = 'center'; c.fillText('灯泡', x, y + 32);
+}
+function coil(c, x, y, P){
+  var g = Math.max(0, Math.min(1, P / 24));
+  c.save();
+  if (g > 0.02){
+    var rg = c.createRadialGradient(x, y, 4, x, y, 30 + 14 * g);
+    rg.addColorStop(0, 'rgba(239,68,68,' + (0.5 * g).toFixed(3) + ')');
+    rg.addColorStop(1, 'rgba(239,68,68,0)');
+    c.fillStyle = rg; c.beginPath(); c.arc(x, y, 30 + 14 * g, 0, 6.2832); c.fill();
+  }
+  c.fillStyle = '#fff'; c.strokeStyle = '#0f172a'; c.lineWidth = 2;
+  rrect(c, x - 26, y - 20, 52, 40, 5); c.fill(); c.stroke();
+  c.strokeStyle = g > 0.02 ? '#dc2626' : '#475569'; c.lineWidth = 2;
+  c.beginPath(); c.moveTo(x - 16, y);
+  for (var k = 0; k < 4; k++){
+    c.lineTo(x - 16 + 8 * k + 4, y - 9);
+    c.lineTo(x - 16 + 8 * k + 8, y + 9);
+  }
+  c.lineTo(x + 16, y); c.stroke();
+  c.restore();
+  c.font = '11px "Microsoft YaHei", sans-serif'; c.fillStyle = '#64748b';
+  c.textAlign = 'center'; c.fillText('电阻丝', x, y + 34);
+}
+function label(c, x, y, txt, color, size, align){
+  c.font = (size || 12.5) + 'px "Microsoft YaHei", sans-serif';
+  c.fillStyle = color || '#1e293b'; c.textAlign = align || 'left';
+  c.textBaseline = 'alphabetic'; c.fillText(txt, x, y);
+}
+function mono(c, x, y, txt, color, size, align){
+  c.font = (size || 12) + 'px Consolas, monospace';
+  c.fillStyle = color || '#1e293b'; c.textAlign = align || 'left';
+  c.textBaseline = 'alphabetic'; c.fillText(txt, x, y);
+}
+
+/* ================= 模块 1：电功与电功率 ================= */
+var cv1 = $('cv1');
+var m1 = { U: 6, I: 1.5, W: 0, t: 0, on: true, app: 'lamp', ph: 0 };
+var BARMAX = 300; /* 能量条满格 300 J */
+
+function drawM1(){
+  var c = fit(cv1), W = cv1.clientWidth, H = cv1.clientHeight;
+  c.clearRect(0, 0, W, H);
+  var L = 62, R = W * 0.34, T = 56, B = 262;
+  var my = (T + B) / 2;
+  var wire = m1.on ? '#0f172a' : '#94a3b8';
+  var P = m1.on ? m1.U * m1.I : 0;
+
+  /* 回路导线 */
+  c.strokeStyle = wire; c.lineWidth = 3; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(L, B); c.lineTo(L, T); c.lineTo(R, T); c.lineTo(R, B); c.closePath(); c.stroke();
+
+  /* 元件 */
+  batV(c, L, my);
+  meter(c, (L + R) / 2, T, 'A', (m1.on ? m1.I : 0).toFixed(2) + ' A');
+  sw(c, (L + R) / 2, B, m1.on);
+  /* 电压表（并联在用电器两端，画在回路内部） */
+  var vx = R - 76;
+  c.save(); c.setLineDash([4, 3]); c.lineWidth = 1.4; c.strokeStyle = '#94a3b8';
+  c.beginPath(); c.moveTo(R, my - 34); c.lineTo(vx, my - 34); c.lineTo(vx, my - 21); c.stroke();
+  c.beginPath(); c.moveTo(R, my + 34); c.lineTo(vx, my + 34); c.lineTo(vx, my + 21); c.stroke();
+  c.restore();
+  meter(c, vx, my, 'V', m1.U.toFixed(1) + ' V');
+  if (m1.app === 'lamp') lamp(c, R, my, P); else coil(c, R, my, P);
+
+  /* 电流粒子 */
+  if (m1.on && m1.I > 0){
+    var sp = 26;
+    flowDots(c, [[L, B], [L, T], [R, T], [R, B]], m1.ph, sp, '#f59e0b');
+    /* 方向箭头 */
+    c.save(); c.setLineDash([]); c.restore();
+    arrow(c, (L + R) / 2 - 46, T - 16, (L + R) / 2 - 16, T - 16, '#b45309', 1.6);
+  }
+  label(c, L - 6, T - 12, '电流方向', '#b45309', 12);
+
+  /* ---- 右侧能量面板 ---- */
+  var px0 = W * 0.40, px1 = W - 18;
+  label(c, px0, 30, '电能累计：W = UIt（1 J = 1 W·s）', '#1e293b', 14);
+  var bx = px0 + 8, bw = 56, by0 = 52, by1 = H - 52;
+  var f = Math.max(0, Math.min(1, m1.W / BARMAX));
+  var bh = by1 - by0;
+  c.fillStyle = '#f1f5f9'; rrect(c, bx, by0, bw, bh, 8); c.fill();
+  c.strokeStyle = '#cbd5e1'; c.lineWidth = 1; c.stroke();
+  if (f > 0){
+    var g = c.createLinearGradient(0, by1, 0, by1 - bh * f);
+    g.addColorStop(0, '#fbbf24'); g.addColorStop(1, '#f59e0b');
+    c.fillStyle = g;
+    rrect(c, bx + 2, by1 - bh * f + 2, bw - 4, bh * f - 4, 6); c.fill();
+  }
+  /* 刻度 */
+  for (var k = 1; k <= 3; k++){
+    var ty = by1 - bh * k / 3;
+    c.strokeStyle = '#94a3b8'; c.lineWidth = 1;
+    c.beginPath(); c.moveTo(bx + bw, ty); c.lineTo(bx + bw + 5, ty); c.stroke();
+    mono(c, bx + bw + 8, ty + 4, (BARMAX * k / 3) + ' J', '#64748b', 11);
+  }
+  mono(c, bx, by1 + 20, '满格 ' + BARMAX + ' J', '#94a3b8', 11);
+
+  /* 读数 */
+  var tx = bx + bw + 74, ty2 = 82;
+  var lh = 26;
+  mono(c, tx, ty2, 'P = UI = ' + fmt(P, 2) + ' W', '#1d4ed8', 13.5);
+  mono(c, tx, ty2 + lh, 't = ' + fmt(m1.t, 1) + ' s', '#1e293b', 13.5);
+  mono(c, tx, ty2 + 2 * lh, 'W = UIt = ' + fmt(m1.W, 1) + ' J', '#b45309', 13.5);
+  mono(c, tx, ty2 + 3 * lh, '= ' + fmt(m1.W / 3.6e6, 6) + ' kW·h', '#64748b', 12);
+  var hours = P > 0 ? 3.6e6 / P / 3600 : Infinity;
+  label(c, tx, ty2 + 4 * lh + 4,
+    '烧掉 1 度电（3.6×10⁶ J）需 ' + (isFinite(hours) ? fmt(hours, 1) + ' 小时' : '∞（P=0）'),
+    '#1e293b', 12.5);
+  label(c, tx, ty2 + 5 * lh + 4,
+    '这些能量可把 1 kg 水升温 ' + fmt(m1.W / 4200, 2) + ' ℃', '#1e293b', 12.5);
+  var dst = m1.app === 'lamp'
+    ? '能量去向：电能 → 光能 + 内能（灯泡发光发热）'
+    : '能量去向：电能 → 内能（电阻丝只发热，是纯电阻）';
+  label(c, px0, H - 18, dst, '#64748b', 12.5);
+  if (!m1.on) label(c, px0, H - 36, '开关断开：I = 0，P = 0，电能条停止上涨', '#dc2626', 12.5);
+}
+
+/* ================= 模块 2：焦耳定律 ================= */
+var cv2 = $('cv2');
+var m2 = { I: 2, R: 4, t: 30, mode: 'pure' };
+
+function drawM2(){
+  var c = fit(cv2), W = cv2.clientWidth, H = cv2.clientHeight;
+  c.clearRect(0, 0, W, H);
+  var I = m2.I, R = m2.R, t = m2.t;
+  var U = (m2.mode === 'pure') ? I * R : 12;         /* 电动机端电压固定为 12 V（示意） */
+  var Q = I * I * R * t;                              /* 焦耳定律，普适 */
+  var Wel = U * I * t;                                /* 电功，普适 */
+  var Iref = 6;                                       /* Q–I 图横轴上限 */
+  var Qref = Iref * Iref * R * t;                     /* 纵轴上限 */
+
+  /* ---- 左侧：电路与热量条 ---- */
+  var L = 52, Rt = W * 0.28, T = 48, B = 196, my = (T + B) / 2;
+  c.strokeStyle = '#0f172a'; c.lineWidth = 3; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(L, B); c.lineTo(L, T); c.lineTo(Rt, T); c.lineTo(Rt, B); c.closePath(); c.stroke();
+  batV(c, L, my);
+  meter(c, (L + Rt) / 2, T, 'A', I.toFixed(2) + ' A');
+  coil(c, Rt, my, I * I * R);
+  flowDots(c, [[L, B], [L, T], [Rt, T], [Rt, B]], m1.ph * 0.8, 24, '#f59e0b');
+  /* 热浪 */
+  c.save(); c.strokeStyle = 'rgba(220,38,38,.5)'; c.lineWidth = 2;
+  for (var w = 0; w < 3; w++){
+    var yy = my - 40 - w * 14;
+    c.beginPath();
+    for (var xx = Rt - 20; xx <= Rt + 20; xx += 4){
+      var yv = yy + 3 * Math.sin((xx / 6) + m1.ph * 0.06 + w);
+      if (xx === Rt - 20) c.moveTo(xx, yv); else c.lineTo(xx, yv);
+    }
+    c.stroke();
+  }
+  c.restore();
+
+  /* 热量条 */
+  var hx = L, hy = 236, hw = W * 0.30 - L, hh = 28;
+  label(c, hx, hy - 12, '热量 Q = I²Rt（满格 = 6 A 时的热量）', '#1e293b', 12.5);
+  c.fillStyle = '#f1f5f9'; rrect(c, hx, hy, hw, hh, 6); c.fill();
+  c.strokeStyle = '#cbd5e1'; c.lineWidth = 1; c.stroke();
+  var fq = Math.max(0, Math.min(1, Q / Qref));
+  if (fq > 0){
+    var g = c.createLinearGradient(hx, 0, hx + hw, 0);
+    g.addColorStop(0, '#fbbf24'); g.addColorStop(1, '#dc2626');
+    c.fillStyle = g; rrect(c, hx + 2, hy + 2, (hw - 4) * fq, hh - 4, 5); c.fill();
+  }
+  mono(c, hx + 6, hy + 19, 'Q = ' + fmt(Q, 0) + ' J', '#7c2d12', 12.5);
+  label(c, hx, hy + 50, '相当于把 200 g 水升温 ' + fmt(Q / (4200 * 0.2), 2) + ' ℃', '#64748b', 12.5);
+
+  /* W 与 Q 对比框 */
+  c.fillStyle = m2.mode === 'pure' ? '#ecfdf5' : '#eff6ff';
+  c.strokeStyle = m2.mode === 'pure' ? '#a7f3d0' : '#bfdbfe'; c.lineWidth = 1;
+  rrect(c, L - 4, 296, W * 0.32, 60, 8); c.fill(); c.stroke();
+  if (m2.mode === 'pure'){
+    mono(c, L + 2, 312, 'U = IR = ' + fmt(U, 2) + ' V', '#065f46', 12.5);
+    mono(c, L + 2, 330, 'W = UIt = ' + fmt(Wel, 0) + ' J', '#065f46', 12.5);
+    mono(c, L + 2, 348, 'Q = I²Rt = ' + fmt(Q, 0) + ' J  →  W = Q ✔', '#065f46', 12.5);
+  } else {
+    var Eb = U - I * R;                       /* 电动机正常运行必须有反电动势 E反 = U − IR > 0 */
+    mono(c, L + 2, 312, 'U = ' + fmt(U, 2) + ' V（端电压，固定）', '#1e40af', 12.5);
+    mono(c, L + 2, 330, 'W = UIt = ' + fmt(Wel, 0) + ' J', '#1e40af', 12.5);
+    if (Eb > 0.05){
+      mono(c, L + 2, 348, 'Q = ' + fmt(Q, 0) + ' J，W−Q = ' + fmt(Wel - Q, 0) + ' J → 机械能', '#1e40af', 12.5);
+    } else {
+      mono(c, L + 2, 348, '⚠ U < IR：这组数据不可能（E反<0）', '#b91c1c', 12.5);
+    }
+  }
+
+  /* ---- 右侧：Q–I 曲线 ---- */
+  var ax0 = W * 0.36, aw = W - ax0 - 10;
+  c.save(); c.translate(ax0, 0);
+  var A = axes(c, aw, H, 40, Iref, Qref, 'I / A', 'Q / J', 1, 0);
+  /* 抛物线 */
+  c.strokeStyle = '#1d4ed8'; c.lineWidth = 2.6;
+  c.beginPath();
+  for (var i = 0; i <= 120; i++){
+    var ii = Iref * i / 120;
+    var qq = ii * ii * R * t;
+    if (i === 0) c.moveTo(A.px(ii), A.py(qq)); else c.lineTo(A.px(ii), A.py(qq));
+  }
+  c.stroke();
+  /* 线性参照（假如 Q∝I） */
+  c.save(); c.setLineDash([6, 4]); c.strokeStyle = 'rgba(148,163,184,.9)'; c.lineWidth = 1.5;
+  c.beginPath(); c.moveTo(A.px(0), A.py(0)); c.lineTo(A.px(Iref), A.py(Qref)); c.stroke(); c.restore();
+  label(c, A.px(Iref * 0.62), A.py(Qref * 0.62) - 8, '若 Q∝I 应为直线', '#94a3b8', 11.5);
+  /* 当前点 */
+  c.fillStyle = '#dc2626';
+  c.beginPath(); c.arc(A.px(I), A.py(Q), 6, 0, 6.2832); c.fill();
+  c.strokeStyle = '#fff'; c.lineWidth = 1.8; c.stroke();
+  mono(c, A.px(I) + 9, A.py(Q) - 6, 'I=' + I.toFixed(1) + 'A → Q=' + fmt(Q, 0) + 'J', '#dc2626', 12);
+  /* 2I 点 */
+  var I2 = 2 * I;
+  if (I2 <= Iref){
+    var Q2 = 4 * Q;
+    c.save(); c.setLineDash([4, 3]); c.strokeStyle = 'rgba(220,38,38,.55)'; c.lineWidth = 1.3;
+    c.beginPath(); c.moveTo(A.px(0), A.py(Q2)); c.lineTo(A.px(I2), A.py(Q2)); c.lineTo(A.px(I2), A.y0); c.stroke();
+    c.beginPath(); c.moveTo(A.px(0), A.py(Q)); c.lineTo(A.px(I), A.py(Q)); c.lineTo(A.px(I), A.y0); c.stroke();
+    c.restore();
+    c.fillStyle = '#059669';
+    c.beginPath(); c.arc(A.px(I2), A.py(Q2), 6, 0, 6.2832); c.fill();
+    c.strokeStyle = '#fff'; c.lineWidth = 1.8; c.stroke();
+    mono(c, A.px(I2) + 9, A.py(Q2) - 6, '2I → 4Q = ' + fmt(Q2, 0) + ' J', '#059669', 12);
+    label(c, A.px(I2) - 4, A.py(Q2) + 22, '电流加倍，热量变 4 倍！', '#059669', 12.5);
+  }
+  /* 倍数表 */
+  c.fillStyle = 'rgba(255,255,255,.92)';
+  rrect(c, A.x1 - 152, A.y1 + 4, 148, 62, 6); c.fill();
+  c.strokeStyle = '#e2e8f0'; c.lineWidth = 1; c.stroke();
+  mono(c, A.x1 - 144, A.y1 + 20, 'I    → Q = ' + fmt(Q, 0) + ' J', '#1e293b', 11.5);
+  mono(c, A.x1 - 144, A.y1 + 38, '2I   → 4Q = ' + fmt(4 * Q, 0) + ' J', '#1e293b', 11.5);
+  mono(c, A.x1 - 144, A.y1 + 56, '3I   → 9Q = ' + fmt(9 * Q, 0) + ' J', '#1e293b', 11.5);
+  c.restore();
+}
+
+/* ================= 模块 3：电动机与能量流向 ================= */
+var cv3 = $('cv3');
+var m3 = { U: 8, R: 2, load: 0.45, y: 0, smoke: 0 };
+var MASS = 0.4, G = 9.8, TRAVEL = 1.5; /* 重物 0.4 kg，行程 1.5 m */
+
+function calcM3(){
+  var U = m3.U, R = Math.max(m3.R, 0.1);
+  var Ist = U / R;                       /* 堵转电流 */
+  var I0 = 0.12 * Ist;                   /* 空载电流 */
+  var stalled = m3.load >= 0.985;
+  var I = stalled ? Ist : (I0 + (Ist - I0) * m3.load);
+  var Pin = U * I, Ph = I * I * R;
+  var Pm = Math.max(0, Pin - Ph);
+  if (stalled) Pm = 0;
+  var eff = Pin > 0 ? Pm / Pin : 0;
+  var v = Pm / (MASS * G);               /* 提升速度 m/s */
+  return { U: U, R: R, Ist: Ist, I: I, Pin: Pin, Ph: Ph, Pm: Pm, eff: eff, v: v, stalled: stalled };
+}
+
+function drawM3(){
+  var c = fit(cv3), W = cv3.clientWidth, H = cv3.clientHeight;
+  c.clearRect(0, 0, W, H);
+  var d = calcM3();
+
+  /* ---- 左侧：电动机提升重物 ---- */
+  var L = 44, Rt = W * 0.30, T = 56, B = 300, mx = (L + Rt) / 2;
+  c.strokeStyle = '#0f172a'; c.lineWidth = 3; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(L, B); c.lineTo(L, T); c.lineTo(Rt, T); c.lineTo(Rt, B); c.closePath(); c.stroke();
+  /* 电源在底边（水平符号） */
+  c.save(); c.strokeStyle = '#0f172a'; c.lineWidth = 3;
+  c.beginPath(); c.moveTo(mx - 20, B - 4); c.lineTo(mx - 20, B + 4); c.stroke();
+  c.beginPath(); c.moveTo(mx - 6, B - 8); c.lineTo(mx - 6, B + 8); c.stroke(); c.restore();
+  mono(c, mx - 26, B - 12, '+', '#0f172a', 12);
+  mono(c, mx + 2, B + 22, 'U=' + d.U.toFixed(1) + 'V', '#0f172a', 11.5);
+  meter(c, Rt, (T + B) / 2, 'A', d.I.toFixed(2) + ' A');
+  flowDots(c, [[L, B], [L, T], [Rt, T], [Rt, B]], m1.ph * (0.6 + d.I * 0.15), 26, '#f59e0b');
+
+  /* 电动机本体（挂在顶边） */
+  var mw = 84, mh = 46, mcx = mx, mcy = T;
+  c.save();
+  if (d.stalled){
+    var rg = c.createRadialGradient(mcx, mcy, 6, mcx, mcy, 62);
+    rg.addColorStop(0, 'rgba(220,38,38,.45)'); rg.addColorStop(1, 'rgba(220,38,38,0)');
+    c.fillStyle = rg; c.beginPath(); c.arc(mcx, mcy, 62, 0, 6.2832); c.fill();
+  }
+  c.fillStyle = d.stalled ? '#fee2e2' : '#fff';
+  c.strokeStyle = d.stalled ? '#dc2626' : '#0f172a'; c.lineWidth = 2.2;
+  rrect(c, mcx - mw / 2, mcy - mh / 2, mw, mh, 8); c.fill(); c.stroke();
+  c.restore();
+  label(c, mcx, mcy + 5, 'M 电动机', d.stalled ? '#b91c1c' : '#1e293b', 13, 'center');
+
+  /* 绳子与重物 */
+  var wTop = mcy + mh / 2;
+  var wyTop = wTop + 24 + (1 - m3.y) * 130;      /* 重物顶部 y：y=0 在下，y=1 在上 */
+  c.strokeStyle = '#475569'; c.lineWidth = 2;
+  c.beginPath(); c.moveTo(mcx, wTop); c.lineTo(mcx, wyTop); c.stroke();
+  c.fillStyle = '#64748b'; c.strokeStyle = '#334155'; c.lineWidth = 1.6;
+  rrect(c, mcx - 22, wyTop, 44, 36, 4); c.fill(); c.stroke();
+  label(c, mcx, wyTop + 24, MASS.toFixed(1) + 'kg', '#f1f5f9', 12, 'center');
+  mono(c, Rt - 4, wyTop + 18, 'v=' + fmt(d.v, 2) + 'm/s', '#1e293b', 11.5, 'right');
+  label(c, L, B + 34, '提升高度 h = ' + fmt(m3.y * TRAVEL, 2) + ' m', '#64748b', 12);
+  if (d.stalled){
+    label(c, L, B + 54, '⚠ 卡住：转速为 0，重物不动，电能全部发热', '#b91c1c', 13);
+    /* 冒烟 */
+    c.save(); c.fillStyle = 'rgba(100,116,139,.55)';
+    for (var s = 0; s < 5; s++){
+      var t2 = (m3.smoke * 0.6 + s * 0.2) % 1;
+      c.beginPath();
+      c.arc(mcx + 30 + 12 * Math.sin(s * 2 + m3.smoke * 0.05), mcy - 20 - t2 * 40, 3 + t2 * 6, 0, 6.2832);
+      c.fill();
+    }
+    c.restore();
+  }
+
+  /* ---- 右侧：能量流向（桑基式） ---- */
+  var sx = W * 0.36, sw = W - sx - 20;
+  label(c, sx, 32, '能量流向：P入 = UI 分成两股（宽度表示功率）', '#1e293b', 14);
+  var top = 62, bot = H - 92, hMax = bot - top;
+  var Pmax = d.U * d.Ist;                    /* 满高对应堵转时的输入功率 */
+  var k = hMax / Math.max(Pmax, 0.001);
+  var hIn = Math.max(6, d.Pin * k);
+  var hM = Math.max(0, d.Pm * k), hH = Math.max(0, d.Ph * k);
+  var xLf = sx + 6, xRt = sx + sw * 0.62, xEnd = sx + sw - 96;
+
+  /* 输入带 */
+  var gi = c.createLinearGradient(xLf, 0, xRt, 0);
+  gi.addColorStop(0, '#bfdbfe'); gi.addColorStop(1, '#93c5fd');
+  c.fillStyle = gi;
+  c.beginPath(); c.rect(xLf, top, 22, hIn); c.fill();
+  c.strokeStyle = '#1d4ed8'; c.lineWidth = 1; c.stroke();
+  label(c, xLf - 2, top - 8, '输入 P入 = UI = ' + fmt(d.Pin, 2) + ' W', '#1d4ed8', 12.5);
+
+  /* 分流带 */
+  function band(y1, hh2, y2, colA, colB){
+    if (hh2 <= 0.5) return;
+    var g2 = c.createLinearGradient(xRt, 0, xEnd, 0);
+    g2.addColorStop(0, colA); g2.addColorStop(1, colB);
+    c.fillStyle = g2;
+    var dx = (xEnd - xRt) * 0.45;
+    c.beginPath();
+    c.moveTo(xRt, y1);
+    c.bezierCurveTo(xRt + dx, y1, xEnd - dx, y2, xEnd, y2);
+    c.lineTo(xEnd, y2 + hh2);
+    c.bezierCurveTo(xEnd - dx, y2 + hh2, xRt + dx, y1 + hh2, xRt, y1 + hh2);
+    c.closePath(); c.fill();
+  }
+  band(top, hM, top + 6, '#6ee7b7', '#059669');
+  band(top + hM, hH, top + 6 + hM, '#fcd34d', '#dc2626');
+
+  /* 右侧方框与标注 */
+  c.fillStyle = '#ecfdf5'; c.strokeStyle = '#059669'; c.lineWidth = 1.2;
+  rrect(c, xEnd - 2, top + 6, 92, 46, 6); c.fill(); c.stroke();
+  mono(c, xEnd + 6, top + 22, '机械能', '#065f46', 12.5);
+  mono(c, xEnd + 6, top + 40, fmt(d.Pm, 2) + ' W', '#065f46', 13);
+
+  c.fillStyle = '#fff7ed'; c.strokeStyle = '#dc2626'; c.lineWidth = 1.2;
+  rrect(c, xEnd - 2, top + 6 + hM + 4, 92, 46, 6); c.fill(); c.stroke();
+  mono(c, xEnd + 6, top + 22 + hM + 4, '内能(发热)', '#b91c1c', 12.5);
+  mono(c, xEnd + 6, top + 40 + hM + 4, fmt(d.Ph, 2) + ' W', '#b91c1c', 13);
+
+  /* 结论行 */
+  var ly = H - 62;
+  mono(c, sx, ly, 'R = ' + d.R.toFixed(1) + ' Ω    I = ' + fmt(d.I, 2) + ' A    I²R = ' + fmt(d.Ph, 2) + ' W', '#1e293b', 12.5);
+  mono(c, sx, ly + 20, 'P机 = UI − I²R = ' + fmt(d.Pm, 2) + ' W    η = P机/P入 = ' + fmt(d.eff * 100, 1) + ' %', '#1e293b', 12.5);
+  label(c, sx, ly + 42, '电动机转动时产生反电动势，机械功率也可写成 P机 = E反·I（E反 = U − IR）', '#64748b', 12);
+
+  /* 警告 */
+  var w3 = $('warn3');
+  if (d.stalled){
+    w3.style.display = 'block';
+    w3.innerHTML = '<b>危险：堵转（卡住）状态。</b>转速为 0 → 反电动势为 0 → 电流 I = U/R = '
+      + fmt(d.Ist, 2) + ' A 达到最大，输入的 ' + fmt(d.Pin, 1)
+      + ' W 全部变成热（I²R = ' + fmt(d.Ph, 1) + ' W），机械功率为 0、效率 η = 0。线圈温度会急剧上升，实际中必须避免电动机堵转。';
+  } else if (d.eff < 0.25){
+    w3.style.display = 'block';
+    w3.innerHTML = '<b>重载：</b>电流已经很大（' + fmt(d.I, 2) + ' A），发热占比 '
+      + fmt(100 - d.eff * 100, 0) + ' %，效率只有 ' + fmt(d.eff * 100, 0)
+      + ' % —— 负载越重，电源给的电能越多地变成了没用的热。';
+  } else {
+    w3.style.display = 'none';
+  }
+}
+
+/* ================= 控件绑定 ================= */
+bindRange('u1', function(v){ m1.U = v; drawM1(); }, function(v){ return v.toFixed(1) + ' V'; });
+bindRange('i1', function(v){ m1.I = v; drawM1(); }, function(v){ return v.toFixed(1) + ' A'; });
+$('seg1').addEventListener('click', function(e){
+  var b = e.target;
+  if (b.tagName !== 'BUTTON') return;
+  var bs = this.getElementsByTagName('button');
+  for (var i = 0; i < bs.length; i++) bs[i].className = '';
+  b.className = 'on';
+  m1.app = b.getAttribute('data-app');
+  drawM1();
+});
+$('sw1').addEventListener('click', function(){
+  m1.on = !m1.on;
+  this.textContent = '开关：' + (m1.on ? '闭合' : '断开');
+  this.className = m1.on ? 'btn' : 'btn on';
+  drawM1();
+});
+$('cl1').addEventListener('click', function(){ m1.W = 0; m1.t = 0; drawM1(); });
+
+bindRange('i2', function(v){ m2.I = v; drawM2(); }, function(v){ return v.toFixed(1) + ' A'; });
+bindRange('r2', function(v){ m2.R = v; drawM2(); }, function(v){ return v.toFixed(1) + ' Ω'; });
+bindRange('t2', function(v){ m2.t = v; drawM2(); }, function(v){ return v.toFixed(0) + ' s'; });
+$('seg2').addEventListener('click', function(e){
+  var b = e.target;
+  if (b.tagName !== 'BUTTON') return;
+  var bs = this.getElementsByTagName('button');
+  for (var i = 0; i < bs.length; i++) bs[i].className = '';
+  b.className = 'on';
+  m2.mode = b.getAttribute('data-m');
+  drawM2();
+});
+
+bindRange('u3', function(v){ m3.U = v; drawM3(); }, function(v){ return v.toFixed(1) + ' V'; });
+bindRange('r3', function(v){ m3.R = v; drawM3(); }, function(v){ return v.toFixed(1) + ' Ω'; });
+bindRange('l3', function(v){ m3.load = v / 100; drawM3(); }, function(v){ return v.toFixed(0) + ' %'; });
+function setLoad(pct){
+  m3.load = pct / 100;
+  $('l3').value = pct; $('l3v').textContent = pct.toFixed(0) + ' %';
+  drawM3();
+}
+$('p3a').addEventListener('click', function(){ setLoad(5); });
+$('p3b').addEventListener('click', function(){ setLoad(43); });   /* I ≈ U/2R，P机 最大 */
+$('p3c').addEventListener('click', function(){ setLoad(100); });
+
+/* ================= 动画循环 ================= */
+var last = 0;
+function loop(ts){
+  var dt = last ? Math.min((ts - last) / 1000, 0.05) : 0;
+  last = ts;
+  if (!document.hidden){
+    m1.ph += dt * 60;
+    if (m1.on){ m1.t += dt; m1.W += m1.U * m1.I * dt; }
+    var d = calcM3();
+    if (d.v > 0){
+      m3.y += d.v * dt / TRAVEL;
+      if (m3.y > 1) m3.y = 0;
+    }
+    m3.smoke += dt * 60;
+    drawM1(); drawM2(); drawM3();
+  }
+  requestAnimationFrame(loop);
+}
+window.addEventListener('resize', function(){ drawM1(); drawM2(); drawM3(); });
+drawM1(); drawM2(); drawM3();
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

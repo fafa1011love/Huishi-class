@@ -1,12 +1,14 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import AdminUsers from './AdminUsers';
 import Dashboard from './Dashboard';
 import Landing, { MarketingPage } from './Landing';
 import Login, { AuthUser } from './Login';
+import VisualClassroom from './VisualClassroom';
 import { useTheme } from './components/ThemeProvider';
 import { isThemeId } from './services/theme';
+import { isVisualHash } from './services/visualClassroom';
 
-type AppView = 'landing' | 'login' | 'dashboard' | 'admin';
+type AppView = 'landing' | 'login' | 'dashboard' | 'admin' | 'visual';
 
 const MARKETING_ROUTES: Record<MarketingPage, string> = {
   home: '/',
@@ -34,7 +36,9 @@ async function readError(response: Response) {
 }
 
 export default function App() {
-  const [view, setView] = useState<AppView>('landing');
+  const [view, setView] = useState<AppView>(() => (isVisualHash() ? 'visual' : 'landing'));
+  // 进入可视化课堂前的视图，用于浏览器后退时还原（不影响营销页自身的导航）
+  const visualReturnRef = useRef<'dashboard' | null>(null);
   const [marketingPage, setMarketingPage] = useState<MarketingPage>(() => marketingPageFromPath(window.location.pathname));
   const [user, setUser] = useState<AuthUser | null>(null);
   const [isCheckingAuth, setIsCheckingAuth] = useState(true);
@@ -59,14 +63,14 @@ export default function App() {
 
         if (isMounted) {
           setUser(data.user);
-          if (initialMarketingPage === 'home') {
+          if (initialMarketingPage === 'home' && !isVisualHash()) {
             setView(data.user.role === 'admin' ? 'admin' : 'dashboard');
           }
         }
       } catch {
         if (isMounted) {
           setUser(null);
-          setView('landing');
+          setView(isVisualHash() ? 'visual' : 'landing');
         }
       } finally {
         if (isMounted) setIsCheckingAuth(false);
@@ -82,6 +86,16 @@ export default function App() {
 
   useEffect(() => {
     const handlePopState = () => {
+      if (isVisualHash()) {
+        setView('visual');
+        return;
+      }
+      const returnTo = visualReturnRef.current;
+      visualReturnRef.current = null;
+      if (returnTo === 'dashboard') {
+        setView('dashboard');
+        return;
+      }
       setMarketingPage(marketingPageFromPath(window.location.pathname));
       setView('landing');
     };
@@ -96,6 +110,20 @@ export default function App() {
     setMarketingPage(page);
     setView('landing');
     window.scrollTo({ top: 0, behavior: 'auto' });
+  };
+
+  const handleOpenVisualClassroom = () => {
+    visualReturnRef.current = 'dashboard';
+    window.history.pushState({}, '', `${window.location.pathname}${window.location.search}#visual`);
+    setView('visual');
+  };
+
+  const handleBackFromVisual = () => {
+    visualReturnRef.current = null;
+    if (window.location.hash) {
+      window.history.pushState({}, '', `${window.location.pathname}${window.location.search}`);
+    }
+    setView(user ? 'dashboard' : 'landing');
   };
 
   const handleEnter = () => {
@@ -150,6 +178,10 @@ export default function App() {
     );
   }
 
+  if (view === 'visual') {
+    return <VisualClassroom onBack={handleBackFromVisual} />;
+  }
+
   if (view === 'admin' && user?.role === 'admin') {
     return (
       <AdminUsers
@@ -167,6 +199,7 @@ export default function App() {
         initialLocalModelId={localModelId || undefined}
         currentUser={user}
         onBack={() => setView('landing')}
+        onOpenVisualClassroom={handleOpenVisualClassroom}
         onLogout={handleLogout}
         onUserUpdated={handleUserUpdated}
         onOpenAdmin={user.role === 'admin' ? () => setView('admin') : undefined}

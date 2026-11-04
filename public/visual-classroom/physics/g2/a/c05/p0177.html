@@ -1,0 +1,669 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>13.5　能量量子化 ｜ 人教版物理必修第三册</title>
+<style>
+  :root{
+    --blue:#1d4ed8; --blue-soft:#eff6ff; --blue-line:#bfdbfe;
+    --ink:#1e293b; --sub:#64748b; --line:#e2e8f0;
+    --amber-bg:#fffbeb; --amber-line:#fcd34d; --amber-ink:#92400e;
+    --green:#059669; --red:#dc2626;
+    --purple:#7c3aed; --purple-soft:#f5f3ff;
+    --amber:#f59e0b;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:#f3f5f9; color:var(--ink);
+    font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif; padding:18px 12px 40px;}
+  .wrap{max-width:1060px; margin:0 auto;}
+  header{background:#fff; border:1px solid var(--line); border-left:6px solid var(--purple);
+    border-radius:12px; padding:16px 22px; box-shadow:0 1px 3px rgba(15,23,42,.06);}
+  header h1{font-size:22px; color:var(--ink);}
+  header .meta{margin-top:6px; font-size:12.5px; color:var(--sub); line-height:1.7;}
+  .mod{background:#fff; border:1px solid var(--line); border-radius:12px;
+    padding:16px 20px 18px; margin-top:16px; box-shadow:0 1px 3px rgba(15,23,42,.05);}
+  .mod-h{display:flex; align-items:center; gap:10px; margin-bottom:10px;}
+  .mod-h .no{background:var(--purple); color:#fff; font-size:12px; border-radius:6px;
+    padding:2px 8px; white-space:nowrap;}
+  .mod-h h2{font-size:16.5px;}
+  .mod-h .kp{margin-left:auto; font-size:12px; color:var(--sub); white-space:nowrap;}
+  .think{background:var(--blue-soft); border:1px solid var(--blue-line); border-radius:8px;
+    padding:8px 12px; font-size:12.5px; color:#1e40af; margin-bottom:10px; line-height:1.7;}
+  .think b{color:var(--blue);}
+  canvas.stage{display:block; width:100%; background:#fbfdff;
+    border:1px solid var(--line); border-radius:10px;}
+  .ctrl{display:flex; flex-wrap:wrap; gap:8px 18px; align-items:center; margin-top:10px;}
+  .row{display:flex; align-items:center; gap:8px; font-size:13px;}
+  .row label{color:var(--sub); white-space:nowrap;}
+  .row input[type=range]{width:150px; accent-color:var(--purple);}
+  .row .val{min-width:64px; font-variant-numeric:tabular-nums; color:var(--ink); font-weight:600;}
+  .btn{border:1px solid var(--purple); color:var(--purple); background:#fff; border-radius:7px;
+    padding:4px 12px; font-size:12.5px; cursor:pointer;}
+  .btn:hover{background:var(--purple-soft);}
+  .btn.on{background:var(--purple); color:#fff;}
+  .note{margin-top:10px; background:var(--amber-bg); border:1px solid var(--amber-line);
+    border-radius:8px; padding:8px 12px; font-size:12.5px; color:var(--amber-ink); line-height:1.8;}
+  .note b{color:#b45309;}
+  footer{margin-top:20px; text-align:center; font-size:12px; color:#94a3b8;}
+  .seg{display:inline-flex; border:1px solid var(--purple); border-radius:8px; overflow:hidden;}
+  .seg button{border:none; background:#fff; color:var(--purple); padding:4px 12px;
+    font-size:12.5px; cursor:pointer;}
+  .seg button.on{background:var(--purple); color:#fff;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>13.5　能量量子化</h1>
+  <div class="meta">人教版《物理》必修第三册 · 第十三章 电磁感应与电磁波初步 · 教材 P124–P130 ｜ 覆盖知识点：黑体辐射与"紫外灾难"、普朗克能量子假说 ε＝hν、光子与光电效应（截止频率、Ek–ν 图象）</div>
+</header>
+
+<div class="mod">
+  <div class="mod-h"><span class="no">模块 1</span><h2>黑体辐射与"紫外灾难"</h2><span class="kp">数据图象</span></div>
+  <div class="think"><b>先想一想：</b>把铁块加热，它先变红、再变黄、最后发白。温度越高，最亮的那个波长是变<b>长</b>还是变<b>短</b>？</div>
+  <canvas class="stage" id="cv1" style="height:380px;"></canvas>
+  <div class="ctrl">
+    <div class="row"><label>温度 T</label><input type="range" id="r1t" min="3000" max="6000" step="50" value="5000"><span class="val" id="r1tv"></span></div>
+    <button class="btn" id="b1a">3000 K（白炽灯）</button>
+    <button class="btn" id="b1b">5800 K（太阳表面）</button>
+    <button class="btn" id="b1c">6000 K</button>
+  </div>
+  <div class="note"><b>观察要点：</b>经典理论（瑞利–金斯公式，红虚线）在长波区跟实验吻合，可到了<b>短波（紫外）端却趋向无穷大</b>——这就是"紫外灾难"，说明经典物理在这里失效了。普朗克假设能量只能<b>一份一份</b>地吸收、辐射（ε＝hν），得出的曲线（紫实线）与实验完全吻合。温度越高：<b>辐射越强，峰值波长越短</b>（维恩位移 λ_max·T＝2.90×10⁻³ m·K）。</div>
+</div>
+
+<div class="mod">
+  <div class="mod-h"><span class="no">模块 2</span><h2>能量子 ε＝hν：能量是一份一份的</h2><span class="kp">动画交互</span></div>
+  <div class="think"><b>先想一想：</b>振子的能量可以取 1.5 份 hν 吗？拖动"能量"滑块，看看量子这边的小球能不能停在两级台阶之间。</div>
+  <canvas class="stage" id="cv2" style="height:380px;"></canvas>
+  <div class="ctrl">
+    <div class="row"><label>频率 ν</label><input type="range" id="r2n" min="1" max="12" step="0.1" value="5"><span class="val" id="r2nv"></span></div>
+    <div class="row"><label>振子能量 E</label><input type="range" id="r2e" min="0" max="5.5" step="0.02" value="2.3"><span class="val" id="r2ev"></span></div>
+    <button class="btn" id="b2up">吸收一份 hν ↑</button>
+    <button class="btn" id="b2dn">放出一份 hν ↓</button>
+  </div>
+  <div class="note"><b>观察要点：</b>经典物理认为能量可以<b>连续</b>取任意值（左边斜坡，球想停哪儿停哪儿）；普朗克说：频率为 ν 的振子，能量只能是 <b>hν 的整数倍</b>（右边台阶，球只能停在 0、hν、2hν、3hν… 上）。h＝6.63×10⁻³⁴ J·s，这个"最小份额"就叫<b>能量子</b>。频率越高，一份能量越大，台阶越高。</div>
+</div>
+
+<div class="mod">
+  <div class="mod-h"><span class="no">模块 3</span><h2>光电效应：光的频率说了算</h2><span class="kp">交互仿真</span></div>
+  <div class="think"><b>先想一想：</b>用很暗的蓝光和很亮的红光分别照同一块金属，哪种一定能打出电子？（提示：一个一个光子去撞电子）</div>
+  <canvas class="stage" id="cv3" style="height:380px;"></canvas>
+  <div class="ctrl">
+    <div class="row"><label>入射光频率 ν</label><input type="range" id="r3n" min="2" max="12" step="0.05" value="7"><span class="val" id="r3nv"></span></div>
+    <div class="row"><label>光强</label><input type="range" id="r3i" min="1" max="6" step="0.5" value="3"><span class="val" id="r3iv"></span></div>
+    <button class="btn" id="b3a">低于截止频率（红光）</button>
+    <button class="btn" id="b3b">高于截止频率（紫外）</button>
+  </div>
+  <div class="note"><b>观察要点：</b>ν＜ν₀（截止频率）时，<b>不管光多强，一个电子也打不出来</b>；ν＞ν₀ 时立刻有电子逸出，最大初动能 <b>E_k＝hν−W₀</b> 只跟频率有关，跟光强无关；<b>光强只改变电子数目</b>（单位时间跑出来的电子变多，但每个电子的能量不变）。右边 E_k–ν 是一条直线：<b>斜率就是 h</b>，横截距就是 ν₀。</div>
+</div>
+
+<footer>人教版高中物理必修第三册 · 可视化交互课件 ｜ 单文件离线运行，双击即可使用</footer>
+</div>
+
+<script>
+(function(){
+'use strict';
+/* ========== 通用工具 ========== */
+function $(id){ return document.getElementById(id); }
+function fmt(x, d){
+  if (d === undefined) d = 2;
+  if (!isFinite(x)) return '—';
+  var a = Math.abs(x);
+  if (a >= 10000 || (a > 0 && a < 0.01)) return x.toExponential(2);
+  return (+x.toFixed(d)).toString();
+}
+function fit(cv){
+  var dpr = window.devicePixelRatio || 1;
+  var w = cv.clientWidth, h = cv.clientHeight;
+  if (w < 10) w = 900;
+  cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+  var ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return ctx;
+}
+function bindRange(id, fn){
+  var el = $(id), v = $(id + 'v');
+  function go(){ if (v) v.textContent = el.value; fn(parseFloat(el.value)); }
+  el.addEventListener('input', go); go();
+  return el;
+}
+function arrow(ctx, x1, y1, x2, y2, color, w){
+  ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = w || 2;
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  var a = Math.atan2(y2 - y1, x2 - x1), s = 7;
+  ctx.beginPath(); ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - s * Math.cos(a - 0.42), y2 - s * Math.sin(a - 0.42));
+  ctx.lineTo(x2 - s * Math.cos(a + 0.42), y2 - s * Math.sin(a + 0.42));
+  ctx.closePath(); ctx.fill();
+}
+function txt(c, s, x, y, col, font, al, bl){
+  c.fillStyle = col || '#334155';
+  c.font = font || '12px "Microsoft YaHei",sans-serif';
+  c.textAlign = al || 'left'; c.textBaseline = bl || 'middle';
+  c.fillText(s, x, y);
+}
+function rr(c, x, y, w, h, r){
+  r = Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2);
+  c.beginPath();
+  c.moveTo(x + r, y);
+  c.arcTo(x + w, y, x + w, y + h, r);
+  c.arcTo(x + w, y + h, x, y + h, r);
+  c.arcTo(x, y + h, x, y, r);
+  c.arcTo(x, y, x + w, y, r);
+  c.closePath();
+}
+var TAU = Math.PI * 2, PURPLE = '#7c3aed', AMBER = '#f59e0b', RED = '#dc2626';
+var H = 6.63e-34, CC = 3.0e8, EE = 1.60e-19, KB = 1.38e-23;
+var C2 = H * CC / KB;            /* 1.4388e-2 m·K */
+var WIEN = 2.898e-3;             /* m·K */
+var SU = {'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
+function sup(n){
+  var s = String(n), o = '';
+  for (var i = 0; i < s.length; i++) o += (SU[s.charAt(i)] || s.charAt(i));
+  return o;
+}
+/* 波长(nm) → 近似颜色 */
+function wl2rgb(nm){
+  var r = 0, g = 0, b = 0;
+  nm = Math.max(360, Math.min(800, nm));
+  if (nm < 440){ r = -(nm - 440) / 60; g = 0; b = 1; }
+  else if (nm < 490){ r = 0; g = (nm - 440) / 50; b = 1; }
+  else if (nm < 510){ r = 0; g = 1; b = -(nm - 510) / 20; }
+  else if (nm < 580){ r = (nm - 510) / 70; g = 1; b = 0; }
+  else if (nm < 645){ r = 1; g = -(nm - 645) / 65; b = 0; }
+  else { r = 1; g = 0; b = 0; }
+  var f = 1;
+  if (nm < 420) f = 0.35 + 0.65 * (nm - 360) / 60;
+  else if (nm > 700) f = 0.35 + 0.65 * (800 - nm) / 100;
+  f = Math.max(0, Math.min(1, f));
+  return 'rgb(' + Math.round(255 * Math.max(0, r) * f) + ',' + Math.round(255 * Math.max(0, g) * f) + ',' + Math.round(255 * Math.max(0, b) * f) + ')';
+}
+
+/* ==================================================================
+   模块 1：黑体辐射（普朗克公式 vs 瑞利–金斯公式）
+   相对单位：Planck = 1/(λ⁵(e^{c2/(λT)}−1))，Rayleigh-Jeans = T/(c2·λ⁴)
+   ================================================================== */
+var cv1 = $('cv1'), c1 = null, W1 = 0, H1 = 0;
+var M1 = {T:5000};
+var L0 = 50e-9, L1 = 3000e-9;
+function prep1(){ c1 = fit(cv1); W1 = cv1.clientWidth; H1 = cv1.clientHeight; }
+function planck(lam, T){
+  var x = C2 / (lam * T);
+  if (x > 700) return 0;
+  return 1 / (Math.pow(lam, 5) * (Math.exp(x) - 1));
+}
+function rj(lam, T){ return T / (C2 * Math.pow(lam, 4)); }
+function peakVal(T){ return planck(WIEN / T, T); }
+function draw1(){
+  prep1();
+  var c = c1, i;
+  c.clearRect(0, 0, W1, H1); c.fillStyle = '#fbfdff'; c.fillRect(0, 0, W1, H1);
+  var x0 = 62, x1 = W1 * 0.72, y0 = H1 - 52, y1 = 30;
+  var yMax = peakVal(6000) * 1.06;
+  function Xof(lam){ return x0 + (x1 - x0) * (lam - L0) / (L1 - L0); }
+  function Yof(v){ return y0 - (y0 - y1) * Math.max(0, Math.min(0.97, v / yMax)); }
+  /* 网格 */
+  c.strokeStyle = '#e2e8f0'; c.lineWidth = 1;
+  for (i = 1; i <= 4; i++){
+    var gy = y0 - (y0 - y1) * i / 4;
+    c.beginPath(); c.moveTo(x0, gy); c.lineTo(x1, gy); c.stroke();
+  }
+  c.strokeStyle = '#334155'; c.lineWidth = 1.4;
+  c.beginPath(); c.moveTo(x0, y1); c.lineTo(x0, y0); c.lineTo(x1, y0); c.stroke();
+  /* 可见光底色 */
+  var vx0 = Xof(400e-9), vx1 = Xof(760e-9);
+  var g = c.createLinearGradient(vx0, 0, vx1, 0);
+  g.addColorStop(0, 'rgba(124,45,146,.16)'); g.addColorStop(0.25, 'rgba(37,99,235,.16)');
+  g.addColorStop(0.5, 'rgba(22,163,74,.16)'); g.addColorStop(0.75, 'rgba(250,204,21,.16)');
+  g.addColorStop(1, 'rgba(220,38,38,.16)');
+  c.fillStyle = g; c.fillRect(vx0, y1, vx1 - vx0, y0 - y1);
+  txt(c, '可见光', (vx0 + vx1) / 2, y1 + 10, '#64748b', '10.5px "Microsoft YaHei"', 'center');
+  /* 参考曲线（其它温度，淡色） */
+  var refs = [3000, 4000, 6000];
+  for (i = 0; i < refs.length; i++){
+    if (Math.abs(refs[i] - M1.T) < 60) continue;
+    c.strokeStyle = 'rgba(124,58,237,.22)'; c.lineWidth = 1.5;
+    c.beginPath();
+    for (var k = 0; k <= 240; k++){
+      var lam = L0 + (L1 - L0) * k / 240;
+      var yy = Yof(planck(lam, refs[i]));
+      if (k === 0) c.moveTo(Xof(lam), yy); else c.lineTo(Xof(lam), yy);
+    }
+    c.stroke();
+    txt(c, refs[i] + 'K', Xof(WIEN / refs[i]) + 6, Yof(peakVal(refs[i])) - 8, '#a78bfa', '10.5px "Microsoft YaHei"');
+  }
+  /* 瑞利–金斯（经典）曲线 */
+  c.strokeStyle = RED; c.lineWidth = 2; c.setLineDash([7, 4]);
+  c.beginPath();
+  for (i = 0; i <= 240; i++){
+    var lam2 = L0 + (L1 - L0) * i / 240;
+    var yy2 = Yof(rj(lam2, M1.T));
+    if (i === 0) c.moveTo(Xof(lam2), yy2); else c.lineTo(Xof(lam2), yy2);
+  }
+  c.stroke(); c.setLineDash([]);
+  /* 普朗克曲线 */
+  c.strokeStyle = PURPLE; c.lineWidth = 2.8;
+  c.beginPath();
+  for (i = 0; i <= 300; i++){
+    var lam3 = L0 + (L1 - L0) * i / 300;
+    var yy3 = Yof(planck(lam3, M1.T));
+    if (i === 0) c.moveTo(Xof(lam3), yy3); else c.lineTo(Xof(lam3), yy3);
+  }
+  c.stroke();
+  /* 峰值标记 */
+  var lmax = WIEN / M1.T, pv = planck(lmax, M1.T);
+  var pxm = Xof(lmax), pym = Yof(pv);
+  c.strokeStyle = '#059669'; c.lineWidth = 1.4; c.setLineDash([4, 3]);
+  c.beginPath(); c.moveTo(pxm, y0); c.lineTo(pxm, pym); c.stroke(); c.setLineDash([]);
+  c.beginPath(); c.arc(pxm, pym, 5, 0, TAU); c.fillStyle = '#059669'; c.fill();
+  txt(c, 'λ_max = ' + (lmax * 1e9).toFixed(0) + ' nm', pxm + 8, pym - 14, '#059669', 'bold 12px "Microsoft YaHei"');
+  /* 紫外灾难标注 */
+  var uvy = Yof(rj(300e-9, M1.T));
+  if (uvy < y1 + 24){
+    txt(c, '↑ 经典理论在这里发散', Xof(320e-9), y1 + 24, '#b91c1c', 'bold 11.5px "Microsoft YaHei"');
+    txt(c, '（"紫外灾难"）', Xof(320e-9), y1 + 40, '#b91c1c', '11.5px "Microsoft YaHei"');
+  }
+  /* 坐标轴 */
+  for (i = 0; i <= 6; i++){
+    var lx = Xof(L0 + (L1 - L0) * i / 6);
+    txt(c, ((L0 + (L1 - L0) * i / 6) * 1e9).toFixed(0),
+        lx, y0 + 16, '#94a3b8', '10.5px "Microsoft YaHei"', 'center');
+    c.strokeStyle = '#cbd5e1';
+    c.beginPath(); c.moveTo(lx, y0); c.lineTo(lx, y0 + 5); c.stroke();
+  }
+  txt(c, '波长 λ / nm', (x0 + x1) / 2, y0 + 34, '#475569', '12px "Microsoft YaHei"', 'center');
+  txt(c, '辐射强度（相对值）', x0 - 6, y1 + 6, '#6d28d9', '11.5px "Microsoft YaHei"', 'right');
+  /* 图例 */
+  var lgx = x0 + 14, lgy = y1 + 56;
+  c.strokeStyle = PURPLE; c.lineWidth = 2.8;
+  c.beginPath(); c.moveTo(lgx, lgy); c.lineTo(lgx + 26, lgy); c.stroke();
+  txt(c, '普朗克公式（与实验吻合）', lgx + 32, lgy, '#6d28d9', '11.5px "Microsoft YaHei"');
+  c.strokeStyle = RED; c.lineWidth = 2; c.setLineDash([7, 4]);
+  c.beginPath(); c.moveTo(lgx + 210, lgy); c.lineTo(lgx + 236, lgy); c.stroke(); c.setLineDash([]);
+  txt(c, '瑞利–金斯公式（经典理论）', lgx + 242, lgy, '#b91c1c', '11.5px "Microsoft YaHei"');
+  /* 右侧面板 */
+  var px0 = W1 * 0.73, py0 = 24, pw = W1 * 0.27 - 22;
+  c.fillStyle = 'rgba(255,255,255,.96)'; c.strokeStyle = '#e2e8f0'; c.lineWidth = 1;
+  rr(c, px0, py0, pw, 210, 9); c.fill(); c.stroke();
+  txt(c, '读数', px0 + 14, py0 + 18, '#334155', 'bold 13px "Microsoft YaHei"');
+  txt(c, '温度 T', px0 + 14, py0 + 44, '#64748b', '12px "Microsoft YaHei"');
+  txt(c, M1.T + ' K', px0 + pw - 12, py0 + 44, '#334155', 'bold 13px "Microsoft YaHei"', 'right');
+  txt(c, '峰值波长 λ_max', px0 + 14, py0 + 70, '#64748b', '12px "Microsoft YaHei"');
+  txt(c, (lmax * 1e9).toFixed(0) + ' nm', px0 + pw - 12, py0 + 70, '#059669', 'bold 13px "Microsoft YaHei"', 'right');
+  txt(c, 'λ_max·T（维恩常量）', px0 + 14, py0 + 96, '#64748b', '12px "Microsoft YaHei"');
+  txt(c, (lmax * M1.T).toExponential(2) + ' m·K', px0 + pw - 12, py0 + 96, '#6d28d9', 'bold 11.5px "Microsoft YaHei"', 'right');
+  /* 总辐射 ∝ T⁴ 的对比条 */
+  var r0 = Math.pow(3000 / 6000, 4), r1 = Math.pow(M1.T / 6000, 4);
+  var bw = pw - 28, bx = px0 + 14, byy = py0 + 122;
+  txt(c, '总辐射强度 ∝ T⁴', bx, byy - 6, '#64748b', '11.5px "Microsoft YaHei"');
+  c.fillStyle = '#ede9fe'; rr(c, bx, byy + 8, bw, 12, 6); c.fill();
+  c.fillStyle = PURPLE; rr(c, bx, byy + 8, Math.max(2, bw * r1), 12, 6); c.fill();
+  c.strokeStyle = '#94a3b8'; c.lineWidth = 1;
+  var r0x = bx + bw * r0;
+  c.beginPath(); c.moveTo(r0x, byy + 4); c.lineTo(r0x, byy + 24); c.stroke();
+  txt(c, '3000K', r0x, byy + 32, '#94a3b8', '10px "Microsoft YaHei"', 'center');
+  txt(c, '相对 6000K：' + fmt(r1 * 100, 1) + '%', bx, byy + 48, '#6d28d9', '11.5px "Microsoft YaHei"');
+  txt(c, 'T 翻倍，总辐射变为 16 倍；', bx, py0 + 186, '#475569', '11.5px "Microsoft YaHei"');
+  txt(c, '峰值波长则缩短为一半。', bx, py0 + 200, '#475569', '11.5px "Microsoft YaHei"');
+  /* 黑体模型示意图（空腔小孔） */
+  var qx = px0 + 10, qy = py0 + 226, qw = pw - 20, qh = H1 - qy - 14;
+  c.fillStyle = 'rgba(255,255,255,.96)'; c.strokeStyle = '#e2e8f0'; c.lineWidth = 1;
+  rr(c, qx, qy, qw, qh, 8); c.fill(); c.stroke();
+  txt(c, '黑体模型：空腔 + 小孔', qx + 10, qy + 14, '#334155', 'bold 12px "Microsoft YaHei"');
+  var cavX = qx + qw * 0.40, cavY = qy + qh * 0.56, cw = Math.min(74, qw * 0.42), ch = Math.min(46, qh * 0.34);
+  /* 加热的火焰 */
+  c.fillStyle = '#f97316';
+  c.beginPath(); c.moveTo(cavX - 10, cavY + ch / 2 + 26); c.lineTo(cavX, cavY + ch / 2 + 4); c.lineTo(cavX + 10, cavY + ch / 2 + 26); c.closePath(); c.fill();
+  c.fillStyle = '#fbbf24';
+  c.beginPath(); c.moveTo(cavX - 5, cavY + ch / 2 + 24); c.lineTo(cavX, cavY + ch / 2 + 10); c.lineTo(cavX + 5, cavY + ch / 2 + 24); c.closePath(); c.fill();
+  /* 空腔 */
+  c.fillStyle = '#e2e8f0'; c.strokeStyle = '#475569'; c.lineWidth = 2;
+  rr(c, cavX - cw / 2, cavY - ch / 2, cw, ch, 8); c.fill(); c.stroke();
+  c.fillStyle = '#fff';
+  c.fillRect(cavX + cw / 2 - 6, cavY - 6, 12, 12);
+  c.strokeStyle = '#475569'; c.lineWidth = 1.4;
+  c.strokeRect(cavX + cw / 2 - 6, cavY - 6, 12, 12);
+  /* 腔内多次反射（几乎全部吸收） */
+  c.strokeStyle = 'rgba(124,58,237,.55)'; c.lineWidth = 1.4;
+  c.beginPath();
+  c.moveTo(cavX + cw / 2 - 4, cavY);
+  c.lineTo(cavX - cw / 2 + 8, cavY + ch / 2 - 6);
+  c.lineTo(cavX + cw / 2 - 10, cavY - ch / 2 + 7);
+  c.lineTo(cavX - cw / 2 + 6, cavY - ch / 2 + 10);
+  c.stroke();
+  /* 小孔射出的辐射（按色温着色） */
+  for (i = 0; i < 6; i++){
+    var ang = -0.55 + i * 0.22;
+    var lnm = WIEN / M1.T * 1e9;
+    c.strokeStyle = wl2rgb(lnm * (0.7 + i * 0.12));
+    c.lineWidth = 2.4; c.globalAlpha = 0.85;
+    c.beginPath();
+    c.moveTo(cavX + cw / 2 + 4, cavY + 2);
+    c.lineTo(cavX + cw / 2 + 22 + Math.cos(ang) * 16, cavY + 2 + Math.sin(ang) * 26);
+    c.stroke(); c.globalAlpha = 1;
+  }
+  txt(c, '小孔几乎不反射：进去的光全被吸收', qx + 10, qy + qh - 26, '#64748b', '11px "Microsoft YaHei"');
+  txt(c, '→ 加热时射出的就是"黑体辐射"', qx + 10, qy + qh - 11, '#6d28d9', '11px "Microsoft YaHei"');
+}
+function setT(v){
+  M1.T = v; $('r1t').value = v; $('r1tv').textContent = v;
+  draw1();
+}
+bindRange('r1t', function(v){ M1.T = v; draw1(); });
+$('b1a').addEventListener('click', function(){ setT(3000); });
+$('b1b').addEventListener('click', function(){ setT(5800); });
+$('b1c').addEventListener('click', function(){ setT(6000); });
+
+/* ==================================================================
+   模块 2：能量子 ε = hν
+   ================================================================== */
+var cv2 = $('cv2'), c2 = null, W2 = 0, H2 = 0;
+var M2 = {nu:5, E:2.3, anim:0, from:2.3, to:2.3, at:0, dir:0};
+function prep2(){ c2 = fit(cv2); W2 = cv2.clientWidth; H2 = cv2.clientHeight; }
+function draw2(){
+  prep2();
+  var c = c2, i;
+  c.clearRect(0, 0, W2, H2); c.fillStyle = '#fbfdff'; c.fillRect(0, 0, W2, H2);
+  var nu = M2.nu * 1e14;                 /* Hz */
+  var eps = H * nu;                      /* J */
+  var epsEV = eps / EE;                  /* eV */
+  var lam = CC / nu * 1e9;               /* nm */
+  var half = W2 / 2, mxm = W2 / 2;
+  /* ---- 左：经典（连续）---- */
+  var ax = 30, aw = half - 60, ay0 = H2 - 118, ay1 = 78;
+  c.fillStyle = '#faf5ff'; c.strokeStyle = '#e2e8f0'; c.lineWidth = 1;
+  rr(c, ax, 34, aw, H2 - 110, 10); c.fill(); c.stroke();
+  txt(c, '经典物理：能量连续', ax + aw / 2, 50, '#334155', 'bold 13px "Microsoft YaHei"', 'center');
+  /* 斜坡 */
+  var steps = 4.6, unit = (ay0 - ay1) / steps;
+  c.beginPath();
+  c.moveTo(ax + 30, ay0);
+  c.lineTo(ax + aw - 30, ay1);
+  c.lineTo(ax + aw - 30, ay0);
+  c.closePath();
+  c.fillStyle = 'rgba(148,163,184,.28)'; c.fill();
+  c.strokeStyle = '#94a3b8'; c.lineWidth = 2; c.stroke();
+  /* 连续刻度小球 */
+  var eCls = Math.max(0, Math.min(steps, M2.E));
+  var cx0 = ax + 30 + (aw - 60) * (eCls / steps);
+  var cy0 = ay0 - unit * eCls;
+  c.strokeStyle = 'rgba(100,116,139,.55)'; c.lineWidth = 1; c.setLineDash([3, 3]);
+  c.beginPath(); c.moveTo(ax + 30, cy0); c.lineTo(cx0, cy0); c.stroke(); c.setLineDash([]);
+  c.beginPath(); c.arc(cx0, cy0 - 6, 8, 0, TAU); c.fillStyle = '#64748b'; c.fill();
+  txt(c, 'E = ' + fmt(eCls, 2) + ' hν', cx0, cy0 - 24, '#475569', 'bold 12px "Microsoft YaHei"', 'center');
+  txt(c, '球可以停在斜面上任意高度', ax + aw / 2, ay0 + 20, '#64748b', '11.5px "Microsoft YaHei"', 'center');
+  txt(c, '（能量取任意值）', ax + aw / 2, ay0 + 38, '#64748b', '11.5px "Microsoft YaHei"', 'center');
+  /* ---- 右：量子（台阶）---- */
+  var bx = half + 30, bw = half - 60;
+  c.fillStyle = '#faf5ff'; c.strokeStyle = '#e2e8f0';
+  rr(c, bx, 34, bw, H2 - 110, 10); c.fill(); c.stroke();
+  txt(c, '普朗克：能量量子化', bx + bw / 2, 50, '#334155', 'bold 13px "Microsoft YaHei"', 'center');
+  var nMax = 4;
+  var sw = (bw - 60) / (nMax + 1);
+  var nSel = Math.round(Math.max(0, Math.min(nMax, M2.E)));
+  var nTgt = Math.round(Math.max(0, Math.min(nMax, M2.to)));
+  for (i = 0; i <= nMax; i++){
+    var sx = bx + 30 + sw * i, sy = ay0 - unit * i;
+    c.fillStyle = (i === nSel) ? 'rgba(124,58,237,.35)' : 'rgba(124,58,237,.16)';
+    c.fillRect(sx, sy, sw, unit * i + 2);
+    c.strokeStyle = PURPLE; c.lineWidth = 2.2;
+    c.beginPath(); c.moveTo(sx, sy); c.lineTo(sx + sw, sy); c.stroke();
+    c.beginPath(); c.moveTo(sx + sw, sy); c.lineTo(sx + sw, ay0); c.stroke();
+    txt(c, i === 0 ? '0' : (i + 'hν'), sx + sw / 2, sy - 12, '#6d28d9', 'bold 11.5px "Microsoft YaHei"', 'center');
+  }
+  /* 台阶上的小球：不动时稳稳落在某一级，跃迁时"跳"一级，中间不停留 */
+  var eNow = M2.anim ? (M2.from + (M2.to - M2.from) * Math.min(1, M2.at)) : nSel;
+  var qx = bx + 30 + sw * eNow + sw / 2, qy = ay0 - unit * eNow;
+  c.beginPath(); c.arc(qx, qy - 8, 9, 0, TAU); c.fillStyle = PURPLE; c.fill();
+  c.strokeStyle = '#fff'; c.lineWidth = 2; c.stroke();
+  if (M2.anim){
+    /* 一份能量子（光子）飞进 / 飞出 */
+    var gg = Math.min(1, M2.at);
+    var fx0 = mxm, fy0 = H2 / 2 + 40;
+    var phx = M2.dir > 0 ? (fx0 + (qx - fx0) * gg) : (qx + (fx0 - qx) * gg);
+    var phy = M2.dir > 0 ? (fy0 + (qy - 8 - fy0) * gg) : (qy - 8 + (fy0 - (qy - 8)) * gg);
+    c.beginPath(); c.arc(phx, phy, 9, 0, TAU);
+    c.fillStyle = wl2rgb(lam); c.fill();
+    c.strokeStyle = '#b45309'; c.lineWidth = 1.6; c.stroke();
+    txt(c, M2.dir > 0 ? '吸收一份 hν' : '放出一份 hν', phx, phy - 20, '#b45309', 'bold 11.5px "Microsoft YaHei"', 'center');
+  }
+  txt(c, M2.anim ? ('正在跳到第 ' + nTgt + ' 级') : ('停在第 ' + nSel + ' 级：' + nSel + 'hν'),
+      qx, qy - 30, '#6d28d9', 'bold 11.5px "Microsoft YaHei"', 'center');
+  txt(c, '只能取 0、hν、2hν、3hν …', bx + bw / 2, ay0 + 20, '#6d28d9', '11.5px "Microsoft YaHei"', 'center');
+  txt(c, '（中间值不存在！）', bx + bw / 2, ay0 + 38, '#b91c1c', 'bold 11.5px "Microsoft YaHei"', 'center');
+  /* ---- 中间：光子/读数 ---- */
+  txt(c, 'ν', mxm - 44, H2 / 2 - 60, '#b45309', 'bold 13px "Microsoft YaHei"', 'center');
+  txt(c, 'ε = hν', mxm + 44, H2 / 2 - 60, '#b45309', 'bold 13px "Microsoft YaHei"', 'center');
+  /* 一撮光子（数量固定，单个能量随 ν 变大） */
+  for (i = 0; i < 5; i++){
+    var pxx = mxm - 30 + i * 15, pyy = H2 / 2 + 40 + Math.sin(M2.nu + i) * 6;
+    var rad = 5 + M2.nu * 0.55;
+    c.beginPath(); c.arc(pxx, pyy, Math.min(13, rad), 0, TAU);
+    c.fillStyle = wl2rgb(lam); c.fill();
+    c.strokeStyle = 'rgba(15,23,42,.35)'; c.lineWidth = 1; c.stroke();
+  }
+  txt(c, '一份能量的大小随 ν 增大', mxm, H2 / 2 + 74, '#64748b', '11.5px "Microsoft YaHei"', 'center');
+  /* 常见频率的一份能量对比 */
+  var chips = [['红外线 3×10¹³ Hz', 3e13], ['红光 4.3×10¹⁴ Hz', 4.3e14],
+               ['紫光 7.5×10¹⁴ Hz', 7.5e14], ['X 射线 10¹⁸ Hz', 1e18]];
+  var cy0 = H2 - 68, chw = (W2 - 40 - 3 * 10) / 4;
+  for (i = 0; i < 4; i++){
+    var cx2 = 20 + i * (chw + 10);
+    var hot = Math.abs(Math.log10(nu / chips[i][1])) < 0.14;
+    c.fillStyle = hot ? '#f5f3ff' : 'rgba(255,255,255,.95)';
+    c.strokeStyle = hot ? PURPLE : '#e2e8f0'; c.lineWidth = hot ? 1.6 : 1;
+    rr(c, cx2, cy0, chw, 30, 7); c.fill(); c.stroke();
+    txt(c, chips[i][0], cx2 + chw / 2, cy0 + 10, hot ? '#6d28d9' : '#64748b', '11px "Microsoft YaHei"', 'center');
+    var ev = H * chips[i][1] / EE;
+    txt(c, 'ε = ' + (ev >= 1000 ? fmt(ev / 1000, 1) + ' keV' : fmt(ev, 2) + ' eV'),
+        cx2 + chw / 2, cy0 + 22, hot ? '#b45309' : '#475569', 'bold 11.5px "Microsoft YaHei"', 'center');
+  }
+  /* 读数条 */
+  var by0 = H2 - 32;
+  c.fillStyle = 'rgba(255,255,255,.95)'; c.strokeStyle = '#e2e8f0'; c.lineWidth = 1;
+  rr(c, 14, by0, W2 - 28, 26, 7); c.fill(); c.stroke();
+  txt(c, 'ν = ' + fmt(M2.nu, 2) + '×10¹⁴ Hz', 26, by0 + 13, '#334155', '12.5px "Microsoft YaHei"');
+  txt(c, 'λ = c/ν = ' + fmt(lam, 1) + ' nm', 190, by0 + 13, '#334155', '12.5px "Microsoft YaHei"');
+  txt(c, 'ε = hν = ' + eps.toExponential(2) + ' J', 340, by0 + 13, '#b45309', 'bold 12.5px "Microsoft YaHei"');
+  txt(c, '= ' + fmt(epsEV, 3) + ' eV', 560, by0 + 13, '#b45309', 'bold 12.5px "Microsoft YaHei"');
+  txt(c, 'h = 6.63×10⁻³⁴ J·s', 680, by0 + 13, '#64748b', '12px "Microsoft YaHei"');
+  /* 颜色指示 */
+  c.fillStyle = wl2rgb(lam);
+  rr(c, W2 - 60, by0 + 5, 34, 16, 4); c.fill();
+  c.strokeStyle = '#e2e8f0'; c.stroke();
+}
+bindRange('r2n', function(v){ M2.nu = v; draw2(); });
+bindRange('r2e', function(v){ M2.E = v; M2.anim = 0; draw2(); });
+function jump(d){
+  var cur = Math.round(Math.max(0, Math.min(4, M2.E)));
+  var to = cur + d;
+  if (to < 0 || to > 4) return;
+  M2.from = cur; M2.to = to; M2.at = 0; M2.anim = 1; M2.dir = d;
+}
+$('b2up').addEventListener('click', function(){ jump(1); });
+$('b2dn').addEventListener('click', function(){ jump(-1); });
+function step2(dt){
+  if (!M2.anim) return;
+  M2.at += dt / 0.42;
+  if (M2.at >= 1){
+    M2.at = 1; M2.E = M2.to; M2.anim = 0;
+    $('r2e').value = M2.E.toFixed(2); $('r2ev').textContent = M2.E.toFixed(2);
+  }
+  draw2();
+}
+
+/* ==================================================================
+   模块 3：光电效应
+   ================================================================== */
+var cv3 = $('cv3'), c3 = null, W3 = 0, H3 = 0;
+var M3 = {nu:7, inten:3, t:0, play:true};
+var W0 = 2.0;                       /* 逸出功 eV */
+var NU0 = W0 * EE / H;              /* 截止频率 Hz ≈ 4.83e14 */
+function prep3(){ c3 = fit(cv3); W3 = cv3.clientWidth; H3 = cv3.clientHeight; }
+function draw3(){
+  prep3();
+  var c = c3, i;
+  c.clearRect(0, 0, W3, H3); c.fillStyle = '#fbfdff'; c.fillRect(0, 0, W3, H3);
+  var nu = M3.nu * 1e14;
+  var Ek = H * nu / EE - W0;         /* eV */
+  var on = Ek > 0;
+  var lam = CC / nu * 1e9;
+  /* ---- 左：金属板 + 入射光 ---- */
+  var px0 = 20, pw = W3 * 0.44 - 20, py0 = 22, ph = H3 - 52;
+  c.fillStyle = '#faf5ff'; c.strokeStyle = '#e2e8f0'; c.lineWidth = 1;
+  rr(c, px0, py0, pw, ph, 10); c.fill(); c.stroke();
+  var plateX = px0 + pw * 0.62, plateY = py0 + ph * 0.55;
+  /* 入射光束（斜向下打到金属板） */
+  var bx0 = px0 + 26, by0 = py0 + 30;
+  var col = wl2rgb(lam);
+  c.strokeStyle = col; c.lineWidth = 8; c.globalAlpha = 0.35;
+  c.beginPath(); c.moveTo(bx0, by0); c.lineTo(plateX - 26, plateY - 8); c.stroke();
+  c.globalAlpha = 1;
+  /* 光子小球（沿光束运动） */
+  var nph = Math.round(2 + M3.inten * 1.6);
+  for (i = 0; i < nph; i++){
+    var f = ((M3.t * 0.9 + i / nph) % 1);
+    var qx = bx0 + (plateX - 26 - bx0) * f, qy = by0 + (plateY - 8 - by0) * f;
+    c.beginPath(); c.arc(qx, qy, 5 + M3.nu * 0.28, 0, TAU);
+    c.fillStyle = col; c.fill();
+    c.strokeStyle = 'rgba(15,23,42,.3)'; c.lineWidth = 1; c.stroke();
+  }
+  txt(c, '入射光 ν = ' + fmt(M3.nu, 2) + '×10¹⁴ Hz', px0 + 14, py0 + 18, '#334155', 'bold 12px "Microsoft YaHei"');
+  txt(c, 'λ = ' + fmt(lam, 0) + ' nm', px0 + 14, py0 + 36, '#64748b', '11.5px "Microsoft YaHei"');
+  /* 右上两个小条：电子数 vs 最大初动能 */
+  var sbx = px0 + pw - 152, sby = py0 + 14, sbw = 138;
+  c.fillStyle = 'rgba(255,255,255,.92)'; c.strokeStyle = '#e2e8f0'; c.lineWidth = 1;
+  rr(c, sbx, sby, sbw, 62, 7); c.fill(); c.stroke();
+  txt(c, '电子数目 ∝ 光强', sbx + 8, sby + 13, '#64748b', '11px "Microsoft YaHei"');
+  c.fillStyle = '#ede9fe'; rr(c, sbx + 8, sby + 22, sbw - 16, 9, 4); c.fill();
+  c.fillStyle = AMBER; rr(c, sbx + 8, sby + 22, Math.max(2, (sbw - 16) * M3.inten / 6), 9, 4); c.fill();
+  txt(c, 'E_k 与光强无关', sbx + 8, sby + 42, '#64748b', '11px "Microsoft YaHei"');
+  c.fillStyle = '#ede9fe'; rr(c, sbx + 8, sby + 50, sbw - 16, 9, 4); c.fill();
+  c.fillStyle = on ? '#059669' : '#cbd5e1';
+  rr(c, sbx + 8, sby + 50, Math.max(2, (sbw - 16) * (on ? Math.min(1, Ek / 3) : 0)), 9, 4); c.fill();
+  /* 金属板 */
+  c.fillStyle = '#cbd5e1'; c.strokeStyle = '#475569'; c.lineWidth = 2;
+  rr(c, plateX - 16, plateY - 46, 32, 92, 4); c.fill(); c.stroke();
+  txt(c, '金属', plateX, plateY + 58, '#475569', '11.5px "Microsoft YaHei"', 'center');
+  txt(c, 'W₀ = ' + W0.toFixed(1) + ' eV', plateX, plateY + 74, '#64748b', '11px "Microsoft YaHei"', 'center');
+  /* 逸出电子 */
+  if (on){
+    var ne = Math.round(M3.inten * 3);
+    var vmax = Math.sqrt(Math.max(0, Ek));
+    for (i = 0; i < ne; i++){
+      var g = (M3.t * (0.5 + 0.35 * vmax) + i * 0.37) % 1;
+      var ex = plateX + 20 + g * (px0 + pw - plateX - 34);
+      var ey = plateY - 20 - g * 66 - Math.sin(g * Math.PI) * 12;
+      c.beginPath(); c.arc(ex, ey, 4.5, 0, TAU);
+      c.fillStyle = AMBER; c.fill();
+      c.strokeStyle = '#b45309'; c.lineWidth = 1; c.stroke();
+    }
+    txt(c, '光电子逸出！', plateX + 26, plateY - 84, '#059669', 'bold 12.5px "Microsoft YaHei"');
+    txt(c, 'E_k = hν − W₀ = ' + fmt(Ek, 2) + ' eV', plateX + 26, plateY - 66, '#b45309', '12px "Microsoft YaHei"');
+  } else {
+    txt(c, '没有电子逸出（ν < ν₀）', plateX + 22, plateY - 74, '#b91c1c', 'bold 12.5px "Microsoft YaHei"');
+    txt(c, '光再强也没用', plateX + 22, plateY - 56, '#b91c1c', '11.5px "Microsoft YaHei"');
+  }
+  /* ---- 右：Ek–ν 图象 ---- */
+  var gx = W3 * 0.46, gw = W3 * 0.54 - 26, gy = 26, gh = H3 - 78;
+  c.fillStyle = '#faf5ff'; c.strokeStyle = '#e2e8f0'; c.lineWidth = 1;
+  rr(c, gx, gy, gw, gh, 9); c.fill(); c.stroke();
+  var x0 = gx + 48, x1 = gx + gw - 18, y0 = gy + gh - 34, y1 = gy + 30;
+  var nuMax = 12e14;
+  var ekMax = H * nuMax / EE - W0;
+  function GX(n){ return x0 + (x1 - x0) * (n / nuMax); }
+  function GY(e){ return y0 - (y0 - y1) * ((e + W0) / (ekMax + W0)); }
+  /* ν₀ 左侧阴影（无光电子区） */
+  c.fillStyle = 'rgba(220,38,38,.07)';
+  c.fillRect(x0, y1, GX(NU0) - x0, y0 - y1);
+  /* 坐标轴 */
+  c.strokeStyle = '#334155'; c.lineWidth = 1.4;
+  c.beginPath(); c.moveTo(x0, y1); c.lineTo(x0, y0); c.lineTo(x1, y0); c.stroke();
+  c.strokeStyle = '#94a3b8'; c.lineWidth = 1; c.setLineDash([4, 3]);
+  c.beginPath(); c.moveTo(x0, GY(0)); c.lineTo(x1, GY(0)); c.stroke(); c.setLineDash([]);
+  for (i = 0; i <= 4; i++){
+    var tv = nuMax * i / 4;
+    txt(c, fmt(tv / 1e14, 0), GX(tv), y0 + 16, '#94a3b8', '10.5px "Microsoft YaHei"', 'center');
+  }
+  txt(c, 'ν / 10¹⁴ Hz', x1, y0 + 32, '#64748b', '11.5px "Microsoft YaHei"', 'right');
+  for (i = -2; i <= 3; i++){
+    txt(c, i + '', x0 - 6, GY(i), '#94a3b8', '10.5px "Microsoft YaHei"', 'right');
+  }
+  txt(c, 'E_k / eV', x0 - 6, y1 - 12, '#b91c1c', '11.5px "Microsoft YaHei"', 'right');
+  /* 直线 Ek = hν − W₀ */
+  c.strokeStyle = PURPLE; c.lineWidth = 2.6;
+  c.beginPath();
+  c.moveTo(GX(NU0), GY(0));
+  c.lineTo(GX(nuMax), GY(ekMax));
+  c.stroke();
+  /* 延长到 ν=0 的虚线（说明截距） */
+  c.strokeStyle = 'rgba(124,58,237,.4)'; c.lineWidth = 1.4; c.setLineDash([5, 4]);
+  c.beginPath(); c.moveTo(GX(0), GY(-W0)); c.lineTo(GX(NU0), GY(0)); c.stroke(); c.setLineDash([]);
+  /* 斜率标注 h */
+  var mx1 = GX(8e14), my1 = GY(H * 8e14 / EE - W0), mx2 = GX(11e14), my2 = GY(H * 11e14 / EE - W0);
+  c.strokeStyle = '#059669'; c.lineWidth = 1.6;
+  c.beginPath(); c.moveTo(mx1, my1); c.lineTo(mx2, my1); c.lineTo(mx2, my2); c.stroke();
+  txt(c, '斜率 = h', (mx1 + mx2) / 2 + 6, my1 - 10, '#059669', 'bold 11.5px "Microsoft YaHei"');
+  /* ν₀ 标记 */
+  c.strokeStyle = RED; c.lineWidth = 1.6; c.setLineDash([4, 3]);
+  c.beginPath(); c.moveTo(GX(NU0), y0); c.lineTo(GX(NU0), GY(0)); c.stroke(); c.setLineDash([]);
+  c.beginPath(); c.arc(GX(NU0), GY(0), 5, 0, TAU); c.fillStyle = RED; c.fill();
+  txt(c, 'ν₀ = ' + fmt(NU0 / 1e14, 2) + '×10¹⁴', GX(NU0) - 6, y0 - 14, '#b91c1c', 'bold 11.5px "Microsoft YaHei"', 'right');
+  /* 当前工作点 */
+  var cx3 = GX(nu), cy3 = GY(Math.max(-W0, Ek));
+  c.strokeStyle = 'rgba(15,23,42,.35)'; c.lineWidth = 1.2;
+  c.beginPath(); c.moveTo(cx3, y0); c.lineTo(cx3, cy3); c.lineTo(x0, cy3); c.stroke();
+  c.beginPath(); c.arc(cx3, cy3, 6, 0, TAU); c.fillStyle = on ? AMBER : '#94a3b8'; c.fill();
+  txt(c, 'E_k–ν 图象', gx + 14, gy + 16, '#334155', 'bold 12.5px "Microsoft YaHei"');
+  /* 底部读数 */
+  var ry = H3 - 40;
+  c.fillStyle = 'rgba(255,255,255,.96)'; c.strokeStyle = '#e2e8f0'; c.lineWidth = 1;
+  rr(c, gx, ry, gw, 30, 7); c.fill(); c.stroke();
+  txt(c, 'ν₀ = W₀/h = ' + fmt(NU0 / 1e14, 2) + '×10¹⁴ Hz', gx + 12, ry + 15, '#64748b', '12px "Microsoft YaHei"');
+  txt(c, on ? ('E_k = ' + fmt(Ek, 2) + ' eV，每秒逸出电子数 ∝ 光强') : 'ν < ν₀：光强再大也无电子',
+      gx + gw - 12, ry + 15, on ? '#059669' : '#b91c1c', 'bold 12px "Microsoft YaHei"', 'right');
+  /* 左下：三条实验规律 */
+  var lw = [ '① ν < ν₀：无论光多强、照多久，都没有光电子',
+             '② ν > ν₀：光一照上立刻（10⁻⁹ s 内）就有光电子',
+             '③ E_k 只由 ν 决定；光强只改变逸出的电子数目' ];
+  for (i = 0; i < 3; i++){
+    var ly = py0 + ph - 74 + i * 18;
+    c.fillStyle = (i === 0 && !on) ? 'rgba(220,38,38,.10)' : (i === 2 && on ? 'rgba(5,150,105,.10)' : 'rgba(255,255,255,.9)');
+    rr(c, px0 + 10, ly - 9, pw - 20, 17, 4); c.fill();
+    txt(c, lw[i], px0 + 16, ly, (i === 0 && !on) ? '#b91c1c' : ((i === 2 && on) ? '#059669' : '#475569'),
+        '11.5px "Microsoft YaHei"');
+  }
+  /* 光强说明 */
+  txt(c, '光强 = ' + fmt(M3.inten, 1) + '（只改变光子数目，不改变每个光子的能量）',
+      px0 + 14, py0 + ph - 16, '#64748b', '11.5px "Microsoft YaHei"');
+}
+bindRange('r3n', function(v){ M3.nu = v; draw3(); });
+bindRange('r3i', function(v){ M3.inten = v; draw3(); });
+$('b3a').addEventListener('click', function(){ setNu(4.0); });
+$('b3b').addEventListener('click', function(){ setNu(9.0); });
+function setNu(v){
+  M3.nu = v; $('r3n').value = v; $('r3nv').textContent = v;
+  draw3();
+}
+/* 主循环：只驱动模块 3 的小球动画 */
+var last = 0;
+function frame(ts){
+  if (!last) last = ts;
+  var dt = Math.min(0.05, (ts - last) / 1000);
+  last = ts;
+  if (M3.play){ M3.t += dt; draw3(); }
+  step2(dt);
+  requestAnimationFrame(frame);
+}
+draw1(); draw2(); draw3();
+requestAnimationFrame(frame);
+var rt = 0;
+window.addEventListener('resize', function(){
+  clearTimeout(rt);
+  rt = setTimeout(function(){ draw1(); draw2(); draw3(); }, 120);
+});
+})();
+</script>
+</body>
+</html>

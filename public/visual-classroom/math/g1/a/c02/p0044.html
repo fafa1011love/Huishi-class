@@ -1,0 +1,803 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>二次函数 · 一元二次方程 · 一元二次不等式 关系演示</title>
+<style>
+  :root{
+    --bg:#f5f7fa; --card:#fff; --ink:#1e293b; --muted:#64748b;
+    --line:#e2e8f0; --brand:#2563eb; --hl:#ef4444; --accent:#0f766e;
+    --pos:#ef4444;        /* y>0 */
+    --neg:#2563eb;        /* y<0 */
+  }
+  *{margin:0;padding:0;box-sizing:border-box;font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif}
+  body{background:var(--bg);color:var(--ink);padding-bottom:40px}
+  header{background:linear-gradient(120deg,#1e3a8a,#2563eb 60%,#0ea5e9);color:#fff;padding:18px 28px}
+  header h1{font-size:20px;font-weight:700}
+  header p{font-size:13px;opacity:.9;margin-top:4px}
+  main{max-width:1320px;margin:0 auto;padding:18px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;
+        box-shadow:0 1px 3px rgba(0,0,0,.05)}
+  .hint{font-size:12px;color:var(--muted);margin-top:10px;line-height:1.7}
+
+  /* 演示台：图 + 数据 */
+  .stage{display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap;justify-content:flex-start}
+  .svgwrap{flex:1 1 0;min-width:0;max-width:100%}
+  canvas{width:100%;height:min(66vh,580px);min-height:440px;display:block;margin:0 auto;
+         border-radius:10px;background:#fff}
+  .legend{display:flex;gap:14px;justify-content:center;font-size:13px;margin-top:9px;
+          flex-wrap:wrap;color:var(--muted)}
+  .legend i{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+
+  /* 数据面板 */
+  .datapanel{flex:0 0 310px;min-width:270px;margin-left:auto;border:1px solid var(--line);
+             border-radius:12px;padding:16px 18px;background:#fbfdff}
+  .dp-title{font-size:16px;font-weight:700;color:var(--brand);margin-bottom:10px}
+  .drow{display:flex;justify-content:space-between;align-items:baseline;padding:10px 0 5px;
+        font-size:17px;font-weight:700;color:#334155}
+  .drow b{font-size:30px;font-weight:700;font-variant-numeric:tabular-nums;line-height:1.1}
+  .tag{font-size:14px;background:#eff6ff;color:var(--brand);padding:5px 13px;border-radius:20px;
+       font-weight:700;display:inline-block;margin:3px 0 9px}
+  .tag.a-up{background:#eff6ff;color:#2563eb}
+  .tag.a-down{background:#f5f3ff;color:#7c3aed}
+  .tag.d-pos{background:#f0fdf4;color:#16a34a}
+  .tag.d-zero{background:#f0f9ff;color:#0369a1}
+  .tag.d-neg{background:#fff7ed;color:#c2410c}
+  .slider{display:flex;align-items:center;gap:10px;margin-top:12px;font-size:14px;
+          color:#475569;font-weight:600}
+  .slider input[type=range]{flex:1;min-width:110px;accent-color:var(--brand)}
+  .slider b{color:var(--brand);font-size:15px;font-weight:700;
+            font-variant-numeric:tabular-nums;min-width:40px;text-align:right}
+  .btns{display:flex;flex-wrap:wrap;gap:8px;margin-top:16px}
+  .btn{background:var(--brand);color:#fff;border:none;border-radius:8px;padding:8px 15px;
+       font-size:13.5px;font-weight:600;cursor:pointer}
+  .btn:hover{background:#1d4ed8}
+  .btn.ghost{background:#fff;color:var(--brand);border:1px solid var(--brand)}
+  .btn.ghost:hover{background:#eff6ff}
+  .warn{font-size:13px;color:var(--hl);margin-top:8px;display:none}
+
+  /* 结论：单一大框 */
+  .derivbox{border:1px solid var(--line);border-left:4px solid var(--brand);border-radius:10px;
+    padding:15px 20px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.05);
+    font-size:15px;line-height:1.9;margin-top:16px}
+
+  /* 三栏结果 */
+  .kp{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:16px}
+  @media (max-width:900px){ .kp{grid-template-columns:1fr} }
+  .kp .box{border:1px solid var(--line);border-radius:12px;padding:15px 17px;background:#fff;
+           box-shadow:0 1px 3px rgba(0,0,0,.05)}
+  .kp h4{font-size:14.5px;margin-bottom:9px;color:var(--brand);font-weight:700}
+  .kp h4.pos{color:var(--pos)} .kp h4.neg{color:var(--neg)}
+  .sol{font-size:17px;line-height:1.55;min-height:28px;color:var(--ink);font-weight:600}
+  .note{font-size:12.8px;color:var(--muted);margin-top:7px}
+  .axis{margin-top:6px}
+  .axis svg{width:100%;height:78px;display:block}
+
+  /* 知识点总结 */
+  .card h3{font-size:16px;margin-bottom:12px;display:flex;align-items:center;gap:8px;
+           flex-wrap:wrap;font-weight:700;color:var(--ink)}
+  .card h3 .tag{margin:0}
+  .figcap{text-align:center;font-size:14px;font-weight:700;color:#1e3a8a;margin:4px 0 10px}
+  .frac{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;
+        font-size:.9em;line-height:1.08;margin:0 .08em;position:relative;top:-0.06em}
+  .frac>span:first-child{border-bottom:1px solid currentColor;padding:0 .3em}
+  .frac>span:last-child{padding:0 .3em}
+  .sumtable{width:100%;border-collapse:collapse;font-size:14px;margin-top:6px}
+  .sumtable th,.sumtable td{border:1px solid #cfe0f5;padding:10px 9px;text-align:center;
+    vertical-align:middle;line-height:1.75}
+  .sumtable th{background:#eaf3ff;color:#1e3a8a;font-weight:700;font-size:13.5px}
+  .sumtable td.item{background:#f7fbff;color:#1e3a8a;font-weight:600;line-height:1.7}
+  .sumtable td.fig{padding:6px 4px}
+  .sumtable svg{display:block;margin:0 auto;max-width:100%;height:auto}
+  .sumtable b{color:#1e3a8a}
+
+  /* 流程图 */
+  .flow{display:flex;flex-direction:column;align-items:center;margin:6px 0 2px}
+  .flow .fnode{border:1px solid #bfdbfe;background:#f8fbff;border-radius:8px;padding:9px 20px;
+    font-size:14px;color:#1e3a8a;text-align:center;line-height:1.65}
+  .flow .fnode.ans{background:#eff6ff;border-color:#93c5fd;font-weight:600}
+  .flow .flink{width:2px;height:20px;background:#93c5fd;position:relative;align-self:center}
+  .flow .flink::after{content:"";position:absolute;bottom:-1px;left:-4px;
+    border:5px solid transparent;border-top-color:#93c5fd}
+  .flow .fork{width:100%;height:22px;position:relative;align-self:stretch}
+  .flow .fork .hline{position:absolute;top:0;left:16.66%;right:16.66%;height:2px;background:#93c5fd}
+  .flow .fork .drop{position:absolute;top:0;width:2px;height:20px;background:#93c5fd;
+    transform:translateX(-50%)}
+  .flow .fork .drop::after{content:"";position:absolute;bottom:-1px;left:-4px;
+    border:5px solid transparent;border-top-color:#93c5fd}
+  .flow .cols{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;width:100%}
+  .flow .col{display:flex;flex-direction:column}
+  .flow .col > .fnode{min-height:92px;display:flex;align-items:center;justify-content:center}
+  .flow .col > .fnode.ans{min-height:66px}
+  .flow .cond{font-size:14px;font-weight:700;color:var(--brand);text-align:center;margin-bottom:8px}
+  @media (max-width:820px){
+    .flow .fork{display:none}
+    .flow .cols{grid-template-columns:1fr;gap:16px}
+    .sumtable{font-size:13px}
+  }
+
+</style>
+</head>
+<body>
+<header>
+  <h1>二次函数 · 一元二次方程 · 一元二次不等式</h1>
+  <p>y = ax² + bx + c　→　a 定开口，Δ 定交点个数</p>
+</header>
+
+<main>
+  <div class="card">
+    <div class="stage">
+      <div class="svgwrap">
+        <canvas id="cv"></canvas>
+        <div class="legend">
+          <span><i style="background:#ef4444"></i>函数值 y &gt; 0 的部分</span>
+          <span><i style="background:#2563eb"></i>函数值 y &lt; 0 的部分</span>
+        </div>
+      </div>
+
+      <div class="datapanel">
+        <div class="dp-title">📊 实时数据（a 与 Δ）</div>
+
+        <div class="drow"><span>二次项系数 a</span><b id="aVal">1</b></div>
+        <div><span class="tag a-up" id="aTag">开口向上 ↑</span></div>
+
+        <div class="drow"><span>判别式 Δ = b² − 4ac</span><b id="dVal">1</b></div>
+        <div><span class="tag d-pos" id="dTag">Δ &gt; 0，两个不等实根</span></div>
+
+        <div class="slider"><span>滑块调 a</span><input id="sa" type="range" min="-3" max="3" step="0.1" value="1"><b id="va">1</b></div>
+        <div class="slider"><span>滑块调 b</span><input id="sb" type="range" min="-8" max="8" step="0.1" value="-3"><b id="vb">−3</b></div>
+        <div class="slider"><span>滑块调 c</span><input id="sc" type="range" min="-8" max="8" step="0.1" value="2"><b id="vc">2</b></div>
+
+        <div class="warn" id="warn">a = 0 时不是二次函数（退化为一次函数）。</div>
+
+        <div class="btns">
+          <button class="btn" id="bDemo">▶ 平移演示</button>
+          <button class="btn ghost" id="bZero">令 Δ = 0</button>
+          <button class="btn ghost" id="bReset">重置</button>
+        </div>
+
+        <p class="hint">拖动 a 看开口方向与陡缓，拖动 b、c 看 Δ 变号时交点的增减。<br>
+          鼠标移到图上可读出该点函数值的正负。</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="kp">
+    <div class="box">
+      <h4>① 方程 &nbsp;ax²+bx+c = 0 的解</h4>
+      <div class="sol" id="sEq"></div>
+      <div class="axis" id="axEq"></div>
+      <div class="note" id="nEq"></div>
+    </div>
+    <div class="box">
+      <h4 class="pos">② 不等式 &nbsp;ax²+bx+c &gt; 0 的解集</h4>
+      <div class="sol" id="sPos"></div>
+      <div class="axis" id="axPos"></div>
+      <div class="note" id="nPos"></div>
+    </div>
+    <div class="box">
+      <h4 class="neg">③ 不等式 &nbsp;ax²+bx+c &lt; 0 的解集</h4>
+      <div class="sol" id="sNeg"></div>
+      <div class="axis" id="axNeg"></div>
+      <div class="note" id="nNeg"></div>
+    </div>
+  </div>
+
+  <div class="derivbox" id="concl"></div>
+
+  <div class="card" id="sumCard" style="margin-top:16px">
+    <h3>📚 知识点总结 <span class="tag">一表梳理，考前速记</span></h3>
+
+    <p class="figcap">二次函数与一元二次方程、不等式的解的对应关系</p>
+    <table class="sumtable">
+      <thead>
+        <tr>
+          <th style="width:23%">项目</th>
+          <th>Δ &gt; 0</th>
+          <th>Δ = 0</th>
+          <th>Δ &lt; 0</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td class="item">y = ax² + bx + c &nbsp;(a &gt; 0)<br>的图象</td>
+          <td class="fig" id="mini1"></td>
+          <td class="fig" id="mini2"></td>
+          <td class="fig" id="mini3"></td>
+        </tr>
+        <tr>
+          <td class="item">ax² + bx + c = 0 &nbsp;(a &gt; 0)<br>的根</td>
+          <td>有两个不相等的实数根<br>x₁，x₂（x₁ &lt; x₂）</td>
+          <td>有两个相等的实数根<br>x₁ = x₂ = −<span class="frac"><span>b</span><span>2a</span></span></td>
+          <td>没有实数根</td>
+        </tr>
+        <tr>
+          <td class="item">ax² + bx + c &gt; 0 &nbsp;(a &gt; 0)<br>的解集</td>
+          <td>{x | x &lt; x₁，或 x &gt; x₂}</td>
+          <td>{x | x ≠ −<span class="frac"><span>b</span><span>2a</span></span>}</td>
+          <td><b>R</b></td>
+        </tr>
+        <tr>
+          <td class="item">ax² + bx + c &lt; 0 &nbsp;(a &gt; 0)<br>的解集</td>
+          <td>{x | x₁ &lt; x &lt; x₂}</td>
+          <td>∅</td>
+          <td>∅</td>
+        </tr>
+      </tbody>
+    </table>
+
+    <p class="figcap" style="margin-top:24px">求解一元二次不等式（a &gt; 0）的流程</p>
+    <div class="flow" style="margin-top:2px">
+      <div class="fnode"><span>将原不等式化成 &nbsp;ax² + bx + c &gt; 0（a &gt; 0）&nbsp; 的形式</span></div>
+      <div class="flink"></div>
+      <div class="fnode"><span>计算 Δ = b² − 4ac 的值</span></div>
+      <div class="flink"></div>
+      <div class="fork">
+        <span class="hline"></span>
+        <span class="drop" style="left:16.66%"></span>
+        <span class="drop" style="left:50%"></span>
+        <span class="drop" style="left:83.33%"></span>
+      </div>
+      <div class="cols">
+        <div class="col">
+          <div class="cond">Δ &gt; 0</div>
+          <div class="fnode"><span>方程 ax² + bx + c = 0 有<br>两个不相等的实数根，<br>解得 x₁，x₂（x₁ &lt; x₂）</span></div>
+          <div class="flink"></div>
+          <div class="fnode ans"><span>原不等式的解集为<br>{x | x &lt; x₁，或 x &gt; x₂}</span></div>
+        </div>
+        <div class="col">
+          <div class="cond">Δ = 0</div>
+          <div class="fnode"><span>方程 ax² + bx + c = 0 有<br>两个相等的实数根，<br>解得 x₁ = x₂ = −<span class="frac"><span>b</span><span>2a</span></span></span></div>
+          <div class="flink"></div>
+          <div class="fnode ans"><span>原不等式的解集为<br>{x | x ≠ −<span class="frac"><span>b</span><span>2a</span></span>}</span></div>
+        </div>
+        <div class="col">
+          <div class="cond">Δ &lt; 0</div>
+          <div class="fnode"><span>方程 ax² + bx + c = 0<br>没有实数根</span></div>
+          <div class="flink"></div>
+          <div class="fnode ans"><span>原不等式的解集为 <b>R</b></span></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+(function(){
+  'use strict';
+  var POS='#ef4444', NEG='#2563eb', INK='#1e293b', GRID='#eef2f7', AXIS='#334155';
+  var ALL=[{lo:-Infinity,hi:Infinity}];
+
+  var cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+  var CW=0, CH=0, plotH=0;
+  var XMIN=-10, XMAX=10, PL=48, PR=18, PT=18, PB=30;
+
+  var state={a:1,b:-3,c:2};          // 目标参数（滑块）
+  var cur={a:1,b:-3,c:2};            // 实际显示参数（带过渡）
+  var view={ymin:-5,ymax:7};         // 当前 y 视窗
+  var demo={on:false,t:0};
+  var hoverX=null, last=performance.now();
+
+  /* ---------- 工具 ---------- */
+  function fmt(v){
+    if(v===Infinity) return '+∞';
+    if(v===-Infinity) return '−∞';
+    var s=v.toFixed(2).replace(/\.?0+$/,'');
+    if(s==='-0'||s==='0') return '0';
+    return s.replace(/-/,'−');
+  }
+  function clamp(v,lo,hi){ return Math.min(hi,Math.max(lo,v)); }
+  function f(x,a,b,c){ return a*x*x+b*x+c; }
+
+  /* ---------- 求解：方程的根 + 两个不等式的解集 ---------- */
+  function solve(a,b,c){
+    if(Math.abs(a)<1e-9){                       // 退化：一次 / 常数
+      var D=b*b;
+      if(Math.abs(b)<1e-9){
+        return {deg:0,D:D,roots:[],allZero:Math.abs(c)<1e-9,
+                pos:c>0?ALL:[], neg:c<0?ALL:[], vertex:null};
+      }
+      var x0=-c/b;
+      var greater = b>0 ? [{lo:x0,hi:Infinity}] : [{lo:-Infinity,hi:x0}];
+      var less    = b>0 ? [{lo:-Infinity,hi:x0}] : [{lo:x0,hi:Infinity}];
+      return {deg:1,D:D,roots:[x0],pos:greater,neg:less,vertex:null};
+    }
+    var D=b*b-4*a*c;
+    var vx=-b/(2*a), vy=c-b*b/(4*a);
+    var EPS=0.005;                               // 与 Δ 显示精度对齐，避免“显示 0 却判成两根”
+    if(D>EPS){
+      var s=Math.sqrt(D), r1=(-b-s)/(2*a), r2=(-b+s)/(2*a);
+      var x1=Math.min(r1,r2), x2=Math.max(r1,r2);
+      var outside=[{lo:-Infinity,hi:x1},{lo:x2,hi:Infinity}];
+      var inside=[{lo:x1,hi:x2}];
+      return {deg:2,D:D,roots:[x1,x2],
+              pos:a>0?outside:inside, neg:a>0?inside:outside, vertex:{x:vx,y:vy}};
+    }
+    if(D>-EPS){                                  // Δ = 0
+      var x0b=-b/(2*a);
+      var two=[{lo:-Infinity,hi:x0b},{lo:x0b,hi:Infinity}];
+      return {deg:2,D:0,roots:[x0b],double:true,
+              pos:a>0?two:[], neg:a>0?[]:two, vertex:{x:vx,y:vy}};
+    }
+    return {deg:2,D:D,roots:[],
+            pos:a>0?ALL:[], neg:a>0?[]:ALL, vertex:{x:vx,y:vy}};
+  }
+
+  /* 解集 → 文本 */
+  function setLine(segs){
+    if(!segs.length) return '解集：∅（空集）';
+    if(segs.length===1 && segs[0].lo===-Infinity && segs[0].hi===Infinity) return '解集：R（全体实数）';
+    return '解集：{ x | '+segText(segs)+' }';
+  }
+  function segText(segs){
+    if(!segs.length) return '∅';
+    if(segs.length===1 && segs[0].lo===-Infinity && segs[0].hi===Infinity) return 'x ∈ R';
+    if(segs.length===2 && segs[0].hi===segs[1].lo &&
+       segs[0].lo===-Infinity && segs[1].hi===Infinity) return 'x ≠ '+fmt(segs[0].hi);
+    return segs.map(function(s){
+      if(s.hi===Infinity) return 'x > '+fmt(s.lo);
+      if(s.lo===-Infinity) return 'x < '+fmt(s.hi);
+      return fmt(s.lo)+' < x < '+fmt(s.hi);
+    }).join(' 或 ');
+  }
+  /* ---------- 数轴（SVG） ---------- */
+  function axisSVG(segs, pts, color, range){
+    var W=300,H=74, padL=18, padR=18, y0=46;
+    var keys=[];
+    (segs||[]).forEach(function(s){ if(isFinite(s.lo))keys.push(s.lo); if(isFinite(s.hi))keys.push(s.hi); });
+    (pts||[]).forEach(function(p){ keys.push(p); });
+    var lo,hi;
+    if(range){ lo=range.lo; hi=range.hi; }
+    else if(!keys.length){ lo=-6; hi=6; }
+    else{
+      lo=Math.min(-4, Math.min.apply(null,keys)-1.2);
+      hi=Math.max(4, Math.max.apply(null,keys)+1.2);
+      lo=Math.floor(lo*2)/2; hi=Math.ceil(hi*2)/2;
+    }
+    var span=hi-lo, step= span<=14?1 : (span<=30?2:5);
+    function X(v){ return padL + (v-lo)/(hi-lo)*(W-padL-padR); }
+    var s='<svg viewBox="0 0 '+W+' '+H+'" xmlns="http://www.w3.org/2000/svg">';
+    // 轴线 + 箭头
+    s+='<line x1="'+X(lo)+'" y1="'+y0+'" x2="'+X(hi)+'" y2="'+y0+'" stroke="#cbd5e1" stroke-width="1.6"/>';
+    s+='<polygon points="'+X(lo)+','+y0+' '+(X(lo)-7)+','+(y0-4)+' '+(X(lo)-7)+','+(y0+4)+'" fill="#cbd5e1"/>';
+    s+='<polygon points="'+X(hi)+','+y0+' '+(X(hi)+7)+','+(y0-4)+' '+(X(hi)+7)+','+(y0+4)+'" fill="#cbd5e1"/>';
+    // 刻度
+    for(var v=Math.ceil(lo); v<=Math.floor(hi); v+=step){
+      s+='<line x1="'+X(v)+'" y1="'+(y0-4)+'" x2="'+X(v)+'" y2="'+(y0+4)+'" stroke="#cbd5e1" stroke-width="1.2"/>';
+      s+='<text x="'+X(v)+'" y="'+(y0+18)+'" font-size="10" fill="#94a3b8" text-anchor="middle">'+v+'</text>';
+    }
+    // 解集区间（segs 为 null 表示这条数轴只标方程的点）
+    if(segs){
+      if(segs.length){
+        var isAll = segs.length===1 && segs[0].lo===-Infinity && segs[0].hi===Infinity;
+        segs.forEach(function(sg){
+          var a1 = sg.lo===-Infinity ? lo : Math.max(sg.lo,lo);
+          var b1 = sg.hi===Infinity  ? hi : Math.min(sg.hi,hi);
+          if(b1<=a1) return;
+          s+='<line x1="'+X(a1)+'" y1="'+y0+'" x2="'+X(b1)+'" y2="'+y0+'" stroke="'+color+'" stroke-width="7" stroke-linecap="butt" opacity="0.9"/>';
+          [a1,b1].forEach(function(e,i){
+            if(!isFinite(e)) return;
+            var open = i===0 ? (sg.lo!==-Infinity) : (sg.hi!==Infinity);
+            if(!open) return;
+            s+='<circle cx="'+X(e)+'" cy="'+y0+'" r="3.6" fill="#fff" stroke="'+color+'" stroke-width="1.6"/>';
+          });
+        });
+        if(isAll) s+='<text x="'+(W-padR)+'" y="'+(y0-12)+'" font-size="11" fill="'+color+'" text-anchor="end" font-weight="600">R（全体实数）</text>';
+      }else{
+        s+='<text x="'+(W/2)+'" y="'+(y0-12)+'" font-size="12" fill="#94a3b8" text-anchor="middle">∅ 空集（无解）</text>';
+      }
+    }
+    // 方程的根
+    (pts||[]).forEach(function(p,i){
+      if(!isFinite(p)) return;
+      if(p<lo||p>hi) return;
+      s+='<circle cx="'+X(p)+'" cy="'+y0+'" r="5" fill="'+INK+'"/>';
+      s+='<text x="'+X(p)+'" y="'+(y0-13)+'" font-size="11" fill="'+INK+'" text-anchor="middle" font-weight="600">x'+(i===0?'₁':'₂')+'</text>';
+    });
+    if(pts && pts.length===0){
+      s+='<text x="'+(W/2)+'" y="'+(y0-12)+'" font-size="12" fill="#94a3b8" text-anchor="middle">与 x 轴无交点，无实数根</text>';
+    }
+    s+='</svg>';
+    return s;
+  }
+
+  /* ---------- 绘图 ---------- */
+  function resize(){
+    var dpr=window.devicePixelRatio||1;
+    CW=cv.clientWidth; CH=cv.clientHeight; plotH=CH-54;
+    cv.width=Math.round(CW*dpr); cv.height=Math.round(CH*dpr);
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+  }
+  function sx(x){ return PL + (x-XMIN)/(XMAX-XMIN)*(CW-PL-PR); }
+  function sy(y){ return PT + (view.ymax-y)/(view.ymax-view.ymin)*(plotH-PT-PB); }
+
+  function draw(){
+    var a=cur.a,b=cur.b,c=cur.c;
+    ctx.clearRect(0,0,CW,CH);
+    ctx.fillStyle='#fff'; ctx.fillRect(0,0,CW,plotH+2);
+
+    /* 网格 */
+    var spanY = view.ymax-view.ymin;
+    var steps=[1,2,5,10,20,50], raw=spanY/6, ylabel=50;
+    for(var si=0;si<steps.length;si++){ if(steps[si]>=raw){ ylabel=steps[si]; break; } }
+    var ygrid = ylabel>=5 ? ylabel/5 : ylabel;
+    ctx.lineWidth=1; ctx.font='11px "Microsoft YaHei",system-ui,sans-serif';
+    ctx.textAlign='center'; ctx.textBaseline='top';
+    for(var x=XMIN;x<=XMAX;x++){
+      ctx.strokeStyle = x===0? '#cbd5e1' : GRID;
+      ctx.beginPath(); ctx.moveTo(Math.round(sx(x))+.5,0); ctx.lineTo(Math.round(sx(x))+.5,plotH); ctx.stroke();
+      if(x%2===0){ ctx.fillStyle='#94a3b8'; ctx.fillText(x, sx(x), sy(0)+7); }
+    }
+    ctx.textAlign='right'; ctx.textBaseline='middle';
+    for(var y=Math.ceil(view.ymin/ygrid)*ygrid; y<=view.ymax; y+=ygrid){
+      if(Math.abs(y)<1e-9) continue;
+      ctx.strokeStyle=GRID;
+      ctx.beginPath(); ctx.moveTo(PL,Math.round(sy(y))+.5); ctx.lineTo(CW-PR,Math.round(sy(y))+.5); ctx.stroke();
+      if(Math.abs(y%ylabel)<1e-9){ ctx.fillStyle='#94a3b8'; ctx.fillText(y, sx(0)-8, sy(y)); }
+    }
+    /* 坐标轴 */
+    ctx.strokeStyle=AXIS; ctx.lineWidth=1.6;
+    ctx.beginPath(); ctx.moveTo(PL,sy(0)); ctx.lineTo(CW-PR,sy(0)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(sx(0),0); ctx.lineTo(sx(0),plotH); ctx.stroke();
+    ctx.fillStyle=AXIS; ctx.font='italic 13px "Times New Roman",serif';
+    ctx.textAlign='right'; ctx.textBaseline='bottom'; ctx.fillText('x', CW-PR, sy(0)-6);
+    ctx.textAlign='left';  ctx.textBaseline='top';    ctx.fillText('y', sx(0)+7, 3);
+
+    /* 曲线（按 y 的符号着色 + 淡填充） */
+    ctx.save();
+    ctx.beginPath(); ctx.rect(PL,0,CW-PL-PR,plotH); ctx.clip();
+    var N=440, pts=[];
+    for(var i=0;i<=N;i++){
+      var xx=XMIN+(XMAX-XMIN)*i/N;
+      pts.push({x:xx, y:f(xx,a,b,c), c: f(xx,a,b,c)>=0?POS:NEG});
+    }
+    // 填充
+    var seg=[pts[0]];
+    function flushFill(sg){
+      if(sg.length<2) return;
+      ctx.beginPath();
+      ctx.moveTo(sx(sg[0].x), sy(0));
+      for(var k=0;k<sg.length;k++) ctx.lineTo(sx(sg[k].x), sy(sg[k].y));
+      ctx.lineTo(sx(sg[sg.length-1].x), sy(0));
+      ctx.closePath();
+      ctx.fillStyle = sg[0].c===POS ? 'rgba(239,68,68,0.065)' : 'rgba(37,99,235,0.065)';
+      ctx.fill();
+    }
+    function flushLine(sg){
+      if(sg.length<2) return;
+      ctx.beginPath();
+      ctx.moveTo(sx(sg[0].x), sy(sg[0].y));
+      for(var k=1;k<sg.length;k++) ctx.lineTo(sx(sg[k].x), sy(sg[k].y));
+      ctx.strokeStyle=sg[0].c; ctx.lineWidth=2.8; ctx.lineJoin='round'; ctx.lineCap='round';
+      ctx.stroke();
+    }
+    for(var i2=1;i2<pts.length;i2++){
+      seg.push(pts[i2]);
+      if(pts[i2].c!==pts[i2-1].c){
+        flushFill(seg); flushLine(seg);
+        seg=[pts[i2]];
+      }
+    }
+    flushFill(seg); flushLine(seg);
+    ctx.restore();
+
+    /* 顶点与根 */
+    var s=solve(a,b,c);
+    if(s.vertex){
+      var vxp=sx(s.vertex.x), vyp=sy(s.vertex.y);
+      ctx.fillStyle='#475569';
+      ctx.beginPath(); ctx.arc(vxp,vyp,4,0,Math.PI*2); ctx.fill();
+    }
+    ctx.font='600 12px "Microsoft YaHei",system-ui,sans-serif'; ctx.textAlign='center'; ctx.textBaseline='bottom';
+    var names=['x₁','x₂'];
+    s.roots.forEach(function(r,i){
+      if(Math.abs(r)>XMAX) return;
+      ctx.fillStyle=INK;
+      ctx.beginPath(); ctx.arc(sx(r), sy(0), 5, 0, Math.PI*2); ctx.fill();
+      ctx.fillText(names[i]||('x'+i), sx(r), sy(0)-10);
+    });
+
+    /* 底部：解集带 */
+    drawBand(plotH+10, s.pos, POS, 'y > 0');
+    drawBand(plotH+25, s.neg, NEG, 'y < 0');
+
+    /* 悬停探针 */
+    if(hoverX!==null){
+      var hy=f(hoverX,a,b,c);
+      ctx.setLineDash([4,4]); ctx.strokeStyle='#94a3b8'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(sx(hoverX),0); ctx.lineTo(sx(hoverX),plotH); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.fillStyle= hy>=0?POS:NEG;
+      ctx.beginPath(); ctx.arc(sx(hoverX), sy(hy), 4.5, 0, Math.PI*2); ctx.fill();
+      var txt='x = '+fmt(hoverX)+' ,  y = '+fmt(hy);
+      ctx.font='12px "Microsoft YaHei",system-ui,sans-serif'; ctx.textAlign='left'; ctx.textBaseline='middle';
+      var tw=ctx.measureText(txt).width+12;
+      var bx=clamp(sx(hoverX)+10, PL, CW-PR-tw), by=clamp(sy(hy)-18, 6, plotH-20);
+      ctx.fillStyle='rgba(255,255,255,0.94)';
+      ctx.strokeStyle='#e2e8f0'; ctx.lineWidth=1;
+      roundRect(bx,by,tw,20,5); ctx.fill(); ctx.stroke();
+      ctx.fillStyle=INK; ctx.fillText(txt, bx+6, by+11);
+    }
+  }
+  function roundRect(x,y,w,h,r){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+  }
+  function drawBand(yy, segs, color, label){
+    var x0=sx(XMIN), x1=sx(XMAX);
+    ctx.fillStyle='#eef2f7'; roundRect(x0,yy,x1-x0,9,4); ctx.fill();
+    ctx.font='600 11px "Microsoft YaHei",system-ui,sans-serif'; ctx.fillStyle=color;
+    ctx.textAlign='right'; ctx.textBaseline='middle';
+    ctx.fillText(label, x0-8, yy+5);
+    ctx.save();
+    ctx.beginPath(); roundRect(x0,yy,x1-x0,9,4); ctx.clip();
+    (segs||[]).forEach(function(sg){
+      var a1=sg.lo===-Infinity?XMIN:Math.max(sg.lo,XMIN);
+      var b1=sg.hi===Infinity?XMAX:Math.min(sg.hi,XMAX);
+      if(b1<=a1) return;
+      ctx.fillStyle=color; ctx.globalAlpha=0.9;
+      ctx.fillRect(sx(a1), yy, sx(b1)-sx(a1), 9); ctx.globalAlpha=1;
+    });
+    ctx.restore();
+    if(!(segs&&segs.length)){
+      ctx.fillStyle='#94a3b8'; ctx.textAlign='center';
+      ctx.fillText('∅（空集）', (x0+x1)/2, yy+5);
+    }
+  }
+
+  /* ---------- 文案更新 ---------- */
+  var lastAx='';
+  function updateText(s){
+    var a=cur.a;
+    document.getElementById('aVal').textContent = fmt(a);
+    document.getElementById('aVal').style.color = a>=0 ? '#2563eb' : '#7c3aed';
+    var at=document.getElementById('aTag');
+    at.textContent = Math.abs(a)<1e-9 ? '不是二次函数' : (a>0?'开口向上 ↑':'开口向下 ↓');
+    at.className = 'tag ' + (a>0?'a-up':'a-down');
+
+    document.getElementById('dVal').textContent = fmt(s.D);
+    document.getElementById('dVal').style.color = s.D>0 ? '#16a34a' : (s.D===0 ? '#0369a1' : '#c2410c');
+    var dt=document.getElementById('dTag');
+    if(s.deg===0){ dt.textContent='常函数'; dt.className='tag d-neg'; }
+    else if(s.D>0){ dt.textContent='Δ > 0，两个不等实根'; dt.className='tag d-pos'; }
+    else if(s.D===0){ dt.textContent='Δ = 0，两个相等实根'; dt.className='tag d-zero'; }
+    else { dt.textContent='Δ < 0，无实数根'; dt.className='tag d-neg'; }
+
+    document.getElementById('warn').style.display = Math.abs(a)<1e-9 ? 'block':'none';
+
+    // 方程解
+    var eqTxt, eqNote;
+    if(s.deg===0){
+      eqTxt = Math.abs(cur.c)<1e-9 ? '解为任意实数（恒等式）' : '无解';
+      eqNote= 'a = 0 且 b = 0，原式退化为常数。';
+    }else if(s.deg===1){
+      eqTxt = 'x = '+fmt(s.roots[0]);
+      eqNote= '退化为一次方程，只有一个根。';
+    }else if(!s.roots.length){
+      eqTxt = '无实数解';
+      eqNote= '抛物线与 x 轴没有交点。';
+    }else if(s.double){
+      eqTxt = 'x₁ = x₂ = '+fmt(s.roots[0])+'（两个相等实根）';
+      eqNote= '抛物线与 x 轴相切于 1 个点。';
+    }else{
+      eqTxt = 'x₁ = '+fmt(s.roots[0])+'，x₂ = '+fmt(s.roots[1]);
+      eqNote= '抛物线与 x 轴有 2 个交点。';
+    }
+    document.getElementById('sEq').textContent = eqTxt;
+    document.getElementById('nEq').textContent = eqNote;
+
+    document.getElementById('sPos').textContent = setLine(s.pos);
+    document.getElementById('sNeg').textContent = setLine(s.neg);
+    document.getElementById('nPos').textContent = s.pos.length? '即图象在 x 轴上方的 x 范围。' : '图象没有位于 x 轴上方的部分。';
+    document.getElementById('nNeg').textContent = s.neg.length? '即图象在 x 轴下方的 x 范围。' : '图象没有位于 x 轴下方的部分。';
+
+    var fp=JSON.stringify([s.roots,s.pos,s.neg]);
+    if(fp!==lastAx){
+      lastAx=fp;
+      // 三张数轴共用同一刻度范围，横向可直接比对
+      var keys=[];
+      s.roots.forEach(function(k){ keys.push(k); });
+      s.pos.concat(s.neg).forEach(function(g){
+        if(isFinite(g.lo)) keys.push(g.lo);
+        if(isFinite(g.hi)) keys.push(g.hi);
+      });
+      var rlo,rhi;
+      if(!keys.length){ rlo=-6; rhi=6; }
+      else{
+        rlo=Math.floor(Math.min(-4, Math.min.apply(null,keys)-1.2)*2)/2;
+        rhi=Math.ceil(Math.max(4, Math.max.apply(null,keys)+1.2)*2)/2;
+      }
+      var rg={lo:rlo,hi:rhi};
+      document.getElementById('axEq').innerHTML  = axisSVG(null, s.roots, INK, rg);
+      document.getElementById('axPos').innerHTML = axisSVG(s.pos, null, POS, rg);
+      document.getElementById('axNeg').innerHTML = axisSVG(s.neg, null, NEG, rg);
+    }
+
+    // 结论
+    var t='';
+    if(Math.abs(a)<1e-9){
+      t='a = 0，表达式不再是一元二次式，上面的方程/不等式已按一次（或常数）情形求解。把 a 拖离 0 即可回到二次函数。';
+    }else{
+      var dir=a>0?'向上':'向下';
+      t='a = '+fmt(a)+(a>0?' > 0':' < 0')+'，抛物线开口'+dir+'；';
+      t+='Δ = '+fmt(s.D)+'，';
+      if(s.D>0){
+        t+='抛物线与 x 轴有 2 个交点 → 方程有 2 个不等实根；';
+        t+='不等式 > 0 的解集是“'+(a>0?'两根之外':'两根之间')+'”，< 0 的解集是“'+(a>0?'两根之间':'两根之外')+'”。';
+        if(a>0) t+='（a > 0 时的口诀：大于取两边，小于取中间。）';
+      }else if(s.D===0){
+        t+='抛物线与 x 轴相切 → 方程有 2 个相等实根 x₁ = x₂ = '+fmt(s.roots[0])+'；';
+        t+= a>0 ? '除切点外函数值恒正：> 0 的解集为 x ≠ '+fmt(s.roots[0])+'，< 0 的解集为 ∅。'
+               : '除切点外函数值恒负：< 0 的解集为 x ≠ '+fmt(s.roots[0])+'，> 0 的解集为 ∅。';
+      }else{
+        t+='抛物线与 x 轴无交点 → 方程无实数根；';
+        t+= a>0 ? '整条抛物线在 x 轴上方：> 0 的解集为 R，< 0 的解集为 ∅。'
+               : '整条抛物线在 x 轴下方：< 0 的解集为 R，> 0 的解集为 ∅。';
+      }
+    }
+    document.getElementById('concl').textContent = t;
+  }
+
+  /* ---------- 主循环 ---------- */
+  function loop(now){
+    var dt=Math.min(60, now-last); last=now;
+    if(demo.on){
+      demo.t += dt/13000*Math.PI*2;   // 一个来回约 13 秒，便于边看边讲
+      state.c = clamp(demo.center + demo.amp*Math.sin(demo.t), -8, 8);
+      sc.value=state.c.toFixed(1); vc.textContent=fmt(state.c);
+    }
+    var k=1-Math.exp(-dt/110);
+    cur.a += (state.a-cur.a)*k;
+    cur.b += (state.b-cur.b)*k;
+    cur.c += (state.c-cur.c)*k;
+
+    var ty;
+    if(demo.on && demo.view){
+      // 演示时视窗冻结：抛物线才会明显上下平移，而不是被视窗“追着走”
+      ty = demo.view;
+    }else{
+      // y 视窗：随 |a| 调整高度，并按开口方向把余量放给“张开”的一侧
+      var vy = Math.abs(cur.a)<1e-9 ? 0 : cur.c - cur.b*cur.b/(4*cur.a);
+      var A = Math.max(0.25, Math.abs(cur.a));
+      var H = clamp(20/Math.sqrt(A), 8, 34);
+      var up = cur.a>=0 ? H*0.80 : H*0.22;
+      var dn = cur.a>=0 ? H*0.28 : H*0.85;
+      ty={ymin: Math.min(0, vy-dn), ymax: Math.max(0, vy+up)};
+    }
+    var kv=1-Math.exp(-dt/180);
+    view.ymin += (ty.ymin-view.ymin)*kv;
+    view.ymax += (ty.ymax-view.ymax)*kv;
+
+    draw();
+    updateText(solve(cur.a,cur.b,cur.c));
+    requestAnimationFrame(loop);
+  }
+
+  /* ---------- 交互 ---------- */
+  var sa=document.getElementById('sa'), sb=document.getElementById('sb'), sc=document.getElementById('sc');
+  var va=document.getElementById('va'), vb=document.getElementById('vb'), vc=document.getElementById('vc');
+  function syncSliders(){
+    sa.value=state.a; sb.value=state.b; sc.value=state.c;
+    va.textContent=fmt(state.a); vb.textContent=fmt(state.b); vc.textContent=fmt(state.c);
+  }
+  function stopDemo(){ demo.on=false; document.getElementById('bDemo').classList.remove('on');
+                       document.getElementById('bDemo').textContent='▶ 平移演示'; }
+  [['sa','a'],['sb','b'],['sc','c']].forEach(function(p){
+    var el=document.getElementById(p[0]);
+    el.addEventListener('input',function(){
+      stopDemo();
+      state[p[1]]=parseFloat(el.value);
+      document.getElementById('v'+p[1]).textContent=fmt(state[p[1]]);
+    });
+  });
+  document.getElementById('bReset').onclick=function(){ stopDemo(); state={a:1,b:-3,c:2}; syncSliders(); };
+  document.getElementById('bZero').onclick=function(){
+    stopDemo();
+    if(Math.abs(state.a)<1e-9) return;
+    // 依次尝试调 c、b、a，让 Δ 精确为 0（保持其它参数尽量不变）
+    var nc = state.b*state.b/(4*state.a);
+    if(Math.abs(nc)<=8){
+      state.c = nc;
+    }else if(Math.abs(state.b)>1e-9 && state.a*state.c>0){
+      var nb = 2*Math.sqrt(state.a*state.c);
+      state.b = state.b<0 ? -nb : nb;
+    }else if(Math.abs(state.c)>1e-9){
+      var na = state.b*state.b/(4*state.c);
+      if(Math.abs(na)>=0.1 && Math.abs(na)<=3) state.a = na;
+    }
+    syncSliders();
+  };
+  document.getElementById('bDemo').onclick=function(){
+    var btn=document.getElementById('bDemo');
+    if(demo.on){ stopDemo(); return; }
+    if(Math.abs(state.a)<1e-9) state.a=1;
+    var a=state.a, b=state.b;
+    var center=b*b/(4*a);
+    if(!isFinite(center)) center=0;
+    // 中心过高时先让 b=0，保证有足够的上下浮动空间
+    if(Math.abs(center)>4){ state.b=0; b=0; center=0; }
+    // 振幅：c 要尽量在 [-8,8] 内来回，浮动幅度 4~6.5
+    var amp = clamp(8-Math.abs(center), 4, 6.5);
+    demo.center = center;
+    demo.amp = amp;
+    demo.t = Math.asin(clamp((state.c-center)/amp, -1, 1));
+    // 冻结视窗，覆盖顶点的整个浮动区间 [-amp, amp]
+    var A = Math.max(0.25, Math.abs(a));
+    var H = clamp(20/Math.sqrt(A), 8, 34);
+    var up = a>0 ? H*0.55 : H*0.15;
+    var dn = a>0 ? H*0.15 : H*0.55;
+    demo.view = {ymin: Math.min(0, -amp-dn), ymax: Math.max(0, amp+up)};
+    demo.on=true; btn.classList.add('on'); btn.textContent='⏸ 暂停演示';
+    syncSliders();
+  };
+
+  cv.addEventListener('mousemove',function(e){
+    var r=cv.getBoundingClientRect();
+    var px=e.clientX-r.left;
+    hoverX = XMIN + (px-PL)/(CW-PL-PR)*(XMAX-XMIN);
+    if(hoverX<XMIN||hoverX>XMAX) hoverX=null;
+  });
+  cv.addEventListener('mouseleave',function(){ hoverX=null; });
+
+  window.addEventListener('resize',resize);
+  if(window.ResizeObserver) new ResizeObserver(resize).observe(cv);
+
+  // 支持 ?a=1&b=2&c=3 直接打开某个情形（便于课前固定例子）
+  try{
+    var q=new URLSearchParams(location.search);
+    ['a','b','c'].forEach(function(k){
+      var v=parseFloat(q.get(k));
+      if(isFinite(v)){ state[k] = (k==='a')? clamp(v,-3,3) : clamp(v,-8,8); cur[k]=state[k]; }
+    });
+  }catch(e){}
+
+  /* ---------- 总结表里的三张小示意图 ---------- */
+  function miniFig(kind){
+    var W=120,H=96,cx=60,ax=76,sxx=18,syy=11;
+    function PX(x){ return (cx+x*sxx).toFixed(2); }
+    function PY(y){ return (ax-y*syy).toFixed(2); }
+    var fn = kind==='two' ? function(x){ return x*x-1.55; }
+           : kind==='one' ? function(x){ return x*x; }
+           : function(x){ return x*x+1.15; };
+    var d='';
+    for(var i=0;i<=44;i++){
+      var x=-2.2+i*0.1;
+      d += (i?' L':'M')+PX(x)+' '+PY(fn(x));
+    }
+    var yz=+PY(0), xz=+PX(0);
+    var s='<svg viewBox="0 0 '+W+' '+H+'" width="120" height="96">';
+    // 坐标轴
+    s+='<line x1="10" y1="'+yz+'" x2="112" y2="'+yz+'" stroke="#334155" stroke-width="1.3"/>';
+    s+='<polygon points="115,'+yz+' 108,'+(yz-3.5)+' 108,'+(yz+3.5)+'" fill="#334155"/>';
+    s+='<line x1="'+xz+'" y1="88" x2="'+xz+'" y2="12" stroke="#334155" stroke-width="1.3"/>';
+    s+='<polygon points="'+(xz)+',8 '+(xz-3.5)+',14 '+(xz+3.5)+',14" fill="#334155"/>';
+    // 抛物线
+    s+='<path d="'+d+'" fill="none" stroke="#0ea5e9" stroke-width="2.1" stroke-linecap="round"/>';
+    // 原点
+    s+='<text x="'+(xz-9)+'" y="'+(yz+11)+'" font-size="9" fill="#475569" font-style="italic">O</text>';
+    // 交点与标注
+    if(kind==='two'){
+      var r=Math.sqrt(1.55);
+      [-r,r].forEach(function(v,i){
+        s+='<circle cx="'+PX(v)+'" cy="'+yz+'" r="2.7" fill="#ef4444"/>';
+        s+='<text x="'+(+PX(v)+(i?4:-4))+'" y="'+(yz+12)+'" font-size="9" fill="#ef4444" '+
+           'text-anchor="'+(i?'start':'end')+'">x'+(i?'₂':'₁')+'</text>';
+      });
+    }else if(kind==='one'){
+      s+='<circle cx="'+xz+'" cy="'+yz+'" r="2.7" fill="#ef4444"/>';
+      s+='<text x="'+(xz+6)+'" y="'+(yz+12)+'" font-size="9" fill="#ef4444">x₁ = x₂</text>';
+    }
+    s+='</svg>';
+    return s;
+  }
+  document.getElementById('mini1').innerHTML = miniFig('two');
+  document.getElementById('mini2').innerHTML = miniFig('one');
+  document.getElementById('mini3').innerHTML = miniFig('none');
+
+  resize(); syncSliders(); requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,1576 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>模型29 · 转盘线速度与角速度</title>
+<style>
+/* ================= 基础与主题（浅色） ================= */
+:root{
+  --bg:#f4f6fa; --panel:#fff; --line:#dfe5ee; --ink:#1f2937; --sub:#6b7280;
+  --blue:#2563eb; --green:#16a34a; --orange:#ea580c; --purple:#7c3aed; --navy:#1e3a8a;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif;background:var(--bg);color:var(--ink);font-size:14px}
+header{background:linear-gradient(135deg,#0f2c5c,#1d4ed8);color:#fff;padding:10px 18px;display:flex;flex-wrap:wrap;align-items:center;gap:6px 20px}
+header h1{font-size:18px;font-weight:700;letter-spacing:.5px}
+header .sub{font-size:12px;opacity:.8}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;align-items:center}
+.legend i{width:11px;height:11px;border-radius:50%;display:inline-block;margin-right:4px;vertical-align:-1px}
+.legend .ln{width:16px;height:0;border-top:2px dashed #fff;display:inline-block;margin-right:4px;vertical-align:3px}
+.app{display:grid;grid-template-columns:296px minmax(0,1fr);gap:12px;padding:12px;max-width:1720px;margin:0 auto}
+@media (max-width:1080px){.app{grid-template-columns:1fr}.side{order:2}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px;margin-bottom:11px}
+.card h2{font-size:13.5px;color:var(--navy);margin-bottom:8px;padding-bottom:5px;border-bottom:1px dashed var(--line);display:flex;justify-content:space-between;align-items:center}
+.card h2 small{font-weight:400;color:var(--sub);font-size:11.5px}
+.minihelp{width:19px;height:19px;border-radius:50%;border:1px solid #c7d2fe;background:#eef2ff;color:#3730a3;font:italic bold 11px Georgia,serif;cursor:pointer;padding:0;line-height:1;flex:0 0 auto}
+.minihelp:hover{background:#c7d2fe}
+.sl{margin-bottom:9px}
+.sl label{display:flex;justify-content:space-between;font-size:12.5px;color:#374151;margin-bottom:3px}
+.sl label b{color:#111827;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:var(--blue)}
+.seg{display:flex;gap:5px;flex-wrap:wrap;margin:5px 0}
+.seg button{flex:1;min-width:46px;padding:6px 3px;border:1px solid var(--line);background:#f8fafc;border-radius:7px;cursor:pointer;font-size:12px}
+.seg button.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+.btnrow{display:flex;gap:5px;margin:7px 0}
+.btnrow button{flex:1;padding:7px 3px;border:none;border-radius:7px;cursor:pointer;font-size:12.5px;font-weight:600}
+#btnPlay{background:#16a34a;color:#fff}#btnPause{background:#d97706;color:#fff}#btnReset{background:#64748b;color:#fff}
+#btnStep,#btnStatic{background:#e5e7eb;color:#1f2937;font-weight:400}
+.togs{display:grid;grid-template-columns:1fr 1fr;gap:4px 6px;font-size:12.2px}
+.togs label{display:flex;align-items:center;gap:4px;cursor:pointer;white-space:nowrap}
+.markrow{display:grid;grid-template-columns:18px 1fr 62px;gap:6px;align-items:center;margin-bottom:5px;font-size:12px}
+.markrow .dot{width:11px;height:11px;border-radius:50%}
+.markrow input[type=range]{margin:0}
+/* ================= 主区 ================= */
+.stage{display:grid;grid-template-columns:minmax(0,1fr) 316px;gap:12px}
+@media (max-width:1300px){.stage{grid-template-columns:1fr}}
+.panelwrap{position:relative;border:1px solid var(--line);border-radius:10px;background:#fff;overflow:hidden}
+#scene{display:block;width:100%;height:520px;touch-action:none;cursor:default}
+@media (max-width:1080px){#scene{height:420px}}
+.hslots{position:absolute;inset:0;pointer-events:none}
+.hs{position:absolute;width:22px;height:22px;border-radius:50%;border:1.5px solid #fff;background:rgba(30,58,138,.85);color:#fff;font:italic bold 12px Georgia,serif;cursor:pointer;pointer-events:auto;display:none;align-items:center;justify-content:center;box-shadow:0 1px 4px rgba(0,0,0,.25);padding:0}
+.hs:hover{background:#2563eb;transform:scale(1.12)}
+.hs:focus-visible{outline:3px solid #facc15;outline-offset:2px}
+.notice{padding:6px 10px;font-size:11.5px;color:#334155;line-height:1.7;background:#f8fafc;border-top:1px solid var(--line)}
+.rightcol{min-width:0}
+.pcard{border:1px solid var(--line);border-left:4px solid #999;border-radius:8px;padding:6px 8px;margin-bottom:6px;background:#fbfcfe}
+.pcard .h{display:flex;justify-content:space-between;font-size:12.3px;font-weight:600;margin-bottom:3px}
+.pcard .b{display:grid;grid-template-columns:repeat(4,1fr);gap:2px;font-size:11.5px;font-variant-numeric:tabular-nums}
+.pcard .b span{color:var(--sub);font-size:10.5px;display:block}
+.pcard .b b{font-weight:600;font-size:12px}
+.banner{margin-top:4px;font-size:12.2px;line-height:1.65;background:#eff6ff;border:1px solid #bfdbfe;color:#1e3a8a;border-radius:7px;padding:6px 8px}
+.banner.warn{background:#fff7ed;border-color:#fed7aa;color:#9a3412}
+/* 测量工具 */
+.mrow{display:flex;gap:5px;margin-bottom:6px}
+.mrow button{flex:1;padding:6px;font-size:12px;border-radius:6px;border:1px solid var(--line);background:#f8fafc;cursor:pointer}
+.mrow button.primary{background:#2563eb;color:#fff;border-color:#2563eb}
+.mrow button.danger{background:#fee2e2;border-color:#fecaca;color:#991b1b}
+.mgrid{display:grid;grid-template-columns:1fr 1fr;gap:3px 8px;font-size:11.8px;font-variant-numeric:tabular-nums}
+.mgrid div{display:flex;justify-content:space-between;background:#f8fafc;border:1px solid #eef2f7;border-radius:5px;padding:3px 6px}
+.mgrid b{font-weight:600}
+.manual{display:flex;gap:4px;align-items:center;margin-top:6px;font-size:11.5px;flex-wrap:wrap}
+.manual input{width:58px;padding:3px 4px;border:1px solid var(--line);border-radius:5px;font-size:11.5px}
+.manual button{padding:4px 8px;border:1px solid var(--line);background:#f1f5f9;border-radius:5px;cursor:pointer;font-size:11.5px}
+/* 数据表 */
+.tblwrap{max-height:170px;overflow:auto;border:1px solid var(--line);border-radius:6px;margin-bottom:6px}
+table{width:100%;border-collapse:collapse;font-size:11.3px;font-variant-numeric:tabular-nums}
+th{position:sticky;top:0;background:#eef2f7;z-index:1;font-weight:600}
+th,td{padding:3px 4px;text-align:center;border-bottom:1px solid #eef2f7;white-space:nowrap}
+td.sq{color:#1d4ed8}td.bl{color:#6d28d9}
+/* 图像 */
+.charts{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-top:12px}
+@media (max-width:1400px){.charts{grid-template-columns:repeat(3,1fr)}}
+@media (max-width:760px){.charts{grid-template-columns:repeat(2,1fr)}}
+.chartcard{background:#fff;border:1px solid var(--line);border-radius:10px;padding:7px;position:relative}
+.chartcard h3{font-size:11.8px;text-align:center;color:#374151;margin-bottom:3px;font-weight:600}
+.chartcard canvas{display:block;width:100%;height:150px}
+.chartcard .hs2{position:absolute;right:5px;top:4px;width:18px;height:18px;border-radius:50%;border:1px solid #fff;background:#1e3a8a;color:#fff;font:italic bold 11px Georgia;cursor:pointer;padding:0}
+/* ================= 抽屉与卡片 ================= */
+.drawer{position:fixed;top:0;right:0;height:100vh;width:400px;max-width:94vw;background:#fff;border-left:1px solid var(--line);box-shadow:-8px 0 24px rgba(15,23,42,.15);transform:translateX(102%);transition:transform .25s ease;z-index:60;display:flex;flex-direction:column}
+.drawer.open{transform:none}
+@media (max-width:760px){.drawer{width:100%;height:76vh;top:auto;bottom:0;border-radius:14px 14px 0 0;border-left:none;border-top:1px solid var(--line);transform:translateY(102%)}.drawer.open{transform:none}}
+.dhead{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line)}
+.dhead h2{font-size:14px;color:var(--navy);flex:1}
+.dhead input{flex:1;min-width:0;padding:5px 8px;border:1px solid var(--line);border-radius:14px;font-size:12px}
+.iconbtn{width:28px;height:28px;border-radius:50%;border:1px solid var(--line);background:#f8fafc;cursor:pointer;font-size:14px;line-height:1}
+.tabs{display:flex;gap:4px;padding:7px 10px;flex-wrap:wrap;border-bottom:1px solid var(--line)}
+.tabs button{padding:3px 9px;border-radius:12px;border:1px solid var(--line);background:#f8fafc;font-size:11.8px;cursor:pointer}
+.tabs button.on{background:var(--navy);color:#fff;border-color:var(--navy)}
+.dlist{flex:1;overflow:auto;padding:8px 10px}
+.ditem{display:flex;gap:8px;align-items:flex-start;border:1px solid var(--line);border-radius:8px;padding:7px 8px;margin-bottom:6px;cursor:pointer;background:#fcfdff}
+.ditem:hover{border-color:#2563eb;background:#f5f9ff}
+.ditem .cat{font-size:10.5px;padding:1px 6px;border-radius:9px;background:#e0e7ff;color:#3730a3;white-space:nowrap}
+.ditem .t{font-size:12.6px;font-weight:600;line-height:1.4}
+.ditem .c{font-size:11.5px;color:var(--sub);margin-top:2px;line-height:1.5}
+.detail{flex:1;overflow:auto;padding:10px 12px;display:none}
+.detail.show{display:block}
+.detail .ti{font-size:15px;font-weight:700;color:var(--navy);margin-bottom:2px}
+.detail .tagline{font-size:11.5px;color:var(--sub);margin-bottom:8px}
+.face{border:1px solid var(--line);border-radius:10px;padding:10px;background:#fcfdff}
+.face h4{font-size:12px;color:#64748b;margin-bottom:4px;font-weight:600}
+.face p{font-size:12.8px;line-height:1.75;margin-bottom:6px}
+.face .fml{font-size:13px;background:#eff6ff;border:1px solid #bfdbfe;color:#1e3a8a;border-radius:6px;padding:6px 8px;margin:6px 0;font-family:"Cambria Math",Georgia,serif;letter-spacing:.3px}
+.face .how{font-size:12.2px;background:#f0fdf4;border-left:3px solid #16a34a;padding:5px 8px;border-radius:0 6px 6px 0;color:#14532d;line-height:1.65}
+.face .tip{font-size:12.2px;background:#fef2f2;border-left:3px solid #dc2626;padding:5px 8px;border-radius:0 6px 6px 0;color:#991b1b;margin-top:6px;line-height:1.65}
+.face svg{display:block;margin:6px auto;max-width:100%}
+.dnav{display:flex;gap:6px;align-items:center;padding:8px 12px;border-top:1px solid var(--line);font-size:11.5px;color:var(--sub)}
+.dnav button{flex:1;padding:6px;border-radius:6px;border:1px solid var(--line);background:#f8fafc;cursor:pointer;font-size:12px}
+.dnav button.pin.on{background:#fff7ed;border-color:#fdba74;color:#9a3412;font-weight:600}
+/* 钉住标签上移 62px，避免与右下角「知识卡片库」悬浮按钮叠在同一位置 */
+.pinchip{position:fixed;right:14px;bottom:62px;z-index:55;background:#fff;border:1px solid #fdba74;border-radius:20px;padding:6px 12px;font-size:12px;cursor:pointer;box-shadow:0 3px 10px rgba(0,0,0,.12);display:none;max-width:260px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.fab{position:fixed;right:14px;bottom:14px;z-index:50;background:#1e3a8a;color:#fff;border:none;border-radius:22px;padding:10px 16px;font-size:13px;cursor:pointer;box-shadow:0 4px 14px rgba(30,58,138,.35)}
+/* 引导与测验 */
+.gstep{font-size:12.5px;line-height:1.7}
+.gstep .tag{display:inline-block;background:var(--navy);color:#fff;border-radius:4px;padding:1px 7px;font-size:11.5px}
+.gstep .ask{margin-top:5px;padding:5px 8px;background:#fffbeb;border-left:3px solid #f59e0b;border-radius:0 6px 6px 0;color:#92400e;font-size:12.2px}
+.gnav{display:flex;justify-content:space-between;align-items:center;margin-top:6px}
+#btnNext{padding:5px 13px;border:none;background:#2563eb;color:#fff;border-radius:6px;cursor:pointer;font-size:12.5px}
+.quiz{margin-bottom:9px;padding-bottom:7px;border-bottom:1px dashed var(--line)}
+.quiz:last-child{border:none}
+.quiz p{font-size:12.4px;margin-bottom:4px;line-height:1.55}
+.quiz .opt{display:inline-block;margin:2px 3px 2px 0;padding:3px 9px;border:1px solid var(--line);border-radius:12px;background:#f8fafc;cursor:pointer;font-size:12px}
+.quiz .opt:hover{border-color:#2563eb}
+.quiz .opt.right{background:#dcfce7;border-color:#16a34a;color:#14532d}
+.quiz .opt.wrong{background:#fee2e2;border-color:#dc2626;color:#7f1d1d}
+.quiz .why{display:none;font-size:11.8px;margin-top:4px;padding:5px 8px;border-radius:6px;line-height:1.6}
+.quiz .why.ok{display:block;background:#f0fdf4;color:#166534}
+.quiz .why.bad{display:block;background:#fef2f2;color:#991b1b}
+.quiz .why a{color:#1d4ed8;text-decoration:underline;cursor:pointer}
+footer{text-align:center;color:var(--sub);font-size:12px;padding:6px 0 18px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+/* 宽屏时卡片抽屉自动“挤开”页面，不遮挡转盘与读数区 */
+@media (min-width:1180px){body.drawer-open .app{padding-right:418px}}
+</style>
+</head>
+<body>
+<header>
+  <div>
+    <h1>模型29 · 转盘线速度与角速度</h1>
+    <div class="sub">同轴转动 ω 相同 · v = ωr 外圈更大 · 同缘传动 v 相同 · ω ∝ 1/r</div>
+  </div>
+  <div class="legend">
+    <span><i style="background:#3b82f6"></i>内圈</span>
+    <span><i style="background:#22c55e"></i>中圈</span>
+    <span><i style="background:#f97316"></i>外圈</span>
+    <span><i class="ln"></i>参考半径线（ω 相同）</span>
+    <span><i style="background:#facc15"></i>速度矢量（沿切线）</span>
+  </div>
+</header>
+
+<div class="app">
+  <!-- ==================== 左栏 ==================== -->
+  <aside class="side">
+    <div class="card">
+      <h2>装置与转速<button class="minihelp" data-card="c_tfn" aria-label="打开知识卡片：周期频率与转速">i</button></h2>
+      <div class="seg" id="segMode">
+        <button data-m="coax" class="on">同轴转盘</button>
+        <button data-m="belt">皮带双轮（同缘）</button>
+      </div>
+      <div class="sl"><label>转速 n <b><span id="vN">60</span> r/min</b></label>
+        <input type="range" id="slN" min="0" max="120" step="1" value="60"></div>
+      <div class="mgrid" style="margin-bottom:6px">
+        <div><span>ω</span><b id="vOmega">6.28 rad/s</b></div>
+        <div><span>T</span><b id="vT">1.00 s</b></div>
+      </div>
+      <div class="sl" id="beltOnly" style="display:none">
+        <label>轮1 半径 R₁ <b><span id="vR1">0.18</span> m</b></label>
+        <input type="range" id="slR1" min="0.06" max="0.30" step="0.01" value="0.18">
+        <label>轮2 半径 R₂ <b><span id="vR2">0.10</span> m</b></label>
+        <input type="range" id="slR2" min="0.06" max="0.30" step="0.01" value="0.10">
+      </div>
+    </div>
+
+    <div class="card" id="cardMark">
+      <h2>半径标记点 <small>可拖动盘上圆环</small></h2>
+      <div id="markList"></div>
+      <div class="btnrow">
+        <button id="btnAddP" style="background:#e0e7ff;color:#1e3a8a">＋ 添加</button>
+        <button id="btnDelP" style="background:#f1f5f9;color:#334155">－ 删除</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>频闪仪<button class="minihelp" data-card="c_measure" aria-label="打开知识卡片：测量周期">i</button></h2>
+      <div class="togs" style="margin-bottom:6px">
+        <label><input type="checkbox" id="ckStrobe" checked>频闪开启</label>
+        <label><input type="checkbox" id="ckSync">与转速同步</label>
+      </div>
+      <div class="sl"><label>闪光频率 f<sub>闪</sub> <b><span id="vHz">8.0</span> Hz</b></label>
+        <input type="range" id="slHz" min="0.5" max="24" step="0.5" value="8" disabled></div>
+    </div>
+
+    <div class="card">
+      <h2>播放控制</h2>
+      <div class="btnrow">
+        <button id="btnPlay">▶ 播放</button>
+        <button id="btnPause">⏸ 暂停</button>
+        <button id="btnReset">⟲ 重置</button>
+      </div>
+      <div class="btnrow">
+        <button id="btnStep">单步 +0.05s</button>
+        <button id="btnStatic">静态分帧图</button>
+      </div>
+      <div class="sl" style="margin:0"><label>播放速度</label>
+        <div class="seg" id="segSp">
+          <button data-s="0.25">0.25×</button>
+          <button data-s="0.5">0.5×</button>
+          <button data-s="1" class="on">1×</button>
+        </div></div>
+    </div>
+
+    <div class="card">
+      <h2>显示开关</h2>
+      <div class="togs" id="togs">
+        <label><input type="checkbox" data-k="trail" checked>轨迹圆</label>
+        <label><input type="checkbox" data-k="radius" checked>参考半径线</label>
+        <label><input type="checkbox" data-k="vel" checked>切线速度矢量</label>
+        <label><input type="checkbox" data-k="sector" checked>角度扇形</label>
+        <label><input type="checkbox" data-k="ghost" checked>频闪残影</label>
+        <label><input type="checkbox" data-k="ink" checked>墨水点迹</label>
+        <label><input type="checkbox" data-k="dial" checked>角度刻度盘</label>
+        <label><input type="checkbox" data-k="pcards" checked>读数卡</label>
+        <label><input type="checkbox" id="ckSound">音效</label>
+        <label><input type="checkbox" data-k="theory">理论vs实测</label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>教学引导<small>五步推进</small></h2>
+      <div class="gstep">
+        <div id="gBody"></div>
+        <div class="gnav">
+          <span id="gDots" style="font-size:11px;color:#94a3b8"></span>
+          <button id="btnNext">下一步 →</button>
+        </div>
+        <label style="display:flex;gap:4px;align-items:center;font-size:11.5px;color:#64748b;margin-top:6px">
+          <input type="checkbox" id="ckAuto" checked>推进时自动弹出相关卡片</label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>即时测验<small>答错有针对性解释</small></h2>
+      <div id="quizBox"></div>
+    </div>
+  </aside>
+
+  <!-- ==================== 主区 ==================== -->
+  <main>
+    <div class="stage">
+      <div class="panelwrap">
+        <canvas id="scene"></canvas>
+        <div class="hslots" id="hslots">
+          <button class="hs" data-card="c_omega" aria-label="打开知识卡片：角速度 ω" title="角速度 ω">i</button>
+          <button class="hs" data-card="c_coax" aria-label="打开知识卡片：同轴转动规律" title="同轴转动">i</button>
+          <button class="hs" data-card="c_v" aria-label="打开知识卡片：线速度 v" title="线速度 v">i</button>
+          <button class="hs" data-card="c_measure" aria-label="打开知识卡片：测量周期" title="测量方法">i</button>
+        </div>
+        <div class="notice" id="notice">俯视视角：转盘匀速转动，3 个标记点始终在同一条参考半径上。</div>
+      </div>
+
+      <div class="rightcol">
+        <div class="card">
+          <h2>并列读数卡<small>同刻对比</small></h2>
+          <div id="pcards"></div>
+          <div class="banner" id="banner"></div>
+        </div>
+
+        <div class="card">
+          <h2>测周期工具</h2>
+          <div class="mrow">
+            <button id="btnMStart" class="primary">开始计时</button>
+            <button id="btnMStop">停止计时</button>
+            <button id="btnMClear" class="danger">清空</button>
+          </div>
+          <div class="mgrid" id="mOut"></div>
+          <div class="manual">
+            <span>手动录入：Δt</span><input type="number" id="inDt" step="0.01" placeholder="s">
+            <span>N</span><input type="number" id="inN" step="1" placeholder="圈">
+            <button id="btnMManual">计算</button>
+          </div>
+        </div>
+
+        <div class="card">
+          <h2>数据记录<small>同轴蓝 / 同缘紫</small></h2>
+          <div class="tblwrap">
+            <table id="recTbl"><thead><tr>
+              <th>装置</th><th>r/m</th><th>n/(r/min)</th><th>T/s</th><th>ω/(rad/s)</th><th>v/(m/s)</th><th>v理论</th><th>误差</th>
+            </tr></thead><tbody></tbody></table>
+          </div>
+          <div class="mrow">
+            <button id="btnRec" class="primary">＋ 记录本组</button>
+            <button id="btnCSV">导出 CSV</button>
+            <button id="btnClearRec" class="danger">清空</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="charts">
+      <div class="chartcard"><h3>v–r 图（斜率 = ω）</h3><canvas id="chVr"></canvas>
+        <button class="hs2" data-card="c_chart" aria-label="打开知识卡片：图像法">i</button>
+        <div id="theoryNote" style="display:none;font-size:10.5px;color:#dc2626;text-align:center;margin-top:2px"></div>
+      </div>
+      <div class="chartcard"><h3>ω–r 图（同轴水平）</h3><canvas id="chWr"></canvas></div>
+      <div class="chartcard"><h3>θ–t 图（斜率 = ω）</h3><canvas id="chTht"></canvas></div>
+      <div class="chartcard"><h3>s–t 图（斜率 = v）</h3><canvas id="chSt"></canvas></div>
+      <div class="chartcard"><h3>a<sub>n</sub>–r 图（拓展）</h3><canvas id="chAn"></canvas></div>
+    </div>
+  </main>
+</div>
+<footer>θ(t) = ωt + θ₀ 解析计算 · 无外部依赖 · 同轴 ω 相同，同缘 v 相同</footer>
+
+<!-- ==================== 知识卡片抽屉 ==================== -->
+<aside class="drawer" id="drawer" role="dialog" aria-label="知识卡片库" aria-modal="false">
+  <div class="dhead">
+    <h2>知识卡片库</h2>
+    <input id="search" type="search" placeholder="搜索：角速度 / v=ωr / 皮带…" aria-label="搜索卡片">
+    <button class="iconbtn" id="btnClose" aria-label="关闭卡片库">✕</button>
+  </div>
+  <div class="tabs" id="tabs"></div>
+  <div class="dlist" id="dlist"></div>
+  <div class="detail" id="detail">
+    <button class="iconbtn" id="btnBack" style="margin-bottom:6px" aria-label="返回卡片列表">←</button>
+    <div class="ti" id="dTitle"></div>
+    <div class="tagline" id="dTag"></div>
+    <div id="faceFront" class="face"></div>
+    <div id="faceBack" class="face" style="display:none;margin-top:8px"></div>
+  </div>
+  <div class="dnav">
+    <button id="btnPrev">← 上一张</button>
+    <button id="btnFlip">翻转 ⇄</button>
+    <button id="btnPin" class="pin">钉住</button>
+    <button id="btnNextCard">下一张 →</button>
+  </div>
+</aside>
+<button class="fab" id="fab">📚 知识卡片库</button>
+<div class="pinchip" id="pinchip"></div>
+
+<script>
+"use strict";
+/* =========================================================
+ * 一、配置与状态（物理参数集中于此）
+ * ========================================================= */
+const DEG = Math.PI / 180;
+const CFG = {
+  n: 60,                    // 转速 (r/min)
+  mode: "coax",             // coax 同轴 | belt 皮带双轮
+  R1: 0.18, R2: 0.10,       // 皮带双轮半径 (m)
+  points: [{ r: 0.10 }, { r: 0.18 }, { r: 0.28 }],  // 标记点（2–5 个）
+  strobe: { on: true, hz: 8, sync: false },
+  win: 0.15,                // 扇形统计窗口 Δt (s)
+  speed: 1,
+  dt: 1 / 240,              // 固定步长
+  tog: { trail: true, radius: true, vel: true, sector: true, ghost: true, ink: true, dial: true, pcards: true, sound: false, theory: false }
+};
+const S = {
+  t: 0, acc: 0, last: 0, running: false,
+  flashT: -9, flashIdx: -1,
+  measure: null,            // {dt,N,T,om,err}
+  rec: []                   // 数据记录
+};
+const REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+const COLORS = ["#3b82f6", "#22c55e", "#f97316", "#a855f7", "#14b8a6"]; // 按半径升序
+const $ = id => document.getElementById(id);
+const fmt = (v, d = 2) => (isFinite(v) ? v.toFixed(d) : "—");
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+
+/* ---------- 核心物理量（全部由 n 派生，解析式，无积分） ---------- */
+const omega0 = () => 2 * Math.PI * CFG.n / 60;          // ω = 2πn/60
+const period0 = () => (CFG.n > 0 ? 2 * Math.PI / omega0() : Infinity); // T = 2π/ω
+const strobeHz = () => CFG.strobe.sync ? Math.max(CFG.n / 60, 0.1) : CFG.strobe.hz;
+
+/* 当前装置下的“活动标记点”：同轴为全部点；皮带为两轮边缘点 */
+function activePoints() {
+  if (CFG.mode === "coax") {
+    const om = omega0();
+    const rs = CFG.points.map(p => p.r);
+    const order = rs.slice().sort((a, b) => a - b);
+    return CFG.points.map((p, i) => ({
+      r: p.r, om, v: om * p.r, T: 2 * Math.PI / om,
+      an: om * om * p.r, color: COLORS[order.indexOf(p.r) % COLORS.length],
+      label: "P" + (i + 1), idx: i
+    }));
+  }
+  const om1 = omega0(), v = om1 * CFG.R1, om2 = v / CFG.R2;
+  const order = [CFG.R1, CFG.R2].slice().sort((a, b) => a - b);
+  return [
+    { r: CFG.R1, om: om1, v, T: 2 * Math.PI / om1, an: v * v / CFG.R1, color: COLORS[order.indexOf(CFG.R1) % COLORS.length], label: "轮1·边缘" },
+    { r: CFG.R2, om: om2, v, T: 2 * Math.PI / om2, an: v * v / CFG.R2, color: COLORS[order.indexOf(CFG.R2) % COLORS.length], label: "轮2·边缘" }
+  ];
+}
+
+/* =========================================================
+ * 二、画布基础工具
+ * ========================================================= */
+function fitCanvas(cv) {
+  const dpr = window.devicePixelRatio || 1;
+  const w = cv.clientWidth, h = cv.clientHeight;
+  if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) {
+    cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+  }
+  const ctx = cv.getContext("2d");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx, w, h };
+}
+/* 极坐标：θ 自 12 点方向顺时针（与屏幕 y 向下一致） */
+const polar = (cx, cy, r, th) => ({ x: cx + r * Math.sin(th), y: cy - r * Math.cos(th) });
+/* 箭头 */
+function arrow(ctx, x1, y1, x2, y2, color, lw, head) {
+  ctx.save();
+  ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = lw;
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  const a = Math.atan2(y2 - y1, x2 - x1), L = head || 9;
+  ctx.beginPath(); ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - L * Math.cos(a - 0.4), y2 - L * Math.sin(a - 0.4));
+  ctx.lineTo(x2 - L * Math.cos(a + 0.4), y2 - L * Math.sin(a + 0.4));
+  ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+/* 旋转方向弧形箭头（顺时针为正） */
+function spinArrow(ctx, cx, cy, R, color) {
+  ctx.save();
+  ctx.strokeStyle = color; ctx.lineWidth = 2.4;
+  ctx.beginPath(); ctx.arc(cx, cy, R, -Math.PI * 0.75, Math.PI * 0.1); ctx.stroke();
+  const p = { x: cx + R * Math.cos(Math.PI * 0.1), y: cy + R * Math.sin(Math.PI * 0.1) };
+  const tang = { x: -Math.sin(Math.PI * 0.1), y: Math.cos(Math.PI * 0.1) };
+  arrow(ctx, p.x - tang.x * 6, p.y - tang.y * 6, p.x + tang.x * 6, p.y + tang.y * 6, color, 2.4, 8);
+  ctx.restore();
+}
+
+/* =========================================================
+ * 三、主画板：同轴转盘 / 皮带双轮
+ * ========================================================= */
+const scene = $("scene");
+let SC = { cx: 0, cy: 0, s: 1, rMax: 0.28, mode: "coax", R1: 0.18, R2: 0.10 };
+
+/* ---- 同轴转盘 ---- */
+function drawCoax(ctx, w, h) {
+  const pts = activePoints();
+  const rMax = Math.max(...pts.map(p => p.r), 0.1);
+  const Rdial = rMax * 1.22;                       // 刻度盘世界半径
+  const s = Math.min(w, h) * 0.44 / Rdial;         // 自动定标
+  const cx = w / 2, cy = h / 2 + 4;
+  SC = { cx, cy, s, rMax, mode: "coax", R1: CFG.R1, R2: CFG.R2 };
+  const om = omega0(), th = om * S.t;
+
+  // 盘面（金属质感）
+  const Rd = rMax * 1.07 * s;
+  const g = ctx.createRadialGradient(cx - Rd * .3, cy - Rd * .3, Rd * .1, cx, cy, Rd);
+  g.addColorStop(0, "#4b5b70"); g.addColorStop(1, "#28323f");
+  ctx.beginPath(); ctx.arc(cx, cy, Rd, 0, 7); ctx.fillStyle = g; ctx.fill();
+  ctx.strokeStyle = "#94a3b8"; ctx.lineWidth = 2; ctx.stroke();
+
+  // 同心圆网格（半径刻度，每 0.05 m）
+  ctx.save();
+  ctx.strokeStyle = "rgba(255,255,255,.12)"; ctx.lineWidth = 1;
+  for (let rr = 0.05; rr <= rMax + 1e-6; rr += 0.05) {
+    ctx.beginPath(); ctx.arc(cx, cy, rr * s, 0, 7); ctx.stroke();
+  }
+  ctx.restore();
+
+  // 角度刻度盘
+  if (CFG.tog.dial) drawDial(ctx, cx, cy, Rdial * s);
+
+  // 轨迹圆 + 墨水点迹
+  pts.forEach(p => {
+    if (CFG.tog.trail) {
+      ctx.beginPath(); ctx.arc(cx, cy, p.r * s, 0, 7);
+      ctx.strokeStyle = p.color + "88"; ctx.lineWidth = 1.4; ctx.stroke();
+    }
+    if (CFG.tog.ink) {
+      // 按闪光时刻采样，形成等时间间隔点迹
+      const hz = strobeHz(), kmax = Math.floor(S.t * hz);
+      for (let k = Math.max(0, kmax - 24); k <= kmax; k++) {
+        const thk = om * (k / hz), q = polar(cx, cy, p.r * s, thk);
+        ctx.beginPath(); ctx.arc(q.x, q.y, 2.2, 0, 7);
+        ctx.fillStyle = p.color + "cc"; ctx.fill();
+      }
+    }
+  });
+
+  // 扫过角度扇形（固定时间窗 → 角度相同、弧长不同）
+  if (CFG.tog.sector && om > 1e-6) {
+    pts.forEach(p => {
+      const a0 = th - om * CFG.win;
+      ctx.beginPath(); ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, p.r * s, a0 - Math.PI / 2, th - Math.PI / 2);
+      ctx.closePath();
+      ctx.fillStyle = p.color + "26"; ctx.fill();
+      ctx.strokeStyle = p.color + "77"; ctx.lineWidth = 1; ctx.stroke();
+    });
+  }
+
+  // 白色虚线参考半径 + 半径刻度尺
+  if (CFG.tog.radius) {
+    const end = polar(cx, cy, rMax * 1.12 * s, th);
+    ctx.save();
+    ctx.setLineDash([7, 5]); ctx.strokeStyle = "rgba(255,255,255,.95)"; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(end.x, end.y); ctx.stroke();
+    ctx.setLineDash([]);
+    // 半径刻度（每 0.05 m）
+    for (let rr = 0.05; rr <= rMax + 1e-6; rr += 0.05) {
+      const q = polar(cx, cy, rr * s, th);
+      const d = { x: Math.cos(th), y: Math.sin(th) };
+      ctx.beginPath(); ctx.moveTo(q.x - d.x * 4, q.y - d.y * 4);
+      ctx.lineTo(q.x + d.x * 4, q.y + d.y * 4);
+      ctx.strokeStyle = "rgba(255,255,255,.7)"; ctx.lineWidth = 1; ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  // 频闪残影（按闪光时刻的位置采样）
+  if (CFG.tog.ghost && CFG.strobe.on) {
+    const hz = strobeHz(), kmax = Math.floor(S.t * hz);
+    for (let k = Math.max(0, kmax - 8); k <= kmax; k++) {
+      const thk = om * (k / hz);
+      pts.forEach(p => {
+        const q = polar(cx, cy, p.r * s, thk);
+        ctx.beginPath(); ctx.arc(q.x, q.y, 5, 0, 7);
+        ctx.fillStyle = "rgba(250,204,21,.18)"; ctx.fill();
+        ctx.strokeStyle = p.color + "99"; ctx.lineWidth = 1; ctx.stroke();
+      });
+    }
+  }
+
+  // 速度矢量（沿切线） + 标记点 + 拖动手柄
+  pts.forEach(p => {
+    const q = polar(cx, cy, p.r * s, th);
+    if (CFG.tog.vel && p.v > 1e-6) {
+      const len = clamp(p.v * 34, 16, 70);
+      const tx = Math.cos(th), ty = Math.sin(th);     // 顺时针切向
+      arrow(ctx, q.x, q.y, q.x + tx * len, q.y + ty * len, "#facc15", 3, 10);
+    }
+    // 标记点本体
+    ctx.beginPath(); ctx.arc(q.x, q.y, 8, 0, 7);
+    ctx.fillStyle = p.color; ctx.fill();
+    ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.stroke();
+    // 拖动手柄（空心环）
+    ctx.beginPath(); ctx.arc(q.x, q.y, 12, 0, 7);
+    ctx.strokeStyle = "rgba(255,255,255,.55)"; ctx.lineWidth = 1.2; ctx.stroke();
+    // 常驻标签（靠近右边界时自动翻到左侧，避免溢出）
+    ctx.save();
+    ctx.font = "11px 'Microsoft YaHei',sans-serif";
+    const label = `r = ${fmt(p.r)} m · v = ${fmt(p.v)} m/s`;
+    const tw = ctx.measureText(label).width;
+    const toRight = q.x + 14 + tw + 10 < w;
+    const lx = toRight ? q.x + 14 : q.x - 14 - tw - 8;
+    const ly = q.y - 12;
+    ctx.fillStyle = "rgba(15,23,42,.72)";
+    ctx.beginPath(); ctx.roundRect(lx - 4, ly - 11, tw + 8, 16, 4); ctx.fill();
+    ctx.fillStyle = "#e2e8f0"; ctx.fillText(label, lx, ly + 1);
+    ctx.restore();
+  });
+
+  // 圆心 + 角速度转向箭头
+  ctx.beginPath(); ctx.arc(cx, cy, 5, 0, 7); ctx.fillStyle = "#e2e8f0"; ctx.fill();
+  spinArrow(ctx, cx, cy, rMax * 0.42 * s, "#38bdf8");
+  ctx.fillStyle = "#7dd3fc"; ctx.font = "bold 12px sans-serif"; ctx.textAlign = "left";
+  ctx.fillText("ω", cx + rMax * 0.42 * s * 0.72, cy - rMax * 0.42 * s * 0.72);
+
+  // 闪光
+  drawFlash(ctx, w, h);
+  drawScaleBar(ctx, w, h, s);
+}
+
+/* 角度刻度盘：每 10° 一格，每 30° 标数字，0° 在正上方 */
+function drawDial(ctx, cx, cy, R) {
+  ctx.save();
+  ctx.strokeStyle = "rgba(148,163,184,.5)"; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.stroke();
+  for (let a = 0; a < 360; a += 10) {
+    const major = a % 30 === 0;
+    const p1 = polar(cx, cy, R - (major ? 12 : 6), a * DEG);
+    const p2 = polar(cx, cy, R, a * DEG);
+    ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y);
+    ctx.strokeStyle = major ? "rgba(100,116,139,.85)" : "rgba(148,163,184,.55)";
+    ctx.lineWidth = major ? 1.6 : 1; ctx.stroke();
+    if (major) {
+      const pt = polar(cx, cy, R + 13, a * DEG);
+      ctx.fillStyle = "#64748b"; ctx.font = "10px sans-serif";
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText(a + "°", pt.x, pt.y);
+    }
+  }
+  // 固定参考指针（0°）
+  const p0 = polar(cx, cy, R + 22, 0), p1 = polar(cx, cy, R - 4, 0);
+  arrow(ctx, p1.x, p1.y, p0.x, p0.y, "#ef4444", 2, 9);
+  ctx.fillStyle = "#ef4444"; ctx.font = "11px sans-serif"; ctx.textAlign = "center";
+  ctx.fillText("参考指针", p0.x, p0.y - 10);
+  ctx.restore();
+}
+
+/* ---- 皮带双轮（同缘传动） ---- */
+function drawBelt(ctx, w, h) {
+  const R1 = CFG.R1, R2 = CFG.R2;
+  const dM = (R1 + R2) * 1.85;                       // 中心距（世界）
+  const totalW = dM + R1 + R2;
+  const s = Math.min(w * 0.8 / totalW, h * 0.52 / (Math.max(R1, R2) * 2.25));
+  const cx = w / 2, cy = h / 2 + 4;
+  SC = { cx, cy, s, rMax: Math.max(R1, R2), mode: "belt", R1, R2 };
+  const om1 = omega0(), om2 = om1 * R1 / R2, v = om1 * R1;
+  const th1 = om1 * S.t, th2 = om2 * S.t;
+  const C1 = { x: cx - dM * s / 2, y: cy }, C2 = { x: cx + dM * s / 2, y: cy };
+  const R1p = R1 * s, R2p = R2 * s;
+
+  // 皮带（外公切线 + 两段包角弧）
+  const phi = Math.acos(clamp((R1 - R2) / dM, -1, 1));
+  const nx = Math.cos(phi), ny = Math.sin(phi);
+  const T1a = { x: C1.x + R1p * nx, y: C1.y + R1p * ny }, T2a = { x: C2.x + R2p * nx, y: C2.y + R2p * ny };
+  const T1b = { x: C1.x + R1p * nx, y: C1.y - R1p * ny }, T2b = { x: C2.x + R2p * nx, y: C2.y - R2p * ny };
+  ctx.save();
+  ctx.strokeStyle = "#334155"; ctx.lineWidth = 6; ctx.lineCap = "round";
+  ctx.beginPath(); ctx.moveTo(T1a.x, T1a.y); ctx.lineTo(T2a.x, T2a.y); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(T1b.x, T1b.y); ctx.lineTo(T2b.x, T2b.y); ctx.stroke();
+  ctx.strokeStyle = "#475569"; ctx.lineWidth = 5;
+  ctx.beginPath(); ctx.arc(C1.x, C1.y, R1p, phi, Math.PI * 2 - phi); ctx.stroke();       // 轮1 外侧包角
+  ctx.beginPath(); ctx.arc(C2.x, C2.y, R2p, -phi, phi); ctx.stroke();                    // 轮2 外侧包角
+  ctx.restore();
+
+  // 两轮盘面
+  [[C1, R1p, "#3f4d61", "#25303c"], [C2, R2p, "#3f4d61", "#25303c"]].forEach(([C, R]) => {
+    const g = ctx.createRadialGradient(C.x - R * .3, C.y - R * .3, R * .1, C.x, C.y, R);
+    g.addColorStop(0, "#4b5b70"); g.addColorStop(1, "#28323f");
+    ctx.beginPath(); ctx.arc(C.x, C.y, R, 0, 7); ctx.fillStyle = g; ctx.fill();
+    ctx.strokeStyle = "#94a3b8"; ctx.lineWidth = 2; ctx.stroke();
+    ctx.beginPath(); ctx.arc(C.x, C.y, 4, 0, 7); ctx.fillStyle = "#e2e8f0"; ctx.fill();
+  });
+
+  // 边缘标记点 + 切线速度矢量
+  const mark = (C, R, th, color, label) => {
+    const q = { x: C.x + R * Math.sin(th), y: C.y - R * Math.cos(th) };
+    ctx.beginPath(); ctx.arc(q.x, q.y, 8, 0, 7); ctx.fillStyle = color; ctx.fill();
+    ctx.strokeStyle = "#fff"; ctx.lineWidth = 2; ctx.stroke();
+    const len = clamp(v * 34, 18, 70);
+    const tx = Math.cos(th), ty = Math.sin(th);
+    arrow(ctx, q.x, q.y, q.x + tx * len, q.y + ty * len, "#facc15", 3, 10);
+    ctx.font = "10.5px 'Microsoft YaHei',sans-serif"; ctx.fillStyle = "#e2e8f0";
+    ctx.fillText(label, q.x + 12, q.y - 10);
+    return q;
+  };
+  const order = [R1, R2].slice().sort((a, b) => a - b);
+  mark(C1, R1p, th1, COLORS[order.indexOf(R1) % COLORS.length], `R₁=${fmt(R1)}`);
+  mark(C2, R2p, th2, COLORS[order.indexOf(R2) % COLORS.length], `R₂=${fmt(R2)}`);
+
+  // 轮心文字 + 转向箭头
+  spinArrow(ctx, C1.x, C1.y, R1p * 0.45, "#38bdf8");
+  spinArrow(ctx, C2.x, C2.y, R2p * 0.45, "#38bdf8");
+  ctx.font = "11px 'Microsoft YaHei',sans-serif"; ctx.textAlign = "center";
+  ctx.fillStyle = "#cbd5e1";
+  ctx.fillText(`主动轮：ω₁ = ${fmt(om1)} rad/s`, C1.x, C1.y + R1p + 22);
+  ctx.fillText(`从动轮：ω₂ = ${fmt(om2)} rad/s`, C2.x, C2.y + R2p + 22);
+  ctx.textAlign = "left";
+
+  drawFlash(ctx, w, h);
+  drawScaleBar(ctx, w, h, s);
+}
+
+/* 比例尺 / 频闪闪光层 */
+function drawScaleBar(ctx, w, h, s) {
+  const L = 0.1 * s;
+  const x0 = w - L - 20, y0 = h - 14;
+  ctx.save();
+  ctx.strokeStyle = "#475569"; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x0 + L, y0);
+  ctx.moveTo(x0, y0 - 4); ctx.lineTo(x0, y0 + 4);
+  ctx.moveTo(x0 + L, y0 - 4); ctx.lineTo(x0 + L, y0 + 4); ctx.stroke();
+  ctx.fillStyle = "#475569"; ctx.font = "11px sans-serif"; ctx.textAlign = "center";
+  ctx.fillText("0.10 m", x0 + L / 2, y0 - 7);
+  ctx.restore();
+}
+function drawFlash(ctx, w, h) {
+  if (!CFG.strobe.on) return;
+  const k = 1 - (S.t - S.flashT) / 0.12;
+  if (k <= 0) return;
+  ctx.save();
+  ctx.fillStyle = `rgba(255,255,255,${0.18 * k})`;
+  ctx.fillRect(0, 0, w, h);
+  ctx.restore();
+}
+
+/* 统一出口 */
+function drawScene() {
+  const { ctx, w, h } = fitCanvas(scene);
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = "#fbfcfe"; ctx.fillRect(0, 0, w, h);
+  if (CFG.mode === "coax") drawCoax(ctx, w, h); else drawBelt(ctx, w, h);
+  // 热点位置只与几何有关：几何变化时才重排（避免每帧写 DOM）
+  const sig = [SC.cx, SC.cy, SC.s, SC.mode, SC.R1, SC.R2, w, h].join("|");
+  if (sig !== drawScene._sig) { drawScene._sig = sig; layoutHotspots(); }
+}
+/* =========================================================
+ * 四、五张联动图像（统一绘图器）
+ * ========================================================= */
+function plot(cv, o) {
+  const { ctx, w, h } = fitCanvas(cv);
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, w, h);
+  const mL = 34, mR = 8, mT = 16, mB = 24;
+  const pw = w - mL - mR, ph = h - mT - mB;
+  const X = x => mL + (x / o.xr[1]) * pw;
+  const Y = y => mT + ph - (y / o.yr[1]) * ph;
+  // 网格与刻度
+  ctx.strokeStyle = "#eef2f7"; ctx.fillStyle = "#94a3b8"; ctx.font = "8.5px sans-serif"; ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const gx = o.xr[1] * i / 4, gy = o.yr[1] * i / 4;
+    ctx.beginPath(); ctx.moveTo(X(gx), Y(0)); ctx.lineTo(X(gx), Y(o.yr[1])); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(X(0), Y(gy)); ctx.lineTo(X(o.xr[1]), Y(gy)); ctx.stroke();
+    ctx.textAlign = "center"; ctx.fillText(fmt(gx, 2), X(gx), Y(0) + 10);
+    ctx.textAlign = "right"; ctx.fillText(fmt(gy, 2), X(0) - 3, Y(gy) + 3);
+  }
+  // 坐标轴与单位
+  ctx.strokeStyle = "#94a3b8";
+  ctx.beginPath(); ctx.moveTo(X(0), Y(0)); ctx.lineTo(X(o.xr[1]), Y(0));
+  ctx.moveTo(X(0), Y(0)); ctx.lineTo(X(0), Y(o.yr[1])); ctx.stroke();
+  ctx.fillStyle = "#475569"; ctx.textAlign = "left";
+  ctx.fillText(o.xlab, X(o.xr[1]) - 24, Y(0) + 20);
+  ctx.fillText(o.ylab, X(0) + 2, Y(o.yr[1]) - 3);
+  // 理论曲线
+  (o.curves || []).forEach(c => {
+    ctx.save(); ctx.strokeStyle = c.color; ctx.lineWidth = 1.8;
+    if (c.dash) ctx.setLineDash(c.dash);
+    ctx.beginPath();
+    for (let i = 0; i <= 80; i++) {
+      const x = o.xr[1] * i / 80, y = c.f(x);
+      if (!isFinite(y) || y > o.yr[1] * 1.02) { ctx.stroke(); ctx.beginPath(); continue; }
+      i ? ctx.lineTo(X(x), Y(y)) : ctx.moveTo(X(x), Y(y));
+    }
+    ctx.stroke(); ctx.restore();
+  });
+  // 理论直线
+  (o.lines || []).forEach(l => {
+    ctx.save(); ctx.strokeStyle = l.color; ctx.lineWidth = 1.8;
+    if (l.dash) ctx.setLineDash(l.dash);
+    ctx.beginPath(); ctx.moveTo(X(l.x0), Y(l.y0)); ctx.lineTo(X(l.x1), Y(l.y1)); ctx.stroke();
+    ctx.restore();
+  });
+  // 散点
+  (o.dots || []).forEach(d => {
+    ctx.beginPath(); ctx.arc(X(d.x), Y(clamp(d.y, 0, o.yr[1])), 4, 0, 7);
+    ctx.fillStyle = d.color; ctx.fill();
+    ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.2; ctx.stroke();
+  });
+  // 实测值（空心圈，用于“理论 vs 实测”叠加）
+  (o.rings || []).forEach(d => {
+    ctx.beginPath(); ctx.arc(X(d.x), Y(clamp(d.y, 0, o.yr[1])), 5.5, 0, 7);
+    ctx.strokeStyle = d.color; ctx.lineWidth = 1.8; ctx.stroke();
+  });
+  // 备注
+  if (o.note) {
+    ctx.fillStyle = "#1e3a8a"; ctx.font = "9.5px 'Microsoft YaHei',sans-serif";
+    ctx.textAlign = "center"; ctx.fillText(o.note, mL + pw / 2, mT - 5);
+  }
+}
+
+function drawCharts() {
+  const pts = activePoints();
+  const rMax = Math.max(...pts.map(p => p.r), 0.1);
+  const vMax = Math.max(...pts.map(p => p.v), 0.01);
+  const omMax = Math.max(...pts.map(p => p.om), 0.01);
+  const isCoax = CFG.mode === "coax";
+  const om = omega0();
+  // n = 0 时给一个有限的默认时间窗，避免除零
+  const T = isCoax ? (om > 0 ? 2 * Math.PI / om : 2) : (pts[0].om > 0 ? 2 * Math.PI / pts[0].om : 2);
+
+  // v–r：同轴过原点直线（斜率 ω）；同缘为水平线（v 相同）
+  const useTheory = CFG.tog.theory && M.N > 0 && M.dt > 0;
+  const meas = useTheory ? pts.map(p => 2 * Math.PI * p.r * M.N / M.dt) : [];
+  // p.v = 0（转速为 0）时不能做相对误差，否则得到 Infinity%
+  const errs = useTheory ? pts.map((p, i) => p.v > 1e-9 ? Math.abs(meas[i] - p.v) / p.v * 100 : 0) : [];
+  const errMax = errs.length ? Math.max(...errs) : 0;
+  plot($("chVr"), {
+    xr: [0, rMax * 1.25], yr: [0, vMax * 1.25], xlab: "r/m", ylab: "v/(m/s)",
+    // 过原点斜线是「ω 相同」的参考线，只在同轴模式有意义；皮带模式下画它会与「v 相同」矛盾
+    lines: isCoax ? [{ x0: 0, y0: 0, x1: rMax * 1.25, y1: vMax * 1.25, color: "#94a3b8", dash: [4, 3] }] : [],
+    curves: isCoax ? [{ f: x => om * x, color: "#2563eb", dash: [] }] : [{ f: () => pts[0].v, color: "#7c3aed" }],
+    dots: pts.map(p => ({ x: p.r, y: p.v, color: p.color })),
+    rings: useTheory ? pts.map((p, i) => ({ x: p.r, y: meas[i], color: "#dc2626" })) : [],
+    note: isCoax ? "过原点直线，斜率 = ω" : "v 相同 → 水平线"
+  });
+  if (useTheory) {
+    $("theoryNote").textContent = `理论（实心点）vs 实测（空心圈）：最大相对误差 ${errMax.toFixed(2)}%`;
+    $("theoryNote").style.display = "block";
+  } else $("theoryNote").style.display = "none";
+  // ω–r：同轴水平线；同缘双曲线 ω = v/r
+  plot($("chWr"), {
+    xr: [0, rMax * 1.25], yr: [0, omMax * 1.25], xlab: "r/m", ylab: "ω/(rad/s)",
+    curves: isCoax ? [{ f: () => om, color: "#2563eb" }]
+      : [{ f: x => x > 0.02 ? pts[0].v / x : NaN, color: "#7c3aed" }],
+    dots: pts.map(p => ({ x: p.r, y: p.om, color: p.color })),
+    note: isCoax ? "水平线 → ω 与 r 无关" : "ω ∝ 1/r（反比）"
+  });
+  // θ–t：同轴三线完全重合（斜率 ω）；同缘两线斜率不同
+  // 纵轴按 max(ω)·T 自适应，否则皮带模式下从动轮 θ 会超出 4π 被截断
+  const tSpan = Math.max(T, 0.2);
+  const thMax = Math.max(2 * Math.PI, ...pts.map(p => p.om * tSpan));
+  plot($("chTht"), {
+    xr: [0, tSpan], yr: [0, thMax * 1.1], xlab: "t/s", ylab: "θ/rad",
+    curves: pts.map((p, i) => ({ f: t => p.om * t, color: p.color, dash: [[], [7, 4], [2, 3]][i % 3] })),
+    note: isCoax ? `${pts.length} 条线重合 → ω 相同` : "斜率不同 → ω 不同"
+  });
+  // s–t：斜率 = v
+  plot($("chSt"), {
+    xr: [0, tSpan], yr: [0, Math.max(...pts.map(p => p.v * tSpan)) * 1.2 || 1], xlab: "t/s", ylab: "s/m",
+    curves: pts.map(p => ({ f: t => p.v * t, color: p.color })),
+    note: isCoax ? "斜率 = v，外圈更大" : "两条斜率相同 → v 相同"
+  });
+  // a_n–r（拓展）
+  plot($("chAn"), {
+    xr: [0, rMax * 1.25], yr: [0, Math.max(...pts.map(p => p.an)) * 1.25 || 1], xlab: "r/m", ylab: "aₙ/(m/s²)",
+    curves: isCoax ? [{ f: x => om * om * x, color: "#ea580c" }]
+      : [{ f: x => x > 0.02 ? pts[0].v * pts[0].v / x : NaN, color: "#ea580c" }],
+    dots: pts.map(p => ({ x: p.r, y: p.an, color: p.color })),
+    note: isCoax ? "aₙ ∝ r（外圈更大）" : "aₙ ∝ 1/r"
+  });
+}
+
+/* =========================================================
+ * 五、并列读数卡 / 横幅
+ * ========================================================= */
+function buildPointCards() {
+  const pts = activePoints();
+  if (!CFG.tog.pcards) { $("pcards").innerHTML = '<div style="font-size:12px;color:#94a3b8">读数卡已关闭</div>'; return; }
+  $("pcards").innerHTML = pts.map((p, i) => `
+    <div class="pcard" style="border-left-color:${p.color}">
+      <div class="h"><span>${p.label}</span><span style="color:#64748b;font-weight:400">r = ${fmt(p.r)} m</span></div>
+      <div class="b">
+        <div><span>ω/(rad/s)</span><b data-k="om${i}">${fmt(p.om)}</b></div>
+        <div><span>v/(m/s)</span><b data-k="v${i}">${fmt(p.v)}</b></div>
+        <div><span>T/s</span><b data-k="T${i}">${fmt(p.T)}</b></div>
+        <div><span>aₙ/(m/s²)</span><b data-k="an${i}">${fmt(p.an)}</b></div>
+      </div>
+    </div>`).join("");
+}
+function updateBanner() {
+  const pts = activePoints();
+  const b = $("banner");
+  if (CFG.mode === "coax") {
+    // 必须按半径升序排列，否则拖动标记点后会出现「大 < 小」的自相矛盾表述
+    const vs = pts.slice().sort((x, y) => x.r - y.r).map(p => fmt(p.v)).join(" < ");
+    b.className = "banner";
+    b.innerHTML = `同轴：<b>ω 相同 = ${fmt(omega0())} rad/s</b>、T 相同 = ${fmt(period0())} s；` +
+      `v = ωr 随 r 增大：<b>${vs} m/s</b>。`;
+  } else {
+    const [p1, p2] = pts;
+    b.className = "banner warn";
+    b.innerHTML = `同缘：<b>v 相同 = ${fmt(p1.v)} m/s</b>；ω = v/r 与 r 成反比：` +
+      `ω₁ = ${fmt(p1.om)}、ω₂ = ${fmt(p2.om)} rad/s（T₁ = ${fmt(p1.T)} s，T₂ = ${fmt(p2.T)} s）。`;
+  }
+}
+
+/* =========================================================
+ * 六、测周期工具与误差分析
+ * ========================================================= */
+const M = { t0: 0, running: false, dt: 0, N: 0 };
+function renderMeasure() {
+  const pts = activePoints();
+  const p = pts[0];
+  const Tth = 2 * Math.PI / omega0();
+  const vMeas = M.N && M.dt > 0 ? 2 * Math.PI * p.r * M.N / M.dt : null;   // 实测线速度
+  // ω = 0 时 v理论 = 0，相对误差无意义（除零 → NaN/Infinity），必须显式拦截
+  const relErr = (vMeas !== null && p.v > 1e-9) ? Math.abs(vMeas - p.v) / p.v * 100 : null;
+  let html = `<div><span>Δt</span><b>${M.dt ? fmt(M.dt) + " s" : "—"}</b></div>
+              <div><span>圈数 N</span><b>${M.N || "—"}</b></div>
+              <div><span>T测 = Δt/N</span><b>${M.N ? fmt(M.dt / M.N) + " s" : "—"}</b></div>
+              <div><span>T理论</span><b>${omega0() > 0 ? fmt(Tth) + " s" : "∞（不转）"}</b></div>
+              <div><span>ω测</span><b>${M.N ? fmt(2 * Math.PI * M.N / M.dt) + " rad/s" : "—"}</b></div>
+              <div><span>v测（${p.label}）</span><b>${vMeas !== null ? fmt(vMeas) + " m/s" : "—"}</b></div>
+              <div><span>v理论 = ωr</span><b>${fmt(p.v)} m/s</b></div>
+              <div><span>相对误差</span><b style="color:${relErr !== null ? "#16a34a" : "#94a3b8"}">${relErr !== null ? fmt(relErr, 2) + " %" : "—"}</b></div>`;
+  $("mOut").innerHTML = html;
+}
+function stopMeasure() {
+  if (!M.running) return;
+  M.running = false;
+  M.dt = S.t - M.t0;
+  M.N = Math.max(1, Math.round(omega0() * M.dt / (2 * Math.PI)));
+  renderMeasure();
+}
+
+/* =========================================================
+ * 七、数据记录表（同轴/同缘分组着色）与 CSV
+ * ========================================================= */
+function renderRecords() {
+  const tb = $("recTbl").querySelector("tbody");
+  tb.innerHTML = S.rec.map(r => `
+    <tr class="${r.mode === "coax" ? "sq" : "bl"}">
+      <td>${r.mode === "coax" ? "● 同轴" : "● 同缘"}</td>
+      <td>${fmt(r.r)}</td><td>${r.n}</td><td>${fmt(r.T)}</td>
+      <td>${fmt(r.om)}</td><td>${fmt(r.v)}</td><td>${fmt(r.vth)}</td>
+      <td>${fmt(r.err, 2)}%</td>
+    </tr>`).join("");
+}
+function addRecords() {
+  activePoints().forEach(p => {
+    const T = 2 * Math.PI / p.om, vth = p.om * p.r;
+    const v = 2 * Math.PI * p.r / T;
+    S.rec.push({
+      mode: CFG.mode, r: p.r, n: CFG.n, T, om: p.om, v, vth,
+      err: Math.abs(v - vth) / vth * 100
+    });
+  });
+  renderRecords();
+}
+
+/* =========================================================
+ * 八、画面锚点热点定位
+ * ========================================================= */
+function layoutHotspots() {
+  const hs = document.querySelectorAll("#hslots .hs");
+  const { cx, cy, s, rMax, mode, R1, R2 } = SC;
+  if (!s) return;
+  const put = (i, x, y, show) => {
+    const el = hs[i]; if (!el) return;
+    if (!show) { el.style.display = "none"; return; }
+    el.style.display = "flex";
+    el.style.left = (x - 11) + "px"; el.style.top = (y - 11) + "px";
+  };
+  if (mode === "coax") {
+    put(0, cx + rMax * 0.36 * s, cy + rMax * 0.36 * s, true);                 // 角速度
+    put(1, ...(() => { const q = polar(cx, cy, rMax * 0.62 * s, -0.5); return [q.x, q.y]; })(), true); // 同轴
+    put(2, ...(() => { const q = polar(cx, cy, rMax * s, 0.55); return [q.x, q.y]; })(), true);        // 线速度
+    put(3, ...(() => { const q = polar(cx, cy, rMax * 1.22 * s, 3.9); return [q.x, q.y]; })(), true);  // 刻度盘
+  } else {
+    // 皮带：左轮心放“同轴/角速度”卡，右轮边缘放“线速度”卡，其余隐藏
+    put(0, cx, cy - Math.max(R1, R2) * s - 4, true);
+    put(1, cx, cy - Math.max(R1, R2) * s - 30, false);
+    put(2, cx - (R1 + R2) * 0.925 * s - R1 * s, cy - R1 * s * 0.7, true);
+    put(3, cx, cy + Math.max(R1, R2) * s + 22, false);
+  }
+}
+/* =========================================================
+ * 九、知识卡片数据（16 张，集中在配置对象中便于增删）
+ * 字段：id / cat 分类 / title 标题 / concl 一句话结论 / formula 公式或判据
+ *      icon 迷你示意图 / how 在本 Demo 中怎么看 / back 推导与说明 / tip 易错提醒
+ * ========================================================= */
+const SVG = {
+  disk: `<svg viewBox="0 0 150 76" width="150" height="76" role="img">
+    <circle cx="40" cy="38" r="28" fill="#334155"/><circle cx="40" cy="38" r="3" fill="#e2e8f0"/>
+    <line x1="40" y1="38" x2="40" y2="10" stroke="#fff" stroke-dasharray="4 3"/>
+    <circle cx="40" cy="10" r="4.5" fill="#f97316"/><circle cx="40" cy="26" r="3.5" fill="#22c55e"/>
+    <path d="M40 10 h14" stroke="#facc15" stroke-width="2"/>
+    <path d="M40 26 h9" stroke="#facc15" stroke-width="2"/>
+    <text x="82" y="30" font-size="10" fill="#475569">同一半径线</text>
+    <text x="82" y="46" font-size="10" fill="#475569">→ ω 相同</text></svg>`,
+  omega: `<svg viewBox="0 0 150 76" width="150" height="76" role="img">
+    <circle cx="42" cy="38" r="26" fill="none" stroke="#94a3b8"/>
+    <line x1="42" y1="38" x2="42" y2="12" stroke="#1e3a8a" stroke-width="2"/>
+    <line x1="42" y1="38" x2="62" y2="24" stroke="#1e3a8a" stroke-width="2"/>
+    <path d="M42 18 A20 20 0 0 1 57 25" fill="none" stroke="#dc2626" stroke-width="2"/>
+    <text x="52" y="16" font-size="11" fill="#dc2626">θ</text>
+    <text x="80" y="34" font-size="11" fill="#1e3a8a">ω = Δθ/Δt</text>
+    <text x="80" y="50" font-size="11" fill="#1e3a8a">= 2π/T = 2πf</text></svg>`,
+  tangent: `<svg viewBox="0 0 150 76" width="150" height="76" role="img">
+    <circle cx="46" cy="42" r="26" fill="none" stroke="#94a3b8"/>
+    <circle cx="46" cy="42" r="3" fill="#64748b"/>
+    <line x1="46" y1="42" x2="46" y2="16" stroke="#94a3b8" stroke-dasharray="3 3"/>
+    <circle cx="46" cy="16" r="4.5" fill="#f97316"/>
+    <path d="M46 16 h26" stroke="#facc15" stroke-width="2.5" marker-end=""/>
+    <path d="M69 16 l-5 -3 v6 z" fill="#facc15"/>
+    <text x="78" y="20" font-size="11" fill="#b45309">v（切线）</text>
+    <text x="78" y="36" font-size="10" fill="#64748b">v ⊥ r</text></svg>`,
+  belt: `<svg viewBox="0 0 150 76" width="150" height="76" role="img">
+    <circle cx="38" cy="40" r="22" fill="#334155"/><circle cx="96" cy="40" r="14" fill="#334155"/>
+    <path d="M38 18 H96" stroke="#475569" stroke-width="3"/>
+    <path d="M38 62 H96" stroke="#475569" stroke-width="3"/>
+    <circle cx="38" cy="18" r="4" fill="#f97316"/><circle cx="96" cy="26" r="4" fill="#3b82f6"/>
+    <path d="M38 18 h12" stroke="#facc15" stroke-width="2"/><path d="M96 26 h12" stroke="#facc15" stroke-width="2"/>
+    <text x="112" y="30" font-size="10" fill="#475569">v 相同</text></svg>`,
+  chart: `<svg viewBox="0 0 150 76" width="150" height="76" role="img">
+    <path d="M24 12 V60 H136" fill="none" stroke="#94a3b8" stroke-width="1.5"/>
+    <line x1="24" y1="60" x2="122" y2="18" stroke="#2563eb" stroke-width="2"/>
+    <circle cx="52" cy="49" r="4" fill="#3b82f6"/><circle cx="78" cy="37" r="4" fill="#22c55e"/><circle cx="106" cy="24" r="4" fill="#f97316"/>
+    <text x="126" y="16" font-size="10" fill="#2563eb">v</text><text x="8" y="20" font-size="10" fill="#64748b">v</text>
+    <text x="120" y="72" font-size="10" fill="#64748b">r</text></svg>`,
+  clock: `<svg viewBox="0 0 150 76" width="150" height="76" role="img">
+    <circle cx="40" cy="38" r="26" fill="#f8fafc" stroke="#475569" stroke-width="2"/>
+    <line x1="40" y1="38" x2="40" y2="22" stroke="#1e3a8a" stroke-width="2.5"/>
+    <line x1="40" y1="38" x2="52" y2="44" stroke="#1e3a8a" stroke-width="2"/>
+    <line x1="40" y1="38" x2="24" y2="26" stroke="#dc2626" stroke-width="1.6"/>
+    <text x="76" y="34" font-size="10" fill="#475569">秒针尖端 v 最大</text>
+    <text x="76" y="50" font-size="10" fill="#475569">同轴：ω 相同</text></svg>`,
+  warn: `<svg viewBox="0 0 150 76" width="150" height="76" role="img">
+    <path d="M44 62 L64 20 L84 62 Z" fill="#fef3c7" stroke="#d97706" stroke-width="2"/>
+    <text x="60" y="54" font-size="18" font-weight="bold" fill="#b45309">!</text>
+    <text x="94" y="34" font-size="10" fill="#475569">方向沿切线</text>
+    <text x="94" y="50" font-size="10" fill="#475569">不指向圆心</text></svg>`,
+  an: `<svg viewBox="0 0 150 76" width="150" height="76" role="img">
+    <circle cx="44" cy="38" r="28" fill="none" stroke="#94a3b8"/>
+    <circle cx="44" cy="38" r="3" fill="#64748b"/>
+    <circle cx="44" cy="10" r="5" fill="#f97316"/>
+    <path d="M44 16 V34" stroke="#dc2626" stroke-width="2.5"/>
+    <path d="M44 34 l-3.5 -7 h7 z" fill="#dc2626"/>
+    <text x="78" y="30" font-size="10" fill="#dc2626">aₙ 指向圆心</text>
+    <text x="78" y="46" font-size="10" fill="#475569">aₙ = ω²r = v²/r</text></svg>`
+};
+
+const CARDS = [
+  { id: "c_uniform", cat: "概念", title: "匀速圆周运动：速率不变，但仍是变速运动", icon: "disk",
+    concl: "轨迹是圆、速率（速度大小）不变的运动叫匀速圆周运动；速度方向时刻沿切线改变，所以它是<b>变速运动</b>，必然存在加速度。",
+    formula: "v = Δs/Δt（大小不变）　Δv ≠ 0（方向改变）",
+    how: "打开「切线速度矢量」，观察箭头长度不变、方向不断转动；角速度转向箭头随盘一起转。",
+    back: "“匀速”二字只管<b>速率</b>。速度是矢量，方向变了速度就变了，因此有加速度（向心加速度）。中学阶段把速率不变、方向时刻改变的圆周运动统称匀速圆周运动。",
+    tip: "把“匀速圆周运动”当成“匀速运动”是高频错误。" },
+  { id: "c_tfn", cat: "概念", title: "周期 T、频率 f 与转速 n", icon: "clock",
+    concl: "转一圈所用时间叫周期 T；每秒转的圈数叫频率 f；每分钟转的圈数叫转速 n（工程常用）。",
+    formula: "T = 1/f；f = 1/T (Hz)；n (r/min)；ω = 2πn/60",
+    how: "读数卡中的 T 随 n 变化；把 n 设为 60 r/min，可看到 T = 1.00 s、ω ≈ 6.28 rad/s。",
+    back: "若 t 时间内转了 N 圈，则 T = t/N，f = N/t。转速 n 与频率 f 的关系：n = 60f（单位 r/min），故 ω = 2πf = 2πn/60。",
+    tip: "n 的单位是 r/min，不是 rad/s，必须除以 60 再乘 2π。" },
+  { id: "c_omega", cat: "概念", title: "角速度 ω：转动快慢的量度", icon: "omega",
+    concl: "单位时间内转过的角度叫角速度，它描述“转得多快”，与半径无关。",
+    formula: "ω = Δθ/Δt = 2π/T = 2πf（rad/s）",
+    how: "三个标记点始终落在同一条白色参考半径上 → 任何时刻 θ 相同 → ω 相同；θ–t 图三条线重合。",
+    back: "转一圈对应 2π rad，用时 T，所以 ω = 2π/T。角速度是矢量，方向由右手定则确定（垂直盘面）；高中阶段主要用大小与转向（顺/逆时针）描述。",
+    tip: "同轴转盘上除圆心外各点 ω 相同——这是本模型的核心。" },
+  { id: "c_v", cat: "概念", title: "线速度 v：沿切线方向", icon: "tangent",
+    concl: "单位时间内通过的弧长叫线速度，方向沿轨迹切线，大小 v = 2πr/T = ωr。",
+    formula: "v = Δs/Δt = 2πr/T = ωr（m/s）",
+    how: "打开「切线速度矢量」：黄色箭头始终与半径垂直（沿切线），外圈箭头更长。",
+    back: "转一圈走过的弧长是 2πr，用时 T，故 v = 2πr/T；结合 ω = 2π/T 得 v = ωr。",
+    tip: "v 沿切线，不指向圆心；指向圆心的是向心加速度。" },
+  { id: "f_omega", cat: "公式", title: "ω = 2π/T = 2πf 的推导", icon: "omega",
+    concl: "角速度只由周期（或频率）决定，与半径无关；同轴各点因此 ω 相同。",
+    formula: "ω = 2π/T = 2πf = 2πn/60",
+    how: "拖动转速滑块：T 与 ω 同步变化，但三个点的 ω 始终相等。",
+    back: "一圈的角度为 2π rad，用时 T，故 ω = 2π/T；又 f = 1/T，所以 ω = 2πf。若给的是转速 n（r/min），先化成每秒圈数 n/60，再乘 2π。",
+    tip: "T 越大 ω 越小；两者成反比。" },
+  { id: "f_v", cat: "公式", title: "v = 2πr/T = ωr 与两个正比关系", icon: "tangent",
+    concl: "线速度等于角速度乘半径。ω 相同时 v ∝ r；v 相同时 ω ∝ 1/r。",
+    formula: "v = 2πr/T = ωr　⇒　ω 同：v ∝ r；v 同：ω ∝ 1/r",
+    how: "看 v–r 图：同轴为过原点的直线（斜率 = ω）；切换皮带后变成水平线（v 相同）。",
+    back: "由 v = 2πr/T 与 ω = 2π/T 联立得 v = ωr。同轴转盘 r 越大 v 越大（外圈更快）；皮带传动时边缘 v 相同，半径小的轮子转得更快。",
+    tip: "“v 与 r 成正比”只在 ω 相同时成立，不能无条件使用。" },
+  { id: "f_an", cat: "公式", title: "（拓展）向心加速度 aₙ", icon: "an",
+    concl: "匀速圆周运动有指向圆心的加速度，大小 aₙ = v²/r = ω²r；同轴时外圈点 aₙ 更大。",
+    formula: "aₙ = v²/r = ω²r，方向始终指向圆心",
+    how: "读数卡最后一项 aₙ；切换内外圈点即可比较大小（同轴时 aₙ ∝ r）。",
+    back: "速度方向不断改变就需要加速度，方向指向圆心，只改变速度方向、不改变速率。本节只作定性提示，定量推导在后续“圆周运动”章节。",
+    tip: "aₙ 指向圆心，与速度方向垂直，不是沿切线。" },
+  { id: "c_coax", cat: "规律", title: "同轴转动：ω、T、n 相同，v ∝ r", icon: "disk",
+    concl: "同一刚体转盘上所有点（圆心除外）角速度相同、周期相同、转速相同；线速度 v = ωr，半径越大线速度越大。",
+    formula: "ω₁ = ω₂ = ω₃；T 相同；v₁ : v₂ : v₃ = r₁ : r₂ : r₃",
+    how: "三个点始终在同一条参考半径上（白色虚线）；θ–t 三线重合；v–r 图为过原点直线，斜率 = ω。",
+    back: "判据：<b>相同时间内转过相同角度</b> ⟺ ω 相同。但转过的弧长 Δs = r·Δθ 不同，所以线速度不同。实例：钟表时针、分针、秒针同轴，秒针尖端线速度最大。",
+    tip: "“角速度相同则线速度相同”是错误说法。" },
+  { id: "c_belt", cat: "规律", title: "同缘传动：v 相同，ω ∝ 1/r", icon: "belt",
+    concl: "皮带（不打滑）、链条、齿轮边缘啮合的两轮，边缘点线速度大小相等；角速度与半径成反比。",
+    formula: "v₁ = v₂ ⇒ ω₁r₁ = ω₂r₂ ⇒ ω₁/ω₂ = r₂/r₁",
+    how: "切换「皮带双轮」：两个边缘点的速度箭头等长；ω–r 图变成双曲线；把 R₂ 调小，ω₂ 变大。",
+    back: "皮带不打滑意味着相同时间内两轮边缘通过的弧长相等，故 v 相同；由 v = ωr 得 ω ∝ 1/r，半径小的轮转得更快。实例：自行车链传动（链条各处速度相同，飞轮齿数少 = 半径小，故转得快）。注意汽车转弯时左右轮<b>半径相同</b>、靠差速器让外侧轮转得更快，属于另一类问题，不能套用本模型。",
+    tip: "同缘与同轴结论相反，判断时先问“是同一根轴，还是同一条皮带”。" },
+  { id: "c_measure", cat: "方法", title: "测量 T、ω、v：频闪 / 慢动作 / 光电门", icon: "clock",
+    concl: "用“总时间 ÷ 圈数”求周期，再算 ω、v；必须<b>同一转盘多点同时测量</b>，才能验证 ω 相同。",
+    formula: "T = t/N；ω = 2π/T；v = 2πr/T = ωr",
+    how: "「测周期工具」点开始/停止，自动读圈数 N 与 T；打开「频闪同步」时标记点仿佛静止，直接读出转频。",
+    back: "① 频闪法：闪光频率调到与转频相等，标记点每次都回到同一位置（视静止），读出 f 即 T = 1/f；② 慢动作拍摄：数 N 圈的总时间；③ 光电门：测挡光时间与两次挡光间隔。误差来源：计时起停的反应时间、圈数数错。",
+    tip: "只测一个半径的点无法说明 ω 是否相同，必须多点同时测。" },
+  { id: "c_chart", cat: "方法", title: "图像法：v–r 图斜率就是 ω", icon: "chart",
+    concl: "以 r 为横轴、v 为纵轴作图：若为过原点直线，则 v ∝ r，直线斜率等于角速度 ω；同轴的 ω–r 图为水平线。",
+    formula: "v = ωr（一次函数，截距 0，斜率 k = ω）",
+    how: "本页下方 v–r 图与 ω–r 图随装置自动切换；点「记录本组」后可用记录表数据核对。",
+    back: "控制变量：保持转速 n 不变，只改变半径 r，测各点 v。若数据落在同一条过原点直线上，说明 v 与 r 成正比、ω 为常数；若换成皮带传动，v–r 图变水平线、ω–r 图变双曲线。",
+    tip: "图像不过原点说明存在系统误差或模型理解错误。" },
+  { id: "c_vs", cat: "辨析", title: "ω 相同还是 v 相同？两类传动模型", icon: "belt",
+    concl: "同轴（同一根轴、同一刚体）→ ω 相同、v ∝ r；同缘（皮带/链条/齿轮啮合）→ v 相同、ω ∝ 1/r。",
+    formula: "同轴：ω 同 | 同缘：v 同",
+    how: "用「装置切换」在两套模型间来回切换，对照 v–r 与 ω–r 图的变化。",
+    back: "判断口诀：<b>先找“同”</b>——同轴找角速度，同缘找线速度。同轴时越靠外越“跑得快”；同缘时小轮“转得快”。两者可以同时出现在一台机器上（如自行车：脚踏牙盘与后轮同缘，后轮与轮胎同轴）。",
+    tip: "“线速度大 ⇒ 角速度大”不成立，除非半径相同。" },
+  { id: "c_dir", cat: "辨析", title: "方向与单位：切线、圆心、r/min", icon: "warn",
+    concl: "线速度沿切线、与半径垂直；向心加速度指向圆心；转速 n（r/min）不是角速度，需换算 ω = 2πn/60。",
+    formula: "v ⊥ r；aₙ ∥ r（指向圆心）；ω = 2πn/60",
+    how: "观察黄色速度箭头与白色半径线的夹角恒为 90°；转速换算结果显示在面板顶部。",
+    back: "线速度方向沿轨迹切线，所以转弯时速度方向一直在变；向心加速度指向圆心，只改变方向。角速度是矢量，方向垂直于盘面，由右手定则确定（四指沿转向，拇指指向 ω 方向）。",
+    tip: "“线速度指向圆心”“n 就是 ω”都是常见错误。" },
+  { id: "c_err", cat: "易错", title: "六大典型误解逐条纠正", icon: "warn",
+    concl: "这些说法都错在“把条件丢了”或“把方向忘了”。",
+    formula: "判断前先问：同轴还是同缘？方向变了吗？",
+    how: "做完右侧测验后回到本卡对照；也可用装置切换逐条验证。",
+    back: "①“线速度大的点角速度一定大”——错：同轴时 v 大因 r 大，ω 相同。②“角速度相同则线速度相同”——错：v = ωr，r 不同 v 不同。③“匀速圆周运动是匀速运动”——错：方向变，是变速运动。④“线速度方向指向圆心”——错：沿切线。⑤“v 与 r 一定成正比”——错：仅 ω 相同时成立。⑥“转速 r/min 就是角速度”——错：ω = 2πn/60。",
+    tip: "每条错误都对应一个被忽略的前提。" },
+  { id: "c_app", cat: "应用", title: "生活与工程中的同轴 / 同缘", icon: "clock",
+    concl: "钟表指针、风扇叶片、洗衣机脱水桶、摩天轮属同轴；皮带、链条、齿轮啮合属同缘。",
+    formula: "同轴看 ω，同缘看 v",
+    how: "同轴模式联想钟表（秒针尖最快）；皮带模式联想自行车链条（链速相同、飞轮转得快）。",
+    back: "钟表：时针、分针、秒针同轴，ω 各不相同（各自周期不同），同一根指针上尖端 v 更大；洗衣机脱水桶：同一桶壁上各处 ω 相同，桶壁处 r 最大、v 与 aₙ 最大，脱水效果最好；汽车转弯：左右驱动轮<b>半径相同</b>，但外侧轮的转弯半径更大、要走更长的路，因此<b>差速器让外侧轮转得更快（ω 更大）</b>——这不是「外轮半径大」，而是 ω 不同。",
+    tip: "同一台机器上往往同时存在两类传动，要分段判断。" },
+  { id: "c_safe", cat: "安全", title: "旋转装置操作安全", icon: "warn",
+    concl: "旋转部件附近严禁伸手、严禁戴松散饰物；装置必须固定牢靠；调速从小转速开始。",
+    formula: "先停机 → 再调半径 → 后启动",
+    how: "本 Demo 中调整标记点半径前请先点「暂停」；实际实验转速不超过 120 r/min。",
+    back: "高速旋转的转盘边缘线速度很大（v = ωr），一旦衣物、头发被卷入会造成严重伤害。实验前检查转盘是否紧固、防护罩是否到位；出现异常振动立即断电。",
+    tip: "任何调整都应在停机状态下进行。" }
+];
+
+/* =========================================================
+ * 十、卡片抽屉：分类 / 搜索 / 翻转 / 钉住 / 键盘
+ * ========================================================= */
+const D = { cat: "全部", q: "", list: CARDS.slice(), idx: 0, flipped: false, pinned: null, lastFocus: null };
+const CATS = ["全部", "概念", "公式", "规律", "方法", "辨析", "易错", "应用", "安全"];
+const drawer = $("drawer"), dlist = $("dlist"), detail = $("detail");
+
+function renderTabs() {
+  $("tabs").innerHTML = CATS.map(c =>
+    `<button data-cat="${c}" class="${D.cat === c ? "on" : ""}" aria-pressed="${D.cat === c}">${c}</button>`).join("");
+}
+function filterCards() {
+  const q = D.q.trim();
+  D.list = CARDS.filter(c =>
+    (D.cat === "全部" || c.cat === D.cat) &&
+    (!q || (c.title + c.concl + c.formula + c.how + c.cat).includes(q)));
+}
+function renderList() {
+  filterCards();
+  $("dlist").innerHTML = D.list.length ? D.list.map((c, i) => `
+    <div class="ditem" data-id="${c.id}" tabindex="0" role="button" aria-label="打开卡片：${c.title}">
+      <span class="cat">${c.cat}</span>
+      <div><div class="t">${c.title}</div><div class="c">${c.concl.replace(/<[^>]+>/g, "").slice(0, 42)}…</div></div>
+    </div>`).join("") : '<div style="font-size:12.5px;color:#94a3b8;padding:10px">没有匹配的卡片，换个关键词试试。</div>';
+}
+function cardById(id) { return CARDS.find(c => c.id === id); }
+function openCard(id) {
+  const c = cardById(id); if (!c) return;
+  filterCards();
+  let i = D.list.findIndex(x => x.id === id);
+  if (i < 0) { D.list = CARDS.slice(); i = D.list.findIndex(x => x.id === id); }
+  D.idx = Math.max(0, i); D.flipped = false;
+  renderDetail();
+}
+function renderDetail() {
+  const c = D.list[D.idx] || CARDS[0];
+  $("dTitle").textContent = c.title;
+  $("dTag").innerHTML = `<span class="cat" style="font-size:10.5px;padding:1px 7px;border-radius:9px;background:#e0e7ff;color:#3730a3">${c.cat}</span>
+    <span style="margin-left:8px">第 ${D.idx + 1} / ${D.list.length} 张</span>`;
+  $("faceFront").innerHTML = `
+    <h4>一句话结论</h4><p>${c.concl}</p>
+    <div class="fml">${c.formula}</div>
+    ${SVG[c.icon] || ""}
+    <div class="how">👀 <b>在本 Demo 中怎么看：</b>${c.how}</div>
+    ${c.tip ? `<div class="tip">⚠ 易错提醒：${c.tip}</div>` : ""}`;
+  $("faceBack").innerHTML = `<h4>推导与说明（背面）</h4><p>${c.back}</p>
+    <div class="how">🔎 记忆锚点：把公式与“同轴 / 同缘”两个模型绑定记忆。</div>`;
+  $("faceBack").style.display = D.flipped ? "block" : "none";
+  $("faceFront").style.display = D.flipped ? "none" : "block";
+  dlist.style.display = "none"; detail.classList.add("show");
+  $("btnPin").classList.toggle("on", D.pinned === c.id);
+  $("btnPin").textContent = D.pinned === c.id ? "📌 已钉住" : "钉住";
+  detail.scrollTop = 0;
+}
+function openDrawer(id) {
+  D.lastFocus = document.activeElement;
+  drawer.classList.add("open");
+  document.body.classList.add("drawer-open");
+  $("fab").style.display = "none";
+  if (id) { openCard(id); } else { dlist.style.display = "block"; detail.classList.remove("show"); renderList(); }
+  setTimeout(() => (id ? $("btnClose") : $("search")).focus(), 120);
+  setTimeout(() => { drawScene(); drawCharts(); }, 300);   // 布局变化后重算画布尺寸
+}
+function closeDrawer() {
+  drawer.classList.remove("open");
+  document.body.classList.remove("drawer-open");
+  $("fab").style.display = "block";
+  if (D.pinned) {
+    const c = cardById(D.pinned);
+    const chip = $("pinchip");
+    chip.style.display = "block"; chip.textContent = "📌 " + c.title; chip.dataset.id = c.id;
+  }
+  if (D.lastFocus && D.lastFocus.focus) D.lastFocus.focus();
+  setTimeout(() => { drawScene(); drawCharts(); }, 300);   // 抽屉收起后画布变宽，重算尺寸
+}
+function navCard(step) {
+  if (!D.list.length) return;
+  D.idx = (D.idx + step + D.list.length) % D.list.length;
+  D.flipped = false;
+  renderDetail();
+}
+
+/* =========================================================
+ * 十一、教学引导（五步）与测验
+ * ========================================================= */
+const STEPS = [
+  { tag: "① 观察现象", text: "点击 ▶ 播放：三个标记点随转盘一起转动。注意它们是否<b>始终落在同一条白色虚线上</b>，以及黄色速度箭头是否与半径垂直。",
+    ask: "待答：内圈和外圈，谁“转得快”？谁“跑得快”？", card: "c_uniform" },
+  { tag: "② 猜想", text: "若外圈点的半径是内圈的两倍，它转一圈的时间会变吗？线速度会变吗？先把猜想写下来，再去做测量。",
+    ask: "待答：ω 与 r 有关吗？v 与 r 有关吗？", card: "c_coax" },
+  { tag: "③ 测量 T 与 v", text: "用右侧「测周期工具」计时若干圈读 T；或打开「频闪同步」，让标记点看起来静止，直接读出转频。",
+    ask: "待答：三个点的 T、ω 是否相同？v 是否不同、怎样不同？", card: "c_measure" },
+  { tag: "④ 图像分析", text: "看下方 v–r 图与 θ–t 图：v–r 是否为过原点的直线？直线斜率代表什么？θ–t 三线是否重合？",
+    ask: "待答：v–r 图斜率约等于多少？它等于哪个物理量？", card: "c_chart" },
+  { tag: "⑤ 结论", text: "", ask: "", card: "c_belt" }
+];
+let gStep = 0;
+function renderGuide() {
+  const st = STEPS[gStep];
+  let html = `<div><span class="tag">${st.tag}</span></div>`;
+  if (gStep === 4) {
+    const om = omega0(), T = period0();
+    html += `<p style="margin-top:5px;line-height:1.75">
+      <b style="color:#065f46">同轴转动：</b>刚体转盘上各点 <b>ω、T、n 相同</b>（同一时刻转过相同角度），
+      线速度 <b>v = ωr</b>，<b>半径越大 v 越大</b>（外圈更快）。<br>
+      <b style="color:#6d28d9">同缘传动：</b>皮带/链条/齿轮边缘 <b>v 相同</b>，<b>ω ∝ 1/r</b>（小轮转得快）。<br>
+      <b>成立前提：</b>刚体、匀速转动、同轴（或同一条不打滑的皮带）。<br>
+      当前：ω = ${fmt(om)} rad/s，T = ${fmt(T)} s。</p>`;
+  } else {
+    html += `<p style="margin-top:5px">${st.text}</p><div class="ask">${st.ask}</div>`;
+  }
+  $("gBody").innerHTML = html;
+  $("gDots").textContent = `第 ${gStep + 1} / 5 步`;
+  $("btnNext").textContent = gStep === 4 ? "重新开始" : "下一步 →";
+}
+$("btnNext").addEventListener("click", () => {
+  gStep = (gStep + 1) % 5;
+  renderGuide();
+  if ($("ckAuto").checked) openDrawer(STEPS[gStep].card);
+  if (gStep === 2 && !S.running) startPlay();
+});
+
+const QUIZ = [
+  { q: "Q1. 同轴转盘上 r₁ = 0.10 m、r₂ = 0.20 m 两点，下列正确的是——",
+    opts: ["ω 相同，v 相同", "ω 相同，v₂ = 2v₁", "ω₂ = 2ω₁，v 相同", "ω、v 都不同"], ans: 1,
+    why: "同轴转动 ω 相同（同一时刻转过相同角度），由 v = ωr 得 v ∝ r，故 v₂ = 2v₁。可切换「同轴转盘」观察外圈箭头更长。", card: "c_coax" },
+  { q: "Q2. 转速 n = 60 r/min 对应的角速度约为——",
+    opts: ["1.05 rad/s", "6.28 rad/s", "60 rad/s", "377 rad/s"], ans: 1,
+    why: "ω = 2πn/60 = 2π×60/60 = 2π ≈ 6.28 rad/s，对应 T = 1 s。注意先把 r/min 化成 r/s 再乘 2π。", card: "c_tfn" },
+  { q: "Q3. 做匀速圆周运动的物体，其线速度方向——",
+    opts: ["指向圆心", "沿轨迹切线", "沿半径向外", "与半径成 45°"], ans: 1,
+    why: "线速度沿轨迹切线、与半径垂直；指向圆心的是向心加速度。“线速度指向圆心”是高频错误。", card: "c_dir" },
+  { q: "Q4. 皮带传动两轮边缘不打滑，若 R_B = 2R_A，则——",
+    opts: ["ω_B = 2ω_A", "ω_B = ω_A", "ω_B = ω_A / 2", "ω_B = ω_A / 4"], ans: 2,
+    why: "同缘传动边缘 v 相同：ω_A R_A = ω_B R_B，故 ω_B = ω_A·R_A/R_B = ω_A/2，半径大的转得慢。", card: "c_belt" }
+];
+function buildQuiz() {
+  $("quizBox").innerHTML = QUIZ.map((it, qi) => `
+    <div class="quiz"><p>${it.q}</p>
+      ${it.opts.map((o, oi) => `<span class="opt" data-q="${qi}" data-o="${oi}" role="button" tabindex="0">${String.fromCharCode(65 + oi)}. ${o}</span>`).join("")}
+      <div class="why" id="why_${qi}"></div>
+    </div>`).join("");
+}
+$("quizBox").addEventListener("click", e => {
+  const el = e.target.closest(".opt"); if (!el) return;
+  const qi = +el.dataset.q, oi = +el.dataset.o, it = QUIZ[qi];
+  const box = el.parentElement;
+  box.querySelectorAll(".opt").forEach(o => { o.style.pointerEvents = "none"; });
+  const why = $("why_" + qi);
+  if (oi === it.ans) {
+    el.classList.add("right"); why.className = "why ok";
+    why.innerHTML = "✔ 正确！" + it.why;
+  } else {
+    el.classList.add("wrong");
+    box.querySelectorAll(".opt")[it.ans].classList.add("right");
+    why.className = "why bad";
+    why.innerHTML = `✘ 再想想：${it.why} <a data-card="${it.card}">查看对应卡片 →</a>`;
+  }
+});
+$("quizBox").addEventListener("keydown", e => {
+  if ((e.key === "Enter" || e.key === " ") && e.target.classList.contains("opt")) { e.preventDefault(); e.target.click(); }
+});
+$("quizBox").addEventListener("click", e => {
+  const a = e.target.closest("a[data-card]"); if (a) openDrawer(a.dataset.card);
+});
+
+/* =========================================================
+ * 十二、界面刷新
+ * ========================================================= */
+function updateLabels() {
+  $("vN").textContent = CFG.n;
+  $("vOmega").textContent = fmt(omega0()) + " rad/s";
+  $("vT").textContent = (CFG.n > 0 ? fmt(period0()) : "∞") + " s";
+  $("vR1").textContent = fmt(CFG.R1);
+  $("vR2").textContent = fmt(CFG.R2);
+  $("vHz").textContent = fmt(strobeHz(), 1) + (CFG.strobe.sync ? "（锁定）" : "");
+  $("slHz").value = String(clamp(strobeHz(), 0.5, 24));
+  $("slHz").disabled = CFG.strobe.sync || !CFG.strobe.on;
+  $("beltOnly").style.display = CFG.mode === "belt" ? "block" : "none";
+  $("cardMark").style.display = CFG.mode === "coax" ? "block" : "none";  // 皮带模式无半径标记点
+  const om = omega0();
+  const np = CFG.points.length;                 // 点数可变（2–5），文案不能写死“三点”
+  let extra = "";
+  if (CFG.mode === "coax" && om > 0) {
+    const dth = (om * CFG.win * 180 / Math.PI).toFixed(1);
+    // 同样按半径升序，保证「依次增大」成立
+    const ds = CFG.points.slice().sort((a, b) => a.r - b.r).map(p => fmt(om * p.r * CFG.win)).join(" < ");
+    extra = `<br>Δt = ${fmt(CFG.win)} s 内：Δθ = ${dth}°（${np} 点相同）；Δs = ${ds} m（依次增大）`;
+  }
+  $("notice").innerHTML = (CFG.mode === "coax"
+    ? `俯视视角：${np} 个标记点始终在同一条参考半径上 → 相同时间转相同角度 → <b>ω 相同</b>；外圈弧长更大 → <b>v 更大</b>。`
+    : "皮带双轮（同缘传动）：皮带不打滑 ⇒ 两轮边缘 <b>v 相同</b>，由 v = ωr 得 <b>ω ∝ 1/r</b>（小轮转得快）。") + extra;
+}
+function refreshAll() {
+  updateLabels();
+  buildPointCards();
+  updateBanner();
+  renderMeasure();
+  // 引导第 ⑤ 步的结论里带实时 ω / T，参数一变就要跟着刷新，否则显示的是旧快照
+  if (gStep === 4) renderGuide();
+  drawScene();
+  drawCharts();
+}
+/* 标记点列表 */
+function buildMarkList() {
+  const rs = CFG.points.map(p => p.r);
+  const order = rs.slice().sort((a, b) => a - b);
+  $("markList").innerHTML = CFG.points.map((p, i) => `
+    <div class="markrow">
+      <i class="dot" style="background:${COLORS[order.indexOf(p.r) % COLORS.length]}"></i>
+      <input type="range" min="0.05" max="0.30" step="0.01" value="${p.r}" data-i="${i}" aria-label="标记点 ${i + 1} 半径">
+      <span style="font-variant-numeric:tabular-nums">${fmt(p.r)} m</span>
+    </div>`).join("");
+}
+$("markList").addEventListener("input", e => {
+  if (e.target.type !== "range") return;
+  const i = +e.target.dataset.i;
+  CFG.points[i].r = +e.target.value;
+  e.target.nextElementSibling.textContent = fmt(CFG.points[i].r) + " m";
+  buildMarkList0Colors();
+  refreshAll();
+});
+function buildMarkList0Colors() {
+  // 半径改变后按新半径重排颜色（只更新圆点颜色，不重建滑杆，避免拖动中断）
+  const rs = CFG.points.map(p => p.r), order = rs.slice().sort((a, b) => a - b);
+  document.querySelectorAll("#markList .dot").forEach((d, i) => {
+    d.style.background = COLORS[order.indexOf(CFG.points[i].r) % COLORS.length];
+  });
+}
+
+/* =========================================================
+ * 十三、事件绑定
+ * ========================================================= */
+function startPlay() {
+  if (!S.running) { S.running = true; }
+  if (CFG.tog.sound && audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+}
+/* 音效：频闪“咔哒” */
+let audioCtx = null;
+function clickSound() {
+  if (!CFG.tog.sound) return;
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const t0 = audioCtx.currentTime, o = audioCtx.createOscillator(), g = audioCtx.createGain();
+    o.type = "square"; o.frequency.value = 1500;
+    g.gain.setValueAtTime(0.05, t0); g.gain.exponentialRampToValueAtTime(0.001, t0 + 0.03);
+    o.connect(g).connect(audioCtx.destination); o.start(t0); o.stop(t0 + 0.04);
+  } catch (e) { /* 静默降级 */ }
+}
+
+$("segMode").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  CFG.mode = b.dataset.m;
+  [...$("segMode").children].forEach(x => x.classList.toggle("on", x === b));
+  S.measure = null; refreshAll();
+  buildMarkList();
+});
+$("slN").addEventListener("input", e => {
+  CFG.n = +e.target.value;
+  if (CFG.strobe.sync) { /* 频闪自动跟随 */ }
+  refreshAll();
+});
+$("slR1").addEventListener("input", e => { CFG.R1 = +e.target.value; refreshAll(); });
+$("slR2").addEventListener("input", e => { CFG.R2 = +e.target.value; refreshAll(); });
+$("ckStrobe").addEventListener("change", e => { CFG.strobe.on = e.target.checked; refreshAll(); });
+$("ckSync").addEventListener("change", e => {
+  CFG.strobe.sync = e.target.checked;
+  if (CFG.strobe.sync) CFG.strobe.hz = Math.max(CFG.n / 60, 0.1);
+  refreshAll();
+});
+$("slHz").addEventListener("input", e => { CFG.strobe.hz = +e.target.value; CFG.strobe.sync = false; $("ckSync").checked = false; updateLabels(); });
+$("togs").addEventListener("change", e => {
+  if (e.target.id === "ckSound") { CFG.tog.sound = e.target.checked; return; }
+  const k = e.target.dataset.k; if (k) { CFG.tog[k] = e.target.checked; refreshAll(); }
+});
+$("btnPlay").addEventListener("click", startPlay);
+$("btnPause").addEventListener("click", () => { S.running = false; });
+$("btnReset").addEventListener("click", () => {
+  S.t = 0; S.acc = 0; S.flashIdx = -1; S.flashT = -9; M.running = false; M.dt = 0; M.N = 0;
+  refreshAll();
+});
+$("btnStep").addEventListener("click", () => { S.running = false; S.t += 0.05; refreshAll(); });
+$("btnStatic").addEventListener("click", () => {
+  S.running = false;
+  S.t = (CFG.n > 0 ? period0() : 1) * 0.72;   // 停在 72% 圈处，展示完整分帧与扇形
+  S.flashT = -9;                              // 静态模式不叠加闪光
+  refreshAll();
+});
+$("segSp").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  CFG.speed = +b.dataset.s;
+  [...$("segSp").children].forEach(x => x.classList.toggle("on", x === b));
+});
+$("btnAddP").addEventListener("click", () => {
+  if (CFG.points.length >= 5) return;
+  const used = CFG.points.map(p => p.r);
+  const cand = [0.08, 0.14, 0.22, 0.26, 0.30].find(v => !used.includes(v)) || 0.2;
+  CFG.points.push({ r: cand });
+  buildMarkList(); refreshAll();
+});
+$("btnDelP").addEventListener("click", () => {
+  if (CFG.points.length <= 2) return;
+  CFG.points.pop();
+  buildMarkList(); refreshAll();
+});
+/* 测量 */
+$("btnMStart").addEventListener("click", () => {
+  if (CFG.n === 0) return;
+  M.running = true; M.t0 = S.t; M.dt = 0; M.N = 0;
+  startPlay(); renderMeasure();
+});
+$("btnMStop").addEventListener("click", stopMeasure);
+$("btnMClear").addEventListener("click", () => { M.running = false; M.dt = 0; M.N = 0; renderMeasure(); });
+$("btnMManual").addEventListener("click", () => {
+  const dt = parseFloat($("inDt").value), N = parseInt($("inN").value, 10);
+  if (!(dt > 0) || !(N > 0)) return;
+  M.running = false; M.dt = dt; M.N = N; renderMeasure();
+});
+/* 记录表 */
+$("btnRec").addEventListener("click", addRecords);
+$("btnClearRec").addEventListener("click", () => { S.rec = []; renderRecords(); });
+$("btnCSV").addEventListener("click", () => {
+  let csv = "\uFEFF装置,r(m),n(r/min),T(s),omega(rad/s),v(m/s),v_theory(m/s),error(%)\n";
+  S.rec.forEach(r => {
+    csv += `${r.mode === "coax" ? "同轴" : "同缘"},${r.r.toFixed(3)},${r.n},${r.T.toFixed(4)},${r.om.toFixed(4)},${r.v.toFixed(4)},${r.vth.toFixed(4)},${r.err.toFixed(2)}\n`;
+  });
+  const blob = new Blob([csv], { type: "text/csv" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "模型29_转盘测量记录.csv";
+  a.click(); URL.revokeObjectURL(a.href);
+});
+/* 抽屉交互 */
+$("fab").addEventListener("click", () => openDrawer());
+$("btnClose").addEventListener("click", closeDrawer);
+$("btnBack").addEventListener("click", () => { dlist.style.display = "block"; detail.classList.remove("show"); renderList(); });
+$("search").addEventListener("input", e => { D.q = e.target.value; renderList(); dlist.style.display = "block"; detail.classList.remove("show"); });
+$("tabs").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  D.cat = b.dataset.cat; renderTabs(); renderList();
+  dlist.style.display = "block"; detail.classList.remove("show");
+});
+$("dlist").addEventListener("click", e => {
+  const it = e.target.closest(".ditem"); if (it) openCard(it.dataset.id);
+});
+$("dlist").addEventListener("keydown", e => {
+  const it = e.target.closest(".ditem");
+  if (it && (e.key === "Enter" || e.key === " ")) { e.preventDefault(); openCard(it.dataset.id); }
+});
+$("btnPrev").addEventListener("click", () => navCard(-1));
+$("btnNextCard").addEventListener("click", () => navCard(1));
+$("btnFlip").addEventListener("click", () => {
+  D.flipped = !D.flipped;
+  $("faceBack").style.display = D.flipped ? "block" : "none";
+  $("faceFront").style.display = D.flipped ? "none" : "block";
+});
+$("btnPin").addEventListener("click", () => {
+  const id = (D.list[D.idx] || CARDS[0]).id;
+  D.pinned = D.pinned === id ? null : id;
+  renderDetail();
+  $("pinchip").style.display = D.pinned ? "block" : "none";
+  if (D.pinned) { $("pinchip").textContent = "📌 " + cardById(D.pinned).title; $("pinchip").dataset.id = D.pinned; }
+});
+$("pinchip").addEventListener("click", () => openDrawer($("pinchip").dataset.id));
+document.addEventListener("keydown", e => {
+  if (!drawer.classList.contains("open")) return;
+  if (e.key === "Escape") { closeDrawer(); return; }
+  if (!detail.classList.contains("show")) return;
+  if (e.key === "ArrowLeft") { e.preventDefault(); navCard(-1); }
+  if (e.key === "ArrowRight") { e.preventDefault(); navCard(1); }
+});
+/* 锚点热点（含图表 i 按钮）——统一委托 */
+document.addEventListener("click", e => {
+  const hs = e.target.closest(".hs, .hs2, .minihelp");
+  if (hs && hs.dataset.card) { e.preventDefault(); openDrawer(hs.dataset.card); }
+});
+
+/* ---------- 画布拖动标记点 ---------- */
+let dragIdx = -1;
+function canvasPos(e) {
+  const r = scene.getBoundingClientRect();
+  return { x: e.clientX - r.left, y: e.clientY - r.top };
+}
+scene.addEventListener("pointerdown", e => {
+  if (CFG.mode !== "coax") return;
+  const m = canvasPos(e), th = omega0() * S.t;
+  let best = -1, bd = 1e9;
+  activePoints().forEach((p, i) => {
+    const q = polar(SC.cx, SC.cy, p.r * SC.s, th);
+    const d = Math.hypot(q.x - m.x, q.y - m.y);
+    if (d < bd) { bd = d; best = i; }
+  });
+  if (bd < 20) {
+    dragIdx = best;
+    scene.setPointerCapture(e.pointerId);
+    scene.style.cursor = "grabbing";
+  }
+});
+scene.addEventListener("pointermove", e => {
+  const m = canvasPos(e);
+  if (dragIdx >= 0) {
+    const r = clamp(Math.hypot(m.x - SC.cx, m.y - SC.cy) / SC.s, 0.05, 0.30);
+    CFG.points[dragIdx].r = Math.round(r * 100) / 100;
+    // 只更新该行滑杆与数值，避免整表重建打断交互
+    const row = document.querySelectorAll("#markList .markrow")[dragIdx];
+    if (row) {
+      row.querySelector("input").value = CFG.points[dragIdx].r;
+      row.querySelector("span").textContent = fmt(CFG.points[dragIdx].r) + " m";
+    }
+    buildMarkList0Colors();
+    refreshAll();
+  } else if (CFG.mode === "coax") {
+    const th = omega0() * S.t;
+    let near = false;
+    activePoints().forEach(p => {
+      const q = polar(SC.cx, SC.cy, p.r * SC.s, th);
+      if (Math.hypot(q.x - m.x, q.y - m.y) < 20) near = true;
+    });
+    scene.style.cursor = near ? "grab" : "default";
+  }
+});
+["pointerup", "pointercancel"].forEach(ev => scene.addEventListener(ev, () => {
+  dragIdx = -1; scene.style.cursor = "default";
+}));
+window.addEventListener("resize", () => { drawScene(); drawCharts(); });
+
+/* =========================================================
+ * 十四、主循环（固定步长 + 解析角度）
+ * ========================================================= */
+let frame = 0;
+function loop(now) {
+  if (S.running) {
+    const real = Math.min((now - S.last) / 1000, 0.1);
+    S.acc += real * CFG.speed;
+    while (S.acc >= CFG.dt) { S.t += CFG.dt; S.acc -= CFG.dt; }
+  }
+  S.last = now;
+  // 频闪闪光时刻检测（按闪光频率采样位置）
+  if (CFG.strobe.on && CFG.n > 0) {
+    const hz = strobeHz(), idx = Math.floor(S.t * hz);
+    if (idx !== S.flashIdx) {
+      S.flashIdx = idx; S.flashT = S.t;
+      if (CFG.tog.sound && S.running) clickSound();
+    }
+  }
+  drawScene();
+  if (frame++ % 3 === 0) {
+    drawCharts();
+    if (M.running) renderMeasure();
+  }
+  requestAnimationFrame(loop);
+}
+
+/* =========================================================
+ * 十五、初始化
+ * ========================================================= */
+if (!CanvasRenderingContext2D.prototype.roundRect) { // 老浏览器兼容
+  CanvasRenderingContext2D.prototype.roundRect = function (x, y, w, h, r) {
+    const rr = Math.min(r, w / 2, h / 2);
+    this.moveTo(x + rr, y); this.arcTo(x + w, y, x + w, y + h, rr);
+    this.arcTo(x + w, y + h, x, y + h, rr); this.arcTo(x, y + h, x, y, rr);
+    this.arcTo(x, y, x + w, y, rr); this.closePath(); return this;
+  };
+}
+renderTabs(); renderList(); buildQuiz(); buildMarkList(); renderGuide();
+buildPointCards(); updateBanner(); renderMeasure(); renderRecords(); updateLabels();
+S.running = !REDUCED;                 // 尊重减少动效：默认不自动播放
+if (REDUCED) { S.t = 0.72 * (CFG.n > 0 ? period0() : 1); S.flashT = -9; }
+requestAnimationFrame(t => { S.last = t; requestAnimationFrame(loop); });
+</script>
+</body>
+</html>

@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>将军饮马 · 最短路径实验（八上 P94）</title>
+<style>
+  :root{
+    --bg:#f5f7fa; --panel:#fff; --line:#dfe6ee; --ink:#2c3e50; --sub:#7f8c8d;
+    --red:#e74c3c; --blue:#2980b9; --green:#27ae60; --orange:#e67e22; --purple:#8e44ad;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:"Microsoft YaHei","PingFang SC",sans-serif;background:var(--bg);color:var(--ink);padding:14px;}
+  header{text-align:center;margin-bottom:10px;}
+  header h1{font-size:22px;}
+  header p{color:var(--sub);font-size:13px;margin-top:3px;}
+  .motto{display:inline-block;margin-top:6px;padding:5px 18px;border-radius:20px;font-weight:bold;font-size:14px;
+         background:#eaf3fb;color:var(--blue);border:1px solid var(--blue);}
+  .wrap{display:flex;gap:12px;max-width:1340px;margin:0 auto;align-items:stretch;}
+  .stage{flex:1;background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:8px;}
+  svg{display:block;width:100%;height:auto;border-radius:6px;background:#fdfefe;touch-action:none;cursor:default;}
+  .side{width:390px;display:flex;flex-direction:column;gap:9px;}
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:11px 13px;}
+  .card h3{font-size:14px;margin-bottom:7px;color:var(--purple);border-left:4px solid var(--purple);padding-left:8px;}
+  .btnrow{display:flex;gap:8px;}
+  button{flex:1;padding:8px 4px;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:pointer;
+         font-size:13px;transition:.15s;}
+  button:hover{border-color:var(--purple);color:var(--purple);}
+  button.active{background:var(--purple);color:#fff;border-color:var(--purple);}
+  button.primary{background:var(--blue);color:#fff;border-color:var(--blue);}
+  button.primary:hover{opacity:.88;color:#fff;}
+  table{width:100%;border-collapse:collapse;font-size:13px;}
+  td{padding:4px 2px;border-bottom:1px dashed var(--line);}
+  td:last-child{text-align:right;font-variant-numeric:tabular-nums;font-weight:bold;}
+  .min-row td{color:var(--green);}
+  .analysis{font-size:13px;line-height:1.9;background:#f8f6fc;border-radius:8px;padding:9px 11px;}
+  .analysis b{color:var(--purple);}
+  .analysis .step{margin:2px 0;}
+  .okflag{display:inline-block;padding:2px 10px;border-radius:12px;font-size:12px;font-weight:bold;}
+  .okflag.yes{background:#d4edda;color:#155724;}
+  .okflag.no{background:#fff3cd;color:#856404;}
+  .hint{font-size:12px;color:var(--sub);line-height:1.7;}
+  .formula{font-family:"Cambria Math",Georgia,serif;}
+</style>
+</head>
+<body>
+<header>
+  <h1>将军饮马 · 最短路径实验</h1>
+  <p>人教版八年级上册 P94 综合与实践 —— 在"河"（y 轴）上找点 P，使 PA + PB 最小</p>
+  <div class="motto">口诀：将军饮马 —— 同侧对称，异侧直连</div>
+</header>
+
+<div class="wrap">
+  <div class="stage">
+    <svg id="svg" viewBox="0 0 880 600"></svg>
+  </div>
+
+  <div class="side">
+    <div class="card">
+      <h3>情景切换</h3>
+      <div class="btnrow">
+        <button id="m-same" class="active">模式1 · 同侧经典</button>
+        <button id="m-diff">模式2 · 异侧直接</button>
+      </div>
+      <div class="btnrow" style="margin-top:8px;">
+        <button id="btn-anim" class="primary">▶ 动画演示：P 滑向最优点 P₀</button>
+      </div>
+      <p class="hint" style="margin-top:6px;">可直接拖拽 <b style="color:var(--red)">A</b>、<b style="color:var(--blue)">B</b> 改变位置；
+         拖拽橙色点 <b style="color:var(--orange)">P</b>（只能在 y 轴上滑动）。</p>
+    </div>
+
+    <div class="card">
+      <h3>路径测量</h3>
+      <table>
+        <tr><td>P 点坐标</td><td id="v-p"></td></tr>
+        <tr><td>PA（红色路径·左段）</td><td id="v-pa"></td></tr>
+        <tr><td>PB（红色路径·右段）</td><td id="v-pb"></td></tr>
+        <tr><td>L = PA + PB</td><td id="v-L"></td></tr>
+        <tr class="min-row"><td id="v-minname">最短值 = A′B</td><td id="v-min"></td></tr>
+        <tr><td>当前位置是否最短</td><td><span class="okflag no" id="v-ok">未达最短</span></td></tr>
+      </table>
+      <p class="hint" style="margin-top:6px;">同侧时 <span class="formula">PA = PA′</span>，故
+         <span class="formula">PA + PB = PA′ + PB ≥ A′B</span>，当 A′、P、B <b>共线</b>时取等号。</p>
+    </div>
+
+    <div class="card">
+      <h3>一次函数变式：y 轴上找 P 使 PA+PB 最小</h3>
+      <div class="analysis" id="analysis"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ================= 坐标映射 =================
+const U=60;                                  // 每单位 60px
+const sx=x=>30+(x+5)*U, sy=y=>570-(y+1)*U;   // 数学坐标 → SVG 像素
+const ix=px=>(px-30)/U-5,  iy=py=>(570-py)/U-1;
+
+const svg=document.getElementById('svg'), NS='http://www.w3.org/2000/svg';
+function el(n,a,p){const e=document.createElementNS(NS,n);for(const k in a)e.setAttribute(k,a[k]);(p||svg).appendChild(e);return e;}
+const dist=(p,q)=>Math.hypot(p[0]-q[0],p[1]-q[1]);
+const fmt=v=>v.toFixed(2).replace(/\.00$/,'');
+
+// ================= 状态 =================
+let mode='same';                             // same | diff
+let A=[2,3], B=[5,2];                        // 定点（数学坐标）
+let pY=2.2;                                  // 动点 P(0, pY)
+let drag=null, anim=null;
+
+const SCENES={ same:{A:[2,3], B:[5,2]}, diff:{A:[-2,3], B:[4,2]} };
+
+const A2=()=>[-A[0],A[1]];                   // A 关于 y 轴的对称点 A′
+const sameSide=()=>A[0]*B[0]>0;              // 是否同侧
+function P0(){                               // 最优点 P0(0, y0)
+  const S=sameSide()?A2():A, E=B;
+  const dx=E[0]-S[0];
+  if(Math.abs(dx)<1e-9) return null;         // 平行于 y 轴，无交点
+  const k=(E[1]-S[1])/dx, b=S[1]-k*S[0];
+  return [0,b,k,b];
+}
+const Lnow =()=>dist([0,pY],A)+dist([0,pY],B);
+
+// ================= 静态图层 =================
+const gGrid=el('g',{}), gAxis=el('g',{}), gRiver=el('g',{}),
+      gLines=el('g',{}), gPaths=el('g',{}), gPts=el('g',{}), gLab=el('g',{});
+
+(function drawGrid(){
+  for(let x=-5;x<=8;x++) el('line',{x1:sx(x),y1:sy(-1),x2:sx(x),y2:sy(7.2),stroke:'#e8eef4','stroke-width':1},gGrid);
+  for(let y=-1;y<=7;y++) el('line',{x1:sx(-5),y1:sy(y),x2:sx(8),y2:sy(y),stroke:'#e8eef4','stroke-width':1},gGrid);
+})();
+(function drawAxes(){
+  el('line',{x1:sx(-5),y1:sy(0),x2:sx(8),y2:sy(0),stroke:'#555','stroke-width':2},gAxis);
+  el('line',{x1:sx(8),y1:sy(0),x2:sx(8)-12,y2:sy(0)-5,stroke:'#555','stroke-width':2},gAxis);
+  el('line',{x1:sx(-5),y1:sy(0),x2:sx(-5)+12,y2:sy(0)-5,stroke:'#555','stroke-width':2},gAxis);
+  for(let x=-4;x<=7;x++) if(x!==0){
+    el('line',{x1:sx(x),y1:sy(0)-4,x2:sx(x),y2:sy(0)+4,stroke:'#555'},gAxis);
+    const t=el('text',{x:sx(x),y:sy(0)+20,'text-anchor':'middle','font-size':12,fill:'#888'},gAxis);
+    t.textContent=x;
+  }
+  for(let y=1;y<=6;y++){
+    el('line',{x1:sx(0)-4,y1:sy(y),x2:sx(0)+4,y2:sy(y),stroke:'#555'},gAxis);
+    const t=el('text',{x:sx(0)-16,y:sy(y)+4,'text-anchor':'end','font-size':12,fill:'#888'},gAxis);
+    t.textContent=y;
+  }
+  const o=el('text',{x:sx(0)-14,y:sy(0)+18,'font-size':12,fill:'#888'},gAxis); o.textContent='O';
+  const xl=el('text',{x:sx(7.6),y:sy(0)-10,'font-size':14,'font-style':'italic',fill:'#555'},gAxis); xl.textContent='x';
+  const yl=el('text',{x:sx(0)+10,y:sy(6.8),'font-size':14,'font-style':'italic',fill:'#555'},gAxis); yl.textContent='y';
+})();
+(function drawRiver(){                        // y 轴 = 河
+  el('line',{x1:sx(0),y1:sy(-1),x2:sx(0),y2:sy(7.2),stroke:'var(--blue)','stroke-width':7,opacity:.18},gRiver);
+  el('line',{x1:sx(0),y1:sy(-1),x2:sx(0),y2:sy(7.2),stroke:'var(--blue)','stroke-width':3.5},gRiver);
+  const t=el('text',{x:sx(0)+10,y:sy(7),'font-size':15,'font-weight':'bold',fill:'var(--blue)'},gRiver);
+  t.textContent='河（y 轴）';
+})();
+
+function label(x,y,txt,color,dx=10,dy=-8,size=14){
+  const t=el('text',{x:sx(x)+dx,y:sy(y)+dy,'font-size':size,'font-weight':'bold',fill:color,
+    'paint-order':'stroke',stroke:'#fff','stroke-width':4},gLab);
+  t.textContent=txt; return t;
+}
+
+// ================= 主渲染 =================
+function render(){
+  gLines.innerHTML=''; gPaths.innerHTML=''; gPts.innerHTML=''; gLab.innerHTML='';
+  const P=[0,pY], Ap=A2(), p0=P0();
+  const same=sameSide();
+
+  // ---- AA′ 虚线（垂直于 y 轴）----
+  if(same){
+    el('line',{x1:sx(A[0]),y1:sy(A[1]),x2:sx(Ap[0]),y2:sy(Ap[1]),stroke:'#999',
+      'stroke-dasharray':'4 4','stroke-width':1.6},gLines);
+  }
+  // ---- 对称辅助线 A′P、A′B（虚线）----
+  if(same){
+    el('line',{x1:sx(Ap[0]),y1:sy(Ap[1]),x2:sx(P[0]),y2:sy(P[1]),stroke:'#b085d6','stroke-dasharray':'6 4','stroke-width':1.8},gLines);
+    el('line',{x1:sx(Ap[0]),y1:sy(Ap[1]),x2:sx(B[0]),y2:sy(B[1]),stroke:'var(--green)','stroke-dasharray':'8 5','stroke-width':2.4},gLines);
+  }else{
+    // 异侧：最短路径 = 直线 AB
+    el('line',{x1:sx(A[0]),y1:sy(A[1]),x2:sx(B[0]),y2:sy(B[1]),stroke:'var(--green)','stroke-dasharray':'8 5','stroke-width':2.4},gLines);
+  }
+
+  // ---- 普通路径（红折线 A-P-B）----
+  el('polyline',{points:[sx(A[0]),sy(A[1]),sx(P[0]),sy(P[1]),sx(B[0]),sy(B[1])].join(' '),
+    fill:'none',stroke:'var(--red)','stroke-width':3,'stroke-linejoin':'round'},gPaths);
+
+  // ---- PA = PA′ 等长标记（同侧）----
+  if(same){
+    [[A,P],[Ap,P]].forEach(([u,v])=>{
+      const m=[(u[0]+v[0])/2,(u[1]+v[1])/2], n=Math.hypot(v[1]-u[1],v[0]-u[0]),
+            d=[(v[1]-u[1])/n*10,(v[0]-u[0])/n*10];
+      el('line',{x1:sx(m[0])-d[0],y1:sy(m[1])-d[1],x2:sx(m[0])+d[0],y2:sy(m[1])+d[1],
+        stroke:'#b085d6','stroke-width':2.2},gPaths);
+    });
+    label((A[0]+Ap[0])/2,A[1],'PA = PA′','#8e44ad',-30,-12,13);
+  }
+
+  // ---- 路径数值标签 ----
+  label((A[0]+0)/2,(A[1]+pY)/2,'PA='+fmt(dist(P,A)),'var(--red)',8,0,13);
+  label((B[0]+0)/2,(B[1]+pY)/2,'PB='+fmt(dist(P,B)),'var(--red)',8,0,13);
+  if(same) label((Ap[0]+B[0])/2,(Ap[1]+B[1])/2,'A′B='+fmt(dist(Ap,B))+'（最短）','var(--green)',10,14,13);
+  else     label((A[0]+B[0])/2,(A[1]+B[1])/2,'AB='+fmt(dist(A,B))+'（最短）','var(--green)',10,14,13);
+
+  // ---- 最优点 P0 ----
+  if(p0){
+    el('line',{x1:sx(0),y1:sy(p0[1]),x2:sx(0)+26,y2:sy(p0[1]),stroke:'var(--green)','stroke-width':1.6,'stroke-dasharray':'3 3'},gPts);
+    el('circle',{cx:sx(0),cy:sy(p0[1]),r:7,fill:'none',stroke:'var(--green)','stroke-width':2.5},gPts);
+    label(0,p0[1],'P₀(0, '+fmt(p0[1])+') 最优','var(--green)',12,20,13);
+  }
+
+  // ---- 点 ----
+  function pt(pos,color,name,extra,draggable){
+    const c=el('circle',{cx:sx(pos[0]),cy:sy(pos[1]),r:8,fill:color,stroke:'#fff','stroke-width':2,
+      cursor:draggable?'grab':'default', 'data-drag':draggable||''},gPts);
+    label(pos[0],pos[1],name+(extra||''),color,11,-10,15);
+    return c;
+  }
+  if(same) pt(Ap,'#b085d6','A′','('+fmt(Ap[0])+', '+fmt(Ap[1])+')');
+  pt(A,'var(--red)','A','('+fmt(A[0])+', '+fmt(A[1])+')',true);
+  pt(B,'var(--blue)','B','('+fmt(B[0])+', '+fmt(B[1])+')',true);
+  pt(P,'var(--orange)','P','(0, '+fmt(pY)+')','P');
+
+  updatePanel(p0,same);
+}
+
+// ================= 面板 =================
+function updatePanel(p0,same){
+  const L=Lnow(), min=same?dist(A2(),B):dist(A,B);
+  $('v-p').textContent='(0, '+fmt(pY)+')';
+  $('v-pa').textContent=fmt(dist([0,pY],A));
+  $('v-pb').textContent=fmt(dist([0,pY],B));
+  $('v-L').textContent=fmt(L);
+  $('v-minname').textContent=same?'最短值 = A′B':'最短值 = AB';
+  $('v-min').textContent=fmt(min);
+  const ok=Math.abs(L-min)<0.05;
+  const flag=$('v-ok');
+  flag.textContent=ok?'✓ 已达最短！':'未达最短（差 '+fmt(L-min)+'）';
+  flag.className='okflag '+(ok?'yes':'no');
+
+  // 一次函数解析面板
+  let html='';
+  const s=same?A2():A;
+  if(same){
+    const k=p0?p0[2]:NaN, b=p0?p0[3]:NaN;
+    html+=`<div class="step"><b>① 作对称点：</b>A(${fmt(A[0])}, ${fmt(A[1])}) 关于 y 轴的对称点
+           <b>A′(${fmt(-A[0])}, ${fmt(A[1])})</b></div>`;
+    if(p0){
+      html+=`<div class="step"><b>② 连 A′B，求直线 A′B 的解析式：</b><br>
+             k = (${fmt(B[1])} − ${fmt(A[1])}) / (${fmt(B[0])} − ${fmt(-A[0])}) = <b>${fmt(k)}</b>，
+             b = ${fmt(A[1])} − ${fmt(k)}×${fmt(-A[0])} = <b>${fmt(b)}</b><br>
+             ∴ y = ${fmt(k)}x ${b>=0?'+':'−'} ${fmt(Math.abs(b))}</div>`;
+      html+=`<div class="step"><b>③ 令 x = 0</b>（河岸），得 <b>P₀(0, ${fmt(b)})</b>，
+             此时 PA+PB = A′B = ${fmt(min)} 最小。</div>`;
+    }
+  }else{
+    if(p0){
+      const k=p0[2], b=p0[3];
+      html+=`<div class="step"><b>① 异侧直接连：</b>A 在 y 轴左侧、B 在右侧（当前 A(${fmt(A[0])}, ${fmt(A[1])})、B(${fmt(B[0])}, ${fmt(B[1])})），
+             两点间线段最短。</div>`;
+      html+=`<div class="step"><b>② 求直线 AB 的解析式：</b>k = <b>${fmt(k)}</b>，b = <b>${fmt(b)}</b>，
+             ∴ y = ${fmt(k)}x ${b>=0?'+':'−'} ${fmt(Math.abs(b))}</div>`;
+      html+=`<div class="step"><b>③ 令 x = 0</b>，直线 AB 与 y 轴交点即 <b>P₀(0, ${fmt(b)})</b>，
+             此时 PA + PB = AB = ${fmt(min)} 最小。</div>`;
+    }else{
+      html+=`<div class="step">当前 A、B 连线平行于 y 轴，与河岸无交点，请拖动 A 或 B。</div>`;
+    }
+  }
+  html+=`<div class="step" style="margin-top:4px;">当前状态：<b>${same?'同侧 → 先对称再连':'异侧 → 直接连'}</b></div>`;
+  $('analysis').innerHTML=html;
+}
+function $(id){return document.getElementById(id);}
+
+// ================= 交互 =================
+function toSVG(evt){
+  const r=svg.getBoundingClientRect();
+  return [(evt.clientX-r.left)/r.width*880,(evt.clientY-r.top)/r.height*600];
+}
+svg.addEventListener('pointerdown',e=>{
+  const [mx,my]=toSVG(e);
+  for(const c of gPts.querySelectorAll('circle[data-drag]')){
+    if(!c.dataset.drag) continue;
+    if(Math.hypot(mx-+c.getAttribute('cx'),my-+c.getAttribute('cy'))<16){
+      drag=c.dataset.drag; anim=null; $('btn-anim').textContent='▶ 动画演示：P 滑向最优点 P₀';
+      svg.setPointerCapture(e.pointerId); svg.style.cursor='grabbing'; break;
+    }
+  }
+});
+svg.addEventListener('pointermove',e=>{
+  if(!drag) return;
+  const [mx,my]=toSVG(e);
+  const x=Math.min(7.4,Math.max(-4.6,ix(mx))), y=Math.min(6.6,Math.max(0.3,iy(my)));
+  if(drag==='A'){ A[0]=Math.abs(x)<0.15?0.15*Math.sign(x||1):x; A[1]=y; }
+  else if(drag==='B'){ B[0]=Math.abs(x)<0.15?0.15*Math.sign(x||1):x; B[1]=y; }
+  else if(drag==='P'){ pY=Math.min(6.6,Math.max(0.2,iy(my))); }
+  render();
+});
+svg.addEventListener('pointerup',()=>{drag=null;svg.style.cursor='default';});
+
+// ---- 模式切换 ----
+function setMode(m){
+  mode=m; anim=null; $('btn-anim').textContent='▶ 动画演示：P 滑向最优点 P₀';
+  A=[...SCENES[m].A]; B=[...SCENES[m].B]; pY=m==='same'?2.2:1.2;
+  $('m-same').classList.toggle('active',m==='same');
+  $('m-diff').classList.toggle('active',m==='diff');
+  render();
+}
+$('m-same').onclick=()=>setMode('same');
+$('m-diff').onclick=()=>setMode('diff');
+
+// ---- P→P0 动画 ----
+$('btn-anim').onclick=()=>{
+  if(anim){ anim=null; $('btn-anim').textContent='▶ 动画演示：P 滑向最优点 P₀'; return; }
+  const p0=P0(); if(!p0) return;
+  anim={from:pY,to:Math.min(6.4,Math.max(0.2,p0[1])),t0:performance.now(),dur:1600};
+  $('btn-anim').textContent='⏸ 动画中…';
+};
+(function tick(now){
+  if(anim){
+    let t=(now-anim.t0)/anim.dur;
+    if(t>=1){ pY=anim.to; anim=null; $('btn-anim').textContent='▶ 再看一遍：P 滑向 P₀'; }
+    else{ const k=t<.5?4*t*t*t:1-Math.pow(-2*t+2,3)/2; pY=anim.from+(anim.to-anim.from)*k; }
+    render();
+  }
+  requestAnimationFrame(tick);
+})(performance.now());
+
+setMode('same');
+</script>
+</body>
+</html>

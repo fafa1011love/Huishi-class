@@ -1,0 +1,645 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>13.2　磁感应强度　磁通量 ｜ 人教版物理必修第三册</title>
+<style>
+  :root{
+    --blue:#1d4ed8; --blue-soft:#eff6ff; --blue-line:#bfdbfe;
+    --ink:#1e293b; --sub:#64748b; --line:#e2e8f0;
+    --amber-bg:#fffbeb; --amber-line:#fcd34d; --amber-ink:#92400e;
+    --green:#059669; --red:#dc2626;
+    --purple:#7c3aed; --purple-soft:#f5f3ff;
+    --amber:#f59e0b;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:#f3f5f9; color:var(--ink);
+    font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif; padding:18px 12px 40px;}
+  .wrap{max-width:1060px; margin:0 auto;}
+  header{background:#fff; border:1px solid var(--line); border-left:6px solid var(--purple);
+    border-radius:12px; padding:16px 22px; box-shadow:0 1px 3px rgba(15,23,42,.06);}
+  header h1{font-size:22px; color:var(--ink);}
+  header .meta{margin-top:6px; font-size:12.5px; color:var(--sub); line-height:1.7;}
+  .mod{background:#fff; border:1px solid var(--line); border-radius:12px;
+    padding:16px 20px 18px; margin-top:16px; box-shadow:0 1px 3px rgba(15,23,42,.05);}
+  .mod-h{display:flex; align-items:center; gap:10px; margin-bottom:10px;}
+  .mod-h .no{background:var(--purple); color:#fff; font-size:12px; border-radius:6px;
+    padding:2px 8px; white-space:nowrap;}
+  .mod-h h2{font-size:16.5px;}
+  .mod-h .kp{margin-left:auto; font-size:12px; color:var(--sub); white-space:nowrap;}
+  .think{background:var(--blue-soft); border:1px solid var(--blue-line); border-radius:8px;
+    padding:8px 12px; font-size:12.5px; color:#1e40af; margin-bottom:10px; line-height:1.7;}
+  .think b{color:var(--blue);}
+  canvas.stage{display:block; width:100%; background:#fbfdff;
+    border:1px solid var(--line); border-radius:10px;}
+  .ctrl{display:flex; flex-wrap:wrap; gap:8px 18px; align-items:center; margin-top:10px;}
+  .row{display:flex; align-items:center; gap:8px; font-size:13px;}
+  .row label{color:var(--sub); white-space:nowrap;}
+  .row input[type=range]{width:150px; accent-color:var(--purple);}
+  .row .val{min-width:64px; font-variant-numeric:tabular-nums; color:var(--ink); font-weight:600;}
+  .btn{border:1px solid var(--purple); color:var(--purple); background:#fff; border-radius:7px;
+    padding:4px 12px; font-size:12.5px; cursor:pointer;}
+  .btn:hover{background:var(--purple-soft);}
+  .btn.on{background:var(--purple); color:#fff;}
+  .note{margin-top:10px; background:var(--amber-bg); border:1px solid var(--amber-line);
+    border-radius:8px; padding:8px 12px; font-size:12.5px; color:var(--amber-ink); line-height:1.8;}
+  .note b{color:#b45309;}
+  footer{margin-top:20px; text-align:center; font-size:12px; color:#94a3b8;}
+  .seg{display:inline-flex; border:1px solid var(--purple); border-radius:8px; overflow:hidden;}
+  .seg button{border:none; background:#fff; color:var(--purple); padding:4px 12px;
+    font-size:12.5px; cursor:pointer;}
+  .seg button.on{background:var(--purple); color:#fff;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>13.2　磁感应强度　磁通量</h1>
+  <div class="meta">人教版《物理》必修第三册 · 第十三章 电磁感应与电磁波初步 · 教材 P109–P113 ｜ 覆盖知识点：磁感应强度 B＝F/(IL)（比值定义）、匀强磁场、磁通量 Φ＝BScosθ</div>
+</header>
+
+<div class="mod">
+  <div class="mod-h"><span class="no">模块 1</span><h2>磁感应强度 B＝F/(IL)：比值定义</h2><span class="kp">交互仿真</span></div>
+  <div class="think"><b>先想一想：</b>把电流 I 加倍，导线受到的力 F 会加倍吗？那 F/(IL) 这个比值会跟着变吗？先猜，再拖滑块。</div>
+  <canvas class="stage" id="cv1" style="height:400px;"></canvas>
+  <div class="ctrl">
+    <div class="row"><label>电流 I</label><input type="range" id="r1i" min="0.5" max="5" step="0.1" value="2"><span class="val" id="r1iv"></span></div>
+    <div class="row"><label>导线长度 L</label><input type="range" id="r1l" min="0.1" max="0.5" step="0.01" value="0.3"><span class="val" id="r1lv"></span></div>
+    <div class="row"><label>磁场 B</label><input type="range" id="r1b" min="0.2" max="1.2" step="0.05" value="0.5"><span class="val" id="r1bv"></span></div>
+    <button class="btn" id="b1d">电流方向：→</button>
+    <button class="btn" id="b1p">预设：I=4A，L=0.30m</button>
+  </div>
+  <div class="note"><b>观察要点：</b>I 加倍 → F 加倍；L 加倍 → F 也加倍；但 <b>F/(IL) 始终等于 B，一点不变</b>。说明 B 描述的是磁场本身的强弱，跟放不放导线、放多长、通多大电流<b>无关</b>——这正是"比值定义"的精髓（对比 E＝F/q、ρ＝m/V）。</div>
+</div>
+
+<div class="mod">
+  <div class="mod-h"><span class="no">模块 2</span><h2>匀强磁场 vs 非匀强磁场</h2><span class="kp">示意图 · 探针可拖动</span></div>
+  <div class="think"><b>先想一想：</b>在匀强磁场里把探针从左边挪到右边，B 会变吗？在条形磁铁旁边挪呢？拖动探针（或点"自动巡游"）看看。</div>
+  <canvas class="stage" id="cv2" style="height:340px;"></canvas>
+  <div class="ctrl">
+    <div class="row"><label>匀强磁场 B</label><input type="range" id="r2b" min="0.2" max="1.2" step="0.05" value="0.6"><span class="val" id="r2bv"></span></div>
+    <button class="btn" id="b2t">自动巡游</button>
+    <button class="btn" id="b2r">探针复位</button>
+  </div>
+  <div class="note"><b>观察要点：</b>匀强磁场的磁感线是<b>平行、等距、同向</b>的直线，各点 B 的<b>大小和方向都相同</b>（探针怎么挪读数都不变）；条形磁铁的磁场<b>非匀强</b>——两极附近磁感线最密、B 最大，远处稀、B 小，而且<b>方向也随位置改变</b>。</div>
+</div>
+
+<div class="mod">
+  <div class="mod-h"><span class="no">模块 3</span><h2>磁通量 Φ＝BS·cosθ</h2><span class="kp">交互仿真 · 可动画</span></div>
+  <div class="think"><b>先想一想：</b>线圈平面跟磁感线<b>垂直</b>时穿过的磁感线条数最多，还是<b>平行</b>时最多？θ 是哪个角？（提示：是法线与 B 的夹角）</div>
+  <canvas class="stage" id="cv3" style="height:380px;"></canvas>
+  <div class="ctrl">
+    <div class="row"><label>夹角 θ</label><input type="range" id="r3t" min="0" max="90" step="1" value="30"><span class="val" id="r3tv"></span></div>
+    <div class="row"><label>磁感应强度 B</label><input type="range" id="r3b" min="0.2" max="1.2" step="0.05" value="0.5"><span class="val" id="r3bv"></span></div>
+    <div class="row"><label>线圈面积 S</label><input type="range" id="r3s" min="0.01" max="0.06" step="0.005" value="0.03"><span class="val" id="r3sv"></span></div>
+    <button class="btn" id="b3p">播放 / 暂停</button>
+    <button class="btn" id="b3a">θ＝0°（Φ 最大）</button>
+    <button class="btn" id="b3b">θ＝90°（Φ＝0）</button>
+  </div>
+  <div class="note"><b>观察要点：</b>Φ 就是"穿过线圈的磁感线条数"。θ＝0°（线圈平面⊥磁感线）时条数最多、<b>Φ＝BS</b>；θ＝90°（线圈平面∥磁感线，磁感线"擦边而过"）时<b>Φ＝0</b>；中间 Φ＝BS·cosθ，右侧曲线是标准的余弦线。注意 θ 是<b>法线</b>与 B 的夹角，不是线圈平面与 B 的夹角。</div>
+</div>
+
+<footer>人教版高中物理必修第三册 · 可视化交互课件 ｜ 单文件离线运行，双击即可使用</footer>
+</div>
+
+<script>
+(function(){
+'use strict';
+/* ========== 通用工具 ========== */
+function $(id){ return document.getElementById(id); }
+function fmt(x, d){
+  if (d === undefined) d = 2;
+  if (!isFinite(x)) return '—';
+  var a = Math.abs(x);
+  if (a >= 10000 || (a > 0 && a < 0.01)) return x.toExponential(2);
+  return (+x.toFixed(d)).toString();
+}
+function fit(cv){
+  var dpr = window.devicePixelRatio || 1;
+  var w = cv.clientWidth, h = cv.clientHeight;
+  if (w < 10) w = 900;
+  cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+  var ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return ctx;
+}
+function bindRange(id, fn){
+  var el = $(id), v = $(id + 'v');
+  function go(){ if (v) v.textContent = el.value; fn(parseFloat(el.value)); }
+  el.addEventListener('input', go); go();
+  return el;
+}
+function arrow(ctx, x1, y1, x2, y2, color, w){
+  ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = w || 2;
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  var a = Math.atan2(y2 - y1, x2 - x1), s = 7;
+  ctx.beginPath(); ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - s * Math.cos(a - 0.42), y2 - s * Math.sin(a - 0.42));
+  ctx.lineTo(x2 - s * Math.cos(a + 0.42), y2 - s * Math.sin(a + 0.42));
+  ctx.closePath(); ctx.fill();
+}
+function txt(c, s, x, y, col, font, al, bl){
+  c.fillStyle = col || '#334155';
+  c.font = font || '12px "Microsoft YaHei",sans-serif';
+  c.textAlign = al || 'left'; c.textBaseline = bl || 'middle';
+  c.fillText(s, x, y);
+}
+function rr(c, x, y, w, h, r){
+  r = Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2);
+  c.beginPath();
+  c.moveTo(x + r, y);
+  c.arcTo(x + w, y, x + w, y + h, r);
+  c.arcTo(x + w, y + h, x, y + h, r);
+  c.arcTo(x, y + h, x, y, r);
+  c.arcTo(x, y, x + w, y, r);
+  c.closePath();
+}
+var TAU = Math.PI * 2, PURPLE = '#7c3aed', AMBER = '#f59e0b', RED = '#dc2626';
+var SU = {'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
+function sup(n){
+  var s = String(n), o = '';
+  for (var i = 0; i < s.length; i++) o += (SU[s.charAt(i)] || s.charAt(i));
+  return o;
+}
+
+/* ==================================================================
+   模块 1：B = F/(IL)
+   ================================================================== */
+var cv1 = $('cv1'), c1 = null, W1 = 0, H1 = 0;
+var A1 = {I:2, L:0.3, B:0.5, dir:1};
+function prep1(){ c1 = fit(cv1); W1 = cv1.clientWidth; H1 = cv1.clientHeight; }
+function draw1(){
+  prep1();
+  var c = c1;
+  c.clearRect(0, 0, W1, H1); c.fillStyle = '#fbfdff'; c.fillRect(0, 0, W1, H1);
+  var fx = 24, fy = 30, fw = W1 * 0.58 - 30, fh = H1 - 156;
+  /* 匀强磁场区域：⊗ 表示垂直纸面向里 */
+  c.fillStyle = '#faf5ff'; c.strokeStyle = '#ddd6fe'; c.lineWidth = 1;
+  rr(c, fx, fy, fw, fh, 8); c.fill(); c.stroke();
+  var step = 26, i, j;
+  for (j = 0; j * step < fh - 14; j++){
+    for (i = 0; i * step < fw - 14; i++){
+      var x = fx + 14 + i * step, y = fy + 14 + j * step;
+      c.strokeStyle = 'rgba(124,58,237,.75)'; c.lineWidth = 1.6;
+      c.beginPath();
+      c.moveTo(x - 4.5, y - 4.5); c.lineTo(x + 4.5, y + 4.5);
+      c.moveTo(x + 4.5, y - 4.5); c.lineTo(x - 4.5, y + 4.5);
+      c.stroke();
+    }
+  }
+  txt(c, '匀强磁场 B（⊗ 表示垂直纸面向里）', fx + 8, fy + fh - 10, '#6d28d9', '12px "Microsoft YaHei"');
+  /* 通电导线 */
+  var cx = fx + fw / 2, cy = fy + fh * 0.52;
+  var Lpx = Math.min(fw - 70, 60 + A1.L * 420);
+  var x0 = cx - Lpx / 2, x1 = cx + Lpx / 2;
+  c.strokeStyle = '#475569'; c.lineWidth = 6; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(x0, cy); c.lineTo(x1, cy); c.stroke();
+  c.strokeStyle = '#94a3b8'; c.lineWidth = 2;
+  c.beginPath(); c.moveTo(x0, cy); c.lineTo(x1, cy); c.stroke();
+  /* 电流箭头 */
+  var na = 3;
+  for (i = 0; i < na; i++){
+    var xa = x0 + Lpx * (0.2 + 0.6 * i / (na - 1));
+    if (A1.dir > 0) arrow(c, xa - 12, cy, xa + 10, cy, AMBER, 3);
+    else arrow(c, xa + 12, cy, xa - 10, cy, AMBER, 3);
+  }
+  txt(c, 'I = ' + fmt(A1.I, 1) + ' A', cx, cy - 20, '#b45309', 'bold 12.5px "Microsoft YaHei"', 'center');
+  /* 长度标注 */
+  c.strokeStyle = '#64748b'; c.lineWidth = 1;
+  c.beginPath(); c.moveTo(x0, cy + 34); c.lineTo(x1, cy + 34); c.stroke();
+  c.beginPath(); c.moveTo(x0, cy + 29); c.lineTo(x0, cy + 39);
+  c.moveTo(x1, cy + 29); c.lineTo(x1, cy + 39); c.stroke();
+  txt(c, 'L = ' + fmt(A1.L, 2) + ' m', cx, cy + 48, '#475569', '12px "Microsoft YaHei"', 'center');
+  /* 安培力 F = BIL（方向：I 向右、B 向里 → F 向上） */
+  var F = A1.B * A1.I * A1.L;
+  var flen = Math.min(120, 26 + F * 190);
+  var fdir = A1.dir > 0 ? -1 : 1;
+  arrow(c, cx + Lpx / 2 + 22, cy, cx + Lpx / 2 + 22, cy + flen * fdir, RED, 4);
+  txt(c, 'F = ' + fmt(F, 3) + ' N', cx + Lpx / 2 + 30, cy + flen * fdir / 2, '#b91c1c', 'bold 13px "Microsoft YaHei"');
+  /* 右侧读数 + 数据表 */
+  var px = W1 * 0.60, py = 26, pw = W1 * 0.40 - 26;
+  c.fillStyle = 'rgba(255,255,255,.95)'; c.strokeStyle = '#e2e8f0'; c.lineWidth = 1;
+  rr(c, px, py, pw, 112, 8); c.fill(); c.stroke();
+  txt(c, '实时读数', px + 14, py + 18, '#334155', 'bold 13px "Microsoft YaHei"');
+  txt(c, 'F ＝ B·I·L', px + 14, py + 42, '#64748b', '12.5px "Microsoft YaHei"');
+  txt(c, fmt(F, 3) + ' N', px + pw - 14, py + 42, '#b91c1c', 'bold 14px "Microsoft YaHei"', 'right');
+  txt(c, 'F / (I·L)', px + 14, py + 66, '#64748b', '12.5px "Microsoft YaHei"');
+  txt(c, fmt(A1.B, 3) + ' T', px + pw - 14, py + 66, '#6d28d9', 'bold 14px "Microsoft YaHei"', 'right');
+  txt(c, '（＝磁场的 B，与 I、L 无关）', px + 14, py + 90, '#6d28d9', '11.5px "Microsoft YaHei"');
+  /* 表 */
+  var ty = py + 124;
+  c.fillStyle = 'rgba(255,255,255,.95)'; c.strokeStyle = '#e2e8f0';
+  rr(c, px, ty, pw, 130, 8); c.fill(); c.stroke();
+  txt(c, '数据表：换不同的 I 试一试', px + 14, ty + 18, '#334155', 'bold 12.5px "Microsoft YaHei"');
+  var heads = ['I / A', 'F / N', 'F/(IL) / T'], hx = [px + 16, px + 16 + pw * 0.38, px + 16 + pw * 0.68];
+  for (i = 0; i < 3; i++) txt(c, heads[i], hx[i], ty + 40, '#64748b', '11.5px "Microsoft YaHei"');
+  c.strokeStyle = '#e2e8f0';
+  c.beginPath(); c.moveTo(px + 10, ty + 50); c.lineTo(px + pw - 10, ty + 50); c.stroke();
+  var rows = [1, 2, 3, 4];
+  for (i = 0; i < rows.length; i++){
+    var I2 = rows[i], F2 = A1.B * I2 * A1.L, yy = ty + 58 + i * 19;
+    var hot = Math.abs(I2 - A1.I) < 0.26;
+    if (hot){ c.fillStyle = '#f5f3ff'; rr(c, px + 8, yy - 9, pw - 16, 18, 4); c.fill(); }
+    txt(c, fmt(I2, 1), hx[0], yy, hot ? '#6d28d9' : '#334155', (hot ? 'bold ' : '') + '12px "Microsoft YaHei"');
+    txt(c, fmt(F2, 3), hx[1], yy, hot ? '#b91c1c' : '#475569', (hot ? 'bold ' : '') + '12px "Microsoft YaHei"');
+    txt(c, fmt(A1.B, 3), hx[2], yy, hot ? '#6d28d9' : '#475569', (hot ? 'bold ' : '') + '12px "Microsoft YaHei"');
+  }
+  txt(c, '整列 F/(IL) 都相等 → B 由磁场决定', px + 14, ty + 122, '#6d28d9', '11.5px "Microsoft YaHei"');
+  /* 常见磁感应强度（对数刻度） */
+  var sy0 = H1 - 108;
+  c.fillStyle = 'rgba(255,255,255,.95)'; c.strokeStyle = '#e2e8f0'; c.lineWidth = 1;
+  rr(c, 14, sy0, W1 - 28, 92, 8); c.fill(); c.stroke();
+  txt(c, '常见磁场的磁感应强度（对数刻度，单位 T）', 26, sy0 + 16, '#334155', 'bold 12.5px "Microsoft YaHei"');
+  var items = [['地磁场 5×10⁻⁵', 5e-5], ['冰箱贴 5×10⁻³', 5e-3], ['条形磁铁 10⁻²', 1e-2],
+               ['实验室电磁铁 0.5', 5e-1], ['医院 MRI 3', 3]];
+  var lo = -5, hi = 1, ax0 = 40, ax1 = W1 - 46, ay = sy0 + 62;
+  c.strokeStyle = '#cbd5e1'; c.lineWidth = 1;
+  c.beginPath(); c.moveTo(ax0, ay); c.lineTo(ax1, ay); c.stroke();
+  for (i = -5; i <= 1; i++){
+    var tx = ax0 + (ax1 - ax0) * (i - lo) / (hi - lo);
+    c.beginPath(); c.moveTo(tx, ay - 4); c.lineTo(tx, ay + 4); c.stroke();
+    txt(c, '10' + sup(i), tx, ay + 15, '#94a3b8', '10px "Microsoft YaHei"', 'center');
+  }
+  for (i = 0; i < items.length; i++){
+    var vx2 = ax0 + (ax1 - ax0) * (Math.log10(items[i][1]) - lo) / (hi - lo);
+    c.beginPath(); c.arc(vx2, ay, 5, 0, TAU);
+    c.fillStyle = PURPLE; c.fill();
+    txt(c, items[i][0], vx2, ay - 18 - (i % 2) * 15, '#475569', '11px "Microsoft YaHei"', 'center');
+  }
+  var cbx = ax0 + (ax1 - ax0) * (Math.log10(A1.B) - lo) / (hi - lo);
+  c.fillStyle = AMBER;
+  c.beginPath(); c.moveTo(cbx, ay - 8); c.lineTo(cbx - 6, ay - 20); c.lineTo(cbx + 6, ay - 20);
+  c.closePath(); c.fill();
+  txt(c, '当前 B', cbx, ay - 30, '#b45309', 'bold 11px "Microsoft YaHei"', 'center');
+}
+bindRange('r1i', function(v){ A1.I = v; draw1(); });
+bindRange('r1l', function(v){ A1.L = v; draw1(); });
+bindRange('r1b', function(v){ A1.B = v; draw1(); });
+$('b1d').addEventListener('click', function(){
+  A1.dir = -A1.dir;
+  this.textContent = '电流方向：' + (A1.dir > 0 ? '→' : '←');
+  draw1();
+});
+$('b1p').addEventListener('click', function(){
+  A1.I = 4; A1.L = 0.30; $('r1i').value = 4; $('r1iv').textContent = '4';
+  $('r1l').value = 0.30; $('r1lv').textContent = '0.3';
+  draw1();
+});
+
+/* ==================================================================
+   模块 2：匀强磁场 vs 条形磁铁
+   ================================================================== */
+var cv2 = $('cv2'), c2 = null, W2 = 0, H2 = 0;
+var A2 = {B:0.6, u:0.28, v:0.30, tour:false, t:0};
+function prep2(){ c2 = fit(cv2); W2 = cv2.clientWidth; H2 = cv2.clientHeight; }
+function panels(){
+  var gap = 16, w = (W2 - 30 - gap) / 2;
+  return [{x:14, y:24, w:w, h:H2 - 46}, {x:14 + w + gap, y:24, w:w, h:H2 - 46}];
+}
+function barB(x, y, P){
+  var bx = 0, by = 0, d = P.w * 0.30, cx0 = P.x + P.w / 2, cy0 = P.y + P.h / 2;
+  var ps = [[cx0 + d, cy0, 1], [cx0 - d, cy0, -1]];
+  for (var i = 0; i < 2; i++){
+    var dx = x - ps[i][0], dy = y - ps[i][1];
+    var r2 = dx * dx + dy * dy + 120;
+    var f = ps[i][2] / (r2 * Math.sqrt(r2));
+    bx += f * dx * 26000; by += f * dy * 26000;
+  }
+  return [bx, by];
+}
+function drawBarField(c, P){
+  var d = P.w * 0.30, cx0 = P.x + P.w / 2, cy0 = P.y + P.h / 2;
+  var sx = cx0 + d, sy = cy0;
+  for (var k = 0; k < 13; k++){
+    var ang = -Math.PI * 0.42 + Math.PI * 0.84 * k / 12;
+    var x = sx + 13 * Math.cos(ang), y = sy + 13 * Math.sin(ang);
+    var pts = [[x, y]];
+    for (var s = 0; s < 500; s++){
+      var b = barB(x, y, P), m = Math.sqrt(b[0] * b[0] + b[1] * b[1]);
+      if (m < 1e-9) break;
+      x += b[0] / m * 3.4; y += b[1] / m * 3.4;
+      if (x < P.x + 2 || x > P.x + P.w - 2 || y < P.y + 2 || y > P.y + P.h - 2) break;
+      if (Math.sqrt(Math.pow(x - (cx0 - d), 2) + Math.pow(y - cy0, 2)) < 13){ pts.push([x, y]); break; }
+      pts.push([x, y]);
+    }
+    if (pts.length < 5) continue;
+    c.strokeStyle = 'rgba(124,58,237,.55)'; c.lineWidth = 1.2;
+    c.beginPath(); c.moveTo(pts[0][0], pts[0][1]);
+    for (var i = 1; i < pts.length; i++) c.lineTo(pts[i][0], pts[i][1]);
+    c.stroke();
+    for (var a = 22; a < pts.length - 8; a += 70){
+      var dx = pts[a + 6][0] - pts[a][0], dy = pts[a + 6][1] - pts[a][1];
+      var mm = Math.sqrt(dx * dx + dy * dy) || 1;
+      arrow(c, pts[a][0] - dx / mm * 5, pts[a][1] - dy / mm * 5,
+               pts[a][0] + dx / mm * 5, pts[a][1] + dy / mm * 5, 'rgba(109,40,217,.9)', 1.7);
+    }
+  }
+  /* 磁体 */
+  var bw = d * 2, bh = Math.min(34, P.h * 0.16);
+  var g1 = c.createLinearGradient(cx0 - d, 0, cx0, 0);
+  g1.addColorStop(0, '#1e40af'); g1.addColorStop(1, '#3b82f6');
+  c.fillStyle = g1; rr(c, cx0 - d, cy0 - bh / 2, d, bh, 4); c.fill();
+  var g2 = c.createLinearGradient(cx0, 0, cx0 + d, 0);
+  g2.addColorStop(0, '#ef4444'); g2.addColorStop(1, '#b91c1c');
+  c.fillStyle = g2; rr(c, cx0, cy0 - bh / 2, d, bh, 4); c.fill();
+  c.strokeStyle = '#0f172a'; c.lineWidth = 1.3; rr(c, cx0 - d, cy0 - bh / 2, bw, bh, 4); c.stroke();
+  c.font = 'bold 13px sans-serif'; c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillStyle = '#fff';
+  c.fillText('S', cx0 - d / 2, cy0); c.fillText('N', cx0 + d / 2, cy0);
+  return {cx:cx0, cy:cy0, d:d};
+}
+function drawProbe(c, x, y, b){
+  var m = Math.sqrt(b[0] * b[0] + b[1] * b[1]);
+  if (m < 1e-9) return;
+  var ux = b[0] / m, uy = b[1] / m;
+  var len = Math.min(46, 12 + Math.pow(m, 0.42) * 20);
+  arrow(c, x - ux * len, y - uy * len, x + ux * len, y + uy * len, RED, 3);
+  c.beginPath(); c.arc(x, y, 4, 0, TAU); c.fillStyle = '#fff'; c.fill();
+  c.strokeStyle = RED; c.lineWidth = 1.6; c.stroke();
+}
+/* 沿探针所在水平线扫描 |B|，画成小曲线（底部） */
+function scan(c, P, yRow, fn, col, markX){
+  var x0 = P.x + 18, x1 = P.x + P.w - 18;
+  var yb = P.y + P.h - 66, yt = yb - 44;
+  c.fillStyle = 'rgba(255,255,255,.92)'; c.strokeStyle = '#e2e8f0'; c.lineWidth = 1;
+  rr(c, x0 - 6, yt - 8, (x1 - x0) + 12, (yb - yt) + 16, 6); c.fill(); c.stroke();
+  var n = 72, i, vals = [], mx = 1e-9;
+  for (i = 0; i <= n; i++){
+    var v = fn(x0 + (x1 - x0) * i / n, yRow);
+    if (!isFinite(v) || v < 0) v = 0;
+    vals.push(v); if (v > mx) mx = v;
+  }
+  c.strokeStyle = col; c.lineWidth = 2;
+  c.beginPath();
+  for (i = 0; i <= n; i++){
+    var xx = x0 + (x1 - x0) * i / n;
+    var yy = yb - (yb - yt) * (vals[i] / mx);
+    if (i === 0) c.moveTo(xx, yy); else c.lineTo(xx, yy);
+  }
+  c.stroke();
+  if (markX >= x0 && markX <= x1){
+    c.strokeStyle = 'rgba(100,116,139,.8)'; c.lineWidth = 1; c.setLineDash([3, 3]);
+    c.beginPath(); c.moveTo(markX, yt - 6); c.lineTo(markX, yb + 6); c.stroke(); c.setLineDash([]);
+  }
+  txt(c, '|B| 沿这条水平线的分布', x0, yt - 14, '#64748b', '11px "Microsoft YaHei"');
+}
+function draw2(){
+  prep2();
+  var c = c2, P = panels(), i;
+  c.clearRect(0, 0, W2, H2); c.fillStyle = '#fbfdff'; c.fillRect(0, 0, W2, H2);
+  for (i = 0; i < 2; i++){
+    c.fillStyle = '#faf5ff'; c.strokeStyle = '#e2e8f0'; c.lineWidth = 1;
+    rr(c, P[i].x, P[i].y, P[i].w, P[i].h, 8); c.fill(); c.stroke();
+  }
+  /* 左：匀强磁场（水平向右的平行等距直线，疏密表示强弱） */
+  var n = Math.round(4 + A2.B * 6), L = P[0];
+  for (i = 0; i < n; i++){
+    var y = L.y + L.h * (0.08 + 0.84 * i / Math.max(1, n - 1));
+    c.strokeStyle = 'rgba(124,58,237,.6)'; c.lineWidth = 1.4;
+    c.beginPath(); c.moveTo(L.x + 14, y); c.lineTo(L.x + L.w - 14, y); c.stroke();
+    arrow(c, L.x + L.w * 0.62, y, L.x + L.w * 0.62 + 14, y, PURPLE, 1.8);
+  }
+  /* 右：条形磁铁 */
+  var R = P[1];
+  var g = drawBarField(c, R);
+  /* 探针（两个面板同一相对位置） */
+  var ux = A2.u, uy = A2.v;
+  var p0 = {x:L.x + 12 + (L.w - 24) * ux, y:L.y + 12 + (L.h - 24) * uy};
+  var p1 = {x:R.x + 12 + (R.w - 24) * ux, y:R.y + 12 + (R.h - 24) * uy};
+  var b0 = [A2.B, 0];
+  var b1 = barB(p1.x, p1.y, R);
+  /* 条形磁铁场归一化：极面附近记为 ≈ 1.0 T（示意值） */
+  var ref = barB(g.cx + g.d + 6, g.cy, R);
+  var rm = Math.sqrt(ref[0] * ref[0] + ref[1] * ref[1]) || 1;
+  var mag1 = Math.sqrt(b1[0] * b1[0] + b1[1] * b1[1]) / rm;
+  /* |B| 沿探针所在水平线的扫描曲线：匀强 → 一条平线；条形磁铁 → 起伏 */
+  scan(c, L, p0.y, function(){ return A2.B; }, PURPLE, p0.x);
+  scan(c, R, p1.y, function(x){ var b = barB(x, p1.y, R); return Math.sqrt(b[0] * b[0] + b[1] * b[1]) / rm; }, RED, p1.x);
+  drawProbe(c, p0.x, p0.y, b0);
+  drawProbe(c, p1.x, p1.y, [b1[0] / rm, b1[1] / rm]);
+  /* 读数 */
+  var iw = 150;
+  c.fillStyle = 'rgba(255,255,255,.94)'; c.strokeStyle = '#e2e8f0'; c.lineWidth = 1;
+  rr(c, L.x + 10, L.y + L.h - 46, iw, 34, 6); c.fill(); c.stroke();
+  txt(c, 'B ＝ ' + fmt(A2.B, 2) + ' T（处处相同）', L.x + 20, L.y + L.h - 29, '#6d28d9', 'bold 12px "Microsoft YaHei"');
+  rr(c, R.x + 10, R.y + R.h - 46, iw + 26, 34, 6); c.fill(); c.stroke();
+  txt(c, 'B ≈ ' + fmt(mag1, 2) + ' T（随位置变化）', R.x + 20, R.y + R.h - 29, '#b91c1c', 'bold 12px "Microsoft YaHei"');
+  txt(c, '匀强磁场：平行 · 等距 · 同向', L.x + P[0].w / 2, L.y + 12, '#6d28d9', '12.5px "Microsoft YaHei"', 'center');
+  txt(c, '条形磁铁：两极最密，远处最疏', R.x + P[1].w / 2, R.y + 12, '#6d28d9', '12.5px "Microsoft YaHei"', 'center');
+}
+bindRange('r2b', function(v){ A2.B = v; draw2(); });
+$('b2t').addEventListener('click', function(){
+  A2.tour = !A2.tour;
+  this.className = A2.tour ? 'btn on' : 'btn';
+  if (A2.tour && !A2.raf){ A2.last = 0; A2.raf = requestAnimationFrame(tourFrame); }
+});
+$('b2r').addEventListener('click', function(){ A2.u = 0.28; A2.v = 0.30; A2.tour = false; $('b2t').className = 'btn'; draw2(); });
+function tourFrame(ts){
+  if (!A2.last) A2.last = ts;
+  var dt = Math.min(0.05, (ts - A2.last) / 1000); A2.last = ts;
+  if (A2.tour){
+    A2.t += dt;
+    A2.u = 0.5 + 0.42 * Math.cos(A2.t * 0.9);
+    A2.v = 0.5 + 0.38 * Math.sin(A2.t * 1.3);
+    draw2();
+  }
+  A2.raf = requestAnimationFrame(tourFrame);
+}
+function pt2(ev){
+  var r = cv2.getBoundingClientRect();
+  return {x:(ev.clientX - r.left) * W2 / r.width, y:(ev.clientY - r.top) * H2 / r.height};
+}
+function setProbe(p){
+  var P = panels();
+  for (var i = 0; i < 2; i++){
+    if (p.x > P[i].x && p.x < P[i].x + P[i].w && p.y > P[i].y && p.y < P[i].y + P[i].h){
+      A2.u = Math.max(0, Math.min(1, (p.x - P[i].x - 12) / (P[i].w - 24)));
+      A2.v = Math.max(0, Math.min(1, (p.y - P[i].y - 12) / (P[i].h - 24)));
+      A2.tour = false; $('b2t').className = 'btn';
+      draw2(); return true;
+    }
+  }
+  return false;
+}
+cv2.addEventListener('mousedown', function(ev){ if (setProbe(pt2(ev))) A2.drag = true; });
+cv2.addEventListener('mousemove', function(ev){ if (A2.drag) setProbe(pt2(ev)); });
+window.addEventListener('mouseup', function(){ A2.drag = false; });
+cv2.style.cursor = 'crosshair';
+
+/* ==================================================================
+   模块 3：Φ = B·S·cosθ
+   ================================================================== */
+var cv3 = $('cv3'), c3 = null, W3 = 0, H3 = 0;
+var A3 = {th:30, B:0.5, S:0.03, play:false, t:0};
+var BREF = 0.5, SREF = 0.03, NREF = 18;
+function prep3(){ c3 = fit(cv3); W3 = cv3.clientWidth; H3 = cv3.clientHeight; }
+function p3f(X, Y, Z, ox, oy, s){ return [ox + (X + 0.34 * Z) * s, oy - (Y - 0.26 * Z) * s]; }
+function draw3(){
+  prep3();
+  var c = c3;
+  c.clearRect(0, 0, W3, H3); c.fillStyle = '#fbfdff'; c.fillRect(0, 0, W3, H3);
+  var sc = Math.min(W3 * 0.58 / 26, H3 / 20);
+  var ox = W3 * 0.30, oy = H3 * 0.52;
+  var th = A3.th * Math.PI / 180;
+  var cs = Math.cos(th), sn = Math.sin(th);
+  /* 线圈半宽 a、半深 b（世界单位），面积 = 4ab ∝ S */
+  var a = 4.2, b = 3.0;
+  var kS = Math.sqrt(A3.S / SREF);
+  var aw = a * kS, bw = b * kS;
+  /* 法线与线圈平面内的方向 */
+  var nxv = sn, nyv = cs;         /* n：与 B（竖直向上）夹角 θ */
+  var vx = cs, vy = -sn;          /* v：线圈平面内、纸面内的方向 */
+  /* ---- 磁感线（竖直向上）---- */
+  var nFull = NREF * (A3.B / BREF) * (A3.S / SREF);
+  var aPx = aw * sc;
+  var sp = Math.max(9, (2 * aPx) / Math.max(0.5, nFull));   /* 间距下限，保证画得清楚 */
+  var topY = oy - 8.2 * sc, botY = oy + 8.2 * sc;
+  var halfCross = Math.abs(aPx * cs);
+  var cnt = 0, x, i;
+  for (i = -60; i <= 60; i++){
+    x = ox + i * sp;
+    if (x < 14 || x > W3 * 0.60) continue;
+    var inside = Math.abs(x - ox) < halfCross;   /* θ=90° 时 halfCross=0 → 一条也不穿过 */
+    if (inside) cnt++;
+    c.strokeStyle = inside ? 'rgba(124,58,237,.95)' : 'rgba(124,58,237,.32)';
+    c.lineWidth = inside ? 2.4 : 1.3;
+    c.beginPath(); c.moveTo(x, topY); c.lineTo(x, botY); c.stroke();
+    var ay0 = oy - 8.2 * sc * 0.42 + (i % 2) * 8;
+    arrow(c, x, ay0 + 12, x, ay0 - 8, inside ? PURPLE : 'rgba(124,58,237,.45)', inside ? 2.2 : 1.6);
+  }
+  txt(c, 'B（匀强，向上）', 18, topY - 12, '#6d28d9', '12px "Microsoft YaHei"');
+  /* ---- 线圈（平行四边形：v 与 ẑ 张成）---- */
+  var corners = [];
+  var sg = [[-1, -1], [1, -1], [1, 1], [-1, 1]];
+  for (i = 0; i < 4; i++){
+    var X = sg[i][0] * aw * vx, Y = sg[i][0] * aw * vy, Z = sg[i][1] * bw;
+    corners.push(p3f(X, Y, Z, ox, oy, sc));
+  }
+  c.fillStyle = 'rgba(245,158,11,.10)';
+  c.beginPath(); c.moveTo(corners[0][0], corners[0][1]);
+  for (i = 1; i < 4; i++) c.lineTo(corners[i][0], corners[i][1]);
+  c.closePath(); c.fill();
+  c.strokeStyle = '#334155'; c.lineWidth = 3; c.lineJoin = 'round';
+  c.beginPath(); c.moveTo(corners[0][0], corners[0][1]);
+  for (i = 1; i < 4; i++) c.lineTo(corners[i][0], corners[i][1]);
+  c.closePath(); c.stroke();
+  /* 转轴（沿 z 方向的一条边中点连线，示意） */
+  c.setLineDash([5, 4]); c.strokeStyle = 'rgba(100,116,139,.8)'; c.lineWidth = 1.2;
+  var m1 = p3f(0, 0, -bw, ox, oy, sc), m2 = p3f(0, 0, bw, ox, oy, sc);
+  c.beginPath(); c.moveTo(m1[0], m1[1]); c.lineTo(m2[0], m2[1]); c.stroke(); c.setLineDash([]);
+  txt(c, '转轴', m2[0] + 8, m2[1] - 10, '#64748b', '11px "Microsoft YaHei"');
+  /* 法线 n */
+  var nl = 5.4 * sc;
+  var nEnd = [ox + nxv * nl, oy - nyv * nl];
+  c.setLineDash([6, 4]);
+  arrow(c, ox, oy, nEnd[0], nEnd[1], '#059669', 2.4);
+  c.setLineDash([]);
+  txt(c, 'n', nEnd[0] + 8, nEnd[1] - 6, '#059669', 'bold 13px "Microsoft YaHei"');
+  /* θ 角弧（n 与竖直向上） */
+  var a0 = -Math.PI / 2, a1 = -Math.PI / 2 + th * (sn >= 0 ? 1 : -1);
+  if (Math.abs(sn) > 0.004){
+    c.strokeStyle = '#dc2626'; c.lineWidth = 1.8;
+    c.beginPath(); c.arc(ox, oy, 30, Math.min(a0, a1), Math.max(a0, a1)); c.stroke();
+  }
+  txt(c, 'θ=' + A3.th.toFixed(0) + '°', ox + 34, oy - 26, '#b91c1c', 'bold 12px "Microsoft YaHei"');
+  /* 线圈平面方向 v（α = 90° − θ，学生最容易搞混的那个角） */
+  var vl = 4.4 * sc;
+  var vs = [vx, -vy];                      /* v 在屏幕上的方向 */
+  c.setLineDash([7, 5]); c.strokeStyle = 'rgba(15,23,42,.45)'; c.lineWidth = 1.4;
+  c.beginPath();
+  c.moveTo(ox - vs[0] * vl, oy - vs[1] * vl);
+  c.lineTo(ox + vs[0] * vl, oy + vs[1] * vl);
+  c.stroke(); c.setLineDash([]);
+  txt(c, '线圈平面', ox + vs[0] * vl + 6, oy + vs[1] * vl + 12, '#334155', '11px "Microsoft YaHei"');
+  if (Math.abs(cs) > 0.02){
+    var av = Math.atan2(vs[1], vs[0]);      /* v 的屏幕角 */
+    var ad = Math.PI / 2;                   /* 竖直向下 */
+    c.strokeStyle = 'rgba(5,150,105,.9)'; c.lineWidth = 1.6;
+    c.beginPath(); c.arc(ox, oy, 46, Math.min(av, ad), Math.max(av, ad)); c.stroke();
+    txt(c, 'α=' + (90 - A3.th).toFixed(0) + '°', ox + 50, oy + 34, '#059669', 'bold 11.5px "Microsoft YaHei"');
+  }
+  txt(c, '（θ 是法线与 B 的夹角，α 是线圈平面与 B 的夹角，θ+α＝90°）', 16, H3 - 58, '#64748b', '11.5px "Microsoft YaHei"');
+  /* ---- 右侧：Φ–θ 曲线 ---- */
+  var gx = W3 * 0.62, gy = 30, gw = W3 * 0.38 - 26, gh = H3 - 110;
+  c.fillStyle = '#faf5ff'; c.strokeStyle = '#e2e8f0'; c.lineWidth = 1;
+  rr(c, gx, gy, gw, gh, 8); c.fill(); c.stroke();
+  var x0 = gx + 42, x1 = gx + gw - 14, y0 = gy + gh - 34, y1 = gy + 22;
+  var phiMax = A3.B * A3.S;
+  c.strokeStyle = '#334155'; c.lineWidth = 1.4;
+  c.beginPath(); c.moveTo(x0, y1); c.lineTo(x0, y0); c.lineTo(x1, y0); c.stroke();
+  c.strokeStyle = '#e2e8f0'; c.lineWidth = 1;
+  for (i = 1; i <= 4; i++){
+    var yy = y0 - (y0 - y1) * i / 4;
+    c.beginPath(); c.moveTo(x0, yy); c.lineTo(x1, yy); c.stroke();
+    txt(c, fmt(phiMax * i / 4, 3), x0 - 6, yy, '#94a3b8', '10px "Microsoft YaHei"', 'right');
+  }
+  c.strokeStyle = PURPLE; c.lineWidth = 2.4;
+  c.beginPath();
+  for (i = 0; i <= 90; i++){
+    var t2 = i * Math.PI / 180;
+    var xx = x0 + (x1 - x0) * i / 90;
+    var yy2 = y0 - (y0 - y1) * (Math.cos(t2));
+    if (i === 0) c.moveTo(xx, yy2); else c.lineTo(xx, yy2);
+  }
+  c.stroke();
+  var cx3 = x0 + (x1 - x0) * A3.th / 90;
+  var cy3 = y0 - (y0 - y1) * cs;
+  c.strokeStyle = 'rgba(220,38,38,.55)'; c.lineWidth = 1.2; c.setLineDash([4, 3]);
+  c.beginPath(); c.moveTo(cx3, y0); c.lineTo(cx3, cy3); c.lineTo(x0, cy3); c.stroke(); c.setLineDash([]);
+  c.beginPath(); c.arc(cx3, cy3, 5.5, 0, TAU); c.fillStyle = RED; c.fill();
+  txt(c, 'Φ / Wb', x0 - 6, y1 - 10, '#6d28d9', '11.5px "Microsoft YaHei"', 'right');
+  txt(c, 'θ / °', x1, y0 + 16, '#64748b', '11.5px "Microsoft YaHei"', 'right');
+  for (i = 0; i <= 3; i++) txt(c, (i * 30) + '', x0 + (x1 - x0) * i / 3, y0 + 16, '#94a3b8', '10.5px "Microsoft YaHei"', 'center');
+  txt(c, 'Φ ＝ BS·cosθ 的图象', gx + 14, gy + 14, '#334155', 'bold 12.5px "Microsoft YaHei"');
+  /* ---- 底部读数 ---- */
+  var phi = A3.B * A3.S * cs;
+  var by0 = H3 - 40;
+  c.fillStyle = 'rgba(255,255,255,.95)'; c.strokeStyle = '#e2e8f0'; c.lineWidth = 1;
+  rr(c, 14, by0, W3 * 0.60 - 20, 34, 7); c.fill(); c.stroke();
+  txt(c, 'Φ ＝ ' + fmt(phi, 4) + ' Wb', 26, by0 + 17, '#6d28d9', 'bold 13.5px "Microsoft YaHei"');
+  txt(c, '穿过线圈的磁感线：' + cnt + ' 条', W3 * 0.30, by0 + 17, '#b91c1c', 'bold 13px "Microsoft YaHei"', 'center');
+  txt(c, thetaLabel(), W3 * 0.60 - 26, by0 + 17, '#64748b', '12px "Microsoft YaHei"', 'right');
+}
+function thetaLabel(){
+  if (A3.th <= 1) return '线圈平面 ⊥ 磁感线 → 最多';
+  if (A3.th >= 89) return '线圈平面 ∥ 磁感线 → 擦边而过';
+  return '条数 ∝ cosθ';
+}
+bindRange('r3t', function(v){ A3.th = v; draw3(); });
+bindRange('r3b', function(v){ A3.B = v; draw3(); });
+bindRange('r3s', function(v){ A3.S = v; draw3(); });
+$('b3p').addEventListener('click', function(){
+  A3.play = !A3.play;
+  this.className = A3.play ? 'btn on' : 'btn';
+  if (A3.play && !A3.raf){ A3.last = 0; A3.raf = requestAnimationFrame(frm3); }
+});
+$('b3a').addEventListener('click', function(){ setTh(0); });
+$('b3b').addEventListener('click', function(){ setTh(90); });
+function setTh(v){
+  A3.th = v; $('r3t').value = v; $('r3tv').textContent = v;
+  A3.play = false; $('b3p').className = 'btn';
+  draw3();
+}
+function frm3(ts){
+  if (!A3.last) A3.last = ts;
+  var dt = Math.min(0.05, (ts - A3.last) / 1000); A3.last = ts;
+  if (A3.play){
+    A3.t += dt;
+    var v = 45 + 45 * Math.sin(A3.t * 0.7);
+    A3.th = v; $('r3t').value = Math.round(v); $('r3tv').textContent = Math.round(v);
+    draw3();
+  }
+  A3.raf = requestAnimationFrame(frm3);
+}
+
+/* ========== 启动 & 自适应 ========== */
+draw1(); draw2(); draw3();
+var rt = 0;
+window.addEventListener('resize', function(){
+  clearTimeout(rt);
+  rt = setTimeout(function(){ draw1(); draw2(); draw3(); }, 120);
+});
+})();
+</script>
+</body>
+</html>

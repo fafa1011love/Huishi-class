@@ -1,0 +1,1581 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>模型37 · 行星的运动（开普勒三定律）仿真沙盘</title>
+<style>
+:root{
+  --bg:#f4f6fa; --panel:#ffffff; --ink:#1f2937; --muted:#6b7280; --line:#e5e7eb;
+  --accent:#2563eb; --accent2:#7c3aed; --chip:#eef2ff; --space:#0d1421; --ok:#16a34a; --bad:#dc2626;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;background:var(--bg);color:var(--ink);font-size:14px;line-height:1.55}
+header{padding:10px 16px;background:var(--panel);border-bottom:1px solid var(--line);display:flex;flex-wrap:wrap;gap:10px;align-items:center}
+header h1{font-size:17px;margin:0;color:var(--accent)}
+header .sub{color:var(--muted);font-size:12px}
+header .spacer{flex:1}
+.tabbar{display:flex;flex-wrap:wrap;gap:6px;padding:8px 16px;background:var(--panel);border-bottom:1px solid var(--line);position:sticky;top:0;z-index:40}
+.tabbar button{border:1px solid var(--line);background:#fff;color:var(--ink);padding:7px 14px;border-radius:18px;cursor:pointer;font-size:13px}
+.tabbar button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+main{padding:12px 16px 90px;max-width:1400px;margin:0 auto}
+.page{display:none}
+.page.on{display:block}
+.row{display:flex;gap:12px;align-items:flex-start}
+.col-main{flex:1;min-width:0}
+.col-side{width:340px;flex-shrink:0}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:12px}
+.panel h3{margin:0 0 8px;font-size:14px;color:var(--accent)}
+canvas.cv{width:100%;display:block;background:var(--space);border-radius:8px}
+#cvHist{height:400px}#cvEll{height:440px}#cvSim{height:520px}
+#cvLaw1,#cvLaw2{height:230px}#cvLaw3{height:280px}
+canvas.ch{width:100%;height:215px;display:block;background:#fff;border:1px solid var(--line);border-radius:6px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden}
+.seg button{border:0;background:#fff;padding:6px 12px;cursor:pointer;font-size:13px}
+.seg button.on{background:var(--accent);color:#fff}
+.btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 12px;cursor:pointer;font-size:13px;margin:2px 2px}
+.btn.primary{background:var(--accent);color:#fff;border-color:var(--accent)}
+.btn.warnb{background:#fff0f0;border-color:#f3c1c1;color:var(--bad)}
+.btn:disabled{opacity:.5;cursor:default}
+.ctl{margin:7px 0}
+.ctl label{display:flex;justify-content:space-between;font-size:12.5px;color:var(--muted);margin-bottom:2px}
+.ctl input[type=range]{width:100%}
+.ctlrow{display:flex;flex-wrap:wrap;gap:4px;align-items:center}
+.kv{display:grid;grid-template-columns:repeat(auto-fill,minmax(150px,1fr));gap:5px;font-size:12.5px}
+.kv div{background:#f8fafc;border:1px solid var(--line);border-radius:6px;padding:4px 8px;display:flex;justify-content:space-between;gap:6px}
+.kv b{color:var(--accent);font-weight:600;white-space:nowrap}
+.qbtn{border:1px solid var(--line);background:var(--chip);color:var(--accent);border-radius:50%;width:18px;height:18px;line-height:16px;font-size:11px;cursor:pointer;padding:0;vertical-align:middle}
+.warn{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:8px;padding:8px 10px;font-size:12.5px;margin:8px 0;display:none}
+.warn.show{display:block}
+.hint{font-size:12px;color:var(--muted);margin-top:6px}
+table{border-collapse:collapse;width:100%;font-size:12.5px;margin:6px 0}
+th,td{border:1px solid var(--line);padding:4px 6px;text-align:center}
+th{background:#f1f5f9}
+tr.hl td{background:#fefce8}
+.g0{background:#eff6ff}tr.g0 td{background:#eff6ff}
+tr.g1 td{background:#f0fdf4}tr.g2 td{background:#fdf4ff}tr.g3 td{background:#fff7ed}
+#tl{display:flex;flex-direction:column;gap:0;margin:4px 0}
+.tlnode{display:flex;gap:8px;cursor:pointer;padding:5px 6px;border-radius:8px}
+.tlnode:hover{background:var(--chip)}
+.tlnode.on{background:var(--chip);outline:1px solid var(--accent)}
+.tlnode .yr{font-size:11px;color:var(--muted);width:86px;flex-shrink:0}
+.tlnode .who{font-weight:600}
+.tlnode .tag{font-size:11px;color:var(--accent)}
+#tlInfo{border-top:1px dashed var(--line);margin-top:6px;padding-top:6px;font-size:12.5px}
+#tlInfo b{color:var(--accent)}
+#tlInfo .lim{color:#9a3412;margin-top:4px}
+.checks{display:grid;grid-template-columns:1fr 1fr;gap:2px 8px;font-size:12.5px}
+.checks label{display:flex;gap:5px;align-items:center;cursor:pointer}
+.drawer{position:fixed;top:0;right:-360px;width:350px;height:100vh;background:#fff;border-left:1px solid var(--line);z-index:80;transition:right .25s;display:flex;flex-direction:column;box-shadow:-4px 0 16px rgba(0,0,0,.08)}
+.drawer.open{right:0}
+.drawer .dhead{padding:10px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+.drawer .dhead b{flex:1}
+#cardSearch{width:100%;padding:6px 8px;border:1px solid var(--line);border-radius:8px;margin:8px 0 4px;font-size:13px}
+#cardCats{display:flex;flex-wrap:wrap;gap:4px;padding:0 10px}
+#cardCats button{border:1px solid var(--line);background:#fff;border-radius:12px;padding:3px 9px;font-size:11.5px;cursor:pointer}
+#cardCats button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+#cardList{flex:1;overflow-y:auto;padding:8px 10px}
+#cardList .cl{display:block;width:100%;text-align:left;border:0;background:none;padding:6px 8px;border-radius:6px;cursor:pointer;font-size:13px}
+#cardList .cl:hover{background:var(--chip)}
+#cardList .cl .cc{font-size:11px;color:var(--muted)}
+.modalbg{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:90;display:none;align-items:center;justify-content:center;padding:16px}
+.modalbg.open{display:flex}
+.modal{background:#fff;border-radius:12px;max-width:620px;width:100%;max-height:88vh;overflow-y:auto;padding:16px;position:relative}
+.modal h4{margin:0 0 6px;color:var(--accent);font-size:16px}
+.modal .cat{font-size:11px;color:#fff;background:var(--accent);border-radius:10px;padding:2px 10px;display:inline-block;margin-bottom:8px}
+.modal .formula{background:#f8fafc;border:1px dashed var(--line);border-radius:8px;padding:8px 10px;font-family:"Cambria Math",Georgia,serif;font-size:15px;margin:8px 0}
+.modal .svgbox{margin:8px 0;background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px;text-align:center}
+.modal .howto{background:var(--chip);border-radius:8px;padding:8px 10px;font-size:12.5px;margin:8px 0}
+.modal .pit{background:#fef2f2;border:1px solid #fecaca;border-radius:8px;padding:8px 10px;font-size:12.5px;margin:8px 0;color:#991b1b}
+.cardback{display:none}
+.modal.flipped .cardfront{display:none}
+.modal.flipped .cardback{display:block}
+.mfoot{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+#pinBox{position:fixed;right:14px;bottom:70px;max-width:280px;background:#fff;border:1px solid var(--accent);border-radius:10px;padding:10px;z-index:70;box-shadow:0 4px 14px rgba(0,0,0,.12);display:none;font-size:12.5px}
+#flowBar{position:fixed;left:0;right:0;bottom:0;background:#0f2547;color:#e0e9ff;padding:8px 16px;z-index:60;display:flex;gap:10px;align-items:center;flex-wrap:wrap;font-size:13px}
+#flowBar .fb{flex:1;min-width:260px}
+#flowBar .fq{color:#ffd166}
+#quizBox{max-width:680px}
+.qopt{display:block;width:100%;text-align:left;margin:5px 0;padding:8px 12px;border:1px solid var(--line);border-radius:8px;background:#fff;cursor:pointer;font-size:13.5px}
+.qopt.right{background:#f0fdf4;border-color:var(--ok)}
+.qopt.wrong{background:#fef2f2;border-color:var(--bad)}
+.qexp{border-left:3px solid var(--accent);padding:6px 10px;background:var(--chip);border-radius:0 8px 8px 0;margin:8px 0;font-size:13px}
+.chgrid{display:grid;grid-template-columns:repeat(auto-fill,minmax(300px,1fr));gap:10px}
+.legend{font-size:11.5px;color:var(--muted)}
+details.design{margin:0 0 12px}
+details.design summary{cursor:pointer;color:var(--accent);font-weight:600}
+details.design .dbody{background:#fff;border:1px solid var(--line);border-radius:10px;padding:12px;margin-top:8px;font-size:13px}
+@media (max-width:960px){
+  .row{flex-direction:column}
+  .col-side{width:100%}
+  main{padding-bottom:140px}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>模型37 · 行星的运动（开普勒三定律）</h1>
+  <span class="sub">开普勒行星运动模拟沙盘 · 理想二体仿真</span>
+  <span class="spacer"></span>
+  <label class="sub">单位制
+    <select id="unitSel"><option value="AU">天文单位制（AU、yr）</option><option value="SI">SI 制（m、s）</option></select>
+  </label>
+  <button class="btn" id="btnCards" aria-label="打开知识卡片库">📚 知识卡片库</button>
+</header>
+<nav class="tabbar" role="tablist">
+  <button data-tab="history" class="on">① 历史演变</button>
+  <button data-tab="ellipse">② 画椭圆（图钉+细绳）</button>
+  <button data-tab="orbit">③ 轨道沙盘</button>
+  <button data-tab="laws">④ 三定律验证</button>
+  <button data-tab="quiz">⑤ 练习考核</button>
+</nav>
+<main>
+<details class="design">
+  <summary>设计说明（知识点覆盖 / 结构 / 物理方案）</summary>
+  <div class="dbody">
+    <b>知识点覆盖</b>：历史演变（时间轴+日心/地心对照）、椭圆几何定义与参数、开普勒三定律、动力学衔接（活力公式、逃逸速度、轨道类型）、9 条典型误解、应用实例、模型局限。<br>
+    <b>结构</b>：五个标签页 = 历史演变（时间轴+视角切换）→ 画椭圆（路径A：两图钉+细绳）→ 轨道沙盘（路径B：中心天体+初速度释放）→ 三定律验证（控制变量+6张图像）→ 练习考核（6题+教师模式）。<br>
+    <b>双模式一致性</b>：轨道参数模式由 a、e、M 半解析推进；初速度模式由 E、L 反解 a=−GM/(2E)、e（偏心率矢量），两模式互相换算同步，e≥1 时提示逃逸。<br>
+    <b>求解与守恒</b>：开普勒方程 M=E−e·sinE 用牛顿迭代（精度 1e-13）；初速度模式 RK4 积分子步细分，实时显示 E、L 守恒误差。<br>
+    <b>坐标</b>：世界坐标（AU，太阳/焦点为原点），画布支持滚轮缩放与拖拽平移，按 r_max 自适应，含比例尺与等时间标尺。
+  </div>
+</details>
+
+<!-- ============ ① 历史演变 ============ -->
+<section class="page on" id="page-history">
+  <div class="row">
+    <div class="col-main">
+      <div class="panel">
+        <div style="display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-bottom:8px">
+          <div class="seg" role="group" aria-label="参考系切换">
+            <button data-hview="helio" class="on">日心参考系</button>
+            <button data-hview="geo">地心参考系</button>
+          </div>
+          <button class="btn" id="histPlay">暂停</button>
+          <span class="legend">地球 T=1.0，火星 T=1.881（速率按真实周期比，轨道半径示意）</span>
+        </div>
+        <canvas id="cvHist" class="cv" aria-label="日心与地心参考系对照动画"></canvas>
+        <div class="hint" id="histHint">日心视角：地球（蓝）与火星（红）绕太阳做匀速圆周运动，简洁有序。切换到地心视角观察火星的"逆行"轨迹——这正是地心说需要本轮—均轮的原因。</div>
+      </div>
+      <div class="panel">
+        <h3>科学方法主线（本 Demo 的编排逻辑）</h3>
+        <div style="font-size:13px">观测事实（第谷）→ 模型假设（圆轨道）→ 拟合修正（圆 → 椭圆）→ 定律（开普勒三定律）→ 理论解释（牛顿万有引力）</div>
+      </div>
+    </div>
+    <div class="col-side">
+      <div class="panel">
+        <h3>科学史时间轴（点击节点）</h3>
+        <div id="tl"></div>
+        <div id="tlInfo"></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ② 画椭圆 ============ -->
+<section class="page" id="page-ellipse">
+  <div class="row">
+    <div class="col-main">
+      <div class="panel">
+        <canvas id="cvEll" class="cv" aria-label="两图钉加细绳画椭圆演示"></canvas>
+        <div class="hint" id="ellHint">路径 A：两枚图钉（焦点 F₁、F₂）+ 绷紧细绳（长度 = 2a）+ 铅笔描点。铅笔任意位置都有 PF₁ + PF₂ = 绳长 = 2a。</div>
+      </div>
+    </div>
+    <div class="col-side">
+      <div class="panel">
+        <h3>几何参数</h3>
+        <div class="ctl"><label>绳长 2a（= 细绳拉直长度）<span id="ell2aV">2.00 AU</span></label><input type="range" id="ell2a" min="0.6" max="4" step="0.01" value="2"></div>
+        <div class="ctl"><label>离心率 e = c/a <span id="ellEV">0.50</span></label><input type="range" id="ellE" min="0" max="0.95" step="0.005" value="0.5"></div>
+        <div class="ctlrow">
+          <div class="seg" id="ellSunPos" role="group" aria-label="太阳位置对照">
+            <button data-sunpos="focus" class="on">太阳在焦点 F₁（正确）</button>
+            <button data-sunpos="center">太阳在中心（错误对照）</button>
+          </div>
+        </div>
+        <div class="ctlrow">
+          <button class="btn primary" id="btnEllTrace">✏️ 铅笔描椭圆</button>
+          <button class="btn" id="btnEllRun">🪐 行星沿轨运行 + 等时扇形</button>
+          <button class="btn" id="btnEllClear">清除</button>
+        </div>
+        <div class="warn" id="ellWarn"></div>
+        <div class="kv" id="ellKV">
+          <div>半长轴 a<b id="ell_a"></b></div><div>半短轴 b<b id="ell_b"></b></div>
+          <div>焦距 c<b id="ell_c"></b></div><div>离心率 e<b id="ell_e"></b></div>
+          <div>近日点 r<sub>min</sub><b id="ell_rmin"></b></div><div>远日点 r<sub>max</sub><b id="ell_rmax"></b></div>
+          <div>PF₁+PF₂ 实测<b id="ell_sum"></b></div><div>2a（理论）<b id="ell_2a"></b></div>
+        </div>
+        <div class="hint">PF₁+PF₂ 实测值与 2a 相对误差 &lt; 1%，验证椭圆定义。</div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ③ 轨道沙盘 ============ -->
+<section class="page" id="page-orbit">
+  <div class="row">
+    <div class="col-side" style="width:330px">
+      <div class="panel">
+        <h3>控制面板</h3>
+        <div class="ctlrow" style="margin-bottom:6px">
+          <div class="seg" id="simMode" role="group" aria-label="参数模式">
+            <button data-mode="orbit" class="on">轨道参数模式（a、e）</button>
+            <button data-mode="v0">初速度模式（v₀）</button>
+          </div>
+        </div>
+        <div class="ctl"><label>中心天体质量 M（太阳质量）<span id="simMv">1.0</span></label><input type="range" id="simM" min="0.1" max="5" step="0.1" value="1"></div>
+        <div class="ctl"><label>行星质量 m（不影响轨道）<span id="sim_mv">1.0</span></label><input type="range" id="sim_m" min="0.1" max="10" step="0.1" value="1"></div>
+        <div class="ctl" id="grpOrbit"><label>半长轴 a<span id="sim_av">1.00 AU</span></label><input type="range" id="sim_a" min="0.2" max="30" step="0.01" value="1"></div>
+        <div class="ctl" id="grpOrbit2"><label>离心率 e（0–0.95）<span id="sim_ev">0.50</span></label><input type="range" id="sim_e" min="0" max="0.95" step="0.005" value="0.5"></div>
+        <div class="ctl" id="grpOrbit3"><label>释放位置（真近点角）<span id="simRelv">近日点</span></label>
+          <select id="simRel" style="width:100%"><option value="0">近日点（M₀=0）</option><option value="180">远日点（M₀=π）</option></select>
+        </div>
+        <div class="ctl" id="grpV0"><label>释放点距离 r₀<span id="sim_r0v">1.00 AU</span></label><input type="range" id="sim_r0" min="0.2" max="5" step="0.01" value="1"></div>
+        <div class="ctl" id="grpV0b"><label>初速度大小 v₀（√(GM/r₀) 处为圆轨道）<span id="sim_v0v">6.28</span></label><input type="range" id="sim_v0" min="0.5" max="15" step="0.01" value="6.28"></div>
+        <div class="ctl" id="grpV0c"><label>速度方向角 β（与矢径夹角，90°=垂直）<span id="sim_betav">90°</span></label><input type="range" id="sim_beta" min="0" max="180" step="1" value="90"></div>
+        <div class="ctl"><label>时间倍率<span id="simSpeedv">1.0×</span></label><input type="range" id="simSpeed" min="0.1" max="5" step="0.1" value="1"></div>
+        <div class="ctlrow">
+          <button class="btn primary" id="btnPlay">⏸ 暂停</button>
+          <button class="btn" id="btnReset">↺ 重置</button>
+          <button class="btn" id="btnStep">⏭ 单步</button>
+          <button class="btn" id="btnPeri">⟲ 回到近日点</button>
+          <button class="btn" id="btnFit">🔍 适配视野</button>
+        </div>
+        <div class="ctlrow" id="presetBox"></div>
+        <div class="ctlrow" style="margin-top:6px">
+          <button class="btn" id="btnSyncToV0">⇄ 同步 v₀→初速度模式</button>
+          <button class="btn" id="btnSyncToOrbit">⇄ 同步 a、e→轨道模式</button>
+          <button class="btn" id="btnRecord">📋 记录数据</button>
+          <button class="btn" id="btnNewGroup">🧪 新实验组</button>
+        </div>
+        <h3 style="margin-top:10px">图层开关</h3>
+        <div class="checks">
+          <label><input type="checkbox" id="ckTrail" checked>轨迹残影</label>
+          <label><input type="checkbox" id="ckVel" checked>速度矢量（蓝）</label>
+          <label><input type="checkbox" id="ckGrav" checked>引力矢量（红）</label>
+          <label><input type="checkbox" id="ckSect" checked>等时间扇形</label>
+          <label><input type="checkbox" id="ckAnno" checked>焦点与轴标注</label>
+          <label><input type="checkbox" id="ckGrid" checked>网格与比例尺</label>
+          <label><input type="checkbox" id="ckApsi" checked>近日/远日标记</label>
+          <label><input type="checkbox" id="ckRead" checked>读数卡</label>
+          <label><input type="checkbox" id="ckSound">音效</label>
+        </div>
+      </div>
+    </div>
+    <div class="col-main">
+      <div class="panel">
+        <canvas id="cvSim" class="cv" aria-label="轨道动力学仿真沙盘"></canvas>
+        <div class="warn" id="simBanner"></div>
+        <div class="kv" id="simKV">
+          <div>距离 r<b id="ro_r"></b></div><div>速率 v<b id="ro_v"></b></div>
+          <div>半长轴 a<b id="ro_a"></b></div><div>离心率 e<b id="ro_e"></b></div>
+          <div>半短轴 b<b id="ro_b"></b></div><div>r<sub>min</sub><b id="ro_rmin"></b></div>
+          <div>r<sub>max</sub><b id="ro_rmax"></b></div><div>面积速度 dA/dt<b id="ro_dAdt"></b></div>
+          <div>角动量 L/m<b id="ro_L"></b></div><div>能量 E/m<b id="ro_E"></b></div>
+          <div>T 实测<b id="ro_Ts"></b></div><div>T 理论<b id="ro_Tt"></b></div>
+          <div>a³/T²（实测）<b id="ro_k3"></b></div><div>k = GM/4π² <button class="qbtn" data-card="c_d_k" aria-label="查看k与M关系卡片">?</button><b id="ro_k"></b></div>
+          <div>GM<b id="ro_GM"></b></div><div>v<sub>p</sub> 近日点速度<b id="ro_vp"></b></div>
+          <div>v<sub>a</sub> 远日点速度<b id="ro_va"></b></div><div>v<sub>p</sub>/v<sub>a</sub> 理论比<b id="ro_ratio"></b></div>
+          <div>轨道类型<b id="ro_type"></b></div><div>E 守恒误差<b id="ro_errE"></b></div>
+          <div>L 守恒误差<b id="ro_errL"></b></div><div>运行时间 t<b id="ro_t"></b></div>
+        </div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ④ 三定律验证 ============ -->
+<section class="page" id="page-laws">
+  <div class="panel">
+    <h3>开普勒第一定律（轨道定律）：太阳始终在焦点上</h3>
+    <div class="row">
+      <div class="col-main"><canvas id="cvLaw1" class="cv"></canvas></div>
+      <div class="col-side">
+        <div class="ctl"><label>离心率 e（0 → 0.9 连续形变）<span id="law1eV">0.50</span></label><input type="range" id="law1e" min="0" max="0.9" step="0.005" value="0.5"></div>
+        <div class="ctlrow">
+          <div class="seg" id="law1Sun" role="group" aria-label="太阳位置对照">
+            <button data-l1sun="focus" class="on">太阳在焦点（真实）</button>
+            <button data-l1sun="center">太阳在中心（错误对照）</button>
+          </div>
+        </div>
+        <div class="warn" id="law1Warn"></div>
+        <div class="hint">太阳放在中心（错误对照）时，行星-太阳距离不再满足椭圆定义，开普勒第一定律被违反——请始终记住：太阳在<b>一个焦点</b>上。e = 0 时轨道退化为圆，两焦点重合于圆心。</div>
+      </div>
+    </div>
+  </div>
+  <div class="panel">
+    <h3>开普勒第二定律（面积定律）：相等时间扫过相等面积</h3>
+    <div class="row">
+      <div class="col-main">
+        <canvas id="cvLaw2" class="cv"></canvas>
+        <table><thead><tr><th>扇形</th><th>近日侧面积 ①②③（AU²）</th><th>远日侧面积 ⑤⑥⑦（AU²）</th></tr></thead>
+        <tbody id="law2tbody"></tbody></table>
+        <div class="kv">
+          <div>v<sub>p</sub><b id="law2_vp"></b></div><div>v<sub>a</sub><b id="law2_va"></b></div>
+          <div>v<sub>p</sub>/v<sub>a</sub> 实测<b id="law2_ratio"></b></div><div>(1+e)/(1−e) 理论<b id="law2_ratioT"></b></div>
+          <div>dA/dt<b id="law2_dadt"></b></div>
+        </div>
+      </div>
+      <div class="col-side">
+        <div class="ctl"><label>半长轴 a<span id="law2aV">1.00 AU</span></label><input type="range" id="law2a" min="0.5" max="3" step="0.01" value="1"></div>
+        <div class="ctl"><label>离心率 e<span id="law2eV">0.50</span></label><input type="range" id="law2e" min="0" max="0.9" step="0.005" value="0.5"></div>
+        <div class="hint">每 1/12 周期取一个扇形：近日侧"短而胖"、远日侧"长而瘦"，但<b>面积相等</b>。面积速度 dA/dt = πab/T = L/(2m) 恒定 ⇔ 角动量守恒。近日点速度最大、远日点最小。</div>
+      </div>
+    </div>
+  </div>
+  <div class="panel">
+    <h3>开普勒第三定律（周期定律）：a³/T² = k = GM/4π²</h3>
+    <div class="row">
+      <div class="col-main">
+        <canvas id="cvLaw3" class="cv"></canvas>
+        <table><thead><tr><th>行星</th><th>a (AU)</th><th>e</th><th>m</th><th>T 实测 (yr)</th><th>T 理论 (yr)</th><th>a³/T² 实测</th><th>误差</th></tr></thead>
+        <tbody id="law3tbody"></tbody></table>
+        <div class="hint">同一 M 下所有行星 a³/T² 相同（高亮行含"同 a 不同 e"对照：a=1、e=0.1 与 e=0.5 的周期相同；不同 m 也不影响）。理论 k = <b id="law3k"></b>（AU³/yr²，数值上等于 M 的太阳质量数）。</div>
+        <h3 style="margin-top:10px">换中心天体质量 M（k ∝ M）</h3>
+        <table><thead><tr><th>M（太阳质量）</th><th>a=1 AU 时 T (yr)</th><th>k = GM/4π²</th></tr></thead><tbody id="kmtbody"></tbody></table>
+      </div>
+      <div class="col-side">
+        <div class="ctl"><label>中心天体质量 M（太阳质量）<span id="law3Mv">1.0</span></label><input type="range" id="law3M" min="0.1" max="5" step="0.1" value="1"></div>
+        <div class="hint">改变 M，所有周期同步变化，但 a³/T² 仍彼此相等且等于 GM/4π²。双行星预设：a 比 1:4 → T 比 1:8（√4³=8）。</div>
+        <h3 style="margin-top:8px">由 a、T 反推 GM 与 M（拟合工具）</h3>
+        <div class="ctl"><label>a (AU)</label><input type="number" id="fitA" value="1" step="0.1" min="0.1" style="width:100%"></div>
+        <div class="ctl"><label>T (yr)</label><input type="number" id="fitT" value="1" step="0.1" min="0.01" style="width:100%"></div>
+        <button class="btn primary" id="btnFitGM">反推 GM、M</button>
+        <div class="hint" id="fitOut"></div>
+      </div>
+    </div>
+  </div>
+  <div class="panel">
+    <h3>数据图像（叠加理论线）</h3>
+    <div class="chgrid">
+      <div><canvas id="chA3T2" class="ch"></canvas><div class="legend" style="text-align:center">a³–T² 图：过原点直线，斜率 = k</div></div>
+      <div><canvas id="chLog" class="ch"></canvas><div class="legend" style="text-align:center">log a–log T 图：斜率 ≈ 3/2</div></div>
+      <div><canvas id="chKM" class="ch"></canvas><div class="legend" style="text-align:center">k–M 图：过原点直线，k ∝ M</div></div>
+      <div><canvas id="chTe" class="ch"></canvas><div class="legend" style="text-align:center">T–e 图（固定 a）：水平线，T 与 e 无关</div></div>
+      <div><canvas id="chVr" class="ch"></canvas><div class="legend" style="text-align:center">v–r 图：活力公式 v²=GM(2/r−1/a)</div></div>
+      <div><canvas id="chAr" class="ch"></canvas><div class="legend" style="text-align:center">扇形面积–时间图：阶梯等值</div></div>
+    </div>
+  </div>
+  <div class="panel">
+    <h3>数据记录（不同实验组着色区分）</h3>
+    <div style="overflow-x:auto"><table><thead><tr>
+      <th>组</th><th>模式</th><th>M</th><th>a</th><th>e</th><th>m</th><th>v₀</th><th>T实测</th><th>T理论</th><th>a³/T²</th><th>dA/dt</th><th>v<sub>p</sub></th><th>v<sub>a</sub></th><th>轨道类型</th><th>误差</th>
+    </tr></thead><tbody id="recTbody"></tbody></table></div>
+    <div class="ctlrow"><button class="btn" id="btnCSV">⬇ 导出 CSV</button><button class="btn warnb" id="btnClearRec">清空记录</button></div>
+  </div>
+</section>
+
+<!-- ============ ⑤ 练习考核 ============ -->
+<section class="page" id="page-quiz">
+  <div class="panel" id="quizBox">
+    <h3>练习与考核</h3>
+    <label style="font-size:13px"><input type="checkbox" id="teacherChk"> 教师考核模式（随机出题、隐藏答案、记录成绩）</label>
+    <div id="quizArea" style="margin-top:10px"></div>
+    <button class="btn" id="btnQuizRestart" style="margin-top:8px">重新开始</button>
+    <div class="hint" id="quizScore"></div>
+  </div>
+</section>
+</main>
+
+<!-- 卡片抽屉 -->
+<div class="drawer" id="cardDrawer" role="complementary" aria-label="知识卡片库">
+  <div class="dhead"><b>📚 知识卡片库</b><button class="btn" id="btnCloseDrawer" aria-label="关闭卡片库">✕ 关闭</button></div>
+  <div style="padding:0 10px"><input id="cardSearch" placeholder="搜索关键词…" aria-label="搜索卡片"></div>
+  <div id="cardCats"></div>
+  <div id="cardList" role="listbox" aria-label="卡片列表"></div>
+</div>
+<!-- 卡片弹窗 -->
+<div class="modalbg" id="cardModalBg">
+  <div class="modal" id="cardModal" role="dialog" aria-modal="true" tabindex="0">
+    <span class="cat" id="cmCat"></span>
+    <h4 id="cmTitle"></h4>
+    <div class="cardfront">
+      <p id="cmConcl" style="margin:6px 0"></p>
+      <div class="formula" id="cmFormula"></div>
+      <div class="svgbox" id="cmSvg"></div>
+      <div class="howto" id="cmHowto"></div>
+      <div class="pit" id="cmPit" style="display:none"></div>
+      <div class="hint">Enter/空格 翻转 · ←/→ 切换 · Esc 关闭</div>
+    </div>
+    <div class="cardback"><p id="cmBack"></p></div>
+    <div class="mfoot">
+      <button class="btn" id="btnCardPrev" aria-label="上一张">⬅ 上一张</button>
+      <button class="btn" id="btnCardNext" aria-label="下一张">下一张 ➡</button>
+      <button class="btn" id="btnCardFlip" aria-label="翻转卡片">🔄 翻转（推导）</button>
+      <button class="btn" id="btnCardPin" aria-label="钉住卡片">📌 钉住</button>
+      <button class="btn" id="btnCardClose" aria-label="关闭卡片">✕ 关闭</button>
+    </div>
+  </div>
+</div>
+<div id="pinBox"></div>
+<!-- 教学引导 -->
+<div id="flowBar">
+  <div class="fb"><span id="flowText"></span><div class="fq" id="flowQ"></div></div>
+  <span id="flowStep" class="legend" style="color:#9fb4d8"></span>
+  <button class="btn" id="btnFlowPrev">上一步</button>
+  <button class="btn primary" id="btnFlowNext">下一步</button>
+  <button class="btn" id="btnFlowClose">隐藏引导</button>
+</div>
+<script>
+"use strict";
+/* ================= 全局常量与配置 ================= */
+const TAU=Math.PI*2, PI=Math.PI;
+const GM0=TAU*TAU;              // GM_sun = 4π² AU³/yr²（天文单位制）
+const AU_M=1.496e11, YR_S=3.156e7, GM_SI=1.327e20; // SI 换算
+const RM=window.matchMedia&&matchMedia('(prefers-reduced-motion: reduce)').matches;
+const CL={sun:'#FFB300',planet:'#4A90E2',orbit:'rgba(255,255,255,0.55)',vel:'#4FC3F7',grav:'#FF5252',
+ focus:'#FFD54F',axes:'rgba(170,180,190,0.55)',secN:'rgba(67,160,71,0.42)',secF:'rgba(156,39,176,0.42)',
+ trail:'rgba(255,255,255,0.28)',text:'#dbe7f5'};
+let UNITS='AU';
+/* 八大行星真实参数（用于应用卡与图像参考点） */
+const PLANETS=[
+ {name:'水星',a:0.387,e:0.206,T:0.241},{name:'金星',a:0.723,e:0.007,T:0.615},
+ {name:'地球',a:1.000,e:0.017,T:1.000},{name:'火星',a:1.524,e:0.093,T:1.881},
+ {name:'木星',a:5.203,e:0.048,T:11.86},{name:'土星',a:9.537,e:0.054,T:29.45},
+ {name:'天王星',a:19.19,e:0.047,T:84.02},{name:'海王星',a:30.07,e:0.009,T:164.8}];
+/* 预设库 */
+const PRESETS=[
+ {name:'地球',a:1,e:0.017},{name:'火星',a:1.524,e:0.093},{name:'水星',a:0.387,e:0.206},
+ {name:'哈雷彗星',a:17.8,e:0.967},{name:'圆轨道',a:1,e:0},{name:'高偏心 e=0.7',a:1,e:0.7},
+ {name:'同a不同e对照',a:1,e:0.7,hint:'同 a=1：切到 e=0.2 再看，周期不变；④页有对照行'},
+ {name:'双行星 1:4',laws:true,hint:'a 比 1:4 → T 比 1:8，见"三定律验证"页'}];
+/* 时间轴 */
+const TIMELINE=[
+ {y:'约150年',who:'托勒密',tag:'地心说',txt:'用"本轮 + 均轮"体系拟合行星位置：行星绕本轮中心转，本轮中心沿均轮绕地球转。',lim:'局限：为拟合观测，本轮越加越多，模型复杂、精度有限。'},
+ {y:'1543年',who:'哥白尼',tag:'日心说',txt:'《天体运行论》：以太阳为中心，行星（含地球）绕日运动，模型大幅简化。',lim:'局限：仍坚持正圆轨道，精度并未立刻超过地心说。'},
+ {y:'1576–1599年',who:'第谷·布拉赫',tag:'精密观测',txt:'在汶岛建立当时欧洲最精密的天文台，二十余年系统记录行星位置，角精度约 1′。',lim:'局限：本人未接受日心说（提出折中的第谷体系），但数据成就了开普勒。'},
+ {y:'1609 / 1619年',who:'开普勒',tag:'三定律',txt:'分析第谷的火星数据：放弃圆轨道，改用椭圆（1609 年第一、第二定律）；又发现 a³/T² = 常量（1619 年第三定律）。',lim:'局限：是对观测的归纳定律，尚未回答"为什么"。'},
+ {y:'1610年',who:'伽利略',tag:'望远镜佐证',txt:'用望远镜发现木星四颗卫星（并非一切都绕地球）、金星相位（说明金星绕日），为日心说提供观测证据。',lim:'局限：当时无法测到恒星视差，日心说仍缺直接证据。'},
+ {y:'1687年',who:'牛顿',tag:'理论解释',txt:'《自然哲学的数学原理》：万有引力 F = GMm/r² 加上运动定律，从理论上推导出开普勒三定律，并解释 k = GM/4π²。',lim:'局限：经典引力近似，高速强场情形由广义相对论修正。'}];
+/* 教学引导六步 */
+const FLOW=[
+ {t:'① 历史情境：从托勒密的本轮、哥白尼的日心圆，到开普勒的椭圆。打开"① 历史演变"，点击时间轴并切换日心/地心视角。',q:'想一想：为什么地心说需要"本轮"才能描述行星运动？'},
+ {t:'② 画椭圆：在"② 画椭圆"用两枚图钉（焦点）与一根细绳（长 2a）描出椭圆。',q:'想一想：铅笔移动时绳始终绷紧，这说明 PF₁+PF₂ 等于多少？'},
+ {t:'③ 动力学仿真：在"③ 轨道沙盘"切到初速度模式，调整 v₀ 与方向角 β。',q:'想一想：β=90°（垂直释放）时，v₀ 取多大轨道恰好是圆？'},
+ {t:'④ 三定律验证：看"④"页的等时扇形面积表与 a³/T² 表格。',q:'想一想：同一条轨道上，近日点和远日点哪个更快？'},
+ {t:'⑤ 图像结论：观察 a³–T² 过原点直线、log a–log T 斜率 1.5、T–e 水平线。',q:'想一想：把离心率 e 变大，周期 T 会变吗？'},
+ {t:'⑥ 误解辨析：打开卡片库翻阅 9 张易错卡，并试试"太阳在中心"错误对照。',q:'想一想：行星质量变大，周期会变短吗？'}];
+/* 练习题 */
+const QUIZ=[
+ {q:'按开普勒第一定律，太阳位于行星椭圆轨道的什么位置？',o:['椭圆的中心','椭圆的一个焦点','椭圆短轴的端点'],a:1,exp:'第一定律：所有行星轨道都是椭圆，太阳处在椭圆的一个焦点上，另一个焦点是空的几何点。',card:'c_r_focus'},
+ {q:'同一椭圆轨道上，行星在近日点与远日点的速率相比？',o:['近日点更大','远日点更大','一样大'],a:0,exp:'由面积定律，近日点速度最大、远日点最小，v_p/v_a = (1+e)/(1−e)。',card:'c_r_speed'},
+ {q:'绕同一颗太阳的两颗行星，半长轴 a 相同、离心率 e 不同，周期 T 如何？',o:['e 大的周期长','e 大的周期短','两者相同'],a:2,exp:'T = 2π√(a³/GM)，只由 a 与中心天体质量 M 决定，与 e、行星质量 m 都无关。',card:'c_r_T'},
+ {q:'开普勒第三定律中的 k = a³/T² 由什么决定？',o:['行星的质量','中心天体的质量','行星的离心率'],a:1,exp:'k = GM/4π²，只与中心天体质量 M 有关；绕不同恒星（或卫星绕地球）时 k 不同。',card:'c_d_k'},
+ {q:'什么条件下可以用轨道半径 r 近似代替半长轴 a？',o:['离心率 e 很小（近圆轨道）','轨道很长','行星质量很小'],a:0,exp:'近圆轨道 e≈0 时 r_min=a(1−e)、r_max=a(1+e) 都接近 a。地球 e≈0.017，误差仅约 ±1.7%。',card:'c_near'},
+ {q:'火星"逆行"现象在哪 种参考系下解释最简洁？',o:['地心参考系（本轮—均轮）','日心参考系','任何参考系都同样复杂'],a:1,exp:'日心系中火星匀速绕日；逆行只是地球在追赶超过火星时出现的相对运动。地心系则需要叠加本轮来拟合。',card:'c_d_geo'}];
+/* ============ 迷你示意图库（内联 SVG） ============ */
+const svgW=(inner)=>'<svg viewBox="0 0 120 64" style="max-width:260px">'+inner+'</svg>';
+const SV={
+ ellipse:svgW('<ellipse cx="60" cy="32" rx="44" ry="22" fill="none" stroke="#2563eb"/><circle cx="40" cy="32" r="4" fill="#f59e0b"/><circle cx="80" cy="32" r="3" fill="#94a3b8"/><line x1="40" y1="32" x2="80" y2="32" stroke="#94a3b8" stroke-dasharray="3 2"/><line x1="16" y1="32" x2="104" y2="32" stroke="#cbd5e1" stroke-dasharray="4 3"/><line x1="60" y1="10" x2="60" y2="54" stroke="#cbd5e1" stroke-dasharray="4 3"/><circle cx="40" cy="32" r="9" fill="rgba(245,158,11,.25)"/><text x="34" y="50" font-size="9" fill="#64748b">F₁</text><text x="84" y="50" font-size="9" fill="#64748b">F₂</text><text x="62" y="60" font-size="9" fill="#64748b">O</text>'),
+ sunfocus:svgW('<ellipse cx="60" cy="32" rx="44" ry="22" fill="none" stroke="#2563eb"/><circle cx="38" cy="32" r="6" fill="#f59e0b"/><circle cx="38" cy="32" r="12" fill="rgba(245,158,11,.25)"/><line x1="38" y1="32" x2="96" y2="32" stroke="#dc2626" stroke-dasharray="3 2"/><text x="60" y="28" font-size="9" fill="#dc2626">r_max=a(1+e)</text><line x1="38" y1="32" x2="16" y2="32" stroke="#16a34a" stroke-dasharray="3 2"/><text x="14" y="48" font-size="9" fill="#16a34a">r_min</text><text x="30" y="20" font-size="9" fill="#b45309">太阳</text>'),
+ suncenter:svgW('<ellipse cx="60" cy="32" rx="44" ry="22" fill="none" stroke="#2563eb"/><circle cx="60" cy="32" r="6" fill="#dc2626"/><circle cx="60" cy="32" r="12" fill="rgba(220,38,38,.2)"/><text x="42" y="52" font-size="9" fill="#dc2626">✗ 太阳在中心</text>'),
+ sectors:svgW('<circle cx="30" cy="32" r="10" fill="#f59e0b"/><path d="M30 32 L70 12 A45 22 0 0 1 70 52 Z" fill="rgba(67,160,71,.4)"/><path d="M30 32 L70 12 A45 22 0 0 0 70 52 Z" fill="rgba(67,160,71,.4)"/><path d="M30 32 L118 20 A45 22 0 0 1 118 44 Z" fill="rgba(156,39,176,.35)"/><ellipse cx="74" cy="32" rx="45" ry="22" fill="none" stroke="#2563eb"/><text x="6" y="10" font-size="8" fill="#2f6f33">等时等积</text>'),
+ ratio:svgW('<line x1="10" y1="54" x2="110" y2="54" stroke="#94a3b8"/><line x1="10" y1="54" x2="10" y2="10" stroke="#94a3b8"/><path d="M10 54 L34 30" stroke="#2563eb" stroke-width="2"/><path d="M10 54 L94 46" stroke="#7c3aed" stroke-width="2"/><text x="36" y="26" font-size="9" fill="#2563eb">v_p 大</text><text x="86" y="40" font-size="9" fill="#7c3aed">v_a 小</text>'),
+ line:svgW('<line x1="12" y1="54" x2="12" y2="10" stroke="#94a3b8"/><line x1="12" y1="54" x2="110" y2="54" stroke="#94a3b8"/><line x1="12" y1="54" x2="106" y2="16" stroke="#16a34a" stroke-width="2"/><circle cx="30" cy="44" r="3" fill="#2563eb"/><circle cx="55" cy="34" r="3" fill="#2563eb"/><circle cx="84" cy="24" r="3" fill="#2563eb"/><text x="62" y="52" font-size="9" fill="#16a34a">斜率=k（或3/2）</text>'),
+ hor:svgW('<line x1="12" y1="54" x2="12" y2="10" stroke="#94a3b8"/><line x1="12" y1="54" x2="110" y2="54" stroke="#94a3b8"/><line x1="14" y1="30" x2="108" y2="30" stroke="#dc2626" stroke-width="2"/><circle cx="30" cy="30" r="3" fill="#2563eb"/><circle cx="55" cy="30" r="3" fill="#2563eb"/><circle cx="84" cy="30" r="3" fill="#2563eb"/><text x="40" y="22" font-size="9" fill="#dc2626">T 与 e 无关</text>'),
+ vcurve:svgW('<line x1="12" y1="54" x2="12" y2="10" stroke="#94a3b8"/><line x1="12" y1="54" x2="110" y2="54" stroke="#94a3b8"/><path d="M20 20 Q55 44 100 48" fill="none" stroke="#2563eb" stroke-width="2"/><circle cx="20" cy="20" r="3.5" fill="#dc2626"/><circle cx="100" cy="48" r="3.5" fill="#16a34a"/><text x="8" y="14" font-size="9" fill="#dc2626">v_p</text><text x="96" y="60" font-size="9" fill="#16a34a">v_a</text><text x="46" y="34" font-size="8" fill="#64748b">v²=GM(2/r−1/a)</text>'),
+ esc:svgW('<circle cx="24" cy="52" r="8" fill="#f59e0b"/><path d="M32 46 Q70 6 112 26" fill="none" stroke="#2563eb" stroke-width="2"/><path d="M32 46 Q64 26 60 52" fill="none" stroke="#7c3aed" stroke-dasharray="3 2"/><text x="66" y="12" font-size="9" fill="#2563eb">E>0 双曲线</text><text x="52" y="60" font-size="8" fill="#7c3aed">E=0 抛物线</text>'),
+ retro:svgW('<circle cx="60" cy="34" r="5" fill="#4A90E2"/><path d="M60 34 C 20 6, 12 60, 60 52 C 96 46, 96 26, 60 30 C 40 34, 44 44, 60 34" fill="none" stroke="#dc2626" stroke-width="1.6"/><text x="30" y="12" font-size="8" fill="#dc2626">火星轨迹（地心系）</text><text x="64" y="36" font-size="8" fill="#1d4ed8">地球</text>'),
+ pinstr:svgW('<circle cx="44" cy="32" r="3.5" fill="#b45309"/><circle cx="76" cy="32" r="3.5" fill="#b45309"/><line x1="44" y1="32" x2="92" y2="18" stroke="#65a30d"/><line x1="76" y1="32" x2="92" y2="18" stroke="#65a30d"/><circle cx="92" cy="18" r="3" fill="#111"/><ellipse cx="60" cy="32" rx="40" ry="20" fill="none" stroke="#2563eb" stroke-dasharray="4 2"/><text x="86" y="12" font-size="8" fill="#64748b">铅笔P</text><text x="30" y="46" font-size="8" fill="#b45309">F₁</text><text x="80" y="46" font-size="8" fill="#b45309">F₂</text>'),
+ ctrl:svgW('<rect x="8" y="10" width="30" height="16" rx="3" fill="#eef2ff" stroke="#2563eb"/><rect x="8" y="34" width="30" height="16" rx="3" fill="#eef2ff" stroke="#2563eb"/><text x="14" y="21" font-size="9" fill="#2563eb">固定M</text><text x="14" y="45" font-size="9" fill="#2563eb">固定a</text><path d="M46 18 L86 18 L86 42 L46 42" fill="none" stroke="#16a34a" stroke-dasharray="3 2"/><text x="60" y="34" font-size="9" fill="#16a34a">只变一个量</text>'),
+ twobody:svgW('<circle cx="36" cy="32" r="9" fill="#f59e0b"/><ellipse cx="42" cy="32" rx="34" ry="17" fill="none" stroke="#2563eb"/><circle cx="70" cy="46" r="4" fill="#4A90E2"/><text x="58" y="14" font-size="9" fill="#64748b">M≫m：中心天体近似固定</text>')
+};
+/* ================= 知识卡片库（42 张） ================= */
+const CARDS=[
+// —— 史实 ——
+{id:'c_pto',cat:'史实',title:'托勒密地心说（约150年）',concl:'用"本轮+均轮"描述行星绕地球的运动，是古代最成功的拟合模型之一。',formula:'行星位置 = 均轮（绕地） ⊕ 本轮（绕均轮心）',svg:SV.retro,howto:'① 历史演变 → 地心参考系：观察火星轨迹的环状回绕（本轮思想的来源）。',pit:'地心说并非"一无是处"：它能拟合相当多观测，是被更简洁的日心说取代的历史模型。',back:'本轮相当于在地球坐标系里叠加两个圆周运动（傅里叶思想的雏形），项数越多拟合越好，但物理图像越来越繁琐。'},
+{id:'c_cop',cat:'史实',title:'哥白尼日心说（1543年）',concl:'把太阳放在中心，行星（含地球）绕日做圆周运动，模型大为简化。',formula:'《天体运行论》，1543',svg:SV.ellipse,howto:'① 历史演变 → 日心参考系：两颗行星各自沿简洁的圆轨道运行。',back:'哥白尼仍坚持圆轨道，精度未立刻胜过地心说；真正突破来自开普勒把圆改成椭圆。'},
+{id:'c_tyc',cat:'史实',title:'第谷·布拉赫的精密观测（1576–1599）',concl:'二十余年肉眼观测精度约 1 角分，其火星数据成为开普勒发现椭圆轨道的关键。',formula:'观测事实是一切定律的起点',svg:SV.line,howto:'① 历史演变 → 时间轴节点"第谷"。',back:'第谷本人不接受日心说，但他"只记录、不臆断"的数据风格恰恰成就了开普勒——科学方法的经典案例。'},
+{id:'c_kep',cat:'史实',title:'开普勒归纳三定律（1609 / 1619）',concl:'拟合第谷火星数据：轨道是椭圆、面积速度恒定；a³/T² 为常量。',formula:'Ⅰ 椭圆 · Ⅱ 等面积 · Ⅲ a³/T² = k',svg:SV.sectors,howto:'②③④ 三个标签页分别对应三条定律的可视化。',back:'开普勒为 8 角分的偏差放弃圆轨道，"正是这 8 角分，引领我们走向天文学的全面革新"。'},
+{id:'c_gal',cat:'史实',title:'伽利略的望远镜佐证（1610）',concl:'木星有卫星（不都绕地球）、金星有相位（绕日证据），支持日心说。',formula:'观测 → 证据 → 模型取舍',svg:SV.retro,howto:'① 历史演变 → 时间轴节点"伽利略"。',back:'伽利略的观测没有直接证明日心说，但动摇了"地球独一无二"的地心前提。'},
+{id:'c_new',cat:'史实',title:'牛顿万有引力（1687）',concl:'万有引力 + 运动定律从理论上推出开普勒三定律，并给出 k = GM/4π²。',formula:'F = GMm/r² ⇒ 三定律',svg:SV.twobody,howto:'③ 轨道沙盘：改变 M，看 T 与 k 如何随 GM 变化。',back:'从定律到理论：开普勒回答"怎么运动"，牛顿回答"为什么这样运动"。'},
+// —— 概念 ——
+{id:'c_ell',cat:'概念',title:'椭圆与焦点（两图钉+细绳）',concl:'到两定点（焦点）距离之和为常数的点的轨迹：PF₁ + PF₂ = 2a。',formula:'PF₁ + PF₂ = 2a（绳长），F₁F₂ = 2c',svg:SV.pinstr,howto:'② 画椭圆：拖动铅笔，读数区实时显示 PF₁+PF₂ 与 2a 的对照。',back:'绳长固定 2a、图钉间距 2c，铅笔绷紧绳描出的曲线必然满足定义；a、c 确定后 b = √(a²−c²)。'},
+{id:'c_ab',cat:'概念',title:'半长轴 a 与半短轴 b',concl:'a 是椭圆长轴的一半（平均半径意义上的"轨道大小"），b = a√(1−e²)。',formula:'b = a√(1−e²) = √(a²−c²)',svg:SV.ellipse,howto:'② 画椭圆 / ③ 沙盘：调节 a、e，观察 b 读数。',back:'第三定律中的 a 是半长轴，不是"太阳到行星的距离"——后者随位置变化。'},
+{id:'c_e',cat:'概念',title:'离心率 e（无量纲）',concl:'e = c/a，描述轨道扁平程度：e=0 为圆，e→1 极扁。两焦点间距为 2ae。',formula:'e = c/a（0 ≤ e < 1 为椭圆）',svg:SV.ellipse,howto:'④ 三定律验证·定律一：拖动 e 从 0 到 0.9 看轨道形变。',pit:'e 不是"两焦点间距"！间距是 2c = 2ae，还与 a 有关。',back:'e=0 时两焦点重合于中心，椭圆退化为圆；地球 e≈0.017，水星 e≈0.206，哈雷彗星 e≈0.967。'},
+{id:'c_apsis',cat:'概念',title:'近日点与远日点',concl:'轨道上离太阳最近/最远的点，r_min = a(1−e)，r_max = a(1+e)，太阳在焦点。',formula:'r_min = a(1−e)，r_max = a(1+e)',svg:SV.sunfocus,howto:'③ 沙盘：开启"近日/远日标记"，读数区显示 r_min、r_max。',back:'近日点、远日点位于长轴两端，与焦点共线；两者距离之差 = 2ae。'},
+{id:'c_areavel',cat:'概念',title:'面积速度 dA/dt',concl:'行星-太阳连线单位时间扫过的面积恒定：dA/dt = πab/T = L/(2m)。',formula:'dA/dt = L/(2m) = πab/T = 常量',svg:SV.sectors,howto:'④ 验证·定律二：等时间扇形面积表中 6 个扇形面积相等。',back:'本质是角动量守恒：L = mvr·sinθ 不变，故面积速度不变。这是第二定律的动力学根源。'},
+{id:'c_near',cat:'概念',title:'近圆近似 r ≈ a',concl:'e 很小时 r_max/r_min ≈ 1，可用半径 r 代替半长轴 a。',formula:'地球 e≈0.017 ⇒ r 偏离 a 仅 ±1.7%',svg:SV.ellipse,howto:'③ 沙盘：选"地球"预设（e=0.017），对比 r 与 a 读数。',pit:'只有 e≪1 才能近似；哈雷彗星 e=0.967，绝不能用 r 代替 a。',back:'近圆轨道 r ≈ a，因此中学的"匀速圆周运动 + 万有引力"处理对人造卫星、近地行星是很好的近似。'},
+{id:'c_frame',cat:'概念',title:'参考系与火星"逆行"',concl:'逆行是相对运动效果：地球在内侧轨道追赶并超过火星时，火星看起来向后走。',formula:'视角变换：位置矢量作差',svg:SV.retro,howto:'① 历史演变 → 地心参考系：红色轨迹出现回环即为逆行（示意）。',back:'同一组轨道，日心系里是两条简单圆周，地心系里火星轨迹出现回环——参考系选择决定模型复杂度。'},
+// —— 公式 ——
+{id:'c_f_ratio',cat:'公式',title:'近日/远日速度比',concl:'由面积定律可推：v_p/v_a = r_max/r_min = (1+e)/(1−e)。',formula:'v_p/v_a = (1+e)/(1−e)',svg:SV.ratio,howto:'④ 验证·定律二：右侧读数给出实测比与理论比（a=1,e=0.5 时 = 3.00）。',back:'近日扫"短而胖"扇形仍要相等面积 ⇒ 速度快；远日"长而瘦" ⇒ 速度慢。'},
+{id:'c_f_k',cat:'公式',title:'第三定律 k = GM/4π²',concl:'a³/T² = GM/4π²，只与中心天体质量 M 有关，与行星质量、e 无关。',formula:'a³/T² = GM/(4π²)，T = 2π√(a³/GM)',svg:SV.line,howto:'④ 验证·定律三：表格与 k–M 图、换 M 对照表。',pit:'k 不是宇宙普适常量：绕太阳、绕地球、绕木星的 k 各不相同。',back:'a=4 AU ⇒ T=8 yr；M 翻倍 ⇒ k 翻倍、周期缩短为 1/√2。'},
+{id:'c_f_visa',cat:'公式',title:'活力公式（拓展）',concl:'椭圆轨道任意位置：v² = GM(2/r − 1/a)，只与 r、a 有关。',formula:'v² = GM(2/r − 1/a)',svg:SV.vcurve,howto:'④ 图像区"v–r 图"叠加活力公式曲线；③ 沙盘读数可实时对照。',back:'由能量守恒 E = ½v² − GM/r = −GM/2a 直接移项即得；近日点 v_p=√[GM(1+e)/(a(1−e))]，远日点 v_a=√[GM(1−e)/(a(1+e))]。'},
+{id:'c_f_esc',cat:'公式',title:'逃逸速度（拓展）',concl:'E=0 时轨道为抛物线，v_esc = √(2GM/r) = √2·v_圆。',formula:'v_esc = √(2GM/r) = √2·v_圆',svg:SV.esc,howto:'③ 沙盘·初速度模式：r₀=1、β=90°，把 v₀ 从 6.28 增大到 8.89（√2 倍），观察判为抛物线逃逸。',back:'E<0 椭圆（束缚）、E=0 抛物线、E>0 双曲线——轨道类型由机械能的符号决定。'},
+// —— 规律 ——
+{id:'c_r_focus',cat:'规律',title:'太阳在一个焦点上',concl:'所有行星轨道都是椭圆，太阳位于其中一个焦点，另一个焦点空置。',formula:'开普勒第一定律',svg:SV.sunfocus,howto:'④ 验证·定律一：点击"太阳在中心"错误对照，看提示并纠正。',back:'若太阳在中心，则 r 与角度的关系不再满足观测（第谷数据 8 角分偏差）。'},
+{id:'c_r_area',cat:'规律',title:'等时间扫过相等面积',concl:'任意相等时间间隔内，行星-太阳连线扫过的面积相等（面积速度守恒）。',formula:'ΔA/Δt = 常量',svg:SV.sectors,howto:'④ 验证·定律二：12 等分周期的扇形面积表（相对误差 < 1%）。',back:'近日扇形"短而胖"、远日扇形"长而瘦"而面积相等，是"短×快 = 长×慢"的几何体现。'},
+{id:'c_r_speed',cat:'规律',title:'近日快、远日慢',concl:'近日点速率最大，远日点速率最小，比值 (1+e)/(1−e)。',formula:'v_p 最大，v_a 最小',svg:SV.ratio,howto:'③ 沙盘：观察速度矢量（蓝）在近日点变长、远日点变短。',pit:'"近日点速度最小"是常见口误——恰相反。',back:'能量守恒：近日 r 小 ⇒ 势能低 ⇒ 动能大；角动量守恒也给出同样结论。'},
+{id:'c_r_T',cat:'规律',title:'T 只由 a 与 M 决定',concl:'周期与离心率 e、行星质量 m 无关：T = 2π√(a³/GM)。',formula:'T = 2π√(a³/(GM))',svg:SV.hor,howto:'④ 验证·定律三：a=1、e=0.1 与 e=0.5 两行 T 相同；T–e 图为水平线。',back:'a 相同 ⇒ 轨道能量相同（E=−GM/2a）⇒ 周期相同；e 只重新分配"近快远慢"。'},
+// —— 方法 ——
+{id:'c_m_ctrl',cat:'方法',title:'控制变量法',concl:'固定 M 变 a；固定 a 变 e；固定 a、e 变 m——逐一隔离各量的影响。',formula:'一次只改变一个变量',svg:SV.ctrl,howto:'③ 沙盘 + ④ 验证：三组对照各做一遍并"记录数据"导出 CSV。',back:'这是本沙盘数据记录表分"实验组"着色的原因：每组只动一个量，方便横向比对。'},
+{id:'c_m_lin',cat:'方法',title:'图像线性化',concl:'a³–T² 过原点直线（斜率 k）；log a–log T 直线斜率 3/2。',formula:'log T = (3/2)·log a + 常数',svg:SV.line,howto:'④ 图像区前两张图，均叠加理论线。',back:'幂函数关系取对数后变直线，斜率即幂指数——处理 T∝a^1.5 的标准手法。'},
+{id:'c_m_v0',cat:'方法',title:'由 v₀ 判定轨道类型',concl:'比较 v₀ 与 √(GM/r₀)（圆）和 √(2GM/r₀)（逃逸）即可预判轨道。',formula:'v₀ < v_圆：椭圆（释放点为远日点附近）',svg:SV.esc,howto:'③ 沙盘·初速度模式：v₀=6.28→圆；稍小→椭圆（释放点为远日点）；稍大→椭圆（近日点）；≥8.89→逃逸。',back:'垂直释放时：v₀=v_圆 得圆；v_圆<v₀<v_esc 得椭圆且释放点为近日点；v₀>v_esc 双曲线逃逸。'},
+// —— 辨析 ——
+{id:'c_d_geo',cat:'辨析',title:'地心说 vs 日心说',concl:'两者都能"解释"观测，但日心说用更少的假设达到同等精度——更简洁的模型胜出。',formula:'简洁性（奥卡姆剃刀）',svg:SV.retro,howto:'① 历史演变：同一组轨道在两种参考系下的画面对照（火星逆行）。',back:'地心说是能拟合部分观测的历史模型，不是"完全错误、毫无价值"；科学是被更好模型渐进替代的过程。'},
+{id:'c_d_focus',cat:'辨析',title:'太阳在焦点 vs 在中心',concl:'太阳在焦点（正确）；在中心则 r-角度关系错误、无法拟合第谷数据。',formula:'焦点：r = a(1−e²)/(1+e·cosν)',svg:SV.suncenter,howto:'② 画椭圆 / ④ 验证·定律一：均有"太阳在中心"错误对照按钮。',back:'圆是 e=0 的特例：焦点与中心重合，此时"焦点"与"中心"说法才等价。'},
+{id:'c_d_speed',cat:'辨析',title:'面积速度恒定 vs 速率恒定',concl:'守恒的是"扫面速度"（角动量），不是线速率；速率在近日/远日间振荡。',formula:'dA/dt = 常量 ≠ v = 常量',svg:SV.sectors,howto:'③ 沙盘：同时观察速度矢量长度变化与扇形面积不变。',back:'若速率恒定且 r 变化，则角动量 mvr 必变，违反有心力下角动量守恒。'},
+{id:'c_d_k',cat:'辨析',title:'k 随中心天体变 vs 普适常量',concl:'k = GM/4π² 只对"同一中心天体"相同；换恒星、换地球，k 就不同。',formula:'绕日 k_sun = GM_sun/4π²；绕地 k_earth = GM_earth/4π²',svg:SV.line,howto:'④ 验证·定律三：换 M 对照表与 k–M 图。',back:'人造卫星绕地球同样满足 a³/T² = 常量，但常量是 GM_earth/4π²，与行星绕日的值完全不同。'},
+// —— 易错 ——
+{id:'c_e1',cat:'易错',title:'易错：太阳在椭圆"中心"？',concl:'错。太阳在椭圆的一个焦点上，中心是空几何点。',formula:'正确：太阳 ∈ {焦点}',svg:SV.suncenter,howto:'④ 验证·定律一点"错误对照"按钮强化记忆。',back:'一句话记忆：中心无太阳，焦点才有。'},
+{id:'c_e2',cat:'易错',title:'易错：行星速率不变？',concl:'错。椭圆轨道上速率随位置变化（近日快、远日慢）。',formula:'正确：只有 dA/dt 不变',svg:SV.vcurve,howto:'③ 沙盘看速度矢量长度。',back:'一句话记忆：面积匀，速率不匀。'},
+{id:'c_e3',cat:'易错',title:'易错：近日点速度最小？',concl:'错。近日点速度最大，远日点最小。',formula:'v_p/v_a = (1+e)/(1−e) > 1',svg:SV.ratio,howto:'④ 验证·定律二读数：a=1,e=0.5 时 v_p=2π√3≈10.9，v_a≈3.6。',back:'一句话记忆：离得近，跑得快。'},
+{id:'c_e4',cat:'易错',title:'易错：k 与中心天体无关？',concl:'错。k = GM/4π² 随中心天体质量改变（k ∝ M）。',formula:'M 翻倍 ⇒ k 翻倍',svg:SV.line,howto:'④ 验证·定律三：M 从 0.5→1→2 的对照表。',back:'一句话记忆：换太阳，就换 k。'},
+{id:'c_e5',cat:'易错',title:'易错：同 a 不同 e 周期不同？',concl:'错。T 只由 a 与 M 决定，e 不影响周期。',formula:'T = 2π√(a³/GM)，与 e 无关',svg:SV.hor,howto:'④ 验证·定律三对照行：a=1、e=0.1/0.5 的 T 都等于 1.00 yr。',back:'一句话记忆：定周期，看长轴。'},
+{id:'c_e6',cat:'易错',title:'易错：行星越重周期越短？',concl:'错。T 与行星质量 m 无关（M≫m 近似下 m 根本不出现在公式里）。',formula:'T 中不含 m',svg:SV.twobody,howto:'③ 沙盘：拖动 m 滑杆，轨道与 T 读数纹丝不动。',back:'一句话记忆：周期不由乘客体重决定。'},
+{id:'c_e7',cat:'易错',title:'易错：e 就是两焦点间距？',concl:'错。e = c/a 是无量纲比值；两焦点间距为 2c = 2ae。',formula:'间距 = 2ae（有单位，随 a 变）',svg:SV.ellipse,howto:'② 画椭圆：同时观察 e 与 F₁F₂ 读数。',back:'一句话记忆：e 是比值，不是距离。'},
+{id:'c_e8',cat:'易错',title:'易错：开普勒定律只适用于行星绕太阳？',concl:'不完全。定律形式对任何二体束缚系统通用，但 k 要换成对应中心天体的 GM/4π²。',formula:'卫星绕地球：a³/T² = GM_earth/4π²',svg:SV.twobody,howto:'④ 验证：把 M 调成 0.000003（地球质量/太阳质量）即"绕地"系统的 k。',back:'一句话记忆：形式普适，常量随主。'},
+{id:'c_e9',cat:'易错',title:'易错：地心说"毫无价值"？',concl:'错。它是能拟合部分观测的历史模型，孕育了精确观测传统，被更简模型取代。',formula:'科学是渐进修正，不是全盘推翻',svg:SV.retro,howto:'① 历史演变：用地心视角看火星轨迹，体会它"有用但繁琐"。',back:'一句话记忆：旧模型是阶梯，不是垃圾。'},
+// —— 应用 ——
+{id:'c_a_planets',cat:'应用',title:'八大行星轨道参数',concl:'八大行星 a、e、T 一览：全部满足 a³/T² ≈ 1（AU³/yr²，太阳系单位）。',formula:'水星 0.387/0.206/0.241 …… 海王星 30.07/0.009/164.8',svg:SV.line,howto:'④ 图像区 a³–T² 图中的 8 个参考点即真实行星数据。',back:'行星数据：金星 e=0.007 最圆；水星 e=0.206 最扁（行星中）；所有 a³/T² 偏差 <0.1%。'},
+{id:'c_a_halley',cat:'应用',title:'哈雷彗星（e≈0.967）',concl:'极扁椭圆：r_min≈0.59 AU、r_max≈35 AU，近日速度远大于远日速度。',formula:'a≈17.8 AU ⇒ T≈75 yr',svg:SV.esc,howto:'③ 沙盘：选"哈雷彗星"预设，观察近日点速度矢量的剧烈拉伸。',back:'v_p/v_a = (1+0.967)/(1−0.967) ≈ 60：近日"冲刺"、远日"漫步"。'},
+{id:'c_a_sat',cat:'应用',title:'人造卫星与空间站（近圆轨道）',concl:'近圆轨道 r≈a，可用圆轨道公式 v=√(GM/r)、T=2π√(r³/GM) 处理。',formula:'空间站 r≈6771 km ⇒ T≈92.6 min',svg:SV.ellipse,howto:'③ 沙盘：选"圆轨道"预设（e=0），读数 r≈a。',back:'近地卫星万有引力提供向心力：GMm/r² = mv²/r，这是第二定律 e→0 的退化情形。'},
+{id:'c_a_hoh',cat:'应用',title:'霍曼转移（火星探测器）',concl:'沿与两圆轨道相切的椭圆转移最省能量：近日点贴内轨、远日点贴外轨。',formula:'转移轨道 a = (r₁+r₂)/2',svg:SV.sectors,howto:'③ 沙盘·初速度模式：在 r₀=1 处垂直释放并调 v₀ 略大于圆速度，得到近日点在释放点的椭圆。',back:'转移椭圆 a=(1+1.524)/2≈1.262 AU ⇒ T≈1.42 yr，半程约 0.71 yr——与实际发射窗口吻合。'},
+{id:'c_a_exo',cat:'应用',title:'系外行星凌星法（开普勒太空望远镜）',concl:'行星周期性遮挡恒星光度 ⇒ 测 T 与轨道推算 a（第三定律，k 用恒星质量）。',formula:'a = (k·T²)^(1/3)，k=GM_星/4π²',svg:SV.line,howto:'④ 验证·拟合工具：输入 a 与 T 反推 GM 与 M——正是凌星法的核心换算。',back:'测得 T 与凌星深度，结合恒星光谱估计 M_星，即可定行星轨道大小——第三定律的现代应用。'},
+// —— 局限 ——
+{id:'c_lim',cat:'局限',title:'模型局限（可折叠说明）',concl:'本沙盘为理想二体仿真：忽略行星间引力、摄动与相对论效应，中心天体固定。',formula:'适用条件：M ≫ m、孤立二体',svg:SV.twobody,howto:'③ 沙盘中一切读数均基于该近似；真实太阳系摄动约 10⁻³ 量级。',back:'双星系统两体绕质心互绕（拓展）；水星近日点进动需广义相对论修正（每百年 43″）。'}
+];
+/* ================= 通用工具 ================= */
+const el=id=>document.getElementById(id);
+const fmt=(x,d=3)=>(x===null||x===undefined||isNaN(x))?'—':(+x).toFixed(d);
+const fE=(x,d=3)=>(x===null||isNaN(x))?'—':(+x).toExponential(d);
+function fmtL(x){return UNITS==='AU'?fmt(x)+' AU':fE(x*AU_M,3)+' m';}
+function fmtV(x){return UNITS==='AU'?fmt(x)+' AU/yr':fmt(x*AU_M/YR_S,1)+' m/s';}
+function fmtT(x){return UNITS==='AU'?fmt(x)+' yr':fE(x*YR_S,3)+' s';}
+function fmtA2(x){return UNITS==='AU'?fmt(x)+' AU²/yr':fE(x*AU_M*AU_M/YR_S,3)+' m²/s';}
+/* Canvas 高 DPI 管理 */
+const CV={};
+function setupCanvas(id){
+  const cv=el(id); if(!cv) return null;
+  const r=cv.getBoundingClientRect();
+  if(r.width<10){return null;}
+  const dpr=window.devicePixelRatio||1;
+  cv.width=Math.round(r.width*dpr); cv.height=Math.round(r.height*dpr);
+  const ctx=cv.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0);
+  CV[id]={cv,ctx,W:r.width,H:r.height};
+  return CV[id];
+}
+function getC(id){return CV[id]||setupCanvas(id);}
+window.addEventListener('resize',()=>{Object.keys(CV).forEach(k=>delete CV[k]);['cvHist','cvEll','cvSim','cvLaw1','cvLaw2','cvLaw3','chA3T2','chLog','chKM','chTe','chVr','chAr'].forEach(setupCanvas);lawsDirty=true;});
+/* 画布小工具 */
+function stars(id,n=90){let a=[],s=42;const rnd=()=>{s=(s*16807)%2147483647;return s/2147483647;};for(let i=0;i<n;i++)a.push([rnd(),rnd(),rnd()*1.1+0.2,rnd()]);return a;}
+const STARS={};
+function drawSpace(c){
+  const{ctx,W,H}=c;const g=ctx.createRadialGradient(W/2,H/2,10,W/2,H/2,Math.max(W,H)*0.75);
+  g.addColorStop(0,'#13203a');g.addColorStop(1,'#080d18');ctx.fillStyle=g;ctx.fillRect(0,0,W,H);
+  if(!STARS[c.cv.id])STARS[c.cv.id]=stars(c.cv.id);
+  ctx.fillStyle='#fff';
+  STARS[c.cv.id].forEach(s=>{ctx.globalAlpha=0.25+s[3]*0.5;ctx.beginPath();ctx.arc(s[0]*W,s[1]*H,s[2],0,TAU);ctx.fill();});
+  ctx.globalAlpha=1;
+}
+function dot(ctx,x,y,r,color,label,lc){
+  ctx.fillStyle=color;ctx.beginPath();ctx.arc(x,y,r,0,TAU);ctx.fill();
+  if(label){ctx.fillStyle=lc||'#e7eefb';ctx.font='11px "Microsoft YaHei"';ctx.fillText(label,x+r+3,y+4);}
+}
+function sunGlow(ctx,x,y,R,label){
+  const g=ctx.createRadialGradient(x,y,R*0.2,x,y,R*2.6);
+  g.addColorStop(0,'rgba(255,200,60,0.9)');g.addColorStop(0.35,'rgba(255,170,40,0.35)');g.addColorStop(1,'rgba(255,150,30,0)');
+  ctx.fillStyle=g;ctx.beginPath();ctx.arc(x,y,R*2.6,0,TAU);ctx.fill();
+  dot(ctx,x,y,R,CL.sun,label||'太阳');
+}
+function arrow(ctx,x1,y1,x2,y2,color,label){
+  ctx.strokeStyle=color;ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+  const a=Math.atan2(y2-y1,x2-x1),h=7;
+  ctx.fillStyle=color;ctx.beginPath();
+  ctx.moveTo(x2,y2);ctx.lineTo(x2-h*Math.cos(a-0.45),y2-h*Math.sin(a-0.45));ctx.lineTo(x2-h*Math.cos(a+0.45),y2-h*Math.sin(a+0.45));ctx.closePath();ctx.fill();
+  if(label){ctx.fillStyle=color;ctx.font='11px "Microsoft YaHei"';ctx.fillText(label,x2+4,y2-4);}
+}
+/* ================= 开普勒求解器（半解析） ================= */
+function solveKepler(M,e){ // 牛顿迭代解 M = E − e·sinE
+  M=M%TAU; if(M<0)M+=TAU;
+  let E=e<0.8?M:PI;
+  for(let i=0;i<20;i++){
+    const f=E-e*Math.sin(E)-M, fp=1-e*Math.cos(E), d=f/fp;
+    E-=d; if(Math.abs(d)<1e-13)break;
+  }
+  return E;
+}
+/* 由 a、e、GM、t 求位置速度（焦点在原点，近日点方向 periDir） */
+function keplerPos(a,e,GM,t,M0,periDir){
+  const n=Math.sqrt(GM/(a*a*a)), M=M0+n*t, E=solveKepler(M,e);
+  const cE=Math.cos(E),sE=Math.sin(E),sb=Math.sqrt(Math.max(0,1-e*e));
+  const px=a*(cE-e), py=a*sb*sE, r=a*(1-e*cE);
+  const dE=n/(1-e*cE);
+  const vx=-a*sE*dE, vy=a*sb*cE*dE;
+  const co=Math.cos(periDir||0),si=Math.sin(periDir||0);
+  return {x:px*co-py*si,y:px*si+py*co,vx:vx*co-vy*si,vy:vx*si+vy*co,r,v:Math.hypot(vx,vy),E};
+}
+/* 由状态反解轨道根数（v0 模式） */
+function elementsFromState(x,y,vx,vy,GM){
+  const r=Math.hypot(x,y),v2=vx*vx+vy*vy;
+  const En=v2/2-GM/r, L=x*vy-y*vx;
+  const a=-GM/(2*En);
+  const rv=x*vx+y*vy;
+  const ex=(v2/GM-1/r)*x-rv*vx/GM, ey=(v2/GM-1/r)*y-rv*vy/GM;
+  const e=Math.hypot(ex,ey);
+  const b=En<0?a*Math.sqrt(Math.max(0,1-e*e)):0;
+  // 初始偏近点角 E₀：cos E₀=(1−r/a)/e，sin E₀=rv/(e·√(GM·a))，再得平近点角 M₀=E₀−e·sinE₀
+  let E0=0;
+  if(e>1e-9&&En<0){
+    const cosE=Math.max(-1,Math.min(1,(1-r/a)/e));
+    const sinE=rv/(e*Math.sqrt(GM*a));
+    E0=Math.atan2(sinE,cosE);
+  }
+  const M0=E0-e*Math.sin(E0);
+  return {a,b,e,E:En,L,r,periDir:(e>1e-9)?Math.atan2(ey,ex):0,bound:En<0,E0,M0};
+}
+/* RK4 一步 */
+function rk4(s,dt,GM){
+  const acc=(x,y)=>{const r2=x*x+y*y,r=Math.sqrt(r2),g=GM/(r2*r);return[-g*x,-g*y];};
+  const x=s.x,y=s.y,vx=s.vx,vy=s.vy;
+  const a1=acc(x,y);
+  const a2=acc(x+vx*dt/2,y+vy*dt/2);
+  const a3=acc(x+(vx+a1[0]*dt/2)*dt/2,y+(vy+a1[1]*dt/2)*dt/2);
+  const a4=acc(x+(vx+a2[0]*dt)*dt,y+(vy+a2[1]*dt)*dt);
+  const k1x=vx,k1y=vy;
+  const k2x=vx+a1[0]*dt/2,k2y=vy+a1[1]*dt/2;
+  const k3x=vx+a2[0]*dt/2,k3y=vy+a2[1]*dt/2;
+  const k4x=vx+a3[0]*dt,k4y=vy+a3[1]*dt;
+  s.x=x+dt/6*(k1x+2*k2x+2*k3x+k4x);
+  s.y=y+dt/6*(k1y+2*k2y+2*k3y+k4y);
+  s.vx=vx+dt/6*(a1[0]+2*a2[0]+2*a3[0]+a4[0]);
+  s.vy=vy+dt/6*(a1[1]+2*a2[1]+2*a3[1]+a4[1]);
+}
+/* 视图（世界坐标 AU → 屏幕） */
+function makeView(){return{scale:100,cx:0,cy:0};}
+function w2s(v,x,y,W,H){return[W/2+(x-v.cx)*v.scale,H/2-(y-v.cy)*v.scale];}
+function s2w(v,sx,sy,W,H){return[(sx-W/2)/v.scale+v.cx,(H/2-sy)/v.scale+v.cy];}
+function fitView(v,a,e,W,H,pad=1.18){v.cx=0;v.cy=0;v.scale=Math.min(W,H)/(2*a*(1+e)*pad);}
+/* 等时间扇形（解析计算，N 个扇形） */
+function computeSectors(a,e,GM,N=12){
+  const T=TAU*Math.sqrt(a*a*a/GM), dt=T/N, sb=Math.sqrt(1-e*e), out=[];
+  for(let i=0;i<N;i++){
+    const pts=[];const K=36;
+    for(let k=0;k<=K;k++){
+      const E=solveKepler((i+k/K)*dt/T*TAU,e); // M 线性于时间
+      pts.push([a*(Math.cos(E)-e),a*sb*Math.sin(E)]);
+    }
+    let area=0;
+    for(let k=0;k<K;k++){const p=pts[k],q=pts[k+1];area+=Math.abs(p[0]*q[1]-p[1]*q[0])/2;}
+    const avgR=pts.reduce((s,p)=>s+Math.hypot(p[0],p[1]),0)/(K+1);
+    out.push({pts,area,t0:i*dt,t1:(i+1)*dt,avgR,near:avgR<a*(1+0.0)});
+  }
+  // 椭圆面积 = π·a·b = π·a²·√(1−e²)，故 dA/dt = πa²√(1−e²)/T = L/2
+  return {sectors:out,T,dt,dAdt:PI*a*a*sb/T};
+}
+/* 通用坐标图（浅色背景） */
+function drawChart(id,cfg){
+  const c=getC(id); if(!c)return; const{ctx,W,H}=c;
+  ctx.fillStyle='#fff';ctx.fillRect(0,0,W,H);
+  const mL=44,mR=8,mT=8,mB=26, pw=W-mL-mR, ph=H-mT-mB;
+  const all=[];
+  (cfg.series||[]).forEach(s=>(s.pts||[]).forEach(p=>all.push(p)));
+  if(!all.length){ctx.fillStyle='#64748b';ctx.font='12px sans-serif';ctx.fillText('（数据待生成）',mL+10,mT+20);return;}
+  let x0=all[0][0],x1=x0,y0=all[0][1],y1=y0;
+  all.forEach(p=>{x0=Math.min(x0,p[0]);x1=Math.max(x1,p[0]);y0=Math.min(y0,p[1]);y1=Math.max(y1,p[1]);});
+  if(cfg.zero){x0=Math.min(x0,0);y0=Math.min(y0,0);}
+  if(x1-x0<1e-9)x1=x0+1; if(y1-y0<1e-9)y1=y0+1;
+  const pad=(x1-x0)*0.05+(cfg.zero?0:0.05); x0-=pad;x1+=pad; y0-=(y1-y0)*0.08;y1+=(y1-y0)*0.08;
+  const X=v=>mL+(v-x0)/(x1-x0)*pw, Y=v=>mT+ph-(v-y0)/(y1-y0)*ph;
+  ctx.strokeStyle='#e5e7eb';ctx.fillStyle='#64748b';ctx.font='10px sans-serif';
+  for(let i=0;i<=4;i++){const xv=x0+(x1-x0)*i/4, yv=y0+(y1-y0)*i/4;
+    ctx.beginPath();ctx.moveTo(X(xv),mT);ctx.lineTo(X(xv),mT+ph);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(mL,Y(yv));ctx.lineTo(mL+pw,Y(yv));ctx.stroke();
+    ctx.fillText(Math.abs(xv)>=1000?xv.toExponential(1):(+xv.toFixed(3)),X(xv)-12,H-8);
+    ctx.save();ctx.translate(10,Y(yv)+3);ctx.fillText(Math.abs(yv)>=1000?yv.toExponential(1):(+yv.toFixed(3)),0,0);ctx.restore();}
+  ctx.strokeStyle='#334155';ctx.beginPath();ctx.moveTo(mL,mT+ph);ctx.lineTo(mL+pw,mT+ph);ctx.moveTo(mL,mT);ctx.lineTo(mL,mT+ph);ctx.stroke();
+  ctx.fillStyle='#1f2937';ctx.font='11px "Microsoft YaHei"';
+  ctx.fillText(cfg.xlab||'',mL+pw/2-20,H-8);
+  ctx.save();ctx.translate(11,mT+ph/2+24);ctx.rotate(-PI/2);ctx.fillText(cfg.ylab||'',0,0);ctx.restore();
+  (cfg.series||[]).forEach(s=>{
+    if(s.line&&s.pts.length>1){ctx.strokeStyle=s.color;ctx.lineWidth=s.dash?1:1.8;if(s.dash)ctx.setLineDash([5,4]);
+      ctx.beginPath();s.pts.forEach((p,i)=>i?ctx.lineTo(X(p[0]),Y(p[1])):ctx.moveTo(X(p[0]),Y(p[1])));ctx.stroke();ctx.setLineDash([]);}
+    else if(s.pts){ctx.fillStyle=s.color;ctx.strokeStyle=s.color;
+      s.pts.forEach(p=>{if(s.step){ctx.fillRect(X(p[0])-4,Y(p[1])-7,8,7);}else{ctx.beginPath();ctx.arc(X(p[0]),Y(p[1]),3.2,0,TAU);ctx.fill();if(s.hollow){ctx.strokeStyle='#fff';ctx.lineWidth=1;ctx.stroke();ctx.fillStyle=s.color;ctx.fill();}}});}
+  });
+}
+/* 标签页切换 */
+let activeTab='history';
+document.querySelectorAll('.tabbar button').forEach(b=>{
+  b.addEventListener('click',()=>{
+    document.querySelectorAll('.tabbar button').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+    activeTab=b.dataset.tab; el('page-'+activeTab).classList.add('on');
+    ['cvHist','cvEll','cvSim','cvLaw1','cvLaw2','cvLaw3'].forEach(setupCanvas);
+    if(activeTab==='laws')drawLawsAll();
+  });
+});
+/* ================= ① 历史演变 ================= */
+const hist={t:0,running:!RM,view:'helio',trail:[],lastT:-1};
+const TE=1.0,TM=1.881,RE=1.0,RMm=1.52; // 地球/火星（半径示意）
+document.querySelectorAll('[data-hview]').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('[data-hview]').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+  hist.view=b.dataset.hview;hist.trail=[];
+  el('histHint').textContent=hist.view==='helio'
+   ?'日心视角：地球（蓝）与火星（红）绕太阳做圆周运动，简洁有序。切换到地心视角观察火星"逆行"。'
+   :'地心视角（示意）：地球固定于中心，火星（红）轨迹出现回环——这就是"逆行"。虚线圆显示"本轮+均轮"式的分解：火星绕太阳、太阳绕地球。地心说需要叠加多个本轮才能拟合这种轨迹。';
+}));
+el('histPlay').addEventListener('click',()=>{hist.running=!hist.running;el('histPlay').textContent=hist.running?'暂停':'播放';});
+function histUpdate(dt){ if(hist.running)hist.t+=dt*0.35; }
+function histDraw(){
+  const c=getC('cvHist');if(!c)return;const{ctx,W,H}=c;drawSpace(c);
+  // 日心视角需容纳火星轨 1.52R；地心视角火星相对地球的轨迹最远达 (1.52+1)R，故缩得更小
+  const cx=W/2,cy=H/2,R=Math.min(W,H)*(hist.view==='helio'?0.30:0.18);
+  const aE=TAU*hist.t/TE, aM=TAU*hist.t/TM;
+  const eP=[cx+R*RE*Math.cos(aE),cy-R*RE*Math.sin(aE)];
+  const mP=[cx+R*RMm*Math.cos(aM),cy-R*RMm*Math.sin(aM)];
+  const sP=[cx,cy];
+  if(hist.view==='helio'){
+    ctx.strokeStyle='rgba(255,255,255,0.25)';ctx.setLineDash([4,4]);
+    [RE,RMm].forEach(r=>{ctx.beginPath();ctx.arc(cx,cy,R*r,0,TAU);ctx.stroke();});
+    ctx.setLineDash([]);
+    sunGlow(ctx,cx,cy,9);
+    dot(ctx,eP[0],eP[1],5,'#4A90E2','地球');
+    dot(ctx,mP[0],mP[1],5,'#E0574F','火星');
+    ctx.fillStyle=CL.text;ctx.font='12px "Microsoft YaHei"';ctx.fillText('日心参考系：两条简单圆轨道',12,20);
+  }else{
+    // 地心：地球在中心，位置矢量作差
+    const mG=[mP[0]-eP[0],mP[1]-eP[1]]; // 火星相对地球
+    const sG=[sP[0]-eP[0],sP[1]-eP[1]]; // 太阳相对地球
+    hist.trail.push(mG); if(hist.trail.length>900)hist.trail.shift();
+    ctx.strokeStyle='rgba(224,87,79,0.75)';ctx.lineWidth=1.5;ctx.beginPath();
+    hist.trail.forEach((p,i)=>{const x=cx+(p[0]-sG[0]*0)*1,y=cy+p[1]*1; i?ctx.lineTo(x,y):ctx.moveTo(x,y);});
+    ctx.stroke();ctx.lineWidth=1;
+    // 本轮分解示意：太阳绕地（均轮），火星绕太阳（本轮）
+    ctx.strokeStyle='rgba(255,210,80,0.35)';ctx.setLineDash([3,4]);
+    ctx.beginPath();ctx.arc(cx,cy,R*RE,0,TAU);ctx.stroke();
+    ctx.beginPath();ctx.arc(cx+sG[0],cy+sG[1],Math.hypot(mG[0]-sG[0],mG[1]-sG[1]),0,TAU);ctx.stroke();
+    ctx.setLineDash([]);
+    dot(ctx,cx,cy,6,'#4A90E2','地球（固定）');
+    sunGlow(ctx,cx+sG[0],cy+sG[1],6,'太阳');
+    dot(ctx,cx+mG[0],cy+mG[1],5,'#E0574F','火星');
+    ctx.fillStyle=CL.text;ctx.font='12px "Microsoft YaHei"';ctx.fillText('地心参考系（示意）：火星轨迹出现"逆行"回环',12,20);
+  }
+  ctx.fillStyle='rgba(219,231,245,0.8)';ctx.font='11px "Microsoft YaHei"';
+  ctx.fillText('t = '+fmt(hist.t%20)+' yr（速率按真实周期比 1 : 1.881，轨道半径示意）',12,H-12);
+}
+/* 时间轴 UI */
+let tlSel=3;
+function buildTL(){
+  const box=el('tl');box.innerHTML='';
+  TIMELINE.forEach((n,i)=>{
+    const d=document.createElement('div');d.className='tlnode'+(i===tlSel?' on':'');d.tabIndex=0;d.setAttribute('role','button');
+    d.innerHTML='<span class="yr">'+n.y+'</span><span><span class="who">'+n.who+'</span> <span class="tag">'+n.tag+'</span></span>';
+    d.addEventListener('click',()=>{tlSel=i;buildTL();});
+    d.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' '){tlSel=i;buildTL();}});
+    box.appendChild(d);
+  });
+  const n=TIMELINE[tlSel];
+  el('tlInfo').innerHTML='<b>'+n.who+' · '+n.y+' · '+n.tag+'</b><br>'+n.txt+'<div class="lim">'+n.lim+'</div>';
+}
+buildTL();
+/* ================= ② 画椭圆（两图钉+细绳） ================= */
+const ell={a:1,e:0.5,mode:'idle',nu:0,runT:0,pencilOn:false,sunPos:'focus',tracePts:[]};
+function ellParams(){const a=ell.a,e=ell.e;return{a,b:a*Math.sqrt(1-e*e),c:a*e,e,rmin:a*(1-e),rmax:a*(1+e)};}
+function ellUpdate(dt){
+  if(ell.mode==='pencil'){ell.nu+=dt*1.1;if(ell.nu>=TAU){ell.nu=TAU;ell.mode='idle';}}
+  if(ell.mode==='run'){ell.runT+=dt*0.8;}
+}
+function ellDraw(){
+  const c=getC('cvEll');if(!c)return;const{ctx,W,H}=c;drawSpace(c);
+  const p=ellParams();
+  const sc=Math.min(W,H)/(2*p.rmax*1.15);
+  const cx=W/2+p.c*sc*0.0, cy=H/2; // 椭圆中心
+  const focL=[cx-p.c*sc,cy],focR=[cx+p.c*sc,cy]; // F1(左,太阳), F2(右)
+  // 轨道
+  ctx.strokeStyle=CL.orbit;ctx.lineWidth=1.2;ctx.beginPath();ctx.ellipse(cx,cy,p.a*sc,p.b*sc,0,0,TAU);ctx.stroke();
+  // 等时扇形（运行模式）
+  if(ell.mode==='run'){
+    const sec=computeSectors(p.a,p.e,GM0,12);
+    // 焦点为原点、近日点在 −x 方向：世界 x → 屏幕 x 需取负号（与近日点画在 cx−a·sc 一致）
+    sec.sectors.forEach(s=>{
+      ctx.fillStyle=s.avgR<p.a?CL.secN:CL.secF;
+      ctx.beginPath();ctx.moveTo(focL[0],focL[1]);
+      s.pts.forEach(pt=>ctx.lineTo(focL[0]-pt[0]*sc,focL[1]-pt[1]*sc));
+      ctx.closePath();ctx.fill();
+    });
+    // 行星
+    const st=keplerPos(p.a,p.e,GM0,ell.runT,0,0);
+    const px=focL[0]-st.x*sc,py=focL[1]-st.y*sc;
+    dot(ctx,px,py,5,CL.planet,'行星');
+    arrow(ctx,px,py,px-st.vx*6,py-st.vy*6,CL.vel,'v');
+    ctx.fillStyle=CL.text;ctx.font='11px "Microsoft YaHei"';
+    ctx.fillText('等时间扇形（12 等分周期）：绿=近日侧、紫=远日侧，面积相等',12,H-28);
+    ctx.fillText('dA/dt = '+fmt(sec.dAdt)+' AU²/yr，T = '+fmt(sec.T)+' yr',12,H-12);
+  }
+  // 铅笔（描点模式）
+  if(ell.mode==='pencil'&&ell.nu>0){
+    const nu=ell.nu;
+    const px=cx+p.a*sc*Math.cos(nu), py=cy-p.b*sc*Math.sin(nu);
+    ctx.strokeStyle='#A3E635';ctx.lineWidth=1.4;
+    ctx.beginPath();ctx.moveTo(focL[0],focL[1]);ctx.lineTo(px,py);ctx.lineTo(focR[0],focR[1]);ctx.stroke();ctx.lineWidth=1;
+    ctx.strokeStyle='#FDE68A';ctx.setLineDash([2,3]);
+    ctx.beginPath();ctx.arc(px,py,8,0,TAU);ctx.stroke();ctx.setLineDash([]);
+    dot(ctx,px,py,3.5,'#FDE68A','铅笔 P');
+    // 实测 PF1+PF2
+    const r1=Math.hypot(px-focL[0],py-focL[1])/sc,r2=Math.hypot(px-focR[0],py-focR[1])/sc;
+    const sum=r1+r2,err=Math.abs(sum-2*p.a)/(2*p.a);
+    el('ell_sum').textContent=fmt(sum)+' AU（误差 '+fmt(err*100,2)+'%）';
+    ctx.fillStyle='#FDE68A';ctx.font='11px "Microsoft YaHei"';
+    ctx.fillText('PF₁+PF₂ = '+fmt(r1,2)+' + '+fmt(r2,2)+' = '+fmt(r1+r2)+' AU（绳长恒定）',12,H-12);
+  } else if(ell.mode==='idle'){el('ell_sum').textContent=fmt(2*p.a)+' AU（恒等）';}
+  // 图钉
+  dot(ctx,focR[0],focR[1],4,'#FCD34D','F₂');
+  // 太阳：焦点（正确）或中心（错误对照）
+  if(ell.sunPos==='focus'){sunGlow(ctx,focL[0],focL[1],8,ell.sunPos==='focus'?'太阳（焦点F₁）':'太阳');}
+  else{sunGlow(ctx,cx,cy,8,'太阳(中心!)');ctx.fillStyle='#FF8A80';ctx.font='12px "Microsoft YaHei"';
+    ctx.fillText('✗ 错误对照：太阳在中心——违反开普勒第一定律（正确位置是焦点 F₁）',12,20);}
+  dot(ctx,focL[0],focL[1],3,'#FCD34D','F₁');
+  // 中心、轴、标注
+  dot(ctx,cx,cy,2.5,'#94A3B8','O（中心）');
+  ctx.strokeStyle=CL.axes;ctx.setLineDash([5,4]);
+  ctx.beginPath();ctx.moveTo(cx-p.a*sc-12,cy);ctx.lineTo(cx+p.a*sc+12,cy);ctx.stroke(); // 长轴
+  ctx.beginPath();ctx.moveTo(cx,cy-p.b*sc-10);ctx.lineTo(cx,cy+p.b*sc+10);ctx.stroke(); // 短轴
+  ctx.setLineDash([]);
+  // a、c 标注线
+  ctx.strokeStyle='rgba(120,180,255,0.8)';ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(cx+p.a*sc,cy);ctx.stroke();
+  ctx.fillStyle=CL.text;ctx.font='11px "Microsoft YaHei"';ctx.fillText('a',cx+p.a*sc*0.5+3,cy-6);
+  ctx.strokeStyle='rgba(255,213,79,0.8)';ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(focR[0],focR[1]);ctx.stroke();
+  ctx.fillText('c',cx+p.c*sc*0.5+3,cy+14);ctx.fillText('b',cx+5,cy-p.b*sc*0.5);
+  // 近日/远日点
+  dot(ctx,cx-p.a*sc,cy,3,'#34D399','近日点');
+  dot(ctx,cx+p.a*sc,cy,3,'#C084FC','远日点');
+  // 细绳
+  if(ell.mode!=='pencil'){
+    const nu=ell.nu||0.001;
+    const px=cx+p.a*sc*Math.cos(nu),py=cy+p.b*sc*Math.sin(nu);
+    ctx.strokeStyle='rgba(163,230,53,0.5)';ctx.lineWidth=1;
+    ctx.beginPath();ctx.moveTo(focL[0],focL[1]);ctx.lineTo(px,py);ctx.lineTo(focR[0],focR[1]);ctx.stroke();
+  }
+  // 读数
+  el('ell_a').textContent=fmt(p.a)+' AU';el('ell_b').textContent=fmt(p.b)+' AU';
+  el('ell_c').textContent=fmt(p.c)+' AU';el('ell_e').textContent=fmt(p.e);
+  el('ell_rmin').textContent=fmt(p.rmin)+' AU';el('ell_rmax').textContent=fmt(p.rmax)+' AU';
+  el('ell_2a').textContent=fmt(2*p.a)+' AU';
+  el('ellWarn').className='warn'+(ell.sunPos==='center'?' show':'');
+  el('ellWarn').innerHTML=ell.sunPos==='center'?'⚠ 太阳被放在椭圆中心——这是错误对照。真实情况：太阳位于<b>焦点</b>，近日点距离 a(1−e)、远日点 a(1+e) 不再对称于中心。请切回"太阳在焦点"强化正确图像。':'';
+}
+el('ell2a').addEventListener('input',e=>{ell.a=+e.target.value/2;el('ell2aV').textContent=(+e.target.value).toFixed(2)+' AU';});
+el('ellE').addEventListener('input',e=>{ell.e=+e.target.value;el('ellEV').textContent=(+e.target.value).toFixed(2);});
+document.querySelectorAll('[data-sunpos]').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('[data-sunpos]').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+  ell.sunPos=b.dataset.sunpos;
+}));
+el('btnEllTrace').addEventListener('click',()=>{ell.nu=0;ell.mode='pencil';});
+el('btnEllRun').addEventListener('click',()=>{ell.runT=0;ell.mode='run';});
+el('btnEllClear').addEventListener('click',()=>{ell.mode='idle';ell.nu=0;});
+/* ================= ③ 轨道沙盘 ================= */
+const sim={
+  mode:'orbit',GM:GM0,a:1,e:0.5,m:1,relAngle:0,M0:0,
+  r0:1,v0:TAU,beta:90,
+  t:0,running:!RM,speed:1,
+  state:null,pos:null,trail:[],
+  E0:null,L0:null,Tsim:null,TsimStart:null,accAngle:0,prevAng:null,
+  state0:null,sectorPolys:null,
+  view:makeView(),hotspots:[],
+  show:{trail:1,vel:1,grav:1,sect:1,anno:1,grid:1,apsi:1,read:1,sound:0}
+};
+function simCurrentElems(){ // 当前轨道根数（双模式统一）
+  if(sim.mode==='orbit')return{a:sim.a,b:sim.a*Math.sqrt(1-sim.e*sim.e),e:sim.e,E:-sim.GM/(2*sim.a),L:Math.sqrt(sim.GM*sim.a*(1-sim.e*sim.e)),periDir:0,bound:true};
+  return elementsFromState(sim.state.x,sim.state.y,sim.state.vx,sim.state.vy,sim.GM);
+}
+function simReset(){
+  sim.t=0;sim.trail=[];sim.sectorPolys=null;
+  sim.Tsim=null;sim.TsimStart=null;sim.accAngle=0;sim.prevAng=null;sim.E0=null;sim.L0=null;sim.pos=null;
+  if(sim.mode==='orbit'){
+    sim.M0=sim.relAngle===180?PI:0;
+    sim.pos=keplerPos(sim.a,sim.e,sim.GM,0,sim.M0,0);
+  }else{
+    const x=sim.r0,y=0,th=sim.beta*PI/180;
+    const vx=sim.v0*Math.cos(th), vy=sim.v0*Math.sin(th); // 释放点在 +x 轴，β 相对矢径
+    sim.state={x,y,vx,vy};sim.state0={x,y,vx,vy};
+    const elx=elementsFromState(x,y,vx,vy,sim.GM);
+    sim.E0=elx.E;sim.L0=elx.L;
+    sim.pos={x,y,vx,vy,r:Math.hypot(x,y),v:sim.v0};
+    buildV0Sectors(); // 由初始状态解析构造等时扇形（与帧率、时间倍率无关）
+  }
+  fitIfNeeded();
+}
+function fitIfNeeded(force){
+  const a=sim.mode==='orbit'?sim.a:sim.r0*1.6;
+  const e=sim.mode==='orbit'?sim.e:0.6;
+  if(force||!sim._fitted){const c=getC('cvSim');if(c){fitView(sim.view,a,e,c.W,c.H);sim._fitted=true;}}
+}
+function simUpdate(dtYr){
+  if(!sim.running||dtYr<=0)return;
+  sim.t+=dtYr;
+  if(sim.mode==='orbit'){
+    sim.pos=keplerPos(sim.a,sim.e,sim.GM,sim.t,sim.M0,0);
+  }else{
+    // RK4 子步细分
+    const N=Math.min(6000,Math.max(150,Math.ceil(dtYr/2e-5)));
+    const h=dtYr/N;
+    for(let i=0;i<N;i++){rk4(sim.state,h,sim.GM);}
+    const p=sim.state;const r=Math.hypot(p.x,p.y);
+    sim.pos={x:p.x,y:p.y,vx:p.vx,vy:p.vy,r,v:Math.hypot(p.vx,p.vy)};
+    // 轨迹点在下方统一入栈（此处不再重复入栈）
+  }
+  // 周期实测（角度累积法）
+  const ang=Math.atan2(sim.pos.y,sim.pos.x);
+  if(sim.prevAng!==null){
+    let d=ang-sim.prevAng;if(d>PI)d-=TAU;if(d<-PI)d+=TAU;sim.accAngle+=d;
+    if(sim.accAngle>=TAU){sim.accAngle-=TAU;if(sim.TsimStart!==null&&sim.t-sim.TsimStart>0.05)sim.Tsim=sim.t-sim.TsimStart;sim.TsimStart=sim.t;}
+  } else if(sim.TsimStart===null){sim.TsimStart=sim.t;}
+  sim.prevAng=ang;
+  sim.trail.push([sim.pos.x,sim.pos.y]);
+  while(sim.trail.length>1600)sim.trail.shift();
+}
+function buildV0Sectors(){
+  // 由初始状态解析出轨道根数，再按开普勒方程等分一个周期——与帧率、时间倍率无关
+  if(!sim.state0){sim.sectorPolys=null;return;}
+  const s0=sim.state0, elx=elementsFromState(s0.x,s0.y,s0.vx,s0.vy,sim.GM);
+  if(!elx.bound||elx.e>=1){sim.sectorPolys=null;return;}
+  const T=TAU*Math.sqrt(elx.a**3/sim.GM),N=12,dt=T/N,K=36,out=[];
+  for(let i=0;i<N;i++){
+    const pts=[[0,0]];
+    for(let k=0;k<=K;k++){
+      const p=keplerPos(elx.a,elx.e,sim.GM,i*dt+dt*k/K,elx.M0,elx.periDir);
+      pts.push([p.x,p.y]);
+    }
+    let area=0;for(let k=1;k<pts.length;k++)area+=Math.abs(pts[k-1][0]*pts[k][1]-pts[k-1][1]*pts[k][0])/2;
+    const avgR=pts.reduce((s,q)=>s+Math.hypot(q[0],q[1]),0)/pts.length;
+    out.push({pts,area,avgR,near:avgR<elx.a,t0:i*dt,t1:(i+1)*dt});
+  }
+  sim.sectorPolys=out;
+}
+function drawOrbitPath(ctx,v,W,H,a,e,periDir){
+  const sb=Math.sqrt(1-e*e);
+  ctx.strokeStyle=CL.orbit;ctx.lineWidth=1.2;ctx.beginPath();
+  for(let k=0;k<=90;k++){
+    const E=k/90*TAU;
+    const px=a*(Math.cos(E)-e),py=a*sb*Math.sin(E);
+    const co=Math.cos(periDir),si=Math.sin(periDir);
+    const [sx,sy]=w2s(v,px*co-py*si,px*si+py*co,W,H);
+    k?ctx.lineTo(sx,sy):ctx.moveTo(sx,sy);
+  }
+  ctx.stroke();ctx.lineWidth=1;
+}
+function simDraw(){
+  const c=getC('cvSim');if(!c)return;const{ctx,W,H}=c;drawSpace(c);
+  const v=sim.view,p=sim.pos;
+  if(!p)return;
+  const elx=simCurrentElems();
+  const bound=elx.bound&&elx.e<1;
+  // 网格
+  if(sim.show.grid){
+    ctx.strokeStyle='rgba(120,140,170,0.15)';ctx.lineWidth=1;
+    const step=niceStep(120/v.scale);
+    const wx0=Math.floor(s2w(v,0,0,W,H)[0]/step)*step,wx1=s2w(v,W,0,W,H)[0];
+    const wy0=Math.floor(s2w(v,0,H,W,H)[1]/step)*step,wy1=s2w(v,0,0,W,H)[1];
+    for(let gx=wx0;gx<=wx1;gx+=step){const[sx]=w2s(v,gx,0,W,H);ctx.beginPath();ctx.moveTo(sx,0);ctx.lineTo(sx,H);ctx.stroke();}
+    for(let gy=wy0;gy<=wy1;gy+=step){const[,sy]=w2s(v,0,gy,W,H);ctx.beginPath();ctx.moveTo(0,sy);ctx.lineTo(W,sy);ctx.stroke();}
+  }
+  // 等时扇形
+  if(sim.show.sect){
+    let polys=null;
+    if(sim.mode==='orbit'){const sec=computeSectors(sim.a,sim.e,sim.GM,12);polys=sec.sectors;}
+    else if(sim.sectorPolys)polys=sim.sectorPolys;
+    if(polys)polys.forEach(s=>{
+      ctx.fillStyle=s.near?CL.secN:CL.secF;
+      ctx.beginPath();const[sx,sy]=w2s(v,0,0,W,H);ctx.moveTo(sx,sy);
+      s.pts.forEach(pt=>{const[qx,qy]=w2s(v,pt[0],pt[1],W,H);ctx.lineTo(qx,qy);});
+      ctx.closePath();ctx.fill();
+    });
+  }
+  // 轨迹残影
+  if(sim.show.trail&&sim.trail.length>1){
+    ctx.strokeStyle=CL.trail;ctx.beginPath();
+    sim.trail.forEach((q,i)=>{const[sx,sy]=w2s(v,q[0],q[1],W,H);i?ctx.lineTo(sx,sy):ctx.moveTo(sx,sy);});
+    ctx.stroke();
+  }
+  // 轨道引导椭圆
+  if(bound)drawOrbitPath(ctx,v,W,H,elx.a,elx.e,elx.periDir);
+  // 长短轴虚线 + 中心（标注）
+  if(sim.show.anno&&bound){
+    const sb=Math.sqrt(1-elx.e*elx.e),co=Math.cos(elx.periDir),si=Math.sin(elx.periDir);
+    const ctr=[-elx.a*elx.e*co,-elx.a*elx.e*si];
+    ctx.strokeStyle=CL.axes;ctx.setLineDash([5,4]);
+    const pA=[ctr[0]+elx.a*co,ctr[1]+elx.a*si],pB=[ctr[0]-elx.a*co,ctr[1]-elx.a*si];
+    const pC=[ctr[0]+elx.b*si,ctr[1]-elx.b*co],pD=[ctr[0]-elx.b*si,ctr[1]+elx.b*co];
+    let s1=w2s(v,pA[0],pA[1],W,H),s2=w2s(v,pB[0],pB[1],W,H);
+    ctx.beginPath();ctx.moveTo(s1[0],s1[1]);ctx.lineTo(s2[0],s2[1]);ctx.stroke();
+    s1=w2s(v,pC[0],pC[1],W,H);s2=w2s(v,pD[0],pD[1],W,H);
+    ctx.beginPath();ctx.moveTo(s1[0],s1[1]);ctx.lineTo(s2[0],s2[1]);ctx.stroke();
+    ctx.setLineDash([]);
+    const sc=w2s(v,ctr[0],ctr[1],W,H);dot(ctx,sc[0],sc[1],2.5,'#94A3B8','O');
+  }
+  // 近日/远日标记
+  const peri=[elx.a*(1-elx.e)*Math.cos(elx.periDir),elx.a*(1-elx.e)*Math.sin(elx.periDir)];
+  const apo=[-elx.a*(1+elx.e)*Math.cos(elx.periDir),-elx.a*(1+elx.e)*Math.sin(elx.periDir)];
+  if(sim.show.apsi&&bound){
+    let s=w2s(v,peri[0],peri[1],W,H);dot(ctx,s[0],s[1],3,'#34D399','近日点');
+    s=w2s(v,apo[0],apo[1],W,H);dot(ctx,s[0],s[1],3,'#C084FC','远日点');
+  }
+  // 太阳（焦点 = 原点）
+  const[ssx,ssy]=w2s(v,0,0,W,H);sunGlow(ctx,ssx,ssy,10);
+  // 行星
+  const[px,py]=w2s(v,p.x,p.y,W,H);
+  dot(ctx,px,py,6,CL.planet,'行星 m='+fmt(sim.m,1));
+  // 矢量
+  if(sim.show.vel)arrow(ctx,px,py,px+p.vx*10/sim.speed**0.2,py-p.vy*10/sim.speed**0.2,CL.vel,'v');
+  if(sim.show.grav){const r=Math.hypot(p.x,p.y)||1,g=40/r;arrow(ctx,px,py,px-p.x/r*g,py+p.y/r*g,CL.grav,'F引');}
+  // 等时间标尺（一个周期）
+  if(bound){
+    const T=TAU*Math.sqrt(elx.a**3/sim.GM);
+    const bx0=50,bx1=W-50,by=H-14;
+    ctx.strokeStyle='rgba(219,231,245,0.5)';ctx.beginPath();ctx.moveTo(bx0,by);ctx.lineTo(bx1,by);ctx.stroke();
+    for(let i=0;i<=12;i++){const xx=bx0+(bx1-bx0)*i/12;
+      ctx.beginPath();ctx.moveTo(xx,by-4);ctx.lineTo(xx,by+4);ctx.stroke();
+      if(i%3===0){ctx.fillStyle='rgba(219,231,245,0.7)';ctx.font='9px sans-serif';ctx.fillText(fmt(T*i/12,1),xx-8,by-7);}}
+    const xm=bx0+(bx1-bx0)*((sim.t%T)/T);
+    ctx.fillStyle='#FFD54F';ctx.beginPath();ctx.arc(xm,by,4,0,TAU);ctx.fill();
+  }
+  // 比例尺
+  if(sim.show.grid){
+    const L=niceStep(90/v.scale),bx=14,by=H-34;
+    ctx.fillStyle='rgba(219,231,245,0.85)';ctx.font='11px "Microsoft YaHei"';
+    ctx.fillText(fmt(L)+' AU'+(UNITS==='SI'?'（'+fE(L*AU_M,2)+' m）':''),bx+L*v.scale+6,by+4);
+  }
+  // 热点（可点击问号）
+  sim.hotspots=[];
+  const hs=(wx,wy,card)=>{const[hx,hy]=w2s(v,wx,wy,W,H);sim.hotspots.push({x:hx,y:hy,card});
+    ctx.fillStyle='rgba(255,255,255,0.9)';ctx.beginPath();ctx.arc(hx+14,hy-14,8,0,TAU);ctx.fill();
+    ctx.fillStyle='#0d1421';ctx.font='10px sans-serif';ctx.fillText('?',hx+11,hy-10);};
+  hs(0,0,'c_r_focus'); if(bound){hs(peri[0],peri[1],'c_apsis');hs(apo[0],apo[1],'c_apsis');}
+  // 状态横幅
+  const bn=el('simBanner');
+  if(!bound){bn.className='warn show';bn.innerHTML='⚠ <b>逃逸轨道</b>（E ≥ 0，e ≥ 1）：开普勒第一、三定律的椭圆形式不适用——轨迹为抛物线（E=0）或双曲线（E>0），行星不再返回。';}
+  else if(elx.e<0.02){bn.className='warn show';bn.innerHTML='ℹ <b>e ≈ 0：轨道退化为圆</b>，两焦点重合于圆心，r ≈ a，速率恒定（第二定律的退化情形）。';}
+  else bn.className='warn';
+  // 读数（每 3 帧刷新一次，避免抖动）
+  if(sim.show.read&&!(frame%3)){
+    const GM=sim.GM,a=elx.a,e=elx.e,b=a*Math.sqrt(Math.max(0,1-e*e));
+    const T=bound?TAU*Math.sqrt(a**3/GM):null;
+    const vp=bound?Math.sqrt(GM*(1+e)/(a*(1-e))):null,va=bound?Math.sqrt(GM*(1-e)/(a*(1+e))):null;
+    const dAdt=elx.L/2;
+    el('ro_r').textContent=fmtL(p.r);el('ro_v').textContent=fmtV(p.v);
+    el('ro_a').textContent=bound?fmtL(a):'—';el('ro_e').textContent=bound?fmt(e):fmt(e)+' (≥1!)';
+    el('ro_b').textContent=bound?fmtL(b):'—';el('ro_rmin').textContent=bound?fmtL(a*(1-e)):'—';
+    el('ro_rmax').textContent=bound?fmtL(a*(1+e)):'—';
+    el('ro_dAdt').textContent=fmtA2(dAdt);el('ro_L').textContent=fmt(elx.L)+' AU²/yr';
+    el('ro_E').textContent=fmt(elx.E)+' AU²/yr²';el('ro_Ts').textContent=fmtT(sim.Tsim);
+    el('ro_Tt').textContent=T?fmtT(T):'—';
+    el('ro_k3').textContent=(T&&sim.Tsim)?fmt(a**3/sim.Tsim):'—';
+    el('ro_k').textContent=fmt(GM/TAU/TAU)+' AU³/yr²';el('ro_GM').textContent=fmt(GM)+' AU³/yr²';
+    el('ro_vp').textContent=vp?fmtV(vp):'—';el('ro_va').textContent=va?fmtV(va):'—';
+    el('ro_ratio').textContent=(bound&&e<1)?fmt((1+e)/(1-e)):'—';
+    el('ro_type').textContent=!bound?(elx.E>0?'双曲线（E>0）':'抛物线（E=0）'):(e<0.02?'圆（e≈0）':'椭圆');
+    el('ro_errE').textContent=sim.mode==='v0'&&sim.E0?fmt(Math.abs((elx.E-sim.E0)/sim.E0)*100,4)+' %':'0 %';
+    el('ro_errL').textContent=sim.mode==='v0'&&sim.L0?fmt(Math.abs((elx.L-sim.L0)/sim.L0)*100,4)+' %':'0 %';
+    el('ro_t').textContent=fmtT(sim.t);
+  }
+}
+function niceStep(x){const cands=[0.05,0.1,0.2,0.5,1,2,5,10,20,50,100];for(const s of cands)if(s>=x)return s;return 200;}
+/* 沙盘交互：拖拽平移、滚轮缩放、热点点击 */
+(function(){
+  const cv=el('cvSim');let drag=null;
+  // 用 clientX/Y + 画布 rect 换算：window 上的 mousemove 的 offsetX 是相对当前 hover 元素的，会跳变
+  const localPos=e=>{const r=cv.getBoundingClientRect();return{x:e.clientX-r.left,y:e.clientY-r.top};};
+  cv.addEventListener('mousedown',e=>{drag=localPos(e);});
+  window.addEventListener('mouseup',()=>drag=null);
+  window.addEventListener('mousemove',e=>{
+    if(!drag)return;const c=getC('cvSim');if(!c)return;
+    const p=localPos(e),dx=p.x-drag.x,dy=p.y-drag.y;
+    sim.view.cx-=dx/sim.view.scale;sim.view.cy+=dy/sim.view.scale;
+    drag=p;sim._fitted=true;
+  });
+  cv.addEventListener('wheel',e=>{
+    e.preventDefault();const c=getC('cvSim');if(!c)return;
+    const f=e.deltaY<0?1.12:0.89;
+    const[wx,wy]=s2w(sim.view,e.offsetX,e.offsetY,c.W,c.H);
+    sim.view.scale*=f;
+    sim.view.cx=wx-(e.offsetX-c.W/2)/sim.view.scale;
+    sim.view.cy=wy+(e.offsetY-c.H/2)/sim.view.scale;
+    sim._fitted=true;
+  },{passive:false});
+  cv.addEventListener('click',e=>{
+    for(const h of sim.hotspots){
+      if(Math.hypot(e.offsetX-h.x-14,e.offsetY-h.y+14)<10){openCard(h.card);return;}
+      if(Math.hypot(e.offsetX-h.x,e.offsetY-h.y)<16){openCard(h.card);return;}
+    }
+  });
+})();
+/* 沙盘控件绑定 */
+el('simMode').addEventListener('click',e=>{
+  const b=e.target.closest('button');if(!b)return;
+  document.querySelectorAll('#simMode button').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+  const prev=sim.mode;sim.mode=b.dataset.mode;
+  const g=v=>{['grpOrbit','grpOrbit2','grpOrbit3'].forEach(id=>el(id).style.display=v?'':'none');['grpV0','grpV0b','grpV0c'].forEach(id=>el(id).style.display=v?'none':'');};
+  g(sim.mode==='orbit');
+  // 模式切换时同步参数
+  if(sim.mode==='v0'&&prev==='orbit'){
+    const e0=sim.e,a0=sim.a;
+    sim.r0=Math.max(0.2,a0*(1-e0));
+    sim.v0=Math.sqrt(sim.GM*(1+e0)/(a0*(1-e0)));sim.beta=90;
+    el('sim_r0').value=sim.r0;el('sim_v0').value=Math.min(15,sim.v0);
+    el('sim_r0v').textContent=fmt(sim.r0,2);el('sim_v0v').textContent=fmt(sim.v0,2);
+  }
+  if(sim.mode==='orbit'&&prev==='v0'&&sim.state){
+    const elx=elementsFromState(sim.state.x,sim.state.y,sim.state.vx,sim.state.vy,sim.GM);
+    if(elx.bound&&elx.e<0.95){sim.a=Math.min(30,Math.max(0.2,elx.a));sim.e=Math.min(0.95,Math.max(0,elx.e));
+      el('sim_a').value=sim.a;el('sim_e').value=sim.e;
+      el('sim_av').textContent=fmt(sim.a,2)+' AU';el('sim_ev').textContent=fmt(sim.e,2);}
+  }
+  simReset();
+});
+el('simM').addEventListener('input',e=>{sim.GM=GM0*(+e.target.value);el('simMv').textContent=(+e.target.value).toFixed(1);simReset();});
+el('sim_m').addEventListener('input',e=>{sim.m=+e.target.value;el('sim_mv').textContent=(+e.target.value).toFixed(1);});
+el('sim_a').addEventListener('input',e=>{sim.a=+e.target.value;el('sim_av').textContent=(+e.target.value).toFixed(2)+' AU';simReset();});
+el('sim_e').addEventListener('input',e=>{sim.e=+e.target.value;el('sim_ev').textContent=(+e.target.value).toFixed(2);simReset();});
+el('simRel').addEventListener('change',e=>{sim.relAngle=+e.target.value;el('simRelv').textContent=(+e.target.value)===0?'近日点':'远日点';simReset();});
+el('sim_r0').addEventListener('input',e=>{sim.r0=+e.target.value;el('sim_r0v').textContent=(+e.target.value).toFixed(2)+' AU';simReset();});
+el('sim_v0').addEventListener('input',e=>{sim.v0=+e.target.value;el('sim_v0v').textContent=(+e.target.value).toFixed(2);simReset();});
+el('sim_beta').addEventListener('input',e=>{sim.beta=+e.target.value;el('sim_betav').textContent=(+e.target.value)+'°';simReset();});
+el('simSpeed').addEventListener('input',e=>{sim.speed=+e.target.value;el('simSpeedv').textContent=(+e.target.value).toFixed(1)+'×';});
+el('btnPlay').addEventListener('click',()=>{sim.running=!sim.running;el('btnPlay').textContent=sim.running?'⏸ 暂停':'▶ 播放';});
+el('btnReset').addEventListener('click',()=>{simReset();});
+el('btnStep').addEventListener('click',()=>{simUpdate(0.02);});
+el('btnPeri').addEventListener('click',()=>{if(sim.mode==='orbit'){sim.t=0;sim.M0=0;sim.relAngle=0;el('simRel').value='0';simReset();}else{const elx=simCurrentElems();if(elx.bound){sim.r0=Math.max(0.2,elx.a*(1-elx.e));sim.v0=Math.sqrt(sim.GM*(1+elx.e)/(elx.a*(1-elx.e)));sim.beta=90;el('sim_r0').value=sim.r0;el('sim_v0').value=Math.min(15,sim.v0);el('sim_v0v').textContent=fmt(sim.v0,2);simReset();}}});
+el('btnFit').addEventListener('click',()=>{const elx=simCurrentElems();const c=getC('cvSim');if(c)fitView(sim.view,Math.abs(elx.a)||sim.r0,Math.min(0.95,elx.e),c.W,c.H);});
+[['ckTrail','trail'],['ckVel','vel'],['ckGrav','grav'],['ckSect','sect'],['ckAnno','anno'],['ckGrid','grid'],['ckApsi','apsi'],['ckRead','read'],['ckSound','sound']].forEach(([id,k])=>{
+  el(id).addEventListener('change',e=>{sim.show[k]=e.target.checked?1:0;});
+});
+/* 预设按钮 */
+PRESETS.forEach((ps,i)=>{
+  const b=document.createElement('button');b.className='btn';b.textContent=ps.name;
+  b.addEventListener('click',()=>{
+    if(ps.hint)el('simBanner').className='warn show',el('simBanner').innerHTML='💡 '+ps.hint;
+    if(ps.laws){switchToTab('laws');return;}
+    sim.mode='orbit';
+    document.querySelectorAll('#simMode button').forEach(x=>x.classList.toggle('on',x.dataset.mode==='orbit'));
+    ['grpOrbit','grpOrbit2','grpOrbit3'].forEach(id=>el(id).style.display='');
+    ['grpV0','grpV0b','grpV0c'].forEach(id=>el(id).style.display='none');
+    sim.a=Math.min(30,ps.a);sim.e=ps.e;
+    el('sim_a').value=sim.a;el('sim_e').value=sim.e;
+    el('sim_av').textContent=fmt(sim.a,2)+' AU';el('sim_ev').textContent=fmt(sim.e,2);
+    simReset();const c=getC('cvSim');if(c)fitView(sim.view,sim.a,sim.e,c.W,c.H);
+  });
+  el('presetBox').appendChild(b);
+});
+function switchToTab(name){
+  document.querySelectorAll('.tabbar button').forEach(x=>x.classList.toggle('on',x.dataset.tab===name));
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('on'));
+  activeTab=name;el('page-'+name).classList.add('on');
+  ['cvHist','cvEll','cvSim','cvLaw1','cvLaw2','cvLaw3'].forEach(setupCanvas);
+  if(name==='laws')drawLawsAll();
+}
+el('btnSyncToV0').addEventListener('click',()=>{ // 轨道→初速度（在近日点垂直释放）
+  sim.r0=Math.max(0.2,sim.a*(1-sim.e));sim.v0=Math.sqrt(sim.GM*(1+sim.e)/(sim.a*(1-sim.e)));sim.beta=90;
+  el('sim_r0').value=sim.r0;el('sim_v0').value=Math.min(15,sim.v0);el('sim_r0v').textContent=fmt(sim.r0,2);
+  el('sim_v0v').textContent=fmt(sim.v0,2);el('sim_beta').value=90;
+  document.querySelectorAll('#simMode button').forEach(x=>x.classList.toggle('on',x.dataset.mode==='v0'));
+  sim.mode='v0';['grpOrbit','grpOrbit2','grpOrbit3'].forEach(id=>el(id).style.display='none');
+  ['grpV0','grpV0b','grpV0c'].forEach(id=>el(id).style.display='');
+  simReset();
+});
+el('btnSyncToOrbit').addEventListener('click',()=>{
+  const elx=simCurrentElems();
+  if(elx.bound&&elx.e<0.95){sim.a=elx.a;sim.e=elx.e;
+    el('sim_a').value=Math.min(30,sim.a);el('sim_e').value=sim.e;
+    el('sim_av').textContent=fmt(sim.a,2)+' AU';el('sim_ev').textContent=fmt(sim.e,2);}
+  document.querySelectorAll('#simMode button').forEach(x=>x.classList.toggle('on',x.dataset.mode==='orbit'));
+  sim.mode='orbit';['grpOrbit','grpOrbit2','grpOrbit3'].forEach(id=>el(id).style.display='');
+  ['grpV0','grpV0b','grpV0c'].forEach(id=>el(id).style.display='none');
+  simReset();
+});
+/* ================= ④ 三定律验证 ================= */
+const law1={e:0.5,sun:'focus'};
+el('law1e').addEventListener('input',e=>{law1.e=+e.target.value;el('law1eV').textContent=(+e.target.value).toFixed(2);});
+document.querySelectorAll('[data-l1sun]').forEach(b=>b.addEventListener('click',()=>{
+  document.querySelectorAll('[data-l1sun]').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+  law1.sun=b.dataset.l1sun;
+  el('law1Warn').className='warn'+(law1.sun==='center'?' show':'');
+  el('law1Warn').innerHTML=law1.sun==='center'?'⚠ <b>错误对照</b>：太阳在中心时，行星到太阳的距离不再满足 r_min=a(1−e)/r_max=a(1+e)（对焦点成立），且不满足面积定律的椭圆解——第谷的观测数据正是以此排除了"太阳在中心"。':'';
+}));
+function law1Draw(){
+  const c=getC('cvLaw1');if(!c)return;const{ctx,W,H}=c;drawSpace(c);
+  const a=1,e=law1.e,b=a*Math.sqrt(1-e*e),cc=a*e;
+  const sc=Math.min(W,H)/(2*a*1.15),cx=W/2,cy=H/2;
+  ctx.strokeStyle=CL.orbit;ctx.lineWidth=1.3;ctx.beginPath();ctx.ellipse(cx,cy,a*sc,b*sc,0,0,TAU);ctx.stroke();
+  const f1=[cx-cc*sc,cy];
+  // 等时间扇形参考（淡）
+  const sec=computeSectors(a,e,GM0,12);
+  sec.sectors.forEach(s=>{ctx.fillStyle=s.near?'rgba(67,160,71,0.22)':'rgba(156,39,176,0.22)';
+    ctx.beginPath();ctx.moveTo(f1[0],f1[1]);s.pts.forEach(pt=>ctx.lineTo(f1[0]-pt[0]*sc,f1[1]-pt[1]*sc));ctx.closePath();ctx.fill();});
+  if(law1.sun==='focus'){sunGlow(ctx,f1[0],f1[1],8,'太阳（焦点）');}
+  else{sunGlow(ctx,cx,cy,8,'太阳(中心!)');
+    ctx.strokeStyle='#FF8A80';ctx.setLineDash([4,3]);
+    const pP=[cx-a*sc,cy],aP=[cx+a*sc,cy];
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(pP[0],pP[1]);ctx.stroke();
+    ctx.beginPath();ctx.moveTo(cx,cy);ctx.lineTo(aP[0],aP[1]);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle='#FF8A80';ctx.font='11px "Microsoft YaHei"';
+    ctx.fillText('中心到近日点 '+fmt(a)+' ≠ r_min=a(1−e)='+fmt(a*(1-e)),cx-80,cy+a*sc+16);
+  }
+  dot(ctx,f1[0],f1[1],3,'#FCD34D','F₁');
+  dot(ctx,cx+cc*sc,cy,3,'#FCD34D','F₂');
+  dot(ctx,cx,cy,2.5,'#94A3B8','O');
+  dot(ctx,cx-a*sc,cy,3,'#34D399','近日点');
+  dot(ctx,cx+a*sc,cy,3,'#C084FC','远日点');
+  ctx.strokeStyle=CL.axes;ctx.setLineDash([4,3]);
+  ctx.beginPath();ctx.moveTo(cx-a*sc-10,cy);ctx.lineTo(cx+a*sc+10,cy);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(cx,cy-b*sc-8);ctx.lineTo(cx,cy+b*sc+8);ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle=CL.text;ctx.font='11px "Microsoft YaHei"';
+  ctx.fillText('a='+fmt(a)+'  b='+fmt(b)+'  c='+fmt(cc)+'  e='+fmt(e),12,18);
+  ctx.fillText('r_min='+fmt(a*(1-e))+'  r_max='+fmt(a*(1+e))+'  b=a√(1−e²)  c=ae',12,34);
+  ctx.fillText(e<0.02?'e≈0：轨道退化为圆（两焦点重合于圆心），r≈a':'太阳始终在焦点 F₁ 上',12,H-12);
+}
+const law2={a:1,e:0.5,t:0};
+el('law2a').addEventListener('input',e=>{law2.a=+e.target.value;law2.t=0;el('law2aV').textContent=(+e.target.value).toFixed(2)+' AU';lawsDirty=true;});
+el('law2e').addEventListener('input',e=>{law2.e=+e.target.value;law2.t=0;el('law2eV').textContent=(+e.target.value).toFixed(2);lawsDirty=true;});
+function law2Draw(dt){
+  const c=getC('cvLaw2');if(!c)return;const{ctx,W,H}=c;drawSpace(c);
+  const a=law2.a,e=law2.e,b=a*Math.sqrt(1-e*e),GM=GM0;
+  const sc=Math.min(W,H)/(2*a*(1+e)*1.1);
+  const f1=[W/2-a*e*sc,H/2];
+  const sec=computeSectors(a,e,GM,12);
+  // 扇形
+  sec.sectors.forEach((s,i)=>{
+    ctx.fillStyle=s.near?CL.secN:CL.secF;
+    ctx.beginPath();ctx.moveTo(f1[0],f1[1]);s.pts.forEach(pt=>ctx.lineTo(f1[0]-pt[0]*sc,f1[1]-pt[1]*sc));ctx.closePath();ctx.fill();
+  });
+  // 轨道
+  ctx.strokeStyle=CL.orbit;ctx.lineWidth=1.2;ctx.beginPath();ctx.ellipse(f1[0]+a*e*sc,H/2,a*sc,b*sc,0,0,TAU);ctx.stroke();
+  sunGlow(ctx,f1[0],f1[1],7);
+  // 行星（动画）
+  if(!RM)law2.t+=dt*0.5;
+  const st=keplerPos(a,e,GM,law2.t%sec.T,0,0);
+  const[px,py]=[f1[0]-st.x*sc,f1[1]-st.y*sc];
+  dot(ctx,px,py,5,CL.planet);
+  arrow(ctx,px,py,px-st.vx*8,py-st.vy*8,CL.vel,'v');
+  ctx.fillStyle=CL.text;ctx.font='11px "Microsoft YaHei"';
+  ctx.fillText('近日扇形（绿）：短而胖 · 远日扇形（紫）：长而瘦 · Δt = T/12',12,16);
+  // 表格
+  const tb=el('law2tbody');let html='';
+  for(let i=0;i<3;i++){
+    const ns=sec.sectors[i],fs=sec.sectors[5+i];
+    html+='<tr'+(i===1?' class="hl"':'')+'><td>第'+(i+1)+'/12 周期</td><td>Δt'+(i+1)+'：'+fmt(ns.area,4)+'</td><td>Δt'+(6+i)+'：'+fmt(fs.area,4)+'</td></tr>';
+  }
+  tb.innerHTML=html;
+  const vp=Math.sqrt(GM*(1+e)/(a*(1-e))),va=Math.sqrt(GM*(1-e)/(a*(1+e)));
+  el('law2_vp').textContent=fmtV(vp);el('law2_va').textContent=fmtV(va);
+  // "实测"：直接取仿真解在近日点(t=0)与远日点(t=T/2)的瞬时速率之比
+  const mP=keplerPos(a,e,GM,0,0,0).v, mA=keplerPos(a,e,GM,sec.T/2,0,0).v;
+  el('law2_ratio').textContent=(mA>0)?fmt(mP/mA):'—';el('law2_ratioT').textContent=fmt((1+e)/(1-e));
+  el('law2_dadt').textContent=fmtA2(sec.dAdt);
+  return {sec,vp,va,a,e};
+}
+/* 定律三：多行星 */
+const law3={M:1,planets:[
+  {name:'行星甲（e=0.1）',a:1,e:0.1,m:1,color:'#4A90E2'},
+  {name:'行星乙（e=0.5，同a）',a:1,e:0.5,m:3,color:'#E0574F'},
+  {name:'行星丙（a=2）',a:2,e:0.2,m:1,color:'#34D399'},
+  {name:'行星丁（a=4）',a:4,e:0.7,m:0.5,color:'#C084FC'}],
+  t:0};
+law3.planets.forEach(p=>{p.acc=0;p.prevAng=null;p.Tsim=null;p.T0=null;});
+el('law3M').addEventListener('input',e=>{
+  law3.M=+e.target.value;law3.t=0;
+  law3.planets.forEach(p=>{p.acc=0;p.prevAng=null;p.Tsim=null;p.T0=null;}); // 换 M 后周期变了，实测数据必须清零重测
+  el('law3Mv').textContent=(+e.target.value).toFixed(1);lawsDirty=true;});
+function law3Draw(dt){
+  const c=getC('cvLaw3');if(!c)return;const{ctx,W,H}=c;drawSpace(c);
+  const GM=GM0*law3.M;
+  // 按各轨道的实际包围盒定标：左伸 a(1−e)、右伸 a(1+e)、半高 b，并把太阳放在包围盒中心
+  let lMax=0,rMax=0,hMax=0;
+  law3.planets.forEach(p=>{
+    lMax=Math.max(lMax,p.a*(1-p.e));
+    rMax=Math.max(rMax,p.a*(1+p.e));
+    hMax=Math.max(hMax,p.a*Math.sqrt(1-p.e*p.e));
+  });
+  const sc=Math.min(W/((lMax+rMax)*1.12),H/(2*hMax*1.15));
+  const sunX=W/2+(rMax-lMax)/2*sc,sunY=H/2;
+  const tb=el('law3tbody');let html='';
+  law3.planets.forEach((p,i)=>{
+    const b=p.a*Math.sqrt(1-p.e*p.e);
+    ctx.strokeStyle=p.color+'88';ctx.lineWidth=1;
+    ctx.beginPath();ctx.ellipse(sunX+p.a*p.e*sc,sunY,p.a*sc,b*sc,0,0,TAU);ctx.stroke();
+    const st=keplerPos(p.a,p.e,GM,law3.t*1,0,0);
+    const px=sunX-st.x*sc,py=sunY-st.y*sc;
+    dot(ctx,px,py,4.5,p.color,p.name.split('（')[0]);
+    // 周期实测（角度累积）
+    const ang=Math.atan2(st.y,st.x);
+    if(p.prevAng!==null){let d=ang-p.prevAng;if(d>PI)d-=TAU;if(d<-PI)d+=TAU;p.acc+=d;
+      if(p.acc>=TAU){p.acc-=TAU;if(p.T0!==null)p.Tsim=law3.t-p.T0;p.T0=law3.t;}}
+    else if(p.T0===null)p.T0=law3.t;
+    p.prevAng=ang;
+    const Tth=TAU*Math.sqrt(p.a**3/GM);
+    html+='<tr'+(i===1?' class="hl"':'')+'><td style="color:'+p.color+'">'+p.name+'</td><td>'+fmt(p.a)+'</td><td>'+fmt(p.e)+'</td><td>'+fmt(p.m,1)+'</td><td>'+(p.Tsim?fmt(p.Tsim):'—')+'</td><td>'+fmt(Tth)+'</td><td>'+(p.Tsim?fmt(p.a**3/(p.Tsim*p.Tsim)):'—')+'</td><td>'+(p.Tsim?fmt(Math.abs(p.a**3/(p.Tsim*p.Tsim)/(GM/TAU/TAU)-1)*100,2)+'%':'—')+'</td></tr>';
+  });
+  if(!RM)law3.t+=dt*0.6;
+  sunGlow(ctx,sunX,sunY,8,'太阳 M='+fmt(law3.M,1));
+  tb.innerHTML=html;
+  el('law3k').textContent=fmt(law3.M)+'（AU³/yr²）';
+  // 换 M 表
+  const km=el('kmtbody');let kmh='';
+  [0.5,1,2].forEach(M=>{const G=GM0*M,T=TAU*Math.sqrt(1/G);
+    kmh+='<tr><td>'+M+'</td><td>'+fmt(T)+'</td><td>'+fmt(G/TAU/TAU)+'</td></tr>';});
+  km.innerHTML=kmh;
+}
+/* 数据记录 */
+const REC=[];let recGroup=0;
+el('btnNewGroup').addEventListener('click',()=>{recGroup=(recGroup+1)%4;});
+el('btnRecord').addEventListener('click',()=>{
+  const elx=simCurrentElems();const bound=elx.bound&&elx.e<1;
+  const T=bound?TAU*Math.sqrt(elx.a**3/sim.GM):null;
+  const vp=bound?Math.sqrt(sim.GM*(1+elx.e)/(elx.a*(1-elx.e))):null;
+  const va=bound?Math.sqrt(sim.GM*(1-elx.e)/(elx.a*(1+elx.e))):null;
+  REC.push({g:recGroup,mode:sim.mode,M:sim.GM/GM0,a:bound?elx.a:null,e:elx.e,m:sim.m,v0:sim.mode==='v0'?sim.v0:null,
+    Ts:sim.Tsim,Tt:T,k:T&&sim.Tsim?elx.a**3/(sim.Tsim*sim.Tsim):null,dAdt:elx.L/2,vp,va,
+    type:!bound?'逃逸':(elx.e<0.02?'圆':'椭圆'),err:T&&sim.Tsim?Math.abs(sim.Tsim/T-1)*100:null});
+  renderRec();lawsDirty=true;beep(true);
+});
+function renderRec(){
+  const tb=el('recTbody');
+  tb.innerHTML=REC.map((r,i)=>'<tr class="g'+r.g+'"><td>G'+(r.g+1)+'-'+(i+1)+'</td><td>'+r.mode+'</td><td>'+fmt(r.M,1)+'</td><td>'+(r.a?fmt(r.a):'—')+'</td><td>'+fmt(r.e)+'</td><td>'+fmt(r.m,1)+'</td><td>'+(r.v0?fmt(r.v0):'—')+'</td><td>'+(r.Ts?fmt(r.Ts):'—')+'</td><td>'+(r.Tt?fmt(r.Tt):'—')+'</td><td>'+(r.k?fmt(r.k):'—')+'</td><td>'+fmt(r.dAdt)+'</td><td>'+(r.vp?fmt(r.vp):'—')+'</td><td>'+(r.va?fmt(r.va):'—')+'</td><td>'+r.type+'</td><td>'+(r.err!==null&&r.err!==undefined?fmt(r.err,2)+'%':'—')+'</td></tr>').join('');
+}
+el('btnClearRec').addEventListener('click',()=>{REC.length=0;renderRec();lawsDirty=true;});
+el('btnCSV').addEventListener('click',()=>{
+  const head='组,模式,M(太阳质量),a(AU),e,m,v0(AU/yr),T实测(yr),T理论(yr),a^3/T^2,dA/dt(AU^2/yr),vp(AU/yr),va(AU/yr),轨道类型,误差(%)';
+  const rows=REC.map(r=>[r.g+1,r.mode,fmt(r.M,1),r.a?fmt(r.a):'',fmt(r.e),fmt(r.m,1),r.v0?fmt(r.v0):'',r.Ts?fmt(r.Ts):'',r.Tt?fmt(r.Tt):'',r.k?fmt(r.k):'',fmt(r.dAdt),r.vp?fmt(r.vp):'',r.va?fmt(r.va):'',r.type,r.err!=null?fmt(r.err,2):''].join(','));
+  const blob=new Blob(['\ufeff'+[head,...rows].join('\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download='开普勒验证数据.csv';a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),2000);
+});
+el('btnFitGM').addEventListener('click',()=>{
+  const a=+el('fitA').value,T=+el('fitT').value;
+  if(a>0&&T>0){const GM=TAU*TAU*a**3/T**2;
+    el('fitOut').innerHTML='GM = 4π²a³/T² = <b>'+fmt(GM)+' AU³/yr²</b> = <b>'+fE(GM*GM_SI/GM0)+' m³/s²</b><br>中心天体质量 M = GM/(4π²) = <b>'+fmt(GM/GM0)+' 太阳质量</b>';}
+});
+/* 图像区 */
+let lawsDirty=true;
+function drawCharts(){
+  const k=law3.M;
+  // a³–T²（八大行星 + 定律三行星）
+  const ptsA=[],ptsB=[];
+  PLANETS.forEach(p=>ptsA.push([p.T*p.T,p.a**3]));
+  law3.planets.forEach(p=>{const T=TAU*Math.sqrt(p.a**3/(GM0*law3.M));ptsB.push([T*T,p.a**3]);});
+  const Tmax=Math.max(...ptsA.map(p=>p[0]),...ptsB.map(p=>p[0]));
+  // 蓝点=八大行星（M=1，斜率 1）；红点=当前沙盘行星（斜率 k=law3.M），两条理论线分别对应
+  drawChart('chA3T2',{xlab:'T² (yr²)',ylab:'a³ (AU³)',zero:true,series:[
+    {pts:[[0,0],[Tmax,Tmax]],color:'#16a34a',line:true},
+    {pts:[[0,0],[Tmax,k*Tmax]],color:'#E0574F',line:true,dash:true},
+    {pts:ptsA,color:'#2563eb'},{pts:ptsB,color:'#E0574F'}]});
+  // log–log
+  const lg=x=>Math.log10(x);
+  const ptsL=PLANETS.map(p=>[lg(p.a),lg(p.T)]);
+  const ptsL2=law3.planets.map(p=>[lg(p.a),lg(TAU*Math.sqrt(p.a**3/(GM0*law3.M)))]);
+  const lmax=Math.max(...ptsL.map(p=>p[0]));
+  const cLog=Math.log10(TAU*Math.sqrt(1/(GM0*law3.M))); // log T = 1.5 log a + cLog
+  drawChart('chLog',{xlab:'log₁₀ a',ylab:'log₁₀ T',zero:false,series:[
+    {pts:[[lg(0.3),1.5*lg(0.3)+cLog],[lmax,1.5*lmax+cLog]],color:'#16a34a',line:true},
+    {pts:ptsL,color:'#2563eb'},{pts:ptsL2,color:'#E0574F'}]});
+  // k–M
+  drawChart('chKM',{xlab:'M（太阳质量）',ylab:'k (AU³/yr²)',zero:true,series:[
+    {pts:[[0,0],[2.5,2.5]],color:'#16a34a',line:true},
+    {pts:[[0.5,0.5],[1,1],[2,2]],color:'#7c3aed'}]});
+  // T–e（固定 a=1）
+  const Tc=TAU*Math.sqrt(1/(GM0*law3.M));
+  const epts=[];for(let ee=0;ee<=0.9;ee+=0.1)epts.push([ee,Tc]);
+  drawChart('chTe',{xlab:'e',ylab:'T (yr)',series:[
+    {pts:epts,color:'#dc2626',line:true},
+    {pts:epts,color:'#2563eb'}]});
+  // v–r（当前沙盘轨道活力公式）
+  const elx=(activeTab==='orbit'&&sim.pos)?simCurrentElems():{a:law2.a,e:law2.e};
+  const a=elx.a,e=elx.e,rmin=a*(1-e),rmax=a*(1+e);
+  const vpts=[];for(let i=0;i<=60;i++){const r=rmin+(rmax-rmin)*i/60;vpts.push([r,Math.sqrt(GM0*law3.M*(2/r-1/a))]);}
+  const vp=Math.sqrt(GM0*law3.M*(1+e)/(a*(1-e))),va=Math.sqrt(GM0*law3.M*(1-e)/(a*(1+e)));
+  drawChart('chVr',{xlab:'r (AU)',ylab:'v (AU/yr)',series:[
+    {pts:vpts,color:'#2563eb',line:true},
+    {pts:[[rmin,vp]],color:'#dc2626'},{pts:[[rmax,va]],color:'#16a34a'}]});
+  // 扇形面积–时间（阶梯）
+  const sec=computeSectors(law2.a,law2.e,GM0*law3.M,12);
+  const apts=sec.sectors.map(s=>[s.t1,s.area]);
+  drawChart('chAr',{xlab:'t（扇形末端时刻，yr）',ylab:'单扇形面积 (AU²)',series:[
+    {pts:apts,color:'#16a34a',step:true},
+    {pts:[[sec.dt,sec.dAdt*sec.dt],[sec.T,sec.dAdt*sec.dt]],color:'#94a3b8',line:true,dash:true}]});
+}
+function drawLawsAll(dt){
+  if(!el('page-laws').classList.contains('on'))return;
+  law1Draw();law2Draw(dt||0);law3Draw(dt||0);
+  if(lawsDirty){drawCharts();lawsDirty=false;renderRec();}
+}
+/* ================= ⑤ 练习考核 ================= */
+const quiz={i:0,order:[],answers:[],teacher:false,done:false};
+function quizInit(){
+  quiz.i=0;quiz.answers=[];quiz.done=false;
+  quiz.order=QUIZ.map((q,i)=>i);
+  if(quiz.teacher)quiz.order.sort(()=>Math.random()-0.5);
+  el('quizScore').textContent='';
+  quizRender();
+}
+function quizRender(){
+  const area=el('quizArea');
+  if(quiz.i>=quiz.order.length){quizFinish();return;}
+  const q=QUIZ[quiz.order[quiz.i]];
+  area.innerHTML='<div class="qexp" style="background:var(--chip)">第 '+(quiz.i+1)+' / '+QUIZ.length+' 题'+(quiz.teacher?'（教师考核模式：交卷后再看对错）':'')+'</div><p style="font-size:15px">'+q.q+'</p>';
+  q.o.forEach((op,j)=>{
+    const b=document.createElement('button');b.className='qopt';b.textContent=String.fromCharCode(65+j)+'. '+op;
+    b.addEventListener('click',()=>quizAnswer(j));
+    area.appendChild(b);
+  });
+}
+function quizAnswer(j){
+  const q=QUIZ[quiz.order[quiz.i]];
+  quiz.answers.push({q,j,ok:j===q.a});
+  beep(j===q.a);
+  const area=el('quizArea');
+  if(quiz.teacher){quiz.i++;quizRender();return;}
+  const btns=area.querySelectorAll('.qopt');
+  btns.forEach((b,k)=>{b.disabled=true;if(k===q.a)b.classList.add('right');});
+  if(j!==q.a)btns[j].classList.add('wrong');
+  const div=document.createElement('div');
+  div.className='qexp';
+  div.innerHTML=(j===q.a?'✅ <b>正确！</b> ':'❌ <b>不对。</b>')+q.exp+' <button class="qbtn" data-card="'+q.card+'" aria-label="查看相关卡片">相关卡片?</button>';
+  area.appendChild(div);
+  const nb=document.createElement('button');nb.className='btn primary';nb.textContent='下一题 ➡';nb.style.marginTop='8px';
+  nb.addEventListener('click',()=>{quiz.i++;quizRender();});
+  area.appendChild(nb);
+  div.querySelector('[data-card]').addEventListener('click',()=>openCard(q.card));
+}
+function quizFinish(){
+  quiz.done=true;
+  const n=quiz.answers.filter(a=>a.ok).length;
+  el('quizScore').innerHTML='<b>成绩：'+n+' / '+QUIZ.length+'</b>'+(quiz.teacher?'（教师考核模式，已随机出题并隐藏答案）':'');
+  const area=el('quizArea');
+  let html='<h3>答卷回顾</h3>';
+  quiz.answers.forEach((a,i)=>{
+    html+='<div class="qexp"><b>'+(a.ok?'✅':'❌')+'</b> '+a.q.q+'<br>你的答案：'+a.q.o[a.j]+'（正确：'+a.q.o[a.q.a]+'）<br>'+a.q.exp+' <button class="qbtn" data-card="'+a.q.card+'">相关卡片?</button></div>';
+  });
+  area.innerHTML=html;
+  area.querySelectorAll('[data-card]').forEach(b=>b.addEventListener('click',()=>openCard(b.dataset.card)));
+  beep(n>=QUIZ.length-1);
+}
+el('teacherChk').addEventListener('change',e=>{quiz.teacher=e.target.checked;quizInit();});
+el('btnQuizRestart').addEventListener('click',quizInit);
+quizInit();
+/* ================= 音效 ================= */
+let AC=null;
+function beep(ok){
+  if(!el('ckSound').checked)return;
+  try{
+    AC=AC||new (window.AudioContext||window.webkitAudioContext)();
+    const o=AC.createOscillator(),g=AC.createGain();
+    o.frequency.value=ok?880:330;g.gain.value=0.06;
+    o.connect(g);g.connect(AC.destination);o.start();
+    setTimeout(()=>{o.stop();},120);
+  }catch(e){}
+}
+/* ================= 知识卡片系统 ================= */
+let cardFilter={cat:'全部',kw:''},curCard=-1,pinned=null;
+function cardCatList(){return ['全部',...Array.from(new Set(CARDS.map(c=>c.cat)))];}
+function buildCardCats(){
+  const box=el('cardCats');box.innerHTML='';
+  cardCatList().forEach(cat=>{
+    const b=document.createElement('button');b.textContent=cat+(cat==='全部'?'（'+CARDS.length+'）':'');
+    if(cat===cardFilter.cat)b.classList.add('on');
+    b.addEventListener('click',()=>{cardFilter.cat=cat;buildCardCats();buildCardList();});
+    box.appendChild(b);
+  });
+}
+function filteredCards(){
+  return CARDS.filter(c=>(cardFilter.cat==='全部'||c.cat===cardFilter.cat)&&
+    (!cardFilter.kw||(c.title+c.concl+c.formula+(c.pit||c.pitfall||'')).includes(cardFilter.kw)));
+}
+function buildCardList(){
+  const box=el('cardList');box.innerHTML='';
+  filteredCards().forEach((c,i)=>{
+    const b=document.createElement('button');b.className='cl';b.tabIndex=0;b.setAttribute('role','option');
+    b.innerHTML='<b>'+c.title+'</b><br><span class="cc">'+c.cat+' · '+c.concl.slice(0,26)+'…</span>';
+    b.addEventListener('click',()=>openCard(c.id));
+    b.addEventListener('keydown',e=>{if(e.key==='Enter'||e.key===' ')openCard(c.id);});
+    box.appendChild(b);
+  });
+}
+el('cardSearch').addEventListener('input',e=>{cardFilter.kw=e.target.value.trim();buildCardList();});
+el('btnCards').addEventListener('click',()=>{el('cardDrawer').classList.add('open');buildCardCats();buildCardList();});
+el('btnCloseDrawer').addEventListener('click',()=>el('cardDrawer').classList.remove('open'));
+function openCard(id){
+  curCard=CARDS.findIndex(c=>c.id===id);if(curCard<0)return;
+  const c=CARDS[curCard];
+  el('cmCat').textContent=c.cat;el('cmTitle').textContent=c.title;
+  el('cmConcl').textContent=c.concl;
+  el('cmFormula').textContent=c.formula||'';
+  el('cmFormula').style.display=c.formula?'':'none';
+  el('cmSvg').innerHTML=c.svg||'';el('cmSvg').style.display=c.svg?'':'none';
+  el('cmHowto').innerHTML='🔬 <b>在本 Demo 中怎么看：</b>'+c.howto;
+  el('cmPit').style.display=(c.pit||c.pitfall)?'':'none';
+  el('cmPit').innerHTML='⚠ <b>易错提醒：</b>'+(c.pit||c.pitfall||'');
+  el('cmBack').innerHTML='<b>推导 / 拓展</b><br>'+(c.back||'（暂无推导内容）');
+  el('cardModal').classList.remove('flipped');
+  el('cardModalBg').classList.add('open');
+  el('cardModal').focus();
+}
+function cardNav(d){
+  if(curCard<0)return;
+  curCard=(curCard+d+CARDS.length)%CARDS.length;
+  openCard(CARDS[curCard].id);
+}
+el('btnCardPrev').addEventListener('click',()=>cardNav(-1));
+el('btnCardNext').addEventListener('click',()=>cardNav(1));
+el('btnCardFlip').addEventListener('click',()=>el('cardModal').classList.toggle('flipped'));
+el('btnCardClose').addEventListener('click',()=>el('cardModalBg').classList.remove('open'));
+el('btnCardPin').addEventListener('click',()=>{
+  if(curCard<0)return;
+  const c=CARDS[curCard];pinned=c;
+  el('pinBox').style.display='block';
+  el('pinBox').innerHTML='<b>📌 '+c.title+'</b><br>'+c.concl+(c.formula?'<br><i>'+c.formula+'</i>':'')+'<br><button class="btn" style="margin-top:6px" onclick="document.getElementById(\'pinBox\').style.display=\'none\'">取消钉住</button>';
+});
+el('cardModalBg').addEventListener('click',e=>{if(e.target===el('cardModalBg'))el('cardModalBg').classList.remove('open');});
+document.querySelectorAll('.qbtn[data-card]').forEach(b=>b.addEventListener('click',()=>openCard(b.dataset.card)));
+document.addEventListener('keydown',e=>{
+  const modalOpen=el('cardModalBg').classList.contains('open');
+  if(e.key==='Escape'){el('cardModalBg').classList.remove('open');el('cardDrawer').classList.remove('open');}
+  if(modalOpen){
+    if(e.key==='ArrowLeft'){e.preventDefault();cardNav(-1);}
+    if(e.key==='ArrowRight'){e.preventDefault();cardNav(1);}
+    if(e.key==='Enter'||e.key===' '){e.preventDefault();el('cardModal').classList.toggle('flipped');}
+  }
+});
+/* ================= 教学引导流程 ================= */
+let flowStep=0;
+function flowRender(){
+  if(flowStep>=FLOW.length){
+    el('flowText').innerHTML='🎉 六步完成！结论：<b>开普勒第一定律</b>——轨道是椭圆，太阳在焦点；<b>第二定律</b>——等时间扫过相等面积（近日快远日慢）；<b>第三定律</b>——a³/T² = GM/4π²，只与中心天体质量有关。';
+    el('flowQ').textContent='进入"⑤ 练习考核"检验掌握程度。';
+    el('flowStep').textContent='完成';
+    el('btnFlowNext').textContent='重新引导';
+    return;
+  }
+  const f=FLOW[flowStep];
+  el('flowText').textContent=f.t;el('flowQ').textContent=f.q;
+  el('flowStep').textContent='第 '+(flowStep+1)+' / '+FLOW.length+' 步';
+  el('btnFlowNext').textContent='下一步';
+}
+el('btnFlowNext').addEventListener('click',()=>{flowStep=(flowStep+1)%(FLOW.length+1);flowRender();});
+el('btnFlowPrev').addEventListener('click',()=>{flowStep=Math.max(0,flowStep-1);flowRender();});
+el('btnFlowClose').addEventListener('click',()=>el('flowBar').style.display='none');
+flowRender();
+/* 单位切换 */
+el('unitSel').addEventListener('change',e=>{UNITS=e.target.value;lawsDirty=true;});
+/* ================= 主循环 ================= */
+let frame=0,last=performance.now();
+function loop(now){
+  const dt=Math.min(0.05,(now-last)/1000);last=now;frame++;
+  if(activeTab==='history'){histUpdate(dt);histDraw();}
+  else if(activeTab==='ellipse'){ellUpdate(dt);ellDraw();}
+  else if(activeTab==='orbit'){simUpdate(dt*0.5*sim.speed);simDraw();}
+  else if(activeTab==='laws'){drawLawsAll(dt);}
+  requestAnimationFrame(loop);
+}
+/* 初始化 */
+['cvHist','cvEll','cvSim'].forEach(setupCanvas);
+// 初始为"轨道参数模式"，隐藏初速度模式的滑杆组
+['grpOrbit','grpOrbit2','grpOrbit3'].forEach(id=>el(id).style.display='');
+['grpV0','grpV0b','grpV0c'].forEach(id=>el(id).style.display='none');
+simReset();
+el('btnPlay').textContent=sim.running?'⏸ 暂停':'▶ 播放';
+el('histPlay').textContent=hist.running?'暂停':'播放';
+requestAnimationFrame(loop);
+
+</script>
+</body>
+</html>

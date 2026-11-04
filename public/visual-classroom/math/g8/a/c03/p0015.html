@@ -1,0 +1,409 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>15.1 图形的轴对称 · 互动实验</title>
+<style>
+  :root{
+    --bg:#f6f8fb; --panel:#ffffff; --line:#d8e0ea; --ink:#2b3a4a;
+    --sub:#6b7a8c; --accent:#e05252; --mirror:#3273dc; --axis:#7a5cd6;
+    --ok:#1e9e6a;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:"Microsoft YaHei","PingFang SC",sans-serif;
+    background:var(--bg); color:var(--ink);
+    display:flex; height:100vh; overflow:hidden;
+  }
+  /* ---------- 左侧画布 ---------- */
+  #stageWrap{flex:1; position:relative; display:flex; flex-direction:column;}
+  #topbar{
+    display:flex; align-items:center; gap:10px; flex-wrap:wrap;
+    padding:10px 14px; background:var(--panel); border-bottom:1px solid var(--line);
+  }
+  #topbar .title{font-weight:700; font-size:16px; margin-right:6px;}
+  .chip{
+    font-size:12px; padding:3px 10px; border-radius:20px;
+    background:#eef2f7; color:var(--sub); border:1px solid var(--line);
+  }
+  svg#stage{flex:1; width:100%; display:block; touch-action:none; background:
+    linear-gradient(#e9eef5 1px, transparent 1px),
+    linear-gradient(90deg,#e9eef5 1px, transparent 1px);
+    background-size:40px 40px;}
+  /* ---------- 右侧面板 ---------- */
+  #side{
+    width:330px; background:var(--panel); border-left:1px solid var(--line);
+    padding:14px; overflow-y:auto; display:flex; flex-direction:column; gap:12px;
+  }
+  h2{font-size:15px; margin-bottom:6px;}
+  .card{border:1px solid var(--line); border-radius:10px; padding:12px;}
+  .btnrow{display:flex; gap:8px; flex-wrap:wrap;}
+  button{
+    font-family:inherit; font-size:13px; padding:8px 12px; border-radius:8px;
+    border:1px solid var(--line); background:#fff; color:var(--ink); cursor:pointer;
+    transition:.15s;
+  }
+  button:hover{border-color:var(--axis); color:var(--axis);}
+  button.primary{background:var(--axis); border-color:var(--axis); color:#fff;}
+  button.primary:hover{opacity:.9; color:#fff;}
+  button.warn{background:var(--accent); border-color:var(--accent); color:#fff;}
+  button.on{background:#efeaff; border-color:var(--axis); color:var(--axis); font-weight:700;}
+  label.tog{display:flex; align-items:center; gap:8px; font-size:13px; padding:5px 0; cursor:pointer;}
+  select{font-family:inherit; font-size:13px; padding:6px 8px; border-radius:8px; border:1px solid var(--line);}
+  .measure{font-size:12.5px; line-height:1.9;}
+  .measure b{color:var(--mirror);}
+  .measure .eq{color:var(--ok); font-weight:700;}
+  .kn{font-size:12.5px; color:var(--sub); line-height:1.8;}
+  .kn li{margin:4px 0 4px 18px;}
+  .kn strong{color:var(--ink);}
+  #stepHint{
+    font-size:13px; background:#fffbe8; border:1px dashed #e6c96a;
+    border-radius:8px; padding:8px 10px; min-height:38px; line-height:1.6;
+  }
+  .legend{display:flex; gap:14px; font-size:12px; color:var(--sub); margin-top:2px;}
+  .legend i{display:inline-block; width:14px; height:3px; border-radius:2px; vertical-align:middle; margin-right:4px;}
+</style>
+</head>
+<body>
+
+<div id="stageWrap">
+  <div id="topbar">
+    <span class="title">15.1 图形的轴对称</span>
+    <span class="chip">拖动 红点 = 改变图形</span>
+    <span class="chip">拖动 紫色端点/线身 = 移动对称轴</span>
+    <span class="chip">拖动 蓝色虚线图形整体 = 平移原图</span>
+  </div>
+  <svg id="stage" viewBox="0 0 980 640" preserveAspectRatio="xMidYMid meet">
+    <defs>
+      <marker id="arrow" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+        <path d="M0,0 L10,5 L0,10 z" fill="#9aa7b5"/>
+      </marker>
+    </defs>
+    <g id="gConnect"></g>   <!-- 对应点连线 -->
+    <g id="gMirror"></g>    <!-- 对称图形(虚线) -->
+    <g id="gAxis"></g>      <!-- 对称轴 -->
+    <g id="gShape"></g>     <!-- 原图形(可折叠) -->
+    <g id="gMarks"></g>     <!-- 垂直平分标记 / 直角符号 / 中点 -->
+    <g id="gPoints"></g>    <!-- 可拖拽点 -->
+    <g id="gLabels"></g>    <!-- 文本标注 -->
+  </svg>
+</div>
+
+<div id="side">
+  <div class="card">
+    <h2>▶ 播放控制</h2>
+    <div id="stepHint">点击「自动播放」观看完整作图与折叠过程；也可随时拖动图形与对称轴自主探索。</div>
+    <div class="btnrow" style="margin-top:10px;">
+      <button id="btnPlay" class="primary">自动播放</button>
+      <button id="btnFold">折叠动画</button>
+      <button id="btnReset">重置</button>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>显示选项</h2>
+    <label class="tog"><input type="checkbox" id="ckLines" checked> 对应点连线（虚线）</label>
+    <label class="tog"><input type="checkbox" id="ckMarks" checked> 垂直平分标记（中点·直角·等距）</label>
+    <label class="tog"><input type="checkbox" id="ckLen"> 显示长度数值</label>
+    <div style="margin-top:8px; display:flex; align-items:center; gap:8px;">
+      <span style="font-size:13px;">图形：</span>
+      <select id="selShape">
+        <option value="tri">三角形 ABC</option>
+        <option value="F">字母 “F”</option>
+        <option value="penta">五边形</option>
+      </select>
+    </div>
+    <div class="legend">
+      <span><i style="background:var(--accent)"></i>原图形</span>
+      <span><i style="background:var(--mirror)"></i>对称图形</span>
+      <span><i style="background:var(--axis)"></i>对称轴 l</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>📐 实时测量（垂直平分线性质）</h2>
+    <div class="measure" id="measure"></div>
+  </div>
+
+  <div class="card">
+    <h2>📚 教材知识点</h2>
+    <ul class="kn">
+      <li><strong>轴对称</strong>：两个图形沿一条直线折叠能完全重合；<strong>轴对称图形</strong>：一个图形自身沿某条直线折叠完全重合。</li>
+      <li><strong>性质</strong>：对称轴所在直线，<strong>垂直平分</strong>任何一对对应点的连线。</li>
+      <li><strong>作图方法</strong>：找关键点 → 作各点关于 l 的对称点 → 顺次连线。</li>
+      <li>线段垂直平分线上的点到线段两端距离<strong>相等</strong>。</li>
+    </ul>
+  </div>
+</div>
+
+<script>
+/* ================= 数据 ================= */
+const NS = "http://www.w3.org/2000/svg";
+const svg = document.getElementById("stage");
+const $ = id => document.getElementById(id);
+
+const SHAPES = {
+  tri:   {pts:[[330,150],[210,360],[440,330]], close:true},
+  F:     {pts:[[300,140],[300,400],[340,400],[340,300],[420,300],[420,260],[340,260],[340,180],[450,180],[450,140]], close:false},
+  penta: {pts:[[330,130],[210,250],[260,400],[410,400],[455,250]], close:true}
+};
+let shapeName = "tri";
+let shape = SHAPES.tri.pts.map(p=>({x:p[0],y:p[1]}));   // 原图形顶点
+let A = {x:700, y:110}, B = {x:560, y:520};             // 对称轴两端
+
+/* 折叠因子 f: 1=原位, -1=完全翻到对称位置, 0=与轴重合 */
+let foldF = 1;
+
+/* ================= 工具 ================= */
+function el(tag, attrs, parent){
+  const e = document.createElementNS(NS, tag);
+  for(const k in attrs) e.setAttribute(k, attrs[k]);
+  if(parent) parent.appendChild(e);
+  return e;
+}
+function proj(p){ // p 在直线 AB 上的投影
+  const dx=B.x-A.x, dy=B.y-A.y, L2=dx*dx+dy*dy;
+  const t=((p.x-A.x)*dx+(p.y-A.y)*dy)/L2;
+  return {x:A.x+t*dx, y:A.y+t*dy};
+}
+function mirror(p){
+  const m = proj(p);
+  return {x:2*m.x-p.x, y:2*m.y-p.y, mx:m.x, my:m.y};
+}
+function dist(p,q){ return Math.hypot(p.x-q.x, p.y-q.y); }
+function rotPt(p,c,ang){ // 点 p 绕 c 旋转 ang
+  const s=Math.sin(ang), co=Math.cos(ang), dx=p.x-c.x, dy=p.y-c.y;
+  return {x:c.x+dx*co-dy*s, y:c.y+dx*s+dy*co};
+}
+function fmt(v){ return v.toFixed(1); }
+
+/* ================= 渲染 ================= */
+const LETTERS = ["A","B","C","D","E","F","G","H","J","K"];
+
+function render(){
+  ["gConnect","gMirror","gAxis","gShape","gMarks","gPoints","gLabels"].forEach(id=>$(id).innerHTML="");
+  const showLines = $("ckLines").checked;
+  const showMarks = $("ckMarks").checked;
+  const showLen   = $("ckLen").checked;
+
+  /* --- 对称轴 --- */
+  el("line",{x1:A.x,y1:A.y,x2:B.x,y2:B.y,stroke:"var(--axis)","stroke-width":3,
+             "stroke-dasharray":"14 6","stroke-linecap":"round"}, $("gAxis"));
+  // 轴两端的拖拽手柄
+  [["hA",A],["hB",B]].forEach(([id,P])=>{
+    el("circle",{cx:P.x,cy:P.y,r:8,fill:"var(--axis)",stroke:"#fff","stroke-width":2,
+                 class:"drag", cursor:"grab", "data-handle":id}, $("gAxis"));
+  });
+  el("text",{x:(A.x+B.x)/2+14,y:(A.y+B.y)/2-10,fill:"var(--axis)","font-size":17,
+             "font-weight":"bold","font-style":"italic"}, $("gAxis")).textContent="l";
+
+  /* --- 对应点连线 & 标记 --- */
+  const mirs = shape.map(mirror);
+  shape.forEach((p,i)=>{
+    const m = mirs[i], q = {x:m.x,y:m.y};
+    if(showLines){
+      el("line",{x1:p.x,y1:p.y,x2:q.x,y2:q.y,stroke:"var(--mirror)","stroke-width":1.6,
+                 "stroke-dasharray":"6 5", opacity:.85}, $("gConnect"));
+    }
+    if(showMarks){
+      const mid = {x:(p.x+q.x)/2, y:(p.y+q.y)/2};
+      // 中点
+      el("circle",{cx:mid.x,cy:mid.y,r:4,fill:"#fff",stroke:"var(--ok)","stroke-width":2}, $("gMarks"));
+      // 直角符号（贴着轴，方向沿轴）
+      const ang = Math.atan2(B.y-A.y, B.x-A.x);
+      const s = 11, c = mid;
+      const p1 = rotPt({x:c.x - s, y:c.y}, c, ang);
+      const p2 = rotPt({x:c.x - s, y:c.y - s}, c, ang);
+      const p3 = rotPt({x:c.x,     y:c.y - s}, c, ang);
+      el("path",{d:`M${p1.x},${p1.y} L${p2.x},${p2.y} L${p3.x},${p3.y}`,
+                 fill:"none",stroke:"var(--ok)","stroke-width":1.8}, $("gMarks"));
+    }
+  });
+
+  /* --- 对称图形（虚线） --- */
+  const mp = mirs.map(m=>({x:m.x,y:m.y}));
+  el("path",{d:pathD(mp,SHAPES[shapeName].close),fill:"rgba(50,115,220,.07)",
+             stroke:"var(--mirror)","stroke-width":2,"stroke-dasharray":"7 5"}, $("gMirror"));
+
+  /* --- 原图形（随折叠因子变形） --- */
+  const fp = shape.map((p,i)=>{
+    const m = proj(p);
+    return {x: m.x + (p.x-m.x)*foldF, y: m.y + (p.y-m.y)*foldF};
+  });
+  el("path",{d:pathD(fp,SHAPES[shapeName].close),fill:"rgba(224,82,82,.14)",
+             stroke:"var(--accent)","stroke-width":2.5,"stroke-linejoin":"round"}, $("gShape"));
+
+  /* --- 点、标签、拖拽点 --- */
+  shape.forEach((p,i)=>{
+    const q = mirs[i];
+    putPoint(fp[i], LETTERS[i], "var(--accent)", i);
+    putPoint({x:q.x, y:q.y}, LETTERS[i]+"′", "var(--mirror)", -1);
+    if(showLen){
+      const mid={x:(p.x+q.x)/2,y:(p.y+q.y)/2};
+      el("text",{x:mid.x+8, y:mid.y-6, "font-size":12, fill:"var(--ok)","font-weight":"bold"}, $("gLabels"))
+        .textContent = `|${LETTERS[i]}M|=${fmt(dist(p,mid))}`;
+    }
+  });
+
+  /* --- 测量面板 --- */
+  let html="";
+  shape.forEach((p,i)=>{
+    const q = mirs[i];
+    const ang = 90; // 构造上恒为垂直
+    html += `<div>${LETTERS[i]}${LETTERS[i]}′ 交 l 于 M${i+1}：∠${ang}° <span class="eq">✓垂直</span>，`+
+            `|${LETTERS[i]}M| = |${LETTERS[i]}′M| = <b>${fmt(dist(p,{x:q.mx,y:q.my}))}</b> <span class="eq">✓相等</span></div>`;
+  });
+  $("measure").innerHTML = html;
+}
+
+function pathD(pts, close){
+  let d = `M${pts[0].x},${pts[0].y}`;
+  for(let i=1;i<pts.length;i++) d += ` L${pts[i].x},${pts[i].y}`;
+  return close ? d+" Z" : d;
+}
+function putPoint(p, label, color, dragIdx){
+  el("circle",{cx:p.x, cy:p.y, r:dragIdx>=0?7:5, fill:color, stroke:"#fff","stroke-width":2,
+               ...(dragIdx>=0?{class:"drag",cursor:"grab","data-v":dragIdx}:{})}, $("gPoints"));
+  // 标签往远离对称轴一侧偏移
+  const m = proj(p);
+  let dx = p.x-m.x, dy = p.y-m.y;
+  const L = Math.hypot(dx,dy)||1; dx/=L; dy/=L;
+  el("text",{x:p.x+dx*16-6, y:p.y+dy*16+5, "font-size":15, "font-weight":"bold",
+             fill:color}, $("gLabels")).textContent = label;
+}
+
+/* ================= 拖拽 ================= */
+let drag = null;
+svg.addEventListener("pointerdown", e=>{
+  const t = e.target;
+  if(t.classList.contains("drag")){
+    drag = t.dataset.handle ? {type:"axis", which:t.dataset.handle} : {type:"vertex", idx:+t.dataset.v};
+    svg.setPointerCapture(e.pointerId);
+    stopAuto();
+  }
+});
+/* 点虚线图形整体 → 平移整个原图形 */
+$("gMirror").addEventListener("pointerdown", e=>{
+  if(e.target.tagName==="path"){
+    drag = {type:"shapeMove", last:pt(e)};
+    svg.setPointerCapture(e.pointerId);
+    stopAuto();
+  }
+});
+function pt(e){
+  const r = svg.getBoundingClientRect();
+  // viewBox 980x640, preserveAspectRatio=meet
+  const s = Math.min(r.width/980, r.height/640);
+  const ox = (r.width - 980*s)/2, oy = (r.height - 640*s)/2;
+  return {x:(e.clientX-r.left-ox)/s, y:(e.clientY-r.top-oy)/s};
+}
+svg.addEventListener("pointermove", e=>{
+  if(!drag) return;
+  const p = pt(e);
+  if(drag.type==="vertex"){
+    // 限制顶点不要压到对称轴上（太近时镜像不稳）
+    shape[drag.idx] = p;
+  }else if(drag.type==="axis"){
+    if(drag.which==="hA") A = p; else B = p;
+  }else if(drag.type==="shapeMove"){
+    const dx = p.x-drag.last.x, dy = p.y-drag.last.y;
+    shape.forEach(v=>{v.x+=dx; v.y+=dy;});
+    drag.last = p;
+  }
+  render();
+});
+svg.addEventListener("pointerup", ()=> drag=null);
+
+/* ================= 折叠 / 自动播放 ================= */
+let anim = null; // {mode, t0}
+const FOLD_MS = 1800, HOLD_MS = 900, GAP_MS = 500;
+
+function foldOnce(){ startFold(()=>{ foldF = 1; render(); }); }
+function startFold(done){
+  stopAuto();
+  anim = {mode:"fold", t0:performance.now(), done};
+  hint("🔄 折叠中：每个点沿着「对应点连线」运动，中途与对称轴重合，最终与对称图形完全重合！");
+  requestAnimationFrame(tick);
+}
+function tick(now){
+  if(!anim) return;
+  const el = now - anim.t0;
+  if(anim.mode==="fold"){
+    const k = Math.min(el/FOLD_MS, 1);
+    foldF = Math.cos(k*Math.PI);          // 1 → -1
+    render();
+    if(k>=1){
+      if(anim.done){ const d=anim.done; anim=null; d(); return; }
+      anim = {mode:"hold", t0:now};
+    }
+  }else if(anim.mode==="hold"){
+    foldF = -1; render();
+    if(el>=HOLD_MS){ anim = {mode:"unfold", t0:now}; }
+  }else if(anim.mode==="unfold"){
+    const k = Math.min(el/FOLD_MS, 1);
+    foldF = -Math.cos(k*Math.PI);          // -1 → 1
+    render();
+    if(k>=1){ foldF=1; render(); anim=null; hint(DEF_HINT); return; }
+  }
+  requestAnimationFrame(tick);
+}
+
+/* 自动播放：连线 → 标记 → 折叠 → 展开 */
+const DEF_HINT = "点击「自动播放」观看完整作图与折叠过程；也可随时拖动图形与对称轴自主探索。";
+let auto = null;
+function hint(s){ $("stepHint").textContent = s; }
+function startAuto(){
+  stopAuto(); foldF = 1;
+  const seq = [
+    {ms:1400, f:()=>{ $("ckLines").checked=true; render(); hint("第①步：找出关键点 A、B、C…，连接每一对对应点，画出虚线连线。"); }},
+    {ms:1600, f:()=>{ $("ckMarks").checked=true; render(); hint("第②步：观察交点 M——连线被对称轴 l 垂直平分（直角 ✓，|AM|=|A′M| ✓）。"); }},
+    {ms:2200, f:()=>{ hint("第③步：折叠！图形沿对称轴翻折，每个点沿连线运动……");
+        anim={mode:"fold",t0:performance.now()}; requestAnimationFrame(tick); }},
+    {ms:1200, f:()=>{ hint("完全重合！——这就是「成轴对称」的两个图形。"); }},
+    {ms:2200, f:()=>{ hint("展开回到原位。作图口诀：找对称点 → 顺次连线。");
+        anim={mode:"unfold",t0:performance.now()}; requestAnimationFrame(tick); }},
+    {ms:900,  f:()=>{ hint(DEF_HINT); }}
+  ];
+  auto = {seq, idx:0, t0:performance.now()};
+  $("btnPlay").textContent = "⏸ 暂停";
+  $("btnPlay").classList.add("on");
+  scheduleNext();
+}
+function scheduleNext(){
+  if(!auto) return;
+  const st = auto.seq[auto.idx];
+  st.f();
+  auto.timer = setTimeout(()=>{
+    if(!auto) return;
+    auto.idx = (auto.idx+1) % auto.seq.length;
+    scheduleNext();
+  }, st.ms);
+}
+function stopAuto(){
+  if(auto){ clearTimeout(auto.timer); auto=null; }
+  $("btnPlay").textContent = "自动播放";
+  $("btnPlay").classList.remove("on");
+}
+
+/* ================= 控件 ================= */
+$("btnPlay").onclick = ()=> auto ? (stopAuto(), hint("已暂停。可拖动图形/对称轴继续探索，或重新播放。"), foldF=1, render()) : startAuto();
+$("btnFold").onclick = foldOnce;
+$("btnReset").onclick = ()=>{
+  stopAuto(); anim=null; foldF=1;
+  shape = SHAPES[shapeName].pts.map(p=>({x:p[0],y:p[1]}));
+  A={x:700,y:110}; B={x:560,y:520};
+  $("ckLines").checked=true; $("ckMarks").checked=true; $("ckLen").checked=false;
+  hint(DEF_HINT); render();
+};
+$("selShape").onchange = e=>{
+  shapeName = e.target.value;
+  shape = SHAPES[shapeName].pts.map(p=>({x:p[0],y:p[1]}));
+  stopAuto(); foldF=1; render();
+};
+["ckLines","ckMarks","ckLen"].forEach(id=> $(id).onchange = render);
+
+render();
+</script>
+</body>
+</html>

@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>13.3 三角形的内角与外角 · 交互实验</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif;background:#eef2f7;color:#1e293b;padding:24px 16px}
+.wrap{max-width:840px;margin:0 auto}
+header{text-align:center;margin-bottom:14px}
+header h1{font-size:22px;font-weight:800;color:#0f172a}
+header p{font-size:13px;color:#64748b;margin-top:4px}
+.tabs{display:flex;gap:8px;justify-content:center;margin:14px 0 16px;flex-wrap:wrap}
+.tab-btn{padding:9px 18px;border:1px solid #cbd5e1;background:#fff;border-radius:999px;cursor:pointer;font-size:14px;color:#334155;transition:all .2s}
+.tab-btn:hover{border-color:#2563eb;color:#2563eb}
+.tab-btn.active{background:#2563eb;color:#fff;border-color:#2563eb;font-weight:600}
+.panel{display:none;background:#fff;border-radius:16px;box-shadow:0 2px 10px rgba(15,23,42,.07);padding:16px 18px}
+.panel.active{display:block}
+.panel h2{font-size:16px;margin-bottom:10px;color:#0f172a}
+.panel h2 .tag{display:inline-block;font-size:12px;background:#eff6ff;color:#2563eb;border-radius:6px;padding:2px 8px;margin-right:8px;vertical-align:2px}
+svg{width:100%;height:auto;display:block;background:#fafcfe;border:1px solid #e2e8f0;border-radius:12px;user-select:none;-webkit-user-select:none;touch-action:none}
+.controls{display:flex;flex-wrap:wrap;gap:8px;align-items:center;margin-top:12px}
+.btn{padding:8px 16px;border:1px solid #cbd5e1;background:#fff;border-radius:10px;cursor:pointer;font-size:14px;color:#334155;transition:all .15s}
+.btn:hover{border-color:#2563eb;color:#2563eb}
+.btn.primary{background:#2563eb;color:#fff;border-color:#2563eb}
+.btn.primary:hover{background:#1d4ed8;color:#fff}
+.btn:disabled{opacity:.5;cursor:not-allowed}
+.sliderbox{display:flex;align-items:center;gap:8px;font-size:14px;color:#334155}
+input[type=range]{width:150px;accent-color:#2563eb}
+.hint{font-size:13px;color:#64748b;margin-top:10px;line-height:1.7}
+.info{font-size:14px;margin-top:8px;font-weight:600;color:#0f172a}
+.conclusion{margin-top:10px;padding:10px 14px;border-radius:10px;background:#f8fafc;border:1px dashed #cbd5e1;font-size:14px;color:#475569;line-height:1.7}
+.conclusion.ok{background:#ecfdf5;border:1px solid #6ee7b7;color:#065f46}
+/* SVG 元素样式 */
+.sector{transition:transform 1.2s cubic-bezier(.45,.05,.35,1);cursor:grab;transform-origin:0 0}
+.sector.noanim{transition:none}
+.sector:active{cursor:grabbing}
+.dashline{stroke:#94a3b8;stroke-dasharray:7 5;stroke-width:2;fill:none}
+.tri{fill:#eef2ff;stroke:#475569;stroke-width:2.5;stroke-linejoin:round}
+.poly{fill:#f0f9ff;stroke:#475569;stroke-width:2.5;stroke-linejoin:round}
+.diag{stroke:#7c3aed;stroke-width:2;stroke-dasharray:5 4}
+.handle{fill:#fff;stroke:#2563eb;stroke-width:3;cursor:grab}
+.handle:hover{stroke:#1d4ed8}
+.anglab{font-size:13px;font-weight:700;text-anchor:middle;dominant-baseline:middle;pointer-events:none;fill:#0f172a}
+.vlab{font-size:15px;font-weight:800;text-anchor:middle;dominant-baseline:middle;pointer-events:none;fill:#334155}
+.bigtext{font-size:16px;font-weight:800;text-anchor:middle;fill:#0f172a;pointer-events:none}
+.ialab{font-size:10.5px;text-anchor:middle;dominant-baseline:middle;pointer-events:none;fill:#475569}
+footer{text-align:center;font-size:12px;color:#94a3b8;margin-top:18px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>13.3 三角形的内角与外角 · 交互式几何实验</h1>
+    <p>内角和 180° ｜ 外角 = 不相邻两内角和 ｜ 多边形内角和 (n−2)×180° ｜ 外角和恒为 360°</p>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab-btn active" data-tab="1">实验一 · 内角和剪拼探究</button>
+    <button class="tab-btn" data-tab="2">实验二 · 外角定理</button>
+    <button class="tab-btn" data-tab="3">实验三 · 多边形分割与外角和</button>
+  </nav>
+
+  <!-- 实验一 -->
+  <section class="panel active" id="panel1">
+    <h2><span class="tag">知识点</span>三角形三个内角的和等于 180°（剪拼法验证）</h2>
+    <svg id="svg1" viewBox="0 0 720 440"></svg>
+    <div class="controls">
+      <button class="btn primary" id="btnAuto1">▶ 自动播放：剪下三个角并拼合</button>
+      <button class="btn" id="btnReset1">↺ 复原</button>
+    </div>
+    <div class="info" id="info1"></div>
+    <div class="hint">✋ 手动操作：① 拖动顶点 <b>A</b> 改变三角形形状，观察三个角的大小变化；② 用鼠标把三个彩色角<b>逐一拖到下方虚线上</b>（靠近会自动吸附），看它们能否拼成一条直线。</div>
+    <div class="conclusion" id="conc1">实验结论：三个内角正好拼成一个<b>平角（180°）</b>，所以三角形内角和 = 180°。</div>
+  </section>
+
+  <!-- 实验二 -->
+  <section class="panel" id="panel2">
+    <h2><span class="tag">知识点</span>三角形的一个外角等于与它不相邻的两个内角之和</h2>
+    <svg id="svg2" viewBox="0 0 720 440"></svg>
+    <div class="controls">
+      <button class="btn primary" id="btnAuto2">▶ 自动播放：把 ∠A、∠B 拼到外角处</button>
+      <button class="btn" id="btnReset2">↺ 复原</button>
+    </div>
+    <div class="info" id="info2"></div>
+    <div class="hint">✋ 手动操作：① 拖动顶点 <b>A</b> 改变三角形形状；② 把红色 ∠A 和蓝色 ∠B <b>拖到 C 点的橙色外角区域</b>（靠近会自动吸附），验证它们恰好填满外角。</div>
+    <div class="conclusion" id="conc2">实验结论：外角 ∠ACD 恰好由 ∠A 与 ∠B 拼成，即 <b>外角 = 与它不相邻的两个内角之和</b>（外角 + 相邻内角 = 180°）。</div>
+  </section>
+
+  <!-- 实验三 -->
+  <section class="panel" id="panel3">
+    <h2><span class="tag">知识点</span>多边形内角和 (n−2)×180°，外角和恒为 360°</h2>
+    <svg id="svg3" viewBox="0 0 720 440"></svg>
+    <div class="controls">
+      <span class="sliderbox">边数 n：<input type="range" id="sliderN" min="3" max="10" value="5"><b id="nShow">5</b></span>
+      <button class="btn" id="btnStep3">单步分割</button>
+      <button class="btn primary" id="btnAuto3">▶ 自动分割</button>
+      <button class="btn" id="btnReset3">↺ 重置</button>
+      <button class="btn primary" id="btnExt3">▶ 外角拼成一圈</button>
+      <button class="btn" id="btnExtReset3">↺ 外角复原</button>
+    </div>
+    <div class="info" id="info3"></div>
+    <div class="hint">✋ 手动操作：拖动<b>任意顶点</b>把正多边形拖成不规则多边形（保持凸多边形效果最佳），公式依然成立；用「单步分割」逐个添加对角线。</div>
+    <div class="conclusion" id="conc3">实验结论：从 n 边形一个顶点引对角线，可把它分成 <b>(n−2)</b> 个三角形 → 内角和 = <b>(n−2)×180°</b>；把每个顶点处的外角剪下来，正好拼成一整圈 → <b>外角和 = 360°</b>（与边数无关）。</div>
+  </section>
+
+  <footer>依据教材知识点「13.3 三角形的内角与外角」制作 · 支持手动拖拽与自动播放</footer>
+</div>
+
+<script>
+"use strict";
+/* ---------------- 通用工具 ---------------- */
+const NS = "http://www.w3.org/2000/svg";
+const rad = d => d * Math.PI / 180;
+const deg = r => r * 180 / Math.PI;
+function norm180(a){ a = ((a % 360) + 540) % 360 - 180; return a; }
+function dirv(a, b){ return deg(Math.atan2(b.y - a.y, b.x - a.x)); }
+function dist(a, b){ return Math.hypot(a.x - b.x, a.y - b.y); }
+function polar(p, ang, r){ return { x: p.x + r * Math.cos(rad(ang)), y: p.y + r * Math.sin(rad(ang)) }; }
+function angleAt(v, p, q){ return Math.abs(norm180(dirv(v, p) - dirv(v, q))); }
+function el(tag, attrs, parent){
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function svgCoords(svg, e){
+  const p = svg.createSVGPoint(); p.x = e.clientX; p.y = e.clientY;
+  return p.matrixTransform(svg.getScreenCTM().inverse());
+}
+function fmt(x){ return (Math.round(x * 10) / 10).toString(); }
+/* 顶点处内角扇形的起始角与张角（局部坐标从 0 画到 sweep） */
+function sectSS(v, p, q){
+  const d1 = dirv(v, p), d2 = dirv(v, q);
+  const s = norm180(d2 - d1);
+  return s >= 0 ? { start: d1, sweep: s } : { start: d2, sweep: -s };
+}
+/* 可动画的角（扇形）：路径画在局部坐标系，位置与朝向由 CSS transform 控制 */
+function makeSector(parent, color, r, op){
+  const g = el("g", { class: "sector" }, parent);
+  const path = el("path", { fill: color, "fill-opacity": op || 0.55, stroke: color, "stroke-width": 2, "stroke-linejoin": "round" }, g);
+  const s = {
+    g, r, color, vx: 0, vy: 0, rot: 0, sweep: 60, free: false,
+    set(vx, vy, rot, sweep){
+      this.vx = vx; this.vy = vy; this.rot = rot; this.sweep = sweep;
+      const a = rad(sweep);
+      path.setAttribute("d", `M0,0 L ${r},0 A ${r} ${r} 0 ${sweep > 180 ? 1 : 0} 1 ${(r * Math.cos(a)).toFixed(2)} ${(r * Math.sin(a)).toFixed(2)} Z`);
+      this.apply();
+    },
+    apply(){ g.style.transform = `translate(${this.vx}px,${this.vy}px) rotate(${this.rot}deg)`; }
+  };
+  return s;
+}
+function dragSector(svg, sec, onDrop){
+  sec.g.addEventListener("pointerdown", e => {
+    e.preventDefault();
+    sec.g.setPointerCapture(e.pointerId);
+    sec.g.classList.add("noanim");
+    sec.free = true;
+    const start = svgCoords(svg, e);
+    const ox = sec.vx, oy = sec.vy;
+    const move = ev => {
+      const p = svgCoords(svg, ev);
+      sec.vx = ox + p.x - start.x; sec.vy = oy + p.y - start.y;
+      sec.apply();
+    };
+    const up = () => {
+      sec.g.classList.remove("noanim");
+      sec.g.removeEventListener("pointermove", move);
+      sec.g.removeEventListener("pointerup", up);
+      onDrop && onDrop();
+    };
+    sec.g.addEventListener("pointermove", move);
+    sec.g.addEventListener("pointerup", up);
+  });
+}
+function dragVertex(svg, handle, get, set){
+  handle.addEventListener("pointerdown", e => {
+    e.preventDefault();
+    handle.setPointerCapture(e.pointerId);
+    const move = ev => { const p = svgCoords(svg, ev); set(p); };
+    const up = () => {
+      handle.removeEventListener("pointermove", move);
+      handle.removeEventListener("pointerup", up);
+    };
+    handle.addEventListener("pointermove", move);
+    handle.addEventListener("pointerup", up);
+  });
+}
+/* 标签页切换 */
+document.querySelectorAll(".tab-btn").forEach(btn => {
+  btn.addEventListener("click", () => {
+    document.querySelectorAll(".tab-btn").forEach(b => b.classList.remove("active"));
+    document.querySelectorAll(".panel").forEach(p => p.classList.remove("active"));
+    btn.classList.add("active");
+    document.getElementById("panel" + btn.dataset.tab).classList.add("active");
+  });
+});
+
+/* ================ 实验一：内角和剪拼 ================ */
+const svg1 = document.getElementById("svg1");
+const S1 = { A: { x: 370, y: 115 }, B: { x: 130, y: 330 }, C: { x: 610, y: 330 } };
+const P1 = { x: 370, y: 400 };           // 拼合点
+const R1 = 46;                            // 角半径
+let det1 = false, snapped1 = [false, false, false];
+const base1 = el("line", { x1: 160, y1: P1.y, x2: 580, y2: P1.y, class: "dashline", visibility: "hidden" }, svg1);
+const tri1 = el("polygon", { class: "tri" }, svg1);
+const secLayer1 = el("g", {}, svg1);
+const sec1 = [
+  makeSector(secLayer1, "#ef4444", R1),
+  makeSector(secLayer1, "#3b82f6", R1),
+  makeSector(secLayer1, "#10b981", R1)
+];
+const lab1 = [0, 1, 2].map(() => el("text", { class: "anglab" }, svg1));
+const hA = el("circle", { class: "handle", r: 9 }, svg1);
+const vlab1 = ["A", "B", "C"].map(t => {
+  const e = el("text", { class: "vlab" }, svg1); e.textContent = t; return e;
+});
+const sum1 = el("text", { class: "bigtext", x: 370, y: 300, visibility: "hidden" }, svg1);
+const info1 = document.getElementById("info1"), conc1 = document.getElementById("conc1");
+
+function update1(){
+  const { A, B, C } = S1;
+  const ang = [angleAt(A, B, C), angleAt(B, C, A), angleAt(C, A, B)];
+  const ss = [sectSS(A, B, C), sectSS(B, C, A), sectSS(C, A, B)];
+  const verts = [A, B, C];
+  const slots = [-180, -180 + ang[0], -180 + ang[0] + ang[1]];
+  sec1.forEach((s, i) => {
+    if (snapped1[i]) s.set(P1.x, P1.y, slots[i], ss[i].sweep);
+    else if (s.free) s.set(s.vx, s.vy, s.rot, ss[i].sweep);
+    else s.set(verts[i].x, verts[i].y, ss[i].start, ss[i].sweep);
+    const base = snapped1[i] ? P1 : (s.free ? { x: s.vx, y: s.vy } : verts[i]);
+    const rr = (snapped1[i] || s.free) ? 27 : R1 * 0.62;
+    const rot = snapped1[i] ? slots[i] : (s.free ? s.rot : ss[i].start);
+    const p = polar(base, rot + ss[i].sweep / 2, rr);
+    lab1[i].setAttribute("x", p.x); lab1[i].setAttribute("y", p.y);
+    lab1[i].textContent = "∠" + "ABC"[i] + " " + fmt(ang[i]) + "°";
+  });
+  tri1.setAttribute("points", `${A.x},${A.y} ${B.x},${B.y} ${C.x},${C.y}`);
+  hA.setAttribute("cx", A.x); hA.setAttribute("cy", A.y);
+  vlab1[0].setAttribute("x", A.x); vlab1[0].setAttribute("y", A.y - 20);
+  vlab1[1].setAttribute("x", B.x - 16); vlab1[1].setAttribute("y", B.y + 4);
+  vlab1[2].setAttribute("x", C.x + 16); vlab1[2].setAttribute("y", C.y + 4);
+  base1.setAttribute("visibility", det1 ? "visible" : "hidden");
+  const done = snapped1.every(Boolean);
+  sum1.setAttribute("visibility", (det1 && done) ? "visible" : "hidden");
+  sum1.textContent = `∠A + ∠B + ∠C = ${fmt(ang[0])}° + ${fmt(ang[1])}° + ${fmt(ang[2])}° = 180°`;
+  info1.textContent = `当前三角形：∠A = ${fmt(ang[0])}°，∠B = ${fmt(ang[1])}°，∠C = ${fmt(ang[2])}°（三数之和始终为 180°）`;
+  conc1.classList.toggle("ok", done);
+}
+sec1.forEach((s, i) => dragSector(svg1, s, () => {
+  det1 = true;
+  if (dist({ x: s.vx, y: s.vy }, P1) < 55) snapped1[i] = true;
+  update1();
+}));
+dragVertex(svg1, hA,
+  () => S1.A,
+  p => { S1.A.x = Math.max(180, Math.min(560, p.x)); S1.A.y = Math.max(60, Math.min(280, p.y)); update1(); });
+document.getElementById("btnAuto1").addEventListener("click", () => {
+  det1 = true; snapped1 = [true, true, true]; update1();
+});
+document.getElementById("btnReset1").addEventListener("click", () => {
+  det1 = false; snapped1 = [false, false, false];
+  sec1.forEach(s => s.free = false); update1();
+});
+update1();
+
+/* ================ 实验二：外角定理 ================ */
+const svg2 = document.getElementById("svg2");
+const S2 = { A: { x: 360, y: 115 }, B: { x: 150, y: 340 }, C: { x: 580, y: 340 } };
+const R2 = 44;
+let det2 = false, snapped2 = [false, false];
+const dash2 = el("line", { class: "dashline" }, svg2);
+const dlab2 = el("text", { class: "vlab" }, svg2); dlab2.textContent = "D";
+const tri2 = el("polygon", { class: "tri" }, svg2);
+const wedge2 = el("path", { fill: "#f59e0b", "fill-opacity": 0.25, stroke: "#f59e0b", "stroke-width": 2, "stroke-dasharray": "5 4" }, svg2);
+const secLayer2 = el("g", {}, svg2);
+const sec2 = [makeSector(secLayer2, "#ef4444", R2), makeSector(secLayer2, "#3b82f6", R2)];
+const lab2 = [0, 1, 2].map(() => el("text", { class: "anglab" }, svg2));
+const hA2 = el("circle", { class: "handle", r: 9 }, svg2);
+const vlab2 = ["A", "B", "C"].map(t => { const e = el("text", { class: "vlab" }, svg2); e.textContent = t; return e; });
+const sum2 = el("text", { class: "bigtext", x: 365, y: 60, visibility: "hidden" }, svg2);
+const info2 = document.getElementById("info2"), conc2 = document.getElementById("conc2");
+
+function update2(){
+  const { A, B, C } = S2;
+  const alpha = angleAt(A, B, C), beta = angleAt(B, C, A), ext = alpha + beta;
+  const dirCA = dirv(C, A);                       // 外角起始方向（指向 A）
+  const D = { x: C.x + 105, y: C.y };
+  tri2.setAttribute("points", `${A.x},${A.y} ${B.x},${B.y} ${C.x},${C.y}`);
+  dash2.setAttribute("x1", C.x); dash2.setAttribute("y1", C.y);
+  dash2.setAttribute("x2", D.x); dash2.setAttribute("y2", D.y);
+  dlab2.setAttribute("x", D.x + 14); dlab2.setAttribute("y", D.y + 4);
+  const p1 = polar(C, dirCA, 40), p2 = polar(C, dirCA + ext, 40);
+  wedge2.setAttribute("d", `M${C.x},${C.y} L${p1.x.toFixed(1)},${p1.y.toFixed(1)} A40,40 0 0 1 ${p2.x.toFixed(1)},${p2.y.toFixed(1)} Z`);
+  const ss = [sectSS(A, B, C), sectSS(B, A, C)];
+  const verts = [A, B];
+  const slots = [dirCA, dirCA + alpha];
+  sec2.forEach((s, i) => {
+    if (snapped2[i]) s.set(C.x, C.y, slots[i], ss[i].sweep);
+    else if (s.free) s.set(s.vx, s.vy, s.rot, ss[i].sweep);
+    else s.set(verts[i].x, verts[i].y, ss[i].start, ss[i].sweep);
+    const base = snapped2[i] ? C : (s.free ? { x: s.vx, y: s.vy } : verts[i]);
+    const rr = (snapped2[i] || s.free) ? 26 : R2 * 0.62;
+    const rot = snapped2[i] ? slots[i] : (s.free ? s.rot : ss[i].start);
+    const p = polar(base, rot + ss[i].sweep / 2, rr);
+    lab2[i].setAttribute("x", p.x); lab2[i].setAttribute("y", p.y);
+    lab2[i].textContent = "∠" + "AB"[i] + " " + fmt([alpha, beta][i]) + "°";
+  });
+  const pe = polar(C, dirCA + ext / 2, 58);
+  lab2[2].setAttribute("x", pe.x); lab2[2].setAttribute("y", pe.y);
+  lab2[2].textContent = "∠ACD(外角) " + fmt(ext) + "°";
+  hA2.setAttribute("cx", A.x); hA2.setAttribute("cy", A.y);
+  vlab2[0].setAttribute("x", A.x); vlab2[0].setAttribute("y", A.y - 20);
+  vlab2[1].setAttribute("x", B.x - 16); vlab2[1].setAttribute("y", B.y + 6);
+  vlab2[2].setAttribute("x", C.x + 4); vlab2[2].setAttribute("y", C.y + 22);
+  const done = snapped2.every(Boolean);
+  sum2.setAttribute("visibility", (det2 && done) ? "visible" : "hidden");
+  sum2.textContent = `∠ACD = ∠A + ∠B = ${fmt(alpha)}° + ${fmt(beta)}° = ${fmt(ext)}°`;
+  info2.textContent = `∠A = ${fmt(alpha)}°，∠B = ${fmt(beta)}°，外角 ∠ACD = ${fmt(ext)}° = ∠A + ∠B`;
+  conc2.classList.toggle("ok", done);
+}
+sec2.forEach((s, i) => dragSector(svg2, s, () => {
+  det2 = true;
+  if (dist({ x: s.vx, y: s.vy }, S2.C) < 55) snapped2[i] = true;
+  update2();
+}));
+dragVertex(svg2, hA2,
+  () => S2.A,
+  p => { S2.A.x = Math.max(200, Math.min(540, p.x)); S2.A.y = Math.max(80, Math.min(290, p.y)); update2(); });
+document.getElementById("btnAuto2").addEventListener("click", () => {
+  det2 = true; snapped2 = [true, true]; update2();
+});
+document.getElementById("btnReset2").addEventListener("click", () => {
+  det2 = false; snapped2 = [false, false];
+  sec2.forEach(s => s.free = false); update2();
+});
+update2();
+
+/* ================ 实验三：多边形分割 & 外角和 ================ */
+const svg3 = document.getElementById("svg3");
+const C3 = { x: 350, y: 218 };
+let N = 5, verts3 = [], split3 = 0, extAsm = false;
+const poly3 = el("polygon", { class: "poly" }, svg3);
+const triLayer3 = el("g", {}, svg3);
+const diagLayer3 = el("g", {}, svg3);
+const extLayer3 = el("g", {}, svg3);
+const secLayer3 = el("g", {}, svg3);
+const labLayer3 = el("g", {}, svg3);
+const hLayer3 = el("g", {}, svg3);
+const centerDot = el("circle", { cx: C3.x, cy: C3.y, r: 4, fill: "#334155", visibility: "hidden" }, svg3);
+const f3 = el("text", { class: "bigtext", x: 350, y: 420 }, svg3);
+const extSum3 = el("text", { class: "bigtext", x: 350, y: 70, visibility: "hidden", fill: "#b45309" }, svg3);
+const info3 = document.getElementById("info3"), conc3 = document.getElementById("conc3");
+let handles3 = [], extSectors3 = [], extLabels3 = [];
+let extSweeps3 = [];
+
+function regularVerts(n){
+  const vs = [];
+  for (let i = 0; i < n; i++){
+    const a = -90 + i * 360 / n;
+    vs.push(polar(C3, a, 152));
+  }
+  return vs;
+}
+function build3(){
+  [triLayer3, diagLayer3, extLayer3, secLayer3, labLayer3, hLayer3].forEach(l => l.innerHTML = "");
+  handles3 = []; extSectors3 = []; extLabels3 = [];
+  for (let i = 0; i < N; i++){
+    extLabels3.push(el("text", { class: "anglab", "font-size": "11px" }, labLayer3));
+  }
+  for (let i = 0; i < N; i++){
+    const h = el("circle", { class: "handle", r: 8 }, hLayer3);
+    const idx = i;
+    dragVertex(svg3, h, () => verts3[idx], p => {
+      verts3[idx].x = Math.max(30, Math.min(690, p.x));
+      verts3[idx].y = Math.max(50, Math.min(390, p.y));
+      update3();
+    });
+    handles3.push(h);
+  }
+  for (let i = 0; i < N; i++){
+    const hue = Math.round(i * 360 / N);
+    extSectors3.push(makeSector(secLayer3, `hsl(${hue},75%,55%)`, 32, 0.6));
+  }
+  update3();
+}
+function update3(){
+  const vs = verts3;
+  poly3.setAttribute("points", vs.map(v => `${v.x.toFixed(1)},${v.y.toFixed(1)}`).join(" "));
+  /* 分割三角形 */
+  triLayer3.innerHTML = ""; diagLayer3.innerHTML = "";
+  for (let i = 0; i < split3; i++){
+    const a = vs[0], b = vs[i + 1], c = vs[i + 2];
+    const hue = Math.round(i * 360 / Math.max(1, N - 2));
+    el("polygon", {
+      points: `${a.x},${a.y} ${b.x},${b.y} ${c.x},${c.y}`,
+      fill: `hsl(${hue},80%,86%)`, "fill-opacity": 0.9,
+      stroke: `hsl(${hue},60%,45%)`, "stroke-width": 1.5
+    }, triLayer3);
+  }
+  for (let j = 2; j <= split3; j++){
+    el("line", { x1: vs[0].x, y1: vs[0].y, x2: vs[j].x, y2: vs[j].y, class: "diag" }, diagLayer3);
+  }
+  /* 内角标签 */
+  const cent = vs.reduce((s, v) => ({ x: s.x + v.x / N, y: s.y + v.y / N }), { x: 0, y: 0 });
+  extLabels3.forEach((t, i) => {
+    const prev = vs[(i - 1 + N) % N], next = vs[(i + 1) % N];
+    const ang = angleAt(vs[i], prev, next);
+    t.setAttribute("x", (vs[i].x + (cent.x - vs[i].x) * 0.3).toFixed(1));
+    t.setAttribute("y", (vs[i].y + (cent.y - vs[i].y) * 0.3).toFixed(1));
+    t.textContent = fmt(ang) + "°";
+  });
+  /* 外角扇形 */
+  extSweeps3 = [];
+  extSectors3.forEach((s, i) => {
+    const prev = vs[(i - 1 + N) % N], next = vs[(i + 1) % N];
+    const dirExt = dirv(prev, vs[i]);          // 延长线方向
+    const dirNext = dirv(vs[i], next);
+    const sweep = (dirNext - dirExt + 360) % 360;
+    extSweeps3.push(sweep);
+    if (!extAsm){
+      s.set(vs[i].x, vs[i].y, dirExt, sweep);
+      s.g.style.display = "";
+    }
+  });
+  if (extAsm){
+    let acc = 0;
+    extSectors3.forEach((s, i) => { s.set(C3.x, C3.y, acc, extSweeps3[i]); acc += extSweeps3[i]; });
+  }
+  extLayer3.innerHTML = "";
+  if (!extAsm){
+    vs.forEach((v, i) => {
+      const e = polar(v, dirv(vs[(i - 1 + N) % N], v), 44);
+      el("line", { x1: v.x, y1: v.y, x2: e.x, y2: e.y, class: "dashline", "stroke-width": 1.5 }, extLayer3);
+    });
+  }
+  handles3.forEach((h, i) => { h.setAttribute("cx", vs[i].x); h.setAttribute("cy", vs[i].y); });
+  centerDot.setAttribute("visibility", extAsm ? "visible" : "hidden");
+  extSum3.setAttribute("visibility", extAsm ? "visible" : "hidden");
+  extSum3.textContent = `外角之和 = ${extSweeps3.reduce((a, b) => a + b, 0).toFixed(0)}° = 360°`;
+  f3.textContent = `n = ${N}，可分割成 ${N - 2} 个三角形，内角和 = (${N} − 2) × 180° = ${(N - 2) * 180}°`;
+  info3.textContent = `各内角：${extLabels3.map(t => t.textContent).join(" + ")} = ${(N - 2) * 180}°`;
+  const splitDone = split3 >= N - 2;
+  conc3.classList.toggle("ok", splitDone || extAsm);
+}
+function reset3(){ split3 = 0; extAsm = false; update3(); }
+document.getElementById("sliderN").addEventListener("input", e => {
+  N = +e.target.value;
+  document.getElementById("nShow").textContent = N;
+  verts3 = regularVerts(N); split3 = 0; extAsm = false;
+  build3();
+});
+document.getElementById("btnStep3").addEventListener("click", () => {
+  if (split3 < N - 2) split3++;
+  update3();
+});
+let timer3 = null;
+document.getElementById("btnAuto3").addEventListener("click", () => {
+  clearInterval(timer3); extAsm = false; split3 = 0; update3();
+  timer3 = setInterval(() => {
+    if (split3 < N - 2) { split3++; update3(); }
+    else clearInterval(timer3);
+  }, 700);
+});
+document.getElementById("btnReset3").addEventListener("click", () => { clearInterval(timer3); reset3(); });
+document.getElementById("btnExt3").addEventListener("click", () => { extAsm = true; update3(); });
+document.getElementById("btnExtReset3").addEventListener("click", () => { extAsm = false; update3(); });
+verts3 = regularVerts(N);
+build3();
+</script>
+</body>
+</html>

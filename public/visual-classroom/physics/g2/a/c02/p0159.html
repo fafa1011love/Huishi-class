@@ -1,0 +1,750 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>10.1　电势能和电势 ｜ 人教版物理必修第三册</title>
+<style>
+  :root{
+    --blue:#1d4ed8; --blue-soft:#eff6ff; --blue-line:#bfdbfe;
+    --ink:#1e293b; --sub:#64748b; --line:#e2e8f0;
+    --amber-bg:#fffbeb; --amber-line:#fcd34d; --amber-ink:#92400e;
+    --green:#059669; --red:#dc2626;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:#f3f5f9; color:var(--ink);
+    font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif; padding:18px 12px 40px;}
+  .wrap{max-width:1060px; margin:0 auto;}
+  header{background:#fff; border:1px solid var(--line); border-left:6px solid var(--blue);
+    border-radius:12px; padding:16px 22px; box-shadow:0 1px 3px rgba(15,23,42,.06);}
+  header h1{font-size:22px; color:var(--ink);}
+  header .meta{margin-top:6px; font-size:12.5px; color:var(--sub); line-height:1.7;}
+  .mod{background:#fff; border:1px solid var(--line); border-radius:12px;
+    padding:16px 20px 18px; margin-top:16px; box-shadow:0 1px 3px rgba(15,23,42,.05);}
+  .mod-h{display:flex; align-items:center; gap:10px; margin-bottom:10px;}
+  .mod-h .no{background:var(--blue); color:#fff; font-size:12px; border-radius:6px;
+    padding:2px 8px; white-space:nowrap;}
+  .mod-h h2{font-size:16.5px;}
+  .mod-h .kp{margin-left:auto; font-size:12px; color:var(--sub); white-space:nowrap;}
+  .think{background:var(--blue-soft); border:1px solid var(--blue-line); border-radius:8px;
+    padding:8px 12px; font-size:12.5px; color:#1e40af; margin-bottom:10px; line-height:1.7;}
+  .think b{color:var(--blue);}
+  canvas.stage{display:block; width:100%; background:#fbfdff;
+    border:1px solid var(--line); border-radius:10px; touch-action:none;}
+  .ctrl{display:flex; flex-wrap:wrap; gap:8px 18px; align-items:center; margin-top:10px;}
+  .row{display:flex; align-items:center; gap:8px; font-size:13px;}
+  .row label{color:var(--sub); white-space:nowrap;}
+  .row input[type=range]{width:150px; accent-color:var(--blue);}
+  .row .val{min-width:64px; font-variant-numeric:tabular-nums; color:var(--ink); font-weight:600;}
+  .btn{border:1px solid var(--blue); color:var(--blue); background:#fff; border-radius:7px;
+    padding:4px 12px; font-size:12.5px; cursor:pointer;}
+  .btn:hover{background:var(--blue-soft);}
+  .btn.on{background:var(--blue); color:#fff;}
+  .note{margin-top:10px; background:var(--amber-bg); border:1px solid var(--amber-line);
+    border-radius:8px; padding:8px 12px; font-size:12.5px; color:var(--amber-ink); line-height:1.8;}
+  .note b{color:#b45309;}
+  footer{margin-top:20px; text-align:center; font-size:12px; color:#94a3b8;}
+  .seg{display:inline-flex; border:1px solid var(--blue); border-radius:8px; overflow:hidden;}
+  .seg button{border:none; background:#fff; color:var(--blue); padding:4px 12px;
+    font-size:12.5px; cursor:pointer;}
+  .seg button.on{background:var(--blue); color:#fff;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>10.1　电势能和电势</h1>
+  <div class="meta">人教版《物理》必修第三册 · 第十章 静电场中的能量 · 教材 P26–P30 ｜ 覆盖知识点：静电力做功与路径无关、电势能、电势与零电势点</div>
+</header>
+
+<div class="mod">
+  <div class="mod-h">
+    <span class="no">模块 1</span>
+    <h2>静电力做功与路径无关</h2>
+    <span class="kp">分段交互</span>
+  </div>
+  <div class="think"><b>先想一想：</b>同一电荷从 A 到 B，绕一段路会让静电力做功变多吗？先选路径，再逐段看累加值。</div>
+  <canvas class="stage" id="cv1" style="height:380px;"></canvas>
+  <div class="ctrl">
+    <div class="seg" id="pathSeg">
+      <button class="on" data-path="straight">直线</button>
+      <button data-path="fold">折线</button>
+      <button data-path="curve">曲线分段</button>
+    </div>
+    <div class="row"><label>场强 E</label><input type="range" id="e1" min="20" max="100" step="5" value="60"><span class="val" id="e1v"></span></div>
+    <div class="row"><label>电荷 q</label><input type="range" id="q1" min="-5" max="5" step="0.5" value="2"><span class="val" id="q1v"></span></div>
+    <button class="btn" id="play1">逐段演示</button>
+    <button class="btn" id="reset1">经典位置</button>
+  </div>
+  <div class="note"><b>观察要点：</b>每段只取沿电场方向的位移 Δx，Wᵢ＝qEΔxᵢ；纵向段做功为 0。三条路径的 ΣΔx 都等于 x<sub>B</sub>−x<sub>A</sub>，所以总功相同。</div>
+</div>
+
+<div class="mod">
+  <div class="mod-h">
+    <span class="no">模块 2</span>
+    <h2>电势能与重力势能类比</h2>
+    <span class="kp">同步动画</span>
+  </div>
+  <div class="think"><b>先想一想：</b>高处小球落下时重力势能变小；正电荷顺着电场运动时，电势能会怎样变化？</div>
+  <canvas class="stage" id="cv2" style="height:360px;"></canvas>
+  <div class="ctrl">
+    <div class="row"><label>初始高度</label><input type="range" id="h2" min="20" max="100" step="5" value="85"><span class="val" id="h2v"></span></div>
+    <div class="row"><label>电场强弱</label><input type="range" id="e2" min="20" max="100" step="5" value="70"><span class="val" id="e2v"></span></div>
+    <button class="btn" id="release2">同时释放</button>
+    <button class="btn" id="reset2">复位</button>
+  </div>
+  <div class="note"><b>观察要点：</b>重力做正功，重力势能转化为动能；电场力做正功，正电荷的电势能也转化为动能。两边的“势能＋动能”都保持不变。</div>
+</div>
+
+<div class="mod">
+  <div class="mod-h">
+    <span class="no">模块 3</span>
+    <h2>电势与零电势参考点</h2>
+    <span class="kp">电势色阶＋等高线</span>
+  </div>
+  <div class="think"><b>先想一想：</b>把“零电势”换到另一个位置，A、B 两点的电势读数会变；它们的电势差也会变吗？</div>
+  <canvas class="stage" id="cv3" style="height:400px;"></canvas>
+  <div class="ctrl">
+    <div class="seg" id="refSeg">
+      <button class="on" data-ref="infinity">无穷远为零</button>
+      <button data-ref="point">指定点 R 为零</button>
+    </div>
+    <div class="row"><label>场源 Q</label><input type="range" id="q3" min="-8" max="8" step="1" value="6"><span class="val" id="q3v"></span></div>
+    <button class="btn" id="preset3">恢复探针位置</button>
+  </div>
+  <div class="note"><b>观察要点：</b>电势是相对量。换参考点相当于给所有 φ 同加一个常数，因此 φ<sub>A</sub>、φ<sub>B</sub>整体平移，但 U<sub>AB</sub>＝φ<sub>A</sub>−φ<sub>B</sub>不变。</div>
+</div>
+
+<footer>人教版高中物理必修第三册 · 可视化交互课件 ｜ 单文件离线运行，双击即可使用</footer>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* ========== 通用工具（所有文件统一使用） ========== */
+function $(id){
+  return document.getElementById(id);
+}
+
+function fmt(x, d){
+  if (d === undefined) d = 2;
+  if (!isFinite(x)) return '—';
+  var a = Math.abs(x);
+  if (a >= 10000 || (a > 0 && a < 0.01)) return x.toExponential(2);
+  return (+x.toFixed(d)).toString();
+}
+
+function fit(cv){
+  var dpr = window.devicePixelRatio || 1;
+  var w = cv.clientWidth;
+  var h = cv.clientHeight;
+  cv.width = Math.round(w * dpr);
+  cv.height = Math.round(h * dpr);
+  var ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return ctx;
+}
+
+function bindRange(id, fn){
+  var el = $(id);
+  var v = $(id + 'v');
+  function go(){
+    if (v) v.textContent = el.value;
+    fn(parseFloat(el.value));
+  }
+  el.addEventListener('input', go);
+  go();
+  return el;
+}
+
+function arrow(ctx, x1, y1, x2, y2, color, w){
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = w || 2;
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.stroke();
+  var a = Math.atan2(y2 - y1, x2 - x1);
+  var s = 7;
+  ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - s * Math.cos(a - 0.42), y2 - s * Math.sin(a - 0.42));
+  ctx.lineTo(x2 - s * Math.cos(a + 0.42), y2 - s * Math.sin(a + 0.42));
+  ctx.closePath();
+  ctx.fill();
+}
+
+function clamp(x, a, b){
+  return Math.max(a, Math.min(b, x));
+}
+
+function pointer(cv, ev){
+  var r = cv.getBoundingClientRect();
+  return {
+    x: (ev.clientX - r.left) * cv.clientWidth / Math.max(r.width, 1),
+    y: (ev.clientY - r.top) * cv.clientHeight / Math.max(r.height, 1)
+  };
+}
+
+function roundBox(ctx, x, y, w, h, fill, stroke){
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, 7);
+  if (fill){
+    ctx.fillStyle = fill;
+    ctx.fill();
+  }
+  if (stroke){
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+}
+
+function label(ctx, text, x, y, color, align, size){
+  ctx.fillStyle = color || '#334155';
+  ctx.font = (size || 12) + 'px "Microsoft YaHei",sans-serif';
+  ctx.textAlign = align || 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, x, y);
+}
+
+/* ========== 模块 1：路径无关 ========== */
+var cv1 = $('cv1');
+var state1 = {
+  A:{x:170, y:115},
+  B:{x:710, y:270},
+  E:60,
+  q:2,
+  path:'straight',
+  reveal:99,
+  playing:false,
+  start:0,
+  drag:''
+};
+
+function pathPoints1(){
+  var A = state1.A;
+  var B = state1.B;
+  if (state1.path === 'straight'){
+    return [
+      {x:A.x, y:A.y},
+      {x:B.x, y:B.y}
+    ];
+  }
+  if (state1.path === 'fold'){
+    var mx = (A.x + B.x) * 0.54;
+    return [
+      {x:A.x, y:A.y},
+      {x:mx, y:A.y},
+      {x:mx, y:B.y},
+      {x:B.x, y:B.y}
+    ];
+  }
+  var pts = [];
+  var n = 8;
+  for (var i=0; i<=n; i++){
+    var t = i / n;
+    pts.push({
+      x:A.x + (B.x - A.x) * t,
+      y:A.y + (B.y - A.y) * t + Math.sin(t * Math.PI) * 92
+    });
+  }
+  return pts;
+}
+
+function workMicroJ1(dxPx){
+  var meters = dxPx / 100;
+  return state1.q * state1.E * meters;
+}
+
+function drawField1(ctx, W, H){
+  ctx.strokeStyle = 'rgba(29,78,216,.17)';
+  ctx.lineWidth = 1.4;
+  for (var y=54; y<H-40; y+=42){
+    arrow(ctx, 48, y, W-48, y, 'rgba(29,78,216,.28)', 1.2);
+  }
+  label(ctx, '匀强电场 E →', 52, 27, '#1d4ed8', 'left', 13);
+}
+
+function drawPoint1(ctx, p, name, color){
+  ctx.beginPath();
+  ctx.arc(p.x, p.y, 13, 0, Math.PI * 2);
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.lineWidth = 3;
+  ctx.strokeStyle = '#fff';
+  ctx.stroke();
+  label(ctx, name, p.x, p.y, '#fff', 'center', 13);
+}
+
+function draw1(){
+  var ctx = fit(cv1);
+  var W = cv1.clientWidth;
+  var H = cv1.clientHeight;
+  ctx.clearRect(0, 0, W, H);
+  drawField1(ctx, W, H);
+
+  var pts = pathPoints1();
+  var total = 0;
+  var maxSeg = Math.min(state1.reveal, pts.length - 1);
+
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  for (var i=0; i<pts.length-1; i++){
+    var a = pts[i];
+    var b = pts[i+1];
+    ctx.beginPath();
+    ctx.moveTo(a.x, a.y);
+    ctx.lineTo(b.x, b.y);
+    ctx.strokeStyle = i < maxSeg ? '#f97316' : '#cbd5e1';
+    ctx.lineWidth = i < maxSeg ? 4 : 3;
+    ctx.setLineDash(i < maxSeg ? [] : [7, 6]);
+    ctx.stroke();
+    ctx.setLineDash([]);
+
+    if (i < maxSeg){
+      var wi = workMicroJ1(b.x - a.x);
+      total += wi;
+      var tx = (a.x + b.x) / 2;
+      var ty = (a.y + b.y) / 2 - 16;
+      roundBox(ctx, tx-58, ty-12, 116, 24, 'rgba(255,255,255,.94)', '#fed7aa');
+      label(ctx, 'W' + (i+1) + '＝' + fmt(wi, 1) + ' μJ', tx, ty, '#c2410c', 'center', 11);
+    }
+  }
+
+  drawPoint1(ctx, state1.A, 'A', '#0f766e');
+  drawPoint1(ctx, state1.B, 'B', '#7c3aed');
+
+  var dx = (state1.B.x - state1.A.x) / 100;
+  var finalWork = workMicroJ1(state1.B.x - state1.A.x);
+  var boxW = Math.min(330, W * 0.38);
+  var boxX = W - boxW - 18;
+  roundBox(ctx, boxX, 15, boxW, 84, 'rgba(255,255,255,.95)', '#cbd5e1');
+  label(ctx, '沿场方向总位移 d＝' + fmt(dx, 2) + ' m', boxX+14, 36, '#334155', 'left', 12);
+  label(ctx, '当前累加 ΣW＝' + fmt(total, 1) + ' μJ', boxX+14, 59, '#c2410c', 'left', 13);
+  label(ctx, '最终 W＝qEd＝' + fmt(finalWork, 1) + ' μJ', boxX+14, 82, '#1d4ed8', 'left', 13);
+  label(ctx, '拖动 A、B 改变初末位置', 18, H-18, '#64748b', 'left', 11);
+}
+
+function beginPlay1(){
+  state1.playing = true;
+  state1.reveal = 0;
+  state1.start = performance.now();
+  $('play1').classList.add('on');
+  requestAnimationFrame(tick1);
+}
+
+function tick1(now){
+  if (!state1.playing) return;
+  var count = pathPoints1().length - 1;
+  state1.reveal = Math.min(count, Math.floor((now - state1.start) / 650) + 1);
+  draw1();
+  if (state1.reveal < count){
+    requestAnimationFrame(tick1);
+  } else {
+    state1.playing = false;
+    $('play1').classList.remove('on');
+  }
+}
+
+$('pathSeg').addEventListener('click', function(ev){
+  var btn = ev.target.closest('button');
+  if (!btn) return;
+  var buttons = this.querySelectorAll('button');
+  for (var i=0; i<buttons.length; i++) buttons[i].classList.remove('on');
+  btn.classList.add('on');
+  state1.path = btn.getAttribute('data-path');
+  state1.playing = false;
+  state1.reveal = 99;
+  $('play1').classList.remove('on');
+  draw1();
+});
+
+bindRange('e1', function(v){
+  state1.E = v;
+  $('e1v').textContent = fmt(v, 0) + ' N/C';
+  draw1();
+});
+
+bindRange('q1', function(v){
+  state1.q = v;
+  $('q1v').textContent = fmt(v, 1) + ' μC';
+  draw1();
+});
+
+$('play1').addEventListener('click', beginPlay1);
+
+$('reset1').addEventListener('click', function(){
+  state1.A = {x:170, y:115};
+  state1.B = {x:710, y:270};
+  state1.reveal = 99;
+  state1.playing = false;
+  draw1();
+});
+
+cv1.addEventListener('pointerdown', function(ev){
+  var p = pointer(cv1, ev);
+  if (Math.hypot(p.x-state1.A.x, p.y-state1.A.y) < 25) state1.drag = 'A';
+  if (Math.hypot(p.x-state1.B.x, p.y-state1.B.y) < 25) state1.drag = 'B';
+  if (state1.drag) cv1.setPointerCapture(ev.pointerId);
+});
+
+cv1.addEventListener('pointermove', function(ev){
+  if (!state1.drag) return;
+  var p = pointer(cv1, ev);
+  var W = cv1.clientWidth;
+  var H = cv1.clientHeight;
+  state1[state1.drag].x = clamp(p.x, 55, W-55);
+  state1[state1.drag].y = clamp(p.y, 105, H-40);
+  state1.reveal = 99;
+  state1.playing = false;
+  draw1();
+});
+
+cv1.addEventListener('pointerup', function(){
+  state1.drag = '';
+});
+
+cv1.addEventListener('pointercancel', function(){
+  state1.drag = '';
+});
+
+/* ========== 模块 2：势能类比 ========== */
+var cv2 = $('cv2');
+var state2 = {
+  height:85,
+  field:70,
+  progress:0,
+  running:false,
+  last:0
+};
+
+function drawEnergyBar2(ctx, x, y, w, h, ratio, color, title, value){
+  ratio = clamp(ratio, 0, 1);
+  roundBox(ctx, x, y, w, h, '#f8fafc', '#cbd5e1');
+  ctx.fillStyle = color;
+  ctx.fillRect(x+2, y+h-(h-4)*ratio-2, w-4, (h-4)*ratio);
+  label(ctx, title, x+w/2, y+h+16, '#475569', 'center', 11);
+  label(ctx, fmt(value, 0) + '%', x+w/2, y-10, color, 'center', 11);
+}
+
+function drawHalf2(ctx, x0, w, H, electric){
+  var top = 60;
+  var floor = H - 62;
+  var initRatio = state2.height / 100;
+  var heightRatio = initRatio * (1 - state2.progress);
+  var y = floor - (floor-top) * heightRatio;
+  var potentialRatio = heightRatio;
+  var kineticRatio = initRatio - heightRatio;
+
+  label(ctx, electric ? '电场中的正电荷' : '重力场中的小球', x0+w/2, 25, '#1e293b', 'center', 15);
+
+  if (electric){
+    for (var ex=x0+35; ex<x0+w-155; ex+=42){
+      arrow(ctx, ex, top, ex, floor-6, 'rgba(29,78,216,.35)', 1.2);
+    }
+    label(ctx, 'E', x0+48, top+10, '#1d4ed8', 'center', 12);
+  } else {
+    arrow(ctx, x0+48, top+5, x0+48, floor-10, '#64748b', 2);
+    label(ctx, 'g', x0+61, top+20, '#475569', 'left', 12);
+  }
+
+  ctx.strokeStyle = '#64748b';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(x0+24, floor);
+  ctx.lineTo(x0+w-145, floor);
+  ctx.stroke();
+
+  ctx.beginPath();
+  ctx.arc(x0+w*0.36, y, 13, 0, Math.PI*2);
+  ctx.fillStyle = electric ? '#dc2626' : '#475569';
+  ctx.fill();
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  label(ctx, electric ? '+' : 'm', x0+w*0.36, y, '#fff', 'center', 13);
+
+  var bx = x0+w-122;
+  drawEnergyBar2(ctx, bx, 80, 40, 190, potentialRatio, '#f59e0b', electric ? '电势能' : '重力势能', potentialRatio*100/initRatio);
+  drawEnergyBar2(ctx, bx+58, 80, 40, 190, kineticRatio, '#059669', '动能', kineticRatio*100/initRatio);
+  label(ctx, electric ? 'Eₚ＋Eₖ＝常量' : 'Eₚ重＋Eₖ＝常量', bx+49, 312, '#334155', 'center', 12);
+}
+
+function draw2(){
+  var ctx = fit(cv2);
+  var W = cv2.clientWidth;
+  var H = cv2.clientHeight;
+  ctx.clearRect(0, 0, W, H);
+  ctx.strokeStyle = '#e2e8f0';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(W/2, 14);
+  ctx.lineTo(W/2, H-14);
+  ctx.stroke();
+  drawHalf2(ctx, 0, W/2, H, false);
+  drawHalf2(ctx, W/2, W/2, H, true);
+  label(ctx, '类比：高度 h ↔ 电势 φ，小球 m ↔ 电荷 q', W/2, H-18, '#1d4ed8', 'center', 12);
+}
+
+function tick2(now){
+  if (!state2.running) return;
+  if (!state2.last) state2.last = now;
+  var dt = Math.min(40, now-state2.last);
+  state2.last = now;
+  state2.progress = Math.min(1, state2.progress + dt * (0.00035 + state2.field*0.000004));
+  draw2();
+  if (state2.progress < 1){
+    requestAnimationFrame(tick2);
+  } else {
+    state2.running = false;
+    $('release2').classList.remove('on');
+  }
+}
+
+bindRange('h2', function(v){
+  state2.height = v;
+  state2.progress = 0;
+  state2.running = false;
+  $('h2v').textContent = fmt(v, 0) + '%';
+  draw2();
+});
+
+bindRange('e2', function(v){
+  state2.field = v;
+  $('e2v').textContent = fmt(v, 0) + '%';
+  draw2();
+});
+
+$('release2').addEventListener('click', function(){
+  state2.progress = 0;
+  state2.running = true;
+  state2.last = 0;
+  this.classList.add('on');
+  requestAnimationFrame(tick2);
+});
+
+$('reset2').addEventListener('click', function(){
+  state2.progress = 0;
+  state2.running = false;
+  state2.last = 0;
+  $('release2').classList.remove('on');
+  draw2();
+});
+
+/* ========== 模块 3：零电势参考点 ========== */
+var cv3 = $('cv3');
+var state3 = {
+  Q:6,
+  source:{x:510, y:205},
+  A:{x:690, y:125},
+  B:{x:760, y:290},
+  R:{x:300, y:305},
+  ref:'infinity',
+  drag:''
+};
+
+function rawPotential3(x, y){
+  var dx = x-state3.source.x;
+  var dy = y-state3.source.y;
+  var rm = Math.max(0.18, Math.hypot(dx,dy)/70);
+  return 9 * state3.Q / rm;
+}
+
+function referenceShift3(){
+  return state3.ref === 'point' ? rawPotential3(state3.R.x, state3.R.y) : 0;
+}
+
+function potential3(x, y){
+  return rawPotential3(x, y) - referenceShift3();
+}
+
+function heatColor3(v){
+  var t = clamp(Math.abs(v)/70, 0, 1);
+  if (v >= 0){
+    return 'rgba(220,38,38,' + (0.035 + t*0.16) + ')';
+  }
+  return 'rgba(37,99,235,' + (0.035 + t*0.16) + ')';
+}
+
+function drawHeat3(ctx, W, H){
+  var step = 12;
+  for (var y=0; y<H; y+=step){
+    for (var x=0; x<W; x+=step){
+      ctx.fillStyle = heatColor3(potential3(x+step/2, y+step/2));
+      ctx.fillRect(x, y, step+1, step+1);
+    }
+  }
+}
+
+function drawContours3(ctx, W, H){
+  var shift = referenceShift3();
+  var levels = [-60,-40,-20,0,20,40,60];
+  ctx.strokeStyle = '#d97706';
+  ctx.fillStyle = '#d97706';
+  ctx.lineWidth = 1.4;
+  ctx.font = '11px Consolas,monospace';
+  for (var i=0; i<levels.length; i++){
+    var displayLevel = levels[i];
+    var rawLevel = displayLevel + shift;
+    if (Math.abs(rawLevel) < 0.5) continue;
+    if (rawLevel * state3.Q <= 0) continue;
+    var rm = 9 * state3.Q / rawLevel;
+    var radius = Math.abs(rm) * 70;
+    if (radius < 17 || radius > Math.max(W,H)*1.4) continue;
+    ctx.beginPath();
+    ctx.arc(state3.source.x, state3.source.y, radius, 0, Math.PI*2);
+    ctx.stroke();
+    var lx = state3.source.x + radius * 0.72;
+    var ly = state3.source.y - radius * 0.69;
+    if (lx > 15 && lx < W-35 && ly > 16 && ly < H-12){
+      ctx.fillStyle = 'rgba(255,255,255,.88)';
+      ctx.fillRect(lx-4, ly-9, 40, 18);
+      ctx.fillStyle = '#d97706';
+      ctx.fillText((displayLevel>0?'+':'') + displayLevel + ' V', lx, ly+1);
+    }
+  }
+}
+
+function drawProbe3(ctx, p, name, color){
+  ctx.beginPath();
+  ctx.arc(p.x, p.y, 11, 0, Math.PI*2);
+  ctx.fillStyle = color;
+  ctx.fill();
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  label(ctx, name, p.x, p.y, '#fff', 'center', 11);
+  var v = potential3(p.x,p.y);
+  roundBox(ctx, p.x-48, p.y+17, 96, 24, 'rgba(255,255,255,.94)', '#cbd5e1');
+  label(ctx, 'φ＝' + fmt(v,1) + ' V', p.x, p.y+29, '#334155', 'center', 11);
+}
+
+function draw3(){
+  var ctx = fit(cv3);
+  var W = cv3.clientWidth;
+  var H = cv3.clientHeight;
+  state3.source.x = clamp(state3.source.x, W*0.42, W*0.58);
+  state3.source.y = clamp(state3.source.y, 120, H-120);
+  ctx.clearRect(0,0,W,H);
+  drawHeat3(ctx,W,H);
+  drawContours3(ctx,W,H);
+
+  ctx.beginPath();
+  ctx.arc(state3.source.x,state3.source.y,18,0,Math.PI*2);
+  ctx.fillStyle = state3.Q >= 0 ? '#dc2626' : '#2563eb';
+  ctx.fill();
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  label(ctx, state3.Q >= 0 ? '+' : '−', state3.source.x, state3.source.y, '#fff', 'center', 18);
+  label(ctx, '场源 Q', state3.source.x, state3.source.y+33, '#475569', 'center', 11);
+
+  if (state3.ref === 'point'){
+    ctx.setLineDash([5,4]);
+    ctx.strokeStyle = '#059669';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.arc(state3.R.x,state3.R.y,14,0,Math.PI*2);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    label(ctx, 'R', state3.R.x, state3.R.y, '#047857', 'center', 12);
+    label(ctx, 'φR＝0（可拖动）', state3.R.x, state3.R.y+25, '#047857', 'center', 11);
+  }
+
+  drawProbe3(ctx,state3.A,'A','#0f766e');
+  drawProbe3(ctx,state3.B,'B','#7c3aed');
+
+  var va = potential3(state3.A.x,state3.A.y);
+  var vb = potential3(state3.B.x,state3.B.y);
+  var rawDiff = rawPotential3(state3.A.x,state3.A.y) - rawPotential3(state3.B.x,state3.B.y);
+  roundBox(ctx,16,15,260,100,'rgba(255,255,255,.95)','#cbd5e1');
+  label(ctx, state3.ref === 'point' ? '参考：指定点 R' : '参考：无穷远', 30,37,'#1d4ed8','left',13);
+  label(ctx, 'φA＝' + fmt(va,1) + ' V　φB＝' + fmt(vb,1) + ' V',30,62,'#334155','left',12);
+  label(ctx, 'UAB＝φA−φB＝' + fmt(va-vb,1) + ' V',30,87,'#c2410c','left',13);
+  label(ctx, '（直接由原电势相减：' + fmt(rawDiff,1) + ' V）',30,105,'#64748b','left',10);
+
+  roundBox(ctx,W-185,H-42,168,27,'rgba(255,255,255,.9)','#fed7aa');
+  label(ctx,'橙色：等势线',W-101,H-28,'#d97706','center',11);
+}
+
+$('refSeg').addEventListener('click', function(ev){
+  var btn = ev.target.closest('button');
+  if (!btn) return;
+  var buttons = this.querySelectorAll('button');
+  for (var i=0; i<buttons.length; i++) buttons[i].classList.remove('on');
+  btn.classList.add('on');
+  state3.ref = btn.getAttribute('data-ref');
+  draw3();
+});
+
+bindRange('q3', function(v){
+  state3.Q = v;
+  $('q3v').textContent = (v>0?'+':'') + fmt(v,0) + ' nC';
+  draw3();
+});
+
+$('preset3').addEventListener('click', function(){
+  var W = cv3.clientWidth;
+  var H = cv3.clientHeight;
+  state3.A = {x:W*0.68,y:H*0.31};
+  state3.B = {x:W*0.76,y:H*0.72};
+  state3.R = {x:W*0.29,y:H*0.76};
+  draw3();
+});
+
+cv3.addEventListener('pointerdown', function(ev){
+  var p = pointer(cv3,ev);
+  var choices = ['A','B'];
+  if (state3.ref === 'point') choices.push('R');
+  for (var i=0; i<choices.length; i++){
+    var name = choices[i];
+    if (Math.hypot(p.x-state3[name].x,p.y-state3[name].y)<25){
+      state3.drag = name;
+      cv3.setPointerCapture(ev.pointerId);
+      break;
+    }
+  }
+});
+
+cv3.addEventListener('pointermove', function(ev){
+  if (!state3.drag) return;
+  var p = pointer(cv3,ev);
+  state3[state3.drag].x = clamp(p.x,25,cv3.clientWidth-25);
+  state3[state3.drag].y = clamp(p.y,25,cv3.clientHeight-48);
+  draw3();
+});
+
+cv3.addEventListener('pointerup', function(){
+  state3.drag = '';
+});
+
+cv3.addEventListener('pointercancel', function(){
+  state3.drag = '';
+});
+
+/* ========== 生命周期 ========== */
+function redrawAll(){
+  draw1();
+  draw2();
+  draw3();
+}
+
+window.addEventListener('resize', redrawAll);
+
+document.addEventListener('visibilitychange', function(){
+  if (document.hidden){
+    state1.playing = false;
+    state2.running = false;
+    $('play1').classList.remove('on');
+    $('release2').classList.remove('on');
+  }
+});
+
+redrawAll();
+})();
+</script>
+</body>
+</html>

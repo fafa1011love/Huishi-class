@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>基本不等式的几何证明 · 动态可视化讲解 Demo</title>
+<script>
+window.MathJax = {
+  tex: { inlineMath: [['$','$'],['\\(','\\)']], displayMath: [['$$','$$']] },
+  svg: { fontCache: 'global' }
+};
+</script>
+<script src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-svg.js" async></script>
+<style>
+  :root{
+    --bg:#f5f7fa; --card:#fff; --ink:#1e293b; --muted:#64748b;
+    --line:#e2e8f0; --brand:#2563eb; --hl:#ef4444; --accent:#0f766e;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif}
+  body{background:var(--bg);color:var(--ink);padding-bottom:40px}
+  header{background:linear-gradient(120deg,#1e3a8a,#2563eb 60%,#0ea5e9);color:#fff;padding:18px 28px}
+  header h1{font-size:20px;font-weight:700}
+  header p{font-size:13px;opacity:.85;margin-top:4px}
+  main{max-width:1320px;margin:0 auto;padding:18px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+  .card h3{font-size:15px;margin-bottom:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .tag{font-size:11px;background:#eff6ff;color:var(--brand);padding:2px 8px;border-radius:20px;font-weight:400}
+  .hint{font-size:12px;color:var(--muted);margin-top:10px;line-height:1.7}
+  .btn{background:var(--brand);color:#fff;border:none;border-radius:8px;padding:8px 18px;font-size:13.5px;cursor:pointer}
+  .btn:hover{background:#1d4ed8}
+  .btn.ghost{background:#fff;color:var(--brand);border:1px solid var(--brand)}
+  .btn.ghost:hover{background:#eff6ff}
+  .btn:disabled{opacity:.4;cursor:not-allowed}
+
+  /* 演示台：图 + 数据 */
+  .stage{display:flex;gap:18px;align-items:flex-start;flex-wrap:wrap;justify-content:flex-start}
+  /* 图区占满「左边界 ~ 实时数据」之间的空间，图在其中居中 */
+  .svgwrap{flex:1 1 auto;min-width:280px;max-width:100%}
+  #fig{height:min(66vh,640px);width:auto;max-width:100%;display:block;margin:0 auto;touch-action:none;cursor:ew-resize}
+  mjx-container{overflow-x:auto;overflow-y:hidden;max-width:100%}
+  .legend{display:flex;gap:12px;justify-content:center;font-size:12px;margin-top:2px;flex-wrap:wrap;color:var(--muted)}
+  .legend i{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+
+  /* 数据面板 */
+  /* 实时数据固定在最右侧 */
+  .datapanel{flex:0 0 300px;min-width:260px;margin-left:auto;border:1px solid var(--line);border-radius:12px;padding:14px 16px;background:#fbfdff}
+  .dp-title{font-size:13.5px;font-weight:700;color:var(--brand);margin-bottom:6px}
+  .drow{display:flex;justify-content:space-between;align-items:baseline;padding:6px 0;font-size:13.5px}
+  .drow b{font-size:17px;font-variant-numeric:tabular-nums}
+  .bar{height:14px;background:#eef2f7;border-radius:20px;overflow:hidden;margin:2px 0 8px}
+  .bar i{display:block;height:100%;border-radius:20px;transition:width .12s}
+  .cmp{background:#fff;border:1px dashed var(--brand);border-radius:10px;padding:9px 10px;
+       text-align:center;font-size:15px;margin:10px 0 8px;color:#1e3a8a;font-variant-numeric:tabular-nums}
+  .eqnote{font-size:13px;color:var(--muted);line-height:1.8}
+  .eqnote.eq{color:#15803d;font-weight:700}
+  .slider{display:flex;align-items:center;gap:10px;margin-top:12px;font-size:13px;color:var(--muted)}
+  .slider input[type=range]{flex:1;min-width:120px;accent-color:var(--brand)}
+
+  /* 推导过程：单一大框 */
+  .steplist{margin-top:8px}
+  .sb{font-size:14.5px;line-height:2.05;color:#1f2937}
+  .sb ul{padding-left:20px;margin:4px 0}
+  .sb li{margin-bottom:6px}
+  .sb b{color:var(--hl)}
+  .derivbox{border:1px solid var(--line);border-left:4px solid var(--brand);border-radius:10px;
+    padding:14px 20px;background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+  .derivbox .sb{margin-bottom:14px}
+  .derivbox .sb:last-child{margin-bottom:0}
+  .divider{height:1px;background:var(--line);margin:18px 0 14px}
+
+  /* SVG 高亮 */
+  #fig .dm{transition:opacity .4s}
+  #fig.focused .dm{opacity:.22}
+  #fig .lit{opacity:1 !important;filter:drop-shadow(0 0 4px rgba(239,68,68,.55))}
+  #e-raD.lit{stroke:#ef4444;stroke-width:2.6}
+  .ann{opacity:0;transition:opacity .6s}
+  .ann.on{opacity:1}
+
+  /* 知识点总结 */
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th,td{border-bottom:1px solid var(--line);padding:8px 6px;text-align:left;vertical-align:middle}
+  th{color:var(--muted);font-weight:600;font-size:12.5px}
+  td b{color:var(--brand)}
+  .keybox{background:linear-gradient(120deg,#eff6ff,#f0f9ff);border:1px solid #bfdbfe;border-radius:12px;
+    padding:14px 18px;text-align:center;font-size:18px;margin-bottom:18px;color:#1e3a8a}
+  .kp{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:12px}
+  @media (max-width:900px){ .kp{grid-template-columns:1fr} }
+  .kp .box{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:#f8fafc}
+  .kp h4{font-size:13px;margin-bottom:6px;color:var(--brand)}
+  .kp ul{margin:0;padding-left:18px;font-size:13px;line-height:2;color:#334155}
+  .highlight-card{outline:3px solid #f59e0b;outline-offset:3px}
+</style>
+</head>
+<body>
+<header>
+  <h1>基本不等式的几何证明 · 动态可视化讲解</h1>
+  <p>拖动点 D 感受数据 → 相似判定 → 对应边成比例求 CD → 与半径比较 → 得出结论 → 知识点总结</p>
+</header>
+
+<main>
+  <!-- 题目 -->
+  <div class="card" style="margin-bottom:18px">
+    <h3>📐 题目与已知 <span class="tag">教材图 2.2-1</span></h3>
+    <div style="font-size:14px;line-height:1.85">
+      如图，$AB$ 是 $\odot O$ 的<b>直径</b>，点 $C$ 是 $AB$ 上一点，记 $AC=a$，$BC=b$（$a,b>0$）；<br>
+      过点 $C$ 作 $AB$ 的垂线，交圆于 $D$、$E$ 两点，即 <b>$DC\perp AB$</b>，连接 $AD$、$BD$。<br>
+      <span style="color:var(--muted)">目标：由图形中「半弦 $CD$」与「半径 $OD$」的大小关系，得出基本不等式。</span>
+    </div>
+  </div>
+
+  <!-- 演示台 -->
+  <div class="card">
+    <h3>🖥 图形与数据 <span class="tag">拖动圆上的点 D 改变 a、b</span></h3>
+    <div class="stage">
+      <div class="svgwrap">
+        <svg id="fig" viewBox="60 18 480 470">
+          <!-- 基础图形（一次呈现） -->
+          <circle cx="300" cy="250" r="200" fill="none" stroke="#334155" stroke-width="2.5"/>
+          <line x1="100" y1="250" x2="500" y2="250" stroke="#334155" stroke-width="2.5"/>
+          <line id="e-de" x1="240" y1="59.2" x2="240" y2="440.8" stroke="#c0267e" stroke-width="1.8"/>
+          <line id="e-ad" class="dm" x1="100" y1="250" x2="240" y2="59.2" stroke="#2563eb" stroke-width="2.5"/>
+          <line id="e-bd" class="dm" x1="240" y1="59.2" x2="500" y2="250" stroke="#2563eb" stroke-width="2.5"/>
+          <line id="e-cd" class="dm" x1="240" y1="250" x2="240" y2="59.2" stroke="#ef4444" stroke-width="4"/>
+          <line id="e-oc" class="dm" x1="240" y1="250" x2="300" y2="250" stroke="#0f766e" stroke-width="2" stroke-dasharray="6 5"/>
+          <line id="e-od" class="dm" x1="300" y1="250" x2="240" y2="59.2" stroke="#0f766e" stroke-width="2.4" stroke-dasharray="7 5"/>
+          <!-- 直角符号 -->
+          <polyline id="e-raC1" class="dm" points="240,236 226,236 226,250" fill="none" stroke="#64748b" stroke-width="2"/>
+          <polyline id="e-raC2" class="dm" points="240,236 254,236 254,250" fill="none" stroke="#64748b" stroke-width="2"/>
+          <polyline id="e-raD"  class="dm" points="226.98,76.94 244.72,89.96 257.74,72.22" fill="none" stroke="#64748b" stroke-width="2"/>
+          <!-- 相似三角形着色（推导标注） -->
+          <polygon id="e-t1" class="ann" points="100,250 240,250 240,59.2" fill="#2563eb" fill-opacity="0.18"/>
+          <polygon id="e-t2" class="ann" points="240,59.2 240,250 500,250" fill="#f59e0b" fill-opacity="0.20"/>
+          <!-- 等角标记（推导标注） -->
+          <path id="e-a1" class="ann dm" d="M 123.67 217.74 A 40 40 0 0 1 140 250" fill="none" stroke="#2563eb" stroke-width="2.6"/>
+          <path id="e-a2" class="ann dm" d="M 277.09 86.41 A 46 46 0 0 1 240 105.2" fill="none" stroke="#2563eb" stroke-width="2.6"/>
+          <path id="e-a3" class="ann dm" d="M 219.88 86.62 A 34 34 0 0 0 240 93.2" fill="none" stroke="#f59e0b" stroke-width="2.6"/>
+          <path id="e-a4" class="ann dm" d="M 467.75 226.34 A 40 40 0 0 0 460 250" fill="none" stroke="#f59e0b" stroke-width="2.6"/>
+          <!-- 点与字母 -->
+          <circle cx="100" cy="250" r="4.5" fill="#334155"/><circle cx="500" cy="250" r="4.5" fill="#334155"/>
+          <circle id="p-C" cx="240" cy="250" r="5" fill="#ef4444"/>
+          <circle id="p-D" cx="240" cy="59.2" r="7" fill="#c0267e" stroke="#fff" stroke-width="1.5"/>
+          <circle id="p-E" cx="240" cy="440.8" r="4.5" fill="#c0267e"/>
+          <circle cx="300" cy="250" r="4" fill="#0f766e"/>
+          <text x="74" y="274" font-size="21" font-style="italic" fill="#334155">A</text>
+          <text x="512" y="274" font-size="21" font-style="italic" fill="#334155">B</text>
+          <text id="l-C" x="222" y="280" font-size="20" font-style="italic" fill="#ef4444">C</text>
+          <text id="l-D" x="230" y="42"  font-size="21" font-style="italic" fill="#c0267e">D</text>
+          <text id="l-E" x="232" y="472" font-size="21" font-style="italic" fill="#c0267e">E</text>
+          <text x="308" y="240" font-size="20" font-style="italic" fill="#0f766e">O</text>
+          <!-- 线段长度标注 -->
+          <text id="l-a" x="170" y="280" font-size="20" font-style="italic" fill="#334155" text-anchor="middle">a</text>
+          <text id="l-b" x="370" y="280" font-size="20" font-style="italic" fill="#334155" text-anchor="middle">b</text>
+          <!-- 实时长度数值 -->
+          <text id="v-cdchip" x="196" y="158" font-size="15" fill="#ef4444" text-anchor="end"
+                paint-order="stroke" stroke="#fff" stroke-width="4" font-weight="700">9.54</text>
+          <text id="v-odchip" x="272" y="152" font-size="15" fill="#0f766e" text-anchor="start"
+                paint-order="stroke" stroke="#fff" stroke-width="4" font-weight="700">10.00</text>
+        </svg>
+        <div class="legend">
+          <span><i style="background:#2563eb"></i>△ACD</span>
+          <span><i style="background:#f59e0b"></i>△DCB</span>
+          <span><i style="background:#ef4444"></i>半弦 CD</span>
+          <span><i style="background:#0f766e"></i>半径 OD</span>
+        </div>
+        <p class="hint" style="margin-top:4px">✋ 在图形上<b>按住并左右拖动</b>（或拖点 D / 点 C），右侧数据实时变化。</p>
+      </div>
+
+      <!-- 实时数据面板 -->
+      <div class="datapanel">
+        <div class="dp-title">📊 实时数据（单位长度）</div>
+        <div class="drow"><span>半弦 $CD=\sqrt{ab}$</span><b id="v-cd" style="color:#ef4444">9.54</b></div>
+        <div class="bar"><i id="bar-cd" style="background:#ef4444;width:95%"></i></div>
+        <div class="drow"><span>半径 $OD=\dfrac{a+b}{2}$</span><b id="v-od" style="color:#0f766e">10.00</b></div>
+        <div class="bar"><i id="bar-od" style="background:#0f766e;width:100%"></i></div>
+        <div class="cmp">$\sqrt{ab}$ = <b id="v-gm" style="color:#ef4444">9.54</b>
+          &nbsp;≤&nbsp; $\dfrac{a+b}{2}$ = <b id="v-am" style="color:#0f766e">10.00</b></div>
+        <div class="eqnote" id="v-eq">拖动点 D：无论怎么移动，半弦 CD 都不会超过半径 OD。</div>
+        <div class="slider">
+          <span>滑块调 a</span>
+          <input type="range" id="rng" min="1" max="19" step="0.1" value="7" oninput="setByA(+this.value)">
+          <b id="v-rng" style="color:var(--brand)">7.0</b>
+        </div>
+      </div>
+    </div>
+
+    <div class="divider"></div>
+
+    <!-- 推导过程 -->
+    <h3 style="margin-bottom:10px">📝 推导过程</h3>
+    <div class="steplist" id="steps"></div>
+  </div>
+
+  <!-- 知识点总结 -->
+  <div class="card" id="sumCard" style="margin-top:18px">
+    <h3>📚 知识点总结 <span class="tag">一表梳理，考前速记</span></h3>
+    <div class="keybox">
+      基本不等式：$\sqrt{ab}\le\dfrac{a+b}{2}\quad(a>0,\ b>0)$，当且仅当 $a=b$ 时取等号。
+    </div>
+
+    <h3 style="margin-bottom:8px">✅ 使用条件</h3>
+    <div class="kp">
+      <div class="box">
+        <h4>一正</h4>
+        <ul>
+          <li>各项必须为<b>正数</b>（$a>0,\ b>0$）</li>
+          <li>出现负数先<b>变号 / 提负号</b>再使用</li>
+          <li>$\sqrt{ab}$ 要求 $ab\ge 0$，否则无意义</li>
+        </ul>
+      </div>
+      <div class="box">
+        <h4>二定</h4>
+        <ul>
+          <li>求和的最小值 → 需 <b>$ab$ 为定值</b></li>
+          <li>求积的最大值 → 需 <b>$a+b$ 为定值</b></li>
+          <li>不是定值要先<b>配凑</b>出定值（拆项、凑系数）</li>
+        </ul>
+      </div>
+      <div class="box">
+        <h4>三相等</h4>
+        <ul>
+          <li>等号成立条件 <b>$a=b$</b> 必须能取到</li>
+          <li>要检验 $a=b$ 是否在<b>定义域</b>内</li>
+          <li>多次使用时，各次等号条件须<b>一致</b></li>
+        </ul>
+      </div>
+    </div>
+
+    <h3 style="margin:18px 0 8px">🔁 常用变形</h3>
+    <table>
+      <tr><th style="width:34%">变形形式</th><th>说明 / 用途</th></tr>
+      <tr><td>$a+b\ \ge\ 2\sqrt{ab}$</td><td>积为<b>定值</b>时，和有<b>最小值</b> $2\sqrt{ab}$（"积定和最小"）</td></tr>
+      <tr><td>$ab\ \le\ \left(\dfrac{a+b}{2}\right)^{2}$</td><td>和为<b>定值</b>时，积有<b>最大值</b> $\left(\frac{a+b}{2}\right)^{2}$（"和定积最大"）</td></tr>
+      <tr><td>$a^{2}+b^{2}\ \ge\ 2ab\ (a,b\in\mathbb R)$</td><td>不要求正数；配方、比较大小、求最值的基础</td></tr>
+      <tr><td>$\dfrac{2}{\frac1a+\frac1b}\ \le\ \sqrt{ab}\ \le\ \dfrac{a+b}{2}\ \le\ \sqrt{\dfrac{a^{2}+b^{2}}{2}}$</td>
+          <td>均值链：调和平均 ≤ 几何平均 ≤ 算术平均 ≤ 平方平均</td></tr>
+    </table>
+    <p class="hint">⚠️ 常见失分点：忘记验证"正数"前提；凑不出定值就下结论；等号取不到却写出最值。</p>
+  </div>
+</main>
+
+<script>
+/* ================= 几何参数与可动点 ================= */
+const R = 200, OX = 300, OY = 250, AX = 100, BX = 500, AY = 250, BY = 250;
+const UNIT = 20;          // 1 单位 = 20px，故 AB = 20，半径 = 10
+let cx = 240;             // 点 C 的横坐标（a = 7, b = 13）
+const $ = id => document.getElementById(id);
+
+function unit(vx, vy, wx, wy){ const dx=wx-vx, dy=wy-vy, l=Math.hypot(dx,dy)||1; return [dx/l, dy/l]; }
+
+// 以 V 为顶点、从 VP1 转到 VP2 的小圆弧
+function arcPath(V, P1, P2, r){
+  const u1 = unit(V.x,V.y,P1.x,P1.y), u2 = unit(V.x,V.y,P2.x,P2.y);
+  const s = {x:V.x+r*u1[0], y:V.y+r*u1[1]};
+  const e = {x:V.x+r*u2[0], y:V.y+r*u2[1]};
+  let a1 = Math.atan2(u1[1],u1[0]), a2 = Math.atan2(u2[1],u2[0]);
+  let d = a2 - a1;
+  while(d <= -Math.PI) d += 2*Math.PI;
+  while(d >  Math.PI) d -= 2*Math.PI;
+  return `M ${s.x.toFixed(2)} ${s.y.toFixed(2)} A ${r} ${r} 0 0 ${d>0?1:0} ${e.x.toFixed(2)} ${e.y.toFixed(2)}`;
+}
+function setA(el, attrs){ for(const k in attrs) el.setAttribute(k, attrs[k]); }
+
+function setC(x){
+  cx = Math.max(AX + 0.8*UNIT, Math.min(BX - 0.8*UNIT, x));
+  const dx = cx - OX;
+  const h  = Math.sqrt(Math.max(R*R - dx*dx, 0));
+  const Dy = OY - h, Ey = OY + h;
+  const C = {x:cx, y:AY}, D = {x:cx, y:Dy}, E = {x:cx, y:Ey},
+        A = {x:AX, y:AY}, B = {x:BX, y:BY}, O = {x:OX, y:OY};
+
+  setA($('e-de'), {x1:cx, y1:Dy, x2:cx, y2:Ey});
+  setA($('e-cd'), {x1:cx, y1:AY, x2:cx, y2:Dy});
+  setA($('e-ad'), {x1:AX, y1:AY, x2:cx, y2:Dy});
+  setA($('e-bd'), {x1:cx, y1:Dy, x2:BX, y2:BY});
+  setA($('e-oc'), {x1:cx, y1:AY, x2:OX, y2:OY});
+  setA($('e-od'), {x1:OX, y1:OY, x2:cx, y2:Dy});
+
+  // 直角符号
+  setA($('e-raC1'), {points:`${cx},${AY-14} ${cx-14},${AY-14} ${cx-14},${AY}`});
+  setA($('e-raC2'), {points:`${cx},${AY-14} ${cx+14},${AY-14} ${cx+14},${AY}`});
+  const u = unit(D.x,D.y,A.x,A.y), v = unit(D.x,D.y,B.x,B.y), s = 22;
+  const p1 = {x:D.x+s*u[0], y:D.y+s*u[1]};
+  const p3 = {x:D.x+s*v[0], y:D.y+s*v[1]};
+  const p2 = {x:p1.x+s*v[0], y:p1.y+s*v[1]};
+  setA($('e-raD'), {points:`${p1.x.toFixed(2)},${p1.y.toFixed(2)} ${p2.x.toFixed(2)},${p2.y.toFixed(2)} ${p3.x.toFixed(2)},${p3.y.toFixed(2)}`});
+
+  // 三角形着色与等角标记
+  setA($('e-t1'), {points:`${AX},${AY} ${cx},${AY} ${cx},${Dy.toFixed(2)}`});
+  setA($('e-t2'), {points:`${cx},${Dy.toFixed(2)} ${cx},${AY} ${BX},${BY}`});
+  setA($('e-a1'), {d:arcPath(A, D, C, 40)});
+  setA($('e-a2'), {d:arcPath(D, B, C, 46)});
+  setA($('e-a3'), {d:arcPath(D, A, C, 34)});
+  setA($('e-a4'), {d:arcPath(B, D, C, 40)});
+
+  // 点、字母、数值
+  setA($('p-C'), {cx, cy:AY});
+  setA($('p-D'), {cx, cy:Dy.toFixed(2)});
+  setA($('p-E'), {cx, cy:Ey.toFixed(2)});
+  setA($('l-C'), {x:cx-18, y:AY+30});
+  setA($('l-D'), {x:cx-8,  y:(Dy-14).toFixed(2)});
+  setA($('l-E'), {x:cx-8,  y:(Ey+30).toFixed(2)});
+  setA($('l-a'), {x:(AX+cx)/2, y:AY+30});
+  setA($('l-b'), {x:(cx+BX)/2, y:AY+30});
+  setA($('v-cdchip'), {x:cx-10, y:((AY+Dy)/2).toFixed(2)});
+  setA($('v-odchip'), {x:((OX+cx)/2+12).toFixed(2), y:((OY+Dy)/2-4).toFixed(2)});
+
+  updateData(h);
+}
+
+function updateData(h){
+  const a = (cx - AX)/UNIT, b = (BX - cx)/UNIT;
+  const cd = h/UNIT, od = R/UNIT;                 // 半弦、半径
+  const gm = Math.sqrt(a*b), am = (a+b)/2;        // 几何平均、算术平均
+  const f = n => n.toFixed(2);
+  $('v-cd').textContent = f(cd);
+  $('v-od').textContent = f(od);
+  $('v-cdchip').textContent = f(cd);
+  $('v-odchip').textContent = f(od);
+  $('bar-cd').style.width = (cd/od*100).toFixed(1) + '%';
+  $('bar-od').style.width = '100%';
+  $('v-gm').textContent = f(gm);
+  $('v-am').textContent = f(am);
+  const eq = Math.abs(a-b) < 0.06;
+  $('v-eq').className = 'eqnote' + (eq ? ' eq' : '');
+  $('v-eq').textContent = eq
+    ? '此时 a = b，点 C 与圆心 O 重合：CD = OD = 10.00，等号成立！'
+    : `拖动点 D：无论怎么移动，半弦 CD 都不会超过半径 OD（相差 ${(od-cd).toFixed(2)}）。`;
+  $('v-rng').textContent = a.toFixed(1);
+  if(document.activeElement !== $('rng')) $('rng').value = a.toFixed(1);
+}
+
+function setByA(a){ setC(AX + a*UNIT); }
+
+/* ================= 拖动交互 ================= */
+const fig = document.getElementById('fig');
+function svgX(evt){
+  const r = fig.getBoundingClientRect();
+  const vb = fig.viewBox.baseVal;                 // 自动适配 viewBox
+  return vb.x + (evt.clientX - r.left) / r.width * vb.width;
+}
+let dragging = false;
+fig.addEventListener('pointerdown', e=>{
+  dragging = true;
+  try{ fig.setPointerCapture(e.pointerId); }catch(_){}
+  setC(svgX(e));
+});
+fig.addEventListener('pointermove', e=>{ if(dragging) setC(svgX(e)); });
+fig.addEventListener('pointerup',   e=>{ dragging = false; try{ fig.releasePointerCapture(e.pointerId);}catch(_){} });
+fig.addEventListener('pointercancel', ()=>{ dragging = false; });
+
+/* ================= 推导步骤 ================= */
+const STEPS = [
+  {
+    body:`$\\because\\ AB$ 是 $\\odot O$ 的直径，$D$ 在圆上，$\\therefore\\ \\angle ADB=90^{\\circ}$（直径所对的圆周角是直角）。`,
+    lit:['e-ad','e-bd','e-raD'], show:[]
+  },
+  {
+    body:`<ul>
+      <li>$\\because\\ DC\\perp AB$，$\\therefore\\ \\angle ACD=\\angle DCB=90^{\\circ}$；</li>
+      <li>$\\angle A+\\angle B=90^{\\circ}$，$\\angle A+\\angle ADC=90^{\\circ}$，
+          $\\therefore\\ \\angle ADC=\\angle DBC$；同理 $\\angle CAD=\\angle CDB$。</li>
+      </ul>
+      两角分别相等 $\\Rightarrow\\ \\triangle ACD\\sim\\triangle DCB$。`,
+    lit:['e-t1','e-t2','e-a1','e-a2','e-a3','e-a4','e-raC1','e-raC2'],
+    show:['e-t1','e-t2','e-a1','e-a2','e-a3','e-a4']
+  },
+  {
+    body:`由 $\\triangle ACD\\sim\\triangle DCB$，对应边成比例：
+          $$\\frac{AC}{DC}=\\frac{DC}{CB}\\ \\Rightarrow\\ DC^{2}=AC\\cdot CB=ab$$
+          $$\\therefore\\ DC=\\sqrt{ab}$$`,
+    lit:['e-cd'], show:[]
+  },
+  {
+    body:`连 $OD$，则 $OD=\\dfrac{a+b}{2}$（半径）。
+          在 Rt$\\triangle OCD$ 中，$CD$ 是直角边，$OD$ 是斜边，
+          $$\\therefore\\ CD\\le OD$$
+          当且仅当 $C$ 与圆心 $O$ 重合时取等号。`,
+    lit:['e-od','e-oc','e-cd'], show:[]
+  },
+  {
+    body:`由 $CD=\\sqrt{ab}$，$CD\\le OD$，$OD=\\dfrac{a+b}{2}$，得
+          $$\\sqrt{ab}\\ \\le\\ \\frac{a+b}{2}\\qquad(a>0,\\ b>0)$$
+          当且仅当 $a=b$ 时等号成立。`,
+    lit:['e-cd','e-od'], show:[]
+  }
+];
+
+const stepsEl = document.getElementById('steps');
+function typeset(el){ if(window.MathJax && MathJax.typesetPromise) MathJax.typesetPromise([el]).catch(()=>{}); }
+
+// 推导过程一次性完整显示（单一大框）
+function renderSteps(){
+  stepsEl.innerHTML = '<div class="derivbox">' +
+    STEPS.map(s=>`<div class="sb">${s.body}</div>`).join('') + '</div>';
+  typeset(stepsEl);
+  // 图形标注全部显示，不聚焦任何一步
+  fig.classList.remove('focused');
+  document.querySelectorAll('#fig .ann').forEach(e=>e.classList.add('on'));
+  document.querySelectorAll('#fig .lit').forEach(e=>e.classList.remove('lit'));
+}
+
+setC(240);
+renderSteps();
+</script>
+</body>
+</html>

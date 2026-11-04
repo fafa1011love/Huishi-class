@@ -1,0 +1,586 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>三角恒等变换 · 动态演示教具（人教A版 必修第一册 5.5）</title>
+<style>
+:root{
+  --bg:#f5f7fa; --card:#ffffff; --ink:#1e293b; --ink2:#334155; --muted:#64748b;
+  --line:#e2e8f0; --line2:#eef2f7;
+  --brand:#2563eb; --brand2:#1d4ed8; --brandsoft:#eff6ff;
+  --green:#0f9d58; --greenSoft:#eaf7f0;
+  --orange:#ea8a00; --orangeSoft:#fff5e6;
+  --purple:#7c3aed; --purpleSoft:#f3edff;
+  --red:#ef4444; --redSoft:#fdeceb;
+  --teal:#0e8f9e;
+  --shadow:0 1px 3px rgba(0,0,0,.05);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:"Microsoft YaHei","PingFang SC","Hiragino Sans GB","Source Han Sans SC",system-ui,sans-serif;
+  font-size:15px; line-height:1.7;
+}
+header.top{background:linear-gradient(120deg,#1e3a8a,#2563eb 60%,#0ea5e9); color:#fff;
+  box-shadow:0 1px 3px rgba(0,0,0,.08); padding:18px 20px 14px}
+.top-in{max-width:1320px;margin:0 auto}
+header.top h1{margin:0;font-size:24px;letter-spacing:.5px;color:#fff;font-weight:700}
+header.top .sub{margin:4px 0 0;color:#fff;opacity:.88;font-size:15px}
+
+.layout{max-width:1320px;margin:0 auto;padding:22px 20px 40px}
+
+nav.tabs{display:flex;gap:6px;margin:12px auto 0;overflow-x:auto;padding-bottom:2px}
+.ni{flex:0 0 auto;border:1px solid var(--line);background:#fff;color:var(--ink2);border-radius:999px;
+  padding:8px 18px;font-size:16px;cursor:pointer;transition:.15s;font-family:inherit;white-space:nowrap}
+.ni:hover{border-color:var(--brand);color:var(--brand);background:var(--brandsoft)}
+.ni.active{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:700}
+.ni .n{opacity:.6;margin-right:2px}
+
+main{min-width:0}
+.sec{display:none;background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow);padding:22px 24px 26px}
+.sec.active{display:block}
+.sec h2{margin:0 0 4px;font-size:19px;display:flex;align-items:center;gap:10px}
+.sec h2 .tag{font-size:12px;font-weight:600;color:var(--brand);background:var(--brandsoft);border:1px solid #d7e6ff;padding:2px 9px;border-radius:999px}
+.sec .lead{color:var(--muted);font-size:13.5px;margin:0 0 16px}
+.sec h3{font-size:15px;margin:18px 0 8px;padding-left:9px;border-left:3px solid var(--brand);line-height:1.4}
+
+.grid2{display:grid;grid-template-columns:minmax(0,1.05fr) minmax(0,1fr);gap:20px}
+@media (max-width:1000px){.grid2{grid-template-columns:1fr}}
+
+.cv{background:#fbfcfe;border:1px solid var(--line);border-radius:10px;padding:6px}
+canvas{width:100%;height:480px;display:block}
+canvas.short{height:330px}
+
+.panel{display:flex;flex-direction:column;gap:12px;min-width:0}
+.ctrl{background:#fbfcfe;border:1px solid var(--line);border-radius:12px;padding:12px 14px}
+.slider-row{display:flex;align-items:center;gap:12px;margin:8px 0}
+.slider-row label{flex:0 0 96px;font-size:13.5px;color:var(--ink2)}
+.slider-row .val{font-weight:700;color:var(--brand);font-variant-numeric:tabular-nums}
+input[type=range]{flex:1;min-width:0;accent-color:var(--brand);height:22px}
+.chips{display:flex;flex-wrap:wrap;gap:6px;margin-top:8px}
+.chips button{border:1px solid var(--line);background:#fff;color:var(--ink2);border-radius:8px;
+  padding:3px 10px;font-size:12.5px;cursor:pointer;font-family:inherit}
+.chips button:hover{border-color:var(--brand);color:var(--brand);background:var(--brandsoft)}
+.btn{display:inline-flex;align-items:center;gap:6px;border:1px solid var(--brand);background:#fff;color:var(--brand);
+  border-radius:9px;padding:7px 14px;font-size:13.5px;cursor:pointer;font-family:inherit;transition:.12s}
+.btn:hover{background:var(--brandsoft)}
+.btn.ghost{background:#fff;color:var(--brand)}
+.btn.ghost:hover{background:var(--brandsoft)}
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+
+.fml{background:var(--brandsoft);border:1px solid #dbe8ff;border-radius:11px;padding:12px 14px;text-align:center;
+  font-size:16.5px;color:#12306e;overflow-x:auto}
+.fml.alt{background:var(--orangeSoft);border-color:#ffe0b3;color:#7a4700}
+.fml.gr{background:var(--greenSoft);border-color:#c9ecd7;color:#0b5c37}
+.fml.pu{background:var(--purpleSoft);border-color:#e2d7ff;color:#4c2a94}
+.fml small{display:block;font-size:12.5px;color:var(--muted);margin-top:5px}
+
+.frac{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;margin:0 .18em;font-size:.92em}
+.frac .num{border-bottom:1px solid currentColor;padding:0 .35em;line-height:1.35}
+.frac .den{padding:0 .35em;line-height:1.35}
+.sqrt{display:inline-flex;align-items:stretch;vertical-align:-0.12em;line-height:1;white-space:nowrap}
+.sqrt .rad{display:flex;align-items:center;font-size:1.18em;line-height:1;transform:translateX(.06em)}
+.sqrt .sbody{border-top:1.6px solid currentColor;padding:.06em .22em 0 .28em}
+
+table.tbl{width:100%;border-collapse:collapse;font-size:14.5px;font-variant-numeric:tabular-nums}
+table.tbl th{background:#f3f6fb;color:var(--muted);font-weight:600;text-align:left;padding:8px 10px;border-bottom:1px solid var(--line)}
+table.tbl td{padding:8px 10px;border-bottom:1px solid var(--line2);vertical-align:middle}
+table.tbl tr:last-child td{border-bottom:0}
+.ok{color:var(--green);font-weight:700}
+.no{color:var(--red);font-weight:700}
+.num{font-variant-numeric:tabular-nums}
+
+.note{font-size:13.5px;color:var(--ink2);background:#fff;border:1px dashed var(--line);border-radius:11px;padding:11px 14px}
+.note b{color:var(--brand)}
+.tip{font-size:13px;color:#7a4a00;background:var(--orangeSoft);border:1px solid #ffe0b3;border-radius:10px;padding:9px 13px}
+.steps{counter-reset:s;margin:0;padding-left:0;list-style:none}
+.steps li{counter-increment:s;position:relative;padding:7px 0 7px 36px;font-size:15.5px;color:var(--ink)}
+.steps li::before{content:counter(s);position:absolute;left:0;top:9px;width:23px;height:23px;border-radius:50%;
+  background:var(--brandsoft);color:var(--brand);font-size:13px;font-weight:700;display:flex;align-items:center;justify-content:center}
+
+/* 公式总览网格（知识点总结页） */
+.fmlgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px}
+.warn{font-size:15px;line-height:1.9;color:var(--ink2);background:var(--redSoft);border:1px solid #f2c4c0;border-radius:11px;padding:13px 17px}
+.warn b{color:var(--red)}
+
+footer{text-align:center;color:var(--muted);font-size:12.5px;padding:18px 0 26px}
+</style>
+</head>
+<body>
+<header class="top">
+  <div class="top-in">
+    <h1>三角恒等变换 · 动态演示教具</h1>
+    <p class="sub">人教版高中数学 · 必修第一册 · 第五章 5.5 三角恒等变换 —— 和差角公式、二倍角公式与简单的三角恒等变换</p>
+    <nav class="tabs" id="nav">
+      <button class="ni active" data-go="s0">使用说明</button>
+      <button class="ni" data-go="s1"><span class="n">①</span>两角差的余弦</button>
+      <button class="ni" data-go="s2"><span class="n">②</span>和角·差角公式族</button>
+      <button class="ni" data-go="s3"><span class="n">③</span>二倍角公式</button>
+      <button class="ni" data-go="s7"><span class="n">★</span>知识点总结</button>
+    </nav>
+  </div>
+</header>
+
+<div class="layout">
+  <main id="main">
+    <!-- ============ S0 说明 ============ -->
+    <section class="sec active" id="s0">
+      <h2>使用说明与知识地图<span class="tag">5.5 三角恒等变换</span></h2>
+      <p class="lead">本教具按教材顺序组织：先由单位圆上的两点间距离推导出<b>两角差的余弦公式</b>（它是整套公式的"根"），再由此生长出和角、差角、倍角、半角、积和互化与辅助角公式。</p>
+      <div class="grid2">
+        <div>
+          <h3>整套公式的生长路径</h3>
+          <ol class="steps">
+            <li>单位圆 + 两点间距离公式 ⇒ <b>cos(α−β)</b>（本教具模块 1 动态演示）</li>
+            <li>用 −β 替换 β ⇒ cos(α+β)；用诱导公式 sinθ = cos(90°−θ) ⇒ sin(α±β)</li>
+            <li>同角关系相除 ⇒ tan(α±β)（注意分母不为 0）</li>
+            <li>令 β = α ⇒ 二倍角公式 sin2α、cos2α（三种形式）、tan2α</li>
+            <li>由 cos2α 变形 ⇒ 降幂公式与半角公式；两式相加减 ⇒ 积化和差、和差化积</li>
+            <li>逆向运用：a sinx + b cosx = <span class="sqrt"><span class="rad">√</span><span class="sbody">a²+b²</span></span>·sin(x+φ)（辅助角公式，为 5.6 做准备）</li>
+          </ol>
+          <div class="note" style="margin-top:12px">全部公式已汇总在顶部导航的<b>「知识点总结」</b>页，便于课堂收尾时整体回顾。</div>
+        </div>
+        <div>
+          <h3>操作提示</h3>
+          <ul class="steps">
+            <li>每个模块的滑块可拖动改变角 α、β，图形与右侧数值<b>实时同步</b>。</li>
+            <li>数值表里"左边/右边"若完全相等则显示绿色 ✓，可用来检验公式与定义域。</li>
+            <li>模块 1 的"旋转演示"按钮会把两点同时旋转 β，直观说明"旋转不改变距离"。</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ S1 两角差的余弦 ============ -->
+    <section class="sec" id="s1">
+      <h2>两角差的余弦公式<span class="tag">5.5.1 起点公式</span></h2>
+      <p class="lead">在单位圆上取角 α、β 的终边与圆的交点 P₁、P₂，用<b>两点间距离公式</b>算弦长；再把两终边一起旋转 −β，使 P₂ 落到 (1,0)。旋转不改变距离，两种算法必然相等。</p>
+      <div class="grid2">
+        <div>
+          <div class="cv"><canvas id="c1"></canvas></div>
+          <div class="ctrl" style="margin-top:12px">
+            <div class="slider-row"><label>α = <span class="val" id="a1v">60°</span></label><input type="range" id="a1" min="-180" max="180" step="1" value="60"></div>
+            <div class="slider-row"><label>β = <span class="val" id="b1v">30°</span></label><input type="range" id="b1" min="-180" max="180" step="1" value="30"></div>
+            <div class="btnrow">
+              <button class="btn" id="rot1">▶ 旋转演示</button>
+              <button class="btn ghost" id="reset1">复位</button>
+            </div>
+          </div>
+        </div>
+        <div class="panel">
+          <div class="fml">cos(α − β) = cos α cos β + sin α sin β</div>
+          <h3>公式与数值验证</h3>
+          <table class="tbl" id="t1"></table>
+          <h3>推导过程</h3>
+          <ol class="steps">
+            <li>在单位圆 O 中，设角 α、β 的终边分别交圆于 P₁(cos α, sin α)、P₂(cos β, sin β)。<br>|P₁P₂|² = (cosα−cosβ)² + (sinα−sinβ)² = 2 − 2(cosαcosβ + sinαsinβ)</li>
+            <li>OP₁、OP₂ 同时旋转 −β：P₂ ↦ Q(1,0)，P₁ ↦ P(cos(α−β), sin(α−β))，<br>|PQ|² = (cos(α−β)−1)² + sin²(α−β) = 2 − 2cos(α−β)</li>
+            <li>由 |P₁P₂| = |PQ|：cos(α−β) = cosαcosβ + sinαsinβ</li>
+          </ol>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ S2 和差角公式族 ============ -->
+    <section class="sec" id="s2">
+      <h2>两角和与差的正弦、余弦、正切公式<span class="tag">5.5.1</span></h2>
+      <p class="lead">由 <b>cos(α−β)</b> 出发，用 −β 代 β 得 <b>cos(α+β)</b>，再用诱导公式 sinθ = cos(90° − θ) 得 <b>sin(α±β)</b>，最后两式相除得 <b>tan(α±β)</b>。</p>
+      <div class="grid2">
+        <div>
+          <div class="cv"><canvas id="c2"></canvas></div>
+          <div class="ctrl" style="margin-top:12px">
+            <div class="slider-row"><label>α = <span class="val" id="a2v">60°</span></label><input type="range" id="a2" min="-180" max="180" step="1" value="60"></div>
+            <div class="slider-row"><label>β = <span class="val" id="b2v">45°</span></label><input type="range" id="b2" min="-180" max="180" step="1" value="45"></div>
+          </div>
+        </div>
+        <div class="panel">
+          <h3>公式与数值验证</h3>
+          <table class="tbl" id="t2"></table>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(280px,1fr));gap:12px;margin-top:14px">
+        <div class="fml">cos(α+β) = cos α cos β − sin α sin β<small>把 cos(α−β) 中的 β 换成 −β</small></div>
+        <div class="fml gr">sin(α+β) = sin α cos β + cos α sin β<small>由 cos(90°−(α+β)) 展开得到</small></div>
+        <div class="fml gr">sin(α−β) = sin α cos β − cos α sin β<small>把 β 换成 −β</small></div>
+        <div class="fml alt">tan(α+β) = <span class="frac"><span class="num">tan α + tan β</span><span class="den">1 − tan α tan β</span></span><small>由 sin(α+β) ÷ cos(α+β)，分母不为 0</small></div>
+        <div class="fml alt">tan(α−β) = <span class="frac"><span class="num">tan α − tan β</span><span class="den">1 + tan α tan β</span></span><small>把 β 换成 −β</small></div>
+        <div class="fml">cos(α−β) = cos α cos β + sin α sin β<small>整套公式的出发点</small></div>
+      </div>
+    </section>
+    <!-- ============ S3 二倍角 ============ -->
+    <section class="sec" id="s3">
+      <h2>二倍角公式<span class="tag">5.5.1</span></h2>
+      <p class="lead">在 <b>sin(α+β)</b>、<b>cos(α+β)</b>、<b>tan(α+β)</b> 中令 <b>β = α</b> 即得二倍角公式。</p>
+      <div class="grid2">
+        <div>
+          <div class="cv"><canvas id="c3"></canvas></div>
+          <div class="ctrl" style="margin-top:12px">
+            <div class="slider-row"><label>α = <span class="val" id="a3v">30°</span></label><input type="range" id="a3" min="0" max="90" step="1" value="30"></div>
+          </div>
+        </div>
+        <div class="panel">
+          <h3>公式与数值验证</h3>
+          <table class="tbl" id="t3"></table>
+        </div>
+      </div>
+      <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(270px,1fr));gap:12px;margin-top:14px">
+        <div class="fml gr">sin 2α = 2 sin α cos α</div>
+        <div class="fml">cos 2α = cos²α − sin²α</div>
+        <div class="fml">cos 2α = 2cos²α − 1 = 1 − 2sin²α<small>用 sin²α + cos²α = 1 消去一项得到，注意"1"的代换</small></div>
+        <div class="fml alt">tan 2α = <span class="frac"><span class="num">2 tan α</span><span class="den">1 − tan²α</span></span><small>要求 α、2α 都有正切且 1 − tan²α ≠ 0</small></div>
+        <div class="fml pu">1 + cos 2α = 2cos²α<br>1 − cos 2α = 2sin²α</div>
+      </div>
+    </section>
+
+    <!-- ============ S7 知识点总结 ============ -->
+    <section class="sec" id="s7">
+      <h2>知识点总结<span class="tag">5.5 全部公式一览</span></h2>
+      <p class="lead" style="font-size:16.5px;font-weight:700;color:var(--ink);line-height:1.85">整套公式只有一个源头——<b style="color:var(--brand)">两角差的余弦公式</b>：由它替换 −β、用诱导公式、相除、令 β=α、相加减、逆向运用，即可依次得到下面所有公式。</p>
+
+      <h3>一、两角和与差的正弦、余弦、正切公式</h3>
+      <div class="fmlgrid">
+        <div class="fml">cos(α−β) = cosαcosβ + sinαsinβ<small>源头公式（单位圆 + 两点间距离）</small></div>
+        <div class="fml">cos(α+β) = cosαcosβ − sinαsinβ<small>把 cos(α−β) 中的 β 换成 −β</small></div>
+        <div class="fml gr">sin(α+β) = sinαcosβ + cosαsinβ<small>由 sinθ = cos(90°−θ) 展开得到</small></div>
+        <div class="fml gr">sin(α−β) = sinαcosβ − cosαsinβ<small>把 β 换成 −β</small></div>
+        <div class="fml alt">tan(α+β) = <span class="frac"><span class="num">tanα + tanβ</span><span class="den">1 − tanαtanβ</span></span><small>由 sin(α+β) ÷ cos(α+β)，分母不为 0</small></div>
+        <div class="fml alt">tan(α−β) = <span class="frac"><span class="num">tanα − tanβ</span><span class="den">1 + tanαtanβ</span></span><small>把 β 换成 −β</small></div>
+      </div>
+
+      <h3>二、二倍角公式</h3>
+      <div class="fmlgrid">
+        <div class="fml gr">sin 2α = 2 sinα cosα</div>
+        <div class="fml">cos 2α = cos²α − sin²α</div>
+        <div class="fml">cos 2α = 2cos²α − 1 = 1 − 2sin²α</div>
+        <div class="fml alt">tan 2α = <span class="frac"><span class="num">2tanα</span><span class="den">1 − tan²α</span></span></div>
+      </div>
+
+      <h3>三、降幂公式与半角公式</h3>
+      <div class="fmlgrid">
+        <div class="fml pu">sin²<span class="frac"><span class="num">θ</span><span class="den">2</span></span> = <span class="frac"><span class="num">1 − cosθ</span><span class="den">2</span></span></div>
+        <div class="fml pu">cos²<span class="frac"><span class="num">θ</span><span class="den">2</span></span> = <span class="frac"><span class="num">1 + cosθ</span><span class="den">2</span></span></div>
+        <div class="fml pu">tan²<span class="frac"><span class="num">θ</span><span class="den">2</span></span> = <span class="frac"><span class="num">1 − cosθ</span><span class="den">1 + cosθ</span></span></div>
+        <div class="fml gr">tan<span class="frac"><span class="num">θ</span><span class="den">2</span></span> = <span class="frac"><span class="num">sinθ</span><span class="den">1 + cosθ</span></span> = <span class="frac"><span class="num">1 − cosθ</span><span class="den">sinθ</span></span><small>有理形式，无需讨论正负号</small></div>
+      </div>
+
+      <h3>四、积化和差与和差化积</h3>
+      <div class="fmlgrid">
+        <div class="fml">sinαcosβ = <span class="frac"><span class="num">1</span><span class="den">2</span></span>[sin(α+β) + sin(α−β)]</div>
+        <div class="fml">cosαsinβ = <span class="frac"><span class="num">1</span><span class="den">2</span></span>[sin(α+β) − sin(α−β)]</div>
+        <div class="fml">cosαcosβ = <span class="frac"><span class="num">1</span><span class="den">2</span></span>[cos(α+β) + cos(α−β)]</div>
+        <div class="fml">sinαsinβ = −<span class="frac"><span class="num">1</span><span class="den">2</span></span>[cos(α+β) − cos(α−β)]</div>
+        <div class="fml gr">sinα + sinβ = 2sin<span class="frac"><span class="num">α+β</span><span class="den">2</span></span>cos<span class="frac"><span class="num">α−β</span><span class="den">2</span></span></div>
+        <div class="fml gr">sinα − sinβ = 2cos<span class="frac"><span class="num">α+β</span><span class="den">2</span></span>sin<span class="frac"><span class="num">α−β</span><span class="den">2</span></span></div>
+        <div class="fml gr">cosα + cosβ = 2cos<span class="frac"><span class="num">α+β</span><span class="den">2</span></span>cos<span class="frac"><span class="num">α−β</span><span class="den">2</span></span></div>
+        <div class="fml gr">cosα − cosβ = −2sin<span class="frac"><span class="num">α+β</span><span class="den">2</span></span>sin<span class="frac"><span class="num">α−β</span><span class="den">2</span></span></div>
+      </div>
+
+      <h3>五、辅助角公式</h3>
+      <div class="fmlgrid">
+        <div class="fml alt">a sinx + b cosx = <span class="sqrt"><span class="rad">√</span><span class="sbody">a²+b²</span></span> · sin(x+φ)<br>cosφ = a / <span class="sqrt"><span class="rad">√</span><span class="sbody">a²+b²</span></span><br>sinφ = b / <span class="sqrt"><span class="rad">√</span><span class="sbody">a²+b²</span></span></div>
+        <div class="fml alt">sinx + cosx = <span class="sqrt"><span class="rad">√</span><span class="sbody">2</span></span> sin(x + 45°)<small>常用特例</small></div>
+        <div class="fml alt">sinx + <span class="sqrt"><span class="rad">√</span><span class="sbody">3</span></span>cosx = 2 sin(x + 60°)<small>常用特例</small></div>
+      </div>
+
+      <h3>易错提醒</h3>
+      <div class="warn">
+        <b>① 定义域：</b>tan(α+β) 在 α+β = 90°+k·180° 时无意义；tan2α 在 2α = 90°+k·180° 时无意义（分母 1−tanαtanβ、1−tan²α 也不能为 0）。<br>
+        <b>② 开方定号：</b>半角公式开方时，根号前的正负号由 <b>α/2 所在象限</b>决定，不能默认取正。<br>
+        <b>③ 符号细节：</b>sinαsinβ = −½[cos(α+β)−cos(α−β)] 与 cosα−cosβ = −2sin((α+β)/2)sin((α−β)/2) 前面的<b>负号</b>容易漏写。<br>
+        <b>④ "1" 的代换：</b>1 + cos2α = 2cos²α、1 − cos2α = 2sin²α 是降幂与化简的关键桥梁，逆向使用即为升幂。
+      </div>
+    </section>
+
+  </main>
+</div>
+
+<footer>三角恒等变换动态演示教具 · 适配人教 A 版必修第一册第五章 5.5 · 建议配合投影或电子白板使用</footer>
+
+<script>
+/* ================= 基础工具 ================= */
+const d2r = d => d * Math.PI / 180;
+const r2d = r => r * 180 / Math.PI;
+const fmt = (x, n = 4) => {
+  if (x === null || x === undefined || !isFinite(x)) return '无定义';
+  const v = Math.abs(x) < Math.pow(10, -(n + 2)) ? 0 : x;
+  return v.toFixed(n);
+};
+const near = (a, b, eps = 1e-9) => typeof a === 'number' && typeof b === 'number' && isFinite(a) && isFinite(b) && Math.abs(a - b) < eps;
+
+/* canvas 注册与高清渲染 */
+const CVS = [];
+function reg(id, draw) {
+  const rec = { el: document.getElementById(id), draw };
+  CVS.push(rec); return rec;
+}
+function render(rec) {
+  const c = rec.el; if (!c) return;
+  const w = c.clientWidth, h = c.clientHeight;
+  if (!w || !h) return;
+  const dpr = window.devicePixelRatio || 1;
+  c.width = Math.round(w * dpr); c.height = Math.round(h * dpr);
+  const ctx = c.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  ctx.clearRect(0, 0, w, h);
+  ctx.font = '13px "Microsoft YaHei", sans-serif';
+  ctx.textBaseline = 'middle';
+  rec.draw(ctx, w, h);
+}
+function renderAll() { CVS.forEach(render); }
+window.addEventListener('resize', renderAll);
+
+/* 绘图小工具 */
+function line(ctx, x1, y1, x2, y2, color, w, dash) {
+  ctx.save(); ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2);
+  ctx.strokeStyle = color || '#9aa5b1'; ctx.lineWidth = w || 1;
+  if (dash) ctx.setLineDash(dash);
+  ctx.stroke(); ctx.restore();
+}
+function arrowLine(ctx, x1, y1, x2, y2, color, w) {
+  line(ctx, x1, y1, x2, y2, color, w);
+  const a = Math.atan2(y2 - y1, x2 - x1), s = 8;
+  ctx.save(); ctx.fillStyle = color || '#9aa5b1';
+  ctx.beginPath(); ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - s * Math.cos(a - 0.42), y2 - s * Math.sin(a - 0.42));
+  ctx.lineTo(x2 - s * Math.cos(a + 0.42), y2 - s * Math.sin(a + 0.42));
+  ctx.closePath(); ctx.fill(); ctx.restore();
+}
+function circle(ctx, cx, cy, r, color, w, dash) {
+  ctx.save(); ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI * 2);
+  ctx.strokeStyle = color || '#1e293b'; ctx.lineWidth = w || 1.6;
+  if (dash) ctx.setLineDash(dash);
+  ctx.stroke(); ctx.restore();
+}
+function dot(ctx, x, y, r, color) {
+  ctx.save(); ctx.beginPath(); ctx.arc(x, y, r || 4.5, 0, Math.PI * 2);
+  ctx.fillStyle = color; ctx.fill();
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.5; ctx.stroke(); ctx.restore();
+}
+function label(ctx, x, y, text, color, align, size, bold) {
+  ctx.save(); ctx.fillStyle = color || '#334155';
+  ctx.font = (bold ? 'bold ' : '') + (size || 13) + 'px "Microsoft YaHei", sans-serif';
+  ctx.textAlign = align || 'left'; ctx.textBaseline = 'middle';
+  ctx.fillText(text, x, y); ctx.restore();
+}
+/* 数学角 a0→a1 的圆弧（y 轴向上为正） */
+function angleArc(ctx, cx, cy, r, a0, a1, color, w) {
+  ctx.save(); ctx.beginPath();
+  ctx.arc(cx, cy, r, -a0, -a1, a1 > a0);
+  ctx.strokeStyle = color; ctx.lineWidth = w || 1.6; ctx.stroke(); ctx.restore();
+}
+function axes(ctx, cx, cy, r, pad) {
+  arrowLine(ctx, cx - r - pad, cy, cx + r + pad, cy, '#94a3b8', 1.2);
+  arrowLine(ctx, cx, cy + r + pad, cx, cy - r - pad, '#94a3b8', 1.2);
+  label(ctx, cx + r + pad - 4, cy - 12, 'x', '#64748b', 'right');
+  label(ctx, cx - 12, cy - r - pad + 8, 'y', '#64748b', 'right');
+  label(ctx, cx - 8, cy + 14, 'O', '#64748b', 'right');
+}
+
+/* 滑块绑定 */
+function slider(id, cb) {
+  const el = document.getElementById(id), v = document.getElementById(id + 'v');
+  const upd = () => { const x = parseFloat(el.value); if (v) v.textContent = x + '°'; cb(x); };
+  el.addEventListener('input', upd);
+  return { el, upd, get: () => parseFloat(el.value), set(x) { el.value = x; upd(); } };
+}
+
+/* 数值验证表 */
+function verifyTable(el, rows) {
+  let html = '<tr><th>公式</th><th>左边</th><th>右边</th><th>判定</th></tr>';
+  rows.forEach(r => {
+    let L = '—', R = '—', ok = false, cls = '', mark = '—';
+    if (r.L === null || r.R === null) { mark = '无定义'; cls = 'no'; }
+    else {
+      L = fmt(r.L); R = fmt(r.R); ok = near(r.L, r.R, 1e-8);
+      cls = ok ? 'ok' : 'no'; mark = ok ? '✓ 相等' : '✗ 不等';
+    }
+    html += '<tr><td>' + r.name + '</td><td class="num">' + L + '</td><td class="num">' + R + '</td><td class="' + cls + '">' + mark + '</td></tr>';
+  });
+  el.innerHTML = html;
+}
+
+/* ================= 模块 1：两角差的余弦 ================= */
+let S1 = { a: 60, b: 30, t: 0 };
+const rec1 = reg('c1', (ctx, w, h) => {
+  const cx = w * 0.46, cy = h * 0.52, r = Math.min(w * 0.42, h * 0.42);
+  const a = d2r(S1.a), b = d2r(S1.b), rot = -b * S1.t;
+  axes(ctx, cx, cy, r, 26);
+  circle(ctx, cx, cy, r, '#cbd5e1', 1.4);
+
+  const A = { x: cx + r * Math.cos(a + rot), y: cy - r * Math.sin(a + rot) };
+  const B = { x: cx + r * Math.cos(b + rot), y: cy - r * Math.sin(b + rot) };
+  const A0 = { x: cx + r * Math.cos(a), y: cy - r * Math.sin(a) };
+  const B0 = { x: cx + r * Math.cos(b), y: cy - r * Math.sin(b) };
+
+  if (S1.t > 0.02) { // 旋转前的虚影
+    line(ctx, cx, cy, A0.x, A0.y, '#cbd5e1', 1.2, [5, 4]);
+    line(ctx, cx, cy, B0.x, B0.y, '#cbd5e1', 1.2, [5, 4]);
+  }
+  // 终边
+  line(ctx, cx, cy, A.x, A.y, '#2563eb', 2.2);
+  line(ctx, cx, cy, B.x, B.y, '#0f9d58', 2.2);
+  // 弦
+  line(ctx, A.x, A.y, B.x, B.y, '#ea8a00', 2.6);
+  // 角弧
+  angleArc(ctx, cx, cy, r * 0.30, Math.min(a + rot, b + rot), Math.max(a + rot, b + rot), '#ea8a00', 2);
+  const mid = (a + rot + b + rot) / 2;
+  label(ctx, cx + r * 0.40 * Math.cos(mid), cy - r * 0.40 * Math.sin(mid), 'α−β', '#c2410c', 'center', 13, true);
+  if (S1.t < 0.02) {
+    angleArc(ctx, cx, cy, r * 0.66, 0, a, '#93b4f5', 1.8);
+    label(ctx, cx + r * 0.78 * Math.cos(a / 2), cy - r * 0.78 * Math.sin(a / 2), 'α', '#2563eb', 'center', 12, true);
+    angleArc(ctx, cx, cy, r * 0.52, 0, b, '#8fd3b0', 1.8);
+    label(ctx, cx + r * 0.63 * Math.cos(b / 2), cy - r * 0.63 * Math.sin(b / 2), 'β', '#0f9d58', 'center', 12, true);
+  }
+  dot(ctx, A.x, A.y, 5, '#2563eb');
+  dot(ctx, B.x, B.y, 5, '#0f9d58');
+  const lblA = S1.t > 0.9 ? 'P(cos(α−β), sin(α−β))' : (S1.t > 0.02 ? 'P₁' : 'P₁(cos α, sin α)');
+  const lblB = S1.t > 0.9 ? 'Q(1, 0)' : (S1.t > 0.02 ? 'P₂' : 'P₂(cos β, sin β)');
+  // 标签放不下时自动换到点的左侧，避免超出画布
+  if (A.x + 10 + lblA.length * 12.5 <= w - 4) label(ctx, A.x + 9, A.y - 11, lblA, '#1d4ed8', 'left', 12.5, true);
+  else label(ctx, A.x - 9, A.y - 11, lblA, '#1d4ed8', 'right', 12.5, true);
+  if (B.x + 10 + lblB.length * 12.5 <= w - 4) label(ctx, B.x + 9, B.y + 13, lblB, '#0b7a45', 'left', 12.5, true);
+  else label(ctx, B.x - 9, B.y + 13, lblB, '#0b7a45', 'right', 12.5, true);
+
+  const d = Math.hypot(A.x - B.x, A.y - B.y) / r;
+  label(ctx, (A.x + B.x) / 2 + 8, (A.y + B.y) / 2 - 8, '|P₁P₂| = ' + fmt(d, 4), '#c2410c', 'left', 12.5, true);
+
+  label(ctx, 12, 20, S1.t > 0.98 ? '旋转完成：P₂ → Q(1, 0)，P₁ → P(cos(α−β), sin(α−β))'
+    : S1.t > 0.02 ? '正在把两条终边同时旋转 −β …' : '拖动滑块改变 α、β，点击「旋转演示」', '#475569', 'left', 13, false);
+});
+
+function upd1() {
+  const a = d2r(S1.a), b = d2r(S1.b);
+  verifyTable(document.getElementById('t1'), [
+    { name: 'cos(α−β) = cosαcosβ + sinαsinβ', L: Math.cos(a - b), R: Math.cos(a) * Math.cos(b) + Math.sin(a) * Math.sin(b) }
+  ]);
+  render(rec1);
+}
+const sl_a1 = slider('a1', v => { S1.a = v; S1.t = 0; upd1(); });
+const sl_b1 = slider('b1', v => { S1.b = v; S1.t = 0; upd1(); });
+document.getElementById('rot1').onclick = () => {
+  const t0 = performance.now(), dur = 1600;
+  (function step(now) {
+    const p = Math.min(1, (now - t0) / dur);
+    S1.t = p < 1 ? (1 - Math.cos(p * Math.PI)) / 2 : 1;
+    render(rec1);
+    if (p < 1) requestAnimationFrame(step);
+  })(t0);
+};
+document.getElementById('reset1').onclick = () => { S1.t = 0; sl_a1.set(60); sl_b1.set(30); render(rec1); };
+
+/* ================= 模块 2：和差角公式族 ================= */
+let S2 = { a: 60, b: 45 };
+const rec2 = reg('c2', (ctx, w, h) => {
+  const cx = w * 0.46, cy = h * 0.52, r = Math.min(w * 0.40, h * 0.40);
+  const a = d2r(S2.a), b = d2r(S2.b);
+  axes(ctx, cx, cy, r, 26);
+  circle(ctx, cx, cy, r, '#cbd5e1', 1.4);
+  const rays = [
+    { ang: a, c: '#2563eb', t: 'α' },
+    { ang: b, c: '#0f9d58', t: 'β' },
+    { ang: a + b, c: '#ea8a00', t: 'α+β' },
+    { ang: a - b, c: '#7c3aed', t: 'α−β' }
+  ];
+  rays.forEach(o => {
+    const x = cx + r * Math.cos(o.ang), y = cy - r * Math.sin(o.ang);
+    line(ctx, cx, cy, x, y, o.c, 2);
+    dot(ctx, x, y, 4.5, o.c);
+    const lr = r * 1.18;
+    label(ctx, cx + lr * Math.cos(o.ang), cy - lr * Math.sin(o.ang), o.t, o.c, 'center', 13, true);
+  });
+  // 三角函数线：α+β（橙）与 α−β（紫）都画出正弦线、余弦线
+  [[a + b, '#ea8a00', '(α+β)', 0], [a - b, '#7c3aed', '(α−β)', 1]].forEach(([ang, col, nm, idx]) => {
+    const P = { x: cx + r * Math.cos(ang), y: cy - r * Math.sin(ang) };
+    line(ctx, P.x, P.y, P.x, cy, col, 2);
+    line(ctx, cx, cy, P.x, cy, col, 2);
+    const right = Math.cos(ang) >= 0;
+    label(ctx, P.x + (right ? 8 : -8), (P.y + cy) / 2, 'sin' + nm, col, right ? 'left' : 'right', 13, true);
+    label(ctx, (cx + P.x) / 2, cy + (idx === 0 ? 18 : -12), 'cos' + nm, col, 'center', 13, true);
+  });
+  angleArc(ctx, cx, cy, r * 0.26, Math.min(a, b), Math.max(a, b), '#94a3b8', 1.6);
+  label(ctx, 12, 20, '四条终边：α、β、α+β、α−β（橙、紫分别为 α+β、α−β 的正弦线与余弦线）', '#475569', 'left', 12.5, false);
+});
+function upd2() {
+  const a = d2r(S2.a), b = d2r(S2.b);
+  const ta = Math.tan(a), tb = Math.tan(b);
+  const okTan = (deg) => Math.abs(Math.cos(d2r(deg))) > 1e-9;
+  const rows = [
+    { name: 'cos(α+β) = cosαcosβ − sinαsinβ', L: Math.cos(a + b), R: Math.cos(a) * Math.cos(b) - Math.sin(a) * Math.sin(b) },
+    { name: 'cos(α−β) = cosαcosβ + sinαsinβ', L: Math.cos(a - b), R: Math.cos(a) * Math.cos(b) + Math.sin(a) * Math.sin(b) },
+    { name: 'sin(α+β) = sinαcosβ + cosαsinβ', L: Math.sin(a + b), R: Math.sin(a) * Math.cos(b) + Math.cos(a) * Math.sin(b) },
+    { name: 'sin(α−β) = sinαcosβ − cosαsinβ', L: Math.sin(a - b), R: Math.sin(a) * Math.cos(b) - Math.cos(a) * Math.sin(b) }
+  ];
+  // tan(α+β)
+  if (!okTan(S2.a) || !okTan(S2.b) || Math.abs(1 - ta * tb) < 1e-9 || !okTan(S2.a + S2.b))
+    rows.push({ name: 'tan(α+β) =(tanα+tanβ)/(1−tanαtanβ)', L: null, R: null });
+  else rows.push({ name: 'tan(α+β) =(tanα+tanβ)/(1−tanαtanβ)', L: Math.tan(a + b), R: (ta + tb) / (1 - ta * tb) });
+  if (!okTan(S2.a) || !okTan(S2.b) || Math.abs(1 + ta * tb) < 1e-9 || !okTan(S2.a - S2.b))
+    rows.push({ name: 'tan(α−β) =(tanα−tanβ)/(1+tanαtanβ)', L: null, R: null });
+  else rows.push({ name: 'tan(α−β) =(tanα−tanβ)/(1+tanαtanβ)', L: Math.tan(a - b), R: (ta - tb) / (1 + ta * tb) });
+  verifyTable(document.getElementById('t2'), rows);
+  render(rec2);
+}
+slider('a2', v => { S2.a = v; upd2(); });
+slider('b2', v => { S2.b = v; upd2(); });
+/* ================= 模块 3：二倍角公式 ================= */
+let S3 = { a: 30 };
+const rec3 = reg('c3', (ctx, w, h) => {
+  const cx = w * 0.44, cy = h * 0.52, r = Math.min(w * 0.40, h * 0.40);
+  const a = d2r(S3.a);
+  axes(ctx, cx, cy, r, 26);
+  circle(ctx, cx, cy, r, '#cbd5e1', 1.4);
+  const A = { x: cx + r * Math.cos(a), y: cy - r * Math.sin(a) };
+  const B = { x: cx + r * Math.cos(-a), y: cy - r * Math.sin(-a) };
+  line(ctx, cx, cy, A.x, A.y, '#2563eb', 2.2);
+  line(ctx, cx, cy, B.x, B.y, '#2563eb', 2.2);
+  // 角 2α 的终边（橙色）及其与圆的交点
+  const C = { x: cx + r * Math.cos(2 * a), y: cy - r * Math.sin(2 * a) };
+  line(ctx, cx, cy, C.x, C.y, '#ea8a00', 2.2);
+  dot(ctx, A.x, A.y, 4.5, '#2563eb'); dot(ctx, B.x, B.y, 4.5, '#2563eb'); dot(ctx, C.x, C.y, 5, '#ea8a00');
+  label(ctx, A.x + 8, A.y - 8, 'A(cos α, sin α)', '#1d4ed8', Math.cos(a) > 0.3 ? 'right' : 'left', 12.5, true);
+  label(ctx, B.x + 8, B.y + 10, 'B(cos α, −sin α)', '#1d4ed8', Math.cos(a) > 0.3 ? 'right' : 'left', 12.5, true);
+  label(ctx, C.x + 8, C.y - 10, 'C(cos 2α, sin 2α)', '#c2410c', Math.cos(2 * a) > 0.3 ? 'right' : 'left', 12.5, true);
+  // 角标
+  angleArc(ctx, cx, cy, r * 0.55, -a, a, '#ea8a00', 2);
+  label(ctx, cx + r * 0.66, cy, '2α', '#c2410c', 'center', 13, true);
+  angleArc(ctx, cx, cy, r * 0.30, 0, a, '#2563eb', 1.8);
+  label(ctx, cx + r * 0.40 * Math.cos(a / 2), cy - r * 0.40 * Math.sin(a / 2), 'α', '#2563eb', 'center', 12, true);
+  angleArc(ctx, cx, cy, r * 0.22, -a, 0, '#2563eb', 1.8);
+  label(ctx, cx + r * 0.32 * Math.cos(-a / 2), cy - r * 0.32 * Math.sin(-a / 2), 'α', '#2563eb', 'center', 12, true);
+  label(ctx, 12, 20, '圆心角 ∠AOB = 2α；C 为角 2α 终边与圆的交点', '#475569', 'left', 13, false);
+});
+function upd3() {
+  const a = d2r(S3.a), ta = Math.tan(a);
+  const okT = Math.abs(Math.cos(a)) > 1e-9 && Math.abs(Math.cos(2 * a)) > 1e-9 && Math.abs(1 - ta * ta) > 1e-9;
+  const rows = [
+    { name: 'sin 2α = 2 sin α cos α', L: Math.sin(2 * a), R: 2 * Math.sin(a) * Math.cos(a) },
+    { name: 'cos 2α = cos²α − sin²α', L: Math.cos(2 * a), R: Math.cos(a) ** 2 - Math.sin(a) ** 2 },
+    { name: 'cos 2α = 2cos²α − 1', L: Math.cos(2 * a), R: 2 * Math.cos(a) ** 2 - 1 },
+    { name: 'cos 2α = 1 − 2sin²α', L: Math.cos(2 * a), R: 1 - 2 * Math.sin(a) ** 2 },
+    { name: '1 + cos2α = 2cos²α', L: 1 + Math.cos(2 * a), R: 2 * Math.cos(a) ** 2 },
+    { name: '1 − cos2α = 2sin²α', L: 1 - Math.cos(2 * a), R: 2 * Math.sin(a) ** 2 }
+  ];
+  if (okT) rows.push({ name: 'tan 2α = 2tanα /(1−tan²α)', L: Math.tan(2 * a), R: 2 * ta / (1 - ta * ta) });
+  else rows.push({ name: 'tan 2α = 2tanα /(1−tan²α)', L: null, R: null });
+  verifyTable(document.getElementById('t3'), rows);
+  render(rec3);
+}
+slider('a3', v => { S3.a = v; upd3(); });
+
+/* ================= 导航与初始化 ================= */
+function go(id) {
+  document.querySelectorAll('.sec').forEach(s => s.classList.toggle('active', s.id === id));
+  document.querySelectorAll('.ni').forEach(b => b.classList.toggle('active', b.dataset.go === id));
+  window.scrollTo({ top: 0, behavior: 'smooth' });
+  requestAnimationFrame(renderAll);
+}
+document.addEventListener('click', e => { const b = e.target.closest('[data-go]'); if (b) go(b.dataset.go); });
+
+upd1(); upd2(); upd3();
+renderAll();
+window.addEventListener('load', renderAll);
+</script>
+</body>
+</html>

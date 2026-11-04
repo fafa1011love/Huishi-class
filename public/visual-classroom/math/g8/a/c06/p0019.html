@@ -1,0 +1,346 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>分式的乘除与加减 · 逐步变形动画</title>
+<style>
+:root{
+  --blue:#2563eb; --green:#16a34a; --orange:#ea580c; --purple:#7c3aed;
+  --teal:#0d9488; --red:#dc2626; --ink:#1e293b; --gray:#64748b;
+  --bg:#eef2f7; --card:#fff; --line:#e2e8f0;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--bg);font-family:"Microsoft YaHei","PingFang SC",sans-serif;color:var(--ink);min-height:100vh;padding:20px 24px 26px}
+.wrap{max-width:1120px;margin:0 auto}
+h1{font-size:25px;text-align:center}
+.sub{text-align:center;color:var(--gray);font-size:13.5px;margin-top:8px;line-height:1.7}
+.sub b{color:var(--blue)} .sub i{color:var(--orange);font-style:normal} .sub u{color:var(--green);text-decoration:none;border-bottom:2px solid var(--green)}
+
+.tabs{display:flex;gap:10px;justify-content:center;margin:16px 0 14px;flex-wrap:wrap}
+.tab{border:2px solid var(--line);background:var(--card);border-radius:11px;padding:8px 20px;font-size:15.5px;cursor:pointer;color:var(--ink);font-family:inherit;transition:.15s}
+.tab:hover{border-color:#94a3b8}
+.tab.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.tab small{display:block;font-size:11px;opacity:.72;margin-top:1px}
+
+/* ========== 板书区 ========== */
+.board{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:6px 4px;max-height:466px;overflow-y:auto;scroll-behavior:smooth}
+.board::-webkit-scrollbar{width:8px}
+.board::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:4px}
+.line{display:flex;gap:13px;padding:13px 20px 15px 16px;border-bottom:1px dashed #eef2f7;transition:opacity .45s,background .45s}
+.line:last-child{border-bottom:none}
+.line.past{opacity:.42}
+.line.cur{background:#f8fbff;box-shadow:inset 3px 0 0 var(--blue)}
+.rail{width:26px;height:26px;border-radius:50%;background:#e2e8f0;color:#64748b;font-size:13px;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-top:2px;transition:.3s}
+.line.cur .rail{background:var(--blue);color:#fff;transform:scale(1.08)}
+.line.past .rail{background:#dcfce7;color:#15803d}
+.lbody{flex:1;min-width:0}
+.meta{display:flex;gap:8px;align-items:flex-start;margin-bottom:5px}
+.chip{display:inline-block;font-size:11.5px;padding:2px 9px;border-radius:20px;color:#fff;flex-shrink:0;line-height:1.5}
+.note{font-size:13px;color:var(--gray);line-height:1.55}
+.line.cur .note{color:#475569}
+.math{font-size:27px;font-family:"Cambria Math","Times New Roman",serif;line-height:1.55;padding-left:2px;min-height:46px;display:flex;align-items:center;flex-wrap:wrap}
+
+/* 分数 */
+.fr{display:inline-flex;flex-direction:column;text-align:center;vertical-align:middle;margin:0 3px;transition:max-width .42s ease,opacity .34s,margin .34s}
+.fr .n{padding:2px 9px 4px;border-bottom:2.5px solid var(--ink);transition:border-color .35s}
+.fr .d{padding:4px 9px 2px;overflow:hidden;max-height:64px;opacity:1;transition:max-height .38s,opacity .34s,padding .38s}
+.fr.nod .n{border-bottom-color:transparent}
+.fr.nod .d{max-height:0;opacity:0;padding-top:0;padding-bottom:0}
+.fr.fd{overflow:hidden}
+.op{display:inline-block;vertical-align:middle;margin:0 13px;color:#475569;overflow:hidden;white-space:nowrap;transition:max-width .35s ease,opacity .3s,margin .3s}
+.op.gone{opacity:0}
+em.hlp{font-style:normal;border-radius:5px;padding:0 3px;background:#ede9fe;outline:1.5px dashed var(--purple)}
+
+/* 约分：划线 → 收缩 */
+.cx{display:inline-block;position:relative;vertical-align:bottom;overflow:hidden;white-space:nowrap;transition:max-width .38s ease,opacity .3s,margin .3s}
+.cx::after{content:'';position:absolute;left:-1px;right:-1px;top:52%;height:2.5px;background:var(--red);border-radius:2px;transform:scaleX(0);transform-origin:left center;transition:transform .3s ease}
+.cx.strike::after{transform:scaleX(1)}
+.cx.gone{opacity:0}
+.fd.gone{opacity:0}
+
+/* 因式分解：旧式淡出、新式浮现 */
+.mg{display:inline-block;position:relative;vertical-align:bottom;min-height:1.15em;transition:width .42s cubic-bezier(.4,0,.2,1)}
+.mg .mg-o{display:inline-block;white-space:nowrap;transition:opacity .28s,transform .28s;transform-origin:left center}
+.mg .mg-t{position:absolute;left:0;top:0;white-space:nowrap;opacity:0;transform:scale(.8);transform-origin:left center;color:var(--blue);font-weight:bold;transition:opacity .3s .1s,transform .3s .1s}
+.mg.go .mg-o{opacity:0;transform:scale(.86)}
+.mg.go .mg-t{opacity:1;transform:scale(1)}
+
+/* 新插入的因式 / 合并的分子 */
+.ins{display:inline-block;opacity:0;transform:scale(.55);transition:opacity .3s,transform .32s cubic-bezier(.34,1.56,.64,1)}
+.ins.on{opacity:1;transform:scale(1);color:var(--purple)}
+.pop{display:inline-block;opacity:0;transform:scale(.8);transition:opacity .3s,transform .34s cubic-bezier(.34,1.56,.64,1)}
+.pop.on{opacity:1;transform:scale(1)}
+/* 结果 */
+.resx{display:inline-block;margin-left:14px;color:var(--green);font-weight:bold;opacity:0;transform:translateX(-10px) scale(.88);transition:opacity .4s,transform .42s cubic-bezier(.34,1.56,.64,1)}
+.resx.on{opacity:1;transform:none;text-shadow:0 0 16px rgba(22,163,74,.3)}
+/* 倒数翻转 */
+@keyframes flipIn{0%{transform:rotate(180deg) scale(.62);opacity:0}60%{opacity:1}100%{transform:rotate(0) scale(1);opacity:1}}
+.fr.flipin{animation:flipIn .55s cubic-bezier(.4,0,.2,1) both}
+/* 完成高亮 */
+@keyframes finishGlow{0%{box-shadow:0 0 0 0 rgba(22,163,74,.32)}70%{box-shadow:0 0 0 14px rgba(22,163,74,0)}100%{box-shadow:0 0 0 0 rgba(22,163,74,0)}}
+.line.finish{animation:finishGlow 1.1s ease-out 1;background:#f6fdf8}
+.badge{display:inline-block;font-size:12px;color:#fff;background:var(--green);border-radius:20px;padding:2px 10px;margin-left:10px;vertical-align:middle;opacity:0;transform:scale(.5);transition:.35s cubic-bezier(.34,1.56,.64,1)}
+.badge.on{opacity:1;transform:scale(1)}
+
+/* 历史行：直接落成终态，不做动画 */
+.line.static *{transition:none!important;animation:none!important}
+.line.static .cx.gone{max-width:0!important;opacity:0;margin:0}
+.line.static .fd.gone{max-width:0!important;opacity:0;margin:0}
+.line.static .op.gone{max-width:0!important;opacity:0;margin:0!important}
+.line.static .mg .mg-o{display:none}
+.line.static .mg .mg-t{position:static;opacity:1;transform:none}
+
+/* ========== 控制条 ========== */
+.ctrl{display:flex;gap:10px;justify-content:center;margin-top:14px;align-items:center;flex-wrap:wrap}
+.btn{border:none;border-radius:10px;padding:10px 19px;font-size:15px;cursor:pointer;font-family:inherit;transition:.15s}
+.btn.main{background:var(--blue);color:#fff;box-shadow:0 2px 8px rgba(37,99,235,.25)}
+.btn.main:hover{background:#1d4ed8}
+.btn.ghost{background:var(--card);border:1.5px solid var(--line);color:var(--ink)}
+.btn.ghost:hover{border-color:#94a3b8}
+.btn:disabled{opacity:.4;cursor:not-allowed;box-shadow:none}
+.dots{display:flex;gap:7px;margin-left:6px}
+.dot{width:10px;height:10px;border-radius:50%;background:#cbd5e1;transition:.2s}
+.dot.done{background:#86efac}
+.dot.cur{background:var(--blue);transform:scale(1.4)}
+.spd{font-size:13px;color:var(--gray);min-width:42px;text-align:center;display:inline-block}
+
+.rules{display:flex;gap:11px;margin-top:15px;flex-wrap:wrap}
+.rcard{flex:1;min-width:240px;background:var(--card);border:1px solid var(--line);border-left:4px solid var(--blue);border-radius:10px;padding:10px 13px;font-size:13px;line-height:1.6}
+.rcard b{display:block;font-size:13.5px;margin-bottom:1px}
+.rcard.r2{border-left-color:var(--purple)} .rcard.r3{border-left-color:var(--green)}
+.hint{text-align:center;color:#94a3b8;font-size:12.5px;margin-top:10px}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>分式的乘除与加减 · 逐步变形动画</h1>
+  <div class="sub">乘除：<b>先因式分解，再约分</b>　|　加减：<i>先通分</i>　|　最后：<u>结果化成最简分式</u><br>
+  每步只做一步变形，旧步骤留在黑板上——看得见"划掉哪些、剩下什么"</div>
+
+  <div class="tabs" id="tabs"></div>
+  <div class="board" id="board"></div>
+
+  <div class="ctrl">
+    <button class="btn ghost" id="bReset">⟲ 重置</button>
+    <button class="btn ghost" id="bPrev">◀ 上一步</button>
+    <button class="btn main" id="bNext">下一步 ▶</button>
+    <button class="btn ghost" id="bPlay">▶ 自动播放</button>
+    <button class="btn ghost" id="bSpeed"><span class="spd" id="spd">1×</span></button>
+    <div class="dots" id="dots"></div>
+  </div>
+
+  <div class="rules">
+    <div class="rcard"><b>✕ 乘除法则</b>分子乘分子、分母乘分母；除以一个分式 = 乘它的<b>倒数</b>。先因式分解，约分才约得动。</div>
+    <div class="rcard r2"><b>＋ 加减法则</b>同分母：分母不变、分子加减；异分母：先<b>通分</b>（最简公分母），再加减。</div>
+    <div class="rcard r3"><b>✓ 化最简</b>分子分母有公因式就继续约，直到最简；别忘检验字母取值范围（分母≠0）。</div>
+  </div>
+  <div class="hint">快捷键：空格 = 播放/暂停　← → = 上一步/下一步　1~4 = 切题</div>
+</div>
+
+<script>
+/* ================= 表达式小工具 ================= */
+const F=(n,d,cls='')=>`<span class="fr ${cls}"><span class="n">${n}</span><span class="d">${d}</span></span>`;
+const OP=o=>`<span class="op">${o}</span>`;
+const C=s=>`<span class="cx">${s}</span>`;                                   // 待约去的因式
+const MG=(a,b)=>`<span class="mg"><span class="mg-o">${a}</span><span class="mg-t">${b}</span></span>`; // 分解前 → 后
+const INS=s=>`<span class="ins">${s}</span>`;                               // 新补上的因式
+const POP=s=>`<span class="pop">${s}</span>`;                               // 合并出的分子
+const RES=s=>`<span class="resx">= ${s}</span>`;                            // 结果
+const BAD=()=>`<span class="badge">最简 ✓</span>`;
+
+const CHIP={
+  start:['原式','#64748b'], factor:['因式分解','#2563eb'], recip:['乘倒数','#ea580c'],
+  cancel:['约分','#16a34a'], common:['通分','#7c3aed'], merge:['合并分子','#0d9488'],
+  simpl:['化简分子','#0d9488'], final:['化最简','#16a34a']
+};
+const chip=k=>{const[c,col]=CHIP[k];return `<span class="chip" style="background:${col}">${c}</span>`};
+
+/* ================= 四道例题 ================= */
+const EX=[
+{tag:'乘',q:'分式乘法：先分解，再约分',
+ steps:[
+  {r:'start', h:F('x+1','x−2')+OP('·')+F('x²−4','x+1'),
+   n:'先看结构：x²−4 是平方差，分母 x−2 一定能在它分解后约掉。'},
+  {r:'factor', h:F('x+1','x−2')+OP('·')+F(MG('x²−4','(x+2)(x−2)'),'x+1'),
+   n:'第 1 步：只做因式分解 —— x²−4 = (x+2)(x−2)，其余一个字都不动。'},
+  {r:'cancel', h:F(C('x+1'),C('x−2'),'fd')+'<span class="op die">·</span>'+F('(x+2)'+C('(x−2)'),C('x+1'),'fdendie')+RES('x+2'),
+   n:'第 2 步：只做约分 —— 划掉 (x+1) 和 (x−2)，分子分母同时除去，剩下的就是结果。'},
+  {r:'final', h:RES('x + 2')+BAD(),
+   n:'分子分母已无公因式 → 最简。检验：x ≠ 2 且 x ≠ −1（原分母不能为 0）。'}
+ ]},
+
+{tag:'除',q:'分式除法：先分解，再乘倒数',
+ steps:[
+  {r:'start', h:F('x²−1','x')+OP('÷')+F('x+1','x²'),
+   n:'除号不能直接约！先看清：x²−1 可分解，除号后面还要颠倒。'},
+  {r:'factor', h:F(MG('x²−1','(x+1)(x−1)'),'x')+OP('÷')+F('x+1','x²'),
+   n:'第 1 步：只做因式分解 —— x²−1 = (x+1)(x−1)。'},
+  {r:'recip', h:F('(x+1)(x−1)','x')+OP('·')+F('x²','x+1','flipin'),
+   n:'第 2 步：只做除变乘 —— 除号翻成乘号，后面这个分式上下颠倒（取倒数）。'},
+  {r:'cancel', h:F(C('(x+1)')+'(x−1)',C('x'),'fdendie')+OP('·')+F(MG('x²','x'),C('x+1'),'fdendie')+RES('x(x−1)'),
+   n:'第 3 步：只做约分 —— 约去 (x+1)；分母的 x 与 x² 约掉一个 x，x² 变成 x。'},
+  {r:'final', h:RES('x(x − 1)')+BAD(),
+   n:'结果写成积的形式即可（也可展开成 x²−x）。检验：x ≠ 0 且 x ≠ −1。'}
+ ]},
+
+{tag:'加',q:'异分母加法：先通分',
+ steps:[
+  {r:'start', h:F('2','x−1')+OP('+')+F('3','x+1'),
+   n:'分母不同，不能直接相加 —— 必须先通分。'},
+  {r:'common', h:F(INS('2(x+1)'),'<em class="hlp">(x−1)(x+1)</em>')+OP('+')+F(INS('3(x−1)'),'<em class="hlp">(x−1)(x+1)</em>'),
+   n:'第 1 步：只做通分 —— 最简公分母是 (x−1)(x+1)，每个分子补乘缺的那个因式。'},
+  {r:'merge', h:F(POP('2(x+1)+3(x−1)'),'(x−1)(x+1)'),
+   n:'第 2 步：只做合并 —— 分母不变，分子相加（每个分子都要加括号）。'},
+  {r:'simpl', h:F(MG('2(x+1)+3(x−1)','5x−1'),'(x−1)(x+1)'),
+   n:'第 3 步：只整理分子 —— 2(x+1)+3(x−1) = 2x+2+3x−3 = 5x−1。'},
+  {r:'final', h:F('5x−1','(x−1)(x+1)')+BAD(),
+   n:'5x−1 与分母没有公因式 → 已是最简。检验：x ≠ 1 且 x ≠ −1。'}
+ ]},
+
+{tag:'减',q:'异分母减法：分解 + 通分',
+ steps:[
+  {r:'start', h:F('3','x²−4')+OP('−')+F('1','x+2'),
+   n:'先扫一眼：x²−4 能分解，而 x+2 正是它的一个因式。'},
+  {r:'factor', h:F('3',MG('x²−4','(x+2)(x−2)'))+OP('−')+F('1','x+2'),
+   n:'第 1 步：只做因式分解 —— x²−4 = (x+2)(x−2)。'},
+  {r:'common', h:F('3','(x+2)(x−2)')+OP('−')+F(INS('x−2'),'<em class="hlp">(x+2)(x−2)</em>'),
+   n:'第 2 步：只做通分 —— 公分母就是 (x+2)(x−2)，第二个分子补乘 (x−2)。'},
+  {r:'merge', h:F(POP('3−(x−2)'),'(x+2)(x−2)'),
+   n:'第 3 步：只做合并 —— 分子相减，减号后面整个分子要加括号！'},
+  {r:'simpl', h:F(MG('3−(x−2)','5−x'),'(x+2)(x−2)'),
+   n:'第 4 步：只去括号整理 —— 3−(x−2) = 3−x+2 = 5−x。'},
+  {r:'final', h:F('5−x','(x+2)(x−2)')+BAD(),
+   n:'分子分母无公因式 → 最简。检验：x ≠ 2 且 x ≠ −2。'}
+ ]}
+];
+
+/* ================= 状态 & 渲染 ================= */
+let cur=0, si=0, timer=null, speed=1;
+const $=id=>document.getElementById(id);
+const board=$('board');
+
+/* ---- 历史行：直接落成终态 ---- */
+function finalize(div){
+  div.classList.add('static');
+  div.querySelectorAll('.cx').forEach(el=>el.classList.add('strike','gone'));
+  div.querySelectorAll('.fd').forEach(el=>el.classList.add('gone'));
+  div.querySelectorAll('.op.die').forEach(el=>el.classList.add('gone'));
+  div.querySelectorAll('.fdendie').forEach(el=>el.classList.add('nod'));
+  div.querySelectorAll('.mg').forEach(el=>el.classList.add('go'));
+  div.querySelectorAll('.ins,.pop,.resx,.badge').forEach(el=>el.classList.add('on'));
+}
+
+/* ---- 当前行：四段式动画 ---- */
+function animateLine(div, isFinal){
+  const q=s=>[...div.querySelectorAll(s)];
+  const cxs=q('.cx'), fds=q('.fd'), fdend=q('.fdendie'), opdie=q('.op.die'),
+        mgs=q('.mg'), inss=q('.ins'), pops=q('.pop'), ress=q('.resx'), badges=q('.badge');
+
+  /* ① 新补因式 / 合并出的分子：依次弹出 */
+  inss.forEach((el,i)=>setTimeout(()=>el.classList.add('on'), 220+i*150));
+  pops.forEach((el,i)=>setTimeout(()=>el.classList.add('on'), 240+i*120));
+
+  /* ② 划线 → 收缩消失 */
+  if(cxs.length){
+    const step=140;
+    cxs.forEach((el,i)=>setTimeout(()=>el.classList.add('strike'), 180+i*step));
+    setTimeout(()=>{
+      cxs.forEach(el=>{
+        el.style.maxWidth=el.offsetWidth+'px';
+        void el.offsetWidth;
+        el.classList.add('gone');
+        el.style.maxWidth='0px';
+        el.style.margin='0';
+      });
+      fds.concat(opdie).forEach(el=>{
+        el.style.maxWidth=el.offsetWidth+'px';
+        void el.offsetWidth;
+        el.classList.add('gone');
+        el.style.maxWidth='0px';
+        el.style.margin='0';
+      });
+      fdend.forEach(el=>el.classList.add('nod'));
+    }, 180+cxs.length*step+240);
+  }
+
+  /* ③ 因式分解：旧式缩退、新式浮现 */
+  mgs.forEach((el,i)=>{
+    setTimeout(()=>{
+      const o=el.querySelector('.mg-o'), n=el.querySelector('.mg-t');
+      const w0=o.offsetWidth, w1=n.offsetWidth;
+      el.style.width=w0+'px';
+      void el.offsetWidth;
+      el.classList.add('go');
+      el.style.width=(w1||w0)+'px';
+    }, 320+i*140);
+  });
+
+  /* ④ 结果 & 结论章 */
+  const tRes = cxs.length ? 180+cxs.length*140+620 : 700;
+  ress.forEach(el=>setTimeout(()=>el.classList.add('on'), tRes));
+  badges.forEach(el=>setTimeout(()=>el.classList.add('on'), tRes+320));
+  if(isFinal) div.classList.add('finish');
+}
+
+/* ---- 整页渲染 ---- */
+function render(){
+  const e=EX[cur];
+  board.innerHTML='';
+  for(let i=0;i<=si;i++){
+    const st=e.steps[i];
+    const div=document.createElement('div');
+    div.className='line '+(i===si?'cur':'past');
+    div.innerHTML='<div class="rail">'+(i+1)+'</div>'
+      +'<div class="lbody"><div class="meta">'+chip(st.r)+'<span class="note">'+st.n+'</span></div>'
+      +'<div class="math">'+st.h+'</div></div>';
+    board.appendChild(div);
+    if(i<si) finalize(div);
+    else animateLine(div, i===e.steps.length-1);
+  }
+  const e2=EX[cur];
+  $('dots').innerHTML=e2.steps.map((_,i)=>'<div class="dot '+(i===si?'cur':(i<si?'done':''))+'"></div>').join('');
+  const last=si===e2.steps.length-1;
+  $('bPrev').disabled=si===0;
+  $('bNext').disabled=last;
+  $('bNext').textContent=last?'已完成 ✓':'下一步 ▶';
+  const cl=board.lastElementChild;
+  if(cl && board.scrollTo) board.scrollTo({top:Math.max(0,cl.offsetTop-board.clientHeight+cl.offsetHeight+8),behavior:'smooth'});
+}
+
+function renderTabs(){
+  $('tabs').innerHTML=EX.map((e,i)=>'<button class="tab '+(i===cur?'on':'')+'">'+e.tag+'<small>'+(i+1)+'/4</small></button>').join('');
+  [...$('tabs').children].forEach((b,i)=>b.onclick=()=>go(i));
+}
+function renderSpeed(){ $('spd').textContent=(speed===1?'1×':speed+'×'); }
+
+/* ---- 播放控制 ---- */
+function stop(){ if(timer){clearInterval(timer);timer=null;$('bPlay').textContent='▶ 自动播放';} }
+function next(){
+  if(si<EX[cur].steps.length-1){ si++; render(); }
+  if(si===EX[cur].steps.length-1) stop();
+}
+function play(){
+  if(timer){stop();return;}
+  if(si===EX[cur].steps.length-1){ si=0; render(); }
+  $('bPlay').textContent='⏸ 暂停';
+  timer=setInterval(next, 3000/speed);
+}
+function go(i){ stop(); cur=i; si=0; renderTabs(); render(); board.scrollTop=0; }
+
+$('bNext').onclick=()=>{stop();next();};
+$('bPrev').onclick=()=>{stop();if(si>0){si--;render();}};
+$('bReset').onclick=()=>{stop();si=0;render();};
+$('bPlay').onclick=play;
+$('bSpeed').onclick=()=>{ speed = speed===1?1.5:(speed===1.5?0.75:1); renderSpeed(); if(timer){stop();play();} };
+document.addEventListener('keydown',ev=>{
+  if(ev.code==='Space'){ev.preventDefault();play();}
+  else if(ev.key==='ArrowRight'){stop();next();}
+  else if(ev.key==='ArrowLeft'){stop();if(si>0){si--;render();}}
+  else if(ev.key>='1'&&ev.key<='4'){go(+ev.key-1);}
+});
+
+renderTabs(); renderSpeed(); render();
+</script>
+</body>
+</html>

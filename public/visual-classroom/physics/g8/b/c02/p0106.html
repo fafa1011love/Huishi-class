@@ -1,0 +1,422 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>飞机升力产生原理</title>
+<style>
+  :root{
+    --bg:#eef3f8; --panel:#ffffff; --ink:#1f2a37; --sub:#5b6b7b;
+    --line:#d7e0ea; --accent:#2b6fe0; --red:#e23b3b; --blue:#2b6fe0;
+    --warn:#e8871e;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;
+       background:var(--bg);color:var(--ink);}
+  header{padding:14px 20px;background:linear-gradient(90deg,#1b4f9c,#2b6fe0);
+         color:#fff;}
+  header h1{margin:0;font-size:20px;font-weight:700;letter-spacing:.5px;}
+  header p{margin:4px 0 0;font-size:13px;opacity:.92;}
+  .wrap{display:grid;grid-template-columns:1fr 320px;gap:14px;padding:14px;}
+  @media(max-width:900px){.wrap{grid-template-columns:1fr;}}
+  .stage{background:var(--panel);border-radius:12px;padding:8px;
+         box-shadow:0 2px 10px rgba(20,50,90,.08);position:relative;}
+  canvas{width:100%;height:auto;display:block;border-radius:8px;background:
+         linear-gradient(180deg,#dff0ff 0%,#eaf5ff 55%,#f7fbff 100%);}
+  .kp{position:absolute;left:14px;top:14px;background:rgba(255,255,255,.86);
+      border:1px solid var(--line);border-radius:8px;padding:8px 11px;
+      font-size:12px;line-height:1.55;max-width:300px;color:var(--sub);}
+  .kp b{color:var(--ink);}
+  .panel{background:var(--panel);border-radius:12px;padding:16px;
+         box-shadow:0 2px 10px rgba(20,50,90,.08);}
+  .panel h2{font-size:14px;margin:0 0 12px;color:var(--accent);
+            border-left:4px solid var(--accent);padding-left:8px;}
+  .ctrl{margin-bottom:16px;}
+  .ctrl label{display:flex;justify-content:space-between;font-size:13px;
+              margin-bottom:6px;color:var(--sub);}
+  .ctrl label b{color:var(--ink);font-variant-numeric:tabular-nums;}
+  input[type=range]{width:100%;accent-color:var(--accent);}
+  .toggles{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px;}
+  .toggles button{flex:1 1 auto;border:1px solid var(--line);background:#f6f9fd;
+        color:var(--sub);border-radius:8px;padding:7px 6px;font-size:12px;cursor:pointer;}
+  .toggles button.on{background:var(--accent);color:#fff;border-color:var(--accent);}
+  .readout{border-top:1px dashed var(--line);padding-top:12px;}
+  .row{display:flex;justify-content:space-between;align-items:center;
+       font-size:13px;padding:5px 0;}
+  .row span:first-child{color:var(--sub);}
+  .row b{font-variant-numeric:tabular-nums;}
+  .bar{height:9px;border-radius:5px;background:#e7edf3;overflow:hidden;margin-top:3px;}
+  .bar>i{display:block;height:100%;background:linear-gradient(90deg,#2b6fe0,#53b0ff);}
+  .legend{display:flex;gap:14px;font-size:12px;color:var(--sub);
+          margin-top:12px;align-items:center;flex-wrap:wrap;}
+  .sw{display:inline-block;width:13px;height:13px;border-radius:3px;
+      vertical-align:-2px;margin-right:4px;}
+  .warn{display:none;margin-top:10px;background:#fff4e6;color:var(--warn);
+        border:1px solid #f3d3a3;border-radius:8px;padding:8px 10px;font-size:12.5px;}
+  .warn.show{display:block;}
+  .note{font-size:11.5px;color:#8a99a8;margin-top:14px;line-height:1.6;}
+  .formula{background:#f3f7fc;border:1px solid var(--line);border-radius:8px;
+           padding:8px 10px;font-size:12px;color:var(--sub);margin-top:10px;}
+  .formula b{color:var(--ink);}
+</style>
+</head>
+<body>
+<header>
+  <h1>✈️ 飞机升力产生原理</h1>
+  <p>P60 流体流速越大压强越小 · 机翼上下表面流速差 → 压强差 → 向上的升力</p>
+</header>
+
+<div class="wrap">
+  <div class="stage">
+    <canvas id="sim" width="900" height="560"></canvas>
+    <div class="kp">
+      <b>看这里：</b>翼型上下方的流线<b>越密 = 流速越快</b>；蓝区=低压、红区=高压。
+      上表面流线更密（流速快、压强低），下表面压强高，于是产生<b>向上的升力</b>。
+      <br><span style="color:#8a99a8">注：真实空气肉眼不可见，流线仅为辅助示意。</span>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>控制面板</h2>
+
+    <div class="ctrl">
+      <label>气流速度 <b id="vU">1.00 ×</b></label>
+      <input id="sU" type="range" min="0.25" max="2" step="0.01" value="1">
+    </div>
+    <div class="ctrl">
+      <label>机翼仰角（迎角） <b id="vA">8°</b></label>
+      <input id="sA" type="range" min="-6" max="20" step="0.5" value="8">
+    </div>
+
+    <div class="toggles">
+      <button id="tFlow" class="on">气流流线</button>
+      <button id="tPress" class="on">压强着色</button>
+      <button id="tLift" class="on">升力箭头</button>
+      <button id="tPlay" class="on">⏸ 暂停</button>
+    </div>
+
+    <div class="readout">
+      <div class="row"><span>上表面平均流速</span><b id="rVt">—</b></div>
+      <div class="row"><span>下表面平均流速</span><b id="rVb">—</b></div>
+      <div class="row"><span>上表面压强 (Cp)</span><b id="rPt">—</b></div>
+      <div class="row"><span>下表面压强 (Cp)</span><b id="rPb">—</b></div>
+      <div class="row"><span>压强差 Δp（推动升力）</span><b id="rDp">—</b></div>
+      <div class="row"><span>升力大小（相对）</span><b id="rL">—</b></div>
+      <div class="bar"><i id="barL" style="width:0%"></i></div>
+    </div>
+
+    <div class="legend">
+      <span><i class="sw" style="background:#e23b3b"></i>高压（流速慢）</span>
+      <span><i class="sw" style="background:#2b6fe0"></i>低压（流速快）</span>
+    </div>
+
+    <div class="warn" id="warn">⚠️ 已超过临界迎角（约 15°），实际中气流会在机翼上表面分离、升力骤降——这叫<b>失速</b>。本模型仍按理想势流显示流线。</div>
+
+    <div class="formula">
+      <b>伯努利原理：</b> p + ½ρv² = 常量 ⇒ 流速 v 越大，压强 p 越小。<br>
+      <b>库塔-儒可夫斯基：</b> 升力 L = ρ·V∞·Γ（Γ 为环量，随迎角增大而增大）。
+    </div>
+
+    <div class="note">小提示：把"机翼仰角"调到 0° 仍有升力——因为机翼带有弧度（翼型弯度）；调到负角则升力向下。</div>
+  </div>
+</div>
+
+<script>
+/* ===================== 复数运算 ===================== */
+const C = {
+  add:(a,b)=>({re:a.re+b.re,im:a.im+b.im}),
+  sub:(a,b)=>({re:a.re-b.re,im:a.im-b.im}),
+  mul:(a,b)=>({re:a.re*b.re-a.im*b.im,im:a.re*b.im+a.im*b.re}),
+  div:(a,b)=>{const d=b.re*b.re+b.im*b.im;return{re:(a.re*b.re+a.im*b.im)/d,im:(a.im*b.re-a.re*b.im)/d};},
+  conj:a=>({re:a.re,im:-a.im}),
+  scale:(a,s)=>({re:a.re*s,im:a.im*s}),
+  abs:a=>Math.hypot(a.re,a.im),
+};
+function csqrt(a){const r=Math.hypot(a.re,a.im);const re=Math.sqrt(Math.max(0,(r+a.re)/2));
+  let im=Math.sqrt(Math.max(0,(r-a.re)/2));if(a.im<0)im=-im;return{re,im};}
+
+/* ===================== 翼型与流场参数 ===================== */
+const B=1, EPS=0.10, DELTA=0.08;            // 儒可夫斯基变换参数
+const zeta0={re:-EPS,im:DELTA};             // 圆圆心（含厚度与弯度）
+const R=Math.hypot(B+EPS,-DELTA);           // 圆半径（过尾缘点 (B,0)）
+const thetaCam=Math.atan2(DELTA,B+EPS);     // 弯度角
+let U=1.0, alpha=8*Math.PI/180;
+let Gamma=0;
+function computeGamma(){Gamma=-4*Math.PI*U*R*Math.sin(alpha+thetaCam);}
+computeGamma();
+
+/* ===================== 坐标映射（儒可夫斯基变换） ===================== */
+function joukowski(z){return C.add(z,C.div({re:B*B,im:0},z));}
+function invJ(z){
+  const disc=C.sub(C.mul(z,z),{re:4*B*B,im:0});
+  const sq=csqrt(disc);
+  const r1=C.scale(C.add(z,sq),0.5);
+  const r2=C.scale(C.sub(z,sq),0.5);
+  return C.abs(r1)>=C.abs(r2)?r1:r2;
+}
+// 物理平面 z 处的速度（解析势流解）
+function velocityAt(z){
+  const zeta=invJ(z);
+  if(C.abs(C.sub(zeta,zeta0))<R*0.999)return null;     // 在翼型内部
+  const eta=C.sub(zeta,zeta0);
+  const eia={re:Math.cos(alpha),im:Math.sin(alpha)};
+  const emia={re:Math.cos(alpha),im:-Math.sin(alpha)};
+  const term1=C.scale(emia,U);
+  const eta2=C.mul(eta,eta);
+  const term2=C.scale(C.mul(eia,C.div({re:R*R,im:0},eta2)),U);
+  const etaAbs2=eta.re*eta.re+eta.im*eta.im;
+  const term3=C.scale({re:eta.im,im:eta.re},Gamma/(2*Math.PI*etaAbs2));
+  const dW=C.add(C.sub(term1,term2),term3);
+  const wZeta=C.conj(dW);
+  const zeta2=C.mul(zeta,zeta);
+  const dzd=C.sub({re:1,im:0},C.div({re:B*B,im:0},zeta2));
+  const wZ=C.div(wZeta,dzd);
+  const sp=C.abs(wZ);                                   // 限幅，抑制尾缘奇点
+  if(!isFinite(sp)||sp>50*U){const f=50*U/sp;return C.scale(wZ,f);}
+  return wZ;
+}
+function cpAt(z){const w=velocityAt(z);if(!w)return 1;return 1-(w.re*w.re+w.im*w.im)/(U*U);}
+
+/* ===================== 画布与视图 ===================== */
+const cv=document.getElementById('sim');
+const ctx=cv.getContext('2d');
+let W=900,H=560,scale=100,offX=0,offY=0;
+const VIEW={w:8.4,h:5.4,cx:0.35,cy:0};
+function resize(){
+  const rect=cv.getBoundingClientRect();
+  const dpr=window.devicePixelRatio||1;
+  W=rect.width; H=rect.height||(W*560/900);
+  cv.width=W*dpr; cv.height=H*dpr;
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  scale=Math.min(W/VIEW.w,H/VIEW.h)*0.96;
+  offX=W/2 - VIEW.cx*scale;
+  offY=H/2 - VIEW.cy*scale;
+}
+function mapZ(z){return {x:offX+z.re*scale, y:offY - z.im*scale};}
+
+/* ===================== 粒子（流线） ===================== */
+let particles=[];const N=340;let laneIdx=0;const LANES=36;
+function laneY(i){return -2.5 + (i/(LANES-1))*5.0;}
+function spawn(p){
+  const y=laneY(laneIdx%LANES)+(Math.random()-0.5)*0.12;laneIdx++;
+  p.z={re:-4.0+Math.random()*0.4, im:y}; p.trail=[];
+}
+for(let i=0;i<N;i++){const p={z:null,trail:[]};spawn(p);particles.push(p);}
+function step(){
+  for(const p of particles){
+    const w=velocityAt(p.z);
+    if(!w||p.z.re>4.8||p.z.im<-2.9||p.z.im>2.9){spawn(p);continue;}
+    const s=0.04;
+    p.z={re:p.z.re+w.re*s, im:p.z.im+w.im*s};
+    p.trail.push({re:p.z.re,im:p.z.im});
+    if(p.trail.length>10)p.trail.shift();
+  }
+}
+
+/* ===================== 颜色 ===================== */
+function pressureColor(cp){
+  let r,g,b;
+  if(cp>=0){const t=Math.min(cp/1,1);r=255+(226-255)*t;g=255+(59-255)*t;b=255+(59-255)*t;}
+  else{const t=Math.min(-cp/2.6,1);r=255+(43-255)*t;g=255+(111-255)*t;b=255+(224-255)*t;}
+  return `rgb(${r|0},${g|0},${b|0})`;
+}
+
+/* ===================== 绘制 ===================== */
+function arrow(x,y,dx,dy,color,width,head){
+  const len=Math.hypot(dx,dy); if(len<0.5)return;
+  const ux=dx/len,uy=dy/len;
+  ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=width;
+  ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(x+dx,y+dy);ctx.stroke();
+  const hx=x+dx,hy=y+dy;
+  ctx.beginPath();
+  ctx.moveTo(hx,hy);
+  ctx.lineTo(hx-ux*head-uy*head*0.6, hy-uy*head+ux*head*0.6);
+  ctx.lineTo(hx-ux*head+uy*head*0.6, hy-uy*head-ux*head*0.6);
+  ctx.closePath();ctx.fill();
+}
+
+const M=160;
+function surfacePoints(){
+  const pts=[];
+  for(let i=0;i<=M;i++){
+    const th=i/M*2*Math.PI;
+    const zeta=C.add(zeta0,{re:R*Math.cos(th),im:R*Math.sin(th)});
+    const z=joukowski(zeta);
+    pts.push({z,cp:cpAt(z),th});
+  }
+  return pts;
+}
+
+let show={flow:true,press:true,lift:true,play:true};
+let frame=0;
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+
+  // 地面参考线（淡）
+  ctx.strokeStyle='rgba(120,150,180,.18)';ctx.lineWidth=1;
+  const ground=mapZ({re:0,im:-2.6});
+  ctx.beginPath();ctx.moveTo(0,ground.y);ctx.lineTo(W,ground.y);ctx.stroke();
+
+  // 流线
+  if(show.flow){
+    for(const p of particles){
+      if(p.trail.length<2)continue;
+      const w=velocityAt(p.z);
+      const sp=w?C.abs(w):U;
+      const a=Math.min(0.15+sp/(U*3.2),0.85);
+      ctx.strokeStyle=`rgba(43,111,224,${a})`;
+      ctx.lineWidth=1.4;
+      ctx.beginPath();
+      for(let i=0;i<p.trail.length;i++){
+        const s=mapZ(p.trail[i]);
+        if(i===0)ctx.moveTo(s.x,s.y);else ctx.lineTo(s.x,s.y);
+      }
+      ctx.stroke();
+    }
+  }
+
+  // 翼型
+  const sp2=surfacePoints();
+  // 实体填充
+  ctx.beginPath();
+  for(let i=0;i<sp2.length;i++){
+    const s=mapZ(sp2[i].z);
+    if(i===0)ctx.moveTo(s.x,s.y);else ctx.lineTo(s.x,s.y);
+  }
+  ctx.closePath();
+  const grad=ctx.createLinearGradient(0,mapZ({re:0,im:1}).y,0,mapZ({re:0,im:-1}).y);
+  grad.addColorStop(0,'#c7d2dc');grad.addColorStop(0.5,'#eef2f6');grad.addColorStop(1,'#b9c4cf');
+  ctx.fillStyle=grad;ctx.fill();
+  ctx.strokeStyle='#7d8a98';ctx.lineWidth=1;ctx.stroke();
+
+  // 压强着色边缘
+  if(show.press){
+    ctx.lineWidth=5;ctx.lineCap='round';
+    for(let i=0;i<sp2.length-1;i++){
+      const a=mapZ(sp2[i].z), b=mapZ(sp2[i+1].z);
+      ctx.strokeStyle=pressureColor(sp2[i].cp);
+      ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();
+    }
+    ctx.lineCap='butt';
+  }
+
+  // 压强箭头（上、下表面取样）
+  if(show.press){
+    const centroid={re:0,im:0.02};
+    const picks=[14,40,66, 100,124,150];   // 前三个上表面，后三个下表面
+    for(const k of picks){
+      const pt=sp2[k];
+      const nrm={re:pt.z.re-centroid.re, im:pt.z.im-centroid.im};
+      const nl=Math.hypot(nrm.re,nrm.im)||1;
+      const nx=nrm.re/nl, ny=nrm.im/nl;           // 外向法线
+      const len=Math.min(Math.abs(pt.cp)*26,42)+6;
+      const base=mapZ(pt.z);
+      const ox=base.x+nx*len, oy=base.y-ny*len;   // 屏幕 y 翻转
+      arrow(ox,oy, base.x-ox, base.y-oy, pressureColor(pt.cp),3.2,7);
+    }
+  }
+
+  // 弦线 + 来流方向 + 迎角标注
+  const le=mapZ(joukowski(C.add(zeta0,C.scale({re:-1,im:0},1)))); // 近似
+  const zLE=joukowski(C.sub(zeta0,C.sub({re:B,im:0},zeta0)));
+  const zTE=joukowski({re:B,im:0});
+  const sLE=mapZ(zLE), sTE=mapZ(zTE);
+  ctx.strokeStyle='rgba(60,80,100,.55)';ctx.setLineDash([6,5]);ctx.lineWidth=1.2;
+  ctx.beginPath();ctx.moveTo(sLE.x,sLE.y);ctx.lineTo(sTE.x,sTE.y);ctx.stroke();
+  ctx.setLineDash([]);
+  // 来流箭头（左侧）
+  const ax=offX-3.6*scale, ay=offY+0*scale;
+  const fdx=Math.cos(alpha)*70, fdy=-Math.sin(alpha)*70;
+  arrow(ax,ay,fdx,fdy,'#1f2a37',3,9);
+  ctx.fillStyle='#1f2a37';ctx.font='13px sans-serif';
+  ctx.fillText('来流 V∞',ax-6,ay-12);
+  // 迎角弧
+  ctx.strokeStyle='rgba(226,59,59,.8)';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.arc(ax,ay,34,-Math.PI/2,-Math.PI/2+alpha,alpha<0);ctx.stroke();
+  const ad=alpha*180/Math.PI;
+  ctx.fillStyle='#e23b3b';ctx.font='bold 13px sans-serif';
+  ctx.fillText('α='+ad.toFixed(1)+'°',ax+38,ay-18);
+
+  // 升力箭头
+  if(show.lift){
+    const c=mapZ({re:0,im:0.02});
+    const liftVec={re:Gamma*Math.sin(alpha), im:-Gamma*Math.cos(alpha)};
+    const lm=C.abs(liftVec);
+    if(lm>1e-6){
+      const dir={re:liftVec.re/lm, im:liftVec.im/lm};
+      let Lmag=Math.abs(Gamma)*U;
+      let arrowLen=Math.min(Lmag*9,150);
+      let stallF=1;
+      const ad=alpha*180/Math.PI;
+      if(ad>15)stallF=Math.max(0.25,1-(ad-15)*0.05);
+      arrowLen*=stallF;
+      const dx=dir.re*arrowLen, dy=-dir.im*arrowLen;
+      arrow(c.x,c.y,dx,dy,'#1b9e5a',5,13);
+      ctx.fillStyle='#1b9e5a';ctx.font='bold 14px sans-serif';
+      ctx.fillText('升力 L',c.x+dx+6,c.y+dy);
+    }
+  }
+
+  // 标题角标
+  ctx.fillStyle='rgba(31,42,55,.75)';ctx.font='12px sans-serif';
+  ctx.fillText('理想势流模型（库塔条件）',12,H-12);
+
+  // 读数
+  if(frame%5===0)updateReadout();
+  frame++;
+}
+
+/* ===================== 读数 ===================== */
+function avgSpeed(th0,th1){
+  let s=0,n=0;
+  for(let i=0;i<=20;i++){
+    const th=th0+(th1-th0)*i/20;
+    const zeta=C.add(zeta0,{re:R*Math.cos(th),im:R*Math.sin(th)});
+    const w=velocityAt(joukowski(zeta));
+    if(w){s+=C.abs(w);n++;}
+  }
+  return n?s/n:U;
+}
+function updateReadout(){
+  const vT=avgSpeed(0.18*Math.PI,0.82*Math.PI)/U;
+  const vB=avgSpeed(1.18*Math.PI,1.82*Math.PI)/U;
+  // 表面 Cp 平均值
+  let pT=0,pB=0;const sp=surfacePoints();
+  for(const pt of sp){
+    if(pt.th>0.18*Math.PI&&pt.th<0.82*Math.PI)pT+=pt.cp;
+    if(pt.th>1.18*Math.PI&&pt.th<1.82*Math.PI)pB+=pt.cp;
+  }
+  pT/=((0.82-0.18)*M); pB/=((1.82-1.18)*M);
+  const dp=pB-pT;
+  const Lmag=Math.abs(Gamma)*U;
+  document.getElementById('rVt').textContent=vT.toFixed(2)+' ×';
+  document.getElementById('rVb').textContent=vB.toFixed(2)+' ×';
+  document.getElementById('rPt').textContent=pT.toFixed(2);
+  document.getElementById('rPb').textContent=pB.toFixed(2);
+  document.getElementById('rDp').textContent=(dp>=0?'+':'')+dp.toFixed(2)+(dp>=0?'（向上）':'（向下）');
+  document.getElementById('rL').textContent=Lmag.toFixed(2);
+  document.getElementById('barL').style.width=Math.min(100,Lmag/20*100)+'%';
+  const ad=alpha*180/Math.PI;
+  document.getElementById('warn').classList.toggle('show',ad>15);
+}
+
+/* ===================== 交互 ===================== */
+const sU=document.getElementById('sU'), sA=document.getElementById('sA');
+sU.oninput=()=>{U=parseFloat(sU.value);document.getElementById('vU').textContent=U.toFixed(2)+' ×';computeGamma();};
+sA.oninput=()=>{alpha=parseFloat(sA.value)*Math.PI/180;document.getElementById('vA').textContent=parseFloat(sA.value).toFixed(1)+'°';computeGamma();};
+function toggle(id,key,label){
+  const b=document.getElementById(id);
+  b.onclick=()=>{show[key]=!show[key];b.classList.toggle('on',show[key]);
+    if(key==='play'){b.textContent=show.play?'⏸ 暂停':'▶ 播放';}
+  };
+}
+toggle('tFlow','flow');toggle('tPress','press');toggle('tLift','lift');toggle('tPlay','play');
+
+/* ===================== 主循环 ===================== */
+function loop(){ if(show.play)step(); draw(); requestAnimationFrame(loop); }
+window.addEventListener('resize',resize);
+resize(); loop();
+</script>
+</body>
+</html>

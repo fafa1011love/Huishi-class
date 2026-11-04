@@ -1,0 +1,612 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>温度计 · 原理、摄氏温度与正确使用</title>
+<style>
+:root{
+  --blue:#2563EB; --blue-d:#1D4ED8; --blue-l:#EFF4FF;
+  --green:#10B981; --red:#EF4444; --amber:#F59E0B; --purple:#7C3AED;
+  --ink:#16233A; --ink2:#3F5069; --sub:#6B7B94; --line:#E4EAF3;
+  --bg:#EFF3FA; --card:#FFFFFF;
+  --shadow:0 1px 2px rgba(22,35,58,.05), 0 10px 28px -16px rgba(22,35,58,.28);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:"Microsoft YaHei","PingFang SC","Hiragino Sans GB",system-ui,-apple-system,"Segoe UI",sans-serif;
+  background:var(--bg); color:var(--ink); line-height:1.7;
+  -webkit-font-smoothing:antialiased;
+}
+svg{font-family:inherit; display:block}
+.wrap{max-width:1160px; margin:0 auto; padding:36px 24px 64px}
+
+/* ---------- 头部 ---------- */
+.hero{margin-bottom:26px}
+.kicker{
+  display:inline-block; font-size:12.5px; font-weight:700; letter-spacing:.5px;
+  color:var(--blue); background:#E3ECFF; border-radius:999px; padding:4px 13px; margin-bottom:14px;
+}
+.hero h1{margin:0 0 10px; font-size:31px; line-height:1.3; letter-spacing:.4px}
+.hero p{margin:0; color:var(--sub); font-size:14.5px; max-width:760px}
+
+/* ---------- 卡片 ---------- */
+.card{
+  background:var(--card); border-radius:18px; padding:26px 28px; margin-bottom:20px;
+  box-shadow:var(--shadow); border:1px solid rgba(255,255,255,.9);
+}
+.chead{display:flex; gap:14px; align-items:flex-start; margin-bottom:20px}
+.idx{
+  flex:0 0 auto; width:36px; height:36px; border-radius:12px; background:#E6EEFF;
+  color:var(--blue); font-weight:800; font-size:14px; display:flex; align-items:center; justify-content:center;
+  margin-top:2px; letter-spacing:.5px;
+}
+.chead h2{margin:0 0 4px; font-size:19.5px; letter-spacing:.2px}
+.chead p{margin:0; color:var(--sub); font-size:13.5px; line-height:1.6}
+
+.split{display:grid; grid-template-columns:minmax(0,1.06fr) minmax(300px,.94fr); gap:28px; align-items:start}
+@media(max-width:860px){ .split{grid-template-columns:1fr} }
+
+.stage svg{width:100%; height:auto; border-radius:14px}
+
+/* ---------- 控件面板 ---------- */
+.panel{display:flex; flex-direction:column; gap:17px}
+.ctl label{display:flex; justify-content:space-between; align-items:baseline; font-size:13px; color:var(--sub); margin-bottom:7px}
+.ctl label b{color:var(--ink); font-size:14.5px; font-variant-numeric:tabular-nums; font-weight:700}
+input[type=range]{
+  width:100%; height:24px; accent-color:var(--blue); cursor:pointer;
+  background:transparent; margin:0;
+}
+input[type=range]:focus-visible{outline:2px solid #93B4F8; outline-offset:3px; border-radius:6px}
+
+.rows{border:1px solid var(--line); border-radius:12px; overflow:hidden; background:#FCFDFF}
+.row{display:flex; justify-content:space-between; gap:12px; padding:9px 14px; font-size:13.2px; border-bottom:1px solid var(--line)}
+.row:last-child{border-bottom:0}
+.row span{color:var(--sub)}
+.row b{font-variant-numeric:tabular-nums; color:var(--ink); font-weight:700}
+
+.note{
+  margin:0; font-size:13.2px; color:var(--ink2); line-height:1.75;
+  background:#F6F9FF; border-left:3px solid var(--blue); border-radius:0 10px 10px 0; padding:12px 15px;
+}
+.note em{font-style:normal; font-weight:700; color:var(--blue-d)}
+
+/* ---------- 三张操作卡 ---------- */
+.cards{display:grid; grid-template-columns:repeat(3,minmax(0,1fr)); gap:16px}
+@media(max-width:1000px){ .cards{grid-template-columns:1fr} }
+.op{background:#F8FAFE; border:1px solid var(--line); border-radius:15px; padding:15px 15px 14px}
+.op h3{
+  margin:0 0 10px; font-size:14px; font-weight:700; display:flex; align-items:center; gap:7px;
+  letter-spacing:.2px;
+}
+.dot{width:8px; height:8px; border-radius:50%; flex:0 0 auto; display:inline-block}
+.dot.r{background:var(--red)}
+.dot.a{background:var(--amber)}
+.chip{
+  font-size:10.5px; font-weight:500; color:#8B9AB0; border:1px solid #DDE5F0; background:#fff;
+  border-radius:999px; padding:1px 8px; margin-left:auto; letter-spacing:.3px; white-space:nowrap;
+}
+.op svg{
+  width:100%; height:auto; touch-action:none; cursor:grab;
+  background:#fff; border-radius:11px; border:1px solid #EDF2F9;
+}
+.op svg:active{cursor:grabbing}
+
+.read{display:flex; align-items:baseline; gap:8px; margin:11px 0 6px; font-size:12.5px; color:var(--sub)}
+.read b{font-size:20px; font-weight:800; font-variant-numeric:tabular-nums; color:var(--red); letter-spacing:.3px}
+.tag{font-size:11px; font-weight:700; border-radius:999px; padding:2px 9px; letter-spacing:.3px; transform:translateY(-2px)}
+.tag.ok{background:#E4F9F0; color:#0E9F6E}
+.tag.bad{background:#FEECEC; color:#DC2626}
+.tag.mid{background:#FFF6E5; color:#B45309}
+.cap{margin:0; font-size:12.2px; color:var(--sub); line-height:1.6; min-height:2.6em}
+
+
+footer{text-align:center; color:#93A2B8; font-size:12px; padding:8px 0 0}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <div class="kicker">§3.1 温度 · 人教版八年级上册 P58</div>
+    <h1>温度计：把热胀冷缩变成读数</h1>
+    <p>热胀冷缩本身看不见，所以用一根细管把它放大成几厘米的液柱；而刻度是人规定的，读数还得守规矩。</p>
+  </header>
+
+  <!-- ============ 01 ============ -->
+  <section class="card">
+    <div class="chead">
+      <div class="idx">01</div>
+      <div>
+        <h2>自制温度计：让热胀冷缩看得见</h2>
+        <p>小瓶装满红墨水，塞上细玻璃管，一起浸在水里。水温一变，液柱就升降。</p>
+      </div>
+    </div>
+    <div class="split">
+      <div class="stage"><svg id="m1svg" viewBox="0 0 480 430" role="img" aria-label="自制温度计"></svg></div>
+      <div class="panel">
+        <div class="ctl">
+          <label>水温 <b id="m1T">65 ℃</b></label>
+          <input id="m1Tr" type="range" min="25" max="75" step="1" value="65">
+        </div>
+        <div class="ctl">
+          <label>细管内径 <b id="m1D">1.5 mm</b></label>
+          <input id="m1Dr" type="range" min="1.5" max="3" step="0.1" value="1.5">
+        </div>
+        <div class="rows">
+          <div class="row"><span>红墨水体积变化 ΔV</span><b id="m1dV">0 mm³</b></div>
+          <div class="row"><span>液柱升降 h = ΔV ÷ S</span><b id="m1H">0 mm</b></div>
+        </div>
+        <p class="note">瓶里几十立方毫米的体积变化，肉眼根本看不出来。把同样这点体积<em>摊进一根细管</em>，液柱就能升降好几厘米——这就是「放大」。管越细，同样的升温，液柱升得越高。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 02 ============ -->
+  <section class="card">
+    <div class="chead">
+      <div class="idx">02</div>
+      <div>
+        <h2>摄氏温度：把两处液柱之间分成 100 份</h2>
+        <p>0 ℃ 和 100 ℃ 是人规定的两个定标点，中间等分 100 格，每格就是 1 ℃。</p>
+      </div>
+    </div>
+    <div class="split">
+      <div class="stage"><svg id="m2svg" viewBox="0 0 460 430" role="img" aria-label="摄氏温度刻度"></svg></div>
+      <div class="panel">
+        <div class="ctl">
+          <label>被测液体温度 <b id="m2T">46 ℃</b></label>
+          <input id="m2Tr" type="range" min="-10" max="100" step="1" value="46">
+        </div>
+        <div class="rows">
+          <div class="row"><span>量程 / 分度值</span><b>−10 ℃ ~ 100 ℃ / 1 ℃</b></div>
+          <div class="row"><span>液柱比 0 ℃ 的位置</span><b id="m2n">高 46 格</b></div>
+          <div class="row"><span>每 1 格代表</span><b>1 ℃</b></div>
+          <div class="row"><span>所以读数是</span><b id="m2r">46 ℃</b></div>
+        </div>
+        <p class="note">规则很干脆：冰水混合物定为 <em>0 ℃</em>，标准大气压下的沸水定为 <em>100 ℃</em>，两处之间平分 100 份。所以刻度是<em>人定的</em>，而液柱高低才是热胀冷缩的真实反映。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 03 ============ -->
+  <section class="card">
+    <div class="chead">
+      <div class="idx">03</div>
+      <div>
+        <h2>三种最常见的错误操作</h2>
+        <p>拖动温度计或眼睛，看示数怎么跟着跑偏。每种错法都对应一条使用规则。</p>
+      </div>
+    </div>
+    <div class="cards">
+
+      <div class="op">
+        <h3><span class="dot r"></span>玻璃泡碰到杯底<span class="chip">可拖动</span></h3>
+        <svg id="svgA" viewBox="0 0 320 300" role="img" aria-label="玻璃泡碰底"></svg>
+        <div class="read">示数 <b id="aVal">40.0 ℃</b><span class="tag ok" id="aTag">正确</span></div>
+        <p class="cap" id="aCap"></p>
+      </div>
+
+      <div class="op">
+        <h3><span class="dot r"></span>离开液体读数<span class="chip">可拖动</span></h3>
+        <svg id="svgB" viewBox="0 0 320 300" role="img" aria-label="离开液面读数"></svg>
+        <div class="read">示数 <b id="bVal">40.0 ℃</b><span class="tag ok" id="bTag">正确</span></div>
+        <p class="cap" id="bCap"></p>
+      </div>
+
+      <div class="op">
+        <h3><span class="dot a"></span>斜视读数<span class="chip">可拖眼睛</span></h3>
+        <svg id="svgC" viewBox="0 0 320 300" role="img" aria-label="斜视读数"></svg>
+        <div class="read">读数 <b id="cVal">40.4 ℃</b><span class="tag bad" id="cTag">偏低</span></div>
+        <p class="cap" id="cCap"></p>
+      </div>
+
+    </div>
+  </section>
+
+  <footer>物理可视化模型 · 温度计的原理与使用　|　单文件版，无需外部资源</footer>
+</div>
+
+<script>
+/* ============================================================
+   工具
+   ============================================================ */
+const clamp = (v,a,b)=>Math.min(b,Math.max(a,v));
+const fmt = (v,d=0)=>Number(v).toFixed(d);
+const svgPt = (svg,e)=>{
+  const p = svg.createSVGPoint();
+  p.x = e.clientX; p.y = e.clientY;
+  return p.matrixTransform(svg.getScreenCTM().inverse());
+};
+const pending = {};
+const schedule = (k,fn)=>{
+  if(pending[k]) return;
+  pending[k] = requestAnimationFrame(()=>{ pending[k]=0; fn(); });
+};
+
+/* ============================================================
+   模块 ① 自制温度计
+   红墨水 = 水，γ = 2.1e-4 /℃；瓶内液体 V0 = 10 mL = 1e4 mm³
+   h = ΔV / S，S = π(d/2)²  —— 管越细，同样 ΔV 下 h 越大
+   ============================================================ */
+const M1 = { T: 65, d: 1.5 };
+const K1 = { V0: 10000, GAMMA: 2.1e-4, T0: 50, PX: 1.6, BASE: 190, TOP: 124, BOT: 252, CX: 250 };
+
+function m1data(){
+  const S = Math.PI * Math.pow(M1.d/2, 2);
+  const dV = K1.V0 * K1.GAMMA * (M1.T - K1.T0);
+  const hMM = dV / S;
+  return { S, dV, hMM, hPx: hMM * K1.PX };
+}
+
+function renderM1(){
+  const d = m1data();
+  const cx = K1.CX, tw = 12 + (M1.d - 1.5) * 6, liqW = Math.max(7, tw - 5);
+  const topY = K1.BASE - d.hPx;
+  const T = M1.T;
+
+  document.getElementById('m1svg').innerHTML = `
+  <defs>
+    <linearGradient id="gWater" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#C7DDFC"/><stop offset="1" stop-color="#8FBBF5"/>
+    </linearGradient>
+    <linearGradient id="gGlass" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity=".95"/>
+      <stop offset=".45" stop-color="#FFFFFF" stop-opacity=".3"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity=".85"/>
+    </linearGradient>
+  </defs>
+
+  <rect x="0" y="384" width="480" height="46" fill="#DEE7F2"/>
+  <rect x="0" y="379" width="480" height="5" fill="#C6D4E6"/>
+
+  <!-- 烧杯 -->
+  <path d="M132 190 L132 362 Q132 378 148 378 L352 378 Q368 378 368 362 L368 190"
+        fill="#FAFCFF" opacity=".8" stroke="#93A6BE" stroke-width="3" stroke-linecap="round"/>
+  <!-- 水 -->
+  <path d="M136 236 L364 236 L364 362 Q364 374 352 374 L148 374 Q136 374 136 362 Z"
+        fill="url(#gWater)" opacity=".6"/>
+  <line x1="136" y1="236" x2="364" y2="236" stroke="#7FB2EF" stroke-width="2.5"/>
+
+  <!-- 小瓶 -->
+  <rect x="208" y="252" width="84" height="116" rx="10" fill="#fff" opacity=".72" stroke="#93A6BE" stroke-width="2.5"/>
+  <rect x="210" y="254" width="80" height="112" rx="9" fill="#DC2626" opacity=".86"/>
+
+  <!-- 细管 + 液柱 -->
+  <rect x="${cx-tw/2}" y="${K1.TOP}" width="${tw}" height="${K1.BOT-K1.TOP}" rx="${tw/2}"
+        fill="url(#gGlass)" stroke="#9AAEC6" stroke-width="2"/>
+  <rect x="${cx-liqW/2}" y="${topY.toFixed(1)}" width="${liqW}" height="${(K1.BOT-topY).toFixed(1)}" fill="#DC2626"/>
+  <ellipse cx="${cx}" cy="${topY.toFixed(1)}" rx="${liqW/2}" ry="2.2" fill="#EF4444"/>
+
+  <!-- 瓶塞（压住管口） -->
+  <rect x="198" y="238" width="104" height="16" rx="5" fill="#B98B57" stroke="#96693A" stroke-width="2"/>
+
+  <!-- 管壁高光 -->
+  <rect x="${cx-tw/2+2.2}" y="${K1.TOP+8}" width="${Math.max(1.6,tw*0.17)}" height="${K1.BOT-K1.TOP-18}"
+        rx="2" fill="#fff" opacity=".55"/>
+
+  <!-- 温度标注 -->
+  <text x="30" y="46" font-size="12.5" fill="#6B7B94">水温</text>
+  <text x="30" y="80" font-size="27" font-weight="800" fill="#1D4ED8" letter-spacing=".5">${T} ℃</text>
+
+  <!-- 提示：没有刻度 -->
+  <text x="${cx+tw/2+14}" y="152" font-size="11" fill="#94A3B8">没有刻度</text>
+  <line x1="${cx+tw/2+11}" y1="148" x2="${cx+tw/2+3}" y2="145" stroke="#C7D2E0" stroke-width="1"/>
+  `;
+
+  document.getElementById('m1T').textContent = T + ' ℃';
+  document.getElementById('m1D').textContent = fmt(M1.d,1) + ' mm';
+  document.getElementById('m1dV').textContent = (d.dV>=0?'+':'') + fmt(d.dV,0) + ' mm³';
+  document.getElementById('m1H').textContent =
+    Math.abs(d.hMM) < 0.05 ? '0 mm' : (d.hMM>0?'+':'') + fmt(d.hMM,1) + ' mm';
+}
+
+/* ============================================================
+   模块 ② 摄氏温度刻度
+   -10 ℃ ~ 100 ℃ 映射到 y 311.7 ~ 110
+   ============================================================ */
+const M2 = { T: 46 };
+const K2 = { t0: -10, t1: 100, y0: 311.7, y1: 110 };
+const y2 = t => K2.y0 + (t - K2.t0) * (K2.y1 - K2.y0) / (K2.t1 - K2.t0);
+
+function renderM2(){
+  const T = M2.T, yT = y2(T);
+  let ticks = '';
+  for (let t = -10; t <= 100; t++){
+    const y = y2(t);
+    const major = t % 10 === 0, mid = t % 5 === 0;
+    const len = major ? 16 : (mid ? 10 : 5);
+    const col = major ? '#94A3B8' : '#CBD5E1';
+    ticks += `<line x1="172" y1="${y.toFixed(1)}" x2="${172+len}" y2="${y.toFixed(1)}"
+      stroke="${col}" stroke-width="${major?1.3:1}"/>`;
+    if (major && t % 20 === 0){
+      ticks += `<text x="${172+len+5}" y="${(y+3.6).toFixed(1)}" font-size="10.5" fill="#64748B">${t}</text>`;
+    }
+  }
+
+  const y0 = y2(0), y100 = y2(100);
+
+  document.getElementById('m2svg').innerHTML = `
+  <defs>
+    <linearGradient id="gGlass2" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#FFFFFF" stop-opacity=".95"/>
+      <stop offset=".45" stop-color="#FFFFFF" stop-opacity=".3"/>
+      <stop offset="1" stop-color="#FFFFFF" stop-opacity=".85"/>
+    </linearGradient>
+  </defs>
+
+  <!-- 管身 -->
+  <rect x="148" y="92" width="24" height="258" rx="12" fill="url(#gGlass2)" stroke="#9AAEC6" stroke-width="2"/>
+  <!-- 液柱 -->
+  <rect x="151" y="${yT.toFixed(1)}" width="18" height="${(352-yT).toFixed(1)}" fill="#DC2626"/>
+  <!-- 玻璃泡 -->
+  <circle cx="160" cy="352" r="23" fill="#DC2626" stroke="#9AAEC6" stroke-width="2"/>
+  <ellipse cx="152" cy="344" rx="5" ry="7" fill="#fff" opacity=".28"/>
+
+  <!-- 刻度 -->
+  ${ticks}
+
+  <!-- 两个定标点 -->
+  <line x1="212" y1="${y0.toFixed(1)}" x2="252" y2="${y0.toFixed(1)}" stroke="#F59E0B" stroke-width="1.6" stroke-dasharray="4 3"/>
+  <text x="258" y="${(y0+4).toFixed(1)}" font-size="10.5" font-weight="700" fill="#B45309">0 ℃ 冰水混合物</text>
+  <line x1="212" y1="${y100.toFixed(1)}" x2="252" y2="${y100.toFixed(1)}" stroke="#F59E0B" stroke-width="1.6" stroke-dasharray="4 3"/>
+  <text x="258" y="${(y100+4).toFixed(1)}" font-size="10.5" font-weight="700" fill="#B45309">100 ℃ 沸水（标准大气压）</text>
+
+  <!-- 100 等份说明 -->
+  <text x="258" y="${((y0+y100)/2 + 4).toFixed(1)}" font-size="10" fill="#94A3B8">两处之间平分 100 份</text>
+
+  <!-- 读数气泡 -->
+  <g>
+    <rect x="36" y="${(yT-17).toFixed(1)}" width="90" height="34" rx="10" fill="#1D4ED8"/>
+    <text x="81" y="${(yT+5.5).toFixed(1)}" text-anchor="middle" font-size="16" font-weight="800" fill="#fff">${T} ℃</text>
+    <line x1="126" y1="${yT.toFixed(1)}" x2="148" y2="${yT.toFixed(1)}" stroke="#1D4ED8" stroke-width="2"/>
+  </g>
+  `;
+
+  document.getElementById('m2T').textContent = T + ' ℃';
+  document.getElementById('m2n').textContent = T === 0 ? '与 0 ℃ 相平'
+    : (T > 0 ? '高 ' + T + ' 格' : '低 ' + Math.abs(T) + ' 格');
+  document.getElementById('m2r').textContent = T + ' ℃';
+}
+
+/* ============================================================
+   模块 ③ 三张操作卡
+   ============================================================ */
+
+/* ---------- 卡 A：玻璃泡碰底 ---------- */
+const A = { bob: 200 };
+const A_GEO = { cx: 160, tw: 13, tubeTop: 34, realT: 40, bottomT: 68 };
+
+function beakerA(waterTop){
+  return `
+  <rect x="0" y="286" width="320" height="14" fill="#E2E8F0"/>
+  <path d="M78 110 L78 258 Q78 266 90 266 L230 266 Q242 266 242 258 L242 110"
+        fill="#FAFCFF" stroke="#93A6BE" stroke-width="2.5"/>
+  <path d="M81 ${waterTop} L239 ${waterTop} L239 258 Q239 263 230 263 L90 263 Q81 263 81 258 Z"
+        fill="#B9D8FC" opacity=".72"/>
+  <line x1="81" y1="${waterTop}" x2="239" y2="${waterTop}" stroke="#7FB2EF" stroke-width="2"/>`;
+}
+
+function renderA(){
+  const bob = A.bob;
+  const bobTop = bob - 11;
+  const c = clamp((bob + 11 - 249) / 13, 0, 1);
+  const shown = A_GEO.realT + 28 * c;
+  const ok = c < 0.04;
+  const liqTop = bobTop - shown * 1.5;
+  const { cx, tw, tubeTop } = A_GEO;
+
+  document.getElementById('svgA').innerHTML = `
+  ${beakerA(168)}
+  <rect x="96" y="258" width="128" height="6" rx="3" fill="#FDBA74"/>
+  <text x="70" y="176" text-anchor="end" font-size="10.5" fill="#1D4ED8">水 40 ℃</text>
+  <text x="247" y="262" font-size="10.5" fill="#C2410C">底 68 ℃</text>
+
+  <rect x="${cx-tw/2}" y="${tubeTop}" width="${tw}" height="${bobTop-tubeTop}" rx="${tw/2}"
+        fill="#fff" stroke="#9AAEC6" stroke-width="1.6"/>
+  <rect x="${cx-3}" y="${liqTop.toFixed(1)}" width="6" height="${(bobTop-liqTop).toFixed(1)}" fill="#DC2626"/>
+  <circle cx="${cx}" cy="${bob}" r="11" fill="#DC2626" stroke="#9AAEC6" stroke-width="1.6"/>
+  <text x="${cx+13}" y="${tubeTop+15}" font-size="11" fill="#B6C2D4">↕</text>
+  `;
+
+  const val = document.getElementById('aVal');
+  val.textContent = fmt(shown,1) + ' ℃';
+  val.style.color = ok ? '#0E9F6E' : '#DC2626';
+  const tag = document.getElementById('aTag');
+  tag.textContent = ok ? '正确' : '错误';
+  tag.className = 'tag ' + (ok ? 'ok' : 'bad');
+  document.getElementById('aCap').textContent = ok
+    ? '玻璃泡全部浸在水里，也没碰到杯底，测到的就是水温。'
+    : '玻璃泡碰到了杯底，测到的其实是杯底的温度，比水温高。';
+}
+
+/* ---------- 卡 B：离开液面读数 ---------- */
+const B = { bob: 196 };
+const B_GEO = { cx: 160, tw: 13, tubeTop: 34, waterTop: 172, realT: 40 };
+
+function renderB(){
+  const bob = B.bob;
+  const bobTop = bob - 11;
+  // 玻璃泡整颗没入液面之下 => e=0；整颗提离液面 => e=1（y 越大越低）
+  const e = clamp((B_GEO.waterTop + 11 - bob) / 22, 0, 1);
+  const shown = B_GEO.realT - 13 * e;
+  const ok = e < 0.04;
+  const liqTop = bobTop - shown * 1.5;
+  const { cx, tw, tubeTop } = B_GEO;
+
+  document.getElementById('svgB').innerHTML = `
+  ${beakerA(B_GEO.waterTop)}
+  <text x="70" y="180" text-anchor="end" font-size="10.5" fill="#1D4ED8">水 40 ℃</text>
+  <text x="247" y="200" font-size="10.5" fill="#94A3B8">室温 26 ℃</text>
+
+  <rect x="${cx-tw/2}" y="${tubeTop}" width="${tw}" height="${bobTop-tubeTop}" rx="${tw/2}"
+        fill="#fff" stroke="#9AAEC6" stroke-width="1.6"/>
+  <rect x="${cx-3}" y="${liqTop.toFixed(1)}" width="6" height="${(bobTop-liqTop).toFixed(1)}" fill="#DC2626"/>
+  <circle cx="${cx}" cy="${bob}" r="11" fill="#DC2626" stroke="#9AAEC6" stroke-width="1.6"/>
+  <text x="${cx+13}" y="${tubeTop+15}" font-size="11" fill="#B6C2D4">↕</text>
+  `;
+
+  const val = document.getElementById('bVal');
+  val.textContent = fmt(shown,1) + ' ℃';
+  val.style.color = ok ? '#0E9F6E' : '#DC2626';
+  const tag = document.getElementById('bTag');
+  tag.textContent = ok ? '正确' : '错误';
+  tag.className = 'tag ' + (ok ? 'ok' : 'bad');
+  document.getElementById('bCap').textContent = ok
+    ? '玻璃泡还浸在液体里，示数稳定，读数才是这杯水的温度。'
+    : '玻璃泡一离开液体，液柱就开始回落，示数已经不等于水温了。';
+}
+
+/* ---------- 卡 C：斜视读数 ---------- */
+const C = { eyeX: 44, eyeY: 130, T: 46 };
+const C_GEO = { lx: 149, sx: 164, yBase: 240, k: 1.3 };
+
+function renderC(){
+  const T = C.T, yT = C_GEO.yBase - C_GEO.k * T;
+  const ex = C.eyeX, ey = C.eyeY;
+  const dx = C_GEO.lx - ex;
+  let yRead = yT;
+  if (dx > 6) yRead = yT + (C_GEO.sx - C_GEO.lx) * (yT - ey) / dx;
+  const tRead = (C_GEO.yBase - yRead) / C_GEO.k;
+  const diff = tRead - T;
+  const ok = Math.abs(diff) <= 1;
+
+  let ticks = '';
+  for (let t = 0; t <= 100; t += 5){
+    const y = C_GEO.yBase - C_GEO.k * t;
+    const major = t % 10 === 0;
+    ticks += `<line x1="160" y1="${y.toFixed(1)}" x2="${(160 + (major?14:8))}" y2="${y.toFixed(1)}"
+      stroke="${major?'#94A3B8':'#CBD5E1'}" stroke-width="${major?1.2:1}"/>`;
+    if (t % 20 === 0){
+      ticks += `<text x="177" y="${(y+3.4).toFixed(1)}" font-size="9.5" fill="#64748B">${t}</text>`;
+    }
+  }
+
+  document.getElementById('svgC').innerHTML = `
+  <rect x="0" y="286" width="320" height="14" fill="#E2E8F0"/>
+  <!-- 管身 -->
+  <rect x="138" y="86" width="22" height="158" rx="11" fill="#fff" stroke="#9AAEC6" stroke-width="2"/>
+  <rect x="141" y="${yT.toFixed(1)}" width="16" height="${(250-yT).toFixed(1)}" fill="#DC2626"/>
+  <circle cx="149" cy="262" r="20" fill="#DC2626" stroke="#9AAEC6" stroke-width="2"/>
+  ${ticks}
+
+  <!-- 图例 -->
+  <line x1="14" y1="22" x2="26" y2="22" stroke="#10B981" stroke-width="1.6" stroke-dasharray="3 2"/>
+  <text x="31" y="25.5" font-size="9.5" fill="#0E9F6E">真实液柱位置 ${T} ℃</text>
+  <line x1="14" y1="38" x2="26" y2="38" stroke="#EF4444" stroke-width="2.2"/>
+  <text x="31" y="41.5" font-size="9.5" fill="#DC2626">视线落到刻度上的位置</text>
+
+  <!-- 真实位置 -->
+  <line x1="160" y1="${yT.toFixed(1)}" x2="174" y2="${yT.toFixed(1)}" stroke="#fff" stroke-width="5"/>
+  <line x1="160" y1="${yT.toFixed(1)}" x2="174" y2="${yT.toFixed(1)}" stroke="#10B981" stroke-width="1.6" stroke-dasharray="3 2"/>
+
+  <!-- 视线 -->
+  <line x1="${ex}" y1="${ey}" x2="${C_GEO.sx}" y2="${yRead.toFixed(1)}"
+        stroke="#EF4444" stroke-width="1.5" stroke-dasharray="6 4"/>
+  <line x1="160" y1="${yRead.toFixed(1)}" x2="176" y2="${yRead.toFixed(1)}" stroke="#fff" stroke-width="6"/>
+  <line x1="160" y1="${yRead.toFixed(1)}" x2="176" y2="${yRead.toFixed(1)}" stroke="#EF4444" stroke-width="2.6" stroke-linecap="round"/>
+  <circle cx="${C_GEO.sx}" cy="${yRead.toFixed(1)}" r="3.2" fill="#EF4444" stroke="#fff" stroke-width="1.2"/>
+
+  <!-- 眼睛 -->
+  <g>
+    <circle cx="${ex}" cy="${ey}" r="17" fill="#FEF2F2" stroke="#FCA5A5" stroke-width="1.5" stroke-dasharray="4 3"/>
+    <ellipse cx="${ex}" cy="${ey}" rx="11" ry="7" fill="#fff" stroke="#334155" stroke-width="1.8"/>
+    <circle cx="${ex+2}" cy="${ey}" r="3.2" fill="#334155"/>
+  </g>
+  <text x="${ex}" y="${ey-24}" font-size="9.5" fill="#94A3B8" text-anchor="middle">拖我</text>
+  `;
+
+  const val = document.getElementById('cVal');
+  val.textContent = fmt(Math.abs(tRead),1) + ' ℃';
+  val.style.color = ok ? '#0E9F6E' : '#DC2626';
+  const tag = document.getElementById('cTag');
+  tag.textContent = ok ? '正确' : (diff > 0 ? '偏高' : '偏低');
+  tag.className = 'tag ' + (ok ? 'ok' : 'bad');
+  document.getElementById('cCap').textContent = ok
+    ? '视线与液柱上表面相平，读到的刻度就是真实温度。'
+    : (diff > 0
+        ? '眼睛偏低、往上看，视线落在真实位置的上面，读数偏大。'
+        : '眼睛偏高、往下看，视线落在真实位置的下面，读数偏小。');
+}
+
+/* ============================================================
+   事件绑定
+   ============================================================ */
+document.getElementById('m1Tr').addEventListener('input', e=>{ M1.T = +e.target.value; renderM1(); });
+document.getElementById('m1Dr').addEventListener('input', e=>{ M1.d = +e.target.value; renderM1(); });
+document.getElementById('m2Tr').addEventListener('input', e=>{ M2.T = +e.target.value; renderM2(); });
+
+/* 卡 A 拖动 */
+(function(){
+  const svg = document.getElementById('svgA');
+  let off = null;
+  svg.addEventListener('pointerdown', e=>{
+    const p = svgPt(svg, e);
+    if (Math.abs(p.x - A_GEO.cx) > 80) return;
+    off = p.y - A.bob;
+    svg.setPointerCapture(e.pointerId);
+  });
+  svg.addEventListener('pointermove', e=>{
+    if (off === null) return;
+    const p = svgPt(svg, e);
+    A.bob = clamp(p.y - off, 196, 251);
+    schedule('A', renderA);
+  });
+  const end = ()=>{ off = null; };
+  svg.addEventListener('pointerup', end);
+  svg.addEventListener('pointercancel', end);
+})();
+
+/* 卡 B 拖动 */
+(function(){
+  const svg = document.getElementById('svgB');
+  let off = null;
+  svg.addEventListener('pointerdown', e=>{
+    const p = svgPt(svg, e);
+    if (Math.abs(p.x - B_GEO.cx) > 80) return;
+    off = p.y - B.bob;
+    svg.setPointerCapture(e.pointerId);
+  });
+  svg.addEventListener('pointermove', e=>{
+    if (off === null) return;
+    const p = svgPt(svg, e);
+    B.bob = clamp(p.y - off, 126, 220);
+    schedule('B', renderB);
+  });
+  const end = ()=>{ off = null; };
+  svg.addEventListener('pointerup', end);
+  svg.addEventListener('pointercancel', end);
+})();
+
+/* 卡 C 拖动眼睛 */
+(function(){
+  const svg = document.getElementById('svgC');
+  let drag = false;
+  svg.addEventListener('pointerdown', e=>{
+    const p = svgPt(svg, e);
+    if (Math.hypot(p.x - C.eyeX, p.y - C.eyeY) > 26) return;
+    drag = true;
+    svg.setPointerCapture(e.pointerId);
+  });
+  svg.addEventListener('pointermove', e=>{
+    if (!drag) return;
+    const p = svgPt(svg, e);
+    C.eyeX = clamp(p.x, 22, 122);
+    C.eyeY = clamp(p.y, 82, 262);
+    schedule('C', renderC);
+  });
+  const end = ()=>{ drag = false; };
+  svg.addEventListener('pointerup', end);
+  svg.addEventListener('pointercancel', end);
+})();
+
+/* 初始化 */
+renderM1();
+renderM2();
+renderA();
+renderB();
+renderC();
+</script>
+</body>
+</html>

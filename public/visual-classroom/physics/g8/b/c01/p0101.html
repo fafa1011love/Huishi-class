@@ -1,0 +1,1033 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>二力平衡条件实验</title>
+<style>
+  :root{
+    --bg:#f5f7fa; --card:#ffffff; --line:#e3e8ef;
+    --ink:#1f2a37; --ink2:#5b6779; --ink3:#8b95a5;
+    --blue:#2563eb; --blue-soft:#eaf1ff;
+    --red:#e0463b; --red-soft:#fdeceb;
+    --green:#14915f; --green-soft:#e7f6ef;
+    --amber:#c7791a; --amber-soft:#fdf3e2;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg); color:var(--ink);
+    font-family:"Microsoft YaHei","PingFang SC","Hiragino Sans GB","Segoe UI",system-ui,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .app{max-width:1180px;margin:0 auto;padding:18px 18px 30px;}
+
+  .hd{margin-bottom:13px;display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;}
+  .hd h1{font-size:19px;margin:0;letter-spacing:.5px;}
+  .hd .sub{margin:0;font-size:12.5px;color:var(--ink2);}
+  .hd .sub b{color:var(--ink);font-weight:700;}
+
+  /* 上方：左栏（画布+判定） + 右栏（控制+情景） */
+  .lab{display:flex;gap:14px;align-items:flex-start;}
+  .col{display:flex;flex-direction:column;gap:12px;min-width:0;}
+  .colL{flex:1.55 1 0;}
+  .colR{flex:1 1 0;min-width:290px;}
+  .stage{
+    background:var(--card);border:1px solid var(--line);border-radius:14px;
+    padding:10px;box-shadow:0 1px 2px rgba(16,24,40,.04);
+  }
+  canvas{display:block;width:100%;height:auto;border-radius:10px;background:#fbfcfe;}
+  .readout{display:flex;flex-wrap:wrap;gap:6px;margin-top:9px;}
+  .chip{
+    background:#f4f6f9;border:1px solid var(--line);border-radius:8px;
+    padding:4px 8px;font-size:11.5px;color:var(--ink2);line-height:1.4;
+  }
+  .chip b{color:var(--ink);font-weight:600;font-variant-numeric:tabular-nums;}
+  .chip.blue{background:var(--blue-soft);border-color:#cfe0ff;color:#1e40af;}
+  .chip.red{background:var(--red-soft);border-color:#f8d5d2;color:#a52a22;}
+  .chip.green{background:var(--green-soft);border-color:#c9ead9;color:#0d6b46;}
+  .foot{font-size:11px;color:var(--ink3);margin-top:8px;line-height:1.6;}
+
+  .card{
+    background:var(--card);border:1px solid var(--line);border-radius:14px;padding:13px 14px;
+    box-shadow:0 1px 2px rgba(16,24,40,.04);
+  }
+  .card h2{font-size:13px;margin:0 0 10px;color:var(--ink);letter-spacing:.5px;
+    display:flex;align-items:center;gap:6px;}
+  .card h2::before{content:"";width:3px;height:13px;background:var(--blue);border-radius:2px;}
+
+  .row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin-bottom:7px;}
+  .lbl{font-size:13px;color:var(--ink2);}
+  .val{font-size:13px;font-weight:600;font-variant-numeric:tabular-nums;color:var(--ink);
+    background:#f4f6f9;border-radius:6px;padding:2px 7px;min-width:58px;text-align:right;}
+  input[type=range]{width:100%;accent-color:var(--blue);margin:0;}
+
+  .seg{display:flex;background:#f1f4f8;border-radius:9px;padding:3px;gap:3px;}
+  .seg button{
+    flex:1;border:0;background:transparent;padding:7px 4px;border-radius:7px;
+    font-size:12.5px;color:var(--ink2);cursor:pointer;font-family:inherit;transition:.15s;
+  }
+  .seg button.on{background:#fff;color:var(--blue);font-weight:600;box-shadow:0 1px 2px rgba(16,24,40,.08);}
+
+  .knobWrap{display:flex;align-items:center;gap:12px;}
+  .knob{
+    position:relative;width:82px;height:82px;border-radius:50%;flex:0 0 auto;
+    background:radial-gradient(circle at 50% 30%,#ffffff,#eef2f8);
+    border:1px solid #d8e0ec;box-shadow:inset 0 -4px 10px rgba(16,24,40,.06),0 2px 6px rgba(16,24,40,.06);
+    cursor:grab;touch-action:none;
+  }
+  .knob.active{cursor:grabbing;}
+  .knob .ptr{
+    position:absolute;left:50%;top:7%;width:5px;height:43%;margin-left:-2.5px;
+    background:var(--blue);border-radius:3px;transform-origin:50% 100%;
+    box-shadow:0 0 0 2px rgba(37,99,235,.12);
+  }
+  .knob .hub{position:absolute;left:50%;top:50%;width:11px;height:11px;margin:-5.5px 0 0 -5.5px;
+    border-radius:50%;background:#fff;border:1px solid #c9d3e2;}
+  .knob .cap{position:absolute;left:0;right:0;bottom:-18px;text-align:center;font-size:11px;color:var(--ink3);}
+  .knobInfo{flex:1;min-width:0;}
+  .knobInfo .big{font-size:18px;font-weight:700;color:var(--ink);font-variant-numeric:tabular-nums;}
+  .knobInfo .tip{font-size:11px;color:var(--ink3);line-height:1.5;margin-top:2px;}
+  .knobBtns{display:flex;gap:6px;margin-top:7px;}
+  .kb{width:30px;height:26px;border:1px solid var(--line);background:#fff;border-radius:6px;
+    font-size:15px;color:var(--ink2);cursor:pointer;line-height:1;font-family:inherit;}
+  .kb:hover{border-color:#b9c6d8;color:var(--blue);}
+  .kb:disabled{opacity:.4;cursor:not-allowed;}
+
+  .fricTip{font-size:11px;color:#8a560f;background:var(--amber-soft);border:1px solid #f4e0c0;
+    border-radius:8px;padding:6px 9px;line-height:1.5;margin-top:7px;}
+
+  /* 四条件 */
+  .ck{display:flex;flex-direction:column;gap:7px;}
+  .ckItem{
+    display:flex;align-items:flex-start;gap:8px;font-size:12.8px;color:var(--ink2);
+    background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:7px 9px;line-height:1.5;
+  }
+  .ckItem .ic{flex:0 0 18px;height:18px;border-radius:50%;font-size:11px;line-height:18px;
+    text-align:center;font-weight:700;color:#fff;background:#c2cad6;margin-top:1px;}
+  .ckItem.ok{background:var(--green-soft);border-color:#c6e8d8;color:#0d6b46;}
+  .ckItem.ok .ic{background:var(--green);}
+  .ckItem.no{background:var(--red-soft);border-color:#f7d3d0;color:#a52a22;}
+  .ckItem.no .ic{background:var(--red);}
+  .ckItem .nm{font-weight:600;color:inherit;}
+
+  .verdict{border-radius:10px;padding:10px 12px;font-size:12.8px;line-height:1.65;margin-top:10px;}
+  .verdict.good{background:var(--green-soft);border:1px solid #c6e8d8;color:#0d6b46;}
+  .verdict.bad{background:var(--amber-soft);border:1px solid #f4e0c0;color:#8a560f;}
+  .verdict b{font-weight:700;}
+  .verdict ul{margin:6px 0 0;padding-left:17px;}
+  .verdict li{margin:2px 0;}
+
+  /* 情景卡片 */
+  .scnGrid{display:grid;grid-template-columns:1fr 1fr;gap:8px;}
+  .scn{display:flex;flex-direction:column;align-items:center;gap:2px;text-align:center;
+    border:1px solid var(--line);background:#fff;border-radius:10px;padding:8px 6px;cursor:pointer;
+    font-family:inherit;transition:.15s;}
+  .scn:hover{border-color:#b9c6d8;background:#fafcff;}
+  .scn.active{border-color:var(--blue);background:var(--blue-soft);}
+  .scnIco{width:100%;height:40px;}
+  .scnT{font-size:12.5px;font-weight:600;color:var(--ink);}
+  .scnD{font-size:10.5px;color:var(--ink3);}
+  .scnDesc{margin-top:9px;background:#f6f9ff;border:1px solid #dce7fb;border-radius:9px;
+    padding:9px 11px;font-size:12px;color:#33415a;line-height:1.6;min-height:64px;}
+  .presetRow{display:flex;gap:7px;margin-top:9px;flex-wrap:wrap;}
+  .warn{font-size:12px;color:#8a560f;background:var(--amber-soft);border:1px solid #f4e0c0;
+    border-radius:8px;padding:7px 9px;line-height:1.6;margin-top:9px;}
+
+  /* 知识点 */
+  .below{margin-top:12px;}
+  .know{font-size:12.5px;color:var(--ink2);line-height:1.7;max-height:340px;overflow:auto;padding-right:5px;}
+  .know b{color:var(--ink);}
+  .know .mn{display:flex;gap:6px;flex-wrap:wrap;margin:8px 0 4px;}
+  .know .mn span{background:var(--blue-soft);color:#1e40af;border-radius:6px;padding:3px 8px;font-weight:600;font-size:12px;}
+  .know ul.kbList{margin:4px 0 8px;padding-left:18px;}
+  .know ul.kbList li{margin:3px 0;}
+  .know .warn{margin-top:8px;}
+
+  .disabled{opacity:.45;pointer-events:none;}
+
+  @media (max-width:880px){
+    .lab{flex-direction:column;}
+    .colR{min-width:0;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <div class="hd">
+    <h1>二力平衡条件实验</h1>
+    <p class="sub">桌上的小车两端用细绳绕过定滑轮、挂上钩码，绳的拉力拉着小车。调钩码质量、扭小车、换物体，观察小车什么时候能静止——这就是要找的「二力平衡」条件。</p>
+  </div>
+
+  <div class="lab">
+    <!-- 左栏：画布 + 情景切换 -->
+    <div class="col colL">
+      <section class="stage">
+        <canvas id="cv" width="1000" height="400"></canvas>
+        <div class="readout">
+          <div class="chip blue">F₁ = <b id="rF1">0.98 N</b></div>
+          <div class="chip red">F₂ = <b id="rF2">0.98 N</b></div>
+          <div class="chip">扭转角 θ = <b id="rTh">0.0°</b></div>
+          <div class="chip">两作用线偏移 = <b id="rOff">0 mm</b></div>
+          <div class="chip">合力 ΣF = <b id="rSF">0.00 N</b></div>
+          <div class="chip green" id="rStateChip">状态：<b id="rState">静止</b></div>
+        </div>
+        <div class="foot">小车向哪侧滑动，哪一侧钩码就<b>下降</b>、另一侧钩码<b>上升</b>；桌面存在摩擦力，会使扭转的小车最终停住。可切到「无摩擦」对比。</div>
+      </section>
+
+      <div class="card">
+        <h2>一键切换情景</h2>
+        <svg width="0" height="0" style="position:absolute" aria-hidden="true"><defs>
+          <marker id="ab" markerWidth="7" markerHeight="7" refX="5.5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#2563eb"/></marker>
+          <marker id="ar" markerWidth="7" markerHeight="7" refX="5.5" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#e0463b"/></marker>
+        </defs></svg>
+        <div class="scnGrid">
+          <button class="scn" data-preset="perfect">
+            <svg class="scnIco" viewBox="0 0 64 40">
+              <rect x="25" y="22" width="14" height="9" rx="2" fill="#dbe6ff" stroke="#2563eb" stroke-width="1.4"/>
+              <line x1="23" y1="26.5" x2="9" y2="26.5" stroke="#2563eb" stroke-width="2" marker-end="url(#ab)"/>
+              <line x1="41" y1="26.5" x2="55" y2="26.5" stroke="#e0463b" stroke-width="2" marker-end="url(#ar)"/>
+              <text x="32" y="15" font-size="11" fill="#14915f" text-anchor="middle" font-family="sans-serif">✔</text>
+            </svg>
+            <span class="scnT">完美平衡</span>
+            <span class="scnD">等大·反向·共线·同物</span>
+          </button>
+          <button class="scn" data-preset="unequal">
+            <svg class="scnIco" viewBox="0 0 64 40">
+              <rect x="25" y="22" width="14" height="9" rx="2" fill="#dbe6ff" stroke="#2563eb" stroke-width="1.4"/>
+              <line x1="23" y1="26.5" x2="13" y2="26.5" stroke="#2563eb" stroke-width="2" marker-end="url(#ab)"/>
+              <line x1="41" y1="26.5" x2="58" y2="26.5" stroke="#e0463b" stroke-width="2.8" marker-end="url(#ar)"/>
+            </svg>
+            <span class="scnT">大小不等</span>
+            <span class="scnD">向重侧滑动</span>
+          </button>
+          <button class="scn" data-preset="noncol">
+            <svg class="scnIco" viewBox="0 0 64 40">
+              <g transform="rotate(-13 32 28)">
+                <rect x="25" y="22" width="14" height="9" rx="2" fill="#dbe6ff" stroke="#2563eb" stroke-width="1.4"/>
+              </g>
+              <line x1="22" y1="27" x2="8" y2="14" stroke="#2563eb" stroke-width="2" marker-end="url(#ab)"/>
+              <line x1="42" y1="27" x2="56" y2="14" stroke="#e0463b" stroke-width="2" marker-end="url(#ar)"/>
+            </svg>
+            <span class="scnT">不在同一直线</span>
+            <span class="scnD">扭转→转动</span>
+          </button>
+          <button class="scn" data-preset="twoobj">
+            <svg class="scnIco" viewBox="0 0 64 40">
+              <rect x="9" y="23" width="12" height="8" rx="2" fill="#fde7d6" stroke="#c7791a" stroke-width="1.4"/>
+              <rect x="43" y="23" width="12" height="8" rx="2" fill="#fde7d6" stroke="#c7791a" stroke-width="1.4"/>
+              <line x1="9" y1="27" x2="2" y2="27" stroke="#2563eb" stroke-width="2" marker-end="url(#ab)"/>
+              <line x1="55" y1="27" x2="62" y2="27" stroke="#e0463b" stroke-width="2" marker-end="url(#ar)"/>
+            </svg>
+            <span class="scnT">不是同一物体</span>
+            <span class="scnD">两车分离</span>
+          </button>
+        </div>
+        <div class="scnDesc" id="scnDesc">点上方任一情景，查看该情况的观察要点与易错点。</div>
+        <div class="presetRow">
+          <button class="btn" id="btnPause">⏸ 暂停（定格）</button>
+          <button class="btn" data-preset="reset">全部复位</button>
+        </div>
+        <div class="warn">
+          易错提醒：很多同学只盯着「等大、反向」，<b>忽略了「同一物体」和「同一直线」</b>——这两个条件不满足时，物体照样会动。
+        </div>
+      </div>
+    </div>
+
+    <!-- 右栏：控制 + 四条件判定 -->
+    <div class="col colR">
+      <div class="card">
+        <h2>实验控制（调大小 · 调状态）</h2>
+        <div class="row"><span class="lbl">左端钩码 m₁</span><span class="val" id="vM1">100 g</span></div>
+        <input type="range" id="sM1" min="0" max="300" step="5" value="100" />
+        <div class="row" style="margin-top:10px"><span class="lbl">右端钩码 m₂</span><span class="val" id="vM2">100 g</span></div>
+        <input type="range" id="sM2" min="0" max="300" step="5" value="100" />
+
+        <div class="row" style="margin-top:13px"><span class="lbl">受力物体</span></div>
+        <div class="seg" id="segMode">
+          <button data-mode="same" class="on">同一辆小车</button>
+          <button data-mode="two">两辆小车（分裂）</button>
+        </div>
+
+        <div class="row" style="margin-top:13px"><span class="lbl">桌面摩擦</span></div>
+        <div class="seg" id="segFric">
+          <button data-fric="on" class="on">有摩擦</button>
+          <button data-fric="off">无摩擦</button>
+        </div>
+        <div class="fricTip" id="fricTip">有摩擦：小车扭转后会因摩擦停下；无摩擦则来回摆动不停。</div>
+
+        <div class="row" style="margin-top:13px"><span class="lbl">共线旋钮（扭转角）</span></div>
+        <div class="knobWrap" id="knobWrap">
+          <div class="knob" id="knob">
+            <div class="ptr" id="knobPtr"></div>
+            <div class="hub"></div>
+            <div class="cap">拖动扭转</div>
+          </div>
+          <div class="knobInfo">
+            <div class="big" id="knobVal">0°</div>
+            <div class="tip">按住旋钮把小车扭到某个角度，<b>松手</b>后观察它是否转动</div>
+            <div class="knobBtns">
+              <button class="kb" id="knobMinus">−</button>
+              <button class="kb" id="knobPlus">+</button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>四条件自动判定（调完即看）</h2>
+        <div class="ck">
+          <div class="ckItem" id="ck1"><span class="ic">?</span><span><span class="nm">作用在同一物体上</span>（同物）</span></div>
+          <div class="ckItem" id="ck2"><span class="ic">?</span><span><span class="nm">大小相等</span>（等大）</span></div>
+          <div class="ckItem" id="ck3"><span class="ic">?</span><span><span class="nm">方向相反</span>（反向）</span></div>
+          <div class="ckItem" id="ck4"><span class="ic">?</span><span><span class="nm">作用在同一直线上</span>（共线）</span></div>
+        </div>
+        <div class="verdict" id="verdict">等待操作…</div>
+      </div>
+    </div>
+  </div>
+
+  <div class="below">
+    <div class="card">
+      <h2>知识点</h2>
+      <div class="know">
+        <b>什么是二力平衡？</b><br>
+        作用在同一个物体上的两个力，如果<b>大小相等、方向相反、作用在同一条直线上</b>，这两个力就彼此平衡，合力为 0，物体保持<b>静止或匀速直线运动</b>。
+        <div class="mn"><span>① 同物</span><span>② 等大</span><span>③ 反向</span><span>④ 共线</span></div>
+
+        <b>四条条件，缺一不可：</b>
+        <ul class="kbList">
+          <li><b>同一物体</b>：两个力必须作用在同一个物体上。两个物体之间的相互作用（如甲拉乙、乙拉甲）不能互相平衡。</li>
+          <li><b>大小相等</b>：F₁ = F₂ = mg（钩码重力）。一旦不等，合力就不为 0。</li>
+          <li><b>方向相反</b>：两力沿同一直线、指向相反。</li>
+          <li><b>同一直线</b>：两力作用线重合。若错开，就形成<b>力偶</b>，使物体转动。</li>
+        </ul>
+
+        <b>本实验为什么这样设计？</b><br>
+        两端定滑轮把钩码的<b>竖直向下重力</b>转成小车受到的<b>水平拉力</b>，拉力大小等于钩码重力 mg；换更重的钩码，拉力就更大——所以调钩码质量就能改变力的大小。
+
+        <div class="warn">易错点：同学们常只记「等大、反向」，却漏掉「同一物体」和「同一直线」。本仿真里：换成两辆小车 → 力落在不同物体上；扭转小车 → 两力不再共线，都会立刻“不平衡”。</div>
+
+        <b>关于桌面摩擦：</b><br>
+        真实桌面有摩擦力。小车被扭转后，正是<b>摩擦力让它最终停在两力共线处</b>；若切到「无摩擦」，小车会像单摆一样来回摆动、永不停止——这反而更清楚地说明：<b>共线位置才是平衡位置</b>。
+
+        <b>生活里的二力平衡：</b><br>
+        静止在桌面上的书（重力 ↓ 与支持力 ↑）、悬挂的灯笼、匀速上升的电梯（拉力 = 重力）。注意：汽车匀速行驶时受四个力平衡，那是“多力平衡”，不在本课范围。
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ============================ 画布 ============================ */
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+const W = 1000, H = 400;
+function fitCanvas(){
+  const dpr = Math.min(2, window.devicePixelRatio || 1);
+  cv.width = Math.round(W * dpr);
+  cv.height = Math.round(H * dpr);
+  cv.style.width = '100%';
+  cv.style.height = 'auto';
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+}
+fitCanvas();
+window.addEventListener('resize', fitCanvas);
+
+/* ============================ 场景几何（正视实验装置，已缩小） ============================ */
+const SC = 215;                       // 像素/米（较此前缩小）
+const CX0 = 500, CY0 = 70;            // 小车质心初始屏幕位置（= 挂钩水平段高度）
+const DESK_HL = 1.15, DESK_D = 0.50;  // 桌面半长、深度（m）
+const DESK_WY = -0.07;                // 桌面顶面高度（= 车轮底 -Hh/2，使小车稳坐桌面）
+const DESK_TH = 16;                   // 桌面板厚度（px）
+const CAB_B = 388;                    // 桌柜底（填满画布下部）
+const PUL_LX = 206, PUL_RX = 794, PUL_Y = CY0, PUL_R = 13;
+const HANG_LX = 194, HANG_RX = 806;   // 钩码竖直绳
+const HANG_Y0 = 210;                  // 钩码中心基准高度
+const CART_L = 0.30, CART_W = 0.20, CART_H = 0.14, CART_M = 1.00;
+const HL = CART_L / 2, HL2 = CART_L / 4, SEP = 0.08;
+const G = 9.8;
+const MAX_X = 0.43;                    // 有摩擦时小车到桌沿即被挡停
+const MAX_X_FREE = 0.86;               // 无摩擦时允许滑到桌面更远处（钩码仍在画布内）
+const Ic = CART_M * (CART_L*CART_L + CART_W*CART_W) / 12;
+const Pm = (CX0 - PUL_LX) / SC;
+const COL_TOL_DEG = 3;
+const MU_FRI = 0.03;                  // 有摩擦时的等效摩擦系数
+const ANG_DAMP = 3.0;                 // 有摩擦时的角阻尼系数（1/s）
+const KX = 0.45, KY = 0.38;          // 立体斜投影系数（深度方向）
+
+/* ============================ 状态 ============================ */
+const S = {
+  m1: 0.10, m2: 0.10,
+  mode: 'same',
+  friction: true,
+  theta: 0, omega: 0,
+  xC: 0, vC: 0,
+  dA: 0, vA: 0, dB: 0, vB: 0,
+  held: false, paused: false,
+  T1: 0, T2: 0, Fx: 0, tau: 0, offset: 0,
+  atEdge: false
+};
+
+/* ============================ 数学 ============================ */
+function clamp(v, a, b){ return v < a ? a : (v > b ? b : v); }
+function rotY(x, z, th){                 // 俯视平面内绕竖直轴旋转
+  const c = Math.cos(th), s = Math.sin(th);
+  return { x: x*c - z*s, z: x*s + z*c };
+}
+function proj(wx, wy, wz){               // 斜投影：wx 水平、wy 竖直(上正)、wz 深度(远正)
+  return { x: CX0 + wx*SC + wz*SC*KX, y: CY0 - wy*SC - wz*SC*KY };
+}
+
+/* ============================ 几何 ============================ */
+function geom(){
+  const r1 = rotY(S.mode === 'same' ? -HL : -HL2, 0, S.theta);
+  const r2 = rotY(S.mode === 'same' ?  HL :  HL2, 0, S.theta);
+  const cxA = S.mode === 'same' ? S.xC : (-SEP + S.dA);
+  const cxB = S.mode === 'same' ? S.xC : ( SEP + S.dB);
+  const a1 = { x: cxA + r1.x, z: r1.z };
+  const a2 = { x: cxB + r2.x, z: r2.z };
+  const P1 = { x: -Pm, z: 0 }, P2 = { x: Pm, z: 0 };
+  const l1 = Math.hypot(P1.x - a1.x, P1.z - a1.z) || 1e-9;
+  const l2 = Math.hypot(P2.x - a2.x, P2.z - a2.z) || 1e-9;
+  const u1 = { x: (P1.x - a1.x)/l1, z: (P1.z - a1.z)/l1 };
+  const u2 = { x: (P2.x - a2.x)/l2, z: (P2.z - a2.z)/l2 };
+  const off = Math.abs((a2.x - a1.x)*u1.z - (a2.z - a1.z)*u1.x);
+  return { cxA: cxA, cxB: cxB, r1: r1, r2: r2, a1: a1, a2: a2, u1: u1, u2: u2, off: off };
+}
+
+/* ============================ 物理步进 ============================ */
+function step(dt){
+  const g = geom();
+  const mu = S.friction ? MU_FRI : 0;
+  const xMax = S.friction ? MAX_X : MAX_X_FREE;
+  if(S.mode === 'same'){
+    const a = (S.m2 - S.m1) * G / (CART_M + S.m1 + S.m2);
+    const T1 = S.m1 * G, T2 = S.m2 * G;
+    S.T1 = T1; S.T2 = T2;
+    const F1 = { x: T1*g.u1.x, z: T1*g.u1.z };
+    const F2 = { x: T2*g.u2.x, z: T2*g.u2.z };
+    // 内部仅用于驱动「不共线→转动」这一可观察现象（不向学生展示任何力矩数值）
+    S.tau = (g.r1.x*F1.z - g.r1.z*F1.x) + (g.r2.x*F2.z - g.r2.z*F2.x);
+    S.Fx  = F1.x + F2.x;
+    S.offset = g.off;
+
+    let acc = a - mu*G*Math.sign(S.vC);
+    S.vC += acc * dt;
+    if(Math.abs(S.vC) < 0.006 && Math.abs(a) < mu*G) S.vC = 0;
+    S.xC += S.vC * dt;
+    S.atEdge = false;
+    // 有摩擦：滑到边缘被挡住停下；无摩擦：不归零速度，让它继续滑（桌面尽头前都算"还在动"）
+    if(S.xC >  xMax){ S.xC =  xMax; if(S.friction) S.vC = 0; S.atEdge = true; }
+    if(S.xC < -xMax){ S.xC = -xMax; if(S.friction) S.vC = 0; S.atEdge = true; }
+
+    S.omega += (S.tau / Ic) * dt;
+    S.omega *= S.friction ? Math.exp(-ANG_DAMP * dt) : 1;
+    S.theta += S.omega * dt;
+    if(S.friction && Math.abs(S.omega) < 0.09 && Math.abs(S.theta) < 0.09){
+      S.omega *= Math.exp(-9 * dt);
+      S.theta -= S.theta * Math.min(1, 5 * dt);
+      if(Math.abs(S.theta) < 0.0015 && Math.abs(S.omega) < 0.02){ S.theta = 0; S.omega = 0; }
+    }
+    if(S.theta >  Math.PI) S.theta -= 2*Math.PI;
+    if(S.theta < -Math.PI) S.theta += 2*Math.PI;
+  }else{
+    const half = CART_M / 2;
+    const aL = S.m1 * G / (half + S.m1);
+    const aR = S.m2 * G / (half + S.m2);
+    S.T1 = S.m1 * G; S.T2 = S.m2 * G;
+    S.tau = NaN; S.Fx = NaN; S.offset = g.off; S.atEdge = false;
+
+    S.vA += (-aL) * dt;
+    S.vA -= mu*G*Math.sign(S.vA) * dt;
+    if(Math.abs(S.vA) < 0.006 && aL < mu*G) S.vA = 0;
+    S.dA += S.vA * dt;
+    if(S.dA < -xMax){ S.dA = -xMax; if(S.friction) S.vA = 0; S.atEdge = true; }
+
+    S.vB += ( aR) * dt;
+    S.vB -= mu*G*Math.sign(S.vB) * dt;
+    if(Math.abs(S.vB) < 0.006 && aR < mu*G) S.vB = 0;
+    S.dB += S.vB * dt;
+    if(S.dB > xMax){ S.dB = xMax; if(S.friction) S.vB = 0; S.atEdge = true; }
+  }
+}
+
+function refreshOutputs(){
+  const g = geom();
+  S.T1 = S.m1 * G; S.T2 = S.m2 * G; S.offset = g.off;
+  const F1 = { x: S.T1*g.u1.x, z: S.T1*g.u1.z };
+  const F2 = { x: S.T2*g.u2.x, z: S.T2*g.u2.z };
+  if(S.mode === 'same'){
+    S.Fx  = F1.x + F2.x;
+    S.tau = (g.r1.x*F1.z - g.r1.z*F1.x) + (g.r2.x*F2.z - g.r2.z*F2.x);
+  }
+}
+
+/* ============================ 绘图工具 ============================ */
+function rr(x, y, w, h, r){
+  r = Math.min(r, w/2, h/2);
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.arcTo(x+w, y,     x+w, y+h, r);
+  ctx.arcTo(x+w, y+h,   x,   y+h, r);
+  ctx.arcTo(x,   y+h,   x,   y,   r);
+  ctx.arcTo(x,   y,     x+w, y,   r);
+  ctx.closePath();
+}
+function arrow(x1, y1, dx, dy, len, color, width){
+  const ex = x1 + dx*len, ey = y1 + dy*len;
+  ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = width; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(ex, ey); ctx.stroke();
+  const a = Math.atan2(dy, dx), hs = width*3.1;
+  ctx.beginPath();
+  ctx.moveTo(ex, ey);
+  ctx.lineTo(ex - hs*Math.cos(a - 0.42), ey - hs*Math.sin(a - 0.42));
+  ctx.lineTo(ex - hs*Math.cos(a + 0.42), ey - hs*Math.sin(a + 0.42));
+  ctx.closePath(); ctx.fill();
+}
+function dashedLine(x1, y1, x2, y2, color, dash, width){
+  ctx.save();
+  ctx.setLineDash(dash || [7, 6]);
+  ctx.strokeStyle = color; ctx.lineWidth = width || 1.4;
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  ctx.restore();
+}
+function mix(c1, c2, t){
+  const p = function(c){
+    return [parseInt(c.slice(1,3),16), parseInt(c.slice(3,5),16), parseInt(c.slice(5,7),16)];
+  };
+  const a = p(c1), b = p(c2);
+  return 'rgb(' + Math.round(a[0] + (b[0]-a[0])*t) + ',' +
+                  Math.round(a[1] + (b[1]-a[1])*t) + ',' +
+                  Math.round(a[2] + (b[2]-a[2])*t) + ')';
+}
+
+/* ============================ 实验桌（桌柜填满下部） ============================ */
+function drawDesk(){
+  const gg = ctx.createLinearGradient(0, CAB_B, 0, H);
+  gg.addColorStop(0, 'rgba(120,134,156,.16)'); gg.addColorStop(1, 'rgba(120,134,156,0)');
+  ctx.fillStyle = gg; ctx.fillRect(0, CAB_B, W, H - CAB_B);
+  ctx.strokeStyle = '#c6cfdd'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.moveTo(0, CAB_B); ctx.lineTo(W, CAB_B); ctx.stroke();
+
+  const fl = proj(-DESK_HL, DESK_WY, -DESK_D/2);
+  const fr = proj( DESK_HL, DESK_WY, -DESK_D/2);
+  const br = proj( DESK_HL, DESK_WY,  DESK_D/2);
+  const bl = proj(-DESK_HL, DESK_WY,  DESK_D/2);
+
+  const cabL = fl.x + 22, cabR = fr.x - 22, cabT = fl.y + DESK_TH;
+  rr(cabL, cabT, cabR - cabL, CAB_B - cabT, 5);
+  const gc = ctx.createLinearGradient(0, cabT, 0, CAB_B);
+  gc.addColorStop(0, '#e9edf4'); gc.addColorStop(1, '#dde3ed');
+  ctx.fillStyle = gc; ctx.fill();
+  ctx.strokeStyle = '#c8d2e0'; ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.strokeStyle = '#cfd8e6'; ctx.lineWidth = 1;
+  [cabT + 70, cabT + 140].forEach(function(y){
+    ctx.beginPath(); ctx.moveTo(cabL + 26, y); ctx.lineTo(cabR - 26, y); ctx.stroke();
+  });
+  ctx.strokeStyle = '#bcc8d9';
+  [cabL + (cabR - cabL)/3, cabL + (cabR - cabL)*2/3].forEach(function(x){
+    ctx.beginPath(); ctx.moveTo(x, cabT + 70); ctx.lineTo(x, CAB_B); ctx.stroke();
+  });
+  ctx.font = '12px "Microsoft YaHei",sans-serif';
+  ctx.fillStyle = '#9aa6b7'; ctx.textAlign = 'center';
+  ctx.fillText('实 验 桌', (cabL + cabR)/2, cabT + 188);
+
+  ctx.beginPath();
+  ctx.moveTo(fl.x, fl.y); ctx.lineTo(fr.x, fr.y);
+  ctx.lineTo(fr.x, fr.y + DESK_TH); ctx.lineTo(fl.x, fl.y + DESK_TH);
+  ctx.closePath();
+  ctx.fillStyle = '#dde3ed'; ctx.fill();
+  ctx.strokeStyle = '#b0bccd'; ctx.lineWidth = 1.2; ctx.stroke();
+
+  ctx.beginPath();
+  ctx.moveTo(fl.x, fl.y); ctx.lineTo(fr.x, fr.y);
+  ctx.lineTo(br.x, br.y); ctx.lineTo(bl.x, bl.y);
+  ctx.closePath();
+  const gd = ctx.createLinearGradient(0, br.y, 0, fl.y);
+  gd.addColorStop(0, '#f2f6fb'); gd.addColorStop(1, '#e8edf5');
+  ctx.fillStyle = gd; ctx.fill();
+  ctx.strokeStyle = '#b7c3d4'; ctx.lineWidth = 1.5; ctx.stroke();
+
+  ctx.strokeStyle = '#aab5c6'; ctx.lineWidth = 1;
+  for(let i = -4; i <= 4; i++){
+    const p = proj(i*0.1, DESK_WY, -DESK_D*0.36);
+    const q = proj(i*0.1, DESK_WY, -DESK_D*0.20);
+    ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(q.x, q.y); ctx.stroke();
+  }
+  ctx.font = '10px "Microsoft YaHei",sans-serif';
+  ctx.fillStyle = '#9aa6b7'; ctx.textAlign = 'center';
+  const z0 = proj(0, DESK_WY, -DESK_D*0.14);
+  ctx.fillText('0', z0.x, z0.y + 3);
+  ctx.textAlign = 'right';
+  ctx.fillText('水平桌面（每格 10 cm）', br.x - 6, br.y + 14);
+}
+
+/* ============================ 滑轮 ============================ */
+function deskEdgeX(y, side){
+  const a = proj(side < 0 ? -DESK_HL : DESK_HL, DESK_WY, -DESK_D/2);   // 前下角
+  const b = proj(side < 0 ? -DESK_HL : DESK_HL, DESK_WY,  DESK_D/2);   // 后上角
+  const t = (a.y - y) / (a.y - b.y);
+  return a.x + t * (b.x - a.x);
+}
+function drawPulleys(){
+  const barY = PUL_Y + 34;
+  [[PUL_LX, 1], [PUL_RX, -1]].forEach(function(p){
+    const px = p[0], dir = p[1];
+    const edgeX = deskEdgeX(barY, dir);
+    ctx.strokeStyle = '#9fabbd'; ctx.lineWidth = 3.5; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(px, PUL_Y + PUL_R); ctx.lineTo(px, barY); ctx.stroke();
+    ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(px, barY); ctx.lineTo(edgeX, barY); ctx.stroke();
+    ctx.beginPath(); ctx.arc(px, PUL_Y, PUL_R, 0, Math.PI*2);
+    ctx.fillStyle = '#dde4ef'; ctx.fill();
+    ctx.strokeStyle = '#8f9caf'; ctx.lineWidth = 2; ctx.stroke();
+    ctx.beginPath(); ctx.arc(px, PUL_Y, PUL_R - 3, 0, Math.PI*2);
+    ctx.strokeStyle = 'rgba(125,139,158,.45)'; ctx.lineWidth = 1; ctx.stroke();
+    ctx.beginPath(); ctx.arc(px, PUL_Y, 2.8, 0, Math.PI*2);
+    ctx.fillStyle = '#7d8b9e'; ctx.fill();
+    ctx.font = '10px "Microsoft YaHei",sans-serif';
+    ctx.fillStyle = '#94a0b1'; ctx.textAlign = 'center';
+    ctx.fillText('定滑轮', px, PUL_Y - PUL_R - 7);
+  });
+}
+
+/* ============================ 绳 / 钩码 ============================ */
+function drawStrings(g){
+  const hk1 = proj(g.a1.x, 0, g.a1.z);
+  const hk2 = proj(g.a2.x, 0, g.a2.z);
+  // 小车向哪侧滑动，哪侧钩码下降、对侧上升：
+  // 同一物体：位移均为 xC（车右移→左绳变长→左钩上升、右绳变短→右钩下降）
+  // 两个物体：左车位移 dA、右车位移 dB（各向自身滑轮靠近时该侧钩码下降）
+  const dispA = (S.mode === 'same') ? S.xC : S.dA;
+  const dispB = (S.mode === 'same') ? S.xC : S.dB;
+  const hyA = HANG_Y0 - dispA * SC;
+  const hyB = HANG_Y0 + dispB * SC;
+  ctx.strokeStyle = '#96a1b2'; ctx.lineWidth = 1.6; ctx.lineJoin = 'round';
+  ctx.beginPath(); ctx.moveTo(hk1.x, hk1.y); ctx.lineTo(PUL_LX, PUL_Y); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(hk2.x, hk2.y); ctx.lineTo(PUL_RX, PUL_Y); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(HANG_LX, PUL_Y + 2); ctx.lineTo(HANG_LX, hyA - 14); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(HANG_RX, PUL_Y + 2); ctx.lineTo(HANG_RX, hyB - 14); ctx.stroke();
+  return { hk1: hk1, hk2: hk2, hyA: hyA, hyB: hyB };
+}
+function drawHang(hy){
+  drawOneHang(HANG_LX, hy.hyA, S.m1, 'm₁', '#2563eb');
+  drawOneHang(HANG_RX, hy.hyB, S.m2, 'm₂', '#e0463b');
+}
+function drawOneHang(x, y, m, tag, color){
+  if(m <= 0.0001){
+    ctx.font = '10px "Microsoft YaHei",sans-serif';
+    ctx.fillStyle = '#aab4c3'; ctx.textAlign = 'center';
+    ctx.fillText('未挂钩码', x, y + 4);
+    return;
+  }
+  const w = 36, h = 26;
+  rr(x - w/2, y - h/2, w, h, 5);
+  ctx.fillStyle = '#f7f9fc'; ctx.fill();
+  ctx.strokeStyle = color; ctx.lineWidth = 1.7; ctx.stroke();
+  ctx.fillStyle = color; ctx.fillRect(x - w/2 + 5, y - 5, 4, 10);
+  ctx.font = 'bold 11px "Microsoft YaHei",sans-serif';
+  ctx.fillStyle = '#3b4657'; ctx.textAlign = 'center';
+  ctx.fillText(Math.round(m*1000) + ' g', x, y + h/2 + 13);
+  ctx.font = '10px "Microsoft YaHei",sans-serif';
+  ctx.fillStyle = '#98a3b3';
+  ctx.fillText(tag, x, y + h/2 + 25);
+}
+
+/* ============================ 立体小车 ============================ */
+function drawCart3D(cxWorld, th, L, Wd, Hh, color, label){
+  const cx = CX0 + cxWorld * SC;
+  const base = [[-L/2, -Wd/2], [L/2, -Wd/2], [L/2, Wd/2], [-L/2, Wd/2]];
+  const top = [], bot = [], cz = [];
+  base.forEach(function(p){
+    const r = rotY(p[0], p[1], th);
+    top.push(proj(cxWorld + r.x,  Hh/2, r.z));
+    bot.push(proj(cxWorld + r.x, -Hh/2, r.z));
+    cz.push(r.z);
+  });
+  const faces = [];
+  for(let i = 0; i < 4; i++) faces.push({ i: i, j: (i + 1) % 4, d: (cz[i] + cz[(i+1)%4]) / 2 });
+  faces.sort(function(a, b){ return b.d - a.d; });      // 远 → 近
+  faces.forEach(function(f){
+    const nz = (base[f.i][1] + base[f.j][1]) / 2;
+    const nx = (base[f.i][0] + base[f.j][0]) / 2;
+    const rn = rotY(nx, nz, th);
+    const b = clamp(1 - 0.55 * (rn.z / Math.max(Wd, L)), 0.55, 1);
+    ctx.beginPath();
+    ctx.moveTo(top[f.i].x, top[f.i].y);
+    ctx.lineTo(top[f.j].x, top[f.j].y);
+    ctx.lineTo(bot[f.j].x, bot[f.j].y);
+    ctx.lineTo(bot[f.i].x, bot[f.i].y);
+    ctx.closePath();
+    ctx.fillStyle = mix(color, '#ffffff', 0.55 * b);
+    ctx.fill();
+    ctx.strokeStyle = color; ctx.lineWidth = 1.6; ctx.stroke();
+  });
+  ctx.beginPath();
+  ctx.moveTo(top[0].x, top[0].y);
+  for(let i = 1; i < 4; i++) ctx.lineTo(top[i].x, top[i].y);
+  ctx.closePath();
+  ctx.fillStyle = mix(color, '#ffffff', 0.82);
+  ctx.fill();
+  ctx.strokeStyle = color; ctx.lineWidth = 1.8; ctx.stroke();
+  const ra = rotY(-L/2, 0, th), rb = rotY(L/2, 0, th);
+  const ma = proj(cxWorld + ra.x, Hh/2, ra.z), mb = proj(cxWorld + rb.x, Hh/2, rb.z);
+  ctx.save();
+  ctx.setLineDash([5, 4]);
+  ctx.strokeStyle = 'rgba(90,105,130,.45)'; ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.moveTo(ma.x, ma.y); ctx.lineTo(mb.x, mb.y); ctx.stroke();
+  ctx.restore();
+  const wheels = [];
+  [[-L*0.32, -Wd/2], [L*0.32, -Wd/2]].forEach(function(p){
+    const r = rotY(p[0], p[1], th);
+    wheels.push({ p: proj(cxWorld + r.x, -Hh/2, r.z), d: r.z });
+  });
+  wheels.sort(function(a, b){ return b.d - a.d; });
+  wheels.forEach(function(w){
+    ctx.beginPath(); ctx.arc(w.p.x, w.p.y, 8, 0, Math.PI*2);
+    ctx.fillStyle = '#7f8b9c'; ctx.fill();
+    ctx.strokeStyle = '#5f6b7c'; ctx.lineWidth = 1.4; ctx.stroke();
+    ctx.beginPath(); ctx.arc(w.p.x, w.p.y, 3, 0, Math.PI*2);
+    ctx.fillStyle = '#dfe5ee'; ctx.fill();
+  });
+  if(label){
+    ctx.font = 'bold 12px "Microsoft YaHei",sans-serif';
+    ctx.fillStyle = '#5b6779'; ctx.textAlign = 'center';
+    ctx.fillText(label, cx, CY0 - Hh/2*SC - 12);
+  }
+}
+function drawCarts(){
+  if(S.mode === 'same'){
+    drawCart3D(S.xC, S.theta, CART_L, CART_W, CART_H, '#2563eb', '小车');
+  }else{
+    drawCart3D(-SEP + S.dA, S.theta, CART_L/2, CART_W, CART_H, '#c7791a', '小车 A');
+    drawCart3D( SEP + S.dB, S.theta, CART_L/2, CART_W, CART_H, '#c7791a', '小车 B');
+  }
+}
+
+/* ============================ 作用线 / 力矢量 ============================ */
+function norm(dx, dy){
+  const l = Math.hypot(dx, dy) || 1e-9;
+  return { x: dx/l, y: dy/l };
+}
+function drawActionLines(g, hk){
+  const EXT = 1000;
+  const collinear = g.off < 0.008;
+  const d1 = norm(PUL_LX - hk.hk1.x, PUL_Y - hk.hk1.y);
+  const d2 = norm(PUL_RX - hk.hk2.x, PUL_Y - hk.hk2.y);
+  ctx.save();
+  ctx.setLineDash([8, 6]);
+  ctx.lineWidth = collinear ? 3 : 1.6;
+  ctx.strokeStyle = collinear ? 'rgba(20,145,95,.5)' : 'rgba(120,130,148,.45)';
+  ctx.beginPath();
+  ctx.moveTo(hk.hk1.x - d1.x*EXT, hk.hk1.y - d1.y*EXT);
+  ctx.lineTo(hk.hk1.x + d1.x*EXT, hk.hk1.y + d1.y*EXT);
+  ctx.stroke();
+  if(!collinear){
+    ctx.strokeStyle = 'rgba(120,130,148,.45)';
+    ctx.beginPath();
+    ctx.moveTo(hk.hk2.x - d2.x*EXT, hk.hk2.y - d2.y*EXT);
+    ctx.lineTo(hk.hk2.x + d2.x*EXT, hk.hk2.y + d2.y*EXT);
+    ctx.stroke();
+  }
+  ctx.restore();
+  [[hk.hk1, '#2563eb'], [hk.hk2, '#e0463b']].forEach(function(p){
+    ctx.beginPath(); ctx.arc(p[0].x, p[0].y, 4, 0, Math.PI*2);
+    ctx.fillStyle = p[1]; ctx.fill();
+    ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.6; ctx.stroke();
+  });
+  return { d1: d1, d2: d2 };
+}
+function drawForces(hk, dirs){
+  const k = 44;
+  const l1 = clamp(S.T1 * k, 0, 160);
+  const l2 = clamp(S.T2 * k, 0, 160);
+  if(l1 > 4){
+    arrow(hk.hk1.x, hk.hk1.y, dirs.d1.x, dirs.d1.y, l1, '#2563eb', 4);
+    ctx.font = 'bold 13px "Microsoft YaHei",sans-serif';
+    ctx.fillStyle = '#2563eb'; ctx.textAlign = 'center';
+    ctx.fillText('F₁', hk.hk1.x + dirs.d1.x*l1*0.60, hk.hk1.y + dirs.d1.y*l1*0.60 - 16);
+  }
+  if(l2 > 4){
+    arrow(hk.hk2.x, hk.hk2.y, dirs.d2.x, dirs.d2.y, l2, '#e0463b', 4);
+    ctx.font = 'bold 13px "Microsoft YaHei",sans-serif';
+    ctx.fillStyle = '#e0463b'; ctx.textAlign = 'center';
+    ctx.fillText('F₂', hk.hk2.x + dirs.d2.x*l2*0.60, hk.hk2.y + dirs.d2.y*l2*0.60 - 16);
+  }
+  if(l1 <= 4 && l2 <= 4){
+    ctx.font = '13px "Microsoft YaHei",sans-serif';
+    ctx.fillStyle = '#93a0b1'; ctx.textAlign = 'center';
+    ctx.fillText('两端均未挂钩码，没有拉力作用', CX0, CY0 - 60);
+  }
+}
+
+function drawBadge(){
+  const ok = conds().all;
+  const txt = ok ? '二力平衡 ✔  合力 = 0' : '不平衡';
+  ctx.font = 'bold 12px "Microsoft YaHei",sans-serif';
+  ctx.textAlign = 'right';
+  const w = ctx.measureText(txt).width + 20;
+  rr(W - 18 - w, 12, w, 26, 8);
+  ctx.fillStyle = ok ? '#e7f6ef' : '#fdf3e2'; ctx.fill();
+  ctx.strokeStyle = ok ? '#bfe6d2' : '#f2ddba'; ctx.lineWidth = 1.2; ctx.stroke();
+  ctx.fillStyle = ok ? '#0d6b46' : '#8a560f';
+  ctx.fillText(txt, W - 28, 29);
+}
+
+/* ============================ 判定 ============================ */
+function conds(){
+  const g = geom();
+  const sameObj = S.mode === 'same';
+  const F1 = S.m1 * G, F2 = S.m2 * G;
+  const c1 = sameObj;
+  const c2 = Math.abs(F1 - F2) < 1e-6;
+  const c3 = (g.u1.x * g.u2.x + g.u1.z * g.u2.z) < -0.9;
+  const c4 = g.off < 0.008 && Math.abs(S.theta) < COL_TOL_DEG * Math.PI / 180;
+  const hasForce = S.m1 > 1e-6 && S.m2 > 1e-6;
+  return { c1: c1, c2: c2, c3: c3, c4: c4, all: hasForce && c1 && c2 && c3 && c4,
+           hasForce: hasForce, F1: F1, F2: F2, off: g.off };
+}
+
+/* ============================ DOM 更新 ============================ */
+const el = {
+  m1: document.getElementById('sM1'), m2: document.getElementById('sM2'),
+  vM1: document.getElementById('vM1'), vM2: document.getElementById('vM2'),
+  knobVal: document.getElementById('knobVal'), knobPtr: document.getElementById('knobPtr'),
+  rF1: document.getElementById('rF1'), rF2: document.getElementById('rF2'),
+  rTh: document.getElementById('rTh'), rOff: document.getElementById('rOff'),
+  rSF: document.getElementById('rSF'),
+  rState: document.getElementById('rState'), rStateChip: document.getElementById('rStateChip'),
+  verdict: document.getElementById('verdict'),
+  scnDesc: document.getElementById('scnDesc'),
+  fricTip: document.getElementById('fricTip'),
+  ck: [document.getElementById('ck1'), document.getElementById('ck2'),
+       document.getElementById('ck3'), document.getElementById('ck4')]
+};
+function setCk(node, ok){
+  node.className = 'ckItem ' + (ok ? 'ok' : 'no');
+  node.querySelector('.ic').textContent = ok ? '✓' : '✕';
+}
+function updateUI(){
+  const c = conds();
+  const deg = S.theta * 180 / Math.PI;
+  el.rF1.textContent = c.F1.toFixed(2) + ' N';
+  el.rF2.textContent = c.F2.toFixed(2) + ' N';
+  el.rTh.textContent = deg.toFixed(1) + '°';
+  el.rOff.textContent = Math.round(c.off * 1000) + ' mm';
+  if(S.mode === 'same'){
+    el.rSF.textContent = S.Fx.toFixed(2) + ' N';
+  }else{
+    el.rSF.textContent = '—（分属两物体）';
+  }
+  let st = '静止';
+  if(S.paused) st = '已暂停（定格）';
+  else if(S.held) st = '手扶中（未释放）';
+  else if(S.mode === 'same'){
+    if(Math.abs(S.omega) > 0.05) st = '转动中 ω=' + (S.omega*180/Math.PI).toFixed(0) + '°/s';
+    else if(Math.abs(S.vC) > 0.006) st = (S.vC > 0 ? '向右滑动 ' : '向左滑动 ') + Math.abs(S.vC).toFixed(2) + ' m/s';
+    else if(S.atEdge) st = S.friction ? '已滑到桌面边缘停下' : '已滑到桌面尽头（无摩擦仍想继续冲出）';
+  }else{
+    if(Math.abs(S.vA) > 0.006 || Math.abs(S.vB) > 0.006) st = '两车背向分离';
+    else if(S.atEdge) st = S.friction ? '两车已滑到桌面两端停下' : '两车已冲到桌面两端（无摩擦仍想继续分离）';
+    else st = '两车保持静止';
+  }
+  el.rState.textContent = st;
+  el.rStateChip.className = 'chip ' + (c.all && st === '静止' ? 'green' : (st === '静止' ? '' : 'red'));
+
+  setCk(el.ck[0], c.c1); setCk(el.ck[1], c.c2);
+  setCk(el.ck[2], c.c3); setCk(el.ck[3], c.c4);
+
+  let html = '';
+  if(!c.hasForce){
+    html = '<b>当前状态</b>：至少一端没有挂钩码，小车没有受到两个拉力，请先挂上钩码。';
+  }else if(c.all){
+    html = '<b>结论：二力平衡 ✔</b><br>四个条件全部满足 → 合力为 0，小车保持静止（或匀速直线运动）。' +
+      (S.friction ? '桌面摩擦让它稳稳停住。' : '无摩擦但合力为 0，本就该静止。');
+  }else{
+    const miss = [];
+    if(!c.c1) miss.push('两个力分别作用在<b>不同物体</b>上');
+    if(!c.c2) miss.push('两个力<b>大小不相等</b>（ΔF = ' + Math.abs(c.F1 - c.F2).toFixed(2) + ' N）');
+    if(!c.c3) miss.push('两个力<b>方向不相反</b>');
+    if(!c.c4) miss.push('两个力<b>不在同一直线上</b>（扭转 ' + Math.abs(deg).toFixed(0) + '°，两条作用线错开 ' + Math.round(c.off*1000) + ' mm）');
+    html = '<b>结论：不平衡 ✕</b>（缺 ' + miss.length + ' 条）<ul>';
+    miss.forEach(function(m){ html += '<li>' + m + '</li>'; });
+    html += '</ul><b>现象</b>：' + (function(){
+      if(!c.c1) return '两辆小车各自被拉走 → <b>相互分离</b>，谁也没有被对方“平衡”掉。';
+      if(!c.c2) return '合力不为 0，小车向<b>钩码更重的一侧滑动</b>（重侧钩码下降、轻侧钩码上升）。';
+      if(!c.c4) return '两个力不在同一直线上，小车会<b>转动</b>；' +
+        (S.friction ? '摩擦使它转回两力共线处才停下。' : '无摩擦则像单摆一样来回摆动、永不停止。');
+      return '小车无法保持静止。';
+    })();
+  }
+  if(el.verdict.dataset.k !== html){
+    el.verdict.dataset.k = html;
+    el.verdict.innerHTML = html;
+  }
+  el.verdict.className = 'verdict ' + (c.all && c.hasForce ? 'good' : 'bad');
+}
+
+/* ============================ 主循环 ============================ */
+let last = performance.now(), acc = 0;
+function loop(now){
+  let dt = (now - last) / 1000; last = now;
+  if(dt > 0.25) dt = 0.25;
+  if(!S.held && !S.paused){
+    acc += dt;
+    const h = 1/240;
+    let guard = 0;
+    while(acc >= h && guard++ < 400){ step(h); acc -= h; }
+  }else{ acc = 0; }
+  refreshOutputs();
+  render();
+  updateUI();
+  requestAnimationFrame(loop);
+}
+function render(){
+  ctx.clearRect(0, 0, W, H);
+  ctx.fillStyle = '#fbfcfe'; ctx.fillRect(0, 0, W, H);
+  drawDesk();
+  const g = geom();
+  drawCarts();
+  const hk = drawStrings(g);
+  const dirs = drawActionLines(g, hk);
+  drawForces(hk, dirs);
+  drawPulleys();
+  drawHang(hk);
+  drawBadge();
+}
+requestAnimationFrame(loop);
+
+/* ============================ 交互 ============================ */
+el.m1.addEventListener('input', function(){
+  S.m1 = (+el.m1.value) / 1000;
+  el.vM1.textContent = el.m1.value + ' g';
+  resetMotion();
+});
+el.m2.addEventListener('input', function(){
+  S.m2 = (+el.m2.value) / 1000;
+  el.vM2.textContent = el.m2.value + ' g';
+  resetMotion();
+});
+function setMode(m){
+  S.mode = m;
+  document.querySelectorAll('#segMode button').forEach(function(b){
+    b.classList.toggle('on', b.dataset.mode === m);
+  });
+  const dis = (m !== 'same');
+  document.getElementById('knobWrap').classList.toggle('disabled', dis);
+  document.getElementById('knobMinus').disabled = dis;
+  document.getElementById('knobPlus').disabled = dis;
+  if(dis){ S.theta = 0; S.omega = 0; el.knobVal.textContent = '0°'; el.knobPtr.style.transform = 'rotate(0deg)'; }
+  resetMotion();
+}
+document.querySelectorAll('#segMode button').forEach(function(b){
+  b.addEventListener('click', function(){ setMode(b.dataset.mode); });
+});
+function resetMotion(){
+  S.xC = 0; S.vC = 0; S.dA = 0; S.vA = 0; S.dB = 0; S.vB = 0;
+  S.omega = 0; S.atEdge = false;
+}
+function setTheta(deg){
+  deg = clamp(deg, -80, 80);
+  S.theta = deg * Math.PI / 180;
+  el.knobVal.textContent = deg.toFixed(0) + '°';
+  el.knobPtr.style.transform = 'rotate(' + deg.toFixed(1) + 'deg)';
+}
+const knob = document.getElementById('knob');
+function knobFrom(e){
+  const r = knob.getBoundingClientRect();
+  const dx = e.clientX - (r.left + r.width/2);
+  const dy = e.clientY - (r.top + r.height/2);
+  if(Math.hypot(dx, dy) < 8) return null;
+  return clamp(Math.atan2(dx, -dy) * 180 / Math.PI, -80, 80);
+}
+knob.addEventListener('pointerdown', function(e){
+  if(S.mode !== 'same') return;
+  e.preventDefault();
+  knob.setPointerCapture(e.pointerId);
+  knob.classList.add('active');
+  S.held = true; S.omega = 0; S.vC = 0;
+  const a = knobFrom(e); if(a !== null) setTheta(a);
+});
+knob.addEventListener('pointermove', function(e){
+  if(!S.held) return;
+  const a = knobFrom(e); if(a !== null) setTheta(a);
+});
+function release(){
+  if(!S.held) return;
+  S.held = false;
+  knob.classList.remove('active');
+}
+knob.addEventListener('pointerup', release);
+knob.addEventListener('pointercancel', release);
+window.addEventListener('pointerup', release);
+document.getElementById('knobMinus').addEventListener('click', function(){ setTheta(S.theta*180/Math.PI - 5); });
+document.getElementById('knobPlus').addEventListener('click',  function(){ setTheta(S.theta*180/Math.PI + 5); });
+
+/* 摩擦开关 */
+document.querySelectorAll('#segFric button').forEach(function(b){
+  b.addEventListener('click', function(){
+    S.friction = (b.dataset.fric === 'on');
+    document.querySelectorAll('#segFric button').forEach(function(x){ x.classList.toggle('on', x === b); });
+    el.fricTip.textContent = S.friction
+      ? '有摩擦：小车扭转后会因摩擦停下；无摩擦则来回摆动不停。'
+      : '无摩擦：没有阻力，扭转小车后它会像单摆一样一直摆动、永不停止。现在请拖动旋钮扭转小车看看。';
+  });
+});
+
+/* 情景文案 + 高亮 */
+const SCN_DESC = {
+  perfect: '<b>【完美平衡】</b>两端各 100 g、小车不扭转、作用在同一物体上。四个条件全满足 → 合力为 0，小车静止不动。这就是“二力平衡”的标准样子。',
+  unequal: '<b>【大小不等】</b>右端 180 g、左端 80 g。两力不再等大，合力指向重的一侧，小车<b>向右滑动</b>；同时<b>左钩码上升、右钩码下降</b>（右绳变短）。只满足“等大”就会破坏平衡。',
+  noncol:  '<b>【不在同一直线】</b>两端各 120 g、但把小车扭转 30°。两力大小相等、方向相反，却不在一条线上 → 形成力偶，小车<b>转动</b>；有摩擦时转回共线才停下，无摩擦则来回摆动不停。',
+  twoobj:  '<b>【不是同一物体】</b>把小车“分裂”成 A、B 两辆。两个力分别作用在不同物体上，彼此不能平衡 → 两车被各自拉走、<b>背向分离</b>。说明“同物”是必要条件。'
+};
+function applyScn(p){
+  el.scnDesc.innerHTML = SCN_DESC[p] || '点上方任一情景，查看该情况的观察要点与易错点。';
+  document.querySelectorAll('.scn').forEach(function(b){
+    b.classList.toggle('active', b.dataset.preset === p);
+  });
+}
+
+const btnPause = document.getElementById('btnPause');
+btnPause.addEventListener('click', function(){
+  S.paused = !S.paused;
+  btnPause.textContent = S.paused ? '▶ 继续' : '⏸ 暂停（定格）';
+  btnPause.classList.toggle('primary', S.paused);
+});
+document.querySelectorAll('[data-preset]').forEach(function(b){
+  b.addEventListener('click', function(){
+    const p = b.dataset.preset;
+    if(S.paused){ S.paused = false; btnPause.textContent = '⏸ 暂停（定格）'; btnPause.classList.remove('primary'); }
+    if(p === 'perfect'){ setSliders(100, 100); setMode('same'); setTheta(0); }
+    if(p === 'unequal'){ setSliders(80, 180);  setMode('same'); setTheta(0); }
+    if(p === 'noncol'){  setSliders(120, 120); setMode('same'); setTheta(30); }
+    if(p === 'twoobj'){  setSliders(120, 120); setMode('two'); }
+    if(p === 'reset'){   setSliders(100, 100); setMode('same'); setTheta(0); }
+    resetMotion();
+    el.verdict.dataset.k = '';
+    applyScn(p === 'reset' ? 'perfect' : p);
+  });
+});
+function setSliders(g1, g2){
+  el.m1.value = g1; el.m2.value = g2;
+  S.m1 = g1/1000; S.m2 = g2/1000;
+  el.vM1.textContent = g1 + ' g'; el.vM2.textContent = g2 + ' g';
+}
+
+/* 初始化（支持 #情景名 直达，如 #noncol） */
+setSliders(100, 100);
+setMode('same');
+setTheta(0);
+(function(){
+  const h = (location.hash || '').replace('#', '');
+  const btn = document.querySelector('[data-preset="' + h + '"]');
+  if(btn){ btn.click(); }
+})();
+})();
+</script>
+</body>
+</html>

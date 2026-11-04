@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>古典概型与频率的稳定性模型</title>
+<style>
+  :root{
+    --bg:#eef1f7;
+    --card:#ffffff;
+    --ink:#1b2432;
+    --ink2:#5c6879;
+    --ink3:#8d99aa;
+    --line:#e3e8f0;
+    --blue:#2563eb;
+    --blue-d:#1a49b8;
+    --blue-soft:#eef4ff;
+    --red:#dc2626;
+    --red-soft:#fef2f2;
+    --green:#16a34a;
+    --amber:#b8801b;
+    --serif:"Times New Roman","Songti SC","SimSun",Times,serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    padding:24px 20px 40px;
+    background:
+      radial-gradient(1100px 520px at 18% -12%, #ffffff 0%, rgba(255,255,255,0) 62%),
+      radial-gradient(900px 480px at 92% -4%, #e9f1ff 0%, rgba(233,241,255,0) 58%),
+      var(--bg);
+    color:var(--ink);
+    font-family:"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1250px;margin:0 auto;}
+
+  /* ---------- 页头 ---------- */
+  .head{margin-bottom:16px;}
+  .badge{display:inline-block;font-size:11.5px;letter-spacing:.16em;color:var(--blue);
+    background:var(--blue-soft);border:1px solid #d6e3ff;padding:5px 11px;border-radius:999px;font-weight:700;}
+  h1{font-family:var(--serif);font-size:31px;margin:11px 0 7px;font-weight:700;letter-spacing:.01em;}
+  .sub{margin:0;color:var(--ink2);font-size:14px;line-height:1.7;max-width:880px;}
+  .sub b{color:var(--ink);font-weight:600;}
+
+  /* ---------- 布局 ---------- */
+  .layout{display:grid;grid-template-columns:minmax(0,1fr) 400px;gap:18px;align-items:start;}
+  @media (max-width:1090px){.layout{grid-template-columns:1fr;}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;
+    box-shadow:0 1px 2px rgba(20,30,50,.04),0 16px 34px -22px rgba(20,30,50,.35);}
+
+  /* ---------- 左侧：图表 ---------- */
+  .stage-card{padding:14px 14px 8px;}
+  .stage-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:2px 4px 10px;flex-wrap:wrap;}
+  .tag{font-size:12px;font-weight:700;color:var(--ink2);background:#f4f6fa;border:1px solid var(--line);border-radius:8px;padding:4px 9px;}
+  .hint{font-size:12.5px;color:var(--ink3);}
+  .stage{border:1px solid var(--line);border-radius:12px;overflow:hidden;
+    background:linear-gradient(180deg,#fdfeff,#f8fafd);}
+  svg#chart{display:block;width:100%;height:auto;}
+
+  /* ---------- 控制条 ---------- */
+  .controls{display:flex;align-items:center;gap:9px;padding:13px 4px 12px;flex-wrap:wrap;}
+  .btn{font:inherit;font-size:13.5px;font-weight:700;color:var(--blue-d);background:var(--blue-soft);
+    border:1px solid #d6e3ff;border-radius:10px;padding:9px 15px;cursor:pointer;transition:.15s;white-space:nowrap;}
+  .btn:hover{background:#e2ecff;}
+  .btn:active{transform:translateY(1px);}
+  .btn.ghost{color:var(--ink2);background:#f6f8fb;border-color:var(--line);}
+  .btn.ghost:hover{background:#eef1f6;}
+  .btn.run{color:#fff;background:var(--blue);border-color:var(--blue);}
+  .btn.run:hover{background:#1d4ed8;}
+  .btn.run.on{color:#fff;background:var(--red);border-color:var(--red);}
+  .btn.run.on:hover{background:#b91c1c;}
+  .btn:disabled{opacity:.45;cursor:not-allowed;}
+  .ctl-note{font-size:12px;color:var(--ink3);margin-left:2px;}
+
+  /* ---------- 右侧面板 ---------- */
+  .panel{padding:18px 18px 20px;}
+  .panel-head{display:flex;align-items:baseline;gap:10px;margin-bottom:2px;}
+  .panel-head h2{font-family:var(--serif);font-size:21px;margin:0;font-weight:700;}
+  .panel-head .en{font-family:var(--serif);font-size:12.5px;color:var(--ink3);letter-spacing:.06em;}
+
+  .sect{font-size:11.5px;letter-spacing:.12em;color:var(--ink3);font-weight:700;margin:16px 0 8px;}
+
+  /* 实验选择 */
+  .exp-pick{display:grid;grid-template-columns:1fr;gap:7px;}
+  .exp-opt{display:flex;align-items:center;gap:9px;border:1px solid var(--line);border-radius:10px;
+    padding:8px 11px;cursor:pointer;transition:.15s;background:#fbfcfe;}
+  .exp-opt:hover{background:#f4f7fd;}
+  .exp-opt.active{border-color:var(--blue);background:var(--blue-soft);}
+  .exp-opt .dot{width:9px;height:9px;border-radius:50%;background:#cfd7e3;flex:none;}
+  .exp-opt.active .dot{background:var(--blue);}
+  .exp-opt .name{font-size:13.5px;font-weight:600;color:var(--ink);}
+  .exp-opt .p{margin-left:auto;font-family:var(--serif);font-size:14.5px;color:var(--blue-d);font-weight:700;}
+
+  /* 投掷展示区 */
+  .toss-zone{display:flex;align-items:center;gap:14px;padding:13px;border:1px solid var(--line);
+    border-radius:12px;background:linear-gradient(180deg,#f9fbff,#f1f6ff);margin-top:2px;}
+  .prop{width:74px;height:74px;flex:none;border-radius:50%;position:relative;perspective:520px;}
+  .prop.cube{width:88px;height:88px;border-radius:12px;}
+  .prop-inner{position:absolute;inset:0;border-radius:inherit;display:flex;align-items:center;justify-content:center;
+    font-family:var(--serif);font-weight:700;transition:transform .12s ease;}
+  .prop.coin .prop-inner{background:radial-gradient(circle at 32% 28%,#ffe9a8,#f5c542 58%,#d99f1d);
+    color:#7a5410;font-size:22px;box-shadow:inset 0 0 0 3px rgba(255,255,255,.5),0 4px 10px -3px rgba(120,80,10,.5);}
+  .prop .coinface{display:block;}
+  .prop.cube .coinface{display:none;}
+  .prop.spin .prop-inner{animation:tumble .32s linear infinite;}
+  @keyframes tumble{
+    0%{transform:rotateY(0) rotate(0);}
+    100%{transform:rotateY(360deg) rotate(360deg);}
+  }
+  /* ---- 3D 骰子 ---- */
+  .cube3d{position:absolute;left:7px;top:7px;width:74px;height:74px;transform-style:preserve-3d;
+    transform:rotateX(-25deg) rotateY(35deg);will-change:transform;}
+  .prop .cube3d{display:none;}
+  .prop.cube .cube3d{display:block;}
+  .cube-face{position:absolute;inset:0;display:grid;grid-template-columns:repeat(3,1fr);grid-template-rows:repeat(3,1fr);
+    padding:11%;background:linear-gradient(160deg,#ffffff,#e9edf5);border:1px solid #cfd7e3;border-radius:10px;
+    box-shadow:inset 0 0 14px rgba(30,40,60,.10),inset 0 0 0 1px rgba(255,255,255,.65);}
+  .pip{width:64%;height:64%;place-self:center;border-radius:50%;
+    background:radial-gradient(circle at 35% 30%,#4a5568,#151d2c 75%);}
+  .cube-face.red .pip{background:radial-gradient(circle at 35% 30%,#f87c7c,#b91c1c 75%);}
+  .cshadow{position:absolute;left:10%;right:10%;bottom:-13px;height:12px;border-radius:50%;display:none;
+    background:radial-gradient(ellipse at center,rgba(25,35,55,.28),transparent 72%);}
+  .prop.cube .cshadow{display:block;}
+  @keyframes tumble{
+    0%{transform:rotateY(0) rotate(0);}
+    100%{transform:rotateY(360deg) rotate(360deg);}
+  }
+  .toss-info{min-width:0;}
+  .toss-res{font-size:15px;font-weight:700;color:var(--ink);min-height:22px;}
+  .toss-res .hit{color:var(--red);}
+  .toss-res .miss{color:var(--ink2);}
+  .toss-cnt{font-size:12.5px;color:var(--ink3);margin-top:4px;line-height:1.6;}
+
+  /* 数据表 */
+  .stat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px 10px;}
+  .item{display:flex;justify-content:space-between;align-items:center;font-size:13.5px;
+    padding:8px 11px;background:#f7f9fc;border:1px solid #eef2f8;border-radius:8px;}
+  .item .k{color:var(--ink2);}
+  .item .k i{font-family:var(--serif);font-style:italic;font-size:15.5px;color:#12386f;}
+  .item .v{font-family:var(--serif);font-size:16.5px;font-weight:700;color:var(--blue-d);font-variant-numeric:tabular-nums;}
+  .item.hl{background:var(--red-soft);border-color:#fbd5d5;}
+  .item.hl .v{color:var(--red);}
+
+  /* 公式卡片 */
+  .formula{padding:12px 13px;border:1px solid #deeaff;border-radius:12px;
+    background:linear-gradient(180deg,#f9fbff,#f1f6ff);margin-bottom:9px;}
+  .formula .fx{font-family:var(--serif);font-size:18.5px;color:#12386f;text-align:center;letter-spacing:.02em;}
+  .formula .fx i{font-style:italic;}
+  .formula .cap{font-size:12px;color:var(--ink3);text-align:center;margin-top:5px;line-height:1.65;}
+  .formula.red{border-color:#fbd5d5;background:linear-gradient(180deg,#fffafa,#fdf1f1);}
+  .formula.red .fx{color:#8f1d1d;}
+
+  .note{margin:13px 0 0;font-size:12.5px;color:var(--ink3);line-height:1.75;}
+  .note b{color:var(--ink2);font-weight:600;}
+  .note em{font-style:normal;color:var(--red);font-weight:700;}
+
+  /* 底部说明 */
+  .foot{margin-top:18px;padding:15px 18px;display:flex;gap:14px;align-items:flex-start;}
+  .foot .kbadge{flex:none;font-family:var(--serif);font-weight:700;font-size:13px;color:var(--blue-d);
+    background:var(--blue-soft);border:1px solid #d6e3ff;border-radius:8px;padding:4px 10px;}
+  .foot p{margin:0;font-size:13.5px;color:var(--ink2);line-height:1.8;}
+  .foot p b{color:var(--ink);}
+  .foot i{font-family:var(--serif);font-style:italic;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- 页头 -->
+  <div class="head">
+    <span class="badge">第十章 · 概率 · 模型 21</span>
+    <h1>古典概型与频率的稳定性模型</h1>
+    <p class="sub">样本空间只含有<b>有限个样本点</b>，且每个样本点出现的<b>可能性相等</b>，则 <i style="font-family:var(--serif)">P</i>(<i style="font-family:var(--serif)">A</i>) = <i style="font-family:var(--serif)">k</i>/<i style="font-family:var(--serif)">n</i>（古典概型）。反复抛掷硬币或摸球<b>逐次累加</b>，观察<b>频率折线</b>如何收敛于<b>概率水平线</b>——频率是概率的估计值，试验次数增多时频率逐渐稳定于概率。</p>
+  </div>
+
+  <div class="layout">
+
+    <!-- 左：图表 -->
+    <div class="card stage-card">
+      <div class="stage-head">
+        <span class="tag">频率 k/n 随试验次数 n 的变化</span>
+        <span class="hint">横轴为对数刻度 · 拖动下方按钮逐步累加试验</span>
+      </div>
+      <div class="stage">
+        <svg id="chart" viewBox="0 0 860 470" preserveAspectRatio="xMidYMid meet"></svg>
+      </div>
+      <div class="controls">
+        <button class="btn" id="b1">掷 1 次</button>
+        <button class="btn" id="b10">掷 10 次</button>
+        <button class="btn" id="b100">掷 100 次</button>
+        <button class="btn" id="b1000">掷 1000 次</button>
+        <button class="btn run" id="bAuto">▶ 自动投掷</button>
+        <button class="btn ghost" id="bReset">↺ 重置</button>
+        <span class="ctl-note" id="ctlNote">建议先掷 10 次，再掷 100 次，观察折线如何贴近红线</span>
+      </div>
+    </div>
+
+    <!-- 右：面板 -->
+    <div class="card panel">
+      <div class="panel-head">
+        <h2>随机试验</h2>
+        <span class="en">CLASSICAL MODEL</span>
+      </div>
+
+      <div class="sect">选择试验与事件 A</div>
+      <div class="exp-pick" id="expPick">
+        <div class="exp-opt active" data-exp="coin">
+          <span class="dot"></span><span class="name">抛掷硬币 · A = 正面朝上</span>
+          <span class="p">P(A) = 1/2</span>
+        </div>
+        <div class="exp-opt" data-exp="dice6">
+          <span class="dot"></span><span class="name">抛掷骰子 · A = 掷出 6 点</span>
+          <span class="p">P(A) = 1/6</span>
+        </div>
+        <div class="exp-opt" data-exp="diceEven">
+          <span class="dot"></span><span class="name">抛掷骰子 · A = 掷出偶数点</span>
+          <span class="p">P(A) = 1/2</span>
+        </div>
+        <div class="exp-opt" data-exp="ball">
+          <span class="dot"></span><span class="name">摸球(3红2白) · A = 摸到红球</span>
+          <span class="p">P(A) = 3/5</span>
+        </div>
+      </div>
+
+      <div class="sect">本次投掷</div>
+      <div class="toss-zone">
+        <div class="prop coin" id="prop">
+          <div class="prop-inner coinface" id="propFace">正</div>
+          <div class="cube3d" id="cube3d"></div>
+          <div class="cshadow"></div>
+        </div>
+        <div class="toss-info">
+          <div class="toss-res" id="tossRes">等待投掷…</div>
+          <div class="toss-cnt" id="tossCnt">尚未开始试验</div>
+        </div>
+      </div>
+
+      <div class="sect">实时数据</div>
+      <div class="stat-grid">
+        <div class="item"><span class="k">试验次数 <i>n</i></span><span class="v" id="sN">0</span></div>
+        <div class="item"><span class="k">事件发生 <i>k</i></span><span class="v" id="sK">0</span></div>
+        <div class="item hl"><span class="k">频率 <i>k</i>/<i>n</i></span><span class="v" id="sFreq">—</span></div>
+        <div class="item"><span class="k">概率 <i>P</i>(<i>A</i>)</span><span class="v" id="sP">0.5</span></div>
+      </div>
+
+      <div class="sect">两个知识点</div>
+      <div class="formula">
+        <div class="fx"><i>P</i>(<i>A</i>) = <i>k</i> / <i>n</i></div>
+        <div class="cap">10.1.3 古典概型：样本点有限且等可能，<br><i>n</i> 为样本点总数，<i>k</i> 为 A 含有的样本点数</div>
+      </div>
+      <div class="formula red">
+        <div class="fx">频率 = <i>k</i><sub>事件</sub> / <i>n</i><sub>次</sub> → <i>P</i>(<i>A</i>)</div>
+        <div class="cap">10.3.1 频率是概率的估计值，试验次数增多时<br>频率逐渐稳定于概率</div>
+      </div>
+
+      <p class="note"><b>观察要点：</b>次数较少时频率波动剧烈（可能一次就是 0 或 1）；随着次数累加到数百、数千次，红线上下波动越来越小，频率折线<em>紧贴概率水平线</em>——这就是频率的稳定性。</p>
+    </div>
+  </div>
+
+  <!-- 底部结论 -->
+  <div class="card foot">
+    <span class="kbadge">结论</span>
+    <p>对同一个事件 A，<b>随机试验的频率具有随机性</b>（重做一轮，折线并不相同），但<b>频率又具有稳定性</b>：当 <i>n</i> 充分大时，频率总在常数 <i>P</i>(<i>A</i>) 附近摆动且摆动幅度越来越小。因此可以用频率<b>估计</b>概率，而古典概型给出了概率的精确计算方法：<i>P</i>(<i>A</i>) = <i>k</i>/<i>n</i>。</p>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ================= 数据 ================= */
+const EXPS = {
+  coin:     {kind:"coin", P:1/2, pText:"1/2", pVal:0.5, faceHit:"正", faceMiss:"反",
+             hitText:"正面朝上 ✓ 事件 A 发生", missText:"反面朝上 ✗ A 未发生", propName:"硬币"},
+  dice6:    {kind:"cube", P:1/6, pText:"1/6", pVal:1/6, hitSet:[6],
+             hitText:"掷出 6 点 ✓ 事件 A 发生", missText:"未掷出 6 点 ✗", propName:"骰子"},
+  diceEven: {kind:"cube", P:1/2, pText:"1/2", pVal:0.5, hitSet:[2,4,6],
+             hitText:"掷出偶数点 ✓ 事件 A 发生", missText:"掷出奇数点 ✗", propName:"骰子"},
+  ball:     {kind:"ball", P:3/5, pText:"3/5", pVal:0.6, faceHit:"红", faceMiss:"白",
+             hitText:"摸到红球 ✓ 事件 A 发生", missText:"摸到白球 ✗", propName:"布袋"}
+};
+
+let cur = "coin";
+let n = 0, k = 0;          // 总次数、事件发生次数
+let freqs = [];            // [{n, freq}]
+let autoTimer = null;
+
+/* ================= DOM ================= */
+const $ = id => document.getElementById(id);
+const svg = $("chart");
+const SVGNS = "http://www.w3.org/2000/svg";
+
+/* ================= 图表坐标 ================= */
+const M = {l:56, r:20, t:22, b:42};
+const W = 860, H = 470;
+const IW = W - M.l - M.r, IH = H - M.t - M.b;
+const NMAX = 20000;
+const xOf = t => M.l + IW * Math.log(Math.max(t,1)) / Math.log(NMAX);   // 对数横轴
+const yOf = f => M.t + IH * (1 - f);
+
+function el(tag, attrs){
+  const e = document.createElementNS(SVGNS, tag);
+  for (const a in attrs) e.setAttribute(a, attrs[a]);
+  return e;
+}
+function txt(x, y, s, attrs){
+  const e = el("text", Object.assign({x, y, "text-anchor":"middle",
+    "font-size":"12", fill:"#8d99aa",
+    "font-family":"'Segoe UI','Microsoft YaHei',sans-serif"}, attrs||{}));
+  e.textContent = s; svg.appendChild(e); return e;
+}
+
+/* ================= 绘图 ================= */
+function drawChart(){
+  svg.innerHTML = "";
+
+  /* 网格 + 纵轴刻度 */
+  for (let i = 0; i <= 10; i++){
+    const f = i / 10, y = yOf(f);
+    svg.appendChild(el("line", {x1:M.l, y1:y, x2:W-M.r, y2:y,
+      stroke: i===0||i===10 ? "#dbe2ec" : "#edf1f7", "stroke-width":1}));
+    if (i % 2 === 0)
+      txt(M.l - 10, y + 4, f.toFixed(1), {"text-anchor":"end"});
+  }
+
+  /* 横轴（对数刻度） */
+  const ticks = [1,2,5,10,20,50,100,200,500,1000,2000,5000,10000,20000];
+  svg.appendChild(el("line", {x1:M.l, y1:yOf(0), x2:W-M.r, y2:yOf(0), stroke:"#c9d2df","stroke-width":1.4}));
+  ticks.forEach(t=>{
+    const x = xOf(t);
+    svg.appendChild(el("line", {x1:x, y1:yOf(0), x2:x, y2:yOf(0)+5, stroke:"#c9d2df","stroke-width":1}));
+    txt(x, yOf(0)+19, t >= 1000 ? (t/1000)+"k" : t, {"font-size":"11"});
+  });
+  txt(M.l + IW/2, H - 6, "试验次数 n（对数刻度）", {"font-size":"12.5", fill:"#5c6879","font-weight":"600"});
+  const yl = txt(16, M.t + IH/2, "频率 k/n", {"font-size":"12.5", fill:"#5c6879","font-weight":"600"});
+  yl.setAttribute("transform", `rotate(-90 16 ${M.t+IH/2})`);
+
+  /* 概率水平线（红） */
+  const p = EXPS[cur].P, py = yOf(p);
+  svg.appendChild(el("line", {x1:M.l, y1:py, x2:W-M.r, y2:py,
+    stroke:"#dc2626", "stroke-width":2, "stroke-dasharray":"8 5"}));
+  txt(W-M.r-6, py-8, `P(A) = ${EXPS[cur].pText} = ${p.toFixed(3)}`,
+    {"text-anchor":"end", "font-size":"13", fill:"#dc2626", "font-weight":"700",
+     "font-family":"'Times New Roman','SimSun',serif"});
+
+  /* 频率折线 */
+  if (freqs.length >= 2){
+    const step = Math.max(1, Math.floor(freqs.length / 1600));
+    let d = "";
+    for (let i = 0; i < freqs.length; i += step){
+      const pt = freqs[i];
+      d += (d ? "L" : "M") + xOf(pt.n).toFixed(1) + " " + yOf(pt.freq).toFixed(1);
+    }
+    const last = freqs[freqs.length-1];
+    d += "L" + xOf(last.n).toFixed(1) + " " + yOf(last.freq).toFixed(1);
+    svg.appendChild(el("path", {d, fill:"none", stroke:"#2563eb", "stroke-width":2.2,
+      "stroke-linejoin":"round", "stroke-linecap":"round"}));
+  }
+  if (freqs.length === 1){
+    const pt = freqs[0];
+    svg.appendChild(el("circle", {cx:xOf(pt.n), cy:yOf(pt.freq), r:4, fill:"#2563eb"}));
+  }
+}
+
+/* ================= 模拟 ================= */
+function rand(){
+  const e = EXPS[cur];
+  if (e.kind === "coin")  return Math.random() < 0.5 ? 1 : 0;
+  if (e.kind === "ball")  return Math.random() < 0.6 ? 1 : 0;
+  const face = 1 + Math.floor(Math.random()*6);
+  return e.hitSet.includes(face) ? face : -face;   // 正=命中面，负=未命中面
+}
+
+function faceLabel(r){
+  if (cur === "coin") return r === 1 ? "正" : "反";
+  if (cur === "ball") return r === 1 ? "红" : "白";
+  return String(Math.abs(r));
+}
+
+/* ---- 3D 骰子 ---- */
+const PIPS = {1:[5],2:[3,7],3:[3,5,7],4:[1,3,7,9],5:[1,3,5,7,9],6:[1,3,4,6,7,9]};
+const FACE_ROT = {1:[0,0],2:[0,-90],3:[-90,0],4:[90,0],5:[0,90],6:[0,180]};
+let spinX = 0, spinY = 0;
+function buildCube(){
+  const cube = $("cube3d"), h = 37;   // 半边长
+  const tf = {
+    1:`translateZ(${h}px)`,
+    6:`rotateY(180deg) translateZ(${h}px)`,
+    2:`rotateY(90deg) translateZ(${h}px)`,
+    5:`rotateY(-90deg) translateZ(${h}px)`,
+    3:`rotateX(90deg) translateZ(${h}px)`,
+    4:`rotateX(-90deg) translateZ(${h}px)`
+  };
+  cube.innerHTML = "";
+  for (let v = 1; v <= 6; v++){
+    const f = document.createElement("div");
+    f.className = "cube-face" + (v===1 || v===4 ? " red" : "");  // 中式骰子：1、4 点红色
+    f.style.transform = tf[v];
+    f.innerHTML = PIPS[v].map(i=>`<span class="pip"></span>`).join("");
+    cube.appendChild(f);
+  }
+}
+function showCubeFace(v, dur){
+  const cube = $("cube3d");
+  const [fx, fy] = FACE_ROT[v];
+  spinX += 360 * (1 + Math.floor(Math.random()*2));   // 累加整圈，保证每次都翻滚
+  spinY += 360 * (1 + Math.floor(Math.random()*2));
+  cube.style.transition = `transform ${dur}ms cubic-bezier(.18,.72,.22,1)`;
+  cube.style.transform = `rotateX(${spinX+fx}deg) rotateY(${spinY+fy}deg)`;
+}
+function cubeRest(){
+  const cube = $("cube3d");
+  spinX = 0; spinY = 0;
+  cube.style.transition = "transform .5s ease";
+  cube.style.transform = "rotateX(-25deg) rotateY(35deg)";   // 静止时斜 3/4 视角
+}
+
+function toss(times){
+  const e = EXPS[cur];
+  let last = 0;
+  for (let i = 0; i < times; i++){
+    const r = rand();
+    const hit = r > 0;
+    n++; if (hit) k++;
+    freqs.push({n, freq: k/n});
+    last = r;
+  }
+  /* 道具动画 */
+  const prop = $("prop"), face = $("propFace");
+  if (EXPS[cur].kind === "cube"){
+    showCubeFace(Math.abs(last), times === 1 ? 950 : 340);   // 立体骰子翻滚到掷出的面
+  } else {
+    prop.classList.remove("spin"); void prop.offsetWidth;
+    face.textContent = faceLabel(last);
+    prop.classList.add("spin");
+    clearTimeout(prop._t);
+    prop._t = setTimeout(()=>prop.classList.remove("spin"), times === 1 ? 700 : 350);
+  }
+
+  /* 结果文字 */
+  const isHit = last > 0;
+  $("tossRes").innerHTML = times === 1
+    ? (isHit ? `<span class="hit">${e.hitText}</span>` : `<span class="miss">${e.missText}</span>`)
+    : `连续投掷 ${times.toLocaleString()} 次，最新一次：${faceLabel(last)}${isHit ? " ✓" : " ✗"}`;
+
+  refresh();
+}
+
+function refresh(){
+  const e = EXPS[cur];
+  $("sN").textContent = n.toLocaleString();
+  $("sK").textContent = k.toLocaleString();
+  $("sFreq").textContent = n ? (k/n).toFixed(4) : "—";
+  $("sP").textContent = e.pVal.toFixed(3);
+  $("tossCnt").textContent = n
+    ? `累计 ${n.toLocaleString()} 次试验 · |频率 − 概率| = ${Math.abs(k/n - e.pVal).toFixed(4)}`
+    : "尚未开始试验";
+  drawChart();
+}
+
+function reset(){
+  stopAuto();
+  n = 0; k = 0; freqs = [];
+  $("propFace").textContent = EXPS[cur].kind === "coin" ? "正" : EXPS[cur].kind === "ball" ? "红" : "?";
+  cubeRest();
+  $("tossRes").textContent = "等待投掷…";
+  $("tossCnt").textContent = "尚未开始试验";
+  refresh();
+}
+
+function switchExp(key){
+  if (key === cur) return;
+  cur = key;
+  document.querySelectorAll(".exp-opt").forEach(o=>o.classList.toggle("active", o.dataset.exp === key));
+  const e = EXPS[cur], prop = $("prop");
+  prop.classList.toggle("coin", e.kind !== "cube");
+  prop.classList.toggle("cube", e.kind === "cube");
+  reset();
+}
+
+/* ================= 自动投掷 ================= */
+function startAuto(){
+  if (n >= NMAX) return;
+  $("bAuto").textContent = "⏸ 暂停";
+  $("bAuto").classList.add("on");
+  let batch = 1, tick = 0;
+  autoTimer = setInterval(()=>{
+    tick++;
+    toss(batch);
+    if (tick % 6 === 0 && batch < 200) batch = Math.min(batch * 2, 200);  // 先慢后快
+    if (n >= NMAX) stopAuto();
+  }, 120);
+}
+function stopAuto(){
+  if (autoTimer){ clearInterval(autoTimer); autoTimer = null; }
+  $("bAuto").textContent = "▶ 自动投掷";
+  $("bAuto").classList.remove("on");
+}
+
+/* ================= 事件 ================= */
+$("b1").onclick    = ()=>{ stopAuto(); toss(1); };
+$("b10").onclick   = ()=>{ stopAuto(); toss(10); };
+$("b100").onclick  = ()=>{ stopAuto(); toss(100); };
+$("b1000").onclick = ()=>{ stopAuto(); toss(1000); };
+$("bAuto").onclick = ()=> autoTimer ? stopAuto() : startAuto();
+$("bReset").onclick= reset;
+document.querySelectorAll(".exp-opt").forEach(o=> o.onclick = ()=>{ stopAuto(); switchExp(o.dataset.exp); });
+
+buildCube();
+refresh();
+</script>
+</body>
+</html>

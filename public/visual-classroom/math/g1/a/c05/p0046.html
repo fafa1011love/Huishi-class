@@ -1,0 +1,694 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>5.6 函数 y=Asin(ωx+φ) 的图象 · 动态教具</title>
+<style>
+:root{
+  /* —— 与「三角函数诱导公式教具」统一的配色 —— */
+  --bg:#f5f7fa; --card:#ffffff; --line:#e2e8f0; --line2:#eef1f7;
+  --ink:#1e293b; --ink2:#334155; --ink3:#64748b;
+  --brand:#2563eb; --brand-soft:#eff6ff; --brand-line:#bfdbfe;
+  --deep:#1e3a8a; --hl:#ef4444; --amber:#f59e0b; --green:#10b981;
+  --warn:#d97706;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg);color:var(--ink);
+  font-family:"Microsoft YaHei","PingFang SC","Segoe UI",system-ui,-apple-system,sans-serif;
+  font-size:15px;line-height:1.65;-webkit-font-smoothing:antialiased;
+}
+.wrap{max-width:1320px;margin:0 auto;padding:22px 20px 40px}
+h1,h2,h3{margin:0;font-weight:600}
+.m{font-family:"Cambria Math","Times New Roman",Georgia,serif;font-style:italic;font-size:1.06em;padding:0 .02em}
+
+/* fraction display: nπ/d */
+.fr{display:inline-flex;flex-direction:column;text-align:center;vertical-align:middle;font-size:.84em;line-height:1.05;margin:0 .14em}
+.fr-n{border-bottom:1px solid currentColor;padding:0 .18em}
+.fr-d{padding:0 .18em}
+
+/* ---------- 页头：深蓝渐变条 ---------- */
+header.top{background:linear-gradient(120deg,#1e3a8a,#2563eb 60%,#0ea5e9);color:#fff;box-shadow:0 1px 3px rgba(0,0,0,.08)}
+header.top .hwrap{padding:16px 28px}
+header.top h1{font-size:20px;margin:0;font-weight:700;color:#fff}
+header.top h1 .m{font-size:1.05em}
+header.top p{margin:5px 0 0;font-size:13.5px;color:#fff;opacity:.85}
+
+/* ---------- 函数表达式框 ---------- */
+.heroFormula{
+  font-size:21px;padding:10px 8px;border-radius:12px;background:var(--brand-soft);
+  border:1px solid #bfdbfe;color:#1e3a8a;text-align:center;white-space:nowrap;
+  box-shadow:0 1px 2px rgba(0,0,0,.04);margin-bottom:12px;overflow-x:auto
+}
+
+/* ---------- layout ---------- */
+.grid{display:grid;grid-template-columns:1fr 330px;gap:18px;margin-top:18px;align-items:start}.rowfull{margin-top:18px}
+.row2{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:18px;align-items:start}
+@media(max-width:1180px){.grid{grid-template-columns:1fr}}
+@media(max-width:860px){.row2{grid-template-columns:1fr}}
+
+.card{
+  background:var(--card);border:1px solid var(--line);border-radius:14px;
+  padding:16px 18px 18px;box-shadow:0 1px 3px rgba(0,0,0,.05)
+}
+.ch{display:flex;align-items:center;gap:9px;margin-bottom:10px;flex-wrap:wrap}
+.bar{display:inline-block;width:3px;height:15px;background:var(--brand);border-radius:2px}
+.ch h2{font-size:16.5px;color:var(--deep);font-weight:700}
+.ch .note{font-size:13px;color:var(--ink3);font-weight:400}
+.spacer{flex:1}
+
+/* ---------- controls ---------- */
+.btn{
+  padding:6px 13px;border:1px solid var(--brand);background:#fff;border-radius:8px;
+  font-size:14px;color:var(--brand);cursor:pointer;transition:.15s;font-family:inherit
+}
+.btn:hover{background:var(--brand-soft)}
+.btn:active{transform:translateY(1px)}
+.btn.primary{background:var(--brand);color:#fff;border-color:var(--brand);font-weight:700}
+.btn.primary:hover{background:#1d4ed8;color:#fff}
+.btn.on{background:#dbeafe;border-color:#93c5fd;color:#1d4ed8;font-weight:700}
+.btn.sm{padding:3px 8px;font-size:13px;border-radius:7px}
+.btn[disabled]{opacity:.5;cursor:not-allowed}
+select.btn{padding:5px 8px}
+.sw{display:inline-flex;align-items:center;gap:5px;font-size:13.5px;color:var(--ink);cursor:pointer;user-select:none}
+.sw input{accent-color:var(--brand);width:15px;height:15px;margin:0}
+
+input[type=range]{width:100%;accent-color:var(--brand);height:22px;margin:0}
+.param{margin-bottom:14px}
+.param:last-child{margin-bottom:4px}
+.prow{display:flex;align-items:baseline;justify-content:space-between;gap:8px}
+.pname{font-size:15px;font-weight:600}
+.pname em{font-style:normal;color:var(--ink3);font-weight:400;font-size:12.5px;margin-left:4px}
+.pval{font-size:16.5px;font-weight:600;color:var(--brand);font-family:"Cambria Math","Times New Roman",serif}
+.ptip{font-size:12px;color:var(--ink3);margin-top:-2px}
+.kv{display:flex;justify-content:space-between;gap:10px;padding:5px 0;border-bottom:1px dashed var(--line2);font-size:14.5px}
+.kv:last-child{border-bottom:none}
+.kv .k{color:var(--ink);font-weight:500}
+.kv .v{font-weight:600;font-family:"Cambria Math","Times New Roman",serif;white-space:nowrap}
+
+/* ---------- canvas ---------- */
+canvas{display:block;width:100%;border-radius:10px;background:#fff}
+#cv{height:min(56vh,470px);min-height:380px;border:1px solid #cbd5e1}
+@media(max-width:700px){#cv{height:380px}}
+.legend{display:flex;gap:14px;flex-wrap:wrap;margin-top:9px;font-size:13.5px;color:var(--ink)}
+.legend i{display:inline-block;width:16px;height:0;border-top-width:2.5px;border-top-style:solid;vertical-align:middle;margin-right:5px}
+
+/* ---------- 连续变换演示 ---------- */
+.stagebar{display:flex;gap:8px;margin:2px 0 10px;flex-wrap:wrap}
+.stage{flex:1;min-width:150px;border:1px solid var(--line);border-radius:9px;padding:8px 12px;font-size:14px;color:var(--ink3);background:#fafbfd;text-align:center;transition:.25s}
+.stage.active{color:#fff;font-weight:600;border-color:transparent}
+.stage.done{color:var(--ink2);background:#f1f5f9;border-color:var(--line2)}
+.desc{
+  margin-top:12px;padding:11px 14px;border-radius:10px;background:#f8fafc;
+  border:1px solid var(--line2);font-size:14.5px;color:var(--ink);line-height:1.75
+}
+.desc b{color:var(--brand)}
+.desc .warnbox{color:var(--warn)}
+.pathTabs{display:flex;gap:6px}
+
+/* ---------- 知识点总结 ---------- */
+.sumgrid{display:grid;grid-template-columns:repeat(2,1fr);gap:12px}
+@media(max-width:860px){.sumgrid{grid-template-columns:1fr}}
+.sumcard{border:1px solid var(--line);border-radius:11px;padding:11px 14px;background:#fcfdff}
+.sumh{font-weight:700;font-size:16px;color:var(--deep);margin-bottom:7px}
+.sumlist{margin:0;padding-left:20px;color:var(--ink);font-size:15px;line-height:1.9}
+.sumlist li{margin:3px 0}
+.sumflow{color:var(--ink);font-size:15px;line-height:1.65}
+.sumflow .f{font-family:"Cambria Math","Times New Roman",serif;font-size:17px}
+.sumflow .ar{display:block;color:#1d4ed8;font-size:14px;padding:2px 0 5px 4px}
+.tipbar{
+  margin-top:12px;padding:11px 14px;border-radius:10px;font-size:15px;line-height:1.9;
+  background:#fffbeb;border:1px solid #fde68a;color:#92400e
+}
+.tipbar b{color:#92400e}
+
+footer{margin-top:22px;color:var(--ink3);font-size:12px;text-align:center}
+</style>
+</head>
+<body>
+<header class="top"><div class="hwrap">
+  <h1>5.6 函数教具 · <span class="m">y = A</span> sin(<span class="m">ωx + φ</span>)</h1>
+  <p>拖动滑杆改变 <span class="m">A</span>、<span class="m">ω</span>、<span class="m">φ</span>，实时观察图象变化；支持“相位→周期→振幅”两种途径的连续变形演示，图上始终标注振幅 A 与周期 T，并在初相变化时提示图象移动方向。</p>
+</div></header>
+
+<div class="wrap">
+
+  <div class="grid">
+    <!-- 主图 -->
+    <div class="card">
+      <div class="ch">
+        <span class="bar"></span><h2>图象演示</h2>
+        <span class="note" id="graphNote"></span>
+        <span class="spacer"></span>
+        <label class="sw"><input type="checkbox" id="ckBase" checked>基准 y=sin x</label>
+        <label class="sw"><input type="checkbox" id="ckAnno" checked>周期/振幅标注</label>
+        <label class="sw"><input type="checkbox" id="ckGhost" checked>目标虚影</label>
+      </div>
+
+      <canvas id="cv"></canvas>
+      <div class="legend" id="legend"></div>
+    </div>
+
+    <!-- 控制面板 -->
+    <aside class="card">
+      <div class="heroFormula" id="heroFormula"></div>
+      <div class="ch"><span class="bar"></span><h2>参数控制</h2><span class="note">A&gt;0, ω&gt;0</span></div>
+
+      <div class="param">
+        <div class="prow"><span class="pname">振幅 <span class="m">A</span><em>纵坐标缩放</em></span><span class="pval" id="vA">2</span></div>
+        <input type="range" id="sA" min="2" max="30" step="1" value="20">
+      </div>
+
+      <div class="param">
+        <div class="prow"><span class="pname">角频率 <span class="m">ω</span><em>横坐标缩放</em></span><span class="pval" id="vW">1</span></div>
+        <input type="range" id="sW" min="5" max="30" step="1" value="10">
+      </div>
+
+      <div class="param">
+        <div class="prow"><span class="pname">初相 <span class="m">φ</span><em>左右平移</em></span><span class="pval" id="vP">π/3</span></div>
+        <input type="range" id="sP" min="-24" max="24" step="1" value="4">
+      </div>
+
+      <div style="margin:16px 0 6px;font-weight:600;font-size:13.5px">物理量对照</div>
+      <div id="phys"></div>
+    </aside>
+  </div>
+
+  <!-- 变换路径 -->
+  <div class="rowfull card">
+    <div class="ch">
+      <span class="bar"></span><h2>图象变换连续演示</h2>
+      <span class="note">由 y=sin x 连续变形到 y=Asin(ωx+φ)</span>
+      <span class="spacer"></span>
+      <div class="pathTabs">
+        <button class="btn on" id="btnPath1">路径一：先平移后伸缩</button>
+        <button class="btn" id="btnPath2">路径二：先伸缩后平移</button>
+      </div>
+      <button class="btn primary" id="btnMorph">▶ 连续变换</button>
+      <button class="btn" id="btnMorphReset">↺ 回到 y=sin x</button>
+    </div>
+    <div class="stagebar" id="stageBar"></div>
+    <div class="desc" id="morphDesc"></div>
+  </div>
+
+  <!-- 知识点总结 -->
+  <div class="rowfull card">
+    <div class="ch"><span class="bar"></span><h2>知识点总结</h2>
+      <span class="note">5.6 函数 y=Asin(ωx+φ)（A&gt;0, ω&gt;0）</span>
+    </div>
+
+    <div class="sumgrid">
+      <div class="sumcard">
+        <div class="sumh">① 参数的意义与影响</div>
+        <ul class="sumlist">
+          <li><b><span class="m">A</span>（振幅）</b>：纵坐标变为原来的 <span class="m">A</span> 倍，值域 <span class="m">[−A, A]</span>。</li>
+          <li><b><span class="m">ω</span>（角频率）</b>：横坐标变为原来的 <span class="fr"><span class="fr-n">1</span><span class="fr-d">ω</span></span> 倍，周期 <span class="m">T =</span> <span class="fr"><span class="fr-n">2π</span><span class="fr-d">ω</span></span>；<span class="m">ω</span> 越大，图象越“密”。</li>
+          <li><b><span class="m">φ</span>（初相）</b>：只改变左右位置（形状不变）；<span class="m">ωx+φ</span> 叫相位，<span class="m">x=0</span> 时的相位即初相。</li>
+          <li><b>频率</b> <span class="m">f =</span> <span class="fr"><span class="fr-n">1</span><span class="fr-d">T</span></span> = <span class="fr"><span class="fr-n">ω</span><span class="fr-d">2π</span></span>；<span class="m">x</span> 作时间 <span class="m">t</span> 时，这就是简谐运动。</li>
+        </ul>
+      </div>
+
+      <div class="sumcard">
+        <div class="sumh">② 由图象求解析式的步骤</div>
+        <ul class="sumlist">
+          <li><b>定 A</b>：<span class="m">A = (y<sub>max</sub> − y<sub>min</sub>) / 2</span>（取正值）。</li>
+          <li><b>定 ω</b>：相邻两个最高点（或最低点）的间距即 <span class="m">T</span>，再由 <span class="m">ω = 2π/T</span> 求 ω。</li>
+          <li><b>定 φ</b>：把某个零点或最值点代入 <span class="m">ωx+φ</span> 对应的相位反解 φ。</li>
+          <li><b>注意</b>：φ 的取值不唯一（相差 2π 都对），题目通常限定范围后再取唯一解。</li>
+        </ul>
+      </div>
+
+      <div class="sumcard">
+        <div class="sumh">③ 变换途径一：先平移后伸缩</div>
+        <div class="sumflow">
+          <span class="f">y = sin x</span>
+          <span class="ar">↓ 沿 x 轴平移 |φ| 个单位（φ&gt;0 向左，φ&lt;0 向右，“左加右减”）</span>
+          <span class="f">y = sin(x + φ)</span>
+          <span class="ar">↓ 各点横坐标变为原来的 <span class="fr"><span class="fr-n">1</span><span class="fr-d">ω</span></span> 倍（纵坐标不变）→ 周期由 2π 变为 T</span>
+          <span class="f">y = sin(ωx + φ)</span>
+          <span class="ar">↓ 各点纵坐标变为原来的 A 倍（横坐标不变）→ 值域变为 [−A, A]</span>
+          <span class="f">y = A sin(ωx + φ)</span>
+        </div>
+      </div>
+
+      <div class="sumcard">
+        <div class="sumh">④ 变换途径二：先伸缩后平移</div>
+        <div class="sumflow">
+          <span class="f">y = sin x</span>
+          <span class="ar">↓ 各点横坐标变为原来的 <span class="fr"><span class="fr-n">1</span><span class="fr-d">ω</span></span> 倍（纵坐标不变）</span>
+          <span class="f">y = sin ωx</span>
+          <span class="ar">↓ 沿 x 轴平移 <span class="fr"><span class="fr-n">|φ|</span><span class="fr-d">ω</span></span> 个单位（因为 <span class="f">ωx+φ = ω(x+</span><span class="fr"><span class="fr-n">φ</span><span class="fr-d">ω</span></span><span class="f">)</span>）</span>
+          <span class="f">y = sin(ωx + φ)</span>
+          <span class="ar">↓ 各点纵坐标变为原来的 A 倍（横坐标不变）</span>
+          <span class="f">y = A sin(ωx + φ)</span>
+        </div>
+        <div style="margin-top:6px;font-size:13px;color:#b45309">⚠ 关键差别：第 2 步平移的是 <span class="m">φ/ω</span>，不是 <span class="m">φ</span>！</div>
+      </div>
+
+      <div class="sumcard">
+        <div class="sumh">⑤ 性质速查</div>
+        <ul class="sumlist">
+          <li>定义域 <span class="m">R</span>，值域 <span class="m">[−A, A]</span>，周期 <span class="m">T = 2π/ω</span>。</li>
+          <li>对称轴：令 <span class="m">ωx+φ = π/2 + kπ</span> 求得的直线 <span class="m">x = …</span>。</li>
+          <li>对称中心：令 <span class="m">ωx+φ = kπ</span> 求得的点 <span class="m">(x, 0)</span>。</li>
+          <li>单调性：把 <span class="m">ωx+φ</span> 看成一个整体，代入 <span class="m">sin</span> 的增、减区间求解（整体思想）。</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="tipbar">
+      <b>易错提醒：</b>
+      ①“左加右减”是对 <span class="m">x</span> 而言的，<span class="m">y=sin(x+φ)</span>（φ&gt;0）是<b>向左</b>平移；
+      ②先伸缩后平移时，务必先写成 <span class="m">ω(x+φ/ω)</span> 再平移；
+      ③若给出的 <span class="m">A</span> 或 <span class="m">ω</span> 为负，先用诱导公式化为正数，再确定初相。
+    </div>
+  </div>
+
+  <footer>人教版 · 数学必修第一册 · 5.6 动态教具 · 离线单文件，可直接用浏览器打开或投屏（建议 1440×900 以上分辨率）</footer>
+</div>
+
+<script>
+(function(){
+'use strict';
+var PI = Math.PI;
+function $(id){ return document.getElementById(id); }
+
+/* ============ 有理数（分母式）工具：用于 π 的倍数精确表示 ============ */
+function gcd(a,b){ a=Math.abs(a); b=Math.abs(b); while(b){ var t=a%b; a=b; b=t; } return a||1; }
+function F(n,d){ d = (d===undefined)?1:d; if(d<0){ n=-n; d=-d; } if(n===0) return {n:0,d:1}; var g=gcd(n,d); return {n:n/g,d:d/g}; }
+function fDiv(a,b){ return F(a.n*b.d, a.d*b.n); }
+function fVal(a){ return a.n/a.d; }
+
+function piBody(f){
+  var n=f.n, d=f.d;
+  if(n===0) return '0';
+  var num=(n===1?'':n)+'π';
+  return d===1 ? num : '<span class="fr"><span class="fr-n">'+num+'</span><span class="fr-d">'+d+'</span></span>';
+}
+function piHTML(f){ return f.n<0 ? '−'+piBody({n:-f.n,d:f.d}) : piBody(f); }
+function signedPi(f){ if(f.n===0) return ''; return (f.n>0?' + ':' − ')+piBody({n:Math.abs(f.n),d:f.d}); }
+function signedPiText(f){ if(f.n===0) return ''; return (f.n>0?' + ':' − ')+piText({n:Math.abs(f.n),d:f.d}); }
+function numText(f){ var neg=f.n<0, n=Math.abs(f.n), d=f.d; return (neg?'−':'')+(d===1?String(n):(n+'/'+d)); }
+function formulaText(){ return 'y = '+fmtNum(A())+' sin('+numText(wF())+'x'+signedPiText(phiF())+')'; }
+function piText(f){ // canvas 用单行文本
+  if(f.n===0) return '0';
+  var neg=f.n<0, n=Math.abs(f.n), d=f.d;
+  return (neg?'−':'') + (d===1 ? ((n===1?'':n)+'π') : ((n===1?'':n)+'π/'+d));
+}
+function numHTML(f){
+  var neg=f.n<0, n=Math.abs(f.n), d=f.d;
+  return (neg?'−':'') + (d===1 ? String(n) : '<span class="fr"><span class="fr-n">'+n+'</span><span class="fr-d">'+d+'</span></span>');
+}
+function fmtNum(v){ return String(Math.round(v*10)/10); }
+function fmt2(v){ return (Math.round(v*100)/100).toString(); }
+
+/* ============ 状态 ============ */
+var S = {
+  ai:20, wi:10, k:4,          // A=ai/10, ω=wi/10, φ=k·π/12（滑杆目标值）
+  base:true, anno:true, ghost:true,
+  path:1,                     // 变换途径：1 先平移后伸缩，2 先伸缩后平移
+  mt:0, mPlaying:false,       // 变形进度（秒）与播放状态
+  arrowUntil:0, arrowDir:0,   // φ 移动方向提示箭头
+  uiSig:''
+};
+function A(){ return S.ai/10; }
+function W(){ return S.wi/10; }
+function PHI(){ return S.k*PI/12; }
+function wF(){ return F(S.wi,10); }
+function phiF(){ return F(S.k,12); }
+function domain(){ return {x0:-PI, x1:3*PI}; }
+
+/* ============ 颜色 ============ */
+var C = {
+  grid:'#eef1f7', gridStrong:'#dde3ee', axis:'#64748b', ink:'#475569',
+  base:'#94a3b8', phi:'#0d9488', w:'#7c3aed', fin:'#ef4444'
+};
+
+/* ============ 连续变形演示 ============ */
+var STAGE_INFO = {
+  k:{name:'相位变换', color:'#0d9488'},
+  w:{name:'周期变换', color:'#7c3aed'},
+  a:{name:'振幅变换', color:'#ef4444'}
+};
+function stageOrder(){ return S.path===1 ? ['k','w','a'] : ['w','k','a']; }
+function stageTargets(){ return {a:A(), w:W(), k:PHI()}; }
+var HOLD = 0.6;   // 每完成一步变换后的停顿（秒）
+function stageDurations(){
+  var tg=stageTargets(), o=stageOrder();
+  return o.map(function(key){
+    var v0=(key==='a'||key==='w')?1:0;
+    return Math.abs(tg[key]-v0)>1e-9 ? 1.35 : 0.25;   // 无变化的阶段快速跳过
+  });
+}
+function timeline(){
+  var durs=stageDurations(), segs=[], t=0;
+  for(var i=0;i<3;i++){
+    segs.push({start:t, anim:durs[i]});
+    t+=durs[i]+(i<2?HOLD:0);                          // 每步完成后稍作停顿
+  }
+  segs.total=t;
+  return segs;
+}
+function totalDur(){ return timeline().total; }
+function stageState(){
+  var segs=timeline(), o=stageOrder();
+  for(var i=0;i<3;i++){
+    var s=segs[i];
+    if(S.mt<s.start+s.anim) return {idx:i, key:o[i], f:(S.mt-s.start)/s.anim, holding:false};
+    if(i<2 && S.mt<s.start+s.anim+HOLD) return {idx:i, key:o[i], f:1, holding:true};
+  }
+  return {idx:3, f:1, done:true};
+}
+function currentStageKey(){ var st=stageState(); return st.done?null:st.key; }
+// 由变形进度插值出“当前显示”的参数
+function dispParams(){
+  var tg=stageTargets(), o=stageOrder(), st=stageState();
+  if(st.done) return {a:tg.a, w:tg.w, k:tg.k};
+  var cur={a:1,w:1,k:0};
+  for(var s=0;s<st.idx;s++) cur[o[s]]=tg[o[s]];
+  var key=o[st.idx], f=st.f; f=f*f*(3-2*f);            // smoothstep 缓动
+  var v0=(key==='a'||key==='w')?1:0;
+  cur[key]=v0+(tg[key]-v0)*f;
+  return cur;
+}
+var D={a:1,w:1,k:0};
+function refreshDisp(){ D=dispParams(); }
+function dA(){ return D.a; }
+function dW(){ return D.w; }
+function dK(){ return D.k; }
+function isMorphing(){ return S.mt>1e-6 && S.mt<totalDur()-1e-6; }
+function formulaFrom(d){
+  var kt=d.k===0?'':(d.k>0?' + ':' − ')+fmt2(Math.abs(d.k));
+  return 'y = '+fmt2(d.a)+' sin('+fmt2(d.w)+'x'+kt+')';
+}
+
+/* ============ 画布工具 ============ */
+var cv=$('cv'), ctx=cv.getContext('2d');
+function fit(c,cx){
+  var dpr=Math.min(window.devicePixelRatio||1,2);
+  var w=c.clientWidth, h=c.clientHeight;
+  if(c.width!==Math.round(w*dpr)||c.height!==Math.round(h*dpr)){ c.width=Math.round(w*dpr); c.height=Math.round(h*dpr); }
+  cx.setTransform(dpr,0,0,dpr,0,0);
+  return {w:w,h:h};
+}
+function arrow(c,x1,y1,x2,y2,s){
+  c.beginPath(); c.moveTo(x1,y1); c.lineTo(x2,y2); c.stroke();
+  var a=Math.atan2(y2-y1,x2-x1);
+  c.beginPath(); c.moveTo(x2,y2);
+  c.lineTo(x2-s*Math.cos(a-0.45), y2-s*Math.sin(a-0.45));
+  c.lineTo(x2-s*Math.cos(a+0.45), y2-s*Math.sin(a+0.45));
+  c.closePath(); c.fill();
+}
+function label(c,txt,x,y,color,bg){
+  c.font='13.5px "Segoe UI","PingFang SC",sans-serif';
+  var w=c.measureText(txt).width, bx=x-w/2-4, by=y-10;
+  c.fillStyle=bg||'rgba(255,255,255,.9)';
+  c.beginPath(); c.rect(bx,by,w+8,18); c.fill();
+  c.fillStyle=color; c.textAlign='center'; c.textBaseline='middle'; c.fillText(txt,x,y);
+}
+function plot(c,X,Y,fn,x0,x1,color,width,dash){
+  var N=1400, i, x, px, py;
+  c.save(); c.beginPath(); c.setLineDash(dash||[]);
+  for(i=0;i<=N;i++){
+    x=x0+(x1-x0)*i/N; px=X(x); py=Y(fn(x));
+    if(i===0) c.moveTo(px,py); else c.lineTo(px,py);
+  }
+  c.strokeStyle=color; c.lineWidth=width; c.lineJoin='round'; c.stroke(); c.restore();
+}
+
+/* ============ 主图绘制 ============ */
+function drawMain(){
+  var dim=fit(cv,ctx), w=dim.w, h=dim.h;
+  var L=54,R=20,T=16,B=36, pw=w-L-R, ph=h-T-B;
+  var d=domain(), x0=d.x0, x1=d.x1, yMin=-3.6, yMax=3.6;
+  var X=function(x){ return L+(x-x0)/(x1-x0)*pw; };
+  var Y=function(y){ return T+(yMax-y)/(yMax-yMin)*ph; };
+  ctx.clearRect(0,0,w,h);
+  ctx.fillStyle='#fff'; ctx.fillRect(0,0,w,h);
+
+  // 网格
+  var stepx = PI/2;
+  var i, kf, xv, px;
+  for(i=Math.ceil(x0/stepx); i<=Math.floor(x1/stepx); i++){
+    if(i===0) continue;
+    kf = F(i,2);
+    xv = fVal(kf)*PI; px = X(xv);
+    ctx.strokeStyle = (kf.d===1) ? C.gridStrong : C.grid;
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(px,T); ctx.lineTo(px,T+ph); ctx.stroke();
+    label(ctx, piText(kf), px, T+ph+16, C.ink, 'rgba(255,255,255,.75)');
+  }
+  for(i=-3;i<=3;i++){
+    if(i===0) continue;
+    var py=Y(i);
+    ctx.strokeStyle=C.grid; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(L,py); ctx.lineTo(L+pw,py); ctx.stroke();
+    ctx.fillStyle=C.ink; ctx.font='13px "Segoe UI",sans-serif'; ctx.textAlign='right'; ctx.textBaseline='middle';
+    ctx.fillText(String(i), L-8, py);
+  }
+  label(ctx,'0', X(0), T+ph+16, C.ink, 'rgba(255,255,255,.75)');
+  label(ctx,'O', X(0)-9, Y(0)+11, C.ink, 'rgba(255,255,255,.75)');
+
+  // 坐标轴
+  ctx.strokeStyle=C.axis; ctx.fillStyle=C.axis; ctx.lineWidth=1.4;
+  ctx.beginPath(); ctx.moveTo(L,Y(0)); ctx.lineTo(L+pw,Y(0)); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(X(0),T); ctx.lineTo(X(0),T+ph); ctx.stroke();
+  arrow(ctx,L+pw,Y(0),L+pw+9,Y(0),4.5);
+  arrow(ctx,X(0),T,X(0),T-9,4.5);
+  ctx.font='italic 14px "Times New Roman",serif'; ctx.fillStyle=C.ink;
+  ctx.textAlign='left'; ctx.fillText('x', L+pw+6, Y(0)-10);
+  ctx.fillText('y', X(0)+8, T+10);
+
+  ctx.save(); ctx.beginPath(); ctx.rect(L-1,T-1,pw+2,ph+2); ctx.clip();
+
+  var av=dA(), wv=dW(), kv=dK();
+  var curFn = function(x){ return av*Math.sin(wv*x+kv); };
+  var targetFn = function(x){ return A()*Math.sin(W()*x+PHI()); };
+
+  // 基准 y=sin x
+  if(S.base) plot(ctx,X,Y,function(x){return Math.sin(x);},x0,x1,C.base,1.4,[6,5]);
+
+  // 目标虚影（变形未完成时）
+  if(S.ghost && isMorphing()) plot(ctx,X,Y,targetFn,x0,x1,C.fin,1.2,[2,4]);
+
+  // 当前曲线
+  plot(ctx,X,Y,curFn,x0,x1,C.fin,3,[]);
+
+  // 周期 / 振幅标注（始终显示；从最大值点开始，允许越过视野边界由裁剪处理）
+  if(S.anno){
+    var colT='#5b21b6', colA='#0f766e';   // 加深后的周期/振幅标注色
+    var Tval=2*PI/wv;
+    var xPeak0=(PI/2-kv)/wv;
+    var pk=xPeak0+Math.ceil((x0+0.05-xPeak0)/Tval)*Tval;   // 视野内（或紧邻右侧）的第一个最高点
+    var tStart=pk, tEnd=pk+Tval;
+    if(tEnd>x1-0.05){ tStart=pk-Tval; tEnd=pk; }           // 右侧放不下就改为左端越界
+    var yp=Y(-3.15);
+    ctx.strokeStyle=colT; ctx.fillStyle=colT; ctx.lineWidth=1.6; ctx.setLineDash([]);
+    arrow(ctx,X(tStart),yp,X(tEnd),yp,4.5);
+    var midX=(X(tStart)+X(tEnd))/2;
+    midX=Math.max(X(x0)+80, Math.min(X(x1)-80, midX));
+    label(ctx,'T = '+tLabel(wv), midX, yp, colT);
+    // 振幅：最高点处，从平衡位置到最高点
+    ctx.strokeStyle=colA; ctx.fillStyle=colA; ctx.lineWidth=1.6;
+    arrow(ctx,X(pk),Y(0),X(pk),Y(av),4.5);
+    label(ctx,'A = '+fmtNum(av), X(pk), (Y(0)+Y(av))/2, colA);
+  }
+
+  // 初相变化方向提示（φ 变化后 2.2s 内淡出）
+  var nowp=performance.now();
+  if(nowp<S.arrowUntil && S.arrowDir!==0){
+    var alpha=Math.max(0,Math.min(1,(S.arrowUntil-nowp)/400));
+    ctx.save(); ctx.globalAlpha=alpha;
+    var ay=T+44, axc=X(0)+160, dir=S.arrowDir;
+    // 流动虚线（向移动方向滚动）
+    ctx.strokeStyle='#f97316'; ctx.lineWidth=4.5;
+    ctx.setLineDash([18,12]); ctx.lineDashOffset=-(nowp/35)%30;
+    ctx.beginPath(); ctx.moveTo(axc-dir*95,ay); ctx.lineTo(axc+dir*70,ay); ctx.stroke();
+    ctx.setLineDash([]); ctx.lineDashOffset=0;
+    // 大箭头
+    ctx.fillStyle='#ea580c';
+    arrow(ctx,axc+dir*70,ay,axc+dir*108,ay,12);
+    ctx.font='700 15px "Segoe UI","PingFang SC",sans-serif';
+    ctx.textAlign='center'; ctx.textBaseline='alphabetic';
+    ctx.fillStyle='#c2410c';
+    ctx.fillText(dir<0?'图象左移':'图象右移', axc, ay-14);
+    ctx.restore();
+  }
+  ctx.restore();
+}
+// 周期标注文本：变形中用近似值，静止时用精确 π 分式
+function tLabel(wv){
+  if(isMorphing() || Math.abs(wv-W())>1e-9) return 'T ≈ '+fmt2(2*PI/wv);
+  if(Math.abs(wv-1)<1e-9) return '2π';
+  return piText(fDiv(F(2),wF()));
+}
+
+/* ============ 面板 / DOM 更新 ============ */
+function formulaHTML(){
+  var w=wF(), term=signedPi(phiF());
+  return '<i>y</i> = '+fmtNum(A())+' sin('+numHTML(w)+'<i>x</i>'+term+')';
+}
+function updateHero(){ $('heroFormula').innerHTML=formulaHTML(); }
+
+function updatePhys(){
+  var Tf=fDiv(F(2),wF());
+  var x0=fDiv(F(-S.k,12),wF());
+  var rows=[
+    ['振幅 <span class="m">A</span>','<span style="color:#0d9488">'+fmtNum(A())+'</span>'],
+    ['周期 <span class="m">T=2π/ω</span>','<span style="color:#7c3aed">'+piHTML(Tf)+'</span> ≈ '+fmt2(fVal(Tf)*PI)],
+    ['频率 <span class="m">f=1/T</span>',fmt2(W()/(2*PI))],
+    ['初相 <span class="m">φ</span>','<span style="color:#ef4444">'+piHTML(phiF())+'</span>'],
+    ['值域','[−'+fmtNum(A())+', '+fmtNum(A())+']'],
+    ['起点 (ωx+φ=0)', '('+piHTML(x0)+', 0)']
+  ];
+  var html='';
+  for(var i=0;i<rows.length;i++) html+='<div class="kv"><span class="k">'+rows[i][0]+'</span><span class="v">'+rows[i][1]+'</span></div>';
+  $('phys').innerHTML=html;
+}
+function updateControlLabels(){
+  $('vA').innerHTML=fmtNum(A());
+  $('vW').innerHTML=numHTML(wF());
+  $('vP').innerHTML=piHTML(phiF());
+  $('sA').value=S.ai; $('sW').value=S.wi; $('sP').value=S.k;
+}
+function updateStageBar(){
+  var segs=timeline(), o=stageOrder(), html='';
+  for(var s=0;s<3;s++){
+    var key=o[s], info=STAGE_INFO[key];
+    var done=S.mt>=segs[s].start+segs[s].anim;
+    var active=!done && S.mt>=segs[s].start;
+    var cls='stage'+(done?' done':'')+(active?' active':'');
+    var txt=info.name+(done?' ✓':'')+(active?' …':'');
+    html+='<div class="'+cls+'" style="'+(active?'background:'+info.color:'')+'">'+txt+'</div>';
+  }
+  $('stageBar').innerHTML=html;
+}
+function updateMorphDesc(){
+  var st=stageState(), key=st.done?null:st.key, el=$('morphDesc');
+  var holdNote = st.holding ? ' <span style="color:var(--ink3)">（本步完成，稍作停顿…）</span>' : '';
+  if(S.mt<=1e-6 && !S.mPlaying){
+    el.innerHTML='点击 <b>▶ 连续变换</b>：图象将从 y = sin x 出发，按所选路径连续变形为 y=Asin(ωx+φ)；也可以随时直接拖动滑杆。';
+    return;
+  }
+  if(key===null){
+    el.innerHTML='<b>变换完成！</b>当前图象即 <b>'+formulaText()+'</b>。可点击「↺ 回到 y=sin x」重新演示，或直接拖动滑杆修改目标。';
+    return;
+  }
+  var Tf=fDiv(F(2),wF()), phiOverW=fDiv(phiF(),wF());
+  if(key==='k'){
+    var amt = S.path===1 ? piHTML(F(Math.abs(S.k),12)) : piHTML(phiOverW);
+    el.innerHTML='<b>相位变换</b>：图象正沿 x 轴'+(S.k>0?'向<b>左</b>':'向<b>右</b>')+'平移 <b>'+amt+'</b> 个单位长度（口诀“左加右减”'+
+      (S.path===2?'。注意：先伸缩后平移时，平移的是 <b>φ/ω</b> 而不是 φ！':'')+'）。当前：<b id="morphFormula"></b>'+holdNote;
+  }else if(key==='w'){
+    el.innerHTML='<b>周期变换</b>：图象上所有点的横坐标正在变为原来的 <b>'+numHTML(fDiv(F(1),wF()))+'</b> 倍，周期趋于 <b>T = 2π/ω = '+piHTML(Tf)+'</b>。当前：<b id="morphFormula"></b>'+holdNote;
+  }else{
+    el.innerHTML='<b>振幅变换</b>：图象上所有点的纵坐标正在变为原来的 <b>'+fmtNum(A())+'</b> 倍，值域趋于 <b>[−'+fmtNum(A())+', '+fmtNum(A())+']</b>。当前：<b id="morphFormula"></b>'+holdNote;
+  }
+}
+function updateMorphUI(){
+  var st=stageState();
+  var sig=S.path+'|'+(st.done?'done':st.key)+'|'+(S.mPlaying?'p':'s')+'|'+(st.holding?'h':'a')+'|'+S.ai+'|'+S.wi+'|'+S.k;
+  if(sig!==S.uiSig){
+    S.uiSig=sig;
+    updateStageBar(); updateMorphDesc(); updateLegend();
+  }
+  var mf=$('morphFormula');
+  if(mf) mf.textContent=formulaFrom(D);
+}
+function updateLegend(){
+  var h='';
+  if(S.base) h+='<span><i style="border-top-color:'+C.base+';border-top-style:dashed"></i>y = sin x（基准，虚线）</span>';
+  if(S.mt<=1e-6){
+    h+='<span><i style="border-top-color:'+C.fin+'"></i>当前：y = sin x（出发点）</span>';
+    if(S.ghost) h+='<span><i style="border-top-color:'+C.fin+';border-top-style:dotted"></i>目标：'+formulaText()+'</span>';
+  }else if(!isMorphing()){
+    h+='<span><i style="border-top-color:'+C.fin+'"></i>当前：'+formulaText()+'</span>';
+  }else{
+    h+='<span><i style="border-top-color:'+C.fin+'"></i>变换中：'+formulaFrom(D)+'</span>';
+    if(S.ghost) h+='<span><i style="border-top-color:'+C.fin+';border-top-style:dotted"></i>目标：'+formulaText()+'</span>';
+  }
+  $('legend').innerHTML=h;
+}
+
+function syncAll(){
+  $('btnPath1').className='btn'+(S.path===1?' on':'');
+  $('btnPath2').className='btn'+(S.path===2?' on':'');
+  updateControlLabels(); updateHero(); updatePhys();
+  refreshDisp(); updateMorphUI(); drawMain();
+}
+// 拖动滑杆：立即停止变形，直接显示目标图象
+function applySliders(){
+  S.mPlaying=false; S.mt=totalDur(); refreshDisp();
+  $('btnMorph').innerHTML='▶ 连续变换'; $('btnMorph').className='btn primary';
+  syncAll();
+}
+function phiArrow(dir){ S.arrowDir=dir; S.arrowUntil=performance.now()+2200; }
+
+/* ============ 交互 ============ */
+$('sA').addEventListener('input',function(){ S.ai=parseInt(this.value,10); applySliders(); });
+$('sW').addEventListener('input',function(){ S.wi=parseInt(this.value,10); applySliders(); });
+$('sP').addEventListener('input',function(){
+  var old=S.k; S.k=parseInt(this.value,10);
+  if(S.k!==old) phiArrow(S.k>old?-1:1);   // φ 增大 → 左移
+  applySliders();
+});
+
+$('ckBase').onchange=function(){ S.base=this.checked; updateLegend(); drawMain(); };
+$('ckAnno').onchange=function(){ S.anno=this.checked; drawMain(); };
+$('ckGhost').onchange=function(){ S.ghost=this.checked; updateLegend(); drawMain(); };
+$('btnPath1').onclick=function(){ S.path=1; S.mPlaying=false; S.mt=0; refreshDisp(); syncAll(); $('btnMorph').innerHTML='▶ 连续变换'; $('btnMorph').className='btn primary'; };
+$('btnPath2').onclick=function(){ S.path=2; S.mPlaying=false; S.mt=0; refreshDisp(); syncAll(); $('btnMorph').innerHTML='▶ 连续变换'; $('btnMorph').className='btn primary'; };
+$('btnMorph').onclick=function(){
+  if(S.mPlaying){ S.mPlaying=false; this.innerHTML='▶ 连续变换'; this.className='btn primary'; updateMorphUI(); return; }
+  if(S.mt>=totalDur()) S.mt=0;            // 已完成则重新开始
+  S.mPlaying=true;
+  this.innerHTML='⏸ 暂停'; this.className='btn';
+  updateMorphUI();
+};
+$('btnMorphReset').onclick=function(){
+  S.mPlaying=false; S.mt=0; refreshDisp();
+  $('btnMorph').innerHTML='▶ 连续变换'; $('btnMorph').className='btn primary';
+  syncAll();
+};
+
+/* 键盘 */
+window.addEventListener('keydown',function(e){
+  if(e.target && /INPUT|SELECT|TEXTAREA/.test(e.target.tagName)) return;
+  if(e.code==='ArrowLeft'){ e.preventDefault(); var o=S.k; S.k=Math.max(-24,S.k-1); if(S.k!==o) phiArrow(1); applySliders(); }
+  if(e.code==='ArrowRight'){ e.preventDefault(); var o2=S.k; S.k=Math.min(24,S.k+1); if(S.k!==o2) phiArrow(-1); applySliders(); }
+});
+window.addEventListener('resize',function(){ drawMain(); });
+
+/* ============ 动画循环 ============ */
+var lastT=performance.now(), dirty=true;
+function tick(now){
+  var dt=Math.min(0.05,(now-lastT)/1000); lastT=now;
+  var active=false;
+  if(S.mPlaying){
+    S.mt+=dt;
+    var st=currentStageKey();
+    if(st==='k' && Math.abs(PHI())>1e-9){ S.arrowDir=(S.k>0?-1:1); S.arrowUntil=now+300; }
+    if(S.mt>=totalDur()){
+      S.mt=totalDur(); S.mPlaying=false;
+      $('btnMorph').innerHTML='▶ 连续变换'; $('btnMorph').className='btn primary';
+    }
+    refreshDisp(); updateMorphUI(); dirty=true; active=true;
+  }
+  if(now<S.arrowUntil) active=true;
+  if(active || dirty){ drawMain(); dirty=false; }
+  requestAnimationFrame(tick);
+}
+
+/* 初始：教材实例 y = 3sin(2x + π/3)（含 A、ω、φ 三重变化） */
+S.ai=30; S.wi=20; S.k=4;
+S.mt=totalDur();          // 初始直接显示目标图象
+refreshDisp();
+S.uiSig='';
+syncAll();
+requestAnimationFrame(tick);
+})();
+</script>
+</body>
+</html>

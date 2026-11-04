@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>潜水艇工作原理 · 物理可视化仿真 + 知识点讲解</title>
+<style>
+  *{ box-sizing:border-box; margin:0; padding:0; }
+  :root{
+    --bg:#eef3fa; --panel:#fff; --ink:#1f2a44; --muted:#5b6b87;
+    --water:#2f80ed; --buoy:#00a86b; --grav:#e8553e; --line:#d8e2f0;
+  }
+  body{ font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+        background:var(--bg); color:var(--ink); padding:20px; line-height:1.65; }
+  .wrap{ max-width:1060px; margin:0 auto; }
+  h1{ font-size:21px; }
+  .sub-tip{ color:var(--muted); font-size:13px; margin-bottom:14px; }
+
+  .layout{ display:grid; grid-template-columns:500px 1fr; gap:18px; align-items:start; }
+  @media(max-width:960px){ .layout{ grid-template-columns:1fr; } }
+
+  .stage{ background:var(--panel); border:1px solid var(--line); border-radius:12px;
+          padding:10px; box-shadow:0 6px 20px rgba(40,70,120,.07); }
+  svg{ width:100%; height:auto; display:block; border-radius:8px; }
+
+  .controls{ display:flex; flex-wrap:wrap; gap:8px; align-items:center; margin-top:10px; }
+  button{ font:inherit; font-size:13px; font-weight:600; cursor:pointer; border:none;
+          border-radius:9px; padding:9px 14px; color:#fff; user-select:none;
+          transition:transform .05s, filter .15s; }
+  button:active{ transform:translateY(1px) scale(.98); }
+  button:hover{ filter:brightness(1.05); }
+  .btn-in{ background:var(--water); } .btn-out{ background:var(--buoy); } .btn-reset{ background:#8a97ad; }
+  .status{ margin-left:auto; font-weight:700; font-size:13px; padding:6px 12px;
+           border-radius:999px; background:#eef3fb; border:1px solid var(--line); }
+
+  .readout{ display:flex; align-items:center; gap:10px; margin-top:10px; padding:9px 12px;
+            background:#f7fafd; border:1px solid var(--line); border-radius:10px; }
+  .readout .big{ font-size:22px; font-weight:800; color:var(--water); min-width:64px; }
+  .readout .lab{ font-size:12px; color:var(--muted); }
+  .bar{ flex:1; height:16px; background:#e6ecf6; border-radius:999px; overflow:hidden; position:relative; }
+  .bar > i{ display:block; height:100%; width:0%; background:linear-gradient(90deg,#8fbcff,var(--water));
+            transition:width .08s linear; }
+  .marks{ position:absolute; inset:0; }
+  .marks span{ position:absolute; top:0; bottom:0; width:1px; background:rgba(0,0,0,.08); }
+
+  .legend{ display:flex; gap:14px; flex-wrap:wrap; font-size:12px; margin-top:8px; color:var(--muted); }
+  .legend span{ display:inline-flex; align-items:center; gap:5px; }
+  .dot{ width:10px; height:10px; border-radius:3px; display:inline-block; }
+
+  .data{ display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-top:10px; }
+  .data .cell{ background:#f7fafd; border:1px solid var(--line); border-radius:9px; padding:7px 10px; }
+  .data .cell span{ display:block; font-size:11px; color:var(--muted); }
+  .data .cell b{ font-size:15px; }
+
+  /* ===== 右栏讲解 ===== */
+  .note{ background:var(--panel); border:1px solid var(--line); border-radius:12px;
+         padding:13px 15px; margin-bottom:12px; }
+  .note h3{ font-size:14px; margin-bottom:7px; }
+  .note p, .note li{ font-size:13px; color:#3c4a63; }
+  .note ul{ padding-left:17px; }
+  .note.green{ border-color:#bfe3cf; background:#f5fbf8; } .note.green h3{ color:var(--buoy); }
+  .note.red{ border-color:#f3c0b6; background:#fff7f5; }   .note.red h3{ color:var(--grav); }
+  .note.blue{ border-color:#c3d9f7; background:#f5f9ff; } .note.blue h3{ color:var(--water); }
+
+  .fml{ background:#fff; border:1px solid var(--line); border-radius:8px; padding:7px 10px;
+        margin:5px 0; font-size:12.5px; }
+  .fml span{ font-family:Consolas,Menlo,monospace; font-weight:700; }
+  kbd{ background:#eef3fb; border:1px solid var(--line); border-bottom-width:2px; border-radius:5px;
+       padding:1px 5px; font-size:11px; font-family:inherit; }
+
+  table{ width:100%; border-collapse:collapse; font-size:12.5px; margin-top:4px; }
+  th,td{ border:1px solid var(--line); padding:5px 7px; text-align:center; }
+  th{ background:#f3f7fc; font-weight:700; font-size:12px; }
+  td.tl{ text-align:left; }
+  .c-up{ color:var(--buoy); font-weight:700; } .c-dn{ color:var(--grav); font-weight:700; }
+
+  details{ border-top:1px dashed var(--line); padding-top:7px; margin-top:9px; }
+  details summary{ cursor:pointer; font-size:13px; font-weight:600; color:var(--water); outline:none; }
+  details p{ font-size:13px; margin-top:6px; }
+
+  .stream{ stroke-dasharray:8 8; animation:flow .45s linear infinite; }
+  @keyframes flow{ to{ stroke-dashoffset:-16; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>🛥️ 潜水艇工作原理</h1>
+  <div class="sub-tip">操作「水舱进水 / 排水」，观察<b>浮力箭头不变、重力箭头随水量变化</b>。</div>
+
+  <div class="layout">
+    <!-- ======== 左：仿真 ======== -->
+    <div class="stage">
+      <svg id="svg" viewBox="0 0 480 460" preserveAspectRatio="xMidYMid meet">
+        <defs>
+          <linearGradient id="sea" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#bfdcff"/>
+            <stop offset="0.18" stop-color="#5aa9f0"/>
+            <stop offset="1" stop-color="#0a3b73"/>
+          </linearGradient>
+          <linearGradient id="hull" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#ffe27a"/>
+            <stop offset="1" stop-color="#f0b400"/>
+          </linearGradient>
+          <linearGradient id="liq" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#6cb0ff"/>
+            <stop offset="1" stop-color="#1c5fb8"/>
+          </linearGradient>
+          <marker id="ah-b" markerWidth="9" markerHeight="9" refX="4.5" refY="8" orient="auto">
+            <path d="M0,8 L4.5,0 L9,8 Z" fill="#00a86b"/></marker>
+          <marker id="ah-g" markerWidth="9" markerHeight="9" refX="4.5" refY="1" orient="auto">
+            <path d="M0,1 L4.5,9 L9,1 Z" fill="#e8553e"/></marker>
+          <clipPath id="clipT"><rect x="-42" y="-19" width="84" height="38" rx="6"/></clipPath>
+        </defs>
+
+        <rect x="0" y="0" width="480" height="46" fill="#eaf4ff"/>
+        <rect x="0" y="46" width="480" height="354" fill="url(#sea)"/>
+        <path d="M0,46 Q40,39 80,46 T160,46 T240,46 T320,46 T400,46 T480,46"
+              fill="none" stroke="#fff" stroke-width="2.5" opacity=".75"/>
+        <path d="M0,400 Q80,391 160,400 T320,400 T480,400" fill="#b8954f" opacity=".65"/>
+        <rect x="0" y="400" width="480" height="60" fill="#caa76b"/>
+
+        <!-- 深度刻度 -->
+        <g font-size="10" fill="#fff" opacity=".7" font-family="sans-serif">
+          <line x1="20" y1="130" x2="36" y2="130" stroke="#fff" stroke-opacity=".5"/>
+          <line x1="20" y1="220" x2="36" y2="220" stroke="#fff" stroke-opacity=".5"/>
+          <line x1="20" y1="310" x2="36" y2="310" stroke="#fff" stroke-opacity=".5"/>
+          <text x="10" y="134">浅</text><text x="10" y="224">中</text><text x="10" y="314">深</text>
+        </g>
+
+        <!-- 潜水艇 -->
+        <g id="sub" transform="translate(240,300)">
+          <ellipse cx="0" cy="0" rx="76" ry="26" fill="url(#hull)" stroke="#e0a800" stroke-width="2.5"/>
+          <rect x="-14" y="-44" width="28" height="20" rx="5" fill="url(#hull)" stroke="#e0a800" stroke-width="2.5"/>
+          <rect x="-4" y="-56" width="8" height="13" rx="2" fill="#e0a800"/>
+          <circle cx="-58" cy="0" r="5" fill="#2f80ed" stroke="#fff" stroke-width="1.5"/>
+          <circle cx="58"  cy="0" r="5" fill="#2f80ed" stroke="#fff" stroke-width="1.5"/>
+          <g id="prop" transform="translate(76,0)">
+            <line x1="0" y1="0" x2="13" y2="0" stroke="#e0a800" stroke-width="3"/>
+            <ellipse cx="16" cy="0" rx="3.5" ry="10" fill="#e0a800"/>
+          </g>
+
+          <!-- 中央水舱（玻璃量杯） -->
+          <rect x="-42" y="-19" width="84" height="38" rx="6" fill="#eaf4ff" opacity=".35" stroke="#fff" stroke-width="1.5"/>
+          <path id="water" d="" fill="url(#liq)" clip-path="url(#clipT)" opacity=".93"/>
+          <path id="surf"  d="" fill="none" stroke="#cfe6ff" stroke-width="1.8" clip-path="url(#clipT)"/>
+          <g clip-path="url(#clipT)">
+            <g stroke="#fff" stroke-opacity=".5" stroke-width="1">
+              <line x1="32" y1="19"   x2="42" y2="19"/>
+              <line x1="32" y1="9.5"  x2="42" y2="9.5"/>
+              <line x1="32" y1="0"    x2="42" y2="0"/>
+              <line x1="32" y1="-9.5" x2="42" y2="-9.5"/>
+              <line x1="32" y1="-19"  x2="42" y2="-19"/>
+            </g>
+            <g font-size="7.5" font-weight="700" fill="#0d2b4a" fill-opacity=".8" text-anchor="end">
+              <text x="29" y="22">0</text><text x="29" y="3">50</text><text x="29" y="-16">100</text>
+            </g>
+          </g>
+
+          <!-- 进水 / 排水水流 -->
+          <g id="streamIn" style="display:none">
+            <path d="M-20,-56 L-20,-19" class="stream" stroke="#2f80ed" stroke-width="4" stroke-linecap="round"/>
+            <path d="M20,-56 L20,-19"   class="stream" stroke="#2f80ed" stroke-width="4" stroke-linecap="round"/>
+            <path d="M-27,-56 L-13,-56 L-20,-49 Z" fill="#2f80ed"/>
+            <path d="M13,-56 L27,-56 L20,-49 Z" fill="#2f80ed"/>
+          </g>
+          <g id="streamOut" style="display:none">
+            <path d="M-20,19 L-20,56" class="stream" stroke="#2f80ed" stroke-width="4" stroke-linecap="round"/>
+            <path d="M20,19 L20,56"   class="stream" stroke="#2f80ed" stroke-width="4" stroke-linecap="round"/>
+          </g>
+          <text x="0" y="-23" font-size="9" fill="#1f2a44" font-weight="700" text-anchor="middle">水舱</text>
+
+          <!-- 受力：浮力恒定 / 重力变化 -->
+          <line id="arrowB" x1="115" y1="0" x2="115" y2="-54" stroke="#00a86b" stroke-width="5" marker-end="url(#ah-b)"/>
+          <text x="123" y="-30" font-size="11" fill="#00a86b" font-weight="700">浮力 F浮</text>
+          <line id="arrowG" x1="115" y1="0" x2="115" y2="38" stroke="#e8553e" stroke-width="5" marker-end="url(#ah-g)"/>
+          <text x="123" y="26" font-size="11" fill="#e8553e" font-weight="700">重力 G</text>
+        </g>
+      </svg>
+
+      <div class="controls">
+        <button class="btn-in"  id="btnIn">💧 进水（按住）</button>
+        <button class="btn-out" id="btnOut">💨 排水（按住）</button>
+        <button class="btn-reset" id="btnReset">↺ 复位</button>
+        <div class="status" id="status">悬浮</div>
+      </div>
+
+      <div class="readout">
+        <div class="big" id="pct">0%</div>
+        <div style="flex:1">
+          <div class="lab">水舱进水量（对照舱内水面高度）</div>
+          <div class="bar">
+            <i id="barFill"></i>
+            <div class="marks"><span style="left:25%"></span><span style="left:50%"></span><span style="left:75%"></span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="legend">
+        <span><i class="dot" style="background:#00a86b"></i>浮力（恒定）</span>
+        <span><i class="dot" style="background:#e8553e"></i>重力（随水量变）</span>
+        <span><i class="dot" style="background:#2f80ed"></i>水舱内的水</span>
+      </div>
+
+      <div class="data">
+        <div class="cell"><span>浮力 F浮</span><b class="c-up">1.00（恒定）</b></div>
+        <div class="cell"><span>重力 G</span><b id="gVal">0.70</b></div>
+        <div class="cell"><span>合力方向</span><b id="netDir">向下 ↓</b></div>
+        <div class="cell"><span>净力大小</span><b id="netMag">0.30</b></div>
+      </div>
+    </div>
+
+    <!-- ======== 右：知识点讲解 ======== -->
+    <div>
+      <div class="note green">
+        <h3>🎯 一句话结论</h3>
+        <p>潜艇浸没在水中时，<b>排开水的体积 V排 不变 → 浮力 F浮 不变</b>；它通过<b>改变水舱内水的质量</b>来改变<b>自身重力 G</b>，从而实现上浮与下潜。</p>
+      </div>
+
+      <div class="note blue">
+        <h3>📐 受力分析（核心公式）</h3>
+        <div class="fml"><span style="color:#00a86b">F浮 = ρ水 · g · V排</span>　潜艇体积不变 → V排 不变 → <b>浮力恒定</b></div>
+        <div class="fml"><span style="color:#e8553e">G = m总 · g = (m艇 + m水) · g</span>　水舱进出水量改变 m水 → <b>重力改变</b></div>
+        <p style="margin-top:6px">👉 仿真中：<b class="c-up">绿色箭头</b>长度始终不变，<b class="c-dn">红色箭头</b>随水量伸长 / 缩短。</p>
+      </div>
+
+      <div class="note">
+        <h3>📊 三种状态对照表</h3>
+        <table>
+          <tr><th>水舱水量</th><th>重力与浮力</th><th>合力方向</th><th>运动状态</th></tr>
+          <tr><td class="tl">排空（少）</td><td class="c-up">G &lt; F浮</td><td class="c-up">向上 ↑</td><td class="c-up">上浮</td></tr>
+          <tr><td class="tl">适中（约 50%）</td><td>G = F浮</td><td>合力为零</td><td>悬浮</td></tr>
+          <tr><td class="tl">灌满（多）</td><td class="c-dn">G &gt; F浮</td><td class="c-dn">向下 ↓</td><td class="c-dn">下潜</td></tr>
+        </table>
+      </div>
+
+      <div class="note">
+        <h3>🧪 操作 → 现象（因果链）</h3>
+        <ul>
+          <li><kbd>进水</kbd>：m水 ↑ → <b class="c-dn">G 变长</b> &gt; F浮 → 合力向下 → <b class="c-dn">下潜</b></li>
+          <li><kbd>排水</kbd>：m水 ↓ → <b class="c-up">G 变短</b> &lt; F浮 → 合力向上 → <b class="c-up">上浮</b></li>
+          <li>调到 <b>G = F浮</b>：合力为零 → 可停在任意深度<b>悬浮</b></li>
+        </ul>
+      </div>
+
+      <div class="note red">
+        <h3>⚠️ 学生易错点</h3>
+        <ul>
+          <li><b>误区：</b>以为潜艇是靠<b>改变浮力</b>来升降的。</li>
+          <li><b>纠正：</b>潜艇<b>体积不变</b>，V排 不变，<b>浮力并不改变</b>；真正改变的是<b>自身重力</b>。</li>
+          <li><b>对比：</b>鱼靠鳔<b>改变自身体积</b>来改变浮力；潜艇靠水舱水量改变重力 —— 两者原理不同。</li>
+          <li><b>易混：</b>只有潜艇<b>露出水面</b>后 V排 才减小、浮力才变小，这不属于水下升降阶段。</li>
+        </ul>
+        <details>
+          <summary>🤔 思考题（点击展开）</summary>
+          <p>1. 潜艇从海面匀速下潜到深海的过程中，所受浮力如何变化？<br><b>答：不变</b>（浸没后 V排 不变）。</p>
+          <p>2. 水面轮船与水下潜艇调节升降的方式有何不同？<br><b>答：</b>轮船靠改变 V排（吃水深度）改变浮力；潜艇靠水舱水量改变自身重力。</p>
+          <p>3. 潜艇紧急上浮时为什么要向水舱<b>吹气排水</b>？<br><b>答：</b>排出压载水使 G 减小，当 G &lt; F浮 时产生向上的合力。</p>
+        </details>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  const subG=document.getElementById('sub');
+  const water=document.getElementById('water'), surf=document.getElementById('surf');
+  const arrowG=document.getElementById('arrowG');
+  const statusEl=document.getElementById('status');
+  const pctEl=document.getElementById('pct'), barFill=document.getElementById('barFill');
+  const streamIn=document.getElementById('streamIn'), streamOut=document.getElementById('streamOut');
+  const gVal=document.getElementById('gVal'), netDir=document.getElementById('netDir'), netMag=document.getElementById('netMag');
+
+  // 物理参数（以浮力为 1 归一化）
+  const BASE=0.70, CAP=0.60, M0=1.00;
+  const BUOY_LEN=54;             // 浮力箭头固定长度
+  const TOP_Y=100, BOT_Y=330;    // 艇心可达范围（保证箭头不越出海面 / 海底）
+  const T_X=-42, T_W=84, T_BOT=19, T_H=38;
+
+  let frac=0, subY=300, vel=0, holding=null, t=0;
+  const gRel=()=>(BASE+CAP*frac)/M0;
+
+  // 生成带波纹水面的水体路径
+  function paths(frac, phase){
+    const sy = T_BOT - T_H*frac;
+    const amp = (frac>0.002 && frac<0.998) ? 1.8 : 0;
+    let body=`M${T_X},${T_BOT} L${T_X},${sy.toFixed(1)}`;
+    let line=`M${T_X},${sy.toFixed(1)}`;
+    const N=10;
+    for(let i=0;i<=N;i++){
+      const px=T_X+T_W*i/N, py=sy+Math.sin(phase/280+i*0.9)*amp;
+      body+=` L${px.toFixed(1)},${py.toFixed(1)}`;
+      line+=` L${px.toFixed(1)},${py.toFixed(1)}`;
+    }
+    body+=` L${T_X+T_W},${T_BOT} Z`;
+    return {body, line};
+  }
+
+  function render(){
+    const p=paths(frac, t);
+    water.setAttribute('d', p.body);
+    surf.setAttribute('d',  p.line);
+
+    arrowG.setAttribute('y2', BUOY_LEN*gRel());
+    subG.setAttribute('transform',`translate(240,${subY.toFixed(1)})`);
+
+    const pct=Math.round(frac*100);
+    pctEl.textContent=pct+'%';
+    barFill.style.width=pct+'%';
+
+    const atTop=subY<=TOP_Y+0.5, atBot=subY>=BOT_Y-0.5, gr=gRel();
+    let s,c;
+    if(Math.abs(gr-1)<0.02 && !atTop && !atBot){ s='悬浮（G=F浮）'; c='#00a86b'; }
+    else if(gr<1 && vel>0.3){ s='上浮中 ↑'; c='#00a86b'; }
+    else if(gr>1 && vel<-0.3){ s='下潜中 ↓'; c='#e8553e'; }
+    else if(atBot && gr>=1){ s='沉底 G>F浮'; c='#e8553e'; }
+    else if(atTop && gr<=1){ s='浮出水面 G<F浮'; c='#00a86b'; }
+    else if(gr<1){ s='可上浮 G<F浮'; c='#00a86b'; }
+    else { s='可下潜 G>F浮'; c='#e8553e'; }
+    statusEl.textContent=s; statusEl.style.color=c;
+
+    // 实时数据面板
+    const gr2=gRel();
+    gVal.textContent=gr2.toFixed(2);
+    gVal.style.color = gr2>1.001 ? '#e8553e' : (gr2<0.999 ? '#00a86b' : '#1f2a44');
+    const net=1-gr2;
+    netMag.textContent=Math.abs(net).toFixed(2);
+    if(Math.abs(net)<0.02){ netDir.textContent='合力为零'; netDir.style.color='#1f2a44'; }
+    else if(net>0){ netDir.textContent='向上 ↑'; netDir.style.color='#00a86b'; }
+    else { netDir.textContent='向下 ↓'; netDir.style.color='#e8553e'; }
+
+    streamIn.style.display  = holding==='in'  ? 'block':'none';
+    streamOut.style.display = holding==='out' ? 'block':'none';
+  }
+
+  function step(){
+    t+=16;
+    if(holding==='in')  frac=Math.min(1, frac+0.010);
+    if(holding==='out') frac=Math.max(0, frac-0.010);
+    vel=(vel + (1-gRel())*0.9)*0.92;   // 向上为正
+    subY-=vel;
+    if(subY<TOP_Y){ subY=TOP_Y; if(vel<0) vel=0; }
+    if(subY>BOT_Y){ subY=BOT_Y; if(vel>0) vel=0; }
+    render();
+    requestAnimationFrame(step);
+  }
+
+  function bindHold(id,type){
+    const el=document.getElementById(id);
+    const start=e=>{ e.preventDefault(); holding=type; };
+    const stop=()=>{ holding=null; };
+    el.addEventListener('mousedown',start);
+    el.addEventListener('touchstart',start,{passive:false});
+    ['mouseup','mouseleave','touchend','touchcancel'].forEach(ev=>el.addEventListener(ev,stop));
+  }
+  bindHold('btnIn','in'); bindHold('btnOut','out');
+  document.getElementById('btnReset').addEventListener('click',()=>{ frac=0; subY=300; vel=0; holding=null; });
+  window.addEventListener('keydown',e=>{ if(e.key==='ArrowDown')holding='in'; if(e.key==='ArrowUp')holding='out'; });
+  window.addEventListener('keyup',  e=>{ if(e.key==='ArrowDown'||e.key==='ArrowUp')holding=null; });
+
+  const prop=document.getElementById('prop'); let ang=0;
+  setInterval(()=>{ ang=(ang+12)%360; prop.setAttribute('transform',`translate(76,0) rotate(${ang})`); },60);
+
+  requestAnimationFrame(step);
+</script>
+</body>
+</html>

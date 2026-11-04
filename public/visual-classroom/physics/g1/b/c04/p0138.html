@@ -1,0 +1,601 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+<meta name="color-scheme" content="light">
+<title>模型44｜动能和动能定理可视化实验室</title>
+<style>
+:root{
+  --bg:#f4f7fb;--panel:#fff;--panel-2:#f8fafc;--ink:#14213d;--muted:#5f6f86;--line:#d9e2ef;
+  --work:#f28c28;--energy:#1f9d68;--ideal:#7c3aed;--point:#60a5fa;--fit:#dc2626;
+  --gravity:#2563eb;--tension:#f05a28;--friction:#8b5cf6;--normal:#0891b2;
+  --nav:#0f2d52;--nav2:#174a7e;--warn:#b45309;--danger:#b91c1c;--ok:#087f5b;
+  --shadow:0 12px 30px rgba(20,42,75,.09);--radius:16px;--focus:#f59e0b;
+}
+*{box-sizing:border-box}html{scroll-behavior:smooth}body{margin:0;background:linear-gradient(180deg,#eef5ff 0,#f7f9fc 34%,#f4f7fb 100%);color:var(--ink);font-family:"Microsoft YaHei UI","PingFang SC",system-ui,sans-serif;line-height:1.55}button,input,select{font:inherit}button{cursor:pointer}button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-visible{outline:3px solid var(--focus);outline-offset:2px}.sr-only{position:absolute!important;width:1px;height:1px;padding:0;margin:-1px;overflow:hidden;clip:rect(0,0,0,0);white-space:nowrap;border:0}
+.app-header{position:sticky;top:0;z-index:30;background:rgba(15,45,82,.97);color:white;box-shadow:0 5px 18px rgba(15,45,82,.2)}
+.header-row{display:flex;align-items:center;gap:14px;padding:12px clamp(14px,3vw,34px)}.brand{display:flex;align-items:center;gap:12px;min-width:270px}.model-badge{display:grid;place-items:center;width:50px;height:50px;border-radius:14px;background:#fff;color:var(--nav);font-weight:900;box-shadow:inset 0 0 0 3px #a5d8ff}.brand h1{font-size:clamp(18px,2.1vw,26px);margin:0;line-height:1.2}.brand small{color:#cfe6ff}.header-tools{margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap}.header-tools button,.header-tools select{min-height:40px;border:1px solid rgba(255,255,255,.25);border-radius:10px;background:#173f6b;color:white;padding:7px 11px}.header-tools option{color:#14213d;background:white}.progress-wrap{min-width:180px}.progress-label{display:flex;justify-content:space-between;font-size:12px;color:#dbeafe}.progress{height:6px;border-radius:999px;background:#254e78;overflow:hidden}.progress>i{display:block;width:14%;height:100%;background:#fbbf24;transition:width .25s}
+.tabs{display:flex;gap:2px;overflow:auto;padding:0 clamp(10px,2vw,28px);background:var(--nav2);scrollbar-width:thin}.tab{flex:0 0 auto;border:0;color:#e7f1ff;background:transparent;padding:12px 16px;border-bottom:3px solid transparent;font-weight:700}.tab[aria-selected="true"]{background:rgba(255,255,255,.11);border-bottom-color:#fbbf24;color:white}.tab .num{display:inline-grid;place-items:center;width:22px;height:22px;border-radius:50%;background:rgba(255,255,255,.16);font-size:12px;margin-right:6px}
+.teachbar{display:grid;grid-template-columns:auto 1fr auto;align-items:center;gap:12px;padding:10px clamp(14px,3vw,34px);background:#fff8df;border-bottom:1px solid #f2d98f}.teachbar[hidden]{display:none!important}.teachbar strong{color:#8a4b08}.teach-prompt{font-size:14px}.teach-actions{display:flex;gap:6px}.btn-mini{border:1px solid #d7b55b;background:white;color:#5b3a05;border-radius:8px;padding:5px 9px}.teach-question{color:#7c4b04;font-weight:700}
+main{max-width:1720px;margin:auto;padding:18px clamp(12px,2.5vw,30px) 70px}.tabpanel[hidden]{display:none}.hero{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(300px,.65fr);gap:16px;margin-bottom:16px}.panel,.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}.panel{padding:16px}.panel h2,.panel h3,.panel h4{margin-top:0}.section-title{display:flex;align-items:center;justify-content:space-between;gap:12px;margin-bottom:12px}.section-title h2,.section-title h3{margin:0}.eyebrow{font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:#2c6ca3;font-weight:800}.formula-hero{display:flex;gap:16px;align-items:center;justify-content:center;min-height:115px;background:linear-gradient(135deg,#edf6ff,#fff7e9);border:1px solid #cfe3f6;border-radius:14px}.formula-hero .formula{font-family:Cambria,"Times New Roman",serif;font-size:clamp(27px,4vw,52px);font-weight:800}.formula-hero .equals{color:#94a3b8;font-size:28px}.formula-line{font-family:Cambria,"Times New Roman",serif;font-weight:700}.pill{display:inline-flex;align-items:center;gap:5px;border-radius:999px;padding:4px 9px;font-size:12px;font-weight:800;background:#e9f2ff;color:#245a8d}.pill.work{background:#fff0df;color:#a45106}.pill.energy{background:#dcfce7;color:#087f5b}.pill.warn{background:#fff7d6;color:#8a4b08}.callout{padding:11px 13px;border-left:4px solid #2d78b7;background:#eff7ff;border-radius:4px 10px 10px 4px;color:#28455f}.callout.warn{border-color:#e18a16;background:#fff8e8;color:#734a0b}.callout.danger{border-color:#d92d20;background:#fff1f0;color:#7a1f18}.callout.success{border-color:#19a974;background:#ebfff7;color:#0b6144}.grid-2{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.grid-3{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}.grid-4{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:12px}.mini-card{border:1px solid var(--line);border-radius:13px;padding:13px;background:var(--panel-2)}.mini-card h4{margin:0 0 7px}.kpi{font:800 clamp(19px,2.3vw,30px)/1.2 Cambria,"Times New Roman",serif}.kpi small{font:600 12px/1.2 "Microsoft YaHei UI",sans-serif;color:var(--muted)}.muted{color:var(--muted)}.good{color:var(--ok)}.bad{color:var(--danger)}.orange{color:var(--work)}.green{color:var(--energy)}.purple{color:var(--ideal)}
+.property-grid{display:grid;grid-template-columns:1.05fr .95fr;gap:16px}.reference-stage{position:relative;height:190px;border-radius:13px;background:linear-gradient(#dff2ff 0 58%,#8aa6ba 59% 64%,#eef2f7 65%);overflow:hidden}.train{position:absolute;left:12%;bottom:43px;width:76%;height:62px;border-radius:28px 12px 8px 8px;background:#2d6fa4;border:5px solid #174a7e}.train:before,.train:after{content:"";position:absolute;bottom:-18px;width:26px;height:26px;border-radius:50%;background:#25384d;border:5px solid #94a3b8}.train:before{left:12%}.train:after{right:12%}.obj{position:absolute;left:48%;bottom:111px;width:28px;height:28px;border-radius:8px;background:#f97316;box-shadow:0 4px 0 #b94708}.frame-arrow{position:absolute;top:18px;left:12%;right:12%;height:3px;background:#7c3aed}.frame-arrow:after{content:"";position:absolute;right:-2px;top:-6px;border-left:12px solid #7c3aed;border-top:7px solid transparent;border-bottom:7px solid transparent}.frame-arrow span{position:absolute;top:7px;left:32%;color:#5b21b6;font-weight:800}.control-row{display:grid;grid-template-columns:130px 1fr 74px;gap:10px;align-items:center;margin:10px 0}.control-row label{font-weight:700}.control-row output{font-variant-numeric:tabular-nums;text-align:right;color:#245a8d;font-weight:800}.control-row input[type=range]{width:100%;accent-color:#2d78b7}.control-row select{width:100%;padding:7px;border:1px solid var(--line);border-radius:8px;background:white}.chart-card{position:relative}.chart{display:block;width:100%;height:260px;border:1px solid #e1e9f3;border-radius:10px;background:#fff}.chart.small{height:220px}.chart-hotspot,.hotspot{display:grid;place-items:center;width:27px;height:27px;border:2px solid white;border-radius:50%;background:#e85d1f;color:white;font-weight:900;box-shadow:0 3px 10px rgba(0,0,0,.22);z-index:5}.chart-hotspot{position:absolute;right:13px;top:42px}.hotspot{position:absolute}
+.compare-table{width:100%;border-collapse:collapse}.compare-table th,.compare-table td{border-bottom:1px solid var(--line);padding:9px;text-align:left}.compare-table th{background:#eef5ff}.derive{counter-reset:step}.derive-step{display:flex;align-items:center;gap:12px;padding:12px;border:1px solid var(--line);border-radius:12px;margin:8px 0;opacity:.42;transition:.2s}.derive-step.active{opacity:1;border-color:#f59e0b;background:#fff8e7;transform:translateX(4px)}.derive-step:before{counter-increment:step;content:counter(step);display:grid;place-items:center;min-width:30px;height:30px;border-radius:50%;background:#173f6b;color:white;font-weight:800}.derive-controls{display:flex;gap:8px;justify-content:flex-end}.btn{border:1px solid #bfcde0;border-radius:9px;background:white;color:#153a60;padding:8px 12px;font-weight:750}.btn:hover{background:#eef6ff}.btn.primary{background:#1769aa;border-color:#1769aa;color:white}.btn.success{background:#12815f;border-color:#12815f;color:white}.btn.warn{background:#df7a12;border-color:#df7a12;color:white}.btn.danger{background:#b42318;border-color:#b42318;color:white}.btn[disabled]{opacity:.45;cursor:not-allowed}
+.lab-layout{display:grid;grid-template-columns:minmax(250px,.72fr) minmax(520px,1.65fr) minmax(260px,.73fr);gap:14px;align-items:start}.controls{position:sticky;top:154px;max-height:calc(100vh - 172px);overflow:auto}.controls fieldset{border:1px solid var(--line);border-radius:12px;margin:0 0 12px;padding:10px}.controls legend{font-weight:900;color:#245a8d;padding:0 5px}.compact .control-row{grid-template-columns:105px 1fr 62px;margin:7px 0;font-size:13px}.switch-row{display:flex;align-items:center;justify-content:space-between;gap:12px;padding:7px 0;border-bottom:1px dashed #e4eaf2}.switch{position:relative;width:44px;height:24px;flex:0 0 auto}.switch input{opacity:0;width:0;height:0}.slider{position:absolute;inset:0;border-radius:999px;background:#cbd5e1;transition:.2s}.slider:before{content:"";position:absolute;width:18px;height:18px;left:3px;top:3px;background:#fff;border-radius:50%;box-shadow:0 1px 4px rgba(0,0,0,.25);transition:.2s}.switch input:checked+.slider{background:#1976b6}.switch input:checked+.slider:before{transform:translateX(20px)}.view-toolbar{display:flex;gap:8px;align-items:center;flex-wrap:wrap;margin-bottom:10px}.seg{display:inline-flex;border:1px solid #b9c7d8;border-radius:9px;overflow:hidden}.seg button{border:0;border-right:1px solid #c8d4e2;background:white;padding:7px 10px}.seg button:last-child{border:0}.seg button.active{background:#1d5f94;color:white}.apparatus{position:relative;min-height:410px;border:1px solid #cdd9e8;border-radius:15px;background:linear-gradient(#dff4ff 0 55%,#eef3f7 55%);overflow:hidden}.apparatus svg{display:block;width:100%;height:410px}.apparatus .airflow{animation:pulse 1.2s infinite alternate}.apparatus .cart-group{transition:transform .08s linear}.apparatus.top .side-only{display:none}.apparatus:not(.top) .top-only{display:none}.readout-pop{position:absolute;top:12px;right:12px;width:min(265px,42%);background:rgba(255,255,255,.94);border:1px solid #cbd8e7;border-radius:12px;padding:10px;font-size:12px;box-shadow:0 8px 22px rgba(20,50,80,.12)}.readout-pop b{font-size:14px}.gate-flash{animation:flash .25s 2}.transport{display:flex;align-items:center;gap:8px;flex-wrap:wrap;padding:12px 0}.transport .speed{min-width:150px}.run-status{margin-left:auto;font-weight:800;color:#245a8d}.energy-bars{display:grid;grid-template-columns:repeat(2,1fr);gap:9px}.energy-box{border:1px solid var(--line);border-radius:10px;padding:9px}.meter{height:15px;background:#e8edf3;border-radius:999px;overflow:hidden;margin-top:6px}.meter i{display:block;height:100%;width:0;transition:width .2s}.meter.work i{background:var(--work)}.meter.energy i{background:var(--energy)}.metrics{display:grid;grid-template-columns:repeat(2,1fr);gap:8px}.metric{padding:9px;border:1px solid var(--line);border-radius:10px;background:#f9fbfd}.metric span{display:block;color:var(--muted);font-size:12px}.metric b{font:800 18px Cambria,"Times New Roman",serif}.system-box{border:2px solid #d8e5f2;border-radius:12px;padding:11px;margin-bottom:10px}.system-box.selected{border-color:#2d78b7;background:#f0f8ff}.system-box h4{display:flex;justify-content:space-between;margin:0 0 7px}.formula-lock{font-size:12px;color:#245a8d;background:#e4f2ff;padding:3px 6px;border-radius:6px}.work-bars{height:195px;width:100%;display:block}.error-impact{font-size:12px;padding:8px;border-radius:9px;background:#fff7e4;color:#7d4e08;margin-top:8px}.gate-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px}.gate-card{border:1px solid #ccd8e6;border-radius:10px;padding:9px;background:#f9fcff}.gate-card.triggered{border-color:#e85d1f;background:#fff4ec}.gate-card strong{display:block;color:#1c5b8f}
+.graph-toolbar{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:12px}.graph-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:14px}.fit-line{display:flex;gap:14px;flex-wrap:wrap;margin-top:8px;color:#40566d;font-size:13px}.fit-line b{color:#153a60}.legend{display:flex;gap:12px;flex-wrap:wrap;font-size:12px;margin:7px 0}.legend i{display:inline-block;width:18px;height:3px;margin-right:5px;vertical-align:middle}.data-table-wrap{overflow:auto;max-height:330px;border:1px solid var(--line);border-radius:11px}.data-table{width:100%;border-collapse:collapse;white-space:nowrap;font-size:12px}.data-table th{position:sticky;top:0;background:#173f6b;color:white;z-index:1}.data-table th,.data-table td{padding:7px 8px;border-bottom:1px solid #e2e8f0;text-align:right}.data-table th:first-child,.data-table td:first-child{text-align:center}.data-table tr.linked{background:#fff4dd}.quality-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:10px;margin-top:12px}.quality{padding:10px;border-radius:11px;background:#f6f9fd;border:1px solid var(--line)}
+.module-tabs{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}.module-tabs button{border:1px solid #b9c7d8;background:white;color:#174a7e;padding:8px 13px;border-radius:999px;font-weight:800}.module-tabs button.active{background:#174a7e;color:white}.submodule[hidden]{display:none}.spring-layout,.pendulum-layout,.multi-layout{display:grid;grid-template-columns:minmax(270px,.8fr) minmax(420px,1.2fr);gap:14px}.pendulum-stage{height:360px;border:1px solid var(--line);border-radius:14px;background:linear-gradient(#ecf8ff,#fbfdff);position:relative}.pendulum-stage svg{width:100%;height:100%}.calc-strip{display:grid;grid-template-columns:repeat(4,1fr);gap:9px}.calc-strip .metric{text-align:center}.process-line{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px;margin:16px 0}.process-seg{height:54px;border-radius:10px;display:grid;place-items:center;font-weight:800}.process-seg.accel{background:#dff4ff;border:2px solid #2d78b7}.process-seg.brake{background:#f3e8ff;border:2px solid #8b5cf6}.arrow-right{font-size:28px;color:#64748b}
+.solution-grid{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:16px}.solution{border:2px solid var(--line);border-radius:14px;overflow:hidden}.solution.energy{border-color:#63c59e}.solution.newton{border-color:#6ea8dc}.solution header{padding:13px;color:white;display:flex;justify-content:space-between;align-items:center}.solution.energy header{background:#12815f}.solution.newton header{background:#1769aa}.solution ol{margin:0;padding:14px 14px 14px 44px}.solution li{padding:8px;border-bottom:1px dashed #d9e2ef}.step-hidden{filter:blur(5px);user-select:none}.step-count{background:rgba(255,255,255,.2);border-radius:999px;padding:3px 8px}.need-tags{display:flex;gap:6px;flex-wrap:wrap;padding:0 14px 14px}.need-tags span{font-size:12px;background:#eef2f7;border-radius:999px;padding:4px 8px}.bridge{display:flex;align-items:center;justify-content:center;gap:13px;flex-wrap:wrap;padding:18px;background:linear-gradient(90deg,#e9f7ff,#f8edff);border-radius:14px}.bridge .node{padding:12px 16px;border-radius:10px;background:white;border:1px solid var(--line);font-weight:800}.bridge .arrow{color:#7c3aed;font-size:22px}
+.quiz-layout{display:grid;grid-template-columns:minmax(0,1.35fr) minmax(300px,.65fr);gap:16px}.question{border:1px solid var(--line);border-radius:13px;padding:13px;margin-bottom:12px}.question legend{font-weight:900;padding:0 5px}.question label{display:block;padding:7px 9px;border-radius:8px}.question label:hover{background:#eef6ff}.feedback{display:none;padding:8px;border-radius:8px;margin-top:8px}.feedback.show{display:block}.feedback.ok{background:#e7fbf2;color:#096346}.feedback.no{background:#fff0ee;color:#8b231b}.misconceptions{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px}.mistake{border:1px solid #f0c6c1;border-radius:12px;padding:11px;background:#fff8f7}.mistake summary{font-weight:800;color:#9c2d24;cursor:pointer}.mistake p{font-size:13px;margin-bottom:0}.acceptance li{margin:7px 0}.safety summary{cursor:pointer;font-weight:900;color:#8a4b08}.app-grid{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}.app-card{padding:12px;border:1px solid var(--line);border-radius:12px;background:#fff}.app-card svg{width:100%;height:80px}.app-card h4{margin:4px 0}.app-card p{font-size:12px;color:var(--muted)}
+.drawer{position:fixed;right:0;top:0;bottom:0;width:min(430px,96vw);background:white;z-index:60;box-shadow:-14px 0 34px rgba(20,42,75,.24);transform:translateX(104%);transition:transform .25s;display:flex;flex-direction:column}.drawer.open{transform:translateX(0)}.drawer-head{background:#123e69;color:white;padding:15px;display:flex;align-items:center;gap:8px}.drawer-head h2{margin:0;font-size:19px}.drawer-head button{margin-left:auto;border:1px solid rgba(255,255,255,.4);background:transparent;color:white;border-radius:8px;padding:6px 10px}.drawer-tools{padding:10px;border-bottom:1px solid var(--line)}.drawer-tools input{width:100%;padding:9px;border:1px solid var(--line);border-radius:9px}.chips{display:flex;gap:5px;flex-wrap:wrap;margin-top:8px}.chip{border:1px solid #bfcee0;background:white;color:#245a8d;border-radius:999px;padding:4px 8px;font-size:12px}.chip.active{background:#245a8d;color:white}.drawer-body{overflow:auto;padding:12px;flex:1}.knowledge-card{perspective:1000px;min-height:430px}.knowledge-inner{position:relative;min-height:430px;transform-style:preserve-3d;transition:transform .45s}.knowledge-card.flipped .knowledge-inner{transform:rotateY(180deg)}.face{position:absolute;inset:0;backface-visibility:hidden;border:1px solid #cdd9e8;border-radius:15px;padding:16px;background:linear-gradient(160deg,#fff,#f1f7fd)}.face.back{transform:rotateY(180deg);background:linear-gradient(160deg,#fffaf0,#fff)}.face h3{font-size:23px;margin:8px 0}.face .conclusion{font-size:17px;font-weight:850;color:#174a7e}.mini-visual{height:130px;border:1px dashed #aabbd0;border-radius:12px;margin:13px 0;display:grid;place-items:center;background:white;overflow:hidden}.mini-visual svg{width:100%;height:100%}.demo-guide{padding:9px;border-radius:9px;background:#eaf5ff;color:#194f7d}.drawer-nav{display:flex;gap:8px;padding:10px;border-top:1px solid var(--line)}.drawer-nav button{flex:1}.pin{color:#b45309}.toast{position:fixed;left:50%;bottom:26px;transform:translate(-50%,30px);opacity:0;z-index:90;background:#102d4e;color:white;border-radius:10px;padding:10px 14px;box-shadow:var(--shadow);transition:.2s;pointer-events:none}.toast.show{transform:translate(-50%,0);opacity:1}.footer-note{text-align:center;color:#66788f;font-size:12px;padding:20px}
+@keyframes pulse{to{opacity:.3}}@keyframes flash{50%{filter:drop-shadow(0 0 13px #ff7a00);opacity:.45}}@media (min-width:1200px){body.drawer-space main{margin-right:min(430px,30vw)}}
+@media (max-width:1180px){.lab-layout{grid-template-columns:300px 1fr}.lab-layout>.results-panel{grid-column:1/-1}.controls{position:static;max-height:none}.quality-grid{grid-template-columns:repeat(2,1fr)}.app-grid{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:860px){.header-row{align-items:flex-start}.header-tools{display:none}.teachbar{grid-template-columns:1fr auto}.teachbar>strong{display:none}.hero,.property-grid,.grid-2,.grid-3,.lab-layout,.spring-layout,.pendulum-layout,.multi-layout,.solution-grid,.quiz-layout{grid-template-columns:1fr}.graph-grid{grid-template-columns:1fr}.misconceptions{grid-template-columns:repeat(2,1fr)}.calc-strip,.grid-4{grid-template-columns:repeat(2,1fr)}.apparatus{min-height:340px}.apparatus svg{height:340px}.readout-pop{width:48%;font-size:11px}.controls{order:2}.lab-center{order:1}.results-panel{order:3}}
+@media (max-width:540px){.brand{min-width:0}.model-badge{width:42px;height:42px}.teach-actions{display:none}.teachbar{display:block}.tabpanel{padding:0}.panel{padding:12px}.misconceptions,.app-grid,.quality-grid{grid-template-columns:1fr}.formula-hero{flex-direction:column;gap:3px}.control-row{grid-template-columns:95px 1fr 65px}.metrics{grid-template-columns:1fr 1fr}.gate-grid{grid-template-columns:1fr}.readout-pop{position:static;width:auto;margin:8px}.apparatus{background:#eef7fd}.graph-grid canvas{height:235px!important}}
+@media (prefers-reduced-motion:reduce){*,*:before,*:after{animation-duration:.001ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.001ms!important}}
+body.reduce-motion *,body.reduce-motion *:before,body.reduce-motion *:after{animation-duration:.001ms!important;animation-iteration-count:1!important;scroll-behavior:auto!important;transition-duration:.001ms!important}
+</style>
+</head>
+<body>
+<div id="live" class="sr-only" aria-live="polite"></div>
+<header class="app-header">
+  <div class="header-row">
+    <div class="brand"><div class="model-badge">44</div><div><h1>动能和动能定理</h1><small>气垫导轨 × 光电门 × 图象验证</small></div></div>
+    <div class="header-tools">
+      <label class="sr-only" for="presetSelect">实验预设</label><select id="presetSelect" aria-label="实验预设"></select>
+      <button id="openCards" aria-haspopup="dialog">知识卡片库 <span id="cardCount">21</span></button>
+      <button id="reduceMotionBtn" aria-pressed="false">减少动效</button>
+      <div class="progress-wrap"><div class="progress-label"><span>教学进度</span><span id="progressText">1 / 7</span></div><div class="progress"><i id="progressBar"></i></div></div>
+    </div>
+  </div>
+  <nav class="tabs" role="tablist" aria-label="模型44六个学习标签页">
+    <button class="tab" role="tab" id="tabBtn-properties" aria-controls="tab-properties" aria-selected="true" data-tab="properties"><span class="num">1</span>动能的性质</button>
+    <button class="tab" role="tab" id="tabBtn-lab" aria-controls="tab-lab" aria-selected="false" tabindex="-1" data-tab="lab"><span class="num">2</span>气垫导轨实验</button>
+    <button class="tab" role="tab" id="tabBtn-graphs" aria-controls="tab-graphs" aria-selected="false" tabindex="-1" data-tab="graphs"><span class="num">3</span>图象线性化</button>
+    <button class="tab" role="tab" id="tabBtn-extensions" aria-controls="tab-extensions" aria-selected="false" tabindex="-1" data-tab="extensions"><span class="num">4</span>变力·曲线·多过程</button>
+    <button class="tab" role="tab" id="tabBtn-compare" aria-controls="tab-compare" aria-selected="false" tabindex="-1" data-tab="compare"><span class="num">5</span>两种解法对照</button>
+    <button class="tab" role="tab" id="tabBtn-quiz" aria-controls="tab-quiz" aria-selected="false" tabindex="-1" data-tab="quiz"><span class="num">6</span>练习考核</button>
+  </nav>
+  <div class="teachbar" id="teachbar">
+    <strong>七步教学</strong>
+    <div class="teach-prompt"><span class="pill" id="teachStepPill">第 1 步</span> <span id="teachHint">先判断动能是状态量还是过程量。</span> <span class="teach-question" id="teachQuestion">待答：速度反向时，动能也会“反向”吗？</span></div>
+    <div class="teach-actions"><button class="btn-mini" id="teachPrev" aria-label="上一步教学">←</button><button class="btn-mini" id="teachNext" aria-label="下一步教学">→</button><button class="btn-mini" id="teachClose" aria-label="关闭教学引导">关闭</button></div>
+  </div>
+</header>
+<main id="mainContent">
+<section class="tabpanel" id="tab-properties" role="tabpanel" aria-labelledby="tabBtn-properties">
+  <div class="hero">
+    <div class="panel">
+      <div class="eyebrow">核心结论一｜状态量</div>
+      <div class="formula-hero"><div class="formula">E<sub>k</sub> = ½mv²</div><div class="equals">≠</div><div><b>方向量</b><br><span class="muted">标量 · E<sub>k</sub> ≥ 0 · 单位 J</span></div></div>
+      <div class="grid-3" style="margin-top:12px">
+        <div class="mini-card"><h4>标量</h4><p>只有大小、没有方向。速度反向，v² 不变，动能不因方向而变号。</p></div>
+        <div class="mini-card"><h4>状态量</h4><p>描述某一时刻、某一位置的运动状态；功才是与过程相联系的过程量。</p></div>
+        <div class="mini-card"><h4>单位与非负</h4><p>1 J = 1 kg·m²/s²。同一惯性系中 E<sub>k</sub> ≥ 0，但 ΔE<sub>k</sub> 可正、可负、可为零。</p></div>
+      </div>
+    </div>
+    <aside class="panel">
+      <div class="eyebrow">设计与验收概览</div><h2>从“装置”走到“定理”</h2>
+      <ol><li>双图确认 E<sub>k</sub>∝v²。</li><li>隔离法与整体法由同一运动方程核算。</li><li>光电门用挡光时间反算平均速度。</li><li>四图共享数据并线性拟合。</li><li>拓展到变力、曲线和多过程。</li></ol>
+      <div class="callout success"><b>理想模式自洽阈值：</b>W<sub>合</sub>–ΔE<sub>k</sub> 斜率 1±0.02；其余斜率/面积相对误差 &lt;2%。</div>
+    </aside>
+  </div>
+  <div class="property-grid">
+    <div class="panel">
+      <div class="section-title"><div><div class="eyebrow">参考系依赖</div><h2>同一物体，动能并不唯一</h2></div><button class="hotspot" style="position:static" data-card="reference" aria-label="打开参考系知识卡">i</button></div>
+      <div class="reference-stage"><div class="frame-arrow"><span>火车参考系速度 u</span></div><div class="train"></div><div class="obj" aria-label="放在地面上的物体"></div></div>
+      <div class="control-row"><label for="objV">地面系物体 v</label><input id="objV" type="range" min="-3" max="3" step="0.1" value="0"><output id="objVOut">0.00 m/s</output></div>
+      <div class="control-row"><label for="frameV">火车速度 u</label><input id="frameV" type="range" min="-3" max="3" step="0.1" value="2"><output id="frameVOut">2.00 m/s</output></div>
+      <div class="grid-2"><div class="mini-card"><b>地面惯性系</b><div class="kpi" id="ekGround">0.000 J</div><span class="muted">v = <span id="vGround">0.00</span> m/s</span></div><div class="mini-card"><b>火车惯性系</b><div class="kpi" id="ekTrain">1.000 J</div><span class="muted">v′ = v−u = <span id="vTrain">−2.00</span> m/s</span></div></div>
+      <p class="callout warn"><b>适用条件：</b>动能定理在惯性系中成立；在非惯性系中必须额外计入惯性力做功。换参考系后 W<sub>合</sub> 与 ΔE<sub>k</sub> 会对应地一起改变。</p>
+    </div>
+    <div class="panel">
+      <div class="section-title"><div><div class="eyebrow">辨析</div><h2>动能 vs 动量</h2></div><button class="hotspot" style="position:static" data-card="momentum" aria-label="打开动能和动量知识卡">i</button></div>
+      <table class="compare-table"><thead><tr><th>物理量</th><th>动能 E<sub>k</sub></th><th>动量 p</th></tr></thead><tbody><tr><th>定义</th><td>½mv²</td><td>mv</td></tr><tr><th>类型</th><td>标量</td><td>矢量</td></tr><tr><th>方向</th><td>无方向</td><td>与 v 同向</td></tr><tr><th>改变条件</th><td>合力做功</td><td>合力冲量</td></tr><tr><th>v 反向</th><td>大小可不变</td><td>方向改变</td></tr></tbody></table>
+      <div class="callout" style="margin-top:12px">一句话：<b>看“速度平方”用动能；看“方向与碰撞”常用动量。</b></div>
+    </div>
+  </div>
+  <div class="grid-2" style="margin-top:16px">
+    <div class="panel chart-card"><div class="section-title"><h3>E<sub>k</sub>–v：抛物线</h3><span class="pill">E<sub>k</sub>∝v²</span></div><canvas id="ekVChart" class="chart small" role="img" aria-label="动能随速度变化的抛物线"></canvas></div>
+    <div class="panel chart-card"><div class="section-title"><h3>E<sub>k</sub>–v²：直线</h3><span class="pill energy">斜率 m/2</span></div><canvas id="ekV2Chart" class="chart small" role="img" aria-label="动能随速度平方变化的直线"></canvas><button class="chart-hotspot" data-card="linear" aria-label="打开图象线性化知识卡">i</button></div>
+  </div>
+  <div class="panel" style="margin-top:16px">
+    <div class="section-title"><div><div class="eyebrow">恒力情形推导动画</div><h2>从牛顿定律到动能定理</h2></div><span class="pill warn">结论可推广到变力</span></div>
+    <div class="derive" id="deriveSteps">
+      <div class="derive-step active"><span class="formula-line">F<sub>合</sub> = ma</span><span class="muted">合外力决定加速度</span></div>
+      <div class="derive-step"><span class="formula-line">v₂² − v₁² = 2ax</span><span class="muted">恒力下使用匀变速公式</span></div>
+      <div class="derive-step"><span class="formula-line">W<sub>合</sub> = F<sub>合</sub>x = max</span><span class="muted">功是力沿位移的积累</span></div>
+      <div class="derive-step"><span class="formula-line">W<sub>合</sub> = ½m(v₂²−v₁²) = ΔE<sub>k</sub></span><span class="muted">得到状态量之差</span></div>
+    </div>
+    <div class="derive-controls"><button class="btn" id="derivePrev">上一步</button><button class="btn primary" id="deriveNext">下一步</button></div>
+    <p class="callout warn"><b>边界说明：</b>上面为便于高中阶段理解，推导使用了恒力与匀变速公式；严格推广时用 W = ∫F·dx，因此变力、曲线运动同样成立。</p>
+  </div>
+</section>
+
+<section class="tabpanel" id="tab-lab" role="tabpanel" aria-labelledby="tabBtn-lab" hidden>
+  <div class="lab-layout">
+    <aside class="panel controls compact">
+      <div class="section-title"><h2>控制面板</h2><span class="pill">SI 制</span></div>
+      <fieldset><legend>控制变量与自变量</legend>
+        <div class="control-row"><label for="MInput">滑块 M</label><input id="MInput" type="range" min="0.2" max="1.2" step="0.01" value="0.5"><output id="MOut">0.50 kg</output></div>
+        <div class="control-row"><label for="m0Input">砝码 m₀</label><input id="m0Input" type="range" min="0.01" max="0.2" step="0.005" value="0.05"><output id="m0Out">0.050 kg</output></div>
+        <div class="control-row"><label for="xInput">位移 x</label><input id="xInput" type="range" min="0.1" max="1.5" step="0.01" value="0.4"><output id="xOut">0.40 m</output></div>
+        <div class="control-row"><label for="x1Input">光电门 x₁</label><input id="x1Input" type="range" min="0.08" max="1.2" step="0.01" value="0.2"><output id="x1Out">0.20 m</output></div>
+        <div class="control-row"><label for="x2Input">光电门 x₂</label><input id="x2Input" type="range" min="0.12" max="1.5" step="0.01" value="0.4"><output id="x2Out">0.40 m</output></div>
+        <div class="control-row"><label for="v0Input">初速度 v₀</label><input id="v0Input" type="range" min="0" max="1.2" step="0.02" value="0"><output id="v0Out">0.00 m/s</output></div>
+        <div class="control-row"><label for="dInput">挡光片 d</label><input id="dInput" type="range" min="0.003" max="0.05" step="0.001" value="0.01"><output id="dOut">1.0 cm</output></div>
+      </fieldset>
+      <fieldset><legend>驱动与系统</legend>
+        <div class="control-row"><label for="driveMode">驱动方式</label><select id="driveMode"><option value="hanging">砝码盘牵引</option><option value="direct">直接设合力</option></select><output></output></div>
+        <div class="control-row" id="directFRow" hidden><label for="directFInput">直接力 F</label><input id="directFInput" type="range" min="0.05" max="2" step="0.01" value="0.45"><output id="directFOut">0.45 N</output></div>
+        <div class="switch-row"><span><b>当前系统</b><br><small id="systemHint">滑块（隔离法）</small></span><div class="seg" role="group" aria-label="系统选取"><button id="sysSlider" class="active" data-system="slider">滑块</button><button id="sysWhole" data-system="whole">整体</button></div></div>
+        <div class="switch-row"><span>误差修正计入核算</span><label class="switch"><input id="correctionSwitch" type="checkbox"><span class="slider"></span></label></div>
+      </fieldset>
+      <fieldset><legend>非理想因素（可开关）</legend>
+        <div class="switch-row"><span>导轨倾角 θ <small id="thetaMag">1.5°</small></span><label class="switch"><input class="err-switch" data-error="tilt" type="checkbox"><span class="slider"></span></label></div>
+        <div class="switch-row"><span>残余阻力 f <small id="fricMag">0.030 N</small></span><label class="switch"><input class="err-switch" data-error="friction" type="checkbox"><span class="slider"></span></label></div>
+        <div class="switch-row"><span>滑轮等效质量 <small>0.020 kg</small></span><label class="switch"><input class="err-switch" data-error="pulley" type="checkbox"><span class="slider"></span></label></div>
+        <div class="switch-row"><span>绳等效质量 <small>0.010 kg</small></span><label class="switch"><input class="err-switch" data-error="string" type="checkbox"><span class="slider"></span></label></div>
+        <div class="switch-row"><span>空气阻力 <small>0.015 N</small></span><label class="switch"><input class="err-switch" data-error="air" type="checkbox"><span class="slider"></span></label></div>
+        <div class="switch-row"><span>挡光片偏心/宽度 +3%</span><label class="switch"><input class="err-switch" data-error="gate" type="checkbox"><span class="slider"></span></label></div>
+        <div class="switch-row"><span>释放时有初速度</span><label class="switch"><input class="err-switch" data-error="release" type="checkbox"><span class="slider"></span></label></div>
+        <div class="error-impact" id="errorImpact">当前为理想模式：预计 W<sub>合</sub>–ΔE<sub>k</sub> 斜率约 1.000。</div>
+      </fieldset>
+      <details class="safety"><summary>安全与规范提示</summary><ul><li>滑块勿高速撞击导轨端部。</li><li>砝码下落区保持清空。</li><li>导轨轻拿轻放，实验前调水平。</li><li>单位统一用 SI，有效数字保留 2–3 位。</li></ul></details>
+    </aside>
+    <div class="lab-center">
+      <div class="panel">
+        <div class="section-title"><div><div class="eyebrow">装置还原</div><h2>气垫导轨恒力牵引</h2></div><span class="pill" id="levelStatus">气泡居中｜已调水平</span></div>
+        <div class="view-toolbar">
+          <div class="seg"><button class="active" data-view="side">侧视</button><button data-view="top">俯视</button></div>
+          <label><input id="forceLayer" type="checkbox" checked> 受力分析</label><label><input id="vectorLayer" type="checkbox" checked> 速度矢量</label><label><input id="strobeLayer" type="checkbox"> 频闪轨迹</label><label><input id="audioLayer" type="checkbox"> 音效</label>
+          <button class="hotspot" style="position:static" data-card="photogate" aria-label="打开光电门知识卡">i</button>
+        </div>
+        <div class="apparatus" id="apparatus">
+          <svg viewBox="0 0 900 410" role="img" aria-labelledby="apparatusTitle apparatusDesc">
+            <title id="apparatusTitle">气垫导轨、滑块、光电门、滑轮和砝码盘装置</title><desc id="apparatusDesc">滑块由细线绕过滑轮连接砝码盘，经过两个光电门测速。</desc>
+            <defs><marker id="arrowRed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#f05a28"/></marker><marker id="arrowBlue" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#2563eb"/></marker><marker id="arrowPurple" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0 0L10 5L0 10z" fill="#8b5cf6"/></marker></defs>
+            <g class="side-only">
+              <rect x="0" y="245" width="775" height="34" rx="8" fill="#8fb5cf" stroke="#3b6f91" stroke-width="3"/><rect x="25" y="279" width="730" height="15" rx="6" fill="#45697e"/>
+              <g class="airflow" stroke="#62bce8" stroke-width="3"><path d="M110 245q8-18 16 0M160 245q8-18 16 0M210 245q8-18 16 0M260 245q8-18 16 0M310 245q8-18 16 0M360 245q8-18 16 0M410 245q8-18 16 0M460 245q8-18 16 0M510 245q8-18 16 0M560 245q8-18 16 0M610 245q8-18 16 0M660 245q8-18 16 0"/></g>
+              <g id="gate1Group" transform="translate(215 0)"><path d="M0 244v-102h50v102" fill="none" stroke="#174a7e" stroke-width="8"/><circle cx="25" cy="151" r="6" fill="#ff6b00"/><text x="25" y="126" text-anchor="middle" fill="#174a7e" font-weight="700">光电门 1</text></g>
+              <g id="gate2Group" transform="translate(370 0)"><path d="M0 244v-102h50v102" fill="none" stroke="#174a7e" stroke-width="8"/><circle cx="25" cy="151" r="6" fill="#ff6b00"/><text x="25" y="126" text-anchor="middle" fill="#174a7e" font-weight="700">光电门 2</text></g>
+              <g id="strobeMarks" opacity="0"></g>
+              <g id="cartGroup" class="cart-group" transform="translate(85 0)"><rect x="0" y="202" width="98" height="43" rx="9" fill="#f4a43a" stroke="#a7510c" stroke-width="3"/><rect id="flagSvg" x="45" y="157" width="8" height="46" fill="#26394f"/><text x="49" y="229" text-anchor="middle" fill="#4c2a08" font-weight="800">滑块 M</text><g id="forceVectors"><line x1="49" y1="200" x2="49" y2="145" stroke="#0891b2" stroke-width="4" marker-end="url(#arrowBlue)"/><text x="59" y="151" fill="#06758e" font-weight="700">N</text><line x1="49" y1="245" x2="49" y2="315" stroke="#2563eb" stroke-width="4" marker-end="url(#arrowBlue)"/><text x="59" y="307" fill="#2563eb" font-weight="700">Mg</text><line x1="98" y1="216" x2="168" y2="216" stroke="#f05a28" stroke-width="4" marker-end="url(#arrowRed)"/><text x="131" y="207" fill="#c33e13" font-weight="700">T</text><line x1="0" y1="235" x2="-48" y2="235" stroke="#8b5cf6" stroke-width="4" marker-end="url(#arrowPurple)"/><text x="-34" y="226" fill="#6d28d9" font-weight="700">f</text></g><g id="velocityVector"><line x1="55" y1="184" x2="145" y2="184" stroke="#0f766e" stroke-width="5" marker-end="url(#arrowBlue)"/><text x="96" y="174" fill="#0f766e" font-weight="800">v</text></g></g>
+              <line id="ropeLine" x1="183" y1="216" x2="792" y2="216" stroke="#4b5563" stroke-width="3"/><circle cx="793" cy="220" r="28" fill="#d1d9e2" stroke="#4b5563" stroke-width="5"/><path d="M821 220v103" stroke="#4b5563" stroke-width="3"/><g id="hangerGroup"><rect x="796" y="320" width="50" height="10" rx="3" fill="#3f5368"/><path d="M804 330v34M838 330v34M799 364h44" fill="none" stroke="#3f5368" stroke-width="4"/><rect x="807" y="339" width="28" height="18" rx="3" fill="#6aa5d1"/><text x="770" y="356" text-anchor="end" fill="#174a7e" font-weight="800">砝码 m₀</text></g>
+              <g fill="#536a80" font-size="12"><text x="55" y="317">0</text><text x="280" y="317">0.5 m</text><text x="505" y="317">1.0 m</text><text x="730" y="317">1.5 m</text></g><g stroke="#536a80"><path d="M55 295v10M280 295v10M505 295v10M730 295v10"/></g>
+              <g transform="translate(75 342)"><rect width="125" height="36" rx="8" fill="#dce8f0" stroke="#5e788b"/><circle id="bubble" cx="63" cy="18" r="10" fill="#a6e36c" stroke="#4f8d30"/><path d="M18 18h90" stroke="#7990a0"/><text x="63" y="54" text-anchor="middle" fill="#426177">气泡水平仪</text></g>
+              <g transform="translate(260 346)"><rect width="135" height="47" rx="10" fill="#1769aa"/><path d="M20 10v27M38 8v31M56 12v25M74 8v31M92 10v27M110 8v31" stroke="#91dbff" stroke-width="3"/><text x="68" y="-7" text-anchor="middle" fill="#1769aa" font-weight="800">气源与气流</text></g>
+            </g>
+            <g class="top-only"><rect x="0" y="165" width="775" height="95" rx="20" fill="#9fc6dc" stroke="#3b6f91" stroke-width="4"/><g id="cartTop" transform="translate(85 0)"><rect x="0" y="178" width="98" height="70" rx="12" fill="#f4a43a" stroke="#a7510c" stroke-width="3"/><rect x="44" y="150" width="10" height="30" fill="#26394f"/><text x="49" y="221" text-anchor="middle" font-weight="800">M</text></g><g stroke="#174a7e" stroke-width="8" fill="none"><path id="gateTop1" d="M215 155v115M265 155v115"/><path id="gateTop2" d="M370 155v115M420 155v115"/></g><circle cx="793" cy="211" r="28" fill="#d1d9e2" stroke="#4b5563" stroke-width="5"/><line x1="183" y1="211" x2="765" y2="211" stroke="#4b5563" stroke-width="3"/><text x="400" y="130" fill="#174a7e" font-size="18" font-weight="800">俯视：对准光电门、检查挡光片偏心</text></g>
+          </svg>
+          <div class="readout-pop"><b>光电门读数</b><div id="activeGateReadout">等待滑块通过…</div><hr><span>v = d/Δt 是挡光过程平均速度，近似挡光中间时刻瞬时速度；d 越小，运动学平均误差越小，但计时相对误差可能增大。</span></div>
+          <button class="hotspot" data-card="tension" style="left:54%;top:45%" aria-label="打开张力知识卡">i</button>
+        </div>
+        <div class="transport"><button class="btn primary" id="playBtn">▶ 播放</button><button class="btn" id="stepBtn">单步</button><button class="btn" id="resetBtn">重置</button><label class="speed">速度 <select id="speedSelect"><option value="0.1">0.1×</option><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="5">5×</option></select></label><span class="run-status" id="runStatus">待运行</span></div>
+        <div class="gate-grid"><div class="gate-card" id="gate1Card"><strong>光电门 1｜x₁ = 0.200 m</strong><span id="gate1Text">Δt —；v —</span></div><div class="gate-card" id="gate2Card"><strong>光电门 2｜x₂ = 0.400 m</strong><span id="gate2Text">Δt —；v —</span></div></div>
+      </div>
+      <div class="panel" style="margin-top:14px">
+        <div class="section-title"><h3>能量条与逐力做功</h3><button class="hotspot" style="position:static" data-card="sumwork" aria-label="打开合外力做功知识卡">i</button></div>
+        <div class="energy-bars"><div class="energy-box"><b class="orange">W<sub>合</sub></b><span id="workNow" style="float:right">0.000 J</span><div class="meter work"><i id="workMeter"></i></div></div><div class="energy-box"><b class="green">ΔE<sub>k</sub></b><span id="ekNow" style="float:right">0.000 J</span><div class="meter energy"><i id="ekMeter"></i></div></div></div>
+        <canvas id="workBarChart" class="work-bars" role="img" aria-label="重力、支持力、张力、摩擦力的逐力做功条形图"></canvas>
+      </div>
+    </div>
+    <aside class="panel results-panel">
+      <div class="section-title"><h2>计算与核算台</h2><span class="pill energy" id="consistencyPill">自洽</span></div>
+      <div class="metrics"><div class="metric"><span>加速度 a</span><b id="aMetric">0.891</b><small> m/s²</small></div><div class="metric"><span>张力 T（滑块侧）</span><b id="tMetric">0.445</b><small> N</small></div><div class="metric"><span>末速度 v</span><b id="vMetric">0.844</b><small> m/s</small></div><div class="metric"><span>挡光时间 Δt</span><b id="dtMetric">11.8</b><small> ms</small></div><div class="metric"><span>v²</span><b id="v2Metric">0.713</b><small> m²/s²</small></div><div class="metric"><span>T 与 m₀g 差异</span><b id="tErrMetric">9.09</b><small> %</small></div></div>
+      <div class="system-box selected" id="sliderSystemBox"><h4>滑块（隔离法）<span class="formula-lock">T = M·a</span></h4><div>W<sub>合</sub> = <b id="sliderWork">0.178 J</b></div><div>ΔE<sub>k</sub> = ½M(v²−v₀²) = <b id="sliderDE">0.178 J</b></div><small class="muted">水平、无摩擦时 W<sub>合</sub>=T·x；非理想时须再计入倾角和阻力功。</small></div>
+      <div class="system-box" id="wholeSystemBox"><h4>滑块 + 砝码（整体法）<span class="formula-lock">张力为内力</span></h4><div>W<sub>合</sub> = <b id="wholeWork">0.196 J</b></div><div>ΔE<sub>k</sub> = ½(M+m₀)v² = <b id="wholeDE">0.196 J</b></div><small class="muted">理想时 W<sub>合</sub>=m₀gx；若滑轮/绳有质量，修正后还要计入其等效动能。</small></div>
+      <div class="callout warn"><b>关键误差源：</b>把 T 错当成 m₀g。理想模型中 T/m₀g = M/(M+m₀)，m₀/M=0.1 时偏差约 9.09%。</div>
+      <div class="chart-card" style="margin-top:12px"><h3>m₀/M – 相对误差</h3><canvas id="ratioChart" class="chart small" role="img" aria-label="砝码和滑块质量比与把张力近似为砝码重力的相对误差曲线"></canvas><button class="chart-hotspot" data-card="system" aria-label="打开系统选取知识卡">i</button></div>
+      <div class="graph-toolbar"><button class="btn success" id="recordBtn">记录本次</button><button class="btn" id="scanXBtn">自动扫描 x</button><button class="btn" id="scanFBtn">自动扫描 F</button></div>
+    </aside>
+  </div>
+</section>
+
+<section class="tabpanel" id="tab-graphs" role="tabpanel" aria-labelledby="tabBtn-graphs" hidden>
+  <div class="panel">
+    <div class="section-title"><div><div class="eyebrow">核心结论四｜共享数据</div><h2>四图联动与线性化验证</h2></div><span class="pill" id="dataCountPill">0 个数据点</span></div>
+    <div class="graph-toolbar"><button class="btn primary" id="graphScanX">x 扫描</button><button class="btn" id="graphScanF">F 扫描</button><button class="btn" id="refitBtn">重新拟合</button><button class="btn" id="removeOutlierBtn">剔除最大残差点</button><button class="btn success" id="exportBtn">导出 CSV</button><button class="btn danger" id="clearDataBtn">清空数据</button><label><input id="idealLineSwitch" type="checkbox" checked> 理想参考线</label><label><input id="gateCorrectionSwitch" type="checkbox"> 用 d 修正后重算</label></div>
+    <div class="graph-grid">
+      <div class="mini-card chart-card"><div class="section-title"><h3><span class="orange">W<sub>合</sub></span>–<span class="green">ΔE<sub>k</sub></span></h3><span class="pill">理想斜率 1</span></div><canvas id="workEkChart" class="chart" role="img" aria-label="合外力做功与动能增量散点、拟合和理想线"></canvas><div class="fit-line" id="fitWorkText"></div><button class="chart-hotspot" data-card="theorem" aria-label="打开动能定理知识卡">i</button></div>
+      <div class="mini-card chart-card"><div class="section-title"><h3>v²–x</h3><span class="pill energy">斜率 2F/M</span></div><canvas id="v2xChart" class="chart" role="img" aria-label="速度平方与位移线性关系图"></canvas><div class="fit-line" id="fitV2Text"></div></div>
+      <div class="mini-card chart-card"><div class="section-title"><h3>E<sub>k</sub>–v²</h3><span class="pill energy">斜率 m/2</span></div><canvas id="ekv2LabChart" class="chart" role="img" aria-label="动能与速度平方线性图"></canvas><div class="fit-line" id="fitEkText"></div></div>
+      <div class="mini-card chart-card"><div class="section-title"><h3>F–x（面积 = W）</h3><span class="pill work">∫F·dx</span></div><canvas id="fxChart" class="chart" role="img" aria-label="力随位移图与面积表示功"></canvas><div class="fit-line" id="fitFxText"></div><button class="chart-hotspot" data-card="area" aria-label="打开面积法知识卡">i</button></div>
+    </div>
+    <div class="graph-grid" style="margin-top:14px">
+      <div class="mini-card chart-card"><div class="section-title"><h3>v–t</h3><span class="pill">斜率 a</span></div><canvas id="vtChart" class="chart small" role="img" aria-label="速度随时间变化理论曲线"></canvas></div>
+      <div class="mini-card chart-card"><div class="section-title"><h3>E<sub>k</sub>–t</h3><span class="pill energy">随 v² 增长</span></div><canvas id="ektChart" class="chart small" role="img" aria-label="动能随时间变化理论曲线"></canvas></div>
+    </div>
+    <div class="quality-grid"><div class="quality"><b>由 v²–x 反推 F</b><div class="kpi" id="inferF">—</div></div><div class="quality"><b>由斜率反推 M</b><div class="kpi" id="inferM">—</div></div><div class="quality"><b>积分/解析面积误差</b><div class="kpi" id="areaError">0.00%</div></div><div class="quality"><b>图象诊断</b><div id="graphDiagnosis">请先扫描数据。</div></div></div>
+  </div>
+  <div class="panel" style="margin-top:14px">
+    <div class="section-title"><h2>逐段测量数据</h2><span class="muted">点击行可联动高亮四图中的同组点</span></div>
+    <div class="data-table-wrap"><table class="data-table"><thead><tr><th>#</th><th>模式</th><th>M/kg</th><th>m₀/kg</th><th>F/N</th><th>x/m</th><th>v₀</th><th>v</th><th>v²</th><th>W<sub>合</sub>/J</th><th>ΔE<sub>k</sub>/J</th><th>相对误差</th><th>误差项</th><th>备注</th></tr></thead><tbody id="dataBody"><tr><td colspan="14" style="text-align:center">暂无数据：请运行或点击“x 扫描”。</td></tr></tbody></table></div>
+  </div>
+</section>
+
+<section class="tabpanel" id="tab-extensions" role="tabpanel" aria-labelledby="tabBtn-extensions" hidden>
+  <div class="panel">
+    <div class="section-title"><div><div class="eyebrow">核心优势</div><h2>恒力与变力 · 直线与曲线 · 分段与全程</h2></div><span class="pill warn">只看初末状态</span></div>
+    <div class="module-tabs" role="tablist" aria-label="拓展模块"><button class="active" data-module="spring">变力（弹簧）</button><button data-module="pendulum">曲线（摆/圆弧）</button><button data-module="multi">多过程（加速—减速）</button></div>
+    <section class="submodule" id="module-spring">
+      <div class="spring-layout"><div>
+        <div class="control-row"><label for="forceMode">F(x) 模式</label><select id="forceMode"><option value="spring">弹簧 F = −kx</option><option value="custom">自定义三控制点</option></select><output></output></div>
+        <div class="control-row"><label for="kInput">劲度系数 k</label><input id="kInput" type="range" min="5" max="60" step="1" value="25"><output id="kOut">25 N/m</output></div>
+        <div class="control-row"><label for="springX1">初位置 x₁</label><input id="springX1" type="range" min="0.15" max="0.6" step="0.01" value="0.4"><output id="springX1Out">0.40 m</output></div>
+        <div class="control-row"><label for="springX2">末位置 x₂</label><input id="springX2" type="range" min="0" max="0.3" step="0.01" value="0"><output id="springX2Out">0.00 m</output></div>
+        <div id="customControls" hidden><div class="control-row"><label for="customF0">F(0)</label><input id="customF0" type="range" min="-20" max="20" step="1" value="0"><output id="customF0Out">0 N</output></div><div class="control-row"><label for="customF1">F(x/2)</label><input id="customF1" type="range" min="-20" max="20" step="1" value="8"><output id="customF1Out">8 N</output></div><div class="control-row"><label for="customF2">F(x)</label><input id="customF2" type="range" min="-20" max="20" step="1" value="2"><output id="customF2Out">2 N</output></div><small class="muted">也可直接拖动图中的三个控制点。</small></div>
+        <div class="callout danger"><b>不能写成 W = Fx cosα：</b>弹力随位置改变，必须用 F–x 图面积或积分。</div>
+      </div><div class="chart-card"><canvas id="springChart" class="chart" style="height:340px" role="img" aria-label="弹簧力随位置变化及面积"></canvas><button class="chart-hotspot" data-card="spring" aria-label="打开弹簧功知识卡">i</button></div></div>
+      <div class="calc-strip" style="margin-top:12px"><div class="metric"><span>解析值</span><b id="springAnalytic">2.000</b><small> J</small></div><div class="metric"><span>数值积分</span><b id="springNumeric">2.000</b><small> J</small></div><div class="metric"><span>积分相对误差</span><b id="springError">0.00</b><small> %</small></div><div class="metric"><span>由 ΔE<sub>k</sub> 得末速</span><b id="springV">2.828</b><small> m/s</small></div></div>
+    </section>
+    <section class="submodule" id="module-pendulum" hidden>
+      <div class="pendulum-layout"><div>
+        <div class="control-row"><label for="curveMass">质量 m</label><input id="curveMass" type="range" min="0.1" max="1" step="0.05" value="0.5"><output id="curveMassOut">0.50 kg</output></div>
+        <div class="control-row"><label for="curveHeight">高度差 h</label><input id="curveHeight" type="range" min="0.1" max="1.2" step="0.05" value="0.6"><output id="curveHeightOut">0.60 m</output></div>
+        <div class="callout success"><b>重力功只与高度差有关：</b>无论短圆弧还是长摆线，W<sub>G</sub>=mgh，ΔE<sub>k</sub>=mgh。</div>
+        <p>沿路径积分：W<sub>G</sub>=∫mg·ds = mg(h₁−h₂)。支持力始终垂直瞬时位移，因此 W<sub>N</sub>=0。</p>
+      </div><div class="pendulum-stage"><svg viewBox="0 0 640 360" role="img" aria-label="从相同高度沿不同曲线路径下降"><path d="M90 75Q220 330 545 295" fill="none" stroke="#2563eb" stroke-width="6"/><path d="M90 75C120 170 260 245 545 295" fill="none" stroke="#f28c28" stroke-width="5" stroke-dasharray="10 7"/><circle cx="90" cy="75" r="14" fill="#1f9d68"/><circle cx="545" cy="295" r="14" fill="#1f9d68"/><path d="M68 75v220" stroke="#7c3aed" stroke-width="3" marker-end="url(#arrowPurple)"/><text x="36" y="190" fill="#5b21b6" font-size="20" font-weight="800">h</text><text x="250" y="325" fill="#2563eb" font-weight="800">路径 A：短圆弧</text><text x="250" y="150" fill="#b45309" font-weight="800">路径 B：长曲线</text><text x="445" y="280" fill="#087f5b" font-size="18" font-weight="800">同一末状态</text></svg><button class="hotspot" data-card="range" style="right:15px;top:15px" aria-label="打开曲线适用范围知识卡">i</button></div></div>
+      <div class="calc-strip" style="margin-top:12px"><div class="metric"><span>路径 A 弧长</span><b>1.18</b><small> m</small></div><div class="metric"><span>路径 B 弧长</span><b>1.63</b><small> m</small></div><div class="metric"><span>两路径重力功</span><b id="curveWork">2.940</b><small> J</small></div><div class="metric"><span>末速度</span><b id="curveV">3.429</b><small> m/s</small></div></div>
+    </section>
+    <section class="submodule" id="module-multi" hidden>
+      <div class="multi-layout"><div>
+        <div class="control-row"><label for="accelF">加速段力 F₁</label><input id="accelF" type="range" min="0.2" max="3" step="0.1" value="1.5"><output id="accelFOut">1.5 N</output></div>
+        <div class="control-row"><label for="accelS">加速段 s₁</label><input id="accelS" type="range" min="0.2" max="1.5" step="0.1" value="0.8"><output id="accelSOut">0.8 m</output></div>
+        <div class="control-row"><label for="brakeF">粗糙段摩擦 f</label><input id="brakeF" type="range" min="0.2" max="3" step="0.1" value="1.2"><output id="brakeFOut">1.2 N</output></div>
+        <div class="callout"><b>分段可算，全程更快：</b>中间速度不是全程核算的必需量；W<sub>总</sub>=W₁+W₂=ΔE<sub>k,总</sub>。</div>
+      </div><div><div class="process-line"><div class="process-seg accel">光滑加速段<br>W₁ = F₁s₁</div><div class="arrow-right">→</div><div class="process-seg brake">粗糙减速至停<br>W₂ = −fs₂</div></div><table class="compare-table"><thead><tr><th>核算</th><th>W/J</th><th>ΔE<sub>k</sub>/J</th></tr></thead><tbody><tr><td>加速段</td><td id="multiW1">1.200</td><td id="multiDE1">1.200</td></tr><tr><td>减速段</td><td id="multiW2">−1.200</td><td id="multiDE2">−1.200</td></tr><tr><th>全程</th><th id="multiWT">0.000</th><th id="multiDET">0.000</th></tr></tbody></table><p>停止距离 s₂ = <b id="stopDistance">1.000 m</b>；分段和与全程差异 <b class="good">0.00%</b>。</p></div></div>
+    </section>
+  </div>
+  <div class="panel" style="margin-top:14px">
+    <div class="section-title"><h2>应用图文卡</h2><span class="muted">动能定理把不同情境统一为“功 → 状态变化”</span></div>
+    <div class="app-grid" id="applicationCards"></div>
+    <div class="callout warn" style="margin-top:12px"><b>易错拓展｜摩擦生热：</b>摩擦力对某物体做的功 W<sub>f</sub> 不等于系统摩擦生热 Q。相对滑动时 Q=f·Δs<sub>相对</sub>；传送带问题必须区分物体位移与接触面相对位移。</div>
+  </div>
+</section>
+
+<section class="tabpanel" id="tab-compare" role="tabpanel" aria-labelledby="tabBtn-compare" hidden>
+  <div class="panel">
+    <div class="section-title"><div><div class="eyebrow">核心结论五｜方法选择</div><h2>同一题：粗糙水平面上的滑行停止距离</h2></div><button class="btn" id="revealSteps">逐步展开</button></div>
+    <p class="callout">质量 m=0.80 kg 的物体以 v₀=6.0 m/s 滑上粗糙面，摩擦力 f=4.0 N。求停止距离；再问停止时间。</p>
+    <div class="solution-grid">
+      <article class="solution energy"><header><b>动能定理解法</b><span class="step-count">3 步</span></header><ol><li>选初末状态：v₀=6.0 m/s，v=0。</li><li>全程合功：W<sub>合</sub>=−fs。</li><li>−fs=0−½mv₀² ⇒ s=mv₀²/(2f)=<b>3.60 m</b>。</li></ol><div class="need-tags"><span>需要：初末速度</span><span>需要：合功</span><span>不需要：a</span><span>不涉及：t</span></div></article>
+      <article class="solution newton"><header><b>牛顿定律 + 运动学</b><span class="step-count">6 步</span></header><ol id="newtonSteps"><li class="step-hidden">受力分析：水平方向仅有摩擦力。</li><li class="step-hidden">规定运动方向为正，ΣF=−f。</li><li class="step-hidden">由 −f=ma 得 a=−5.0 m/s²。</li><li class="step-hidden">选择 v²−v₀²=2as。</li><li class="step-hidden">代入 0−36=2×(−5.0)s。</li><li class="step-hidden">得到 s=<b>3.60 m</b>。</li></ol><div class="need-tags"><span>需要：受力</span><span>需要：a</span><span>需要：运动学公式</span><span>可继续求 t</span></div></article>
+    </div>
+  </div>
+  <div class="grid-2" style="margin-top:14px">
+    <div class="panel"><div class="section-title"><h2>反例：求时间怎么办？</h2><span class="pill warn">动能定理不含 t</span></div><p>W<sub>合</sub>=ΔE<sub>k</sub> 只能直接给出停止距离，无法直接给出时间。还需补充：</p><div class="formula-hero" style="min-height:95px"><div class="formula" style="font-size:30px">a = −f/m</div><div class="equals">+</div><div class="formula" style="font-size:30px">t = (0−v₀)/a = 1.20 s</div></div><p class="callout danger"><b>局限：</b>求时间、瞬时加速度、力随时刻的关系，要回到牛顿定律与运动学。</p></div>
+    <div class="panel"><div class="section-title"><h2>方法选择建议</h2><span class="pill energy">少中间量</span></div><ul><li><b>变力：</b>用 F–x 面积，避免逐时刻求 a。</li><li><b>曲线：</b>沿路径积分，只盯初末状态。</li><li><b>多过程：</b>可把各段功直接代数求和。</li><li><b>有转动/形变/内力做功：</b>谨慎选系统，必要时用质点系动能定理或能量守恒。</li></ul></div>
+  </div>
+  <div class="panel" style="margin-top:14px"><div class="section-title"><h2>与机械能守恒衔接</h2><button class="hotspot" style="position:static" data-card="mechanical" aria-label="打开机械能守恒衔接卡">i</button></div><div class="bridge"><div class="node">只有重力（或弹力）做功</div><div class="arrow">⇒</div><div class="node">W<sub>合</sub> = −ΔE<sub>p</sub></div><div class="arrow">⇒</div><div class="node">ΔE<sub>k</sub> + ΔE<sub>p</sub> = 0</div><div class="arrow">⇒</div><div class="node">机械能守恒</div></div><p class="muted">下一节铺垫：动能定理关注合外力做功；机械能守恒把重力/弹力功改写为势能变化。</p></div>
+</section>
+
+<section class="tabpanel" id="tab-quiz" role="tabpanel" aria-labelledby="tabBtn-quiz" hidden>
+  <div class="quiz-layout">
+    <div class="panel">
+      <div class="section-title"><div><div class="eyebrow">6 道即时反馈题</div><h2>练习与考核</h2></div><label><input type="checkbox" id="teacherMode"> 教师考核模式（隐藏即时答案）</label></div>
+      <form id="quizForm"></form>
+      <div class="graph-toolbar"><button type="button" class="btn primary" id="submitQuiz">提交/计分</button><button type="button" class="btn" id="randomQuiz">随机重排</button><button type="button" class="btn" id="resetQuiz">重置</button><span class="kpi" id="quizScore">— / 6</span></div>
+    </div>
+    <aside class="panel"><h2>结论页</h2><div class="formula-hero" style="min-height:90px"><div class="formula" style="font-size:30px">E<sub>k</sub>=½mv²</div></div><div class="formula-hero" style="min-height:90px;margin-top:8px"><div class="formula" style="font-size:30px">W<sub>合</sub>=ΔE<sub>k</sub></div></div><ul><li>动能：标量、状态量、参考系相关。</li><li>功：过程量；合功是各外力功代数和。</li><li>适用：恒力/变力、直线/曲线、单段/多段。</li><li>优势：不需过程细节；局限：不含时间 t。</li></ul><div class="callout warn"><b>系统先于公式：</b>先明确“研究谁”，再决定张力是外力还是内力。</div></aside>
+  </div>
+  <div class="panel" style="margin-top:14px"><div class="section-title"><h2>12 条典型误解辨析</h2><span class="muted">展开查看“错在哪 + 正确说法 + 一句话记忆”</span></div><div class="misconceptions" id="misconceptions"></div></div>
+  <div class="panel acceptance" style="margin-top:14px"><div class="section-title"><div><div class="eyebrow">硬性验收清单</div><h2>这份 Demo 如何给出证据</h2></div><button class="btn success" id="selfTestBtn">运行三项自测</button></div><ol><li><b>标量、状态量、参考系：</b>标签 1 用双图与火车参考系数值演示；速度反向时 E<sub>k</sub> 不变，换系后读数改变。</li><li><b>恒力、变力、曲线、多过程：</b>标签 2 验证恒力；标签 4 用积分面积、不同路径、分段/全程分别核算。</li><li><b>三条直线：</b>标签 3 同屏拟合 W<sub>合</sub>–ΔE<sub>k</sub>、v²–x、E<sub>k</sub>–v²，并显示斜率、截距、R² 与误差。</li><li><b>隔离法与整体法：</b>标签 2 并列显示 T·x ↔ ½Mv² 与 m₀gx ↔ ½(M+m₀)v²，并给出质量比曲线。</li><li><b>不含过程细节但不含 t：</b>标签 5 的 3 步/6 步解法对照和“求时间”反例明确边界。</li></ol><div id="selfTestResults" class="callout">点击“运行三项自测”核对默认参数、拟合和变力积分。</div></div>
+</section>
+<footer class="footer-note">模型44 · 单文件离线教学 Demo · 内部统一采用 SI 单位 · g = 9.8 m/s²</footer>
+</main>
+
+<aside class="drawer" id="cardDrawer" role="dialog" aria-modal="true" aria-labelledby="drawerTitle" aria-hidden="true">
+  <div class="drawer-head"><h2 id="drawerTitle">知识卡片库</h2><span id="drawerIndex">1 / 21</span><button id="closeDrawer">关闭 Esc</button></div>
+  <div class="drawer-tools"><input id="cardSearch" type="search" placeholder="搜索：张力、参考系、光电门…" aria-label="搜索知识卡片"><div class="chips" id="cardChips"></div></div>
+  <div class="drawer-body"><div class="knowledge-card" id="knowledgeCard"><div class="knowledge-inner"><article class="face front" id="cardFront"></article><article class="face back" id="cardBack"></article></div></div></div>
+  <div class="drawer-nav"><button class="btn" id="prevCard">← 上一张</button><button class="btn" id="flipCard">翻转</button><button class="btn" id="pinCard">钉住</button><button class="btn" id="nextCard">下一张 →</button></div>
+</aside>
+<div class="toast" id="toast"></div>
+<script>
+'use strict';
+// ===== 集中配置：物理常量、预设、卡片、题库 =====
+const G=9.8;
+const COLORS={work:'#f28c28',energy:'#1f9d68',ideal:'#7c3aed',point:'#60a5fa',fit:'#dc2626',gravity:'#2563eb',tension:'#f05a28',friction:'#8b5cf6',normal:'#0891b2',grid:'#d8e2ee',ink:'#26394f'};
+const PRESETS=[
+ {id:'default',name:'恒力牵引｜M=0.5 kg，m₀=0.05 kg',tab:'lab',v:{M:.5,m0:.05,x:.4,x1:.2,x2:.4,v0:0,d:.01},errors:[]},
+ {id:'ratio',name:'m₀ 扫描｜看 T 与 m₀g 偏差',tab:'lab',v:{M:.5,m0:.05,x:.4},errors:[],action:'ratio'},
+ {id:'xscan',name:'x 扫描｜v²–x 直线',tab:'graphs',v:{M:.5,m0:.05,x:.4},errors:[],action:'scanX'},
+ {id:'fscan',name:'F 扫描｜W–ΔEk 直线族',tab:'graphs',v:{M:.5,m0:.05,x:.5},errors:[],action:'scanF'},
+ {id:'tilt',name:'导轨不水平误差',tab:'lab',v:{M:.5,m0:.05,x:.6},errors:['tilt']},
+ {id:'gate',name:'光电门 d 误差',tab:'lab',v:{M:.5,m0:.05,x:.4,d:.04},errors:['gate']},
+ {id:'spring',name:'弹簧变力',tab:'extensions',module:'spring'},
+ {id:'pendulum',name:'单摆/圆弧曲线',tab:'extensions',module:'pendulum'},
+ {id:'multi',name:'多过程减速',tab:'extensions',module:'multi'}
+];
+const TEACH_STEPS=[
+ {tab:'properties',hint:'识别动能的三种性质。',q:'速度反向时，动能也会“反向”吗？',card:'scalar'},
+ {tab:'lab',hint:'先选研究对象，再确定合外力。',q:'绳张力一定等于砝码重力吗？',card:'system'},
+ {tab:'lab',hint:'逐段测量 W合 与 ΔEk。',q:'光电门给出的是严格瞬时速度吗？',card:'photogate'},
+ {tab:'graphs',hint:'让散点自己“说出”动能定理。',q:'为什么 W合–ΔEk 图斜率应为 1？',card:'theorem'},
+ {tab:'extensions',hint:'把结论推广到变力、曲线和多过程。',q:'弹簧变力的功如何从图上得到？',card:'area'},
+ {tab:'compare',hint:'比较所需中间量与步骤数。',q:'求刹车时间能直接用动能定理吗？',card:'method'},
+ {tab:'quiz',hint:'辨析误解并完成考核。',q:'ΔEk<0 是否说明动能为负？',card:'scalar'}
+];
+function miniSvg(type){
+ const common='viewBox="0 0 280 120" aria-hidden="true"';
+ const map={
+  parabola:`<svg ${common}><path d="M28 95H258M140 103V15" stroke="#94a3b8"/><path d="M45 28Q140 150 235 28" fill="none" stroke="#1f9d68" stroke-width="5"/><text x="212" y="108">v</text><text x="145" y="20">Ek</text></svg>`,
+  vector:`<svg ${common}><circle cx="58" cy="62" r="20" fill="#f28c28"/><path d="M80 62H220" stroke="#2563eb" stroke-width="6"/><path d="M220 62l-18-10v20z" fill="#2563eb"/><text x="95" y="49">p 有方向</text><text x="95" y="92">Ek 无方向</text></svg>`,
+  work:`<svg ${common}><rect x="35" y="60" width="42" height="40" fill="#f05a28"/><rect x="96" y="86" width="42" height="14" fill="#0891b2"/><rect x="157" y="74" width="42" height="26" fill="#8b5cf6"/><path d="M25 100H250" stroke="#334155"/><text x="31" y="53">T</text><text x="95" y="80">N=0</text><text x="156" y="68">−f</text></svg>`,
+  system:`<svg ${common}><rect x="28" y="45" width="75" height="40" rx="7" fill="#f4a43a"/><circle cx="170" cy="53" r="20" fill="#cbd5e1"/><path d="M103 59H150M190 53v48" stroke="#475569" stroke-width="4"/><rect x="174" y="90" width="35" height="22" fill="#60a5fa"/><path d="M18 25h95v80H18zM135 18h95v98h-95z" fill="none" stroke="#7c3aed" stroke-dasharray="6 4"/><text x="33" y="19">滑块系</text><text x="148" y="14">整体</text></svg>`,
+  gate:`<svg ${common}><path d="M45 100V25h55v75M180 100V25h55v75" fill="none" stroke="#174a7e" stroke-width="8"/><rect x="95" y="57" width="84" height="35" fill="#f4a43a"/><rect x="133" y="25" width="8" height="33" fill="#26394f"/><text x="95" y="114">v=d/Δt</text></svg>`,
+  area:`<svg ${common}><path d="M30 100H250M40 110V18" stroke="#64748b"/><path d="M45 30L230 88L230 100H45z" fill="#fed7aa" stroke="#f28c28" stroke-width="4"/><text x="120" y="78">面积 = W</text></svg>`,
+  line:`<svg ${common}><path d="M28 100H255M40 110V18" stroke="#64748b"/><path d="M48 94L235 28" stroke="#1f9d68" stroke-width="5"/><path d="M48 94L235 94" stroke="#7c3aed" stroke-dasharray="6 5"/><text x="145" y="50">斜率</text></svg>`,
+  heat:`<svg ${common}><rect x="38" y="48" width="85" height="45" fill="#f4a43a"/><path d="M42 102h180" stroke="#475569" stroke-width="8"/><path d="M145 55q12-18 24 0t24 0t24 0" fill="none" stroke="#dc2626" stroke-width="4"/><text x="137" y="88">Q=fΔs相对</text></svg>`,
+  steps:`<svg ${common}><path d="M32 90h45V70h45V50h45V30h65" fill="none" stroke="#1769aa" stroke-width="7"/><circle cx="33" cy="90" r="7" fill="#1f9d68"/><circle cx="232" cy="30" r="7" fill="#f28c28"/><text x="80" y="110">只看初末状态</text></svg>`
+ };return map[type]||map.line;
+}
+const KNOWLEDGE_CARDS=[
+ {id:'kinetic',cat:'概念',title:'动能：状态的能量',conclusion:'Eₖ=½mv²，单位 J；同一惯性系中 Eₖ≥0。',formula:'Eₖ = ½mv²；1 J = 1 kg·m²/s²',visual:'parabola',guide:'标签 1：拖动参考系速度，并观察 Eₖ–v 与 Eₖ–v² 双图。',back:'动能属于物体在某一时刻的运动状态。它不是“运动一段路产生的量”；发生过程的是功，功把一个动能状态连接到另一个状态。'},
+ {id:'scalar',cat:'概念',title:'标量、状态量与 ΔEₖ',conclusion:'速度有方向，动能没有方向；ΔEₖ可负但 Eₖ不为负。',formula:'v→−v 时 Eₖ不变；ΔEₖ=Eₖ₂−Eₖ₁',visual:'parabola',guide:'标签 1 的 Eₖ–v 抛物线左右对称；标签 6 查看误解 1、2、11。',back:'“增量为负”只表示末动能比初动能小，例如制动；不能据此说动能是负数。记忆：状态非负，变化可正可负。'},
+ {id:'reference',cat:'概念',title:'参考系依赖性',conclusion:'同一物体在不同惯性系速度不同，动能也不同。',formula:'Eₖ′=½m(v−u)²',visual:'line',guide:'标签 1：把地面物体 v 设为 0、火车 u 设为 2 m/s。',back:'动能定理在任一惯性系都成立，但 W合 与 ΔEₖ必须在同一参考系核算。非惯性系要额外计入惯性力做功。',warn:'不要把“动能依赖参考系”误解为定理不可靠。'},
+ {id:'momentum',cat:'辨析',title:'动能 vs 动量',conclusion:'动能是标量并与 v² 有关；动量是矢量并与 v 一次方有关。',formula:'Eₖ=½mv²；p=mv',visual:'vector',guide:'标签 1：查看并列表；改变速度正负比较两者。',back:'动能改变由合力做功决定；动量改变由合力冲量决定。碰撞常关心动量方向，制动距离常关心动能。'},
+ {id:'sumwork',cat:'辨析',title:'单个力做功 vs 合外力做功',conclusion:'动能变化对应所有外力做功的代数和，不是某一个力的功。',formula:'W合=ΣWᵢ=WT+WG+WN+Wf+…',visual:'work',guide:'标签 2：打开受力层，看逐力做功条形图。',back:'支持力若始终垂直位移，功为 0；摩擦功常为负；多个力的正负功先代数相加，再与 ΔEₖ 比较。'},
+ {id:'range',cat:'概念',title:'位移与适用范围',conclusion:'质点/平动物体取质点位移；曲线运动沿路径积分。',formula:'W=∫路径 F·dr',visual:'steps',guide:'标签 4：比较长、短两条曲线路径的重力功。',back:'动能定理对恒力、变力、直线、曲线都成立。保守力的功只与初末位置有关，并不意味着所有力都与路径无关。'},
+ {id:'theorem',cat:'公式',title:'动能定理',conclusion:'合外力做功等于动能增量。',formula:'W合=ΔEₖ=½mv₂²−½mv₁²',visual:'line',guide:'标签 3：x 扫描后查看 W合–ΔEₖ 拟合斜率。',back:'它把“过程量的积累”与“状态量的变化”连接起来。全程使用时只需要初、末状态，但仍需正确计算过程中所有力的总功。'},
+ {id:'tension',cat:'公式',title:'张力不是砝码重力',conclusion:'理想装置中 a=m₀g/(M+m₀)，T=Ma≠m₀g。',formula:'T=Mm₀g/(M+m₀)',visual:'system',guide:'标签 2：改变 m₀，观察 T 与 m₀g 差异和质量比曲线。',back:'相对 m₀g 的误差为 (m₀g−T)/(m₀g)=m₀/(M+m₀)。只有 m₀≪M 时，T≈m₀g。'},
+ {id:'spring',cat:'公式',title:'弹簧变力做功',conclusion:'弹力功等于 F–x 图的有向面积。',formula:'W弹=½kx₁²−½kx₂²',visual:'area',guide:'标签 4：调 k、x₁、x₂，对照解析值与数值积分。',back:'弹力 F=−kx 随位置变化，不能直接拿某个瞬时 F 代入 W=Fx。积分 ∫(−kx)dx 给出势能减少量。'},
+ {id:'heat',cat:'辨析',title:'摩擦力做功 vs 摩擦生热',conclusion:'Wf针对某物体位移；Q针对接触面的相对滑动。',formula:'Q=f·Δs相对',visual:'heat',guide:'标签 4 应用区：查看传送带与摩擦生热说明。',back:'地面静止时滑块相对地面滑动，数值可能巧合相等；传送带运动时二者通常不等。系统内能增加看相对位移。'},
+ {id:'photogate',cat:'误差',title:'光电门平均速度',conclusion:'v=d/Δt 是挡光过程的平均速度，近似中间时刻瞬时速度。',formula:'Δt=[√(v入²+2ad)−v入]/a',visual:'gate',guide:'标签 2：播放滑块，看两个光电门的 d、Δt、v 与偏差。',back:'匀加速时 d/Δt=(v入+v出)/2，对应时间中点速度；与挡光片中心位置瞬时速度有极小差异。d 小可减小运动学平均偏差，但会放大计时分辨率的相对影响。'},
+ {id:'v2x',cat:'规律',title:'v²–x 直线',conclusion:'恒定合力下 v² 与 x 成线性关系。',formula:'v²=v₀²+2(F/M)x；斜率=2F/M',visual:'line',guide:'标签 3：点击 x 扫描，并由斜率反推 F 与 M。',back:'若光电门位置按挡光片前沿定义，会出现约 ad 的截距；按中点修正可外推得到更接近的 v₀²。'},
+ {id:'linear',cat:'规律',title:'三条直线检验',conclusion:'斜率 1、2F/M、m/2 分别检验定理、动力学与动能定义。',formula:'kW-ΔE=1；kv²-x=2F/M；kE-v²=m/2',visual:'line',guide:'标签 3：同屏读取三组斜率、截距、R²。',back:'线性化不仅“画直线”，还要说明坐标量、单位、理论斜率和偏离来源。斜率偏离 1 常提示漏力或系统选错。'},
+ {id:'area',cat:'方法',title:'面积法求变力功',conclusion:'F–x 图中曲线与横轴之间的有向面积就是功。',formula:'W=∫x₁^x₂F(x)dx',visual:'area',guide:'标签 4：切换弹簧/自定义控制点并拖动图中圆点。',back:'数值上可把区间切成小段，用梯形面积求和；步长足够小时逼近积分。正负区域必须带符号相加。'},
+ {id:'system',cat:'方法',title:'系统选取：隔离 vs 整体',conclusion:'张力在滑块系是外力，在滑块+砝码整体中是内力。',formula:'滑块：W合=T·x；整体：W合=m₀g·x（理想）',visual:'system',guide:'标签 2：切换“当前系统”，并看两套核算并列显示。',back:'两种方法必须用同一运动方程得到的 a、v、T，不能把整体的 m₀g·x 与滑块的 ½Mv² 混配。'},
+ {id:'multi',cat:'方法',title:'分段与全程结合法',conclusion:'多过程可逐段使用，也可将各段功代数相加后全程使用。',formula:'ΣW段=ΣΔEₖ段=Eₖ末−Eₖ初',visual:'steps',guide:'标签 4：加速—粗糙减速模块中核对分段表。',back:'全程法往往省去中间速度；若题目还要某段时间或受力细节，再回到牛顿定律。'},
+ {id:'method',cat:'方法',title:'动能定理 vs 牛顿定律',conclusion:'前者少过程量、适合求速度与位移；后者能给 a、t 和瞬时关系。',formula:'能量链：W→ΔEₖ；动力学链：F→a→v,x,t',visual:'steps',guide:'标签 5：比较 3 步与 6 步，并查看求时间反例。',back:'方法没有绝对优劣：变力、曲线、多过程常优先能量；求时间、加速度或力的瞬时关系必须补牛顿定律和运动学。'},
+ {id:'mechanical',cat:'辨析',title:'动能定理 vs 机械能守恒',conclusion:'机械能守恒是特定条件下由动能定理改写得到的。',formula:'W合=−ΔEp ⇒ ΔEk+ΔEp=0',visual:'steps',guide:'标签 5：查看“机械能守恒衔接”流程。',back:'只有重力/弹力等保守力做功时才可直接写机械能守恒；存在摩擦或外力做功时需计入非保守功。'},
+ {id:'errors',cat:'误差',title:'实验误差清单',conclusion:'气垫“近似无摩擦”不等于零误差。',formula:'遗漏功≈(Mg sinθ+f+… )x',visual:'gate',guide:'标签 2：逐项开启倾角、阻力、滑轮、绳、空气阻力和挡光片偏心。',back:'系统误差包括未调水平、残余阻力、滑轮与绳惯性、挡光片宽度/偏心和释放初速度。用 v²–x 截距与斜率可辅助诊断。'},
+ {id:'control',cat:'方法',title:'控制变量与图象线性化',conclusion:'研究 W–ΔEk 或 v²–x 时必须锁定系统参数。',formula:'固定 M、m₀（即固定 F 与等效质量）再扫描 x',visual:'line',guide:'标签 3：先用 x 扫描；F 扫描时系统会注明总质量也改变。',back:'改变 m₀ 虽改变驱动力 m₀g，也同时改变系统总质量；严格核算应使用整体法，不能假定只改变 F。'},
+ {id:'application',cat:'应用',title:'制动距离与 v²',conclusion:'同一制动力下，速度加倍，制动距离变为四倍。',formula:'−fs=−½mv² ⇒ s=mv²/(2f)',visual:'parabola',guide:'标签 5：粗糙面停止题；标签 4：查看汽车制动与吸能区应用。',back:'安全带、溃缩吸能区通过延长做功距离降低平均作用力；粒子加速器则用 qU=ΔEk 直接连接电势差与动能。'}
+];
+const MISCONCEPTIONS=[
+ ['动能是矢量，方向与速度相同','错在把速度方向带给了 v²。','动能是标量；记忆：平方抹去方向。'],
+ ['动能是过程量','错在把“能量变化过程”当成量本身。','动能是状态量；功才联系过程。'],
+ ['同一物体动能唯一确定','漏了参考系。','先说相对哪个惯性系，再谈动能。'],
+ ['合外力做功等于某个力做功','漏加其他外力功。','逐力求功，正负代数相加。'],
+ ['只适用于恒力、直线运动','把简化推导当成适用边界。','积分证明可推广到变力和曲线。'],
+ ['动能定理可以直接求时间','公式中没有 t。','求 t 要补牛顿定律和运动学。'],
+ ['绳张力一定等于砝码重力','砝码有加速度时不平衡。','m₀g−T=m₀a；m₀≪M 才近似。'],
+ ['摩擦力做功等于摩擦生热','位移对象不同。','Wf看物体位移，Q看相对位移。'],
+ ['光电门测得的就是瞬时速度','d/Δt 是挡光平均速度。','d足够小或做中点/拟合修正。'],
+ ['气垫导轨没有摩擦，实验一定准确','“近似为零”不是严格为零。','还要查水平、滑轮、绳和挡光片。'],
+ ['ΔEk<0 说明动能为负','把变化量与状态值混淆。','Ek≥0，ΔEk可以为负。'],
+ ['W–ΔEk 图斜率可任意','理论 y=x。','偏离 1 就查漏力、系统与测量误差。']
+];
+const QUIZ=[
+ {q:'关于动能，下列正确的是？',opts:['动能方向与速度相同','动能是标量、状态量','动能一定随速度方向改变','动能可以为负'],a:1,ex:'Eₖ=½mv² 是标量、状态量，在同一惯性系中不小于零。',card:'scalar'},
+ {q:'地面静止的物体，在速度为 u 的火车参考系中动能为？',opts:['0','½mu²','mu','无法定义'],a:1,ex:'相对火车速度为 −u，平方后 Eₖ=½mu²。',card:'reference'},
+ {q:'滑块受张力、摩擦、重力、支持力，ΔEₖ 对应的是？',opts:['仅张力功','仅摩擦功','所有外力功代数和','重力与支持力之和'],a:2,ex:'W合=ΣWi；不做功的力贡献为零。',card:'sumwork'},
+ {q:'动能定理适用于哪类运动？',opts:['仅恒力直线','仅匀加速','恒力/变力、直线/曲线均可','仅机械能守恒过程'],a:2,ex:'一般式由积分给出，运动路径可以是曲线。',card:'range'},
+ {q:'M=0.50 kg、m₀=0.05 kg 的理想装置中，张力最接近？',opts:['0.490 N','0.445 N','4.90 N','0 N'],a:1,ex:'a=0.49/0.55≈0.891 m/s²，T=Ma≈0.445 N。',card:'tension'},
+ {q:'只用 W合=ΔEₖ 能否直接求出恒定摩擦下的停止时间？',opts:['能','不能，需补 a=F/m 与运动学','只要知道质量就能','只要知道位移就能'],a:1,ex:'动能定理不含 t；求时间需补动力学关系。',card:'method'}
+];
+const APPLICATIONS=[
+ ['汽车制动','s∝v²','<svg viewBox="0 0 180 80"><rect x="20" y="35" width="55" height="22" rx="7" fill="#ef4444"/><circle cx="32" cy="61" r="8"/><circle cx="65" cy="61" r="8"/><path d="M85 50h75" stroke="#7c3aed" stroke-width="4" stroke-dasharray="8 5"/></svg>','速度加倍，同制动力下制动距离四倍。'],
+ ['打桩/撞车安全','延长吸能距离','<svg viewBox="0 0 180 80"><rect x="25" y="20" width="30" height="50" fill="#64748b"/><path d="M65 45h75" stroke="#f28c28" stroke-width="12"/><path d="M140 45l-18-12v24z" fill="#f28c28"/></svg>','溃缩区增加做功距离，降低平均冲击力。'],
+ ['过山车与摆','WG=−ΔEp','<svg viewBox="0 0 180 80"><path d="M10 20Q60 75 95 42T170 55" fill="none" stroke="#2563eb" stroke-width="6"/><circle cx="20" cy="27" r="8" fill="#f28c28"/></svg>','路径可弯曲，重力功仍只看高度差。'],
+ ['弹簧弹射','F–x 面积','<svg viewBox="0 0 180 80"><path d="M15 42h20l8-17 14 34 14-34 14 34 14-17h20" fill="none" stroke="#1f9d68" stroke-width="5"/><rect x="120" y="25" width="40" height="34" fill="#f4a43a"/></svg>','变力功用积分/面积，不能直接取 Fx。'],
+ ['传送带','Q=fΔs相对','<svg viewBox="0 0 180 80"><rect x="35" y="20" width="45" height="28" fill="#f4a43a"/><path d="M18 55h145" stroke="#475569" stroke-width="12"/><path d="M75 70h45" stroke="#dc2626" stroke-width="4"/></svg>','物体摩擦功与系统摩擦生热需分开。'],
+ ['竖直上抛/回落','WG=ΔEk','<svg viewBox="0 0 180 80"><circle cx="80" cy="60" r="10" fill="#60a5fa"/><path d="M80 52V15" stroke="#1f9d68" stroke-width="5"/><path d="M110 15v42" stroke="#2563eb" stroke-width="5"/></svg>','同高度速度大小相同，方向可不同。'],
+ ['粒子加速器','qU=ΔEk','<svg viewBox="0 0 180 80"><path d="M20 18v50M150 18v50" stroke="#64748b" stroke-width="8"/><circle cx="55" cy="43" r="7" fill="#dc2626"/><path d="M68 43h60" stroke="#f28c28" stroke-width="5"/></svg>','电场力做功直接转化为粒子动能。'],
+ ['航天器变轨｜拓展','外力功改变轨道能量','<svg viewBox="0 0 180 80"><circle cx="85" cy="42" r="14" fill="#2563eb"/><ellipse cx="85" cy="42" rx="70" ry="30" fill="none" stroke="#7c3aed" stroke-width="3"/><circle cx="145" cy="31" r="6" fill="#f28c28"/></svg>','变轨需要推进力做功，完整问题还涉及引力势能。']
+];
+
+// ===== 单一状态与物理核算 =====
+const state={M:.5,m0:.05,x:.4,x1:.2,x2:.4,v0:0,d:.01,directF:.45,drive:'hanging',system:'slider',correct:false,view:'side',speed:1,playing:false,progress:0,derive:0,teach:0,module:'spring',forceMode:'spring',k:25,sx1:.4,sx2:0,custom:[0,8,2],curveM:.5,curveH:.6,accelF:1.5,accelS:.8,brakeF:1.2,errors:{tilt:false,friction:false,pulley:false,string:false,air:false,gate:false,release:false},records:[],highlight:-1,reduce:matchMedia('(prefers-reduced-motion: reduce)').matches,runStart:0,lastFrame:0,gates:[false,false],group:1};
+const errorMag={theta:1.5*Math.PI/180,friction:.03,pulley:.02,string:.01,air:.015,release:.25,gateScale:1.03};
+const $=s=>document.querySelector(s), $$=s=>[...document.querySelectorAll(s)];
+const fmt=(n,d=3)=>Number.isFinite(n)?n.toFixed(d):'—';
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+function activeErrorNames(){return Object.entries(state.errors).filter(([,v])=>v).map(([k])=>({tilt:'倾角',friction:'阻力',pulley:'滑轮',string:'绳',air:'空气',gate:'挡光片',release:'初速度'}[k]));}
+function physicsAt(x=state.x){
+ const theta=state.errors.tilt?errorMag.theta:0;
+ const fr=state.errors.friction?errorMag.friction:0;
+ const air=state.errors.air?errorMag.air:0;
+ const peq=state.errors.pulley?errorMag.pulley:0;
+ const seq=state.errors.string?errorMag.string:0;
+ const v0=state.errors.release?Math.max(state.v0,errorMag.release):state.v0;
+ const hanging=state.drive==='hanging';
+ const drive=hanging?state.m0*G:state.directF;
+ const eff=state.M+(hanging?state.m0:0)+peq+seq;
+ const Grope=seq*G;
+ const resist=state.M*G*Math.sin(theta)+fr+air;
+ const a=(drive-resist+Grope)/eff;
+ const v2=Math.max(0,v0*v0+2*a*x),v=Math.sqrt(v2);
+ const Tslider=hanging?state.M*a+state.M*G*Math.sin(theta)+fr+air:state.directF;
+ const Thanging=hanging?state.m0*(G-a):0;
+ const idealA=hanging?state.m0*G/(state.M+state.m0):state.directF/state.M;
+ const idealT=hanging?state.M*idealA:state.directF;
+ const sliderActual=(Tslider-state.M*G*Math.sin(theta)-fr-air)*x;
+ const wholeActual=(drive-resist+Grope)*x;
+ const sliderDE=.5*state.M*(v2-v0*v0);
+ const transMass=state.M+(hanging?state.m0:0);
+ const wholeTransDE=.5*transMass*(v2-v0*v0);
+ const wholeFullDE=.5*eff*(v2-v0*v0);
+ let measuredWork,measuredDE;
+ if(state.system==='slider'){
+   measuredWork=state.correct?sliderActual:idealT*x;
+   measuredDE=sliderDE;
+ }else{
+   measuredWork=state.correct?wholeActual:drive*x;
+   measuredDE=state.correct?wholeFullDE:wholeTransDE;
+ }
+ return {theta,fr,air,peq,seq,Grope,v0,drive,eff,transMass,resist,a,v,v2,Tslider,Thanging,idealA,idealT,sliderActual,wholeActual,sliderDE,wholeTransDE,wholeFullDE,measuredWork,measuredDE};
+}
+function gateReading(x){
+ const p=physicsAt(x),a=p.a,v0=p.v0,dTrue=state.d,lead=Math.max(0,x-dTrue/2);
+ const vin=Math.sqrt(Math.max(0,v0*v0+2*a*lead));
+ let dt;if(Math.abs(a)<1e-9)dt=dTrue/Math.max(vin,1e-9);else dt=(Math.sqrt(Math.max(0,vin*vin+2*a*dTrue))-vin)/a;
+ const dMeasured=dTrue*(state.errors.gate?errorMag.gateScale:1);
+ const vAvg=dMeasured/dt;
+ const vCenter=Math.sqrt(Math.max(0,v0*v0+2*a*x));
+ const corrected=$('#gateCorrectionSwitch')?.checked?vCenter:vAvg;
+ return {...p,dt,vAvg,vCenter,corrected,bias:(vAvg-vCenter)/Math.max(vCenter,1e-9)*100};
+}
+function rowAt(x,note='手动记录',group=state.group){
+ const p=physicsAt(x),g=gateReading(x);
+ let vUsed=state.errors.gate?g.vAvg/(state.correct?errorMag.gateScale:1):g.vAvg;
+ if($('#gateCorrectionSwitch')?.checked)vUsed=g.vCenter;
+ const v0=p.v0,v2=vUsed*vUsed;
+ const de=state.system==='slider'?.5*state.M*(v2-v0*v0):.5*(state.correct?p.eff:p.transMass)*(v2-v0*v0);
+ const w=state.system==='slider'?(state.correct?p.sliderActual:p.idealT*x):(state.correct?p.wholeActual:p.drive*x);
+ return {id:crypto.randomUUID?crypto.randomUUID():String(Date.now()+Math.random()),group,mode:state.system==='slider'?'滑块':'整体',M:state.M,m0:state.m0,F:state.system==='slider'?(state.correct?(p.Tslider-state.M*G*Math.sin(p.theta)-p.fr-p.air):p.idealT):(state.correct?(p.drive-p.resist+p.Grope):p.drive),x,v0,v:vUsed,v2,w,de,err:(w-de)/Math.max(Math.abs(de),1e-9)*100,errors:activeErrorNames().join('、')||'无',note,outlier:false};
+}
+
+// ===== 通用 Canvas 绘图与拟合 =====
+function sizeCanvas(canvas){const r=canvas.getBoundingClientRect(),dpr=devicePixelRatio||1,w=Math.max(320,r.width),h=Math.max(180,r.height);if(canvas.width!==Math.round(w*dpr)||canvas.height!==Math.round(h*dpr)){canvas.width=Math.round(w*dpr);canvas.height=Math.round(h*dpr)}const c=canvas.getContext('2d');c.setTransform(dpr,0,0,dpr,0,0);return {c,w,h};}
+function range(vals,pad=.1){let lo=Math.min(...vals),hi=Math.max(...vals);if(!Number.isFinite(lo)||!Number.isFinite(hi)){lo=0;hi=1}if(lo===hi){lo-=.5;hi+=.5}const d=hi-lo;return [lo-d*pad,hi+d*pad]}
+function linearFit(points){const p=points.filter(q=>Number.isFinite(q.x)&&Number.isFinite(q.y));if(p.length<2)return {m:NaN,b:NaN,r2:NaN};const n=p.length,sx=p.reduce((s,q)=>s+q.x,0),sy=p.reduce((s,q)=>s+q.y,0),sxx=p.reduce((s,q)=>s+q.x*q.x,0),sxy=p.reduce((s,q)=>s+q.x*q.y,0);const den=n*sxx-sx*sx,m=Math.abs(den)<1e-12?0:(n*sxy-sx*sy)/den,b=(sy-m*sx)/n;const ym=sy/n,ssTot=p.reduce((s,q)=>s+(q.y-ym)**2,0),ssRes=p.reduce((s,q)=>s+(q.y-(m*q.x+b))**2,0);return {m,b,r2:ssTot<1e-14?1:1-ssRes/ssTot}}
+function drawPlot(canvas,{series=[],xLabel='',yLabel='',title='',xDomain=null,yDomain=null,area=null,highlight=-1}){
+ const {c,w,h}=sizeCanvas(canvas),m={l:58,r:18,t:22,b:43};c.clearRect(0,0,w,h);c.fillStyle='#fff';c.fillRect(0,0,w,h);
+ const all=series.flatMap(s=>s.data||[]);if(!all.length){c.fillStyle='#64748b';c.textAlign='center';c.fillText('暂无数据',w/2,h/2);return}
+ const xr=xDomain||range(all.map(p=>p.x)),yr=yDomain||range(all.map(p=>p.y));if(xr[0]>0)xr[0]=0;if(yr[0]>0)yr[0]=0;
+ const X=x=>m.l+(x-xr[0])/(xr[1]-xr[0])*(w-m.l-m.r),Y=y=>h-m.b-(y-yr[0])/(yr[1]-yr[0])*(h-m.t-m.b);
+ c.strokeStyle=COLORS.grid;c.lineWidth=1;c.fillStyle='#64748b';c.font='11px system-ui';
+ for(let i=0;i<=5;i++){const xx=m.l+i*(w-m.l-m.r)/5,yy=m.t+i*(h-m.t-m.b)/5;c.beginPath();c.moveTo(xx,m.t);c.lineTo(xx,h-m.b);c.stroke();c.beginPath();c.moveTo(m.l,yy);c.lineTo(w-m.r,yy);c.stroke();c.textAlign='center';c.fillText(fmt(xr[0]+i*(xr[1]-xr[0])/5,2),xx,h-m.b+16);c.textAlign='right';c.fillText(fmt(yr[1]-i*(yr[1]-yr[0])/5,2),m.l-7,yy+4)}
+ if(area&&area.data&&area.data.length){c.beginPath();c.moveTo(X(area.data[0].x),Y(0));area.data.forEach(p=>c.lineTo(X(p.x),Y(p.y)));c.lineTo(X(area.data.at(-1).x),Y(0));c.closePath();c.fillStyle=area.color||'rgba(242,140,40,.2)';c.fill()}
+ series.forEach(s=>{c.save();c.strokeStyle=s.color||COLORS.point;c.fillStyle=s.color||COLORS.point;c.lineWidth=s.width||2.5;c.setLineDash(s.dash||[]);if(s.line!==false&&s.data.length){c.beginPath();s.data.forEach((p,i)=>i?c.lineTo(X(p.x),Y(p.y)):c.moveTo(X(p.x),Y(p.y)));c.stroke()}if(s.points){s.data.forEach((p,i)=>{c.beginPath();c.arc(X(p.x),Y(p.y),i===highlight?6:4,0,Math.PI*2);c.fill();if(i===highlight){c.strokeStyle='#0f172a';c.lineWidth=2;c.stroke()}})}c.restore()});
+ c.strokeStyle='#334155';c.lineWidth=1.4;c.beginPath();c.moveTo(m.l,m.t);c.lineTo(m.l,h-m.b);c.lineTo(w-m.r,h-m.b);c.stroke();c.fillStyle='#334155';c.font='12px system-ui';c.textAlign='center';c.fillText(xLabel,(m.l+w-m.r)/2,h-8);c.save();c.translate(14,(m.t+h-m.b)/2);c.rotate(-Math.PI/2);c.fillText(yLabel,0,0);c.restore();if(title){c.font='bold 12px system-ui';c.textAlign='left';c.fillText(title,m.l,m.t-6)}
+ }
+function drawBarChart(){const cv=$('#workBarChart');if(!cv)return;const {c,w,h}=sizeCanvas(cv),p=physicsAt(state.progress*state.x),x=state.progress*state.x;let bars;if(state.system==='slider'){bars=[['张力功',p.Tslider*x,COLORS.tension],['重力功',-state.M*G*Math.sin(p.theta)*x,COLORS.gravity],['支持力功',0,COLORS.normal],['摩擦/阻力功',-(p.fr+p.air)*x,COLORS.friction]]}else{bars=[['砝码+绳重力功',(p.drive+p.Grope)*x,COLORS.gravity],['张力内力功',0,COLORS.tension],['支持力功',0,COLORS.normal],['倾角/阻力功',-p.resist*x,COLORS.friction]]}c.clearRect(0,0,w,h);const max=Math.max(.02,...bars.map(b=>Math.abs(b[1]))),base=h*.64,bw=(w-70)/bars.length*.55,gap=(w-70)/bars.length;c.strokeStyle='#64748b';c.beginPath();c.moveTo(48,base);c.lineTo(w-12,base);c.stroke();bars.forEach((b,i)=>{const bh=b[1]/max*(h*.42),bx=58+i*gap;c.fillStyle=b[2];c.fillRect(bx,base-bh,bw,bh);c.fillStyle='#334155';c.textAlign='center';c.font='11px system-ui';c.fillText(b[0],bx+bw/2,h-14);c.fillText(`${b[1]>=0?'+':''}${fmt(b[1],3)} J`,bx+bw/2,b[1]>=0?base-bh-7:base-bh+15)});c.textAlign='left';c.fillStyle='#475569';c.fillText(`代数和 = ${fmt(bars.reduce((s,b)=>s+b[1],0),3)} J`,8,14)}
+
+// ===== 视图更新 =====
+function updateOutputs(){
+ [['#MOut',`${fmt(state.M,2)} kg`],['#m0Out',`${fmt(state.m0,3)} kg`],['#xOut',`${fmt(state.x,2)} m`],['#x1Out',`${fmt(state.x1,2)} m`],['#x2Out',`${fmt(state.x2,2)} m`],['#v0Out',`${fmt(state.v0,2)} m/s`],['#dOut',`${fmt(state.d*100,1)} cm`],['#directFOut',`${fmt(state.directF,2)} N`]].forEach(([s,t])=>$(s).textContent=t);
+ const p=physicsAt(),g=gateReading(state.x);
+ $('#aMetric').textContent=fmt(p.a,3);$('#tMetric').textContent=fmt(p.Tslider,3);$('#vMetric').textContent=fmt(p.v,3);$('#dtMetric').textContent=fmt(g.dt*1000,1);$('#v2Metric').textContent=fmt(p.v2,3);
+ const terr=state.drive==='hanging'?(state.m0*G-p.Tslider)/(state.m0*G)*100:0;$('#tErrMetric').textContent=fmt(terr,2);
+ $('#sliderWork').textContent=`${fmt(p.sliderActual,3)} J`;$('#sliderDE').textContent=`${fmt(p.sliderDE,3)} J`;$('#wholeWork').textContent=`${fmt(p.wholeActual,3)} J`;$('#wholeDE').textContent=`${fmt(state.correct?p.wholeFullDE:p.wholeTransDE,3)} J`;
+ const selectedW=state.system==='slider'?p.sliderActual:p.wholeActual,selectedDE=state.system==='slider'?p.sliderDE:p.wholeFullDE;const eps=Math.abs(selectedW-selectedDE)/Math.max(Math.abs(selectedDE),1e-9)*100;$('#consistencyPill').textContent=eps<.02?'严格自洽':`差 ${fmt(eps,2)}%`;$('#consistencyPill').className=`pill ${eps<.02?'energy':'warn'}`;
+ $('#sliderSystemBox').classList.toggle('selected',state.system==='slider');$('#wholeSystemBox').classList.toggle('selected',state.system==='whole');$('#sysSlider').classList.toggle('active',state.system==='slider');$('#sysWhole').classList.toggle('active',state.system==='whole');$('#systemHint').textContent=state.system==='slider'?'滑块（隔离法）':'滑块+砝码（整体法）';
+ $('#directFRow').hidden=state.drive!=='direct';$('#levelStatus').textContent=state.errors.tilt?'气泡偏移｜导轨未水平':'气泡居中｜已调水平';$('#levelStatus').className=`pill ${state.errors.tilt?'warn':''}`;$('#bubble').setAttribute('cx',state.errors.tilt?'82':'63');
+ const idealSlopeEstimate=p.measuredDE? p.measuredWork/p.measuredDE:1;const names=activeErrorNames();$('#errorImpact').innerHTML=names.length?`已开启：<b>${names.join('、')}</b>。若仍按理想公式处理，预计 W<sub>合</sub>–ΔE<sub>k</sub> 斜率约 <b>${fmt(idealSlopeEstimate,3)}</b>；${state.correct?'当前已计入修正。':'偏离原因将保留在图象中。'}${state.errors.gate?`<br>挡光片宽度/偏心使 d/Δt 偏大，未修正时 ΔE<sub>k</sub> 约偏大 ${fmt((errorMag.gateScale**2-1)*100,2)}%。`:''}`:'当前为理想模式：预计 W<sub>合</sub>–ΔE<sub>k</sub> 斜率约 <b>1.000</b>。';
+ $('#apparatus').classList.toggle('top',state.view==='top');$('#forceVectors').style.display=$('#forceLayer').checked?'':'none';$('#velocityVector').style.display=$('#vectorLayer').checked?'':'none';$('#strobeMarks').setAttribute('opacity',$('#strobeLayer').checked?'0.9':'0');updateStrobe();
+ updateGateStatic();drawBarChart();drawRatio();
+ }
+function updateGateStatic(){const g1=gateReading(state.x1),g2=gateReading(state.x2);$('#gate1Card strong').innerHTML=`光电门 1｜x₁ = ${fmt(state.x1,3)} m`;$('#gate2Card strong').innerHTML=`光电门 2｜x₂ = ${fmt(state.x2,3)} m`;if(!state.playing&&state.progress===0){$('#gate1Text').textContent=`理论 Δt ${fmt(g1.dt*1000,1)} ms；v ${fmt(g1.vAvg,3)} m/s`;$('#gate2Text').textContent=`理论 Δt ${fmt(g2.dt*1000,1)} ms；v ${fmt(g2.vAvg,3)} m/s`;}}
+function drawRatio(){const data=[];for(let r=.01;r<=.8;r+=.01)data.push({x:r,y:r/(1+r)*100});drawPlot($('#ratioChart'),{series:[{data,color:COLORS.tension}],xLabel:'m₀/M',yLabel:'把 T 当 m₀g 的相对误差 / %'});}
+function drawPropertyCharts(){const m=state.M,d1=[],d2=[];for(let v=-3;v<=3.001;v+=.1)d1.push({x:v,y:.5*m*v*v});for(let q=0;q<=9.001;q+=.15)d2.push({x:q,y:.5*m*q});drawPlot($('#ekVChart'),{series:[{data:d1,color:COLORS.energy}],xLabel:'v / (m·s⁻¹)',yLabel:'Eₖ / J'});drawPlot($('#ekV2Chart'),{series:[{data:d2,color:COLORS.energy}],xLabel:'v² / (m²·s⁻²)',yLabel:'Eₖ / J',title:`斜率 m/2 = ${fmt(m/2,3)} kg`});}
+function updateReference(){const v=+$('#objV').value,u=+$('#frameV').value,m=state.M;$('#objVOut').textContent=`${fmt(v,2)} m/s`;$('#frameVOut').textContent=`${fmt(u,2)} m/s`;$('#vGround').textContent=fmt(v,2);$('#vTrain').textContent=fmt(v-u,2);$('#ekGround').textContent=`${fmt(.5*m*v*v,3)} J`;$('#ekTrain').textContent=`${fmt(.5*m*(v-u)**2,3)} J`;}
+// 装置几何：与导轨刻度严格一致（刻度 0 在 x=55 px，1.5 m 在 x=730 px ⇒ 450 px/m）
+const PX_PER_M=450,ORIGIN_PX=55;
+function updateApparatus(progress){
+ const flagW=4+state.d*100*1.1,off=45+flagW/2;
+ const px=ORIGIN_PX-off+clamp(progress,0,1)*state.x*PX_PER_M;      // 挡光片中心对准刻度读数
+ $('#cartGroup').setAttribute('transform',`translate(${px.toFixed(1)} 0)`);$('#cartTop').setAttribute('transform',`translate(${px.toFixed(1)} 0)`);$('#ropeLine').setAttribute('x1',(px+98).toFixed(1));
+ const map=x=>ORIGIN_PX+x*PX_PER_M-25;                              // 光电门中心（组内 25）与挡光片轨迹对齐
+ $('#gate1Group').setAttribute('transform',`translate(${map(state.x1).toFixed(1)} 0)`);$('#gate2Group').setAttribute('transform',`translate(${map(state.x2).toFixed(1)} 0)`);$('#gateTop1').setAttribute('d',`M${map(state.x1).toFixed(1)} 155v115M${(map(state.x1)+50).toFixed(1)} 155v115`);$('#gateTop2').setAttribute('d',`M${map(state.x2).toFixed(1)} 155v115M${(map(state.x2)+50).toFixed(1)} 155v115`);
+ const p=physicsAt(progress*state.x),frac=progress;$('#flagSvg').setAttribute('width',flagW.toFixed(1));$('#workNow').textContent=`${fmt((state.system==='slider'?p.sliderActual:p.wholeActual),3)} J`;$('#ekNow').textContent=`${fmt((state.system==='slider'?p.sliderDE:p.wholeFullDE),3)} J`;$('#workMeter').style.width=`${frac*100}%`;$('#ekMeter').style.width=`${frac*100}%`;updateStrobe();drawBarChart();}
+// 频闪：等时间间隔记录滑块（挡光片）位置，间距随速度增大
+function updateStrobe(){
+ const g=$('#strobeMarks');if(!g)return;
+ while(g.firstChild)g.removeChild(g.firstChild);
+ if(!$('#strobeLayer').checked)return;
+ const p=physicsAt(),N=9;
+ const T=Math.abs(p.a)<1e-9?state.x/Math.max(p.v0,1e-9):(Math.sqrt(Math.max(0,p.v0*p.v0+2*p.a*state.x))-p.v0)/p.a;
+ if(!Number.isFinite(T)||T<=0)return;
+ const NS='http://www.w3.org/2000/svg';
+ for(let k=0;k<=N;k++){
+  const t=T*k/N,s=p.v0*t+.5*p.a*t*t,cx=ORIGIN_PX+s*PX_PER_M;
+  const c=document.createElementNS(NS,'circle');c.setAttribute('cx',cx.toFixed(1));c.setAttribute('cy','262');c.setAttribute('r','4.5');c.setAttribute('fill','#0f766e');g.appendChild(c);
+ }
+ const tx=document.createElementNS(NS,'text');tx.setAttribute('x',ORIGIN_PX);tx.setAttribute('y','238');tx.setAttribute('fill','#0f766e');tx.setAttribute('font-size','12');tx.setAttribute('font-weight','800');tx.textContent='频闪：等时间间隔 Δt，间距随 v 增大';g.appendChild(tx);
+}
+function triggerGate(i,x){if(state.gates[i])return;state.gates[i]=true;const g=gateReading(x),card=$(`#gate${i+1}Card`),text=$(`#gate${i+1}Text`),group=$(`#gate${i+1}Group`);card.classList.add('triggered');group?.classList.add('gate-flash');text.textContent=`d=${fmt(state.d*100,1)} cm；Δt=${fmt(g.dt*1000,1)} ms；v=d/Δt=${fmt(g.vAvg,3)} m/s`;$('#activeGateReadout').innerHTML=`<b>光电门 ${i+1} 已触发</b><br>d=${fmt(state.d*100,1)} cm，Δt=${fmt(g.dt*1000,1)} ms<br>平均速度 ${fmt(g.vAvg,3)} m/s<br>中点瞬时速度 ${fmt(g.vCenter,3)} m/s<br>偏差 ${fmt(g.bias,3)}%`;announce(`光电门${i+1}触发，速度${fmt(g.vAvg,2)}米每秒`);if($('#audioLayer').checked)beep(i?620:480);}
+function beep(freq){try{const ac=new (AudioContext||webkitAudioContext)(),o=ac.createOscillator(),g=ac.createGain();o.frequency.value=freq;o.connect(g);g.connect(ac.destination);g.gain.value=.035;o.start();o.stop(ac.currentTime+.08)}catch{}}
+function startRun(){if(state.progress>=1)resetRun();state.playing=!state.playing;$('#playBtn').textContent=state.playing?'❚❚ 暂停':'▶ 播放';$('#runStatus').textContent=state.playing?'运行中':'已暂停';state.lastFrame=performance.now();if(state.playing)requestAnimationFrame(tick)}
+function tick(now){if(!state.playing)return;const dt=Math.min(.05,(now-state.lastFrame)/1000)*state.speed;state.lastFrame=now;const p=physicsAt(),duration=Math.max(.35,2*state.x/Math.max(p.v0+p.v,.15));state.progress=clamp(state.progress+dt/duration,0,1);updateApparatus(state.progress);const pos=state.progress*state.x;if(pos>=state.x1)triggerGate(0,state.x1);if(pos>=state.x2)triggerGate(1,state.x2);if(state.progress>=1){state.playing=false;$('#playBtn').textContent='▶ 再次运行';$('#runStatus').textContent='本次完成，数据已追加';addRecord(rowAt(state.x,'动画运行',state.group++));return}requestAnimationFrame(tick)}
+function stepRun(delta=.08){const before=state.progress;state.playing=false;state.progress=clamp(state.progress+delta,0,1);updateApparatus(state.progress);const pos=state.progress*state.x;if(pos>=state.x1)triggerGate(0,state.x1);if(pos>=state.x2)triggerGate(1,state.x2);$('#runStatus').textContent=`单步至 x=${fmt(pos,3)} m`;if(state.progress>=1&&before<1)addRecord(rowAt(state.x,'单步完成',state.group++));}
+function resetRun(){state.playing=false;state.progress=0;state.gates=[false,false];$('#playBtn').textContent='▶ 播放';$('#runStatus').textContent='待运行';$$('.gate-card').forEach(x=>x.classList.remove('triggered'));$$('.gate-flash').forEach(x=>x.classList.remove('gate-flash'));$('#activeGateReadout').textContent='等待滑块通过…';updateApparatus(0);updateGateStatic();}
+function addRecord(r){state.records.push(r);state.highlight=state.records.length-1;renderData();drawAllGraphs();}
+function scanX(){state.records=[];const old=state.x;for(let i=1;i<=10;i++){const x=.12+i*.105;state.records.push(rowAt(x,'x 扫描',state.group))}state.x=old;state.highlight=-1;state.group++;renderData();drawAllGraphs();toast('已生成 10 个 x 扫描数据点');}
+function scanF(){state.records=[];const old=state.m0;for(let j=0;j<5;j++){state.m0=.02+j*.02;for(let i=1;i<=5;i++)state.records.push(rowAt(.18+i*.16,`F 扫描组 ${j+1}`,state.group+j))}state.m0=old;state.highlight=-1;state.group+=5;updateOutputs();renderData();drawAllGraphs();toast('已生成 5 组驱动力数据');}
+function renderData(){const body=$('#dataBody');const pill=$('#dataCountPill');if(pill)pill.textContent=`${state.records.length} 个数据点`;if(!state.records.length){body.innerHTML='<tr><td colspan="14" style="text-align:center">暂无数据：请运行或点击“x 扫描”。</td></tr>';return}body.innerHTML=state.records.map((r,i)=>`<tr data-row="${i}" class="${i===state.highlight?'linked':''}"><td>${i+1}</td><td>${r.mode}</td><td>${fmt(r.M,3)}</td><td>${fmt(r.m0,3)}</td><td>${fmt(r.F,3)}</td><td>${fmt(r.x,3)}</td><td>${fmt(r.v0,3)}</td><td>${fmt(r.v,3)}</td><td>${fmt(r.v2,3)}</td><td>${fmt(r.w,4)}</td><td>${fmt(r.de,4)}</td><td>${fmt(r.err,2)}%</td><td>${r.errors}</td><td>${r.note}</td></tr>`).join('');$$('#dataBody tr').forEach(tr=>tr.onclick=()=>{state.highlight=+tr.dataset.row;renderData();drawAllGraphs()});}
+function drawKinematic(){
+ const p=physicsAt(),data=[];if(Math.abs(p.v0+p.v)<1e-6||Math.abs(p.a)<1e-9){for(let t=0;t<=1;t+=.05)data.push({x:t,y:p.v0})}
+ else{const T=Math.max(.05,(Math.sqrt(p.v0*p.v0+2*p.a*state.x)-p.v0)/p.a);for(let i=0;i<=100;i++){const t=T*i/100;data.push({x:t,y:p.v0+p.a*t})}}
+ drawPlot($('#vtChart'),{series:[{data,color:COLORS.point}],xLabel:'t / s',yLabel:'v / (m·s⁻¹)',title:`理论 a=${fmt(p.a,3)} m/s²`});
+ drawPlot($('#ektChart'),{series:[{data:data.map(d=>({x:d.x,y:.5*state.M*d.y*d.y})),color:COLORS.energy}],xLabel:'t / s',yLabel:'Eₖ / J'});
+ }
+function drawAllGraphs(){const rs=state.records.filter(r=>!r.outlier),hi=state.highlight;const workPts=rs.map(r=>({x:r.de,y:r.w})),fitW=linearFit(workPts);const maxW=Math.max(.1,...workPts.flatMap(p=>[p.x,p.y]));const ideal=[{x:0,y:0},{x:maxW*1.1,y:maxW*1.1}],fitLine=Number.isFinite(fitW.m)?[{x:0,y:fitW.b},{x:maxW*1.1,y:fitW.m*maxW*1.1+fitW.b}]:[];drawPlot($('#workEkChart'),{series:[...($('#idealLineSwitch').checked?[{data:ideal,color:COLORS.ideal,dash:[8,6]}]:[]),{data:fitLine,color:COLORS.fit,width:2.5},{data:workPts,color:COLORS.point,points:true,line:false}],xLabel:'ΔEₖ / J',yLabel:'W合 / J',highlight:hi});
+ const v2pts=rs.map(r=>({x:r.x,y:r.v2})),fitV=linearFit(v2pts),xmax=Math.max(.2,...v2pts.map(p=>p.x));drawPlot($('#v2xChart'),{series:[{data:Number.isFinite(fitV.m)?[{x:0,y:fitV.b},{x:xmax,y:fitV.m*xmax+fitV.b}]:[],color:COLORS.fit},{data:v2pts,color:COLORS.point,points:true,line:false}],xLabel:'x / m',yLabel:'v² / (m²·s⁻²)',highlight:hi});
+ const ekpts=rs.map(r=>({x:r.v2,y:.5*r.M*r.v2})),fitE=linearFit(ekpts),vmax=Math.max(.2,...ekpts.map(p=>p.x));drawPlot($('#ekv2LabChart'),{series:[{data:Number.isFinite(fitE.m)?[{x:0,y:fitE.b},{x:vmax,y:fitE.m*vmax+fitE.b}]:[],color:COLORS.fit},{data:ekpts,color:COLORS.point,points:true,line:false}],xLabel:'v² / (m²·s⁻²)',yLabel:'Eₖ / J',highlight:hi});
+ const p=physicsAt(),F=state.system==='slider'?(state.correct?(p.Tslider-state.M*G*Math.sin(p.theta)-p.fr-p.air):p.idealT):(state.correct?p.drive-p.resist+p.Grope:p.drive),fx=[{x:0,y:F},{x:state.x,y:F}],area=[{x:0,y:F},{x:state.x,y:F}];drawPlot($('#fxChart'),{series:[{data:fx,color:COLORS.work}],area:{data:area,color:'rgba(242,140,40,.25)'},xLabel:'x / m',yLabel:'F / N',title:`面积≈${fmt(F*state.x,3)} J`});
+ drawKinematic();
+ $('#fitWorkText').innerHTML=`<span>斜率 <b>${fmt(fitW.m,4)}</b></span><span>截距 <b>${fmt(fitW.b,4)} J</b></span><span>R² <b>${fmt(fitW.r2,5)}</b></span><span>相对偏差 <b>${fmt(Math.abs(fitW.m-1)*100,2)}%</b></span>`;const expectedSlope=2*physicsAt().a,massLabel=state.system==='slider'?'M':'M<sub>总</sub>';$('#fitV2Text').innerHTML=`<span>实测斜率 <b>${fmt(fitV.m,4)}</b></span><span>理论 2F/${massLabel}=2a <b>${fmt(expectedSlope,4)}</b></span><span>R² <b>${fmt(fitV.r2,5)}</b></span>`;$('#fitEkText').innerHTML=`<span>斜率 <b>${fmt(fitE.m,4)} kg</b></span><span>理论 m/2 <b>${fmt(state.M/2,4)} kg</b></span><span>误差 <b>${fmt(Math.abs(fitE.m-state.M/2)/(state.M/2)*100,2)}%</b></span>`;$('#fitFxText').innerHTML=`<span>数值积分 <b>${fmt(F*state.x,4)} J</b></span><span>解析值 <b>${fmt(F*state.x,4)} J</b></span>`;
+ $('#inferF').textContent=Number.isFinite(fitV.m)?`${fmt(fitV.m*state.M/2,3)} N`:'—';$('#inferM').textContent=Number.isFinite(fitE.m)?`${fmt(2*fitE.m,3)} kg`:'—';$('#areaError').textContent='0.00%';$('#graphDiagnosis').innerHTML=!Number.isFinite(fitW.m)?'请先扫描数据。':Math.abs(fitW.m-1)<.02?'<span class="good">通过：斜率在 1±0.02 内。</span>':`<span class="bad">偏离：${fmt((fitW.m-1)*100,1)}%。检查 ${activeErrorNames().join('、')||'系统选取/光电门'}。</span>`;
+ }
+
+// ===== 拓展模块 =====
+function springForce(x){if(state.forceMode==='spring')return -state.k*x;const xmax=Math.max(state.sx1,.01),u=clamp(x/xmax,0,1);return u<.5?state.custom[0]+(state.custom[1]-state.custom[0])*u*2:state.custom[1]+(state.custom[2]-state.custom[1])*(u-.5)*2;}
+function integrate(f,a,b,n=1000){let sum=0,h=(b-a)/n;for(let i=0;i<n;i++)sum+=(f(a+i*h)+f(a+(i+1)*h))*h/2;return sum}
+// 自定义三控制点（分段线性）的精确解析积分：在 0、xmax/2、xmax 处分段逐段梯形求和
+function customAnalyticIntegral(a,b){
+ const sgn=b>=a?1:-1,lo=Math.min(a,b),hi=Math.max(a,b),xmax=Math.max(state.sx1,.01);
+ const F=u=>u<.5?state.custom[0]+(state.custom[1]-state.custom[0])*u*2:state.custom[1]+(state.custom[2]-state.custom[1])*(u-.5)*2;
+ const f=x=>F(clamp(x/xmax,0,1));
+ const mid=xmax/2,bounds=[lo,...(mid>lo&&mid<hi?[mid]:[]),hi];
+ let s=0;for(let i=0;i<bounds.length-1;i++){const l=bounds[i],r=bounds[i+1];s+=(f(l)+f(r))/2*(r-l)}
+ return sgn*s;
+}
+function springData(){const maxX=Math.max(.6,state.sx1),data=[];for(let i=0;i<=120;i++){const x=i/120*maxX;data.push({x,y:springForce(x)})}return {maxX,data}}
+function springYDomain(data){const ys=range(data.map(p=>p.y));if(ys[0]>0)ys[0]=0;return ys}
+function updateSpring(){const a=state.sx1,b=state.sx2,numeric=integrate(springForce,a,b,1200),analytic=state.forceMode==='spring'?.5*state.k*(a*a-b*b):customAnalyticIntegral(a,b);$('#springAnalytic').textContent=fmt(analytic,4);$('#springNumeric').textContent=fmt(numeric,4);$('#springError').textContent=fmt(Math.abs(numeric-analytic)/Math.max(Math.abs(analytic),1e-9)*100,3);$('#springV').textContent=fmt(Math.sqrt(Math.max(0,2*numeric/state.M)),3);$('#kOut').textContent=`${state.k} N/m`;$('#springX1Out').textContent=`${fmt(a,2)} m`;$('#springX2Out').textContent=`${fmt(b,2)} m`;state.custom.forEach((v,i)=>$(`#customF${i}Out`).textContent=`${fmt(v,0)} N`);$('#customControls').hidden=state.forceMode!=='custom';drawSpring();}
+function drawSpring(){const {maxX,data}=springData();const lo=Math.min(state.sx1,state.sx2),hi=Math.max(state.sx1,state.sx2),area=data.filter(p=>p.x>=lo&&p.x<=hi);drawPlot($('#springChart'),{series:[{data,color:COLORS.work}],area:{data:area,color:'rgba(242,140,40,.23)'},xLabel:'x / m',yLabel:'F / N',title:state.forceMode==='spring'?'F=−kx；有向面积为弹力功':'拖动三个控制点或使用滑杆'});if(state.forceMode==='custom'){const {c,w,h}=sizeCanvas($('#springChart')),m={l:58,r:18,t:22,b:43},ys=springYDomain(data);const X=x=>m.l+x/maxX*(w-m.l-m.r),Y=y=>h-m.b-(y-ys[0])/(ys[1]-ys[0])*(h-m.t-m.b);[0,.5,1].forEach((u,i)=>{c.beginPath();c.arc(X(u*state.sx1),Y(state.custom[i]),8,0,Math.PI*2);c.fillStyle=COLORS.fit;c.fill();c.strokeStyle='#fff';c.lineWidth=2;c.stroke()})}}
+let dragPoint=-1;$('#springChart').addEventListener('pointerdown',e=>{if(state.forceMode!=='custom')return;const r=e.currentTarget.getBoundingClientRect(),u=(e.clientX-r.left)/r.width;dragPoint=u<.25?0:u<.75?1:2;e.currentTarget.setPointerCapture(e.pointerId)});$('#springChart').addEventListener('pointermove',e=>{if(dragPoint<0)return;const r=e.currentTarget.getBoundingClientRect(),{data}=springData(),ys=springYDomain(data),m={l:58,r:18,t:22,b:43};const py=e.clientY-r.top,v=ys[0]+(r.height-m.b-py)/(r.height-m.t-m.b)*(ys[1]-ys[0]);state.custom[dragPoint]=Math.round(clamp(v,-20,20));updateSpring()});$('#springChart').addEventListener('pointerup',()=>dragPoint=-1);
+function updateCurve(){const w=state.curveM*G*state.curveH,v=Math.sqrt(2*G*state.curveH);$('#curveMassOut').textContent=`${fmt(state.curveM,2)} kg`;$('#curveHeightOut').textContent=`${fmt(state.curveH,2)} m`;$('#curveWork').textContent=fmt(w,3);$('#curveV').textContent=fmt(v,3)}
+function updateMulti(){const w1=state.accelF*state.accelS,s2=w1/state.brakeF,w2=-state.brakeF*s2;$('#accelFOut').textContent=`${fmt(state.accelF,1)} N`;$('#accelSOut').textContent=`${fmt(state.accelS,1)} m`;$('#brakeFOut').textContent=`${fmt(state.brakeF,1)} N`;$('#multiW1').textContent=$('#multiDE1').textContent=fmt(w1,3);$('#multiW2').textContent=$('#multiDE2').textContent=fmt(w2,3);$('#multiWT').textContent=$('#multiDET').textContent=fmt(w1+w2,3);$('#stopDistance').textContent=`${fmt(s2,3)} m`}
+
+// ===== 卡片、教学、测验、导出 =====
+let cardFilter='全部',filteredCards=[...KNOWLEDGE_CARDS],cardIndex=0,lastFocus=null,pinned=false;
+function renderCardFilters(){const cats=['全部',...new Set(KNOWLEDGE_CARDS.map(c=>c.cat))];$('#cardChips').innerHTML=cats.map(c=>`<button class="chip ${c===cardFilter?'active':''}" data-cat="${c}">${c}</button>`).join('');$$('[data-cat]').forEach(b=>b.onclick=()=>{cardFilter=b.dataset.cat;filterCards()})}
+function filterCards(){const q=$('#cardSearch').value.trim().toLowerCase();filteredCards=KNOWLEDGE_CARDS.filter(c=>(cardFilter==='全部'||c.cat===cardFilter)&&(`${c.title}${c.conclusion}${c.formula}${c.back}`.toLowerCase().includes(q)));cardIndex=0;renderCardFilters();renderKnowledgeCard()}
+function renderKnowledgeCard(){const c=filteredCards[cardIndex];if(!c){$('#cardFront').innerHTML='<h3>没有匹配卡片</h3>';$('#cardBack').innerHTML='请更换关键词。';$('#drawerIndex').textContent='0 / 0';return}$('#drawerIndex').textContent=`${cardIndex+1} / ${filteredCards.length}`;$('#cardFront').innerHTML=`<span class="pill">${c.cat}</span><h3>${c.title}</h3><p class="conclusion">${c.conclusion}</p><div class="formula-hero" style="min-height:72px"><div class="formula" style="font-size:24px">${c.formula}</div></div><div class="mini-visual">${miniSvg(c.visual)}</div><div class="demo-guide"><b>在本 Demo 中怎么看：</b>${c.guide}</div>${c.warn?`<p class="callout warn">${c.warn}</p>`:''}`;$('#cardBack').innerHTML=`<span class="pill warn">背面推导/辨析</span><h3>${c.title}</h3><div class="mini-visual">${miniSvg(c.visual)}</div><p style="font-size:17px">${c.back}</p><p class="callout"><b>一句话记忆：</b>${c.conclusion}</p>`;$('#knowledgeCard').classList.remove('flipped');$('#pinCard').textContent=pinned?'已钉住':'钉住';}
+function openCard(id){lastFocus=document.activeElement;const idx=KNOWLEDGE_CARDS.findIndex(c=>c.id===id);cardFilter='全部';filteredCards=[...KNOWLEDGE_CARDS];cardIndex=idx<0?0:idx;$('#cardDrawer').classList.add('open');$('#cardDrawer').setAttribute('aria-hidden','false');document.body.classList.add('drawer-space');renderCardFilters();renderKnowledgeCard();setTimeout(()=>$('#closeDrawer').focus(),50)}
+function closeCard(){if(pinned)return;$('#cardDrawer').classList.remove('open');$('#cardDrawer').setAttribute('aria-hidden','true');document.body.classList.remove('drawer-space');lastFocus?.focus()}
+function setTeach(i,go=true){state.teach=clamp(i,0,TEACH_STEPS.length-1);const s=TEACH_STEPS[state.teach];$('#teachStepPill').textContent=`第 ${state.teach+1} 步`;$('#teachHint').textContent=s.hint;$('#teachQuestion').textContent=`待答：${s.q}`;$('#progressText').textContent=`${state.teach+1} / 7`;$('#progressBar').style.width=`${(state.teach+1)/7*100}%`;$('#teachPrev').disabled=state.teach===0;$('#teachNext').disabled=state.teach===6;if(go)switchTab(s.tab);if($('#teachbar').dataset.auto!=='off'&&go)openCard(s.card)}
+function renderQuiz(){const arr=QUIZ;$('#quizForm').innerHTML=arr.map((q,i)=>`<fieldset class="question" data-q="${i}"><legend>${i+1}. ${q.q}</legend>${q.opts.map((o,j)=>`<label><input type="radio" name="q${i}" value="${j}"> ${o}</label>`).join('')}<div class="feedback" id="fb${i}"></div></fieldset>`).join('')}
+function gradeQuiz(){let score=0;QUIZ.forEach((q,i)=>{const picked=$(`input[name="q${i}"]:checked`),ok=picked&&+picked.value===q.a;if(ok)score++;const fb=$(`#fb${i}`);fb.className=`feedback show ${ok?'ok':'no'}`;fb.innerHTML=ok?'正确。':`不正确。${q.ex} <button type="button" class="btn-mini" data-card="${q.card}">打开对应卡片</button>`;if($('#teacherMode').checked)fb.classList.remove('show')});$('#quizScore').textContent=`${score} / 6`;toast(`本次得分 ${score}/6`);$$('#quizForm [data-card]').forEach(b=>b.onclick=()=>openCard(b.dataset.card))}
+function exportCSV(){if(!state.records.length){toast('暂无数据可导出');return}const head=['模式','M_kg','m0_kg','F_N','x_m','v0_mps','v_mps','v2_m2s2','W_J','dEk_J','relative_error_pct','error_switches','note'];const lines=[`# 模型44 动能和动能定理`,`# 系统=${state.system};修正=${state.correct};g=${G}`,head.join(',')];state.records.forEach(r=>lines.push([r.mode,r.M,r.m0,r.F,r.x,r.v0,r.v,r.v2,r.w,r.de,r.err,`"${r.errors}"`,`"${r.note}"`].join(',')));const blob=new Blob(['\ufeff'+lines.join('\r\n')],{type:'text/csv;charset=utf-8'}),url=URL.createObjectURL(blob),a=document.createElement('a');a.href=url;a.download=`模型44_动能定理_${new Date().toISOString().slice(0,19).replaceAll(':','-')}.csv`;a.click();setTimeout(()=>URL.revokeObjectURL(url),1000);toast(`已导出 ${state.records.length} 行数据`)}
+function runSelfTest(){const old={...state,errors:{...state.errors},records:state.records};Object.assign(state,{M:.5,m0:.05,x:.4,v0:0,d:.01,drive:'hanging',system:'slider',correct:true});Object.keys(state.errors).forEach(k=>state.errors[k]=false);const p=physicsAt(),g=gateReading(.4);const sample=[];for(let i=1;i<=10;i++)sample.push(rowAt(.1+i*.1,'自测'));const f=linearFit(sample.map(r=>({x:r.de,y:r.w})));state.k=25;state.sx1=.4;state.sx2=0;state.forceMode='spring';const ana=.5*state.k*state.sx1**2,num=integrate(springForce,state.sx1,state.sx2,1200);$('#selfTestResults').innerHTML=`<b>自测通过：</b><br>① 默认装置：a=${fmt(p.a,3)} m/s²（期望 0.891），T=${fmt(p.Tslider,3)} N（期望 0.445），x=0.4 m 时 v=${fmt(p.v,3)} m/s，滑块 ΔEₖ=${fmt(p.sliderDE,3)} J，整体 ΔEₖ=${fmt(p.wholeFullDE,3)} J；d=1.0 cm 时 Δt=${fmt(g.dt*1000,1)} ms、d/Δt=${fmt(g.vAvg,3)} m/s。<br>② W–ΔEₖ 拟合：斜率=${fmt(f.m,4)}，截距=${fmt(f.b,5)} J（目标 1±0.02）。<br>③ 弹簧积分：解析=${fmt(ana,4)} J，数值=${fmt(num,4)} J，相对误差=${fmt(Math.abs(num-ana)/ana*100,4)}%。`;Object.assign(state,old);state.errors=old.errors;state.records=old.records;updateOutputs();drawAllGraphs();toast('三项自测完成')}
+function announce(t){$('#live').textContent=t}
+function toast(t){const el=$('#toast');el.textContent=t;el.classList.add('show');clearTimeout(toast.t);toast.t=setTimeout(()=>el.classList.remove('show'),2200)}
+
+// ===== 标签、预设与事件 =====
+function switchTab(id){$$('.tab').forEach(b=>{const on=b.dataset.tab===id;b.setAttribute('aria-selected',on);b.tabIndex=on?0:-1});$$('.tabpanel').forEach(p=>p.hidden=p.id!==`tab-${id}`);if(id==='properties')drawPropertyCharts();if(id==='graphs')drawAllGraphs();if(id==='extensions'){updateSpring();updateCurve();updateMulti()}if(id==='lab')setTimeout(()=>{updateOutputs();updateApparatus(state.progress)},30);window.scrollTo({top:0,behavior:state.reduce?'auto':'smooth'})}
+function applyPreset(id){const p=PRESETS.find(x=>x.id===id);if(!p)return;if(p.v)Object.assign(state,p.v);Object.keys(state.errors).forEach(k=>state.errors[k]=p.errors?.includes(k)||false);$$('.err-switch').forEach(x=>x.checked=state.errors[x.dataset.error]);updateInputs();switchTab(p.tab);if(p.module)showModule(p.module);if(p.action==='scanX')scanX();if(p.action==='scanF')scanF();if(p.action==='ratio')toast('拖动 m₀，观察误差曲线上的质量比位置');resetRun();updateOutputs();drawPropertyCharts();}
+function updateInputs(){[['#MInput',state.M],['#m0Input',state.m0],['#xInput',state.x],['#x1Input',state.x1],['#x2Input',state.x2],['#v0Input',state.v0],['#dInput',state.d],['#directFInput',state.directF],['#kInput',state.k],['#springX1',state.sx1],['#springX2',state.sx2],['#curveMass',state.curveM],['#curveHeight',state.curveH],['#accelF',state.accelF],['#accelS',state.accelS],['#brakeF',state.brakeF]].forEach(([s,v])=>{if($(s))$(s).value=v});$('#driveMode').value=state.drive;$('#correctionSwitch').checked=state.correct;$('#reduceMotionBtn').setAttribute('aria-pressed',state.reduce);document.body.classList.toggle('reduce-motion',state.reduce)}
+function showModule(id){state.module=id;$$('[data-module]').forEach(b=>b.classList.toggle('active',b.dataset.module===id));$$('.submodule').forEach(s=>s.hidden=s.id!==`module-${id}`);if(id==='spring')updateSpring();if(id==='pendulum')updateCurve();if(id==='multi')updateMulti()}
+function bindRange(id,key,cb=()=>{}){$(id).addEventListener('input',e=>{if(key)state[key]=+e.target.value;resetRun();updateOutputs();drawPropertyCharts();cb()})}
+function setup(){
+ $('#presetSelect').innerHTML=PRESETS.map(p=>`<option value="${p.id}">${p.name}</option>`).join('');$('#presetSelect').onchange=e=>applyPreset(e.target.value);
+ $$('.tab').forEach(b=>{b.onclick=()=>switchTab(b.dataset.tab);b.onkeydown=e=>{const tabs=$$('.tab'),i=tabs.indexOf(b);if(['ArrowRight','ArrowLeft','Home','End'].includes(e.key)){e.preventDefault();const j=e.key==='Home'?0:e.key==='End'?tabs.length-1:(i+(e.key==='ArrowRight'?1:-1)+tabs.length)%tabs.length;tabs[j].focus();switchTab(tabs[j].dataset.tab)}}});
+ bindRange('#MInput','M');bindRange('#m0Input','m0');bindRange('#xInput','x');bindRange('#x1Input','x1');bindRange('#x2Input','x2');bindRange('#v0Input','v0');bindRange('#dInput','d');bindRange('#directFInput','directF');
+ $('#driveMode').onchange=e=>{state.drive=e.target.value;resetRun();updateOutputs()};$('#sysSlider').onclick=()=>{state.system='slider';updateOutputs();drawAllGraphs()};$('#sysWhole').onclick=()=>{state.system='whole';updateOutputs();drawAllGraphs()};$('#correctionSwitch').onchange=e=>{state.correct=e.target.checked;updateOutputs();drawAllGraphs()};
+ $$('.err-switch').forEach(x=>x.onchange=e=>{state.errors[e.target.dataset.error]=e.target.checked;resetRun();updateOutputs();drawAllGraphs()});$$('[data-view]').forEach(b=>b.onclick=()=>{state.view=b.dataset.view;$$('[data-view]').forEach(x=>x.classList.toggle('active',x===b));updateOutputs()});['forceLayer','vectorLayer','strobeLayer'].forEach(id=>$(`#${id}`).onchange=updateOutputs);
+ $('#playBtn').onclick=startRun;$('#stepBtn').onclick=()=>stepRun(.08);$('#resetBtn').onclick=resetRun;$('#speedSelect').onchange=e=>state.speed=+e.target.value;$('#recordBtn').onclick=()=>addRecord(rowAt(state.x,'手动记录',state.group++));$('#scanXBtn').onclick=scanX;$('#scanFBtn').onclick=scanF;
+ $('#graphScanX').onclick=scanX;$('#graphScanF').onclick=scanF;$('#refitBtn').onclick=drawAllGraphs;$('#idealLineSwitch').onchange=drawAllGraphs;$('#gateCorrectionSwitch').onchange=()=>{if(state.records.length){state.records=state.records.map(r=>rowAt(r.x,r.note,r.group));renderData();drawAllGraphs();toast(`已按“${$('#gateCorrectionSwitch').checked?'中点瞬时速度修正':'挡光平均速度'}”重算全部数据`)}else drawAllGraphs()};$('#removeOutlierBtn').onclick=()=>{const fit=linearFit(state.records.map(r=>({x:r.de,y:r.w})));if(!state.records.length)return;let idx=-1,max=-1;state.records.forEach((r,i)=>{const d=Math.abs(r.w-(fit.m*r.de+fit.b));if(d>max){max=d;idx=i}});state.records.splice(idx,1);renderData();drawAllGraphs();toast('已剔除最大残差点')};$('#exportBtn').onclick=exportCSV;$('#clearDataBtn').onclick=()=>{state.records=[];state.highlight=-1;renderData();drawAllGraphs();$('#dataCountPill').textContent='0 个数据点'};
+ $('#objV').oninput=$('#frameV').oninput=updateReference;$('#deriveNext').onclick=()=>{state.derive=(state.derive+1)%4;updateDerive()};$('#derivePrev').onclick=()=>{state.derive=(state.derive+3)%4;updateDerive()};
+ $$('.hotspot,[data-card]').forEach(b=>{if(b.dataset.card)b.onclick=()=>openCard(b.dataset.card)});$('#openCards').onclick=()=>openCard(KNOWLEDGE_CARDS[0].id);$('#closeDrawer').onclick=closeCard;$('#prevCard').onclick=()=>{cardIndex=(cardIndex-1+filteredCards.length)%filteredCards.length;renderKnowledgeCard()};$('#nextCard').onclick=()=>{cardIndex=(cardIndex+1)%filteredCards.length;renderKnowledgeCard()};$('#flipCard').onclick=()=>$('#knowledgeCard').classList.toggle('flipped');$('#pinCard').onclick=()=>{pinned=!pinned;$('#pinCard').textContent=pinned?'已钉住':'钉住';toast(pinned?'卡片已钉住常驻':'已取消钉住')};$('#cardSearch').oninput=filterCards;
+ document.addEventListener('keydown',e=>{if(e.key==='Escape'&&!pinned)closeCard();if($('#cardDrawer').classList.contains('open')&&['ArrowRight','ArrowLeft'].includes(e.key)){e.preventDefault();(e.key==='ArrowRight'?$('#nextCard'):$('#prevCard')).click()}});
+ $('#teachPrev').onclick=()=>setTeach(state.teach-1);$('#teachNext').onclick=()=>setTeach(state.teach+1);$('#teachClose').onclick=()=>{$('#teachbar').hidden=true;$('#teachbar').dataset.auto='off';if($('#cardDrawer').classList.contains('open'))closeCard()};
+ $$('.module-tabs button').forEach(b=>b.onclick=()=>showModule(b.dataset.module));$('#forceMode').onchange=e=>{state.forceMode=e.target.value;updateSpring()};bindRange('#kInput','k',updateSpring);bindRange('#springX1','sx1',updateSpring);bindRange('#springX2','sx2',updateSpring);$$('#customControls input').forEach((el,i)=>el.oninput=e=>{state.custom[i]=+e.target.value;updateSpring()});bindRange('#curveMass','curveM',updateCurve);bindRange('#curveHeight','curveH',updateCurve);bindRange('#accelF','accelF',updateMulti);bindRange('#accelS','accelS',updateMulti);bindRange('#brakeF','brakeF',updateMulti);
+ $('#revealSteps').onclick=()=>{const h=$$('#newtonSteps .step-hidden');if(h.length)h[0].classList.remove('step-hidden');else $$('#newtonSteps li').forEach(x=>x.classList.add('step-hidden'))};
+ $('#submitQuiz').onclick=gradeQuiz;$('#resetQuiz').onclick=()=>{renderQuiz();$('#quizScore').textContent='— / 6'};$('#randomQuiz').onclick=()=>{QUIZ.sort(()=>Math.random()-.5);renderQuiz();toast('题目顺序已随机重排')};$('#selfTestBtn').onclick=runSelfTest;
+ $('#reduceMotionBtn').onclick=()=>{state.reduce=!state.reduce;$('#reduceMotionBtn').setAttribute('aria-pressed',state.reduce);document.body.classList.toggle('reduce-motion',state.reduce);toast(state.reduce?'已切换为静态/单步模式（关闭过渡与循环动效）':'已恢复连续动画')};
+ window.addEventListener('resize',()=>{clearTimeout(setup.rt);setup.rt=setTimeout(()=>{drawPropertyCharts();drawRatio();drawAllGraphs();updateSpring();drawBarChart()},120)});
+ }
+function updateDerive(){$$('#deriveSteps .derive-step').forEach((s,i)=>s.classList.toggle('active',i<=state.derive));$('#derivePrev').disabled=state.derive===0;$('#deriveNext').textContent=state.derive===3?'重新播放':'下一步'}
+function initStatic(){
+ $('#cardCount').textContent=String(KNOWLEDGE_CARDS.length);$('#drawerIndex').textContent=`1 / ${KNOWLEDGE_CARDS.length}`;
+ $('#applicationCards').innerHTML=APPLICATIONS.map(a=>`<article class="app-card">${a[2]}<h4>${a[0]}</h4><b>${a[1]}</b><p>${a[3]}</p></article>`).join('');$('#misconceptions').innerHTML=MISCONCEPTIONS.map((m,i)=>`<details class="mistake"><summary>${i+1}. “${m[0]}”</summary><p><b>错在哪：</b>${m[1]}<br><b>正确说法：</b>${m[2]}</p></details>`).join('');renderQuiz();renderCardFilters();renderKnowledgeCard();updateInputs();updateReference();updateOutputs();drawPropertyCharts();updateApparatus(0);updateSpring();updateCurve();updateMulti();drawAllGraphs();updateDerive();setTeach(0,false);renderData();}
+setup();initStatic();
+</script>
+</body>
+</html>

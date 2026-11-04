@@ -1,0 +1,726 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>声的利用 · 传递信息与能量</title>
+<style>
+:root{
+  --blue:#2563EB;
+  --blue-d:#1D4ED8;
+  --amber:#F59E0B;
+  --amber-d:#C2410C;
+  --pink:#DB2777;
+  --ink:#1F2937;
+  --ink-2:#4B5563;
+  --ink-3:#6B7280;
+  --line:#E5E7EB;
+  --bg:#F5F7FB;
+  --card:#FFFFFF;
+  --radius:14px;
+  --shadow:0 1px 2px rgba(16,24,40,.04), 0 8px 24px rgba(16,24,40,.06);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:"Microsoft YaHei","PingFang SC","Hiragino Sans GB",system-ui,-apple-system,"Segoe UI",sans-serif;
+  background:var(--bg);color:var(--ink);line-height:1.65;-webkit-font-smoothing:antialiased;
+}
+
+/* ---------- header ---------- */
+.site-header{background:linear-gradient(135deg,#1E40AF 0%,#2563EB 55%,#3B82F6 100%);color:#fff;padding:26px 0 28px;}
+.header-inner{max-width:1140px;margin:0 auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;}
+.header-text h1{margin:0;font-size:25px;letter-spacing:.4px;font-weight:700;}
+.header-text p{margin:6px 0 0;font-size:14px;opacity:.92;}
+.header-badge{border:1px solid rgba(255,255,255,.4);border-radius:999px;padding:7px 16px;font-size:13px;background:rgba(255,255,255,.12);white-space:nowrap;}
+
+/* ---------- layout ---------- */
+.wrap{max-width:1140px;margin:0 auto;padding:26px 24px 40px;}
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:24px;border:1px solid rgba(229,231,235,.7);margin-bottom:20px;}
+
+.chead{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:14px;}
+.chead h2{margin:0;font-size:19px;font-weight:700;}
+.tag{font-size:11.5px;font-weight:700;padding:3px 10px;border-radius:999px;letter-spacing:.5px;white-space:nowrap;}
+.tag-e{background:#FFF7ED;color:var(--amber-d);border:1px solid #FED7AA;}
+.tag-i{background:#EFF6FF;color:#1D4ED8;border:1px solid #BFDBFE;}
+
+/* ---------- 舞台 ---------- */
+.stage{border:1px solid var(--line);border-radius:12px;background:#F8FAFC;overflow:hidden;}
+.stage svg{display:block;width:100%;height:auto;user-select:none;-webkit-user-select:none;}
+
+/* ---------- 控制区 ---------- */
+.controls{display:flex;flex-wrap:wrap;gap:16px 26px;align-items:center;margin-top:16px;}
+.ctrl{display:flex;align-items:center;gap:12px;flex:1 1 250px;min-width:220px;}
+.ctrl label{font-size:13px;color:var(--ink-2);white-space:nowrap;}
+.ctrl label b{color:var(--ink);font-variant-numeric:tabular-nums;}
+.ctrl input[type=range]{flex:1;min-width:0;}
+
+input[type=range]{
+  -webkit-appearance:none;appearance:none;width:100%;height:18px;background:transparent;cursor:pointer;margin:0;
+}
+input[type=range]::-webkit-slider-runnable-track{height:4px;border-radius:2px;background:#E2E8F0;}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;width:16px;height:16px;border-radius:50%;
+  background:var(--blue);border:2px solid #fff;margin-top:-6px;
+  box-shadow:0 1px 4px rgba(37,99,235,.35);
+}
+input[type=range]::-moz-range-track{height:4px;border-radius:2px;background:#E2E8F0;}
+input[type=range]::-moz-range-thumb{width:14px;height:14px;border:2px solid #fff;border-radius:50%;background:var(--blue);}
+input[type=range].amber::-webkit-slider-thumb{background:var(--amber);box-shadow:0 1px 4px rgba(245,158,11,.4);}
+input[type=range].amber::-moz-range-thumb{background:var(--amber);}
+
+.seg{display:flex;gap:5px;background:#F1F5F9;padding:3px;border-radius:9px;}
+.seg button{
+  border:0;background:transparent;padding:5px 13px;border-radius:7px;font-size:12.5px;
+  color:var(--ink-3);cursor:pointer;font-family:inherit;transition:.15s;white-space:nowrap;
+}
+.seg button:hover{color:var(--ink);}
+.seg button.on{background:#fff;color:var(--ink);font-weight:700;box-shadow:0 1px 3px rgba(16,24,40,.13);}
+
+.btn{
+  border:1px solid var(--line);background:#fff;color:var(--ink-2);border-radius:9px;
+  padding:7px 15px;font-size:13px;cursor:pointer;font-family:inherit;transition:.15s;white-space:nowrap;
+}
+.btn:hover{border-color:#93C5FD;color:var(--blue);}
+
+.readout{display:flex;gap:22px;flex-wrap:wrap;align-items:center;font-size:13px;color:var(--ink-3);}
+.readout b{color:var(--ink);font-variant-numeric:tabular-nums;font-size:14px;}
+.readout .hi{color:var(--amber-d);}
+.readout .bi{color:var(--blue-d);}
+.hint{font-size:12.5px;color:#94A3B8;}
+
+/* ---------- 落点 ---------- */
+.callout{
+  margin-top:16px;padding:11px 15px;border-radius:10px;font-size:13.5px;line-height:1.65;
+  color:var(--ink-2);
+}
+.callout b{color:var(--ink);font-weight:600;}
+.callout.e{background:#FFFBEB;border-left:3px solid var(--amber);}
+.callout.i{background:#EFF6FF;border-left:3px solid var(--blue);}
+
+/* ---------- footer ---------- */
+.foot{
+  margin-top:6px;padding:20px 24px;border-radius:var(--radius);background:#0F172A;
+  font-size:14px;line-height:1.85;
+}
+.foot .row2{display:flex;gap:26px;flex-wrap:wrap;}
+.foot .col{flex:1 1 320px;}
+.foot .k{font-weight:700;margin-bottom:2px;}
+.foot .k.e{color:#FBBF24;}
+.foot .k.i{color:#60A5FA;}
+.foot p{margin:0;font-size:13px;color:#94A3B8;}
+.foot p b{color:#CBD5E1;}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-text">
+      <h1>声的利用：传递信息与能量</h1>
+      <p>同一束声波 —— 让它做功，或者让它带回消息</p>
+    </div>
+    <div class="header-badge">八年级物理 · §2.3 声的利用</div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- ==================== ① 声波推动火焰 ==================== -->
+  <section class="card">
+    <div class="chead">
+      <span class="tag tag-e">传递能量</span>
+      <h2>声波把火焰推歪了</h2>
+    </div>
+
+    <div class="stage"><svg id="svg1" viewBox="0 0 1040 300" xmlns="http://www.w3.org/2000/svg"></svg></div>
+
+    <div class="controls">
+      <div class="ctrl">
+        <label>音量 <b id="r1vv">60</b></label>
+        <input id="r1v" type="range" min="0" max="100" value="60" class="amber">
+      </div>
+      <div class="ctrl">
+        <label>距离 <b id="r1dd">1.9 m</b></label>
+        <input id="r1d" type="range" min="10" max="30" value="19" class="amber">
+      </div>
+      <div class="seg" id="spd1">
+        <button data-sp="1">1×</button>
+        <button data-sp="0.5" class="on">慢镜头 0.5×</button>
+        <button data-sp="0.25">0.25×</button>
+      </div>
+      <button class="btn" id="play1">暂停</button>
+    </div>
+
+    <div class="controls" style="margin-top:10px;">
+      <div class="readout">
+        <span>火焰处声强：<b id="v1i" class="hi">—</b></span>
+        <span>最大偏角：<b id="v1a" class="hi">—</b></span>
+      </div>
+    </div>
+
+    <div class="callout e">火焰没有被加热，却被<b>推动</b>了 —— 这就是声音带着能量。</div>
+  </section>
+
+  <!-- ==================== ② 超声波清洗 ==================== -->
+  <section class="card">
+    <div class="chead">
+      <span class="tag tag-e">传递能量 · 做功</span>
+      <h2>超声波把污渍「震」了下来</h2>
+    </div>
+
+    <div class="stage"><svg id="svg2" viewBox="0 0 1040 300" xmlns="http://www.w3.org/2000/svg"></svg></div>
+
+    <div class="controls">
+      <div class="ctrl">
+        <label>超声功率 <b id="r2pp">55</b> %</label>
+        <input id="r2p" type="range" min="0" max="100" value="55" class="amber">
+      </div>
+      <div class="readout"><span>已清除污渍：<b id="v2n" class="hi">0</b> / 12</span></div>
+      <button class="btn" id="reset2">重新弄脏</button>
+    </div>
+
+    <div class="callout e">功率归零，气泡消失，污渍一块也不掉 —— 要让它动起来，必须持续输入能量。</div>
+  </section>
+
+  <!-- ==================== ③ 超声回波 ==================== -->
+  <section class="card">
+    <div class="chead">
+      <span class="tag tag-i">传递信息</span>
+      <h2>从回波里量出深度</h2>
+    </div>
+
+    <div class="stage"><svg id="svg3" viewBox="0 0 1040 360" xmlns="http://www.w3.org/2000/svg"></svg></div>
+
+    <div class="controls">
+      <div class="ctrl">
+        <label>界面深度 <b id="r3dd">7.0 cm</b></label>
+        <input id="r3d" type="range" min="20" max="140" value="70">
+      </div>
+      <div class="readout">
+        <span>回波往返时间 Δt：<b id="v3t" class="bi">—</b></span>
+        <span>算出深度 s：<b id="v3d" class="bi">—</b></span>
+        <span class="hint">（或直接拖动图里那根粉色界面）</span>
+      </div>
+    </div>
+
+    <div class="callout i">界面一动没动，我们却知道了它在哪 —— <b>s = v·Δt ÷ 2</b>，v ≈ 1540 m/s。</div>
+  </section>
+
+  <footer class="foot">
+    <div class="row2">
+      <div class="col">
+        <div class="k e">传递能量</div>
+        <p>让物体动了、变了 —— 判据：<b>别的东西真的变了</b>。</p>
+      </div>
+      <div class="col">
+        <div class="k i">传递信息</div>
+        <p>知道位置、距离、形状 —— 判据：<b>我们知道了什么</b>。</p>
+      </div>
+    </div>
+  </footer>
+
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ==================== 通用 ==================== */
+var NS = 'http://www.w3.org/2000/svg';
+var TAU = Math.PI*2;
+var $ = function(s){ return document.querySelector(s); };
+var clamp = function(v,a,b){ return v<a?a:(v>b?b:v); };
+var lerp = function(a,b,t){ return a+(b-a)*t; };
+/* 写文本时容忍元素缺失，避免一个空节点把整条动画循环打断 */
+function txt(sel, v){ var e = $(sel); if(e) e.textContent = v; }
+
+/* 对象池：预建 SVG 节点，每帧只改属性，不再反复创建销毁 */
+function Pool(parent, tag, size, base){
+  var els = [];
+  for(var i=0;i<size;i++){
+    var el = document.createElementNS(NS, tag);
+    for(var k in base) el.setAttribute(k, base[k]);
+    el.setAttribute('opacity','0');
+    parent.appendChild(el);
+    els.push(el);
+  }
+  return {
+    els: els, n: 0, prev: 0,
+    reset: function(){ this.n = 0; },
+    get: function(){ return this.n < this.els.length ? this.els[this.n++] : null; },
+    finish: function(){
+      var end = this.n > this.prev ? this.n : this.prev;
+      for(var i=this.n;i<end;i++) this.els[i].setAttribute('opacity','0');
+      this.prev = this.n;
+    }
+  };
+}
+
+/* ==================== ① 声波推动火焰 ==================== */
+var S1 = { vol:60, dist:1.9, speed:0.5, playing:true, t:0 };
+
+var svg1 = $('#svg1');
+svg1.innerHTML = [
+'<defs>',
+  '<linearGradient id="gFlame" x1="0" y1="1" x2="0" y2="0">',
+    '<stop offset="0" stop-color="#EA580C"/>',
+    '<stop offset=".42" stop-color="#F59E0B"/>',
+    '<stop offset="1" stop-color="#FEF08A"/>',
+  '</linearGradient>',
+  '<clipPath id="clipStage1"><rect x="0" y="0" width="1040" height="252"/></clipPath>',
+'</defs>',
+'<rect x="0" y="0" width="1040" height="300" fill="#F8FAFC"/>',
+'<rect x="0" y="252" width="1040" height="48" fill="#F1F5F9"/>',
+'<line x1="0" y1="252" x2="1040" y2="252" stroke="#CBD5E1" stroke-width="2"/>',
+'<g id="waves1" clip-path="url(#clipStage1)"></g>',
+'<rect x="96" y="180" width="76" height="72" rx="7" fill="#475569"/>',
+'<rect x="96" y="180" width="76" height="18" rx="7" fill="#64748B"/>',
+'<path d="M172 192 L214 152 L214 250 L172 210 Z" fill="#334155"/>',
+'<ellipse cx="214" cy="201" rx="12" ry="50" fill="#1E293B"/>',
+'<ellipse cx="214" cy="201" rx="7.5" ry="35" fill="#334155"/>',
+'<ellipse cx="214" cy="201" rx="3.5" ry="16" fill="#7B8CA3"/>',
+'<text x="140" y="274" text-anchor="middle" font-size="12" fill="#94A3B8">扬声器</text>',
+'<g id="candle1" transform="translate(600,0)">',
+  '<rect x="-13" y="208" width="26" height="44" rx="3" fill="#FEF9C3" stroke="#FDE68A" stroke-width="1.5"/>',
+  '<line x1="0" y1="208" x2="0" y2="199" stroke="#44403C" stroke-width="2.6" stroke-linecap="round"/>',
+  '<g id="flame1">',
+    '<path d="M0 202 C -18 182, -19 158, 0 136 C 19 158, 18 182, 0 202 Z" fill="url(#gFlame)"/>',
+    '<path d="M0 197 C -8 184, -9 168, 0 152 C 9 168, 8 184, 0 197 Z" fill="#FFFBEB" opacity=".95"/>',
+  '</g>',
+  '<text x="0" y="274" text-anchor="middle" font-size="12" fill="#94A3B8">火焰</text>',
+'</g>'
+].join('');
+
+var waves1 = $('#waves1'), candle1 = $('#candle1'), flame1 = $('#flame1');
+var W1 = Pool(waves1, 'path', 8, {fill:'none', stroke:'#F59E0B', 'stroke-width':'2.4', 'stroke-linecap':'round'});
+
+function flameX(){ return 420 + (S1.dist-1)/2*480; }
+
+function update1(dt){
+  if(S1.playing) S1.t += dt*S1.speed;
+
+  var fx = flameX();
+  var att = Math.pow(1/S1.dist, 0.85);
+  var A = (S1.vol/100)*att;
+  var thMax = A*32;
+
+  var w = TAU*1.45;
+  var th = thMax*Math.sin(S1.t*w) + thMax*0.3*Math.sin(S1.t*w*1.71+1.2);
+  if(S1.vol < 2) th = 0;
+
+  candle1.setAttribute('transform','translate('+fx.toFixed(1)+',0)');
+  flame1.setAttribute('transform','rotate('+th.toFixed(2)+',0,202)');
+
+  var maxR = Math.max(70, fx-214), N = 8;
+  var a1 = -14*Math.PI/180, a2 = 14*Math.PI/180;
+  W1.reset();
+  for(var i=0;i<N;i++){
+    var u = ((S1.t*0.62 + i/N) % 1);
+    var R = 22 + u*(maxR-22);
+    var op = (1-u)*(1-u*0.5)*0.9*Math.min(1, S1.vol/55);
+    if(op < 0.015) continue;
+    var e = W1.get(); if(!e) break;
+    e.setAttribute('d', 'M'+(214+R*Math.cos(a1)).toFixed(1)+' '+(201+R*Math.sin(a1)).toFixed(1)+
+      ' A'+R.toFixed(1)+' '+R.toFixed(1)+' 0 0 1 '+(214+R*Math.cos(a2)).toFixed(1)+' '+(201+R*Math.sin(a2)).toFixed(1));
+    e.setAttribute('opacity', op.toFixed(3));
+  }
+  W1.finish();
+
+  txt('#v1i', Math.round(A*A*100)+'%');
+  txt('#v1a', thMax.toFixed(1)+'°');
+}
+
+$('#r1v').addEventListener('input', function(){ S1.vol = +this.value; txt('#r1vv', S1.vol); });
+$('#r1d').addEventListener('input', function(){
+  S1.dist = +this.value/10;
+  txt('#r1dd', S1.dist.toFixed(1)+' m');
+});
+$('#spd1').addEventListener('click', function(e){
+  var b = e.target.closest('button'); if(!b) return;
+  S1.speed = +b.getAttribute('data-sp');
+  [].forEach.call(this.children, function(c){ c.classList.remove('on'); });
+  b.classList.add('on');
+});
+$('#play1').addEventListener('click', function(){
+  S1.playing = !S1.playing;
+  this.textContent = S1.playing ? '暂停' : '继续';
+});
+
+/* ==================== ② 超声波清洗 ==================== */
+var S2 = { power:55, t:0, bubbles:[], shocks:[], stains:[], spawn:0, cleaned:0 };
+
+var svg2 = $('#svg2');
+svg2.innerHTML = [
+'<defs>',
+  '<linearGradient id="gWater" x1="0" y1="0" x2="0" y2="1">',
+    '<stop offset="0" stop-color="#E0F2FE" stop-opacity=".9"/>',
+    '<stop offset="1" stop-color="#BAE6FD" stop-opacity=".95"/>',
+  '</linearGradient>',
+  '<linearGradient id="gMetal" x1="0" y1="0" x2="1" y2="1">',
+    '<stop offset="0" stop-color="#E2E8F0"/>',
+    '<stop offset=".45" stop-color="#94A3B8"/>',
+    '<stop offset="1" stop-color="#CBD5E1"/>',
+  '</linearGradient>',
+'</defs>',
+'<rect x="0" y="0" width="1040" height="300" fill="#F8FAFC"/>',
+'<rect x="190" y="50" width="680" height="210" rx="10" fill="url(#gWater)" stroke="#7DD3FC" stroke-width="3"/>',
+'<rect x="190" y="50" width="680" height="38" fill="#F0F9FF" opacity=".45"/>',
+'<path d="M193 88 Q 260 81 327 88 T 461 88 T 595 88 T 729 88 T 863 88" fill="none" stroke="#38BDF8" stroke-width="2" opacity=".6"/>',
+'<text x="208" y="74" font-size="12" fill="#0284C7">水</text>',
+'<g id="sonic2"></g>',
+'<g transform="translate(640,145) rotate(-8)">',
+  '<rect x="-75" y="-52" width="150" height="104" rx="11" fill="url(#gMetal)" stroke="#64748B" stroke-width="2"/>',
+  '<circle cx="-56" cy="-36" r="6.5" fill="#64748B" opacity=".38"/>',
+  '<circle cx="-56" cy="-36" r="2.6" fill="#94A3B8"/>',
+  '<circle cx="56" cy="-36" r="6.5" fill="#64748B" opacity=".38"/>',
+  '<circle cx="56" cy="-36" r="2.6" fill="#94A3B8"/>',
+  '<circle cx="-56" cy="36" r="6.5" fill="#64748B" opacity=".38"/>',
+  '<circle cx="-56" cy="36" r="2.6" fill="#94A3B8"/>',
+  '<circle cx="56" cy="36" r="6.5" fill="#64748B" opacity=".38"/>',
+  '<circle cx="56" cy="36" r="2.6" fill="#94A3B8"/>',
+'</g>',
+'<g id="stains2"></g>',
+'<g id="bubbles2"></g>',
+'<rect x="498" y="240" width="64" height="18" rx="3" fill="#1E293B"/>',
+'<rect x="504" y="236" width="52" height="6" rx="2" fill="#475569"/>',
+'<text x="530" y="284" text-anchor="middle" font-size="12" fill="#94A3B8">超声换能器</text>'
+].join('');
+
+var SN2 = Pool($('#sonic2'), 'path', 5, {fill:'none', stroke:'#FFFFFF', 'stroke-width':'2'});
+var KB2 = Pool($('#bubbles2'), 'circle', 44, {fill:'none', stroke:'#F0F9FF'});
+var BB2 = Pool($('#bubbles2'), 'circle', 80, {fill:'#FFFFFF'});
+
+var stainEls = (function(){
+  var g = $('#stains2'), arr = [];
+  for(var i=0;i<12;i++){
+    var el = document.createElementNS(NS, 'ellipse');
+    el.setAttribute('fill', '#4B3226');
+    el.setAttribute('opacity', '0');
+    g.appendChild(el);
+    arr.push(el);
+  }
+  return arr;
+})();
+
+function mkBub(P){
+  var near = Math.random() < 0.6;
+  var x, y;
+  if(near){
+    var a = Math.random()*TAU, rr = 40 + Math.random()*62;
+    x = 640 + Math.cos(a)*rr*1.35;
+    y = 145 + Math.sin(a)*rr*0.85;
+  } else {
+    x = 208 + Math.random()*644;
+    y = 94 + Math.random()*144;
+  }
+  return {
+    x: clamp(x, 206, 854),
+    y: clamp(y, 94, 240),
+    near: near,
+    age: 0,
+    life: 0.45 + Math.random()*0.45,
+    r0: 4.2 + Math.random()*5.6,
+    r: 0.4,
+    p: P
+  };
+}
+
+function cleanAt(x, y, P){
+  for(var i=0;i<S2.stains.length;i++){
+    var s = S2.stains[i];
+    if(s.hp <= 0) continue;
+    var dx = s.x-x, dy = s.y-y;
+    if(dx*dx + dy*dy < 1296){
+      s.hp -= 0.03*(0.3 + P);
+      if(s.hp <= 0){ s.hp = 0; S2.cleaned++; }
+    }
+  }
+}
+
+function initStains(){
+  var sd = 987654321;
+  var rnd = function(){ sd = (sd*1664525 + 1013904223) >>> 0; return sd/4294967296; };
+  var cx = 640, cy = 145, a = -8*Math.PI/180, ca = Math.cos(a), sa = Math.sin(a);
+  S2.stains = [];
+  for(var i=0;i<12;i++){
+    var lx = (rnd()-0.5)*124, ly = (rnd()-0.5)*80;
+    var x = cx + lx*ca - ly*sa, y = cy + lx*sa + ly*ca;
+    S2.stains.push({ x:x, y:y, r:3.4+rnd()*3.4, sq:0.55+rnd()*0.5, rot:rnd()*180, hp:1 });
+    var el = stainEls[i];
+    el.setAttribute('cx', x.toFixed(1));
+    el.setAttribute('cy', y.toFixed(1));
+    el.setAttribute('transform', 'rotate('+S2.stains[i].rot.toFixed(0)+' '+x.toFixed(1)+' '+y.toFixed(1)+')');
+  }
+  S2.cleaned = 0;
+  S2.bubbles = [];
+  S2.shocks = [];
+  S2.spawn = 0;
+  /* 预热：打开页面水里就已经在空化，不从空缸开始等 */
+  var P0 = S2.power/100;
+  if(P0 > 0.01){
+    for(var k=0;k<22;k++){
+      var nb = mkBub(P0);
+      nb.age = Math.random()*nb.life*0.9;
+      nb.r = nb.r0*Math.sin(Math.PI*nb.age/nb.life);
+      S2.bubbles.push(nb);
+    }
+  }
+  txt('#v2n', '0');
+}
+
+function update2(dt){
+  S2.t += dt;
+  var P = S2.power/100;
+
+  if(P > 0.01){
+    S2.spawn += 90*P*dt;
+    while(S2.spawn >= 1){ S2.spawn -= 1; S2.bubbles.push(mkBub(P)); }
+  }
+
+  for(var i=S2.bubbles.length-1;i>=0;i--){
+    var b = S2.bubbles[i];
+    b.age += dt;
+    if(b.age >= b.life){
+      S2.shocks.push({x:b.x, y:b.y, t:0});
+      if(b.near) cleanAt(b.x, b.y, b.p);
+      S2.bubbles.splice(i,1);
+      continue;
+    }
+    b.r = b.r0*Math.sin(Math.PI*b.age/b.life);
+  }
+
+  for(var j=S2.shocks.length-1;j>=0;j--){
+    S2.shocks[j].t += dt;
+    if(S2.shocks[j].t > 0.45) S2.shocks.splice(j,1);
+  }
+
+  SN2.reset();
+  if(P > 0.01){
+    for(var k=0;k<5;k++){
+      var u = ((S2.t*0.62 + k/5) % 1);
+      var R = 8 + u*200;
+      var e = SN2.get(); if(!e) break;
+      e.setAttribute('d', 'M'+(530-R).toFixed(1)+' 240 A'+R.toFixed(1)+' '+R.toFixed(1)+' 0 0 1 '+(530+R).toFixed(1)+' 240');
+      e.setAttribute('opacity', ((1-u)*0.55*Math.min(1, P*1.6)).toFixed(3));
+    }
+  }
+  SN2.finish();
+
+  KB2.reset();
+  for(var m=0;m<S2.shocks.length;m++){
+    var s2 = S2.shocks[m], uu = s2.t/0.45;
+    var ke = KB2.get(); if(!ke) break;
+    ke.setAttribute('cx', s2.x.toFixed(1));
+    ke.setAttribute('cy', s2.y.toFixed(1));
+    ke.setAttribute('r', (2+uu*30).toFixed(1));
+    ke.setAttribute('stroke-width', (2.6*(1-uu)).toFixed(2));
+    ke.setAttribute('opacity', (0.9*(1-uu)).toFixed(2));
+  }
+  KB2.finish();
+
+  BB2.reset();
+  for(var n=0;n<S2.bubbles.length;n++){
+    var bb = S2.bubbles[n];
+    if(bb.r < 0.35) continue;
+    var be = BB2.get(); if(!be) break;
+    be.setAttribute('cx', bb.x.toFixed(1));
+    be.setAttribute('cy', bb.y.toFixed(1));
+    be.setAttribute('r', bb.r.toFixed(1));
+    be.setAttribute('opacity', '0.62');
+  }
+  BB2.finish();
+
+  for(var p=0;p<S2.stains.length;p++){
+    var st = S2.stains[p], el = stainEls[p];
+    if(st.hp <= 0){ el.setAttribute('opacity','0'); continue; }
+    var kk = clamp(st.hp, 0, 1);
+    el.setAttribute('rx', (st.r*(0.55+0.45*kk)).toFixed(1));
+    el.setAttribute('ry', (st.r*st.sq*(0.55+0.45*kk)).toFixed(1));
+    el.setAttribute('opacity', (0.5+0.4*kk).toFixed(2));
+  }
+
+  txt('#v2n', S2.cleaned);
+}
+
+$('#r2p').addEventListener('input', function(){ S2.power = +this.value; txt('#r2pp', S2.power); });
+$('#reset2').addEventListener('click', initStains);
+initStains();
+
+/* ==================== ③ 超声回波 ==================== */
+var S3 = { d:7.0, t:0, drag:false };
+var X0 = 100, US_PX = 4.2, BASE = 285;
+
+var svg3 = $('#svg3');
+svg3.innerHTML = [
+'<rect x="0" y="0" width="1040" height="360" fill="#F8FAFC"/>',
+'<rect x="112" y="58" width="888" height="108" fill="#FBD9E8"/>',
+'<rect x="112" y="58" width="300" height="108" id="tissue3" fill="#FCE7F3"/>',
+'<line x1="112" y1="58" x2="112" y2="166" stroke="#F9A8D4" stroke-width="3"/>',
+'<line x1="112" y1="112" x2="600" y2="112" id="beam3" stroke="#FBCFE8" stroke-width="2" stroke-dasharray="3 5"/>',
+'<g id="iface3">',
+  '<rect x="-1" y="50" width="9" height="128" rx="4.5" fill="#DB2777" opacity=".9"/>',
+  '<rect x="-13" y="98" width="33" height="32" rx="10" fill="#FFFFFF" opacity=".95"/>',
+  '<rect x="-4" y="106" width="15" height="2.6" rx="1.3" fill="#DB2777"/>',
+  '<rect x="-4" y="112.7" width="15" height="2.6" rx="1.3" fill="#DB2777"/>',
+  '<rect x="-4" y="119.4" width="15" height="2.6" rx="1.3" fill="#DB2777"/>',
+'</g>',
+'<path id="pulse3" fill="none" stroke="#DB2777" stroke-width="2.4" stroke-linecap="round" opacity="0"/>',
+'<rect x="60" y="66" width="42" height="92" rx="7" fill="#334155"/>',
+'<rect x="96" y="76" width="16" height="72" rx="4" fill="#64748B"/>',
+'<text x="81" y="180" text-anchor="middle" font-size="12" fill="#94A3B8">探头</text>',
+'<text x="118" y="44" font-size="11" fill="#F472B6">皮肤</text>',
+'<text id="lbliface" x="300" y="40" font-size="11" font-weight="700" fill="#BE185D" text-anchor="middle">界面</text>',
+'<rect x="60" y="200" width="940" height="145" rx="10" fill="#0B1220"/>',
+'<g id="grid3"></g>',
+'<line x1="100" y1="285" x2="940" y2="285" stroke="#1E3A5F" stroke-width="1.5"/>',
+'<path id="spk0" fill="#38BDF8" opacity=".95"/>',
+'<path id="spk1" fill="#F472B6" opacity=".95"/>',
+'<line id="dtl" y1="302" y2="302" x1="100" stroke="#334155" stroke-width="1"/>',
+'<line id="dte0" y1="296" y2="308" x1="100" x2="100" stroke="#334155" stroke-width="1.5"/>',
+'<line id="dte1" y1="296" y2="308" stroke="#334155" stroke-width="1.5"/>',
+'<text id="dtt" y="318" font-size="11" fill="#64748B" text-anchor="middle">Δt</text>',
+'<text x="100" y="332" font-size="10" fill="#475569" text-anchor="middle">0</text>',
+'<text x="310" y="332" font-size="10" fill="#475569" text-anchor="middle">50</text>',
+'<text x="520" y="332" font-size="10" fill="#475569" text-anchor="middle">100</text>',
+'<text x="730" y="332" font-size="10" fill="#475569" text-anchor="middle">150</text>',
+'<text x="940" y="332" font-size="10" fill="#475569" text-anchor="middle">200  t / μs</text>',
+'<rect x="836" y="205" width="11" height="11" rx="2" fill="#38BDF8"/>',
+'<text x="853" y="215" font-size="11" fill="#94A3B8">发射脉冲</text>',
+'<rect x="922" y="205" width="11" height="11" rx="2" fill="#F472B6"/>',
+'<text x="939" y="215" font-size="11" fill="#94A3B8">回波</text>'
+].join('');
+
+(function(){
+  var g = $('#grid3'), s = '';
+  for(var k=1;k<=4;k++){
+    var x = X0 + k*210;
+    s += '<line x1="'+x+'" y1="210" x2="'+x+'" y2="285" stroke="#16233A" stroke-width="1"/>';
+  }
+  g.innerHTML = s;
+})();
+
+var iface3 = $('#iface3'), tissue3 = $('#tissue3'), beam3 = $('#beam3'),
+    pulse3 = $('#pulse3'), lbliface = $('#lbliface'),
+    spk0 = $('#spk0'), spk1 = $('#spk1'),
+    dtl = $('#dtl'), dte1 = $('#dte1'), dtt = $('#dtt');
+
+function ifaceX(){ return 240 + (S3.d-2)/12*520; }
+
+function pulsePath(cx, base, span, h){
+  var n = 44, d = '';
+  for(var i=0;i<=n;i++){
+    var u = i/n;
+    var x = cx - span/2 + u*span;
+    var env = Math.exp(-Math.pow((u-0.5)/0.2, 2));
+    d += (i?'L':'M') + x.toFixed(1) + ' ' + (base - h*env*Math.sin(u*TAU*3)).toFixed(1);
+  }
+  return d;
+}
+
+function spikePath(x, base, h, w){
+  return 'M'+(x-w)+' '+base+' L'+(x-w*0.3)+' '+(base-3)+' L'+x+' '+(base-h)+
+         ' L'+(x+w*0.3)+' '+(base-3)+' L'+(x+w)+' '+base+' Z';
+}
+
+function update3(dt){
+  S3.t += dt;
+  var xf = ifaceX();
+  var T = 2.6, ph = (S3.t % T)/T;
+
+  var px;
+  if(ph < 0.4) px = lerp(112, xf, ph/0.4);
+  else if(ph < 0.8) px = lerp(xf, 112, (ph-0.4)/0.4);
+  else px = 112;
+
+  if(ph < 0.8){
+    pulse3.setAttribute('d', pulsePath(px, 112, 86, 21));
+    pulse3.setAttribute('opacity', (ph > 0.7 ? Math.max(0, 1-(ph-0.7)/0.1) : 1).toFixed(2));
+  } else {
+    pulse3.setAttribute('opacity', '0');
+  }
+
+  tissue3.setAttribute('width', Math.max(0, xf-112).toFixed(1));
+  iface3.setAttribute('transform', 'translate('+(xf-3.5).toFixed(1)+',0)');
+  lbliface.setAttribute('x', xf.toFixed(1));
+  beam3.setAttribute('x2', Math.max(112, xf-14).toFixed(1));
+
+  var dtUs = S3.d*12.987;
+  var xe = X0 + dtUs*US_PX;
+
+  spk0.setAttribute('d', spikePath(X0, BASE, 72, 9));
+  spk1.setAttribute('d', spikePath(xe, BASE, 48, 9));
+  dtl.setAttribute('x2', xe.toFixed(1));
+  dte1.setAttribute('x1', xe.toFixed(1));
+  dte1.setAttribute('x2', xe.toFixed(1));
+  dtt.setAttribute('x', ((X0+xe)/2).toFixed(1));
+
+  txt('#v3t', Math.round(dtUs)+' μs');
+  txt('#v3d', S3.d.toFixed(1)+' cm');
+}
+
+function setDfromX(px){
+  S3.d = clamp(2 + (px-240)/520*12, 2, 14);
+  var r = $('#r3d'); if(r) r.value = Math.round(S3.d*10);
+  txt('#r3dd', S3.d.toFixed(1)+' cm');
+}
+
+function toLocal(svg, evt){
+  var pt = svg.createSVGPoint();
+  pt.x = evt.clientX; pt.y = evt.clientY;
+  return pt.matrixTransform(svg.getScreenCTM().inverse());
+}
+
+svg3.addEventListener('pointerdown', function(e){
+  var p = toLocal(svg3, e);
+  if(p.y > 190 || p.x < 180) return;
+  S3.drag = true;
+  try{ svg3.setPointerCapture(e.pointerId); }catch(err){}
+  setDfromX(p.x);
+  e.preventDefault();
+});
+svg3.addEventListener('pointermove', function(e){
+  if(!S3.drag) return;
+  setDfromX(toLocal(svg3, e).x);
+});
+svg3.addEventListener('pointerup', function(){ S3.drag = false; });
+svg3.addEventListener('pointercancel', function(){ S3.drag = false; });
+$('#r3d').addEventListener('input', function(){
+  S3.d = +this.value/10;
+  txt('#r3dd', S3.d.toFixed(1)+' cm');
+});
+
+/* ==================== 主循环 ==================== */
+var svgs = [svg1, svg2, svg3];
+var vis = [true, true, true];
+var ups = [update1, update2, update3];
+
+/* 屏幕外的卡片先不渲染，长页面里能省掉大半开销 */
+if(window.IntersectionObserver){
+  var io = new IntersectionObserver(function(es){
+    for(var i=0;i<es.length;i++){
+      var idx = svgs.indexOf(es[i].target);
+      if(idx >= 0) vis[idx] = es[i].isIntersecting;
+    }
+  }, {rootMargin:'120px'});
+  io.observe(svg1); io.observe(svg2); io.observe(svg3);
+}
+
+var last = 0;
+function loop(now){
+  requestAnimationFrame(loop);
+  if(!last) last = now;
+  var dt = Math.min(0.05, (now-last)/1000);
+  last = now;
+  /* 单个模块出错只停它自己，不牵连另外两个 */
+  for(var i=0;i<3;i++){
+    if(!vis[i]) continue;
+    try{ ups[i](dt); }catch(err){ vis[i] = false; }
+  }
+}
+requestAnimationFrame(loop);
+
+})();
+</script>
+</body>
+</html>

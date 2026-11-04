@@ -1,0 +1,443 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>13.1 三角形的概念 · 定义与分类 演示</title>
+<style>
+  :root{
+    --ink:#1e293b; --sub:#64748b; --line:#e2e8f0; --paper:#f8fafc;
+    --accent:#2563eb; --accent-soft:#dbeafe; --red:#dc2626; --teal:#0d9488;
+    --green:#16a34a; --amber:#d97706; --purple:#7c3aed;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif; background:var(--paper); color:var(--ink); padding:24px 16px 48px;}
+  .wrap{max-width:1040px; margin:0 auto;}
+  header{text-align:center; margin-bottom:20px;}
+  header h1{font-size:26px; font-weight:800;}
+  header p{color:var(--sub); margin-top:6px; font-size:14px;}
+  .tabs{display:flex; gap:8px; justify-content:center; margin:18px 0; flex-wrap:wrap;}
+  .tab-btn{padding:10px 20px; border:1.5px solid var(--line); background:#fff; border-radius:999px; font-size:15px; font-weight:600; color:var(--sub); cursor:pointer; transition:.15s;}
+  .tab-btn.active{background:var(--accent); border-color:var(--accent); color:#fff;}
+  .card{background:#fff; border:1px solid var(--line); border-radius:16px; padding:18px 20px; box-shadow:0 1px 3px rgba(15,23,42,.05); margin-bottom:16px;}
+  .card h3{font-size:16px; margin-bottom:10px; color:var(--ink);}
+  section{display:none;} section.active{display:block;}
+  .stage{display:flex; gap:18px; flex-wrap:wrap;}
+  .stage svg{flex:1 1 460px; min-width:340px; border:1px solid var(--line); border-radius:12px; background:#fff; max-width:100%;}
+  .side{flex:1 1 280px; min-width:260px; display:flex; flex-direction:column; gap:12px;}
+  .badge{padding:12px 14px; border-radius:12px; font-size:15px; font-weight:700; line-height:1.6;}
+  .badge.blue{background:#eff6ff; color:var(--accent); border:1px solid #bfdbfe;}
+  .badge.green{background:#f0fdf4; color:var(--green); border:1px solid #bbf7d0;}
+  .badge.amber{background:#fffbeb; color:var(--amber); border:1px solid #fde68a;}
+  .badge.red{background:#fef2f2; color:var(--red); border:1px solid #fecaca;}
+  .note{font-size:13px; color:var(--sub); line-height:1.8; background:var(--paper); border:1px dashed var(--line); border-radius:10px; padding:10px 12px;}
+  .theorem{font-size:14px; line-height:1.8; color:var(--ink); background:#f0fdf4; border-left:4px solid var(--green); padding:10px 12px; border-radius:0 10px 10px 0;}
+  .hint{font-size:13px; color:var(--sub); text-align:center; margin-top:8px;}
+  .row3{display:flex; gap:14px; flex-wrap:wrap;}
+  .row3>div{flex:1 1 280px; min-width:260px;}
+  .row3 .t{font-size:14px; font-weight:700; text-align:center; margin-bottom:6px; color:var(--ink);}
+  .row3 svg{width:100%; border:1px solid var(--line); border-radius:12px; background:#fff;}
+  .ctrl{display:flex; gap:10px; align-items:center; flex-wrap:wrap; font-size:14px;}
+  .ctrl input[type=number]{width:90px; padding:8px; border:1.5px solid var(--line); border-radius:8px; font-size:15px; text-align:center;}
+  .ctrl button{padding:8px 16px; border-radius:10px; border:1.5px solid var(--line); background:#fff; font-size:14px; font-weight:600; cursor:pointer;}
+  .ctrl button.primary{background:var(--accent); border-color:var(--accent); color:#fff;}
+  .case{border:1.5px solid var(--line); border-radius:12px; padding:12px 14px; font-size:14px; line-height:1.8;}
+  .case.ok{border-color:#bbf7d0; background:#f0fdf4;}
+  .case.no{border-color:#fecaca; background:#fef2f2;}
+  .case b.v{color:var(--green);} .case b.x{color:var(--red);}
+  footer{text-align:center; color:#94a3b8; font-size:12px; margin-top:24px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>13.1 三角形的概念 · 演示实验</h1>
+    <p>人教版八年级上册 · 三角形定义 ＋ 按边/按角分类 ＋ 等腰△边分类讨论（易错）</p>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="t1">① 定义：什么叫三角形</button>
+    <button class="tab-btn" data-tab="t2">② 分类：按边 / 按角</button>
+    <button class="tab-btn" data-tab="t3">③ 易错：等腰△分类讨论</button>
+  </div>
+
+  <!-- ============ Tab 1 定义 ============ -->
+  <section id="t1" class="active">
+    <div class="card">
+      <div class="stage">
+        <svg id="svg1" viewBox="0 0 720 460"></svg>
+        <div class="side">
+          <div class="theorem"><b>三角形的定义：</b><u>不在同一直线上</u>的三条线段<u>首尾顺次相接</u>所组成的图形叫做三角形。</div>
+          <div class="badge blue" id="badge1">构成中……</div>
+          <div class="note">两个关键词，缺一不可：<br>① <b>不在同一直线上</b> —— 三点共线时，三条线段"叠"成一条线段，围不成图形；<br>② <b>首尾顺次相接</b> —— A→B→C→A 依次相连，组成封闭图形。<br><br>🖱 <b>拖动 A、B、C 三个点</b>：把它们拖到同一条直线上试试，看看三角形"消失"的过程；蓝色小圆点会沿着 A→B→C→A 巡回，演示"首尾顺次相接"。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ Tab 2 分类 ============ -->
+  <section id="t2">
+    <div class="card">
+      <h3>动手分类：拖动点 C，三角形会实时"变身"</h3>
+      <div class="stage">
+        <svg id="svg2" viewBox="0 0 720 380"></svg>
+        <div class="side">
+          <div class="badge amber" id="badge2a">按角分类：——</div>
+          <div class="badge blue" id="badge2b">按边分类：——</div>
+          <div class="note">🖱 <b>拖动点 C</b> 观察：<br>· 拖到 ∠C≈90° 时出现<b>直角符号</b> → 直角三角形；<br>· 拖到 C 在 AB 正上方中点附近 → 三边相等 → <b>等边三角形</b>；<br>· 拖到某两边相等（如 CA=CB）→ <b>等腰三角形</b>，相等的两边会出现相同的刻划线；<br>· 三边互不相等 → 不等边三角形。<br><br>角上的小弧＋度数只是辅助标记。</div>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>分类树与从属关系（课本分类树）</h3>
+      <div class="row3">
+        <div><div class="t">按边分类</div><svg id="tree1" viewBox="0 0 460 230"></svg></div>
+        <div><div class="t">按角分类</div><svg id="tree2" viewBox="0 0 460 230"></svg></div>
+        <div><div class="t">从属关系：等边 ⊂ 等腰 ⊂ 三角形</div><svg id="venn" viewBox="0 0 460 230"></svg></div>
+      </div>
+      <div class="hint">等边三角形是特殊的等腰三角形（腰=底），三者是<b>包含关系</b>，不是并列关系 —— 这是本节最常见的判断题考点。</div>
+    </div>
+  </section>
+
+  <!-- ============ Tab 3 易错：分类讨论 ============ -->
+  <section id="t3">
+    <div class="card">
+      <div class="stage">
+        <svg id="svg3" viewBox="0 0 720 330"></svg>
+        <div class="side">
+          <div class="theorem"><b>典型易错题：</b>等腰三角形的两边长分别为 a、b，求它的周长。</div>
+          <div class="ctrl">a = <input id="inA" type="number" value="4" min="1"> ，b = <input id="inB" type="number" value="9" min="1"> <button id="btnRand" class="primary">🎲 换一组</button></div>
+          <div class="badge amber" id="badge3">结论将显示在这里</div>
+          <div class="note"><b>解题四步：</b><br>① <b>分类讨论</b>：没说哪条是腰！分"a 是腰"和"b 是腰"两种情况；<br>② 求出每种情况的第三边；<br>③ <b>回验三边关系</b>：两边之和 &gt; 第三边，不满足的<b>舍去</b>；<br>④ 写出所有成立的周长。<br><br>⚠ 教材高频陷阱：求出边长后<b>必须回验</b>，否则会出现"4、4、9"这种不存在的三角形！</div>
+        </div>
+      </div>
+      <div class="stage" style="margin-top:14px;">
+        <div class="case" id="case1" style="flex:1 1 300px;"></div>
+        <div class="case" id="case2" style="flex:1 1 300px;"></div>
+      </div>
+    </div>
+  </section>
+
+  <footer>教学演示用 · 三角形的概念 / 分类 / 分类讨论 · 可直接投影课堂使用</footer>
+</div>
+
+<script>
+"use strict";
+const NS='http://www.w3.org/2000/svg';
+const dirV=d=>{const a=d*Math.PI/180;return{x:Math.cos(a),y:Math.sin(a)};};
+const pol=(c,r,d)=>{const a=d*Math.PI/180;return{x:c.x+r*Math.cos(a),y:c.y+r*Math.sin(a)};};
+const sub=(a,b)=>({x:a.x-b.x,y:a.y-b.y});
+const add=(a,b)=>({x:a.x+b.x,y:a.y+b.y});
+const mul=(a,s)=>({x:a.x*s,y:a.y*s});
+const nrm=v=>{const l=Math.hypot(v.x,v.y)||1;return{x:v.x/l,y:v.y/l};};
+const dot=(a,b)=>a.x*b.x+a.y*b.y;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+const cross=(a,b)=>a.x*b.y-a.y*b.x;
+
+function el(n,at,p){const e=document.createElementNS(NS,n);for(const k in at)e.setAttribute(k,at[k]);if(p)p.appendChild(e);return e;}
+function ln(p,x1,y1,x2,y2,st,w,dash){return el('line',{x1,y1,x2,y2,stroke:st,'stroke-width':w,...(dash?{'stroke-dasharray':dash}:{})},p);}
+function txt(p,x,y,s,o={}){const t=el('text',{x,y,'text-anchor':o.anchor||'middle','font-size':o.size||14,fill:o.fill||'#334155','font-weight':o.w||600,'font-family':'inherit',...(o.italic?{'font-style':'italic'}:{})},p);t.textContent=s;return t;}
+function dotC(p,x,y,r,f){return el('circle',{cx:x,cy:y,r:r||4.5,fill:f||'#1e293b'},p);}
+function arcPath(cx,cy,r,a0,a1){
+  const p0=pol({x:cx,y:cy},r,a0),p1=pol({x:cx,y:cy},r,a1);
+  const large=Math.abs(a1-a0)>180?1:0, sweep=a1>a0?1:0;
+  return `M ${p0.x.toFixed(1)} ${p0.y.toFixed(1)} A ${r} ${r} 0 ${large} ${sweep} ${p1.x.toFixed(1)} ${p1.y.toFixed(1)}`;
+}
+function raMarkAt(g,V,u1,u2,s=12){
+  const a=add(V,mul(u1,s)),b=add(add(V,mul(u1,s)),mul(u2,s)),c=add(V,mul(u2,s));
+  el('path',{d:`M ${a.x} ${a.y} L ${b.x} ${b.y} L ${c.x} ${c.y}`,fill:'none',stroke:'#64748b','stroke-width':1.6},g);
+}
+function arrowHead(g,p1,p2,size,color){
+  const u=nrm(sub(p2,p1)),n={x:-u.y,y:u.x},m=mul(add(p1,p2),.5);
+  const tip=add(m,mul(u,size*.6)),b1=add(m,{x:-u.x*size*.6+n.x*size*.55,y:-u.y*size*.6+n.y*size*.55}),b2=add(m,{x:-u.x*size*.6-n.x*size*.55,y:-u.y*size*.6-n.y*size*.55});
+  el('path',{d:`M ${tip.x} ${tip.y} L ${b1.x} ${b1.y} L ${b2.x} ${b2.y} Z`,fill:color},g);
+}
+function angleAt(P,U,Vv){ // 角度（度）
+  const a=nrm(sub(U,P)),b=nrm(sub(Vv,P));
+  return Math.acos(clamp(dot(a,b),-1,1))*180/Math.PI;
+}
+function drawAngleArc(g,P,U,Vv,color,showDeg=true){
+  const a1=Math.atan2(U.y-P.y,U.x-P.x)*180/Math.PI;
+  let a2=Math.atan2(Vv.y-P.y,Vv.x-P.x)*180/Math.PI;
+  let d=a2-a1; while(d>180)d-=360; while(d<=-180)d+=360;
+  el('path',{d:arcPath(P.x,P.y,26,a1,a1+d),fill:'none',stroke:color,'stroke-width':1.8},g);
+  if(showDeg){
+    const mid=a1+d/2,bis=dirV(mid);
+    const t=pol(P,44,mid);
+    txt(g,t.x,t.y+4,Math.round(angleAt(P,U,Vv))+'°',{size:12,fill:color});
+  }
+}
+function tickMark(g,P,Q,color,n=1){ // 线段 PQ 中点上的刻划线
+  const m=mul(add(P,Q),.5),u=nrm(sub(Q,P)),t={x:-u.y,y:u.x};
+  for(let i=0;i<n;i++){
+    const off=(i-(n-1)/2)*5;
+    ln(g,m.x+u.x*off-t.x*6,m.y+u.y*off-t.y*6,m.x+u.x*off+t.x*6,m.y+u.y*off+t.y*6,color,2.4);
+  }
+}
+
+/* ---------- tabs ---------- */
+document.querySelectorAll('.tab-btn').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.tab-btn').forEach(x=>x.classList.toggle('active',x===b));
+  document.querySelectorAll('section').forEach(s=>s.classList.toggle('active',s.id===b.dataset.tab));
+});
+
+/* ==================== Tab 1: 定义 ==================== */
+const svg1=document.getElementById('svg1');
+const P1=[{x:190,y:330,label:'A'},{x:560,y:350,label:'B'},{x:360,y:110,label:'C'}];
+function perimeterPoint(t){ // 周界上按 A→B→C→A 巡回
+  const [A,B,C]=P1;
+  const L=[Math.hypot(B.x-A.x,B.y-A.y),Math.hypot(C.x-B.x,C.y-B.y),Math.hypot(A.x-C.x,A.y-C.y)];
+  const tot=L[0]+L[1]+L[2]; let s=t*tot;
+  for(let i=0;i<3;i++){
+    if(s<=L[i]){
+      const p=[A,B,C][i],q=[B,C,A][i],k=L[i]?s/L[i]:0;
+      return add(p,mul(sub(q,p),k));
+    }
+    s-=L[i];
+  }
+  return A;
+}
+function render1(){
+  const g=svg1; g.innerHTML='';
+  const [A,B,C]=P1;
+  const cr=cross(sub(B,A),sub(C,A));
+  const degenerate=Math.abs(cr)<3500;
+  const badge=document.getElementById('badge1');
+  if(degenerate){
+    ln(g,A.x,A.y,B.x,B.y,'#dc2626',3,'8 6');
+    ln(g,B.x,B.y,C.x,C.y,'#dc2626',3,'8 6');
+    [A,B,C].forEach(p=>dotC(g,p.x,p.y,6,'#dc2626'));
+    txt(g,360,230,'✘ 三点落在同一条直线上',{size:19,fill:'#dc2626',w:800});
+    txt(g,360,258,'三条线段叠成一条线段，围不成封闭图形 —— 不是三角形',{size:14,fill:'#dc2626'});
+    badge.className='badge red';
+    badge.textContent='✘ 不满足"不在同一直线上" → 不能构成三角形，把点拖开试试';
+  }else{
+    el('polygon',{points:`${A.x},${A.y} ${B.x},${B.y} ${C.x},${C.y}`,fill:'#2563eb',opacity:.08},g);
+    ln(g,A.x,A.y,B.x,B.y,'#1e293b',2.5);
+    ln(g,B.x,B.y,C.x,C.y,'#1e293b',2.5);
+    ln(g,C.x,C.y,A.x,A.y,'#1e293b',2.5);
+    // 首尾顺次相接：箭头 + 巡回小圆点
+    arrowHead(g,A,B,9,'#2563eb'); arrowHead(g,B,C,9,'#2563eb'); arrowHead(g,C,A,9,'#2563eb');
+    const t=(performance.now()/2800)%1, m=perimeterPoint(t);
+    el('circle',{cx:m.x,cy:m.y,r:6,fill:'#2563eb',opacity:.85},g);
+    txt(g,360,430,'A → B → C → A  首尾顺次相接，围成封闭图形 ✔',{size:14,fill:'#2563eb',w:700});
+    // 顶点与角
+    const angA=angleAt(A,B,C),angB=angleAt(B,C,A),angC=angleAt(C,A,B);
+    drawAngleArc(g,A,B,C,'#0d9488'); drawAngleArc(g,B,C,A,'#0d9488'); drawAngleArc(g,C,A,B,'#0d9488');
+    [A,B,C].forEach((p,i)=>{
+      dotC(g,p.x,p.y,6,'#dc2626');
+      const off=[[ -16,20],[16,20],[0,-18]][i];
+      txt(g,p.x+off[0],p.y+off[1],p.label,{size:17,italic:true,fill:'#dc2626',w:800});
+    });
+    const sum=Math.round(angA+angB+angC);
+    badge.className='badge green';
+    badge.textContent=`✔ 是三角形！∠A+∠B+∠C = ${sum}°（内角和 180°），边 AB=${Math.round(Math.hypot(B.x-A.x,B.y-A.y))}，BC=${Math.round(Math.hypot(C.x-B.x,C.y-B.y))}，CA=${Math.round(Math.hypot(A.x-C.x,A.y-C.y))}`;
+  }
+}
+(function loop1(){ render1(); requestAnimationFrame(loop1); })();
+// 拖动（监听器挂在持久的 svg 上）
+svg1.addEventListener('pointerdown',e=>{
+  const r=svg1.getBoundingClientRect();
+  const x=(e.clientX-r.left)*720/r.width, y=(e.clientY-r.top)*460/r.height;
+  let hit=-1,best=36;
+  P1.forEach((p,i)=>{const d=Math.hypot(p.x-x,p.y-y); if(d<best){best=d;hit=i;}});
+  if(hit<0)return;
+  svg1.setPointerCapture(e.pointerId);
+  const move=ev=>{
+    const r2=svg1.getBoundingClientRect();
+    P1[hit].x=clamp((ev.clientX-r2.left)*720/r2.width,30,690);
+    P1[hit].y=clamp((ev.clientY-r2.top)*460/r2.height,30,430);
+  };
+  const up=()=>{svg1.removeEventListener('pointermove',move);svg1.removeEventListener('pointerup',up);};
+  svg1.addEventListener('pointermove',move); svg1.addEventListener('pointerup',up);
+});
+
+/* ==================== Tab 2: 分类 ==================== */
+const svg2=document.getElementById('svg2');
+const A2={x:150,y:300},B2={x:580,y:300}; let C2={x:360,y:100};
+function render2(){
+  const g=svg2; g.innerHTML='';
+  // 参考线：AB 中垂线（找等腰位置用）
+  ln(g,(A2.x+B2.x)/2,50,(A2.x+B2.x)/2,320,'#cbd5e1',1.2,'5 5');
+  txt(g,(A2.x+B2.x)/2,42,'CA=CB 的位置',{size:11,fill:'#94a3b8'});
+  const AB=Math.hypot(B2.x-A2.x,B2.y-A2.y),BC=Math.hypot(C2.x-B2.x,C2.y-B2.y),CA=Math.hypot(A2.x-C2.x,A2.y-C2.y);
+  const angA=angleAt(A2,B2,C2),angB=angleAt(B2,C2,A2),angC=angleAt(C2,A2,B2);
+  const mx=Math.max(angA,angB,angC);
+  // 分类
+  let byAngle,angCol;
+  if(Math.abs(mx-90)<=1){byAngle='直角三角形';angCol='#dc2626';}
+  else if(mx>90){byAngle='钝角三角形';angCol='#d97706';}
+  else{byAngle='锐角三角形';angCol='#16a34a';}
+  const eq=(u,v)=>Math.abs(u-v)<=2;
+  let bySide,sideCol;
+  if(eq(AB,BC)&&eq(BC,CA)){bySide='等边三角形（三边相等）';sideCol='#7c3aed';}
+  else if(eq(AB,BC)||eq(BC,CA)||eq(CA,AB)){bySide='等腰三角形（有两边相等）';sideCol='#0d9488';}
+  else{bySide='不等边三角形（三边互不相等）';sideCol='#64748b';}
+  // 图形
+  el('polygon',{points:`${A2.x},${A2.y} ${B2.x},${B2.y} ${C2.x},${C2.y}`,fill:'#2563eb',opacity:.07},g);
+  ln(g,A2.x,A2.y,B2.x,B2.y,'#1e293b',2.5);
+  ln(g,B2.x,B2.y,C2.x,C2.y,'#1e293b',2.5);
+  ln(g,C2.x,C2.y,A2.x,A2.y,'#1e293b',2.5);
+  // 角弧 + 度数
+  drawAngleArc(g,A2,B2,C2,'#0d9488'); drawAngleArc(g,B2,C2,A2,'#0d9488'); drawAngleArc(g,C2,A2,B2,'#0d9488');
+  if(Math.abs(angC-90)<=1)raMarkAt(g,C2,nrm(sub(A2,C2)),nrm(sub(B2,C2)),13);
+  if(Math.abs(angA-90)<=1)raMarkAt(g,A2,nrm(sub(B2,A2)),nrm(sub(C2,A2)),13);
+  if(Math.abs(angB-90)<=1)raMarkAt(g,B2,nrm(sub(C2,B2)),nrm(sub(A2,B2)),13);
+  // 等边刻划线
+  if(eq(CA,AB)){tickMark(g,A2,C2,sideCol,eq(AB,BC)&&eq(BC,CA)?2:1); tickMark(g,A2,B2,sideCol,eq(AB,BC)&&eq(BC,CA)?2:1);}
+  if(eq(AB,BC)){tickMark(g,B2,C2,sideCol,eq(AB,BC)&&eq(BC,CA)?2:1); tickMark(g,A2,B2,sideCol,eq(AB,BC)&&eq(BC,CA)?2:1);}
+  if(eq(BC,CA)){tickMark(g,A2,C2,sideCol,eq(AB,BC)&&eq(BC,CA)?2:1); tickMark(g,B2,C2,sideCol,eq(AB,BC)&&eq(BC,CA)?2:1);}
+  // 点
+  [A2,B2].forEach((p,i)=>{dotC(g,p.x,p.y,5.5,'#1e293b'); txt(g,p.x+(i?18:-18),p.y+20,i?'B':'A',{size:17,italic:true});});
+  dotC(g,C2.x,C2.y,7,'#dc2626');
+  el('circle',{cx:C2.x,cy:C2.y,r:18,fill:'transparent',cursor:'grab',id:'handleC'},g);
+  txt(g,C2.x,C2.y-16,'C',{size:17,italic:true,fill:'#dc2626',w:800});
+  txt(g,360,366,`AB=${Math.round(AB)}  BC=${Math.round(BC)}  CA=${Math.round(CA)}   ∠A=${Math.round(angA)}° ∠B=${Math.round(angB)}° ∠C=${Math.round(angC)}°（和=${Math.round(angA+angB+angC)}°）`,{size:13,fill:'#64748b'});
+  document.getElementById('badge2a').textContent=`按角分类：${byAngle}（最大角 ${Math.round(mx)}°）`;
+  document.getElementById('badge2a').className='badge '+(byAngle==='直角三角形'?'red':byAngle==='钝角三角形'?'amber':'green');
+  document.getElementById('badge2b').textContent=`按边分类：${bySide}`;
+  document.getElementById('badge2b').className='badge '+(bySide.startsWith('等边')?'blue':bySide.startsWith('等腰')?'green':'blue');
+}
+svg2.addEventListener('pointerdown',e=>{
+  const r=svg2.getBoundingClientRect();
+  const x=(e.clientX-r.left)*720/r.width, y=(e.clientY-r.top)*380/r.height;
+  if(Math.hypot(C2.x-x,C2.y-y)>40)return;
+  svg2.setPointerCapture(e.pointerId);
+  const move=ev=>{
+    const r2=svg2.getBoundingClientRect();
+    C2.x=clamp((ev.clientX-r2.left)*720/r2.width,140,590);
+    C2.y=clamp((ev.clientY-r2.top)*380/r2.height,50,285);
+    render2();
+  };
+  const up=()=>{svg2.removeEventListener('pointermove',move);svg2.removeEventListener('pointerup',up);};
+  svg2.addEventListener('pointermove',move); svg2.addEventListener('pointerup',up);
+});
+render2();
+
+/* 分类树 + 从属关系（静态图，用 JS 绘制） */
+function box(g,x,y,w,h,label,fill,color,fs=14,bold=true){
+  el('rect',{x,y,width:w,height:h,rx:10,fill,stroke:color,'stroke-width':1.6},g);
+  const t=txt(g,x+w/2,y+h/2+fs*.36,label,{size:fs,fill:color,w:bold?800:600});
+  return t;
+}
+function link(g,x1,y1,x2,y2,color,dash){ln(g,x1,y1,x2,y2,color,1.6,dash);}
+(function drawTrees(){
+  // 按边
+  const g1=document.getElementById('tree1');
+  box(g1,14,90,96,44,'三角形','#eff6ff','#2563eb');
+  box(g1,180,24,130,44,'不等边三角形','#fff','#64748b');
+  box(g1,180,140,130,44,'等腰三角形','#f0fdf4','#0d9488');
+  box(g1,340,140,106,44,'等边三角形','#ede9fe','#7c3aed');
+  link(g1,110,112,180,46,'#94a3b8');
+  link(g1,110,112,180,162,'#94a3b8');
+  link(g1,310,162,340,162,'#7c3aed','5 4');
+  txt(g1,325,148,'特殊的',{size:11,fill:'#7c3aed'});
+  txt(g1,232,208,'三边都不相等 / 至少两边相等',{size:11,fill:'#94a3b8'});
+  // 按角
+  const g2=document.getElementById('tree2');
+  box(g2,14,90,96,44,'三角形','#eff6ff','#2563eb');
+  box(g2,180,16,130,44,'锐角三角形','#f0fdf4','#16a34a');
+  box(g2,180,90,130,44,'直角三角形','#fef2f2','#dc2626');
+  box(g2,180,164,130,44,'钝角三角形','#fffbeb','#d97706');
+  link(g2,110,112,180,38,'#94a3b8');
+  link(g2,110,112,180,112,'#94a3b8');
+  link(g2,110,112,180,186,'#94a3b8');
+  txt(g2,232,222,'三个角都是锐角 / 有一个直角 / 有一个钝角',{size:11,fill:'#94a3b8'});
+  // 从属关系（嵌套）
+  const g3=document.getElementById('venn');
+  el('rect',{x:20,y:20,width:420,height:190,rx:18,fill:'#eff6ff',stroke:'#2563eb','stroke-width':1.8},g3);
+  txt(g3,44,44,'三角形',{size:14,fill:'#2563eb',w:800,anchor:'start'});
+  el('rect',{x:62,y:70,width:336,height:122,rx:14,fill:'#f0fdf4',stroke:'#0d9488','stroke-width':1.8},g3);
+  txt(g3,86,94,'等腰三角形（至少两边相等）',{size:13,fill:'#0d9488',w:800,anchor:'start'});
+  el('rect',{x:120,y:124,width:220,height:50,rx:12,fill:'#ede9fe',stroke:'#7c3aed','stroke-width':1.8},g3);
+  txt(g3,230,155,'等边三角形',{size:14,fill:'#7c3aed',w:800});
+})();
+
+/* ==================== Tab 3: 等腰分类讨论 ==================== */
+const svg3=document.getElementById('svg3');
+function drawIsoTriangle(g,cx,cy,base,leg,labelBase,labelLeg,scale){
+  // 等腰三角形：底 base 在下，腰 leg；返回是否可画
+  const h2=leg*leg-(base/2)*(base/2);
+  if(h2<=0)return false;
+  const h=Math.sqrt(h2);
+  const s=scale||Math.min(230/Math.max(base,leg),150/h);
+  const b=base*s,hh=h*s,ll=leg*s;
+  const A={x:cx-b/2,y:cy},B={x:cx+b/2,y:cy},C={x:cx,y:cy-hh};
+  el('polygon',{points:`${A.x},${A.y} ${B.x},${B.y} ${C.x},${C.y}`,fill:'#2563eb',opacity:.08},g);
+  ln(g,A.x,A.y,B.x,B.y,'#1e293b',2.4);
+  ln(g,B.x,B.y,C.x,C.y,'#dc2626',2.4);
+  ln(g,C.x,C.y,A.x,A.y,'#dc2626',2.4);
+  tickMark(g,A,C,'#dc2626'); tickMark(g,B,C,'#dc2626');
+  txt(g,cx,cy+18,labelBase,{size:13,fill:'#334155'});
+  const mL=mul(add(A,C),.5),mR=mul(add(B,C),.5);
+  txt(g,mL.x-16,mL.y,labelLeg,{size:13,fill:'#dc2626',w:700});
+  txt(g,mR.x+16,mR.y,labelLeg,{size:13,fill:'#dc2626',w:700});
+  txt(g,cx,cy-hh-10,'等腰△（两腰相等）',{size:11,fill:'#94a3b8'});
+  return true;
+}
+function render3(){
+  const g=svg3; g.innerHTML='';
+  const a=+document.getElementById('inA').value, b=+document.getElementById('inB').value;
+  const c1=document.getElementById('case1'),c2=document.getElementById('case2'),badge=document.getElementById('badge3');
+  if(!(a>0&&b>0)){badge.className='badge red';badge.textContent='请输入正数边长';return;}
+  // 情况①：a 为腰、b 为底 → 三边 a,a,b
+  const ok1=2*a>b;
+  // 情况②：b 为腰、a 为底 → 三边 b,b,a
+  const ok2=2*b>a;
+  const s=Math.min(230/Math.max(b,a),150/Math.sqrt(Math.max(a*a-b*b/4,1)),1.6);
+  txt(g,180,34,`情况①：a 是腰、b 是底（三边 ${a}、${a}、${b}）`,{size:14,w:800,fill:ok1?'#16a34a':'#dc2626'});
+  txt(g,540,34,`情况②：b 是腰、a 是底（三边 ${b}、${b}、${a}）`,{size:14,w:800,fill:ok2?'#16a34a':'#dc2626'});
+  let ok=false;
+  if(ok1){
+    drawIsoTriangle(g,180,268,b,a,`底=${b}`,`腰=${a}`,Math.min(230/Math.max(b,a),140/Math.sqrt(Math.max(a*a-b*b/4,1))));
+    ok=true;
+    txt(g,180,318,`检验：${a}+${a}=${2*a} > ${b} ✔  周长=${2*a+b}`,{size:13,fill:'#16a34a',w:700});
+  }else{
+    txt(g,180,160,'✘ 无法画出',{size:16,fill:'#dc2626',w:800});
+    txt(g,180,186,`两腰之和 ${a}+${a}=${2*a} ≤ 底 ${b}`,{size:13,fill:'#dc2626'});
+    txt(g,180,210,'两边之和必须大于第三边 → 舍去',{size:13,fill:'#dc2626'});
+  }
+  if(ok2){
+    drawIsoTriangle(g,540,268,a,b,`底=${a}`,`腰=${b}`,Math.min(230/Math.max(a,b),140/Math.sqrt(Math.max(b*b-a*a/4,1))));
+    ok=true;
+    txt(g,540,318,`检验：${b}+${b}=${2*b} > ${a} ✔  周长=${2*b+a}`,{size:13,fill:'#16a34a',w:700});
+  }else{
+    txt(g,540,160,'✘ 无法画出',{size:16,fill:'#dc2626',w:800});
+    txt(g,540,186,`两腰之和 ${b}+${b}=${2*b} ≤ 底 ${a}`,{size:13,fill:'#dc2626'});
+    txt(g,540,210,'两边之和必须大于第三边 → 舍去',{size:13,fill:'#dc2626'});
+  }
+  // 案例卡片
+  c1.className='case '+(ok1?'ok':'no');
+  c1.innerHTML=ok1
+    ?`<b class="v">情况① 成立：</b>a 是腰、b 是底 → 第三边 = <b>${a}</b>（腰）<br>三边为 ${a}、${a}、${b}；回验：${a}+${a}=${2*a} &gt; ${b} ✔<br><b>周长 = ${2*a}+${b} = <span style="color:#16a34a">${2*a+b}</span></b>`
+    :`<b class="x">情况① 舍去：</b>a 是腰、b 是底 → 三边 ${a}、${a}、${b}<br>回验：${a}+${a}=${2*a} ≤ ${b}，两边之和不大于第三边 ✘<br>这样的三角形不存在！`;
+  c2.className='case '+(ok2?'ok':'no');
+  c2.innerHTML=ok2
+    ?`<b class="v">情况② 成立：</b>b 是腰、a 是底 → 第三边 = <b>${b}</b>（腰）<br>三边为 ${b}、${b}、${a}；回验：${b}+${b}=${2*b} &gt; ${a} ✔<br><b>周长 = ${2*b}+${a} = <span style="color:#16a34a">${2*b+a}</span></b>`
+    :`<b class="x">情况② 舍去：</b>b 是腰、a 是底 → 三边 ${b}、${b}、${a}<br>回验：${b}+${b}=${2*b} ≤ ${a}，两边之和不大于第三边 ✘<br>这样的三角形不存在！`;
+  // 总结论
+  const ans=[ok1?2*a+b:null,ok2?2*b+a:null].filter(v=>v!==null);
+  if(ans.length===0){badge.className='badge red';badge.textContent=`✘ 两种情况都回验失败：以 ${a}、${b} 为边的等腰三角形不存在！`;}
+  else if(ans.length===1){badge.className='badge green';badge.textContent=`✔ 只有情况${ok1?'①':'②'}成立 → 周长为 ${ans[0]}（另一情况已舍去）`;}
+  else if(ans[0]===ans[1]){badge.className='badge green';badge.textContent=`✔ 两种情况周长相同 → 周长为 ${ans[0]}`;}
+  else{badge.className='badge green';badge.textContent=`✔ 两种情况都成立 → 周长为 ${ans[0]} 或 ${ans[1]}（分类讨论要写全！）`;}
+}
+document.getElementById('inA').oninput=render3;
+document.getElementById('inB').oninput=render3;
+document.getElementById('btnRand').onclick=()=>{
+  const pairs=[[4,9],[5,6],[6,2],[3,7],[5,5],[10,3],[7,4],[2,5]];
+  const [x,y]=pairs[Math.floor(Math.random()*pairs.length)];
+  document.getElementById('inA').value=x;
+  document.getElementById('inB').value=y;
+  render3();
+};
+render3();
+
+/* 支持网址锚点直达页签，如 triangle-concept-demo.html#t2 */
+if(location.hash){
+  const b=document.querySelector(`.tab-btn[data-tab="${location.hash.slice(1)}"]`);
+  if(b)b.click();
+}
+</script>
+</body>
+</html>

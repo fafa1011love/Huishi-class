@@ -1,0 +1,709 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>18.4 整数指数幂 · 课堂互动课件</title>
+<style>
+  :root{
+    --bg:#eef2f7; --card:#fff; --line:#e2e8f0; --text:#1e293b; --muted:#64748b;
+    --blue:#2563eb; --red:#dc2626; --green:#059669; --orange:#d97706; --purple:#7c3aed; --teal:#0891b2;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;overflow:hidden;}
+  body{background:radial-gradient(circle at 20% 0%,#e8eefb,#eef2f7 60%);font-family:"Microsoft YaHei","PingFang SC",sans-serif;
+    color:var(--text);user-select:none;-webkit-user-select:none;}
+  #screen{width:1600px;height:900px;position:absolute;left:50%;top:50%;transform-origin:center center;
+    display:flex;flex-direction:column;padding:16px 20px 18px;gap:10px;}
+
+  /* ---------- 顶栏 + 分页 ---------- */
+  .topbar{display:flex;align-items:center;gap:16px;flex:0 0 auto;}
+  .title{font-size:22px;font-weight:800;letter-spacing:.5px;}
+  .title small{font-size:12.5px;font-weight:400;color:var(--muted);margin-left:10px;letter-spacing:0;}
+  .pager{display:flex;gap:6px;margin-left:auto;background:#fff;border:1px solid var(--line);border-radius:12px;padding:4px;align-items:center;}
+  .ptab{padding:6px 14px;border-radius:9px;border:none;background:transparent;cursor:pointer;font-size:13.5px;
+    color:var(--muted);font-family:inherit;font-weight:600;transition:.18s;}
+  .ptab:hover{color:var(--blue);}
+  .ptab.on{background:var(--blue);color:#fff;box-shadow:0 2px 8px rgba(37,99,235,.3);}
+  .pnav{width:30px;height:30px;border-radius:9px;border:1px solid var(--line);background:#fff;cursor:pointer;
+    font-size:16px;color:var(--muted);font-weight:800;line-height:1;}
+  .pnav:hover{color:var(--blue);border-color:var(--blue);}
+
+  /* ---------- 页面与卡片 ---------- */
+  .board{flex:1 1 auto;display:flex;min-height:0;}
+  .page{display:none;flex:1 1 auto;min-height:0;}
+  .page.on{display:flex;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;
+    box-shadow:0 3px 14px rgba(15,23,42,.05);padding:14px 18px;display:flex;flex-direction:column;
+    flex:1 1 auto;min-height:0;width:100%;}
+  .card-h{display:flex;align-items:center;gap:10px;flex:0 0 auto;margin-bottom:8px;}
+  .card-h h2{font-size:17px;font-weight:800;color:#1e293b;}
+  .badge{font-size:12px;font-weight:700;color:#fff;background:var(--blue);padding:3px 10px;border-radius:20px;}
+  .badge.p2{background:var(--teal);} .badge.p3{background:var(--orange);} .badge.p4{background:var(--purple);}
+  .toggles{margin-left:auto;display:flex;gap:14px;font-size:12.5px;color:var(--muted);}
+  .toggles label{display:flex;align-items:center;gap:4px;cursor:pointer;}
+  input[type=checkbox]{accent-color:var(--blue);cursor:pointer;}
+  input[type=range]{accent-color:var(--blue);height:4px;}
+
+  button.b{padding:7px 14px;border-radius:9px;border:1px solid var(--line);background:#fff;cursor:pointer;
+    font-size:13px;font-family:inherit;font-weight:600;color:var(--text);transition:.15s;}
+  button.b:hover{border-color:var(--blue);color:var(--blue);}
+  button.b.primary{background:var(--teal);border-color:var(--teal);color:#fff;}
+  button.b.primary:hover{filter:brightness(1.05);color:#fff;}
+  button.b.play{background:var(--green);border-color:var(--green);color:#fff;}
+  button.b.play.pause{background:var(--orange);border-color:var(--orange);}
+  button.b.sm{padding:5px 10px;font-size:12px;}
+  .note{font-size:12px;color:var(--muted);line-height:1.5;}
+  sup{font-size:.68em;}
+
+  /* ---------- 模块一 ---------- */
+  .chart-wrap{flex:1 1 auto;min-height:0;}
+  #chart{width:100%;height:100%;display:block;}
+  .ctrl-row{display:flex;gap:26px;align-items:center;flex:0 0 auto;margin-top:6px;}
+  .ctrl{flex:1;display:flex;align-items:center;gap:10px;font-size:14px;color:var(--muted);}
+  .ctrl input[type=range]{flex:1;}
+  .ctrl b{color:var(--text);font-size:15px;min-width:44px;text-align:right;font-variant-numeric:tabular-nums;}
+  .ctrl.btns{flex:0 0 auto;}
+  .calc{margin-top:10px;flex:0 0 auto;background:#eff6ff;border:1px solid #bfdbfe;border-radius:10px;
+    padding:10px 14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+  .calc .eq{font-size:24px;font-weight:800;color:var(--blue);font-family:"Cambria Math",Georgia,serif;letter-spacing:.5px;}
+  .calc .eq em{color:var(--red);font-style:normal;}
+  .calc .tip{font-size:13px;color:var(--muted);margin-left:auto;text-align:right;line-height:1.4;}
+  #steps1{margin-top:8px;font-size:13.5px;color:var(--green);background:#ecfdf5;border:1px dashed #a7f3d0;
+    border-radius:8px;padding:6px 12px;display:flex;gap:2px;align-items:center;flex-wrap:wrap;flex:0 0 auto;}
+  #steps1 span.op{color:var(--muted);font-size:12px;}
+
+  /* ---------- 模块二 ---------- */
+  .zeno{display:flex;gap:20px;flex:1 1 auto;min-height:0;}
+  .cup-box{flex:0 0 280px;display:flex;flex-direction:column;align-items:center;justify-content:flex-start;}
+  #cup{width:250px;flex:1 1 auto;max-height:560px;}
+  .zeno-right{flex:1 1 auto;display:flex;flex-direction:column;gap:10px;min-height:0;}
+  .stat-row{display:flex;gap:10px;}
+  .stat{flex:1;background:#f8fafc;border:1px solid var(--line);border-radius:10px;padding:8px 10px;text-align:center;}
+  .stat .k{font-size:12.5px;color:var(--muted);}
+  .stat .v{font-size:21px;font-weight:800;font-variant-numeric:tabular-nums;}
+  .bar{height:14px;border-radius:7px;background:#e2e8f0;overflow:hidden;}
+  .bar>i{display:block;height:100%;background:linear-gradient(90deg,#059669,#10b981);border-radius:7px;transition:width .35s;}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;align-content:flex-start;overflow:auto;flex:1 1 auto;min-height:60px;}
+  .chip{font-size:12.5px;padding:4px 10px;border-radius:20px;background:#f1f5f9;border:1px solid var(--line);
+    color:#334155;font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .chip.now{background:#fef2f2;border-color:#fecaca;color:var(--red);font-weight:700;}
+  .chip .p{color:var(--muted);font-size:11.5px;}
+  .concl{flex:0 0 auto;background:#eff6ff;border:1.5px solid #93c5fd;border-radius:10px;padding:9px 14px;
+    font-size:14px;line-height:1.6;color:#1e3a8a;}
+  .concl b{color:var(--red);}
+  .concl.done{background:#fef2f2;border-color:#fca5a5;}
+  .btns{display:flex;gap:8px;align-items:center;flex-wrap:wrap;flex:0 0 auto;}
+
+  /* ---------- 模块三：小数点移动 ---------- */
+  .sci-top{display:flex;gap:10px;align-items:center;flex:0 0 auto;}
+  .sci-top input[type=text]{flex:0 0 380px;padding:8px 12px;border:1px solid var(--line);border-radius:9px;
+    font-size:16px;font-family:inherit;color:var(--text);background:#fff;}
+  .sci-out{margin-top:10px;background:#fff7ed;border:1px solid #fed7aa;border-radius:10px;padding:10px 14px;
+    display:flex;align-items:center;gap:16px;flex:0 0 auto;}
+  .sci-out .big{font-size:25px;font-weight:800;color:var(--orange);font-variant-numeric:tabular-nums;white-space:nowrap;}
+  .sci-out .sub{font-size:13px;color:#7c2d12;line-height:1.5;}
+  .dig-stage{margin-top:14px;flex:1 1 auto;min-height:0;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:14px;}
+  #digRow{position:relative;display:flex;gap:6px;align-items:flex-end;flex:0 0 auto;}
+  .dbox{width:52px;height:60px;border-radius:9px;background:#eff6ff;border:1.5px solid #93c5fd;
+    display:flex;align-items:center;justify-content:center;font-size:30px;font-weight:800;color:#1d4ed8;
+    font-variant-numeric:tabular-nums;}
+  .dbox.hl{background:#dc2626;border-color:#b91c1c;color:#fff;}
+  .dbox.zero{background:#f8fafc;border-color:#cbd5e1;color:#94a3b8;}
+  #dp{position:absolute;top:8px;width:14px;height:14px;border-radius:50%;background:var(--red);
+    box-shadow:0 0 0 3px rgba(220,38,38,.18);transition:left .22s ease;}
+  #dp::after{content:"小数点";position:absolute;top:18px;left:50%;transform:translateX(-50%);
+    font-size:11px;font-weight:700;color:var(--red);white-space:nowrap;}
+  .move-cnt{font-size:15px;font-weight:700;color:var(--purple);min-height:22px;}
+  .sci-steps{flex:0 0 auto;background:#f5f3ff;border:1.5px solid #c4b5fd;border-radius:10px;padding:10px 16px;
+    font-size:14px;line-height:1.8;color:#3730a3;}
+  .sci-steps b{color:var(--purple);}
+  .sci-steps .st{display:flex;gap:8px;}
+  .sci-steps .no{flex:0 0 auto;width:20px;height:20px;border-radius:50%;background:var(--purple);color:#fff;
+    font-size:12px;font-weight:800;display:flex;align-items:center;justify-content:center;margin-top:4px;}
+  .sci-bottom{display:flex;gap:12px;flex:0 0 auto;margin-top:12px;align-items:center;}
+  .sci-row{display:flex;align-items:center;gap:10px;font-size:13.5px;color:var(--muted);flex:1;}
+  .sci-row input[type=range]{flex:1;}
+  .sci-row b{color:var(--text);font-size:14px;min-width:52px;text-align:right;font-variant-numeric:tabular-nums;}
+  .macro{display:flex;gap:10px;flex:0 0 auto;margin-top:12px;}
+  .macro div{flex:1;background:#f8fafc;border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-size:12.5px;
+    color:var(--muted);line-height:1.6;}
+  .macro b{color:var(--text);font-size:13.5px;}
+
+  /* ---------- 模块四 ---------- */
+  .read{font-size:14.5px;line-height:1.85;color:#334155;overflow:auto;flex:1 1 auto;padding-right:8px;}
+  .read h4{font-size:15px;color:var(--purple);margin:10px 0 4px;}
+  .read p{margin-bottom:6px;}
+  .read .hl{color:var(--blue);font-weight:700;}
+  .mantra{margin-top:10px;flex:0 0 auto;background:linear-gradient(90deg,#7c3aed,#2563eb);color:#fff;
+    border-radius:10px;padding:12px 18px;font-size:16px;font-weight:700;line-height:1.7;letter-spacing:.5px;}
+  .mantra small{display:block;font-weight:400;font-size:12px;opacity:.9;letter-spacing:0;}
+</style>
+</head>
+<body>
+<div id="screen">
+
+  <!-- 顶栏：标题 + 分页 -->
+  <div class="topbar">
+    <div class="title">18.4 整数指数幂<small>负整数指数幂 · 科学记数法 · 芝诺悖论阅读 ｜ 八年级上册</small></div>
+    <div class="pager">
+      <button class="pnav" id="prevPage" title="上一页">‹</button>
+      <button class="ptab on" data-p="0">① 负指数规律</button>
+      <button class="ptab" data-p="1">② 芝诺倒水</button>
+      <button class="ptab" data-p="2">③ 科学记数法</button>
+      <button class="ptab" data-p="3">④ 阅读与思考</button>
+      <button class="pnav" id="nextPage" title="下一页">›</button>
+    </div>
+  </div>
+
+  <div class="board">
+
+    <!-- 第 1 页：模块一 -->
+    <div class="page on" id="page0">
+      <div class="card">
+        <div class="card-h">
+          <span class="badge">模块一</span><h2>负整数指数幂：指数每减 1，结果除以 a</h2>
+          <div class="toggles"><label><input type="checkbox" id="cbGrid" checked> 网格</label></div>
+        </div>
+        <div class="chart-wrap"><svg id="chart" viewBox="0 0 1520 316" preserveAspectRatio="none"></svg></div>
+        <div class="ctrl-row">
+          <div class="ctrl">指数 n <input type="range" id="nSlider" min="-5" max="5" step="1" value="3"><b id="nVal">3</b></div>
+          <div class="ctrl">底数 a <input type="range" id="aSlider" min="1" max="5" step="1" value="2"><b id="aVal">2</b></div>
+          <div class="ctrl btns"><button class="b play" id="play0">▶ 播放</button></div>
+        </div>
+        <div class="calc">
+          <div class="eq" id="eq1"></div>
+          <div class="tip" id="tip1"></div>
+        </div>
+        <div id="steps1"></div>
+      </div>
+    </div>
+
+    <!-- 第 2 页：模块二 -->
+    <div class="page" id="page1">
+      <div class="card">
+        <div class="card-h">
+          <span class="badge p2">模块二</span><h2>容器中的水能倒完吗？（芝诺悖论）</h2>
+          <div class="toggles">
+            <label><input type="checkbox" id="cbRemain" checked> 剩余量</label>
+            <label><input type="checkbox" id="cbSeq" checked> 倒出序列</label>
+          </div>
+        </div>
+        <div class="zeno">
+          <div class="cup-box"><svg id="cup" viewBox="0 0 220 330"></svg></div>
+          <div class="zeno-right">
+            <div class="stat-row" id="statRow">
+              <div class="stat"><div class="k">倒水次数 n</div><div class="v" id="pourN">0</div></div>
+              <div class="stat"><div class="k">剩余水量</div><div class="v" id="remainV" style="color:#0891b2">1</div></div>
+              <div class="stat"><div class="k">已倒出（趋近 1）</div><div class="v" id="pouredV" style="color:#059669">0</div></div>
+            </div>
+            <div class="bar"><i id="pourBar" style="width:0%"></i></div>
+            <div class="chips" id="chips"></div>
+            <div class="concl" id="concl2"></div>
+            <div class="btns">
+              <button class="b primary" id="pourOne">🫗 下一步倒水</button>
+              <button class="b play" id="playPour">▶ 播放</button>
+              <button class="b" id="resetPour">↺ 重置</button>
+              <span class="note" style="margin-left:auto" id="zenoNote"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 第 3 页：模块三 -->
+    <div class="page" id="page2">
+      <div class="card">
+        <div class="card-h"><span class="badge p3">模块三</span><h2>科学记数法 N = a × 10ⁿ —— 用「移动小数点」来做题</h2></div>
+        <div class="sci-top">
+          <input type="text" id="sciInput" value="0.00012" spellcheck="false">
+          <button class="b primary" id="sciConv">🔄 逐步演示</button>
+          <button class="b play" id="playSci">▶ 自动播放</button>
+          <span class="note">输入一个数，看小数点怎么一步步移动</span>
+        </div>
+        <div class="sci-out">
+          <div class="big" id="sciBig">1.2 × 10⁻⁴</div>
+          <div class="sub" id="sciSub"></div>
+        </div>
+        <div class="dig-stage">
+          <div id="digRow"></div>
+          <div class="move-cnt" id="moveCnt"></div>
+        </div>
+        <div class="sci-steps" id="sciSteps"></div>
+        <div class="sci-bottom">
+          <div class="sci-row">指数 n <input type="range" id="sciN" min="-9" max="9" step="1" value="-4"><b id="sciNv">-4</b></div>
+          <div class="sci-row">系数 a <input type="range" id="sciA" min="1" max="9.9" step="0.1" value="1.2"><b id="sciAv">1.2</b></div>
+        </div>
+        <div class="macro">
+          <div><b>宏观</b><br>光速 3×10⁸ m/s ｜ 地球质量 6×10²⁴ kg</div>
+          <div><b>微观</b><br>电子质量 9.1×10⁻³¹ kg ｜ 病毒直径 1.2×10⁻⁷ m</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 第 4 页：模块四 -->
+    <div class="page" id="page3">
+      <div class="card">
+        <div class="card-h">
+          <span class="badge p4">模块四</span><h2>阅读与思考</h2>
+          <div class="toggles"><label><input type="checkbox" id="cbRead" checked> 阅读文本</label></div>
+        </div>
+        <div class="read" id="readBox">
+          <h4>一、芝诺的"二分法"</h4>
+          <p>物体从 A 到 B，必先经过中点；再到中点与 B 的中点……如此下去，<span class="hl">要经过无限多个点</span>，所以"永远到不了" B。倒水同理：每次倒出剩余的一半，第 1 次倒 1/2，第 2 次倒 1/4，第 3 次倒 1/8……总能剩下一点水，<span class="hl">似乎永远倒不完</span>。</p>
+          <h4>二、用负指数刻画"剩余"</h4>
+          <p>剩下 1/2、1/4、1/8……正是 2⁻¹、2⁻²、2⁻³……即剩余 = 2⁻ⁿ。n 越大，2⁻ⁿ 越小：2⁻¹⁰≈0.00098，2⁻²⁰≈0.00000095，<span class="hl">无限趋近 0 但永不等于 0</span>。而已倒出的总量 1−2⁻ⁿ 则无限趋近 1。</p>
+          <h4>三、数学文化：极限思想的萌芽</h4>
+          <p>1/2+1/4+1/8+… 无限多项相加，结果竟然是有限数 1——古希腊人难以接受，直到 19 世纪极限理论建立才被严格说明。<b>负指数幂 a⁻ⁿ</b> 恰好提供了描述"越来越小、无限接近"的简洁语言，这就是数学的美与力量。</p>
+          <h4>四、结论</h4>
+          <p>理论上永远倒不完（剩余恒大于 0）；现实中能倒完，因为水由分子构成，小到一定程度就不再"连续可分"。</p>
+        </div>
+        <div class="mantra">负指数，变倒数，正指数算清楚；<br>科学计数两部曲，系数指数要牢记。
+          <small>口诀：a⁻ⁿ = 1/aⁿ（a≠0）｜ N = a×10ⁿ，1 ≤ |a| &lt; 10 ｜ 小数点右移 ⇒ 负指数，左移 ⇒ 正指数</small></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+const NS="http://www.w3.org/2000/svg";
+const $=id=>document.getElementById(id);
+const clamp=(v,a,b)=>Math.min(b,Math.max(a,v));
+const lerp=(a,b,t)=>a+(b-a)*t;
+function el(tag,attrs,parent){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e;}
+function clear(g){while(g.firstChild)g.removeChild(g.firstChild);}
+const SUPMAP={"0":"⁰","1":"¹","2":"²","3":"³","4":"⁴","5":"⁵","6":"⁶","7":"⁷","8":"⁸","9":"⁹","-":"⁻","+":""};
+const supStr=n=>String(n).split("").map(c=>SUPMAP[c]??c).join("");
+
+/* ---------- 自适应缩放：1600×900 版面 ---------- */
+(function fit(){
+  const sc=$("screen");
+  const resize=()=>{
+    const k=Math.min(window.innerWidth/1600,window.innerHeight/900);
+    sc.style.transform=`translate(-50%,-50%) scale(${k})`;
+  };
+  window.addEventListener("resize",resize); resize();
+})();
+
+/* ---------- 全局动画调度 ---------- */
+const Ticker={
+  id:null,btn:null,
+  stop(){if(this.id){cancelAnimationFrame(this.id);this.id=null;}
+    if(this.btn){this.btn.textContent=this.btn.dataset.play||"▶ 播放";this.btn.classList.remove("pause");this.btn=null;}},
+  start(btn,fn){this.stop();this.btn=btn||null;
+    if(btn){btn.dataset.play=btn.dataset.play||btn.textContent;btn.textContent="⏸ 暂停";btn.classList.add("pause");}
+    const t0=performance.now();let last=t0;
+    const step=now=>{const t=(now-t0)/1000,dt=(now-last)/1000;last=now;
+      if(fn(t,dt)===false){this.stop();return;}this.id=requestAnimationFrame(step);};
+    this.id=requestAnimationFrame(step);}
+};
+
+/* ---------- 数字格式化 ---------- */
+function fmtPretty(v){
+  if(Number.isInteger(v)) return v.toLocaleString("en-US");
+  if(Math.abs(v)<1e-4) return v.toExponential(3).replace(/e-?\d+$/,m=>{
+    const neg=m[1]==="-"; const d=m.slice(2);
+    return "×10"+(neg?"⁻":"⁺")+supStr(d);
+  });
+  const s=v.toFixed(6).replace(/0+$/,"").replace(/\.$/,"");
+  return s;
+}
+
+/* =========================================================
+   分页控制
+========================================================= */
+const PAGE_TITLES=["负指数规律","芝诺倒水","科学记数法","阅读与思考"];
+let curPage=0;
+function showPage(i){
+  curPage=clamp(i,0,3);
+  Ticker.stop();
+  document.querySelectorAll(".ptab").forEach(b=>b.classList.toggle("on",+b.dataset.p===curPage));
+  for(let k=0;k<4;k++) $("page"+k).classList.toggle("on",k===curPage);
+}
+document.querySelectorAll(".ptab").forEach(b=>b.addEventListener("click",()=>showPage(+b.dataset.p)));
+$("prevPage").addEventListener("click",()=>showPage((curPage+3)%4));
+$("nextPage").addEventListener("click",()=>showPage((curPage+1)%4));
+document.addEventListener("keydown",e=>{
+  if(e.target.tagName==="INPUT"&&e.target.type==="text")return;
+  if(e.key==="ArrowLeft")showPage(curPage-1);
+  if(e.key==="ArrowRight")showPage(curPage+1);
+});
+
+/* =========================================================
+   模块一：负整数指数幂（数轴式排列：负指数在左）
+========================================================= */
+let A=2, N=3;
+const CHART=$("chart");
+
+function drawChart(){
+  clear(CHART);
+  const W=1520,H=316, base=268, x0=64, x1=W-30;
+  const cols=[]; for(let n=-5;n<=5;n++)cols.push(n);   // 数轴式：负指数在左 → 正指数在右
+  const cw=(x1-x0)/cols.length;
+  const vals=cols.map(n=>Math.pow(A,n));
+  const maxV=Math.max(...vals), minV=Math.min(...vals);
+  const lg=v=>Math.log10(Math.max(v,1e-9));
+  const lo=lg(minV), hi=lg(maxV);
+  const hOf=v=>hi-lo<1e-6?120:44+168*((lg(v)-lo)/(hi-lo));
+
+  if($("cbGrid").checked){
+    for(let i=0;i<=4;i++){
+      const y=base-i*50;
+      el("line",{x1:x0-10,y1:y,x2:x1,y2:y,stroke:"#f1f5f9","stroke-width":1},CHART);
+    }
+  }
+  el("line",{x1:x0-18,y1:base,x2:x1+8,y2:base,stroke:"#cbd5e1","stroke-width":1.5},CHART);
+  // 数轴箭头（向右 = 指数增大）
+  el("path",{d:`M ${x1+8} ${base} l -10 -5 v 10 Z`,fill:"#94a3b8"},CHART);
+  const ax=el("text",{x:x1-4,y:base+44,"text-anchor":"end","font-size":12,"font-weight":700,fill:"#94a3b8"},CHART);
+  ax.textContent="指数增大 →";
+
+  cols.forEach((n,i)=>{
+    const x=x0+i*cw+cw/2, v=vals[i], h=hOf(v);
+    const cur=n===N;
+    el("rect",{x:x-cw*0.30,y:base-h,width:cw*0.60,height:h,rx:4,
+      fill:cur?"#dc2626":"#93b4f7",opacity:cur?0.92:0.85},CHART);
+    const label = n>=0 ? String(v) : `1/${Math.pow(A,-n)}`;
+    const t=el("text",{x,y:base-h-8,"text-anchor":"middle","font-size":cur?15:13,
+      "font-weight":cur?800:600,fill:cur?"#dc2626":"#64748b"},CHART);
+    t.textContent=label;
+    const bt=el("text",{x,y:base+24,"text-anchor":"middle","font-size":cur?17:14.5,
+      "font-weight":cur?800:600,fill:cur?"#dc2626":"#334155"},CHART);
+    bt.textContent=n;
+    if(cur) el("path",{d:`M ${x} ${base+30} l -6 -8 h 12 Z`,fill:"#dc2626"},CHART);
+    // 向右 ×a 箭头（指数增大 = 乘 a）
+    if(i>0){
+      const px=x0+(i-1)*cw+cw/2;
+      el("path",{d:`M ${px+cw*0.36} ${base-4} L ${x-cw*0.40} ${base-4}`,stroke:"#cbd5e1","stroke-width":1.2},CHART);
+      el("path",{d:`M ${x-cw*0.40} ${base-4} l 6 -3.5 v 7 Z`,fill:"#cbd5e1"},CHART);
+      const mt=el("text",{x:(px+x)/2,y:base-8,"text-anchor":"middle","font-size":11,fill:"#94a3b8"},CHART);
+      mt.textContent="×"+A;
+    }
+  });
+  // 正负分界（左负右正，与柱排列一致）
+  const idxZero=cols.indexOf(0), zeroX=x0+idxZero*cw+cw/2;
+  el("line",{x1:zeroX,y1:34,x2:zeroX,y2:base+6,stroke:"#7c3aed","stroke-width":1.6,"stroke-dasharray":"6 5",opacity:.85},CHART);
+  const lt=el("text",{x:zeroX-10,y:44,"text-anchor":"end","font-size":13,"font-weight":700,fill:"#7c3aed"},CHART);
+  lt.textContent="← 负指数（数越来越小）";
+  const rt=el("text",{x:zeroX+10,y:44,"font-size":13,"font-weight":700,fill:"#7c3aed"},CHART);
+  rt.textContent="正指数（数越来越大）→";
+}
+
+function renderModule1(){
+  drawChart();
+  $("nVal").textContent=N; $("aVal").textContent=A;
+  $("nSlider").value=N; $("aSlider").value=A;
+
+  const v=Math.pow(A,N);
+  let eq, tip;
+  if(A===1){
+    eq=`1<sup>${N}</sup> = <em>1</em>`;
+    tip=`a=1 时任何次幂都等于 1（1 的倒数还是 1）`;
+  }else if(N>=0){
+    eq=`${A}<sup>${N}</sup> = <em>${v}</em>`;
+    tip=`正指数：${A} 连乘 ${N} 次${N===0?"（任何非零数的 0 次幂都是 1）":""}`;
+  }else{
+    const k=-N, den=Math.pow(A,k);
+    eq=`${A}<sup>${N}</sup> = <span style="font-size:26px">1/${A}<sup>${k}</sup></span> = <span style="font-size:26px">1/${den}</span> = <em>${fmtPretty(v)}</em>`;
+    tip=`负指数 ⇒ 取倒数：${A}<sup>−${k}</sup> = 1/${A}<sup>${k}</sup>`;
+  }
+  $("eq1").innerHTML=eq;
+  $("tip1").innerHTML=tip;
+
+  const startN=N>=0?N:1;
+  let s="";
+  for(let k=startN;k>=-5;k--){
+    const val=Math.pow(A,k);
+    const txt=k>=0?`${A}<sup>${k}</sup>=${val}`:`${A}<sup>${k}</sup>=1/${Math.pow(A,-k)}`;
+    s+=`<span>${txt}</span>`;
+    if(k>-5) s+=`<span class="op">−→ ÷${A} →</span>`;
+  }
+  $("steps1").innerHTML=`<b style="margin-right:6px">递推：</b>${s}`;
+}
+$("nSlider").addEventListener("input",e=>{Ticker.stop();N=+e.target.value;renderModule1();});
+$("aSlider").addEventListener("input",e=>{A=+e.target.value;renderModule1();resetPour();});
+$("cbGrid").addEventListener("change",()=>{drawChart();});
+$("play0").addEventListener("click",()=>{
+  if(Ticker.btn===$("play0")){Ticker.stop();return;}
+  N=5; renderModule1();
+  Ticker.start($("play0"),t=>{
+    const k=Math.floor(t/1.0);
+    if(k>=11){ N=-5; renderModule1(); return false; }
+    const nn=5-k;
+    if(nn!==N){ N=nn; renderModule1(); }
+  });
+});
+
+/* =========================================================
+   模块二：芝诺倒水（直壁杯，水面贴底无缝隙）
+========================================================= */
+const CUP=$("cup");
+let pours=0, level=1, levelTarget=1, waterRaf=null;
+const W_TOP=26, W_BOT=302, W_LEFT=46, W_RIGHT=174;   // 杯内区域：水面始终贴 W_BOT
+const W_H=W_BOT-W_TOP, W_W=W_RIGHT-W_LEFT;
+
+function drawCupStatic(){
+  clear(CUP);
+  // 直壁杯：内腔从杯口直到杯底，无收口无缝隙
+  el("path",{d:`M 40 20 L 40 296 Q 40 304 48 304 L 172 304 Q 180 304 180 296 L 180 20`,
+    fill:"none",stroke:"#334155","stroke-width":5,"stroke-linejoin":"round"},CUP);
+  el("line",{x1:34,y1:20,x2:186,y2:20,stroke:"#334155","stroke-width":5,"stroke-linecap":"round"},CUP);
+  // 刻度（水位 = 2⁻ⁿ 参考线）
+  for(let k=1;k<=4;k++){
+    const y=W_BOT-W_H*Math.pow(0.5,k);
+    el("line",{x1:W_LEFT,y1:y,x2:W_LEFT+10,y2:y,stroke:"#94a3b8","stroke-width":1.5},CUP);
+    const t=el("text",{x:W_LEFT+14,y:y+4,"font-size":10.5,fill:"#94a3b8"},CUP);
+    t.textContent="2⁻"+k;
+  }
+  const g=el("g",{},CUP); g.id="waterG";
+  el("rect",{id:"waterRect",x:W_LEFT,y:W_TOP,width:W_W,height:W_H,fill:"rgba(8,145,178,.55)"},g);
+  el("line",{id:"waterTop",x1:W_LEFT,y1:W_TOP,x2:W_RIGHT,y2:W_TOP,stroke:"#0891b2","stroke-width":2.5},g);
+  el("text",{id:"cupTxt",x:(W_LEFT+W_RIGHT)/2,y:0,"text-anchor":"middle","font-size":14.5,"font-weight":800},CUP);
+}
+function drawWater(){
+  const h=W_H*level;
+  const y=W_BOT-h;                       // 底边恒为 W_BOT，永不留缝
+  const r=CUP.querySelector("#waterRect");
+  r.setAttribute("y",y); r.setAttribute("height",Math.max(h,0.5));
+  const t=CUP.querySelector("#waterTop");
+  t.setAttribute("y1",y); t.setAttribute("y2",y);
+  const lbl=CUP.querySelector("#cupTxt");
+  const surf=y;
+  if(level>=0.14){
+    lbl.setAttribute("y",surf+26);
+    lbl.setAttribute("fill","#ffffff");
+  }else{
+    lbl.setAttribute("y",Math.max(W_TOP+16,surf-10));
+    lbl.setAttribute("fill","#0369a1");
+  }
+  lbl.textContent = pours===0?"满杯 1":`剩 ${fmtPretty(level)}`;
+}
+function tickWater(){
+  level=lerp(level,levelTarget,0.2);
+  if(Math.abs(level-levelTarget)<0.002)level=levelTarget;
+  drawWater();
+  if(level!==levelTarget) waterRaf=requestAnimationFrame(tickWater); else waterRaf=null;
+}
+function setLevel(t){levelTarget=t;if(!waterRaf)waterRaf=requestAnimationFrame(tickWater);}
+
+const pourFrac=()=>1/A;
+const remainV=()=>Math.pow(1-pourFrac(),pours);
+
+function renderZeno(){
+  drawWater();
+  const r=remainV(), poured=1-r;
+  $("pourN").textContent=pours;
+  $("remainV").textContent = pours===0?"1":fmtPretty(r);
+  $("pouredV").textContent = pours===0?"0":fmtPretty(poured);
+  $("pourBar").style.width=(poured*100).toFixed(2)+"%";
+  $("statRow").style.display=$("cbRemain").checked?"flex":"none";
+  $("chips").style.display=$("cbSeq").checked?"flex":"none";
+
+  const chips=$("chips");
+  if($("cbSeq").checked){
+    let html="";
+    for(let k=1;k<=Math.max(pours,1);k++){
+      const amt=pourFrac()*Math.pow(1-pourFrac(),k-1);
+      const amtTxt = A===2 ? `1/${Math.pow(2,k)}` : fmtPretty(amt);
+      const tag = A===2 ? `=2<sup>−${k}</sup>` : "";
+      html+=`<div class="chip ${k===pours?"now":""}">第${k}次 ${amtTxt}<span class="p"> ${tag}</span></div>`;
+    }
+    if(pours===0) html=`<div class="chip">第1次将倒出 ${A===2?"1/2":"1/"+A}</div>`;
+    chips.innerHTML=html;
+  }
+  $("zenoNote").innerHTML = A===2
+    ? `每次倒出剩余的一半 ⇒ 剩余 2<sup>−n</sup>`
+    : `每次倒出剩余的 1/${A} ⇒ 剩余 (1−1/${A})<sup>n</sup>`;
+
+  // ★ 结论框（动态）
+  const c=$("concl2");
+  if(pours===0){
+    c.className="concl";
+    c.innerHTML=`点击「下一步倒水」开始实验：每次倒出剩余的 <b>${A===2?"一半（1/2）":"1/"+A}</b>，观察水位（即剩余量）如何变化。`;
+  }else if(pours<12){
+    c.className="concl";
+    const remTxt = A===2?`2<sup>−${pours}</sup> = ${fmtPretty(r)}`:fmtPretty(r);
+    c.innerHTML=`已倒 ${pours} 次：剩余 <b>${remTxt} ＞ 0</b>，杯里总还有水——继续倒，看它能不能倒完？`;
+  }else{
+    c.className="concl done";
+    c.innerHTML=`<b>结论：</b>倒 12 次后仅剩 2<sup>−12</sup> ≈ 0.000244，<b>仍然 ＞ 0</b>。无论倒多少次，剩余量 = 2<sup>−n</sup> 永远大于 0，<b>水永远倒不完</b>（芝诺悖论）；而已倒出 1−2<sup>−n</sup> 无限趋近 1——这就是<b>极限思想</b>。`;
+  }
+}
+function resetPour(){
+  pours=0; level=1; levelTarget=1;
+  if(waterRaf){cancelAnimationFrame(waterRaf);waterRaf=null;}
+  renderZeno();
+}
+$("pourOne").addEventListener("click",()=>{
+  Ticker.stop();
+  pours=Math.min(pours+1,12);
+  setLevel(remainV()); renderZeno();
+});
+$("resetPour").addEventListener("click",()=>{Ticker.stop();resetPour();});
+$("playPour").addEventListener("click",()=>{
+  if(Ticker.btn===$("playPour")){Ticker.stop();return;}
+  pours=0; level=1; levelTarget=1; renderZeno();
+  Ticker.start($("playPour"),t=>{
+    const k=Math.floor(t/1.1);
+    if(k>=12){ pours=12; setLevel(remainV()); renderZeno(); return false; }
+    if(pours!==k){ pours=k; setLevel(remainV()); renderZeno(); }
+  });
+});
+$("cbRemain").addEventListener("change",renderZeno);
+$("cbSeq").addEventListener("change",renderZeno);
+
+/* =========================================================
+   模块三：科学记数法（小数点移动动画 + 做题步骤）
+========================================================= */
+let sA=1.2, sN=-4;
+
+function aTxt(a){ let s=a.toFixed(2); s=s.replace(/0+$/,"").replace(/\.$/,""); return s; }
+function digitsOfA(a){ return aTxt(a).replace(".",""); }
+// a×10ⁿ → 展示用数字串 + 小数点位置（点前有 pt 个数字）
+function sciDisplay(a,n){
+  const D=digitsOfA(a), m=D.length;
+  const pi=m+(n-m+1);            // 点在 D 坐标系中的位置
+  if(pi>=m) return {dig:D+"0".repeat(pi-m), pt:pi};
+  if(pi>0)  return {dig:D, pt:pi};
+  return {dig:"0"+"0".repeat(-pi)+D, pt:1};
+}
+// a×10ⁿ → 原数的普通写法（如 6540 / 0.00000654）
+function plainStr(a,n){
+  const d=sciDisplay(a,n);
+  return d.pt>=d.dig.length ? d.dig : d.dig.slice(0,d.pt)+"."+d.dig.slice(d.pt);
+}
+// 渲染数字方格 + 小数点
+function renderDigs(dig,pt,hlIdx=-1){
+  const row=$("digRow"); clear(row);
+  [...dig].forEach((c,i)=>{
+    const b=document.createElement("div");
+    b.className="dbox"+(i===hlIdx?" hl":(c==="0"&&i>=(pt<dig.length?pt:0)&&pt<=i?" zero":(c==="0"?" zero":"")));
+    b.textContent=c;
+    row.appendChild(b);
+  });
+  const dp=document.createElement("div");
+  dp.id="dp";
+  const boxes=row.children;
+  let left;
+  if(pt<=0) left=0;
+  else if(pt>=boxes.length) left=boxes.length*(52+6)-10;
+  else left=pt*(52+6)-10;
+  dp.style.left=(pt<=0?4:left)+"px";
+  row.appendChild(dp);
+}
+function moveInfo(dig,ptFrom,ptTo){
+  const moved=Math.abs(ptTo-ptFrom);
+  const dir=ptTo>ptFrom?"向右":"向左";
+  return {moved,dir};
+}
+
+function renderSci(){
+  $("sciBig").innerHTML = `${aTxt(sA)} × 10${supStr(sN)}`;
+  const plain=plainStr(sA,sN), a0=aTxt(sA);
+  // 统一口径：原数 → a×10ⁿ（做题法）。左移 ⇒ 正指数；右移 ⇒ 负指数。
+  const sub = sN===0
+    ? `10⁰ = 1，系数就是原数本身`
+    : sN>0
+      ? `原数 <b>${plain}</b>：小数点<b>向左</b>移动 ${sN} 位 ⇒ ${a0} × 10${supStr(sN)}（极大数，n = +${sN}）`
+      : `原数 <b>${plain}</b>：小数点<b>向右</b>移动 ${-sN} 位 ⇒ ${a0} × 10${supStr(sN)}（极小数，n = −${-sN}）`;
+  $("sciSub").innerHTML=sub;
+  $("sciNv").textContent=sN; $("sciAv").textContent=a0;
+  $("sciN").value=sN; $("sciA").value=sA;
+  const d=sciDisplay(sA,sN);
+  renderDigs(d.dig,d.pt);
+  $("moveCnt").textContent=`当前：小数点在第 ${d.pt} 个数字后 ｜ N = ${fmtPretty(sA*Math.pow(10,sN))}`;
+  renderSciSteps();
+}
+
+/* 做题四步骤卡（实时跟随当前图中的数，口径：原数 → a×10ⁿ） */
+function renderSciSteps(){
+  const plain=plainStr(sA,sN), a0=aTxt(sA);
+  const dir = sN>0?"向左":"向右";          // 原数 → a 的移动方向
+  const moved = Math.abs(sN);
+  const fnz=[...plain.replace(".","")].findIndex(c=>c!=="0");
+  const st1=`看原数 <b>${plain}</b>：第一个不是 0 的数字是 <b>${plain.replace(".","")[fnz]}</b>；`;
+  const st2=`把小数点移到它后面：<b>${dir}移动 ${moved} 位</b>，得到 ${a0}；`;
+  const st3=`<b>${dir}移 ⇒ ${dir==="向左"?"原数变小 → n 为正":"原数变大 → n 为负"}</b>：n = <b>${sN}</b>，系数 a = <b>${a0}</b>；`;
+  const st4=`写结果：<b>${plain} = ${a0} × 10${supStr(sN)}</b>（检验 1 ≤ a &lt; 10 ✓）`;
+  const row=t=>`<div class="st"><span class="no">${t.no}</span><span>${t.txt}</span></div>`;
+  $("sciSteps").innerHTML=
+    `<b style="font-size:14px">📌 做题四步骤（当前图中的数）</b>`+
+    row({no:"①",txt:st1})+row({no:"②",txt:st2})+row({no:"③",txt:st3})+row({no:"④",txt:st4});
+}
+
+/* 输入转换：逐步演示小数点移动 */
+function convertSci(){
+  const raw=$("sciInput").value.trim().replace(/,/g,"");
+  const x=Number(raw);
+  if(!isFinite(x)||x===0){
+    $("sciBig").textContent="请输入非零数字";
+    $("sciSub").textContent="例如 0.00012 或 380000";
+    return;
+  }
+  let s=raw.replace(/^[+-]/,"").replace(",",".");
+  if(s.includes("e")||s.includes("E")){ // 已是科学记数法就直接换算
+    const nRes=Math.floor(Math.log10(x));
+    sA=clamp(Number((x/Math.pow(10,nRes)).toPrecision(6)),1,9.9);
+    sN=clamp(nRes,-9,9);
+    renderSci(); return;
+  }
+  const dotPos=s.indexOf(".");
+  const dig0=s.replace(".","");
+  const origPt=dotPos<0?dig0.length:dotPos;
+  const fnz=[...dig0].findIndex(c=>c!=="0");
+  if(fnz<0){ $("sciBig").textContent="请输入非零数字"; return; }
+  const tgtPt=fnz+1;
+  const nRes=origPt-tgtPt;                    // 向左移(点前数字变少)为正指数
+  sA=clamp(Number((Math.abs(x)/Math.pow(10,nRes)).toPrecision(6)),1,9.9);
+  sN=clamp(nRes,-9,9);
+  const {moved,dir}=moveInfo(dig0,origPt,tgtPt);
+  // 逐步动画：红点一次跳一位
+  let pt=origPt;
+  renderDigs(dig0,pt,fnz);
+  $("moveCnt").textContent=`开始移动……`;
+  Ticker.start($("sciConv"),()=>{
+    pt+= (tgtPt>origPt?1:-1);
+    renderDigs(dig0,pt,fnz);
+    const m=Math.abs(pt-origPt);
+    $("moveCnt").textContent=`小数点${tgtPt>origPt?"向右":"向左"}移动了 ${m} 位${pt===tgtPt?" ✓":"……"}`;
+    if(pt===tgtPt){
+      renderSci();
+      return false;
+    }
+  });
+}
+$("sciConv").addEventListener("click",convertSci);
+$("sciInput").addEventListener("keydown",e=>{if(e.key==="Enter")convertSci();});
+$("playSci").addEventListener("click",()=>{
+  if(Ticker.btn===$("playSci")){Ticker.stop();return;}
+  sN=6; renderSci();
+  Ticker.start($("playSci"),t=>{
+    const k=Math.floor(t/0.7);
+    if(k>=15){ sN=-9; renderSci(); return false; }
+    const nn=6-k;
+    if(nn!==sN){ sN=nn; renderSci(); }
+  });
+});
+$("sciN").addEventListener("input",e=>{Ticker.stop();sN=+e.target.value;renderSci();});
+$("sciA").addEventListener("input",e=>{Ticker.stop();sA=+e.target.value;renderSci();});
+
+$("cbRead").addEventListener("change",e=>{
+  $("readBox").style.display=e.target.checked?"block":"none";
+});
+
+/* ---------- 初始化 ---------- */
+renderModule1();
+drawCupStatic();
+renderZeno();
+renderSci();
+
+// 调试钩子（便于自动化测试）
+window.__demo={
+  get N(){return N;}, get A(){return A;}, get pours(){return pours;},
+  get sN(){return sN;}, get sA(){return sA;}, get curPage(){return curPage;},
+  remain:()=>remainV(), showPage, Ticker
+};
+</script>
+</body>
+</html>

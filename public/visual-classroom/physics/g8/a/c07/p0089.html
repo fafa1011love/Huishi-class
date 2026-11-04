@@ -1,0 +1,866 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>探究：用 s-t 图像描述运动（含 v-t 图像初步）</title>
+<style>
+:root{
+  --blue:#2563EB;
+  --blue-d:#1D4ED8;
+  --blue-l:#EFF4FF;
+  --purple:#7C3AED;
+  --purple-l:#F5F3FF;
+  --red:#EF4444;
+  --green:#10B981;
+  --amber:#F59E0B;
+  --amber-l:#FFFBEB;
+  --ink:#1F2937;
+  --ink-2:#4B5563;
+  --ink-3:#6B7280;
+  --line:#E5E7EB;
+  --bg:#F5F7FB;
+  --card:#FFFFFF;
+  --radius:14px;
+  --shadow:0 1px 2px rgba(16,24,40,.04), 0 8px 24px rgba(16,24,40,.06);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:"Microsoft YaHei","PingFang SC","Hiragino Sans GB",system-ui,-apple-system,"Segoe UI",sans-serif;
+  background:var(--bg);color:var(--ink);line-height:1.65;-webkit-font-smoothing:antialiased;
+}
+
+/* ---------- header ---------- */
+.site-header{background:linear-gradient(135deg,#4338CA 0%,#2563EB 55%,#3B82F6 100%);color:#fff;padding:24px 0 26px;}
+.header-inner{max-width:1120px;margin:0 auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;}
+.header-text h1{margin:0;font-size:25px;letter-spacing:.4px;font-weight:700;}
+.header-badge{border:1px solid rgba(255,255,255,.4);border-radius:999px;padding:7px 16px;font-size:13px;background:rgba(255,255,255,.12);white-space:nowrap;}
+
+/* ---------- anchor nav ---------- */
+.anchors{position:sticky;top:0;z-index:20;background:rgba(255,255,255,.94);border-bottom:1px solid var(--line);backdrop-filter:blur(6px);}
+.anchors-inner{max-width:1120px;margin:0 auto;padding:9px 24px;display:flex;gap:8px;flex-wrap:wrap;}
+.anchors a{
+  font-size:13px;color:var(--ink-2);text-decoration:none;padding:5px 12px;border-radius:999px;
+  border:1px solid var(--line);background:#fff;white-space:nowrap;transition:.15s;
+}
+.anchors a:hover{border-color:var(--blue);color:var(--blue);background:var(--blue-l);}
+
+/* ---------- layout ---------- */
+.wrap{max-width:1120px;margin:0 auto;padding:24px 24px 46px;}
+.card{
+  background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);
+  padding:22px 24px;border:1px solid rgba(229,231,235,.7);margin-bottom:18px;scroll-margin-top:64px;
+}
+.card h2{margin:0 0 14px;font-size:18px;font-weight:700;}
+.card h2 .no{
+  display:inline-block;width:26px;height:26px;line-height:26px;text-align:center;border-radius:8px;
+  background:var(--blue);color:#fff;font-size:14px;margin-right:9px;vertical-align:2px;
+}
+
+/* ---------- segmented control ---------- */
+.seg{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px;}
+.seg button{
+  font-family:inherit;font-size:13px;padding:7px 15px;border-radius:9px;cursor:pointer;
+  border:1px solid var(--line);background:#fff;color:var(--ink-2);transition:.15s;
+}
+.seg button:hover{border-color:var(--blue);color:var(--blue);}
+.seg button.on{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600;box-shadow:0 1px 2px rgba(37,99,235,.25);}
+
+/* ---------- buttons ---------- */
+.btn{
+  font-family:inherit;font-size:13px;padding:8px 16px;border-radius:9px;cursor:pointer;
+  border:1px solid var(--blue);background:#fff;color:var(--blue);transition:.15s;
+}
+.btn:hover{background:var(--blue-l);}
+.btn.primary{background:var(--blue);color:#fff;border-color:var(--blue);font-weight:600;}
+.btn.primary:hover{background:var(--blue-d);}
+.btn.ghost{border-color:var(--line);color:var(--ink-2);}
+.btn.ghost:hover{background:#F3F4F6;}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;margin-bottom:12px;}
+.btn-row .sp{flex:1;}
+
+/* ---------- scene ---------- */
+.scene{background:#F8FAFC;border:1px solid var(--line);border-radius:11px;padding:10px 6px;overflow-x:auto;}
+.scene svg{display:block;margin:0 auto;max-width:100%;}
+
+/* ---------- charts ---------- */
+.charts{display:grid;grid-template-columns:1fr 1fr;gap:16px;margin-top:14px;}
+.chart-box{border:1px solid var(--line);border-radius:11px;padding:10px 8px 6px;background:#fff;}
+.chart-box .ct{font-size:13px;font-weight:700;color:var(--ink-2);text-align:center;margin-bottom:4px;}
+.chart-box .ct .sw{display:inline-block;width:16px;height:3px;border-radius:2px;vertical-align:3px;margin-right:6px;}
+.chart-box svg{max-width:100%;user-select:none;}
+.drag svg{touch-action:none;cursor:grab;}
+.drag svg:active{cursor:grabbing;}
+.chart-box.st .ct .sw{background:var(--blue);}
+.chart-box.vt .ct .sw{background:var(--purple);}
+
+/* ---------- controls ---------- */
+.ctrl{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px 20px;margin-top:12px;}
+.slider-row label{display:block;font-size:13px;color:var(--ink-2);margin-bottom:5px;}
+.slider-row label b{color:var(--blue);font-variant-numeric:tabular-nums;}
+.slider-row input[type=range]{width:100%;accent-color:var(--blue);cursor:pointer;}
+.tick{display:flex;justify-content:space-between;font-size:11px;color:var(--ink-3);margin-top:1px;}
+.hint{color:var(--ink-3);font-size:12px;}
+
+/* ---------- 单行关键读数 ---------- */
+.key{
+  margin-top:14px;padding:10px 16px;border-radius:10px;background:var(--blue-l);border:1px solid #DBE7FF;
+  font-size:14.5px;color:var(--ink-2);display:flex;gap:14px;flex-wrap:wrap;align-items:baseline;
+}
+.key b{color:var(--blue);font-variant-numeric:tabular-nums;font-size:17px;font-weight:700;}
+.key b.ok{color:var(--green);}
+.key.am{background:var(--amber-l);border-color:#FDE9BE;}
+.key.am b{color:#B45309;}
+
+/* ---------- footer ---------- */
+.site-footer{text-align:center;padding:8px 0 34px;color:var(--ink-3);font-size:12.5px;}
+
+@media(max-width:900px){
+  .charts{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-text"><h1>探究：用 s-t 图像描述运动</h1></div>
+    <div class="header-badge">可交互探究 · 拖动看变化</div>
+  </div>
+</header>
+
+<nav class="anchors">
+  <div class="anchors-inner">
+    <a href="#lab1">① 描点成图</a>
+    <a href="#lab2">② 斜率就是速度</a>
+    <a href="#lab3">③ 我画 s-t，小车走</a>
+    <a href="#lab4">④ 面积就是路程</a>
+  </div>
+</nav>
+
+<main class="wrap">
+
+  <!-- ============ ① 描点成图 ============ -->
+  <section class="card" id="lab1">
+    <h2><span class="no">1</span>描点成图：让小车跑，看 s-t 图像长出来</h2>
+
+    <div class="seg" id="m1mode">
+      <button data-m="rest">静止不动</button>
+      <button data-m="uniform" class="on">匀速直线运动</button>
+      <button data-m="accel">越来越快（加速）</button>
+    </div>
+
+    <div class="scene" id="m1scene"></div>
+
+    <div class="btn-row">
+      <button class="btn primary" id="m1play">▶ 播放</button>
+      <button class="btn ghost" id="m1reset">↺ 重置</button>
+      <button class="btn ghost" id="m1rate">🐢 慢放 0.5×</button>
+      <span class="sp"></span>
+      <span class="hint" id="m1clock">t = 0.0 s</span>
+    </div>
+
+    <div class="ctrl">
+      <div class="slider-row">
+        <label>时间轴 t：<b id="m1tv">0.0</b> s</label>
+        <input type="range" id="m1t" min="0" max="10" value="0" step="0.05">
+      </div>
+      <div class="slider-row" id="m1vrow">
+        <label>速度 v：<b id="m1vv">2.0</b> m/s</label>
+        <input type="range" id="m1v" min="0.5" max="3" value="2" step="0.1">
+      </div>
+      <div class="slider-row" id="m1arow" style="display:none">
+        <label>加速度 a：<b id="m1av">0.30</b> m/s²</label>
+        <input type="range" id="m1a" min="0.1" max="0.6" value="0.3" step="0.02">
+      </div>
+      <div class="slider-row">
+        <label>起点位置 s₀：<b id="m1s0v">0</b> m</label>
+        <input type="range" id="m1s0" min="0" max="10" value="0" step="0.5">
+      </div>
+    </div>
+
+    <div class="charts">
+      <div class="chart-box st"><div class="ct"><span class="sw"></span>s-t 图像</div><div id="m1st"></div></div>
+      <div class="chart-box vt"><div class="ct"><span class="sw"></span>v-t 图像</div><div id="m1vt"></div></div>
+    </div>
+  </section>
+
+  <!-- ============ ② 斜率就是速度 ============ -->
+  <section class="card" id="lab2">
+    <h2><span class="no">2</span>斜率就是速度：在 s-t 图上量出 v</h2>
+
+    <div class="seg" id="m2mode">
+      <button data-m="uniform" class="on">匀速直线运动</button>
+      <button data-m="accel">越来越快（加速）</button>
+    </div>
+
+    <div class="ctrl">
+      <div class="slider-row">
+        <label>测量起点 t₁：<b id="m2t1v">2.0</b> s</label>
+        <input type="range" id="m2t1" min="0" max="10" value="2" step="0.1">
+      </div>
+      <div class="slider-row">
+        <label>取的时间 Δt：<b id="m2dtv">2.0</b> s</label>
+        <input type="range" id="m2dt" min="0.5" max="4" value="2" step="0.1">
+        <div class="tick"><span>0.5</span><span>4</span></div>
+      </div>
+      <div class="slider-row" id="m2vrow">
+        <label>速度 v：<b id="m2vv">3.0</b> m/s</label>
+        <input type="range" id="m2v" min="0.5" max="3" value="3" step="0.1">
+      </div>
+      <div class="slider-row" id="m2arow" style="display:none">
+        <label>加速度 a：<b id="m2av">0.40</b> m/s²</label>
+        <input type="range" id="m2a" min="0.1" max="0.6" value="0.4" step="0.02">
+      </div>
+    </div>
+
+    <div class="charts">
+      <div class="chart-box st"><div class="ct"><span class="sw"></span>s-t 图像 · 拖一拖那段彩色线</div><div id="m2st"></div></div>
+      <div class="chart-box vt"><div class="ct"><span class="sw"></span>v-t 图像 · 同时间的速度</div><div id="m2vt"></div></div>
+    </div>
+
+    <div class="key" id="m2key"></div>
+  </section>
+
+  <!-- ============ ③ 我画 s-t，小车照着走 ============ -->
+  <section class="card" id="lab3">
+    <h2><span class="no">3</span>我画 s-t，小车照着走　<span class="hint">（往上斜＝前进，平的＝不动，往下斜＝往回走）</span></h2>
+
+    <div class="btn-row">
+      <button class="btn primary" id="m3play">▶ 播放</button>
+      <button class="btn ghost" id="m3reset">↺ 回到起点</button>
+      <button class="btn ghost" id="m3preset">换成典型例题</button>
+      <span class="sp"></span>
+      <span class="hint" id="m3clock">t = 0.0 s</span>
+    </div>
+
+    <div class="scene" id="m3scene"></div>
+
+    <div class="charts">
+      <div class="chart-box st"><div class="ct"><span class="sw"></span>s-t 图像 · 拖动橙色点改图线</div><div id="m3st"></div></div>
+      <div class="chart-box vt"><div class="ct"><span class="sw"></span>v-t 图像 · 自动跟着变</div><div id="m3vt"></div></div>
+    </div>
+  </section>
+
+  <!-- ============ ④ 面积就是路程 ============ -->
+  <section class="card" id="lab4">
+    <h2><span class="no">4</span>v-t 初步：图线下的「面积」就是路程</h2>
+
+    <div class="seg" id="m4mode">
+      <button data-m="uniform" class="on">匀速（阴影是长方形）</button>
+      <button data-m="accel">从静止加速（阴影是三角形）</button>
+    </div>
+
+    <div class="ctrl">
+      <div class="slider-row">
+        <label>时间 t：<b id="m4tv">4.0</b> s</label>
+        <input type="range" id="m4t" min="0" max="10" value="4" step="0.1">
+        <div class="tick"><span>0</span><span>10</span></div>
+      </div>
+      <div class="slider-row" id="m4vrow">
+        <label>速度 v：<b id="m4vv">3.0</b> m/s</label>
+        <input type="range" id="m4v" min="0.5" max="3" value="3" step="0.1">
+      </div>
+      <div class="slider-row" id="m4arow" style="display:none">
+        <label>加速度 a：<b id="m4av">0.40</b> m/s²</label>
+        <input type="range" id="m4a" min="0.1" max="0.6" value="0.4" step="0.02">
+      </div>
+    </div>
+
+    <div class="charts">
+      <div class="chart-box st"><div class="ct"><span class="sw"></span>s-t 图像 · 读出走过的路程</div><div id="m4st"></div></div>
+      <div class="chart-box vt"><div class="ct"><span class="sw"></span>v-t 图像 · 阴影面积 = 路程</div><div id="m4vt"></div></div>
+    </div>
+
+    <div class="key am" id="m4key"></div>
+  </section>
+
+</main>
+
+<footer class="site-footer">物理可视化模型 · 用 s-t 图像描述运动　|　单文件版，双击即可打开，无需联网</footer>
+
+<script>
+/* ============================================================
+   探究：用 s-t 图像描述运动（含 v-t 图像初步）
+   纯静态 · 零依赖 · 手写 SVG
+
+   文件内部分区：
+     [core]  工具 / 图表引擎 / 轨道场景
+     [lab1]  描点成图
+     [lab2]  斜率就是速度
+     [lab3]  我画 s-t，小车照着走
+     [lab4]  v-t 初步：面积就是路程
+     [main]  入口
+   ============================================================ */
+
+/* ============================================================
+   [core] 工具
+   ============================================================ */
+const FONT = "Microsoft YaHei, PingFang SC, sans-serif";
+const $  = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const fmt = (n, d = 2) => Number(n).toFixed(d);
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const r2 = v => Math.round(v * 100) / 100;
+
+/* 全局量程：时间 0~10 s，位置 0~40 m，速度 0~6 m/s */
+const T_MAX = 10, S_MAX = 40, V_MAX = 6;
+
+/* 便捷文字 */
+function txt(x, y, s, o = {}) {
+  return `<text x="${r2(x)}" y="${r2(y)}" font-size="${o.size ?? 12}" fill="${o.fill ?? "#1F2937"}"
+    font-weight="${o.w ?? 400}" text-anchor="${o.a ?? "start"}" font-family="${FONT}">${s}</text>`;
+}
+
+/* 组装 SVG（viewBox + 自适应宽度） */
+function svgEl(w, h, content) {
+  return `<svg viewBox="0 0 ${w} ${h}" width="100%" style="max-width:${w}px;display:block;margin:0 auto"
+    xmlns="http://www.w3.org/2000/svg" role="img">${content}</svg>`;
+}
+
+/* ============================================================
+   [core] 运动模型：s(t) 与 v(t)
+   ============================================================ */
+function motionOf(mode, v, a, s0) {
+  if (mode === "rest")    return { s: () => s0,              v: () => 0 };
+  if (mode === "uniform") return { s: t => s0 + v * t,       v: () => v };
+  return                         { s: t => s0 + 0.5 * a * t * t, v: t => a * t };  // accel：从静止启动
+}
+
+/* ============================================================
+   [core] 图表引擎
+   o = { w, h, pad, x:{min,max,step,label}, y:{min,max,step,label,fmt} }
+   返回 { X, Y, IX, IY, g, x0,x1,y0,y1, w,h }
+   ============================================================ */
+function makeChart(o) {
+  const w = o.w ?? 500, h = o.h ?? 300;
+  const pad = Object.assign({ l: 50, r: 18, t: 16, b: 40 }, o.pad);
+  const x0 = pad.l, x1 = w - pad.r, y0 = pad.t, y1 = h - pad.b;
+  const xr = o.x.max - o.x.min, yr = o.y.max - o.y.min;
+  const X  = v => x0 + (v - o.x.min) / xr * (x1 - x0);
+  const Y  = v => y1 - (v - o.y.min) / yr * (y1 - y0);
+  const IX = p => o.x.min + (p - x0) / (x1 - x0) * xr;
+  const IY = p => o.y.min + (y1 - p) / (y1 - y0) * yr;
+
+  let g = "";
+  g += `<rect x="${x0}" y="${y0}" width="${x1 - x0}" height="${y1 - y0}" fill="#FCFDFF" stroke="#E5E7EB"/>`;
+
+  /* 竖向网格 + x 刻度 */
+  for (let v = o.x.min; v <= o.x.max + 1e-9; v += (o.x.step ?? 1)) {
+    const px = X(v);
+    g += `<line x1="${r2(px)}" y1="${y0}" x2="${r2(px)}" y2="${y1}" stroke="${Math.abs(v) < 1e-9 ? "#DCE3EC" : "#EEF2F7"}"/>`;
+    g += `<line x1="${r2(px)}" y1="${y1}" x2="${r2(px)}" y2="${y1 + 5}" stroke="#9CA3AF"/>`;
+    g += txt(px, y1 + 18, fmt(v, v % 1 === 0 ? 0 : 1), { size: 11, fill: "#6B7280", a: "middle" });
+  }
+  /* 横向网格 + y 刻度 */
+  for (let v = o.y.min; v <= o.y.max + 1e-9; v += (o.y.step ?? 5)) {
+    const py = Y(v);
+    g += `<line x1="${x0}" y1="${r2(py)}" x2="${x1}" y2="${r2(py)}" stroke="${Math.abs(v) < 1e-9 ? "#DCE3EC" : "#EEF2F7"}"/>`;
+    g += `<line x1="${x0 - 5}" y1="${r2(py)}" x2="${x0}" y2="${r2(py)}" stroke="#9CA3AF"/>`;
+    g += txt(x0 - 8, py + 4, fmt(v, v % 1 === 0 ? 0 : 1), { size: 11, fill: "#6B7280", a: "end" });
+  }
+  /* 零线（当纵轴含负值时） */
+  if (o.y.min < 0) {
+    const py = Y(0);
+    g += `<line x1="${x0}" y1="${r2(py)}" x2="${x1}" y2="${r2(py)}" stroke="#9CA3AF" stroke-width="1.4"/>`;
+  }
+  /* 轴 */
+  g += `<line x1="${x0}" y1="${y1}" x2="${x1}" y2="${y1}" stroke="#374151" stroke-width="1.5"/>`;
+  g += `<line x1="${x0}" y1="${y0}" x2="${x0}" y2="${y1}" stroke="#374151" stroke-width="1.5"/>`;
+  g += txt((x0 + x1) / 2, h - 6, o.x.label ?? "t / s", { size: 12, fill: "#374151", a: "middle", w: 600 });
+  const my = (y0 + y1) / 2;
+  g += `<text x="14" y="${r2(my)}" font-size="12" fill="#374151" font-weight="600" text-anchor="middle"
+          font-family="${FONT}" transform="rotate(-90 14 ${r2(my)})">${o.y.label ?? "s / m"}</text>`;
+
+  return { X, Y, IX, IY, g, x0, x1, y0, y1, w, h };
+}
+
+/* 曲线路径（对 s(t) 采样） */
+function pathOf(ch, f, t0, t1, step = 0.05) {
+  if (t1 - t0 < 1e-6) {
+    return `M${r2(ch.X(t0))} ${r2(ch.Y(f(t0)))}L${r2(ch.X(t0))} ${r2(ch.Y(f(t0)))}`;
+  }
+  let d = "";
+  for (let t = t0; t < t1 - 1e-9; t += step) d += (d ? "L" : "M") + r2(ch.X(t)) + " " + r2(ch.Y(f(t)));
+  d += "L" + r2(ch.X(t1)) + " " + r2(ch.Y(f(t1)));
+  return d;
+}
+
+/* 采样点（描在图上） */
+function dotsOf(ch, ts, f, color = "#2563EB", r = 3.8) {
+  return ts.map(t => `<circle cx="${r2(ch.X(t))}" cy="${r2(ch.Y(f(t)))}" r="${r}" fill="${color}"
+    stroke="#fff" stroke-width="1.2"/>`).join("");
+}
+
+/* ============================================================
+   [core] 轨道场景：刻度尺 + 轨道 + 小车 + 打点纸带
+   o = { carS, dots:[s...], s0, tag }
+   ============================================================ */
+function trackScene(o) {
+  const PL = 32, PM = 20;
+  const sMax = S_MAX;
+  const X = s => PL + s * PM;
+  const vbW = PL * 2 + sMax * PM;
+  const railY = 78, tapeY = 136, tapeH = 28;
+
+  let g = "";
+
+  /* 轨道 */
+  g += `<line x1="${PL - 14}" y1="${railY}" x2="${vbW - PL + 14}" y2="${railY}" stroke="#64748B" stroke-width="3" stroke-linecap="round"/>`;
+  for (let s = 0; s <= sMax; s += 1) {
+    g += `<line x1="${r2(X(s))}" y1="${railY}" x2="${r2(X(s) - 6)}" y2="${railY + 8}" stroke="#CBD5E1" stroke-width="2"/>`;
+  }
+
+  /* 刻度尺（单位 m） */
+  g += `<rect x="${PL - 10}" y="88" width="${sMax * PM + 20}" height="16" rx="3" fill="#F4F8FF" stroke="#94A3B8"/>`;
+  for (let s = 0; s <= sMax; s++) {
+    let len = 5, col = "#94A3B8", sw = 1;
+    if (s % 10 === 0) { len = 14; col = "#111827"; sw = 1.6; }
+    else if (s % 5 === 0) { len = 9; col = "#475569"; sw = 1.2; }
+    g += `<line x1="${r2(X(s))}" y1="88" x2="${r2(X(s))}" y2="${88 + len}" stroke="${col}" stroke-width="${sw}"/>`;
+    if (s % 10 === 0) g += txt(X(s), 116, String(s), { size: 12, a: "middle", fill: "#111827", w: 600 });
+  }
+  g += txt(vbW - PL + 20, 112, "m", { size: 12, fill: "#6B7280" });
+
+  /* 起点标记（画在纸带上，不会被小车挡住） */
+  const sx = X(o.s0 ?? 0);
+  g += `<line x1="${r2(sx)}" y1="${tapeY - 3}" x2="${r2(sx)}" y2="${tapeY + tapeH + 3}" stroke="#10B981" stroke-width="2.4" stroke-dasharray="4 3"/>`;
+
+  /* 打点纸带 */
+  g += `<rect x="${PL - 10}" y="${tapeY}" width="${sMax * PM + 20}" height="${tapeH}" rx="4" fill="#FFFBEB" stroke="#FDE68A"/>`;
+  g += txt(PL - 10, 130, "打点纸带 · 每 1 s 一个点，点越稀走得越快", { size: 11, fill: "#92400E", w: 600 });
+  (o.dots || []).forEach(s => {
+    g += `<circle cx="${r2(X(s))}" cy="${tapeY + tapeH / 2}" r="3.6" fill="#1F2937"/>`;
+  });
+  /* 当前时刻：车身 → 纸带的对应虚线 */
+  const cx = X(o.carS);
+  g += `<line x1="${r2(cx)}" y1="66" x2="${r2(cx)}" y2="${tapeY + tapeH / 2}" stroke="#EF4444" stroke-width="1.2" stroke-dasharray="4 4"/>`;
+  g += `<circle cx="${r2(cx)}" cy="${tapeY + tapeH / 2}" r="5.5" fill="#EF4444" stroke="#fff" stroke-width="1.5"/>`;
+
+  /* 小车 */
+  g += `<rect x="${r2(cx - 26)}" y="36" width="52" height="26" rx="5" fill="#DBEAFE" stroke="#2563EB" stroke-width="2"/>`;
+  g += `<rect x="${r2(cx - 16)}" y="41" width="20" height="10" rx="2" fill="#fff" stroke="#93C5FD"/>`;
+  g += `<rect x="${r2(cx + 8)}" y="41" width="10" height="10" rx="2" fill="#fff" stroke="#93C5FD"/>`;
+  g += `<circle cx="${r2(cx - 13)}" cy="70" r="8" fill="#fff" stroke="#1F2937" stroke-width="2.2"/>`;
+  g += `<circle cx="${r2(cx + 13)}" cy="70" r="8" fill="#fff" stroke="#1F2937" stroke-width="2.2"/>`;
+  if (o.tag) g += txt(cx, 30, o.tag, { size: 12.5, fill: "#1D4ED8", w: 700, a: "middle" });
+
+  /* 前进方向 */
+  g += `<line x1="${vbW - PL - 30}" y1="20" x2="${vbW - PL - 4}" y2="20" stroke="#94A3B8" stroke-width="1.6"/>`;
+  g += `<path d="M${vbW - PL - 4} 20 l -8 -4 v 8 z" fill="#94A3B8"/>`;
+  g += txt(vbW - PL - 34, 24, "前进方向", { size: 11, fill: "#6B7280", a: "end" });
+
+  g += txt(PL - 10, 178, "起点 s₀ = " + fmt(o.s0 ?? 0, 1) + " m", { size: 11, fill: "#059669", w: 600 });
+
+  return svgEl(vbW, 186, g);
+}
+
+/* ============================================================
+   [core] 图上拖动（事件委托到容器，重绘后依然有效）
+   cb = { down(p), move(p), up() }，p 为 viewBox 坐标
+   ============================================================ */
+function bindDrag(sel, cb) {
+  const el = $(sel);
+  if (!el) return;
+  let dragging = false;
+  const toVB = evt => {
+    const svg = el.querySelector("svg");
+    if (!svg || !svg.getScreenCTM) return null;
+    const m = svg.getScreenCTM();
+    if (!m) return null;
+    try {
+      const p = new DOMPoint(evt.clientX, evt.clientY).matrixTransform(m.inverse());
+      return { x: p.x, y: p.y };
+    } catch (e) {
+      const p = svg.createSVGPoint();
+      p.x = evt.clientX; p.y = evt.clientY;
+      const q = p.matrixTransform(m.inverse());
+      return { x: q.x, y: q.y };
+    }
+  };
+  el.addEventListener("pointerdown", e => {
+    const p = toVB(e);
+    if (!p) return;
+    dragging = true;
+    try { el.setPointerCapture(e.pointerId); } catch (err) {}
+    cb.down && cb.down(p, e);
+  });
+  el.addEventListener("pointermove", e => {
+    if (!dragging) return;
+    const p = toVB(e);
+    if (p) cb.move && cb.move(p, e);
+  });
+  const end = () => { if (dragging) { dragging = false; cb.up && cb.up(); } };
+  el.addEventListener("pointerup", end);
+  el.addEventListener("pointercancel", end);
+}
+
+/* ============================================================
+   [lab1] 描点成图
+   ============================================================ */
+const M1 = { mode: "uniform", v: 2, a: 0.3, s0: 0, t: 0, playing: false, raf: null, rate: 1 };
+
+function m1draw() {
+  const m = motionOf(M1.mode, M1.v, M1.a, M1.s0);
+  const t = M1.t;
+  const done = Math.floor(t + 1e-9);                 // 已经打完的点数
+  const times = [];
+  for (let k = 0; k <= done; k++) times.push(k);
+
+  /* 场景 */
+  let tag = "";
+  if (M1.mode === "rest")    tag = "静止不动";
+  if (M1.mode === "uniform") tag = "v = " + fmt(M1.v, 1) + " m/s";
+  if (M1.mode === "accel")   tag = "a = " + fmt(M1.a, 2) + " m/s²，v = " + fmt(m.v(t), 1) + " m/s";
+  $("#m1scene").innerHTML = trackScene({
+    carS: m.s(t), dots: times.map(k => m.s(k)), s0: M1.s0, tag
+  });
+
+  /* s-t 图 */
+  const st = makeChart({ w: 500, h: 300, x: { min: 0, max: T_MAX, step: 1, label: "t / s" }, y: { min: 0, max: S_MAX, step: 5, label: "s / m" } });
+  let c1 = "";
+  if (t > 0.001) c1 += `<path d="${pathOf(st, m.s, 0, t)}" fill="none" stroke="#2563EB" stroke-width="2.6" stroke-linecap="round"/>`;
+  c1 += dotsOf(st, times, m.s);
+  if (t > 0.001) {
+    c1 += `<line x1="${r2(st.X(t))}" y1="${st.y0}" x2="${r2(st.X(t))}" y2="${st.y1}" stroke="#EF4444" stroke-width="1" stroke-dasharray="4 4"/>`;
+    c1 += `<circle cx="${r2(st.X(t))}" cy="${r2(st.Y(m.s(t)))}" r="5.5" fill="#EF4444" stroke="#fff" stroke-width="1.6"/>`;
+    c1 += txt(st.X(t) + 7, st.Y(m.s(t)) - 8, "(" + fmt(t, 1) + ", " + fmt(m.s(t), 1) + ")", { size: 11.5, fill: "#EF4444", w: 700 });
+  }
+  $("#m1st").innerHTML = svgEl(st.w, st.h, st.g + c1);
+
+  /* v-t 图 */
+  const vt = makeChart({ w: 500, h: 300, x: { min: 0, max: T_MAX, step: 1, label: "t / s" }, y: { min: 0, max: V_MAX, step: 1, label: "v / (m·s⁻¹)" } });
+  let c2 = "";
+  if (t > 0.001) c2 += `<path d="${pathOf(vt, m.v, 0, t)}" fill="none" stroke="#7C3AED" stroke-width="2.6" stroke-linecap="round"/>`;
+  c2 += dotsOf(vt, times, m.v, "#7C3AED");
+  if (t > 0.001) {
+    c2 += `<line x1="${r2(vt.X(t))}" y1="${vt.y0}" x2="${r2(vt.X(t))}" y2="${vt.y1}" stroke="#EF4444" stroke-width="1" stroke-dasharray="4 4"/>`;
+    c2 += `<circle cx="${r2(vt.X(t))}" cy="${r2(vt.Y(m.v(t)))}" r="5.5" fill="#EF4444" stroke="#fff" stroke-width="1.6"/>`;
+  }
+  $("#m1vt").innerHTML = svgEl(vt.w, vt.h, vt.g + c2);
+
+  $("#m1tv").textContent = fmt(t, 1);
+  $("#m1clock").textContent = "t = " + fmt(t, 1) + " s　位置 s = " + fmt(m.s(t), 1) + " m　速度 v = " + fmt(m.v(t), 1) + " m/s";
+}
+
+function m1stop() {
+  M1.playing = false;
+  if (M1.raf) { cancelAnimationFrame(M1.raf); M1.raf = null; }
+  $("#m1play").textContent = "▶ 播放";
+}
+function m1play() {
+  if (M1.playing) { m1stop(); return; }
+  if (M1.t >= T_MAX - 1e-9) M1.t = 0;
+  M1.playing = true;
+  $("#m1play").textContent = "⏸ 暂停";
+  let last = performance.now();
+  const step = now => {
+    const dt = (now - last) / 1000; last = now;
+    M1.t = Math.min(T_MAX, M1.t + dt * M1.rate);
+    $("#m1t").value = M1.t;
+    m1draw();
+    if (M1.t >= T_MAX - 1e-9) { m1stop(); return; }
+    M1.raf = requestAnimationFrame(step);
+  };
+  M1.raf = requestAnimationFrame(step);
+}
+function m1init() {
+  $$("#m1mode button").forEach(b => {
+    b.onclick = () => {
+      m1stop();
+      M1.mode = b.dataset.m;
+      $$("#m1mode button").forEach(x => x.classList.toggle("on", x === b));
+      $("#m1vrow").style.display = M1.mode === "uniform" ? "" : "none";
+      $("#m1arow").style.display = M1.mode === "accel" ? "" : "none";
+      $("#m1t").value = 0; M1.t = 0;
+      m1draw();
+    };
+  });
+  $("#m1play").onclick = m1play;
+  $("#m1reset").onclick = () => { m1stop(); M1.t = 0; $("#m1t").value = 0; m1draw(); };
+  $("#m1rate").onclick = () => {
+    M1.rate = M1.rate === 1 ? 0.5 : 1;
+    $("#m1rate").textContent = M1.rate === 1 ? "🐢 慢放 0.5×" : "⏩ 恢复常速 1×";
+  };
+  $("#m1t").oninput = () => { m1stop(); M1.t = +$("#m1t").value; m1draw(); };
+  $("#m1v").oninput = () => { M1.v = +$("#m1v").value; $("#m1vv").textContent = fmt(M1.v, 1); m1draw(); };
+  $("#m1a").oninput = () => { M1.a = +$("#m1a").value; $("#m1av").textContent = fmt(M1.a, 2); m1draw(); };
+  $("#m1s0").oninput = () => { M1.s0 = +$("#m1s0").value; $("#m1s0v").textContent = fmt(M1.s0, 1); m1draw(); };
+}
+
+/* ============================================================
+   [lab2] 斜率就是速度
+   ============================================================ */
+const M2 = { mode: "uniform", v: 3, a: 0.4, t1: 2, dt: 2, ch: null };
+
+function m2draw() {
+  const m = motionOf(M2.mode, M2.v, M2.a, 0);
+  const dt = M2.dt;
+  const t1 = clamp(M2.t1, 0, T_MAX - dt), t2 = t1 + dt;
+  const s1 = m.s(t1), s2 = m.s(t2), ds = s2 - s1;
+  const vavg = ds / dt;
+  const vmid = m.v((t1 + t2) / 2);
+
+  /* s-t 图 */
+  const st = makeChart({ w: 500, h: 300, x: { min: 0, max: T_MAX, step: 1, label: "t / s" }, y: { min: 0, max: S_MAX, step: 5, label: "s / m" } });
+  M2.ch = st;
+  let c1 = `<path d="${pathOf(st, m.s, 0, T_MAX)}" fill="none" stroke="#93C5FD" stroke-width="2.4"/>`;
+  /* 量的那一段 */
+  c1 += `<path d="${pathOf(st, m.s, t1, t2)}" fill="none" stroke="#2563EB" stroke-width="4.5" stroke-linecap="round"/>`;
+  /* 直角三角形 */
+  c1 += `<line x1="${r2(st.X(t1))}" y1="${r2(st.Y(s1))}" x2="${r2(st.X(t2))}" y2="${r2(st.Y(s1))}" stroke="#F59E0B" stroke-width="2"/>`;
+  c1 += `<line x1="${r2(st.X(t2))}" y1="${r2(st.Y(s1))}" x2="${r2(st.X(t2))}" y2="${r2(st.Y(s2))}" stroke="#F59E0B" stroke-width="2"/>`;
+  c1 += txt((st.X(t1) + st.X(t2)) / 2, st.Y(s1) + 16, "Δt = " + fmt(dt, 1) + " s",
+    { size: 12, fill: "#B45309", w: 700, a: "middle" });
+  const dsmid = (st.Y(s1) + st.Y(s2)) / 2;
+  c1 += txt(st.X(t2) + 8, dsmid + 4, "Δs = " + fmt(Math.abs(ds), 1) + " m", { size: 12, fill: "#B45309", w: 700 });
+  c1 += `<circle cx="${r2(st.X(t1))}" cy="${r2(st.Y(s1))}" r="5" fill="#2563EB" stroke="#fff" stroke-width="1.6"/>`;
+  c1 += `<circle cx="${r2(st.X(t2))}" cy="${r2(st.Y(s2))}" r="5" fill="#2563EB" stroke="#fff" stroke-width="1.6"/>`;
+  c1 += txt(st.X(t1), st.Y(s1) + 20, "t₁", { size: 11, fill: "#2563EB", a: "middle", w: 700 });
+  c1 += txt(st.X(t2), st.Y(s2) - 12, "t₂", { size: 11, fill: "#2563EB", a: "middle", w: 700 });
+  $("#m2st").innerHTML = svgEl(st.w, st.h, st.g + c1);
+  $("#m2st").classList.add("drag");
+
+  /* v-t 图 */
+  const vt = makeChart({ w: 500, h: 300, x: { min: 0, max: T_MAX, step: 1, label: "t / s" }, y: { min: 0, max: V_MAX, step: 1, label: "v / (m·s⁻¹)" } });
+  let c2 = `<rect x="${r2(vt.X(t1))}" y="${vt.y0}" width="${r2(vt.X(t2) - vt.X(t1))}" height="${r2(vt.y1 - vt.y0)}" fill="#EFF4FF"/>`;
+  c2 += `<path d="${pathOf(vt, m.v, 0, T_MAX)}" fill="none" stroke="#C4B5FD" stroke-width="2.4"/>`;
+  c2 += `<path d="${pathOf(vt, m.v, t1, t2)}" fill="none" stroke="#7C3AED" stroke-width="4"/>`;
+  /* 两端时刻的瞬时速度（小圆点） */
+  c2 += `<circle cx="${r2(vt.X(t1))}" cy="${r2(vt.Y(m.v(t1)))}" r="4" fill="#7C3AED"/>`;
+  c2 += `<circle cx="${r2(vt.X(t2))}" cy="${r2(vt.Y(m.v(t2)))}" r="4" fill="#7C3AED"/>`;
+  /* 平均速度水平线 */
+  c2 += `<line x1="${r2(vt.X(t1))}" y1="${r2(vt.Y(vavg))}" x2="${r2(vt.X(t2))}" y2="${r2(vt.Y(vavg))}" stroke="#EF4444" stroke-width="2" stroke-dasharray="6 4"/>`;
+  c2 += txt((vt.X(t1) + vt.X(t2)) / 2, vt.Y(vavg) - 8, "平均 " + fmt(vavg, 2) + " m/s",
+    { size: 12, fill: "#EF4444", w: 700, a: "middle" });
+  c2 += `<line x1="${vt.x0}" y1="${r2(vt.Y(vavg))}" x2="${vt.x1}" y2="${r2(vt.Y(vavg))}" stroke="#EF4444" stroke-width="1" stroke-dasharray="3 5" opacity=".6"/>`;
+  $("#m2vt").innerHTML = svgEl(vt.w, vt.h, vt.g + c2);
+
+  /* 单行关键读数 */
+  let k = `Δs = <b>${fmt(ds, 2)}</b> m　　Δt = <b>${fmt(dt, 1)}</b> s　　v = Δs/Δt = <b class="ok">${fmt(vavg, 2)}</b> m/s`;
+  if (M2.mode === "accel") k += `　　<span class="hint">中点瞬时速度 ${fmt(vmid, 2)} m/s</span>`;
+  $("#m2key").innerHTML = k;
+}
+
+function m2init() {
+  $$("#m2mode button").forEach(b => {
+    b.onclick = () => {
+      M2.mode = b.dataset.m;
+      $$("#m2mode button").forEach(x => x.classList.toggle("on", x === b));
+      $("#m2vrow").style.display = M2.mode === "uniform" ? "" : "none";
+      $("#m2arow").style.display = M2.mode === "accel" ? "" : "none";
+      m2draw();
+    };
+  });
+  $("#m2t1").oninput = () => { M2.t1 = +$("#m2t1").value; $("#m2t1v").textContent = fmt(M2.t1, 1); m2draw(); };
+  $("#m2dt").oninput = () => { M2.dt = +$("#m2dt").value; $("#m2dtv").textContent = fmt(M2.dt, 1); m2draw(); };
+  $("#m2v").oninput = () => { M2.v = +$("#m2v").value; $("#m2vv").textContent = fmt(M2.v, 1); m2draw(); };
+  $("#m2a").oninput = () => { M2.a = +$("#m2a").value; $("#m2av").textContent = fmt(M2.a, 2); m2draw(); };
+
+  /* 在 s-t 图上直接拖那段彩线 */
+  bindDrag("#m2st", {
+    down(p) { M2.t1 = clamp(M2.ch.IX(p.x) - M2.dt / 2, 0, T_MAX - M2.dt); $("#m2t1").value = M2.t1; $("#m2t1v").textContent = fmt(M2.t1, 1); m2draw(); },
+    move(p) { M2.t1 = clamp(M2.ch.IX(p.x) - M2.dt / 2, 0, T_MAX - M2.dt); $("#m2t1").value = M2.t1; $("#m2t1v").textContent = fmt(M2.t1, 1); m2draw(); }
+  });
+}
+
+/* ============================================================
+   [lab3] 我画 s-t，小车照着走
+   6 个锚点固定在 t = 0,2,4,6,8,10，只能上下拖（改位置）
+   ============================================================ */
+const M3 = { pts: [2, 2, 14, 20, 20, 10], t: 0, playing: false, raf: null, ch: null, dragging: -1 };
+const TS = [0, 2, 4, 6, 8, 10];
+const DSEG_MAX = 12;      // 每段位移上限 12 m → 速度上限 6 m/s
+
+function m3s(t) {
+  t = clamp(t, 0, T_MAX);
+  const i = clamp(Math.floor(t / 2), 0, 4);
+  const f = (t - TS[i]) / 2;
+  return M3.pts[i] + (M3.pts[i + 1] - M3.pts[i]) * f;
+}
+function m3v(t) {
+  const i = clamp(Math.floor(t / 2 - 1e-9), 0, 4);
+  return (M3.pts[i + 1] - M3.pts[i]) / 2;
+}
+function m3segs() {
+  return [0, 1, 2, 3, 4].map(i => (M3.pts[i + 1] - M3.pts[i]) / 2);
+}
+function m3setPt(i, val) {
+  let lo = 0, hi = 36;
+  if (i > 0) { lo = Math.max(lo, M3.pts[i - 1] - DSEG_MAX); hi = Math.min(hi, M3.pts[i - 1] + DSEG_MAX); }
+  if (i < 5) { lo = Math.max(lo, M3.pts[i + 1] - DSEG_MAX); hi = Math.min(hi, M3.pts[i + 1] + DSEG_MAX); }
+  if (lo > hi) { const mid = (lo + hi) / 2; lo = hi = mid; }
+  M3.pts[i] = clamp(val, lo, hi);
+}
+
+function m3draw() {
+  const t = M3.t;
+  const segs = m3segs();
+  const iNow = clamp(Math.floor(t / 2 - 1e-9), 0, 4);
+
+  /* 场景 */
+  const dots = [];
+  for (let k = 0; k <= Math.floor(t + 1e-9); k++) dots.push(m3s(k));
+  $("#m3scene").innerHTML = trackScene({
+    carS: m3s(t), dots, s0: M3.pts[0],
+    tag: "v = " + fmt(m3v(t), 1) + " m/s" + (m3v(t) < -0.01 ? "（往回走）" : "")
+  });
+
+  /* s-t 图 */
+  const st = makeChart({ w: 500, h: 300, x: { min: 0, max: T_MAX, step: 1, label: "t / s" }, y: { min: 0, max: S_MAX, step: 5, label: "s / m" } });
+  M3.ch = st;
+  let c1 = "";
+  let d = "";
+  for (let i = 0; i < 6; i++) d += (i ? "L" : "M") + r2(st.X(TS[i])) + " " + r2(st.Y(M3.pts[i]));
+  c1 += `<path d="${d}" fill="none" stroke="#2563EB" stroke-width="2.8" stroke-linejoin="round"/>`;
+  /* 锚点 */
+  for (let i = 0; i < 6; i++) {
+    const px = st.X(TS[i]), py = st.Y(M3.pts[i]);
+    const on = i === M3.dragging;
+    c1 += `<circle cx="${r2(px)}" cy="${r2(py)}" r="${on ? 9 : 7.5}" fill="#F59E0B" stroke="#fff" stroke-width="2.2"/>`;
+    c1 += txt(px, py + 22, fmt(M3.pts[i], 1) + " m", { size: 11, fill: "#B45309", a: "middle", w: 600 });
+  }
+  /* 当前点 */
+  c1 += `<circle cx="${r2(st.X(t))}" cy="${r2(st.Y(m3s(t)))}" r="5.5" fill="#EF4444" stroke="#fff" stroke-width="1.6"/>`;
+  c1 += `<line x1="${r2(st.X(t))}" y1="${st.y0}" x2="${r2(st.X(t))}" y2="${st.y1}" stroke="#EF4444" stroke-width="1" stroke-dasharray="4 4"/>`;
+  c1 += txt(st.x0 + 6, st.y0 + 14, "↕ 拖橙色圆点改图线", { size: 11, fill: "#94A3B8" });
+  $("#m3st").innerHTML = svgEl(st.w, st.h, st.g + c1);
+  $("#m3st").classList.add("drag");
+
+  /* v-t 图（阶梯） */
+  const vt = makeChart({ w: 500, h: 300, x: { min: 0, max: T_MAX, step: 1, label: "t / s" }, y: { min: -V_MAX, max: V_MAX, step: 2, label: "v / (m·s⁻¹)" } });
+  let c2 = "";
+  for (let i = 0; i < 5; i++) {
+    const y = vt.Y(clamp(segs[i], -V_MAX, V_MAX));
+    const x1 = vt.X(TS[i]), x2 = vt.X(TS[i + 1]);
+    const col = Math.abs(segs[i]) < 0.01 ? "#94A3B8" : (segs[i] > 0 ? "#7C3AED" : "#EF4444");
+    c2 += `<rect x="${r2(x1)}" y="${r2(Math.min(y, vt.Y(0)))}" width="${r2(x2 - x1)}" height="${r2(Math.abs(y - vt.Y(0)))}"
+             fill="${segs[i] >= 0 ? "#F5F3FF" : "#FEF2F2"}"/>`;
+    c2 += `<line x1="${r2(x1)}" y1="${r2(y)}" x2="${r2(x2)}" y2="${r2(y)}" stroke="${col}" stroke-width="${i === iNow ? 4.5 : 3}"/>`;
+    if (i > 0) c2 += `<line x1="${r2(x1)}" y1="${r2(vt.Y(clamp(segs[i - 1], -V_MAX, V_MAX)))}" x2="${r2(x1)}" y2="${r2(y)}"
+                        stroke="${col}" stroke-width="1.4" stroke-dasharray="4 3" opacity=".7"/>`;
+    c2 += txt((x1 + x2) / 2, y + (segs[i] >= 0 ? -8 : 17), fmt(segs[i], 1), { size: 11.5, fill: col, a: "middle", w: 700 });
+  }
+  c2 += `<circle cx="${r2(vt.X(t))}" cy="${r2(vt.Y(clamp(m3v(t), -V_MAX, V_MAX)))}" r="5.5" fill="#EF4444" stroke="#fff" stroke-width="1.6"/>`;
+  $("#m3vt").innerHTML = svgEl(vt.w, vt.h, vt.g + c2);
+
+  $("#m3clock").textContent = "t = " + fmt(t, 1) + " s　位置 s = " + fmt(m3s(t), 1) + " m　速度 v = " + fmt(m3v(t), 1) + " m/s";
+}
+
+function m3stop() {
+  M3.playing = false;
+  if (M3.raf) { cancelAnimationFrame(M3.raf); M3.raf = null; }
+  $("#m3play").textContent = "▶ 播放";
+}
+function m3play() {
+  if (M3.playing) { m3stop(); return; }
+  if (M3.t >= T_MAX - 1e-9) M3.t = 0;
+  M3.playing = true;
+  $("#m3play").textContent = "⏸ 暂停";
+  let last = performance.now();
+  const step = now => {
+    const dt = (now - last) / 1000; last = now;
+    M3.t = Math.min(T_MAX, M3.t + dt);
+    m3draw();
+    if (M3.t >= T_MAX - 1e-9) { m3stop(); return; }
+    M3.raf = requestAnimationFrame(step);
+  };
+  M3.raf = requestAnimationFrame(step);
+}
+function m3init() {
+  $("#m3play").onclick = m3play;
+  $("#m3reset").onclick = () => { m3stop(); M3.t = 0; m3draw(); };
+  $("#m3preset").onclick = () => { m3stop(); M3.pts = [2, 2, 14, 20, 20, 10]; M3.t = 0; m3draw(); };
+
+  bindDrag("#m3st", {
+    down(p) {
+      m3stop();
+      const ch = M3.ch;
+      const i = clamp(Math.round(ch.IX(p.x) / 2), 0, 5);
+      M3.dragging = i;
+      m3setPt(i, ch.IY(p.y));
+      m3draw();
+    },
+    move(p) {
+      if (M3.dragging < 0) return;
+      m3setPt(M3.dragging, M3.ch.IY(p.y));
+      m3draw();
+    },
+    up() { M3.dragging = -1; m3draw(); }
+  });
+}
+
+/* ============================================================
+   [lab4] v-t 初步：面积就是路程
+   ============================================================ */
+const M4 = { mode: "uniform", v: 3, a: 0.4, t: 4 };
+
+function m4draw() {
+  const m = motionOf(M4.mode, M4.v, M4.a, 0);
+  const t = M4.t, s = m.s(t), vt = m.v(t);
+
+  /* s-t 图 */
+  const st = makeChart({ w: 500, h: 300, x: { min: 0, max: T_MAX, step: 1, label: "t / s" }, y: { min: 0, max: S_MAX, step: 5, label: "s / m" } });
+  let c1 = `<path d="${pathOf(st, m.s, 0, T_MAX)}" fill="none" stroke="#93C5FD" stroke-width="2.2"/>`;
+  c1 += `<path d="${pathOf(st, m.s, 0, t)}" fill="none" stroke="#2563EB" stroke-width="3.4"/>`;
+  c1 += `<line x1="${r2(st.X(t))}" y1="${st.y0}" x2="${r2(st.X(t))}" y2="${st.y1}" stroke="#EF4444" stroke-width="1" stroke-dasharray="4 4"/>`;
+  c1 += `<line x1="${st.x0}" y1="${r2(st.Y(s))}" x2="${r2(st.X(t))}" y2="${r2(st.Y(s))}" stroke="#EF4444" stroke-width="1" stroke-dasharray="4 4"/>`;
+  c1 += `<circle cx="${r2(st.X(t))}" cy="${r2(st.Y(s))}" r="5.5" fill="#EF4444" stroke="#fff" stroke-width="1.6"/>`;
+  c1 += txt(st.X(t) + 8, st.Y(s) - 8, "s = " + fmt(s, 1) + " m", { size: 12.5, fill: "#EF4444", w: 700 });
+  $("#m4st").innerHTML = svgEl(st.w, st.h, st.g + c1);
+
+  /* v-t 图 + 阴影 */
+  const vc = makeChart({ w: 500, h: 300, x: { min: 0, max: T_MAX, step: 1, label: "t / s" }, y: { min: 0, max: V_MAX, step: 1, label: "v / (m·s⁻¹)" } });
+  let area = `M${r2(vc.X(0))} ${r2(vc.Y(0))}`;
+  for (let k = 0; k <= t + 1e-9; k += 0.1) area += `L${r2(vc.X(Math.min(k, t)))} ${r2(vc.Y(m.v(Math.min(k, t))))}`;
+  area += `L${r2(vc.X(t))} ${r2(vc.Y(m.v(t)))} L${r2(vc.X(t))} ${r2(vc.Y(0))} Z`;
+  let c2 = `<path d="${area}" fill="#F59E0B" fill-opacity=".38" stroke="#F59E0B" stroke-width="2"/>`;
+  c2 += `<path d="${pathOf(vc, m.v, 0, T_MAX)}" fill="none" stroke="#7C3AED" stroke-width="2.6"/>`;
+  c2 += `<line x1="${r2(vc.X(t))}" y1="${vc.y0}" x2="${r2(vc.X(t))}" y2="${vc.y1}" stroke="#EF4444" stroke-width="1" stroke-dasharray="4 4"/>`;
+  c2 += `<circle cx="${r2(vc.X(t))}" cy="${r2(vc.Y(vt))}" r="5" fill="#7C3AED" stroke="#fff" stroke-width="1.6"/>`;
+  /* 长方形的宽高标注 */
+  if (M4.mode === "uniform" && t > 0.2) {
+    c2 += txt(vc.X(t / 2), vc.y1 - 8, "宽 = t = " + fmt(t, 1) + " s", { size: 11.5, fill: "#B45309", w: 700, a: "middle" });
+    c2 += txt(vc.X(t) + 6, (vc.Y(0) + vc.Y(vt)) / 2, "高 = v = " + fmt(vt, 1), { size: 11.5, fill: "#B45309", w: 700 });
+  }
+  if (M4.mode === "accel" && t > 0.2) {
+    c2 += txt(vc.X(t) - 6, vc.Y(vt) + 16, "末速 " + fmt(vt, 1) + " m/s", { size: 11.5, fill: "#B45309", w: 700, a: "end" });
+    c2 += txt(vc.X(t / 2), vc.y1 - 8, "底 = t = " + fmt(t, 1) + " s", { size: 11.5, fill: "#B45309", w: 700, a: "middle" });
+  }
+  $("#m4vt").innerHTML = svgEl(vc.w, vc.h, vc.g + c2);
+
+  /* 单行关键读数 */
+  const fx = M4.mode === "uniform"
+    ? `${fmt(M4.v, 1)} × ${fmt(t, 1)} s`
+    : `½ × ${fmt(vt, 2)} × ${fmt(t, 1)} s`;
+  $("#m4key").innerHTML = `阴影面积 = ${fx} = <b>${fmt(s, 2)}</b> m　　<span class="hint">＝ s-t 图上读出的位置</span>`;
+}
+
+function m4init() {
+  $$("#m4mode button").forEach(b => {
+    b.onclick = () => {
+      M4.mode = b.dataset.m;
+      $$("#m4mode button").forEach(x => x.classList.toggle("on", x === b));
+      $("#m4vrow").style.display = M4.mode === "uniform" ? "" : "none";
+      $("#m4arow").style.display = M4.mode === "accel" ? "" : "none";
+      m4draw();
+    };
+  });
+  $("#m4t").oninput = () => { M4.t = +$("#m4t").value; $("#m4tv").textContent = fmt(M4.t, 1); m4draw(); };
+  $("#m4v").oninput = () => { M4.v = +$("#m4v").value; $("#m4vv").textContent = fmt(M4.v, 1); m4draw(); };
+  $("#m4a").oninput = () => { M4.a = +$("#m4a").value; $("#m4av").textContent = fmt(M4.a, 2); m4draw(); };
+}
+
+/* ============================================================
+   [main] 入口
+   ============================================================ */
+document.addEventListener("DOMContentLoaded", () => {
+  m1init(); m2init(); m3init(); m4init();
+  m1draw(); m2draw(); m3draw(); m4draw();
+});
+
+</script>
+
+</body>
+</html>

@@ -1,0 +1,973 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>探究眼睛的成像原理与近视远视矫正 · 交互式可视化（人教版八年级 §5.4）</title>
+<style>
+:root{
+  --blue:#2563EB; --blue-d:#1D4ED8; --blue-l:#EFF4FF;
+  --green:#10B981; --red:#EF4444; --amber:#F59E0B; --purple:#7C3AED;
+  --ink:#1F2937; --ink-2:#4B5563; --ink-3:#6B7280;
+  --line:#E5E7EB; --bg:#F5F7FB; --card:#FFFFFF;
+  --radius:14px;
+  --shadow:0 1px 2px rgba(16,24,40,.04), 0 10px 28px -14px rgba(16,24,40,.26);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:"Microsoft YaHei","PingFang SC","Hiragino Sans GB",system-ui,-apple-system,"Segoe UI",sans-serif;
+  background:var(--bg); color:var(--ink); line-height:1.68; -webkit-font-smoothing:antialiased;
+}
+svg{display:block; font-family:inherit;}
+
+/* ---------- header ---------- */
+.site-header{background:linear-gradient(120deg,#1D4ED8,#2563EB 55%,#3B82F6);color:#fff;padding:22px 0 24px;}
+.header-inner{max-width:1120px;margin:0 auto;padding:0 22px;display:flex;justify-content:space-between;align-items:flex-end;gap:18px;flex-wrap:wrap;}
+.header-text h1{margin:0;font-size:24px;font-weight:700;letter-spacing:.5px;}
+.header-text p{margin:6px 0 0;font-size:13.5px;color:rgba(255,255,255,.88);}
+.header-nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.header-link{border:1px solid rgba(255,255,255,.45);border-radius:999px;padding:7px 16px;font-size:13px;color:#fff;text-decoration:none;background:rgba(255,255,255,.08);white-space:nowrap;}
+.header-link:hover{background:rgba(255,255,255,.2);}
+.header-badge{border:1px solid rgba(255,255,255,.4);border-radius:999px;padding:7px 16px;font-size:13px;background:rgba(255,255,255,.12);white-space:nowrap;}
+
+/* ---------- layout ---------- */
+.wrap{max-width:1120px;margin:0 auto;padding:24px 22px 40px;}
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:24px 26px;margin-bottom:20px;border:1px solid rgba(229,231,235,.7);}
+.chead{display:flex;gap:14px;align-items:flex-start;margin-bottom:18px;}
+.idx{flex:0 0 auto;width:34px;height:34px;border-radius:11px;background:var(--blue-l);color:var(--blue);font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;margin-top:2px;}
+.chead h2{margin:0 0 3px;font-size:19px;font-weight:700;letter-spacing:.2px;}
+.chead p{margin:0;color:var(--ink-3);font-size:13.3px;}
+
+.split{display:grid;grid-template-columns:minmax(0,1.18fr) minmax(286px,.82fr);gap:24px;align-items:start;}
+@media(max-width:920px){ .split{grid-template-columns:1fr;} }
+.stage{border:1px solid #1E293B;border-radius:12px;background:#0E1729;padding:6px;overflow:hidden;}
+.stage svg{width:100%;height:auto;border-radius:8px;touch-action:none;}
+.stage svg.grab{cursor:grab;}
+.stage svg.grab:active{cursor:grabbing;}
+
+/* ---------- controls ---------- */
+.panel{display:flex;flex-direction:column;gap:14px;}
+.ctl label{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--ink-3);margin-bottom:6px;}
+.ctl label b{color:var(--ink);font-size:14.5px;font-variant-numeric:tabular-nums;font-weight:700;}
+.ctl label b small{font-weight:400;color:var(--ink-3);font-size:12px;}
+input[type=range]{width:100%;height:24px;accent-color:var(--blue);cursor:pointer;margin:0;background:transparent;}
+.tick{display:flex;justify-content:space-between;font-size:11px;color:var(--ink-3);margin-top:-2px;}
+.seg{display:flex;gap:8px;flex-wrap:wrap;}
+.seg button{
+  border:1px solid var(--line);background:#fff;color:var(--ink-2);border-radius:9px;
+  padding:6px 13px;font-size:12.5px;cursor:pointer;font-family:inherit;transition:.15s;
+}
+.seg button:hover{border-color:#BFDBFE;background:#F8FAFF;}
+.seg button.on{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600;}
+.seg button.act{background:#FFF7ED;border-color:#FCD34D;color:#B45309;font-weight:600;}
+
+.rows{border:1px solid var(--line);border-radius:11px;overflow:hidden;background:#FCFDFF;}
+.row{display:flex;justify-content:space-between;gap:10px;padding:8px 13px;font-size:13px;border-bottom:1px solid var(--line);}
+.row:last-child{border-bottom:0;}
+.row span{color:var(--ink-3);}
+.row b{font-variant-numeric:tabular-nums;font-weight:700;}
+.row b.ok{color:var(--green);}
+.row b.warn{color:var(--amber);}
+.row b.bad{color:var(--red);}
+
+.tagline{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--ink-2);flex-wrap:wrap;}
+.tag{font-size:11.5px;font-weight:700;border-radius:999px;padding:2px 10px;letter-spacing:.3px;white-space:nowrap;}
+.tag.b{background:#E4F9F0;color:#0E9F6E;}
+.tag.r{background:#FEECEC;color:#DC2626;}
+.tag.a{background:#FFF6E5;color:#B45309;}
+.tag.g{background:#EFF4FF;color:#1D4ED8;}
+
+.note{margin:0;font-size:13.2px;color:var(--ink-2);line-height:1.72;background:#F6F9FF;border-left:3px solid var(--blue);border-radius:0 10px 10px 0;padding:11px 14px;}
+.warn{margin:10px 0 0;font-size:12.6px;line-height:1.65;color:#92400E;background:#FFFBEB;border-left:3px solid #F59E0B;border-radius:0 10px 10px 0;padding:9px 13px;}
+.warn[hidden]{display:none;}
+.note em{font-style:normal;font-weight:700;color:var(--blue-d);}
+.note em.r{color:#DC2626;}
+.note em.g{color:#0E9F6E;}
+
+.hide{display:none;}
+
+/* ---------- 三眼对照 ---------- */
+.cmp{display:grid;grid-template-columns:repeat(3,1fr);gap:14px;margin-top:6px;}
+@media(max-width:760px){ .cmp{grid-template-columns:1fr;} }
+.cmp-item{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff;}
+.cmp-item .cmph{padding:9px 12px;font-size:13.5px;font-weight:700;border-bottom:1px solid var(--line);display:flex;justify-content:space-between;align-items:center;}
+.cmp-item .cmpf{background:#0E1729;padding:4px;}
+.cmp-item .cmpf svg{width:100%;height:auto;}
+.cmp-item .cmpb{padding:9px 12px;font-size:12.8px;color:var(--ink-2);line-height:1.6;}
+.cmp-item .cmpb b{color:var(--ink);}
+
+footer{text-align:center;color:#93A2B8;font-size:12.3px;padding:6px 0 0;}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-text">
+      <h1>眼睛的成像原理与近视、远视的矫正</h1>
+      <p>晶状体和角膜相当于一个凸透镜，把物体的光会聚在视网膜上——那看不清的时候，是哪里出了问题？</p>
+    </div>
+    <div class="header-nav">
+      <a class="header-link" href="#">« 返回实验目录</a>
+      <span class="header-badge">八年级物理 · 光学 · §5.4</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- ============ ① 眼球模型：看远看近 ============ -->
+  <section class="card">
+    <div class="chead">
+      <div class="idx">01</div>
+      <div>
+        <h2>眼睛怎样看清远近不同的物体</h2>
+        <p>拖动蜡烛的远近，看晶状体怎么自动变厚变薄，始终把像成在视网膜上。</p>
+      </div>
+    </div>
+    <div class="split">
+      <div class="stage"><svg id="svg1" class="grab" viewBox="0 0 680 400" role="img" aria-label="眼球成像与晶状体调节"></svg></div>
+      <div class="panel">
+        <div class="ctl">
+          <label>蜡烛到眼睛的距离 <b id="v1u">300 cm</b></label>
+          <input id="r1u" type="range" min="10" max="300" step="5" value="300">
+          <div class="tick"><span>10 很近</span><span>25</span><span>300 很远</span></div>
+        </div>
+        <div class="seg" id="seg1">
+          <button data-a="auto" class="on">睫状肌自动调焦</button>
+          <button data-a="man">晶状体固定不动</button>
+        </div>
+        <div class="ctl hide" id="ctl1f">
+          <label>晶状体焦距 f <b id="v1f">2.00 cm</b></label>
+          <input id="r1f" type="range" min="160" max="220" step="1" value="200">
+          <div class="tick"><span>1.60 很厚</span><span>1.90</span><span>2.20 很薄</span></div>
+        </div>
+        <div class="rows">
+          <div class="row"><span>晶状体焦距 f</span><b id="o1f">2.00 cm</b></div>
+          <div class="row"><span>像成在晶状体后</span><b id="o1v">2.00 cm</b></div>
+          <div class="row"><span>视网膜在晶状体后</span><b>2.00 cm</b></div>
+          <div class="row"><span>晶状体</span><b id="o1t">最薄（看远）</b></div>
+        </div>
+        <div class="tagline"><span id="o1s" class="tag b">视网膜上的像：清晰</span></div>
+        <div class="seg">
+          <button id="b1far">看远处</button>
+          <button id="b1near">看近处 25 cm</button>
+          <button id="b1toonear">再凑近 10 cm</button>
+        </div>
+        <p class="note">看远处睫状肌放松、晶状体<em>变薄</em>（焦距变长）；看近处睫状肌收缩、晶状体<em>变厚</em>（焦距变短）。无论远近，像都成在视网膜上——这是一个<em>倒立、缩小</em>的实像。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ② 水透镜模拟晶状体变焦 ============ -->
+  <section class="card">
+    <div class="chead">
+      <div class="idx">02</div>
+      <div>
+        <h2>水透镜实验：注水越多，透镜越凸、焦距越短</h2>
+        <p>光屏相当于视网膜（位置不动），改变蜡烛远近后，只有重新注水、抽水才能再次看清。</p>
+      </div>
+    </div>
+    <div class="split">
+      <div class="stage"><svg id="svg2" class="grab" viewBox="0 0 700 380" role="img" aria-label="水透镜模拟晶状体变焦实验"></svg></div>
+      <div class="panel">
+        <div class="ctl">
+          <label>注水量 <b id="v2w">56%</b></label>
+          <input id="r2w" type="range" min="0" max="100" step="1" value="56">
+          <div class="tick"><span>0 很平</span><span>50</span><span>100 很凸</span></div>
+        </div>
+        <div class="ctl">
+          <label>蜡烛到透镜的距离 u <b id="v2u">30 cm</b></label>
+          <input id="r2u" type="range" min="15" max="38" step="1" value="30">
+        </div>
+        <div class="ctl">
+          <label>光屏到透镜的距离 v <b id="v2v">25.0 cm</b></label>
+          <input id="r2v" type="range" min="8" max="55" step="0.5" value="25">
+        </div>
+        <div class="seg">
+          <button class="act" id="b2auto">▶ 注水／抽水找清晰</button>
+          <button id="b2far">蜡烛移远</button>
+          <button id="b2near">蜡烛移近</button>
+        </div>
+        <div class="rows">
+          <div class="row"><span>水透镜焦距 f</span><b id="o2f">13.6 cm</b></div>
+          <div class="row"><span>清晰的像应成在</span><b id="o2v0">22.9 cm</b></div>
+          <div class="row"><span>光屏实际位置</span><b id="o2v">25.0 cm</b></div>
+          <div class="row"><span>屏上像高 ÷ 烛高</span><b id="o2m">0.76</b></div>
+        </div>
+        <div class="tagline"><span id="o2s" class="tag r">屏上的像：模糊</span></div>
+        <p class="note">注水越多 → 透镜<em>越凸</em> → 焦距<em>越短</em> → 会聚本领越强。看近处要注水（晶状体变厚），看远处要抽水（晶状体变薄）——这就是睫状肌在做的事。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ③ 近视 ============ -->
+  <section class="card">
+    <div class="chead">
+      <div class="idx">03</div>
+      <div>
+        <h2>近视眼：像成在视网膜的前面</h2>
+        <p>换上近视眼的眼球，看清像跑到哪儿去了；再戴上凹透镜，看像怎么被"推"回视网膜。</p>
+      </div>
+    </div>
+    <div class="split">
+      <div class="stage"><svg id="svg3" class="grab" viewBox="0 0 680 400" role="img" aria-label="近视眼成因与凹透镜矫正光路"></svg></div>
+      <div class="panel">
+        <div class="seg" id="seg3c">
+          <button data-c="axis" class="on">成因：眼球前后径过长</button>
+          <button data-c="lens">成因：晶状体太厚</button>
+        </div>
+        <div class="ctl">
+          <label>眼球前后径（晶状体→视网膜）<b id="v3d">2.30 cm</b></label>
+          <input id="r3d" type="range" min="180" max="240" step="1" value="230">
+        </div>
+        <div class="ctl">
+          <label>晶状体焦距（最薄时）<b id="v3f">2.00 cm</b></label>
+          <input id="r3f" type="range" min="170" max="230" step="1" value="200">
+        </div>
+        <div class="ctl">
+          <label>眼镜度数 <b id="v3g">不戴眼镜</b></label>
+          <input id="r3g" type="range" min="-1000" max="1000" step="25" value="0">
+          <div class="tick"><span>−1000 强凹</span><span>0 不戴</span><span>+1000 强凸</span></div>
+        </div>
+        <div class="seg">
+          <button class="act" id="b3fit">自动配一副合适的眼镜</button>
+          <button id="b3off">摘掉眼镜</button>
+        </div>
+        <div class="seg" id="seg3u">
+          <button data-u="300" class="on">看远处</button>
+          <button data-u="25">看近处 25 cm</button>
+        </div>
+        <div class="rows">
+          <div class="row"><span>不戴眼镜时像成在</span><b id="o3v0">2.00 cm</b></div>
+          <div class="row"><span>视网膜在</span><b id="o3d">2.30 cm</b></div>
+          <div class="row"><span>现在像成在</span><b id="o3v">2.00 cm</b></div>
+          <div class="row"><span>与视网膜相差</span><b id="o3dif">0.30 cm（偏前）</b></div>
+        </div>
+        <p class="warn" id="w3" hidden></p>
+        <div class="tagline"><span id="o3s" class="tag r">视网膜上的像：模糊</span></div>
+        <p class="note">晶状体太厚（折光太强）或眼球前后径过长，光会聚得太早，像落在视网膜的<em class="r">前面</em>。凹透镜先把光<em>发散</em>一点，让会聚推迟，像恰好回到视网膜上。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ④ 远视 + 对照 ============ -->
+  <section class="card">
+    <div class="chead">
+      <div class="idx">04</div>
+      <div>
+        <h2>远视眼：像成在视网膜的后面</h2>
+        <p>同样的方法反过来看：光会聚得太晚，要戴凸透镜帮它一把。</p>
+      </div>
+    </div>
+    <div class="split">
+      <div class="stage"><svg id="svg4" class="grab" viewBox="0 0 680 400" role="img" aria-label="远视眼成因与凸透镜矫正光路"></svg></div>
+      <div class="panel">
+        <div class="seg" id="seg4c">
+          <button data-c="axis" class="on">成因：眼球前后径过短</button>
+          <button data-c="lens">成因：晶状体太薄</button>
+        </div>
+        <div class="ctl">
+          <label>眼球前后径（晶状体→视网膜）<b id="v4d">1.85 cm</b></label>
+          <input id="r4d" type="range" min="180" max="240" step="1" value="185">
+        </div>
+        <div class="ctl">
+          <label>晶状体焦距（最薄时）<b id="v4f">2.00 cm</b></label>
+          <input id="r4f" type="range" min="170" max="230" step="1" value="200">
+        </div>
+        <div class="ctl">
+          <label>眼镜度数 <b id="v4g">不戴眼镜</b></label>
+          <input id="r4g" type="range" min="-1000" max="1000" step="25" value="0">
+          <div class="tick"><span>−1000 强凹</span><span>0 不戴</span><span>+1000 强凸</span></div>
+        </div>
+        <div class="seg">
+          <button class="act" id="b4fit">自动配一副合适的眼镜</button>
+          <button id="b4off">摘掉眼镜</button>
+        </div>
+        <div class="seg" id="seg4u">
+          <button data-u="300" class="on">看远处</button>
+          <button data-u="25">看近处 25 cm</button>
+        </div>
+        <div class="rows">
+          <div class="row"><span>不戴眼镜时像成在</span><b id="o4v0">2.00 cm</b></div>
+          <div class="row"><span>视网膜在</span><b id="o4d">1.85 cm</b></div>
+          <div class="row"><span>现在像成在</span><b id="o4v">2.00 cm</b></div>
+          <div class="row"><span>与视网膜相差</span><b id="o4dif">0.15 cm（偏后）</b></div>
+        </div>
+        <p class="warn" id="w4" hidden></p>
+        <div class="tagline"><span id="o4s" class="tag r">视网膜上的像：模糊</span></div>
+        <p class="note">晶状体太薄（折光太弱）或眼球前后径过短，光会聚得太晚，像落在视网膜的<em class="r">后面</em>。凸透镜先帮着<em>会聚</em>一点，让会聚提前，像恰好回到视网膜上。</p>
+      </div>
+    </div>
+
+    <div class="cmp" id="cmp4"></div>
+  </section>
+
+</div>
+
+<footer>物理可视化模型 · 眼睛和眼镜 §5.4　|　单文件版，双击即可打开</footer>
+
+<script>
+/* ================================================================
+   探究眼睛的成像原理与近视远视矫正
+   —— 等效单透镜眼模型：角膜+晶状体合成一个凸透镜，视网膜在后
+   1/u + 1/v = 1/f；戴眼镜用「等效物距法」：
+       眼镜把物体先成一个像 vg = 1/(1/fg − 1/(u−t))，
+       眼睛看到的等效物距 ue = t − vg，再代回 1/ue + 1/v = 1/f
+   ================================================================ */
+
+/* ---------------- 通用工具 ---------------- */
+const FONT = "Microsoft YaHei, PingFang SC, sans-serif";
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const fmt = (n, d = 1) => (isFinite(n) ? Number(n).toFixed(d) : "—");
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+
+/* 缓动补间：rAF 平滑推进 + setTimeout 兜底，保证一定会停在终值
+   （后台标签页 / 设备节流时 rAF 会被暂停，不能只靠它） */
+function tween(dur, onUpdate) {
+  const t0 = performance.now();
+  let done = false;
+  const finish = () => {
+    if (done) return; done = true;
+    clearTimeout(timer);
+    onUpdate(1);
+  };
+  const step = now => {
+    if (done) return;
+    const p = Math.min(1, (now - t0) / dur);
+    onUpdate(p * p * (3 - 2 * p));
+    if (p < 1) requestAnimationFrame(step); else finish();
+  };
+  const timer = setTimeout(finish, dur + 80);
+  requestAnimationFrame(step);
+  return finish;
+}
+
+let VW = 680, VH = 400;                 // 当前画布尺寸（裁剪用）
+
+const CJK = /[\u3000-\u9fff\uff00-\uffef]/;
+function textW(s, size) {
+  let n = 0;
+  for (const c of String(s)) n += CJK.test(c) ? 1 : 0.56;
+  return n * size;
+}
+
+/* 文字（可带深色底片，避免被光线穿过看不清） */
+function T(x, y, s, o = {}) {
+  const size = o.size || 12, fill = o.fill || "#E2E8F0", w = o.w || 400, a = o.a || "start";
+  let g = "";
+  if (o.bg) {
+    const ww = textW(s, size) + 10, hh = size * 1.44;
+    const x0 = a === "middle" ? x - ww / 2 : a === "end" ? x - ww : x;
+    g += `<rect x="${x0.toFixed(1)}" y="${(y - size * 1.08).toFixed(1)}" width="${ww.toFixed(1)}" height="${hh.toFixed(1)}" rx="4" fill="${o.bg}" opacity="${o.bgOp == null ? 0.88 : o.bgOp}"/>`;
+  }
+  g += `<text x="${x}" y="${y}" font-size="${size}" fill="${fill}" font-weight="${w}" text-anchor="${a}" font-family="${FONT}">${s}</text>`;
+  return g;
+}
+
+/* Liang–Barsky 线段裁剪 */
+function clipSeg(p, q, W, H) {
+  let t0 = 0, t1 = 1;
+  const x1 = p[0], y1 = p[1], dx = q[0] - x1, dy = q[1] - y1;
+  const pk = [-dx, dx, -dy, dy], qk = [x1 - 0, W - x1, y1 - 0, H - y1];
+  for (let i = 0; i < 4; i++) {
+    if (pk[i] === 0) { if (qk[i] < 0) return null; }
+    else {
+      const r = qk[i] / pk[i];
+      if (pk[i] < 0) { if (r > t1) return null; if (r > t0) t0 = r; }
+      else { if (r < t0) return null; if (r < t1) t1 = r; }
+    }
+  }
+  if (t0 >= t1) return null;
+  return [[x1 + t0 * dx, y1 + t0 * dy], [x1 + t1 * dx, y1 + t1 * dy]];
+}
+function L(p, q, c, w, dash) {
+  const d = clipSeg(p, q, VW, VH);
+  if (!d) return "";
+  return `<line x1="${d[0][0].toFixed(1)}" y1="${d[0][1].toFixed(1)}" x2="${d[1][0].toFixed(1)}" y2="${d[1][1].toFixed(1)}" stroke="${c}" stroke-width="${w}" stroke-linecap="round"${dash ? ` stroke-dasharray="${dash}"` : ""}/>`;
+}
+function dot(x, y, r, c, halo) {
+  return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="${r}" fill="${c}"${halo ? ` stroke="${halo}" stroke-width="2"` : ""}/>`;
+}
+function arrow2(x1, y1, x2, y2, c) {   // 双箭头 + 竖虚线用在外侧
+  return `<path d="M${x1} ${y1} L${x2} ${y2}" stroke="${c}" stroke-width="1.8"/>
+    <path d="M${x1} ${y1} l ${x2 > x1 ? -7 : 7} -5 v 10 z" fill="${c}"/>
+    <path d="M${x2} ${y2} l ${x2 > x1 ? 7 : -7} -5 v 10 z" fill="${c}"/>`;
+}
+
+/* 蜡烛：底在 (0,0)，向上长 h（配合 scale(1,-1) 得到倒立的像） */
+function candleU(h, o = {}) {
+  const w = Math.max(5, h * 0.30), bh = h * 0.66, fh = h * 0.36;
+  const body = o.body || "#FDE68A", edge = o.edge || "#B45309", fl = o.flame || "#F59E0B";
+  let g = `<rect x="${(-w / 2).toFixed(1)}" y="${(-bh).toFixed(1)}" width="${w.toFixed(1)}" height="${bh.toFixed(1)}" rx="2" fill="${body}" stroke="${edge}" stroke-width="1"/>`;
+  g += `<line x1="0" y1="${(-bh).toFixed(1)}" x2="0" y2="${(-bh - 3).toFixed(1)}" stroke="#7C2D12" stroke-width="1.6"/>`;
+  const yb = -bh - 2, yt = -bh - fh, fw = w * 0.62;
+  g += `<path d="M0 ${yt.toFixed(1)} C ${(fw * .9).toFixed(1)} ${(yt + fh * .45).toFixed(1)} ${fw.toFixed(1)} ${(yt + fh * .62).toFixed(1)} ${fw.toFixed(1)} ${(yb - fh * .22).toFixed(1)}
+    C ${fw.toFixed(1)} ${yb.toFixed(1)} ${(-fw).toFixed(1)} ${yb.toFixed(1)} ${(-fw).toFixed(1)} ${(yb - fh * .22).toFixed(1)}
+    C ${(-fw).toFixed(1)} ${(yt + fh * .62).toFixed(1)} ${(-fw * .9).toFixed(1)} ${(yt + fh * .45).toFixed(1)} 0 ${yt.toFixed(1)} Z" fill="${fl}"/>`;
+  return g;
+}
+
+/* ================================================================
+   眼球引擎
+   ================================================================ */
+const CY = 196, LX = 352, S = 82, PU = 82, XG = 282, TG = 1.2;
+
+const XofU = u => 58 + 232 * (1 - Math.exp(-u / 38));
+const UofX = x => {                                  // 拖动反解物距
+  const r = (x - 58) / 232;
+  if (r <= 0.001) return 300;
+  if (r >= 0.999) return 10;
+  return clamp(-38 * Math.log(1 - r), 10, 300);
+};
+const Yof = y => CY - y * PU;
+const hObjOf = u => clamp(XofU(u) * 10 / u, 34, 92);
+
+/* 光学追迹：u(cm) 物距；f(cm) 眼睛焦距；fg(cm) 眼镜焦距，Infinity 表示不戴 */
+function eyeTrace(u, f, fg) {
+  const t = TG, A = u - t;
+  let ue = u, Heff = 1, vg = null;
+  if (isFinite(fg) && Math.abs(fg) < 1e5) {
+    const den = 1 / fg - 1 / A;
+    vg = Math.abs(den) < 1e-9 ? Infinity : 1 / den;
+    if (isFinite(vg)) { ue = t - vg; Heff = -vg / A; }
+    else { ue = Infinity; Heff = 0; }
+  }
+  const rays = [-0.25, 0.02, 0.25].map(yL => {
+    let yg = null, th2;
+    if (vg !== null && isFinite(vg)) {
+      yg = (yL + t / A) / (1 + t / A - t / fg);
+      const th0 = (yg - 1) / A, th1 = th0 - yg / fg;
+      th2 = th1 - yL / f;
+    } else {
+      th2 = (yL - Heff) / ue - yL / f;
+    }
+    return { yL, yg, th2 };
+  });
+  const den2 = 1 / f - 1 / ue;
+  const v = den2 > 1e-9 ? 1 / den2 : Infinity;
+  const hImg = isFinite(v) ? -Heff * v / ue : 0;
+  return { v, hImg, ue, vg, rays };
+}
+
+/* 晶状体厚度（半厚 px）：焦距越短越厚 */
+const lensTh = f => 7 + 15 * clamp((2.30 - f) / (2.30 - 1.60), 0, 1);
+
+/* 眼镜片形状：fg<0 凹、fg>0 凸 */
+function glassG(fg) {
+  const H = 66, x = XG;
+  let d;
+  if (fg < 0) {
+    d = `M${x - 9} ${CY - H} L${x + 9} ${CY - H} Q${x - 11} ${CY} ${x + 9} ${CY + H} L${x - 9} ${CY + H} Q${x + 11} ${CY} ${x - 9} ${CY - H} Z`;
+  } else {
+    d = `M${x - 7} ${CY - H} L${x + 7} ${CY - H} Q${x + 18} ${CY} ${x + 7} ${CY + H} L${x - 7} ${CY + H} Q${x - 18} ${CY} ${x - 7} ${CY - H} Z`;
+  }
+  return `<path d="${d}" fill="#93C5FD" fill-opacity=".30" stroke="#93C5FD" stroke-width="2"/>
+    <path d="M${x - 26} ${CY - H - 6} L${x + 26} ${CY - H - 6}" stroke="#CBD5E1" stroke-width="2.5" stroke-linecap="round"/>
+    <path d="M${x - 26} ${CY + H + 6} L${x + 26} ${CY + H + 6}" stroke="#CBD5E1" stroke-width="2.5" stroke-linecap="round"/>`;
+}
+
+/* 眼球场景图 */
+function eyeScene(o) {
+  const u = o.u, d = o.d, f = o.f, deg = o.deg || 0;
+  const fg = Math.abs(deg) < 1 ? Infinity : 10000 / deg;
+  const tr = eyeTrace(u, f, fg);
+  const v = tr.v;
+
+  const xR = LX + d * S;                 // 视网膜
+  const xC = LX - 30, xL0 = xC - 4, xR0 = xR + 14;
+  const cx = (xL0 + xR0) / 2, rx = (xR0 - xL0) / 2, ry = 92;
+
+  const fid = o.fid || "eyeBlur";
+  const xO = LX - XofU(u), hObj = hObjOf(u), yTop = CY - hObj;
+  const vDraw = isFinite(v) ? clamp(v, 0.2, 4.2) : 4.2;
+  const xv = LX + vDraw * S;
+  const ratio = isFinite(v) ? Math.abs(v - d) / v : 1;
+  const blur = Math.min(22, ratio * 240);
+  const patch = clamp(2.2 + ratio * 95, 2.2, 13);
+
+  let g = `<rect x="0" y="0" width="${VW}" height="${VH}" fill="#0E1729"/>`;
+
+  /* ---- 眼球 ---- */
+  g += `<ellipse cx="${cx.toFixed(1)}" cy="${CY}" rx="${rx.toFixed(1)}" ry="${ry}" fill="#F8FAFC" stroke="#94A3B8" stroke-width="2"/>`;
+  g += `<ellipse cx="${cx.toFixed(1)}" cy="${CY}" rx="${(rx - 12).toFixed(1)}" ry="${(ry - 12).toFixed(1)}" fill="#EEF4FB"/>`;
+  /* 视网膜（右内壁） */
+  const arx = rx - 13, ary = ry - 13, A0 = -62 * Math.PI / 180, A1 = 62 * Math.PI / 180;
+  const pA = [cx + arx * Math.cos(A0), CY + ary * Math.sin(A0)];
+  const pB = [cx + arx * Math.cos(A1), CY + ary * Math.sin(A1)];
+  g += `<path d="M${pA[0].toFixed(1)} ${pA[1].toFixed(1)} A${arx.toFixed(1)} ${ary.toFixed(1)} 0 0 1 ${pB[0].toFixed(1)} ${pB[1].toFixed(1)}" stroke="#FB7185" stroke-width="9" fill="none" stroke-linecap="round"/>`;
+  /* 视神经 */
+  const na = 20 * Math.PI / 180;
+  const n0 = [cx + rx * Math.cos(na), CY + ry * Math.sin(na)];
+  g += `<path d="M${(cx + (rx - 10) * Math.cos(na - 0.10)).toFixed(1)} ${(CY + (ry - 10) * Math.sin(na - 0.10)).toFixed(1)}
+    L${(n0[0] + 26).toFixed(1)} ${(n0[1] + 10).toFixed(1)} L${(n0[0] + 26).toFixed(1)} ${(n0[1] + 24).toFixed(1)}
+    L${(cx + (rx - 10) * Math.cos(na + 0.10)).toFixed(1)} ${(CY + (ry - 10) * Math.sin(na + 0.10)).toFixed(1)} Z" fill="#E2E8F0" stroke="#94A3B8" stroke-width="1.2"/>`;
+  /* 角膜 */
+  g += `<path d="M${xL0 + 2} ${CY - 52} Q${xL0 - 16} ${CY} ${xL0 + 2} ${CY + 52} Z" fill="#BAE6FD" fill-opacity=".55" stroke="#7DD3FC" stroke-width="2"/>`;
+
+  /* ---- 光线 ---- */
+  const RC = "#FDE047", RC2 = "#FCD34D";
+  for (const r of tr.rays) {
+    const yLp = Yof(r.yL);
+    if (r.yg !== null) {
+      const ygP = Yof(r.yg);
+      g += L([xO, yTop], [XG, ygP], RC, 1.7);
+      g += L([XG, ygP], [LX, yLp], RC, 1.7);
+    } else {
+      g += L([xO, yTop], [LX, yLp], RC, 1.7);
+    }
+    /* 出眼后 */
+    const pt = xcm => [LX + xcm * S, Yof(r.yL + r.th2 * xcm)];
+    if (isFinite(v)) {
+      if (v <= d) {
+        g += L([LX, yLp], pt(vDraw), RC2, 1.7);
+        if (d - v > 0.02) g += L(pt(vDraw), pt(d), RC2, 1.2, "5 4");
+      } else {
+        g += L([LX, yLp], pt(d), RC2, 1.7);
+        if (v - d > 0.02) g += L(pt(d), pt(vDraw), RC2, 1.2, "5 4");
+      }
+    } else {
+      g += L([LX, yLp], pt(d), RC2, 1.2, "5 4");
+    }
+  }
+
+  /* ---- 晶状体 + 睫状体 ---- */
+  const th = lensTh(f), lh = 28;
+  g += `<path d="M${LX} ${CY - lh} Q${LX + 2 * th} ${CY} ${LX} ${CY + lh} Q${LX - 2 * th} ${CY} ${LX} ${CY - lh} Z"
+      fill="#BFDBFE" fill-opacity="${(0.45 + 0.35 * clamp((2.3 - f) / 0.7, 0, 1)).toFixed(2)}" stroke="#60A5FA" stroke-width="2"/>`;
+  for (const sgn of [-1, 1]) {
+    const y0 = CY + sgn * (lh + 2), y1 = CY + sgn * (lh + 16);
+    g += `<path d="M${LX} ${y0} Q${LX + sgn * 6} ${y1} ${LX + 22} ${y1 - sgn * 4}" stroke="#F9A8D4" stroke-width="4" fill="none" stroke-linecap="round"/>`;
+  }
+
+  /* ---- 眼镜 ---- */
+  if (isFinite(fg) && Math.abs(fg) < 1e5) {
+    g += glassG(fg);
+    if (o.labels !== false) {
+      g += T(XG - 6, CY + 90, fg < 0 ? "凹透镜（近视镜）" : "凸透镜（远视镜）",
+        { fill: "#BFDBFE", size: 13, w: 700, a: "middle", bg: "#0E1729" });
+    }
+  }
+
+  /* ---- 像点 / 视网膜 ---- */
+  if (isFinite(v)) {
+    g += dot(xv, Yof(tr.hImg), 5, "#FFFFFF", "#FDE047");
+    if (o.labels !== false) {
+      g += T(xv, Yof(tr.hImg) - 16, "像", { fill: "#FDE047", size: 12.5, w: 700, a: "middle", bg: "#0E1729" });
+    }
+  }
+  /* 视网膜上的光斑 */
+  g += `<ellipse cx="${xR.toFixed(1)}" cy="${CY.toFixed(1)}" rx="${Math.max(3, patch * 0.42).toFixed(1)}" ry="${patch.toFixed(1)}"
+      fill="#FDE047" fill-opacity="${(0.20 + 0.5 * Math.min(1, ratio / 0.2)).toFixed(2)}"/>`;
+
+  /* ---- Δ 标注 ---- */
+  if (o.labels !== false && isFinite(v) && Math.abs(v - d) > 0.012) {
+    const yA = CY + 128;
+    g += `<line x1="${xv.toFixed(1)}" y1="${CY + ry + 6}" x2="${xv.toFixed(1)}" y2="${yA}" stroke="#94A3B8" stroke-width="1" stroke-dasharray="3 3"/>`;
+    g += `<line x1="${xR.toFixed(1)}" y1="${CY + ry + 6}" x2="${xR.toFixed(1)}" y2="${yA}" stroke="#94A3B8" stroke-width="1" stroke-dasharray="3 3"/>`;
+    g += arrow2(xv, yA, xR, yA, v < d ? "#F87171" : "#FCA5A5");
+    const mid = (xv + xR) / 2;
+    g += T(mid, yA + 20, `相差 ${fmt(Math.abs(v - d), 2)} cm　像在视网膜${v < d ? "前" : "后"}面`,
+      { fill: v < d ? "#FCA5A5" : "#FCA5A5", size: 12.5, w: 700, a: "middle", bg: "#0E1729" });
+  }
+
+  /* ---- 物体 ---- */
+  g += `<g transform="translate(${xO.toFixed(1)},${CY})">${candleU(hObj)}</g>`;
+  /* 主光轴 */
+  g += `<line x1="20" y1="${CY}" x2="${(cx + rx + 30).toFixed(1)}" y2="${CY}" stroke="#475569" stroke-width="1" stroke-dasharray="7 6"/>`;
+  /* 地面 */
+  g += `<line x1="20" y1="${(CY + 96).toFixed(1)}" x2="${VW - 20}" y2="${(CY + 96).toFixed(1)}" stroke="#1E293B" stroke-width="2"/>`;
+
+  /* ---- 结构标注 ---- */
+  if (o.labels !== false) {
+    g += T(LX - 2, CY - lh - 24, "晶状体", { fill: "#93C5FD", size: 12.5, w: 700, a: "middle", bg: "#0E1729" });
+    g += T(xL0 + 2, CY - 64, "角膜", { fill: "#7DD3FC", size: 12.5, w: 700, a: "middle", bg: "#0E1729" });
+    g += T(cx + rx * 0.50, CY - ry * 0.60, "视网膜", { fill: "#FDA4AF", size: 12.5, w: 700, a: "middle", bg: "#0E1729" });
+    g += T(cx - rx * 0.35, CY + ry * 0.62, "玻璃体", { fill: "#94A3B8", size: 12.5, w: 700, a: "middle", bg: "#0E1729" });
+    g += T(xO, CY - hObj - 12, u >= 280 ? "蜡烛（很远）" : `蜡烛 ${u} cm`, { fill: "#FCD34D", size: 13, w: 700, a: "middle", bg: "#0E1729" });
+  }
+
+  /* ---- 右上角：视网膜上看到的像 ---- */
+  if (o.inset !== false) {
+    const ix = 594, iy = 76, ir = 56;
+    g += `<line x1="${(xR + 2).toFixed(1)}" y1="${(CY - ry * 0.58).toFixed(1)}" x2="${ix - ir * 0.74}" y2="${iy + ir * 0.62}" stroke="#64748B" stroke-width="1.2" stroke-dasharray="4 4"/>`;
+    g += `<circle cx="${ix}" cy="${iy}" r="${ir}" fill="#1B2537" stroke="#64748B" stroke-width="2"/>`;
+    g += `<g filter="url(#${fid})"><g transform="translate(${ix},${iy - 29}) scale(1,-1)">${candleU(58)}</g></g>`;
+    g += T(ix, iy + ir + 17, "视网膜上看到的", { fill: "#CBD5E1", size: 12.5, w: 700, a: "middle", bg: "#0E1729" });
+  }
+
+  return { svg: g, v, hImg: tr.hImg, blur, ratio, fg, ue: tr.ue };
+}
+
+function defsEye(blur, fid) {
+  return `<defs>
+    <filter id="${fid}" x="-60%" y="-60%" width="220%" height="220%">
+      <feGaussianBlur stdDeviation="${blur.toFixed(2)}"/>
+    </filter>
+  </defs>`;
+}
+
+/* ================================================================
+   ① 眼球模型：看远看近
+   ================================================================ */
+const M1 = { u: 300, mode: "auto", fMan: 2.00, D: 2.00 };
+
+function fAuto(u, d) { return 1 / (1 / u + 1 / d); }
+
+function f1() {
+  let f;
+  if (M1.mode === "auto") {
+    const need = fAuto(M1.u, M1.D);
+    f = clamp(need, 1.75, 2.00);
+    M1.locked = need < 1.75 - 1e-9;
+  } else f = M1.fMan;
+  return f;
+}
+
+function draw1() {
+  VW = 680; VH = 400;
+  const f = f1(), d = M1.D;
+  const r = eyeScene({ u: M1.u, d, f, deg: 0, fid: "eb1" });
+  $("#svg1").innerHTML = defsEye(r.blur, "eb1") + r.svg;
+
+  $("#v1u").textContent = M1.u >= 280 ? M1.u + " cm（很远）" : M1.u + " cm";
+  $("#o1f").textContent = fmt(f, 2) + " cm";
+  $("#o1v").textContent = isFinite(r.v) ? fmt(r.v, 2) + " cm" : "成不了像";
+  const sharp = r.ratio < 0.012;
+  $("#o1t").textContent = f > 1.97 ? "最薄（看远）" : (f < 1.80 ? "很厚（看近）" : "中等厚度");
+  const tg = $("#o1s");
+  if (sharp) { tg.className = "tag b"; tg.textContent = "视网膜上的像：清晰"; }
+  else {
+    tg.className = "tag a";
+    tg.textContent = M1.mode === "auto"
+      ? "太近了，晶状体已经最厚，调不过来"
+      : "晶状体固定不动，像没落在视网膜上";
+  }
+  if (M1.mode === "man") { $("#v1f").textContent = fmt(M1.fMan, 2) + " cm"; }
+}
+
+function init1() {
+  $("#r1u").oninput = e => { M1.u = +e.target.value; draw1(); };
+  $("#r1f").oninput = e => { M1.fMan = +e.target.value / 100; draw1(); };
+  $$("#seg1 button").forEach(b => b.onclick = () => {
+    $$("#seg1 button").forEach(x => x.classList.remove("on"));
+    b.classList.add("on");
+    M1.mode = b.dataset.a;
+    $("#ctl1f").classList.toggle("hide", M1.mode !== "man");
+    if (M1.mode === "man") M1.fMan = Math.round(f1() * 100) / 100, $("#r1f").value = M1.fMan * 100;
+    draw1();
+  });
+  const goU = target => {
+    const from = M1.u;
+    tween(700, e => {
+      M1.u = Math.round(from + (target - from) * e);
+      $("#r1u").value = M1.u; draw1();
+    });
+  };
+  $("#b1far").onclick = () => goU(300);
+  $("#b1near").onclick = () => goU(25);
+  $("#b1toonear").onclick = () => goU(10);
+
+  /* 图上拖动蜡烛 */
+  bindDragX($("#svg1"), x => { M1.u = Math.round(UofX(LX - x)); $("#r1u").value = M1.u; draw1(); });
+  draw1();
+}
+
+/* ================================================================
+   ② 水透镜实验
+   ================================================================ */
+const M2 = { w: 56, u: 30, v: 25 };
+const PPC = 6, AX = 176, RAIL = 268, LX2 = 330;
+
+const fOfW = w => 22 - 15 * (w / 100);
+
+function draw2() {
+  VW = 700; VH = 380;
+  const u = M2.u, vs = M2.v, w = M2.w;
+  const f = fOfW(w);
+  const v0 = (u > f) ? f * u / (u - f) : Infinity;
+  const hi = isFinite(v0) ? 44 * v0 / u : 44;
+  const xc = LX2 - u * PPC, xs = LX2 + vs * PPC;
+  const off = isFinite(v0) ? Math.abs(vs - v0) : 99;
+  const sharp = off < 0.4;
+  const bs = clamp(off * 2.0, 0, 11);
+
+  let g = `<rect x="0" y="0" width="${VW}" height="${VH}" fill="#0E1729"/>`;
+  g += `<defs><filter id="wBlur" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="${bs.toFixed(2)}"/></filter></defs>`;
+
+  /* 导轨 */
+  g += `<rect x="66" y="${RAIL}" width="${VW - 132}" height="10" rx="5" fill="#1E293B" stroke="#334155"/>`;
+  for (let i = 0; i <= 20; i++) {
+    const x = 66 + i * (VW - 132) / 20;
+    g += `<line x1="${x.toFixed(1)}" y1="${RAIL}" x2="${x.toFixed(1)}" y2="${RAIL + (i % 2 ? 5 : 9)}" stroke="#475569" stroke-width="1"/>`;
+  }
+  /* 主轴 */
+  g += `<line x1="40" y1="${AX}" x2="${VW - 30}" y2="${AX}" stroke="#475569" stroke-width="1" stroke-dasharray="7 6"/>`;
+
+  /* 焦点 */
+  const xf = LX2 + f * PPC;
+  g += dot(xf, AX, 3.4, "#7DD3FC");
+  g += T(xf, AX - 10, "F", { fill: "#7DD3FC", size: 12, w: 700, a: "middle", bg: "#0E1729" });
+
+  /* 光线 */
+  const yi = AX + hi;
+  g += L([xc, AX - 44], [LX2, AX - 44], "#FDE047", 1.7);
+  g += L([LX2, AX - 44], [xs, isFinite(hi) ? yi : AX], "#FCD34D", 1.7);
+  g += L([xc, AX - 44], [LX2, AX], "#FDE047", 1.7);
+  g += L([LX2, AX], [xs, isFinite(hi) ? yi : AX], "#FCD34D", 1.7);
+  if (isFinite(v0) && v0 < 60) {
+    g += L([LX2, AX - 44], [LX2 + v0 * PPC, yi], "#FCD34D", 1.2, "5 4");
+  }
+
+  /* 蜡烛 */
+  g += `<rect x="${(xc - 16).toFixed(1)}" y="${AX}" width="32" height="${RAIL - AX}" fill="#1E293B" stroke="#334155"/>`;
+  g += `<g transform="translate(${xc.toFixed(1)},${AX})">${candleU(44)}</g>`;
+  g += T(xc, RAIL + 24, "蜡烛", { fill: "#FCD34D", size: 12.5, w: 700, a: "middle", bg: "#0E1729" });
+
+  /* 水透镜 */
+  const th = 8 + 17 * (w / 100), lh = 48;
+  g += `<path d="M${LX2} ${AX - lh} Q${LX2 + 2 * th} ${AX} ${LX2} ${AX + lh} Q${LX2 - 2 * th} ${AX} ${LX2} ${AX - lh} Z"
+      fill="#7DD3FC" fill-opacity="${(0.22 + 0.4 * w / 100).toFixed(2)}" stroke="#7DD3FC" stroke-width="2"/>`;
+  g += `<rect x="${LX2 - 15}" y="${AX + lh}" width="30" height="${RAIL - AX - lh}" fill="#1E293B" stroke="#334155"/>`;
+  g += T(LX2, RAIL + 24, "水透镜", { fill: "#7DD3FC", size: 12.5, w: 700, a: "middle", bg: "#0E1729" });
+
+  /* 注射器 */
+  const bx0 = 96, bx1 = 190, by0 = 52, by1 = 84, pist = bx0 + 4 + 60 * (w / 100);
+  g += `<rect x="${bx0}" y="${by0}" width="${bx1 - bx0}" height="${by1 - by0}" rx="4" fill="#0B1220" stroke="#64748B" stroke-width="1.6"/>`;
+  g += `<rect x="${pist.toFixed(1)}" y="${by0 + 2}" width="${(bx1 - pist - 2).toFixed(1)}" height="${by1 - by0 - 4}" fill="#38BDF8" fill-opacity=".85"/>`;
+  g += `<rect x="${(pist - 5).toFixed(1)}" y="${by0 - 4}" width="5" height="${by1 - by0 + 8}" fill="#CBD5E1"/>`;
+  g += `<line x1="${pist - 5}" y1="${(by0 + by1) / 2}" x2="58" y2="${(by0 + by1) / 2}" stroke="#CBD5E1" stroke-width="4"/>`;
+  g += `<rect x="50" y="${by0 - 8}" width="10" height="${by1 - by0 + 16}" rx="3" fill="#94A3B8"/>`;
+  g += `<path d="M${bx1} ${(by0 + by1) / 2 - 6} h12 v12 h-12 z" fill="#94A3B8"/>`;
+  g += `<path d="M${bx1 + 12} ${(by0 + by1) / 2} C ${bx1 + 60} ${(by0 + by1) / 2} ${LX2 - 90} 100 ${LX2} ${AX - lh - 2}"
+      stroke="#38BDF8" stroke-width="3" fill="none" stroke-opacity=".8"/>`;
+  g += T(bx0 + 4, by0 - 10, "注射器：推活塞 → 往透镜里注水", { fill: "#7DD3FC", size: 12, w: 700, bg: "#0E1729" });
+
+  /* 光屏 */
+  g += `<rect x="${(xs - 4).toFixed(1)}" y="${AX - 88}" width="8" height="${RAIL - AX + 88}" fill="#E2E8F0" stroke="#94A3B8"/>`;
+  g += `<rect x="${(xs - 14).toFixed(1)}" y="${RAIL}" width="28" height="10" rx="3" fill="#1E293B" stroke="#334155"/>`;
+  g += `<g filter="url(#wBlur)"><g transform="translate(${xs.toFixed(1)},${AX}) scale(1,-1)">${candleU(isFinite(hi) ? Math.max(10, hi) : 30)}</g></g>`;
+  g += T(xs, RAIL + 24, "光屏", { fill: "#E2E8F0", size: 12.5, w: 700, a: "middle", bg: "#0E1729" });
+
+  $("#svg2").innerHTML = g;
+
+  $("#v2w").textContent = w + "%";
+  $("#v2u").textContent = u + " cm";
+  $("#v2v").textContent = fmt(vs, 1) + " cm";
+  $("#o2f").textContent = fmt(f, 1) + " cm";
+  $("#o2v0").textContent = isFinite(v0) ? fmt(v0, 1) + " cm" : "成不了实像";
+  $("#o2v").textContent = fmt(vs, 1) + " cm";
+  $("#o2m").textContent = isFinite(v0) ? fmt(v0 / u, 2) : "—";
+  const tg = $("#o2s");
+  if (sharp) { tg.className = "tag b"; tg.textContent = "屏上的像：清晰"; }
+  else if (isFinite(v0)) { tg.className = "tag r"; tg.textContent = vs < v0 ? "屏上的像：模糊（屏太靠前）" : "屏上的像：模糊（屏太靠后）"; }
+  else { tg.className = "tag r"; tg.textContent = "蜡烛在焦点上，屏上接不到像"; }
+}
+
+function init2() {
+  $("#r2w").oninput = e => { M2.w = +e.target.value; draw2(); };
+  $("#r2u").oninput = e => { M2.u = +e.target.value; draw2(); };
+  $("#r2v").oninput = e => { M2.v = +e.target.value; draw2(); };
+
+  const anim = (key, to, dur, after) => {
+    const from = M2[key];
+    tween(dur, e => {
+      M2[key] = from + (to - from) * e;
+      if (key === "w") M2.w = clamp(M2.w, 0, 100);
+      $("#r2" + key).value = key === "w" ? Math.round(M2.w) : (key === "v" ? M2.v.toFixed(1) : Math.round(M2.u));
+      draw2();
+      if (e >= 1 && after) after();
+    });
+  };
+
+  const needW = () => {
+    const f = M2.u * M2.v / (M2.u + M2.v);
+    return (22 - f) / 15 * 100;
+  };
+
+  $("#b2auto").onclick = () => {
+    const w = needW();
+    if (w < 0 || w > 100) {
+      const tg = $("#o2s"); tg.className = "tag a";
+      tg.textContent = "这个屏位配不出来：请把光屏挪到 12–45 cm";
+      return;
+    }
+    anim("w", w, 900);
+  };
+  $("#b2far").onclick = () => { anim("u", 38, 600, () => anim("w", clamp(needW(), 0, 100), 900)); };
+  $("#b2near").onclick = () => { anim("u", 15, 600, () => anim("w", clamp(needW(), 0, 100), 900)); };
+
+  /* 拖动：左半区拖蜡烛、右半区拖光屏 */
+  bindDragX($("#svg2"), x => {
+    if (x < LX2 - 20) { M2.u = clamp(Math.round((LX2 - x) / PPC), 15, 38); $("#r2u").value = M2.u; }
+    else if (x > LX2 + 20) { M2.v = clamp(Math.round((x - LX2) / PPC * 2) / 2, 8, 55); $("#r2v").value = M2.v; }
+    draw2();
+  });
+  draw2();
+}
+
+/* ================================================================
+   ③④ 近视 / 远视（同一引擎，两套参数）
+   ================================================================ */
+const M3 = { d: 2.30, f: 2.00, deg: 0, u: 300 };
+const M4 = { d: 1.85, f: 2.00, deg: 0, u: 300 };
+
+/* 让像恰好落在视网膜上所需的眼镜度数（度）；正的＝凸透镜，负的＝凹透镜 */
+function needDeg(M) { return Math.round(10000 * (1 / M.d - 1 / M.f + 1 / M.u) / 25) * 25; }
+
+/* 极端参数下的兜底说明：n=3 近视、n=4 远视 */
+function warnFor(n, M) {
+  const req = needDeg(M), LIM = 1000;
+  if (Math.abs(req) > LIM)
+    return `这组参数要配到 ${req > 0 ? "+" : ""}${req} 度，已经超出 ±${LIM} 度了 —— 点上面的「成因」按钮可复原。`;
+  if ((n === 3 && req > 0) || (n === 4 && req < 0))
+    return `这颗眼球现在其实是${req > 0 ? "远视" : "近视"}眼（像落在视网膜${req > 0 ? "后" : "前"}面），要戴的是${req > 0 ? "凸" : "凹"}透镜。`;
+  return "";
+}
+
+function drawEyeModule(n, M) {
+  VW = 680; VH = 400;
+  const r = eyeScene({ u: M.u, d: M.d, f: M.f, deg: M.deg, fid: "eb" + n });
+  $("#svg" + n).innerHTML = defsEye(r.blur, "eb" + n) + r.svg;
+
+  const bare = eyeScene({ u: M.u, d: M.d, f: M.f, deg: 0, fid: "eb" + n });
+  const bareV = bare.v;
+  $("#o" + n + "v0").textContent = isFinite(bareV) ? fmt(bareV, 2) + " cm" : "成不了像";
+  $("#o" + n + "d").textContent = fmt(M.d, 2) + " cm";
+  $("#o" + n + "v").textContent = isFinite(r.v) ? fmt(r.v, 2) + " cm" : "成不了像";
+
+  const dv = isFinite(r.v) ? r.v - M.d : NaN;
+  const el = $("#o" + n + "dif");
+  if (isFinite(dv)) {
+    el.textContent = fmt(Math.abs(dv), 2) + " cm（偏" + (dv < 0 ? "前" : "后") + "）";
+    el.className = Math.abs(dv) < 0.03 ? "ok" : "bad";
+  } else { el.textContent = "—"; el.className = "bad"; }
+
+  const tg = $("#o" + n + "s");
+  const sharp = r.ratio < 0.014;
+  if (sharp) { tg.className = "tag b"; tg.textContent = "视网膜上的像：清晰"; }
+  else {
+    tg.className = "tag r";
+    tg.textContent = "视网膜上的像：模糊（像在视网膜" + ((isFinite(r.v) && r.v < M.d) ? "前" : "后") + "面）";
+  }
+
+  const we = $("#w" + n), wt = warnFor(n, M);
+  we.textContent = wt; we.hidden = !wt;
+
+  $("#v" + n + "d").textContent = fmt(M.d, 2) + " cm";
+  $("#v" + n + "f").textContent = fmt(M.f, 2) + " cm";
+  $("#v" + n + "g").textContent = M.deg === 0 ? "不戴眼镜"
+    : (M.deg > 0 ? "+" : "") + M.deg + " 度（" + (M.deg < 0 ? "凹" : "凸") + "透镜，f = " + fmt(10000 / M.deg, 1) + " cm）";
+}
+
+function initEyeModule(n, M, causes) {
+  const ids = { d: "#r" + n + "d", f: "#r" + n + "f", g: "#r" + n + "g" };
+  $(ids.d).oninput = e => { M.d = +e.target.value / 100; drawEyeModule(n, M); };
+  $(ids.f).oninput = e => { M.f = +e.target.value / 100; drawEyeModule(n, M); };
+  $(ids.g).oninput = e => { M.deg = +e.target.value; drawEyeModule(n, M); };
+
+  $$("#seg" + n + "c button").forEach(b => b.onclick = () => {
+    $$("#seg" + n + "c button").forEach(x => x.classList.remove("on"));
+    b.classList.add("on");
+    const c = causes[b.dataset.c];
+    M.d = c.d; M.f = c.f; M.deg = 0;
+    $(ids.d).value = Math.round(M.d * 100); $(ids.f).value = Math.round(M.f * 100); $(ids.g).value = 0;
+    drawEyeModule(n, M);
+  });
+  $$("#seg" + n + "u button").forEach(b => b.onclick = () => {
+    $$("#seg" + n + "u button").forEach(x => x.classList.remove("on"));
+    b.classList.add("on");
+    M.u = +b.dataset.u;
+    drawEyeModule(n, M);
+  });
+
+  $("#b" + n + "fit").onclick = () => {
+    const lo = +$(ids.g).min, hi = +$(ids.g).max;
+    const deg = clamp(needDeg(M), lo, hi);
+    const from = M.deg;
+    tween(650, e => {
+      M.deg = Math.round((from + (deg - from) * e) / 25) * 25;
+      $(ids.g).value = M.deg; drawEyeModule(n, M);
+    });
+  };
+  $("#b" + n + "off").onclick = () => { M.deg = 0; $(ids.g).value = 0; drawEyeModule(n, M); };
+
+  bindDragX($("#svg" + n), x => { M.u = Math.round(UofX(LX - x)); drawEyeModule(n, M); });
+  drawEyeModule(n, M);
+}
+
+/* ================================================================
+   三种眼睛对照（静态缩略图）
+   ================================================================ */
+function miniEye(cfg) {
+  const save = [VW, VH];
+  VW = 680; VH = 400;
+  const r = eyeScene({ u: cfg.u, d: cfg.d, f: cfg.f, deg: cfg.deg, labels: false, inset: false });
+  VW = save[0]; VH = save[1];
+  return `<svg viewBox="0 0 680 400" role="img">${r.svg}</svg>`;
+}
+
+function initCmp() {
+  const items = [
+    { k: "n", name: "正常眼", d: 2.00, f: 2.00, deg: 0, u: 300,
+      why: "像恰好成在视网膜上", fix: "不用戴眼镜" },
+    { k: "m", name: "近视眼", d: 2.30, f: 2.00, u: 300,
+      why: "像成在视网膜<b>前面</b>", fix: "戴<b>凹</b>透镜（先发散，会聚推迟）" },
+    { k: "h", name: "远视眼", d: 1.85, f: 2.00, u: 300,
+      why: "像成在视网膜<b>后面</b>", fix: "戴<b>凸</b>透镜（先会聚，会聚提前）" }
+  ];
+  $("#cmp4").innerHTML = items.map(c => {
+    const deg = c.fix === "不用戴眼镜" ? 0 : needDeg(c);   // 正常眼靠自身调节清晰，不戴镜
+    return `
+    <div class="cmp-item">
+      <div class="cmph"><span>${c.name}</span><span class="tag ${c.k === "n" ? "b" : "r"}">${deg === 0 ? "不戴镜" : (deg > 0 ? "+" : "") + deg + " 度"}</span></div>
+      <div class="cmpf">${miniEye(Object.assign({ deg }, c))}</div>
+      <div class="cmpb">${c.why}<br>${c.fix}</div>
+    </div>`;
+  }).join("");
+}
+
+/* ================================================================
+   拖动引擎（监听挂在 svg 上，innerHTML 重建后不丢）
+   ================================================================ */
+function bindDragX(svg, onX) {
+  const toX = ev => {
+    const r = svg.getBoundingClientRect();
+    const w = (svg.viewBox && svg.viewBox.baseVal) ? svg.viewBox.baseVal.width : VW;
+    return (ev.clientX - r.left) / r.width * w;
+  };
+  let down = false;
+  svg.addEventListener("pointerdown", e => {
+    down = true;
+    try { svg.setPointerCapture(e.pointerId); } catch (err) { }
+    onX(toX(e));
+  });
+  svg.addEventListener("pointermove", e => { if (down) onX(toX(e)); });
+  const up = () => { down = false; };
+  svg.addEventListener("pointerup", up);
+  svg.addEventListener("pointercancel", up);
+  svg.addEventListener("pointerleave", up);
+}
+
+/* ================================================================
+   入口
+   ================================================================ */
+document.addEventListener("DOMContentLoaded", () => {
+  init1();
+  init2();
+  initEyeModule(3, M3, {
+    axis: { d: 2.30, f: 2.00 },
+    lens: { d: 2.00, f: 1.75 }
+  });
+  initEyeModule(4, M4, {
+    axis: { d: 1.85, f: 2.00 },
+    lens: { d: 2.00, f: 2.25 }
+  });
+  initCmp();
+});
+</script>
+
+</body>
+</html>

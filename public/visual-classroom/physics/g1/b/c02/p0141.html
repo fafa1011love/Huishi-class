@@ -1,0 +1,2808 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>模型 33 · 圆锥摆交互演示（高中物理）</title>
+<style>
+/* ===================== 基础与主题 ===================== */
+*{box-sizing:border-box}
+:root{
+  --bg:#f2f5fa; --panel:#ffffff; --ink:#1b2430; --ink2:#44506a; --muted:#78839a;
+  --line:#dde5f1; --line2:#eef2f9;
+  --brand:#2f6df6; --brand-d:#1b4ed0; --brand-l:#e9f1ff;
+  --gray:#8a94a6;     /* 重力 */
+  --orange:#f59e0b;   /* 拉力 */
+  --red:#ef4444;      /* 合力（向心力） */
+  --blue:#3b82f6;     /* 速度 */
+  --green:#10b981;    /* h */
+  --purple:#a855f7;   /* r */
+  --amber:#f59e0b; --shadow:0 2px 12px rgba(24,42,80,.09);
+  --radius:12px;
+}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);
+  font:15px/1.65 "Microsoft YaHei","PingFang SC","Segoe UI",system-ui,sans-serif;
+  -webkit-font-smoothing:antialiased;padding-bottom:40px}
+h1,h2,h3,h4{margin:0;font-weight:700}
+button{font:inherit;cursor:pointer;border-radius:9px;border:1px solid var(--line);
+  background:#fff;color:var(--ink);padding:6px 11px;transition:.15s}
+button:hover{border-color:var(--brand);color:var(--brand)}
+button:active{transform:translateY(1px)}
+button:focus-visible,select:focus-visible,input:focus-visible,[tabindex]:focus-visible{
+  outline:2px solid var(--brand);outline-offset:2px}
+select,input[type=number],input[type=text]{font:inherit;padding:5px 7px;border:1px solid var(--line);
+  border-radius:8px;background:#fff;color:var(--ink)}
+input[type=range]{width:100%;accent-color:var(--brand)}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow)}
+.muted{color:var(--muted)}
+.mini-note{font-size:12.5px;color:var(--muted);line-height:1.5}
+
+/* ===================== 顶栏 ===================== */
+.topbar{position:sticky;top:0;z-index:40;display:flex;gap:12px;align-items:center;
+  justify-content:space-between;flex-wrap:wrap;padding:10px 16px;background:rgba(255,255,255,.94);
+  backdrop-filter:blur(8px);border-bottom:1px solid var(--line)}
+.brand{display:flex;align-items:center;gap:10px}
+.badge{background:var(--brand);color:#fff;font-weight:700;border-radius:8px;padding:3px 9px;font-size:13px}
+.brand h1{font-size:18px;letter-spacing:.3px}
+.top-actions{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.top-actions label{font-size:13px;color:var(--ink2)}
+
+/* ===================== 主布局 ===================== */
+.wrap{max-width:1560px;margin:0 auto;padding:12px 14px}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 336px;gap:12px;align-items:start}
+@media (max-width:1180px){.layout{grid-template-columns:1fr}}
+
+/* ---------- 舞台 ---------- */
+.stage{padding:10px}
+.stage-head{display:flex;gap:10px;align-items:center;justify-content:space-between;flex-wrap:wrap;margin-bottom:8px}
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden}
+.seg button{border:0;border-radius:0;padding:5px 12px;background:#fff}
+.seg button[aria-pressed=true]{background:var(--brand);color:#fff}
+.legend{display:flex;gap:10px;flex-wrap:wrap;font-size:12.5px;color:var(--ink2)}
+.legend i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:5px;vertical-align:middle}
+.canvas-box{position:relative;width:100%;height:clamp(380px,58vh,620px);
+  border:1px solid var(--line);border-radius:10px;background:linear-gradient(180deg,#fbfdff,#f4f7fc);overflow:hidden}
+#scene{width:100%;height:100%;display:block;touch-action:none}
+.warn-banner{position:absolute;left:10px;top:10px;right:10px;z-index:3;padding:8px 12px;border-radius:9px;
+  background:#fff7ed;border:1px solid #fdba74;color:#9a3412;font-size:13.5px;box-shadow:var(--shadow)}
+.warn-banner.err{background:#fef2f2;border-color:#fca5a5;color:#991b1b}
+.warn-banner b{color:inherit}
+
+.readouts{display:grid;grid-template-columns:repeat(auto-fit,minmax(112px,1fr));gap:8px;margin-top:10px}
+.ro{border:1px solid var(--line);border-radius:10px;padding:6px 9px;background:#fff;cursor:pointer;
+  position:relative;transition:.15s}
+.ro:hover{border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-l)}
+.ro .k{display:block;font-size:12px;color:var(--muted)}
+.ro .v{display:inline-block;font-weight:700;font-size:17px;font-variant-numeric:tabular-nums}
+.ro .u{font-size:11.5px;color:var(--muted);margin-left:3px}
+.ro .pin{position:absolute;right:6px;top:5px;font-size:10px;color:var(--brand)}
+.expbox{margin-top:10px;border:1px dashed var(--line);border-radius:10px;padding:8px 10px;background:#fafcff}
+.expbox h4{font-size:14px;margin-bottom:6px}
+.expbox table{width:100%;border-collapse:collapse;font-size:12.8px}
+.expbox th,.expbox td{border:1px solid var(--line2);padding:4px 6px;text-align:center}
+.expbox th{background:#f4f7fd}
+.ok-line{margin-top:6px;font-size:13px;color:#047857;background:#ecfdf5;border:1px solid #a7f3d0;
+  border-radius:8px;padding:5px 8px}
+
+/* ---------- 控制面板 ---------- */
+.panel{padding:12px;max-height:none}
+.panel h3{font-size:15px;padding-bottom:6px;border-bottom:1px solid var(--line2);margin-bottom:10px}
+.ctl{margin-bottom:11px}
+.ctl>label{display:flex;justify-content:space-between;align-items:center;font-size:13px;color:var(--ink2);gap:6px}
+.ctl .row{display:flex;align-items:center;gap:6px;margin-top:4px}
+.ctl input[type=number]{width:82px}
+.grid-btns{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.grid-btns.b3{grid-template-columns:1fr 1fr 1fr}
+.sw{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;font-size:13px}
+.sw label{display:flex;gap:5px;align-items:center;color:var(--ink2)}
+.preset-row{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.preset-row button{font-size:12.8px;padding:6px 4px}
+.hr{height:1px;background:var(--line2);margin:12px 0}
+.tag{display:inline-block;font-size:11px;padding:1px 6px;border-radius:6px;background:var(--brand-l);color:var(--brand-d)}
+.tag.adv{background:#fff7ed;color:#b45309}
+
+/* ===================== 图表 / 实验 / 练习 ===================== */
+.lower{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;margin-top:12px}
+@media (max-width:1180px){.lower{grid-template-columns:1fr}}
+.card h3{font-size:15px;padding:10px 12px;border-bottom:1px solid var(--line2)}
+.card .body{padding:12px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;padding:10px 12px 0}
+.tabs button{font-size:12.8px;padding:5px 10px}
+.tabs button[aria-pressed=true]{background:var(--brand);color:#fff;border-color:var(--brand)}
+.chart-box{position:relative;width:100%;height:268px;padding:6px 10px 10px}
+.chart-box canvas{width:100%;height:100%;display:block}
+table.data{width:100%;border-collapse:collapse;font-size:12.6px}
+table.data th,table.data td{border:1px solid var(--line2);padding:4px 5px;text-align:center;white-space:nowrap}
+table.data th{background:#f4f7fd;position:sticky;top:0}
+.scroll{overflow:auto;max-height:220px}
+.quiz .q{border:1px solid var(--line);border-radius:10px;padding:10px;margin-bottom:10px;background:#fcfdff}
+.quiz .opt{display:block;border:1px solid var(--line);border-radius:8px;padding:6px 9px;margin:5px 0;
+  background:#fff;cursor:pointer;font-size:13.5px}
+.quiz .opt:hover{border-color:var(--brand)}
+.quiz .opt.correct{border-color:#16a34a;background:#ecfdf5}
+.quiz .opt.wrong{border-color:#dc2626;background:#fef2f2}
+.quiz .fb{font-size:13px;margin-top:6px;padding:6px 8px;border-radius:8px}
+.quiz .fb.ok{background:#ecfdf5;color:#047857}
+.quiz .fb.bad{background:#fef2f2;color:#991b1b}
+
+/* ===================== 抽屉 / 弹窗 ===================== */
+.drawer{position:fixed;top:0;right:0;height:100%;width:min(430px,94vw);background:#fff;z-index:60;
+  display:flex;flex-direction:column;transform:translateX(103%);transition:transform .26s ease;
+  box-shadow:-8px 0 28px rgba(20,40,80,.18)}
+.drawer.open{transform:none}
+.drawer header{padding:12px;border-bottom:1px solid var(--line2);display:flex;gap:8px;
+  align-items:center;justify-content:space-between}
+.drawer .filters{padding:8px 12px;border-bottom:1px solid var(--line2);display:flex;flex-direction:column;gap:8px}
+.drawer .catTabs{display:flex;flex-wrap:wrap;gap:5px}
+.drawer .catTabs button{font-size:12px;padding:3px 8px}
+.drawer .catTabs button[aria-pressed=true]{background:var(--brand);color:#fff;border-color:var(--brand)}
+.cardlist{flex:1;overflow:auto;padding:10px 12px;display:flex;flex-direction:column;gap:8px}
+.citem{border:1px solid var(--line);border-radius:10px;padding:8px 10px;cursor:pointer;background:#fff}
+.citem:hover{border-color:var(--brand);box-shadow:0 0 0 3px var(--brand-l)}
+.citem .ttl{font-weight:700;font-size:14px}
+.citem .cc{font-size:12.6px;color:var(--ink2);margin-top:2px}
+.citem .meta{font-size:11.5px;color:var(--muted);margin-top:4px;display:flex;gap:6px;flex-wrap:wrap}
+.drawer footer{padding:8px 12px;border-top:1px solid var(--line2);display:flex;gap:8px;justify-content:space-between}
+
+.mask{position:fixed;inset:0;background:rgba(15,25,45,.42);z-index:70;display:none}
+.mask.show{display:block}
+.modal{position:fixed;z-index:80;left:50%;top:50%;transform:translate(-50%,-50%);width:min(560px,94vw);
+  max-height:88vh;overflow:auto;display:none}
+.modal.show{display:block}
+.modal header{cursor:move;padding:12px 14px;border-bottom:1px solid var(--line2);display:flex;
+  align-items:center;justify-content:space-between;gap:10px;background:#fbfcff;position:sticky;top:0}
+.modal .mbody{padding:14px}
+.flipbox{perspective:1200px}
+.flipinner{transition:transform .45s;transform-style:preserve-3d;position:relative}
+.flipbox.flipped .flipinner{transform:rotateY(180deg)}
+.face{backface-visibility:hidden}
+.face.back{position:absolute;inset:0;transform:rotateY(180deg)}
+.kv{display:grid;grid-template-columns:74px 1fr;gap:4px 10px;font-size:13.6px;margin:6px 0}
+.kv dt{color:var(--muted)}
+.kv dd{margin:0}
+.formula-box{background:#f6f9ff;border:1px solid var(--brand-l);border-radius:9px;padding:8px 10px;
+  font-size:15px;text-align:center;color:var(--brand-d);font-weight:700;margin:8px 0}
+.mini{border:1px solid var(--line2);border-radius:9px;background:#fbfcff;padding:4px;display:block;margin:8px 0}
+.tips{background:#fff7ed;border:1px solid #fed7aa;color:#9a3412;border-radius:9px;padding:7px 10px;font-size:13px}
+.flowbox{background:#eef6ff;border:1px solid #bfdbfe;color:#1e40af;border-radius:9px;padding:7px 10px;font-size:13px}
+
+.teachbar{position:fixed;left:50%;transform:translateX(-50%);bottom:14px;z-index:55;width:min(940px,94vw);
+  box-shadow:0 8px 30px rgba(20,40,80,.2);display:none}
+.teachbar.show{display:block}
+.teachbar .body{display:flex;gap:12px;align-items:flex-start;padding:12px 14px;flex-wrap:wrap}
+.teachbar .step{min-width:74px;text-align:center}
+.teachbar .step b{display:block;font-size:22px;color:var(--brand);line-height:1}
+.teachbar .txt{flex:1;min-width:240px}
+.teachbar .acts{display:flex;gap:6px;flex-wrap:wrap}
+.dots{display:flex;gap:5px;margin-top:6px}
+.dots i{width:9px;height:9px;border-radius:50%;background:var(--line);display:block}
+.dots i.on{background:var(--brand)}
+.dots i.done{background:#86b7ff}
+
+.rowbtns{display:flex;gap:6px;flex-wrap:wrap}
+.small{font-size:12px;padding:4px 8px}
+.nowrap{white-space:nowrap}
+.hotspot-hint{font-size:12px;color:var(--muted);margin-top:6px}
+@media (prefers-reduced-motion: reduce){
+  *{transition:none !important;animation:none !important}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="badge">模型 33</span>
+    <h1>圆锥摆 · 受力分析 → ω=√(g/h) → T<sub>周期</sub>=2π√(h/g)</h1>
+  </div>
+  <div class="top-actions">
+    <label>重力加速度 g
+      <select id="sel-g" aria-label="选择重力加速度">
+        <option value="9.8" selected>9.8 m/s²</option>
+        <option value="10">10 m/s²</option>
+      </select>
+    </label>
+    <button id="btn-cards" title="打开知识点卡片库">📚 知识卡片库</button>
+    <button id="btn-teach" title="六步教学引导">🧭 教学流程</button>
+    <button id="btn-safety" title="实验安全须知">⚠️ 安全须知</button>
+    <button id="btn-help" title="使用说明">❓ 使用说明</button>
+  </div>
+</header>
+
+<div class="wrap">
+  <div class="layout">
+    <!-- ================= 舞台区 ================= -->
+    <section class="card stage">
+      <div class="stage-head">
+        <div class="seg" role="group" aria-label="视角切换">
+          <button id="btn-front" aria-pressed="true">正视（透视椭圆）</button>
+          <button id="btn-top" aria-pressed="false">俯视（圆轨迹）</button>
+        </div>
+        <div class="legend" aria-label="图例">
+          <span><i style="background:#8a94a6"></i>重力 mg</span>
+          <span><i style="background:#f59e0b"></i>拉力 T<sub>拉力</sub></span>
+          <span><i style="background:#ef4444"></i>合力（向心力）</span>
+          <span><i style="background:#3b82f6"></i>速度 v</span>
+          <span><i style="background:#10b981"></i>h 绿色虚线</span>
+          <span><i style="background:#a855f7"></i>r 紫色虚线</span>
+        </div>
+      </div>
+      <div class="canvas-box">
+        <canvas id="scene" tabindex="0" role="img"
+          aria-label="圆锥摆演示画面：可点击量角器、h 标尺、r 标尺、合力箭头等热点查看对应知识卡片，方向键切换热点，回车打开"></canvas>
+        <div class="warn-banner" id="warn" hidden></div>
+      </div>
+
+      <div class="readouts" id="readouts" aria-label="实时读数"></div>
+
+      <div class="expbox" id="expbox">
+        <h4>对照实验结论板 <span class="muted" style="font-weight:400;font-size:12px">（点右侧「预设 / 对照实验」按钮自动跑）</span></h4>
+        <div id="expResult"><p class="mini-note">尚未运行对照实验。可点右侧「预设 / 对照实验」中的 <b>同 h 换质量（A 组）</b>、<b>ω 扫描（B 组）</b>、<b>同 h 换绳长（C 组）</b>。</p></div>
+      </div>
+      <p class="hotspot-hint">提示：画面上的小圆标是<b>知识热点</b>，点击可弹出对应卡片；聚焦画面后用 <b>← →</b> 切换热点、<b>Enter</b> 打开、<b>Esc</b> 关闭。</p>
+    </section>
+
+    <!-- ================= 控制面板 ================= -->
+    <aside class="card panel" aria-label="控制面板">
+      <h3>控制面板</h3>
+
+      <div class="ctl">
+        <label>电机转速 n <span class="nowrap"><input type="number" id="num-n" min="0" max="200" step="0.5" value="45" aria-label="转速 r/min"> r/min</span></label>
+        <input type="range" id="rng-n" min="0" max="200" step="0.5" value="45" aria-label="转速滑块">
+        <div class="row">
+          <span class="muted" style="font-size:12px">或直设 ω</span>
+          <input type="number" id="num-omega" min="0" max="21" step="0.01" value="4.71" aria-label="角速度 rad/s">
+          <span class="muted" style="font-size:12px">rad/s</span>
+          <span id="motor-state" class="tag">转速稳定</span>
+        </div>
+      </div>
+
+      <div class="ctl">
+        <label>绳长 L <span class="nowrap"><input type="number" id="num-L" min="0.3" max="1.2" step="0.01" value="0.80" aria-label="绳长 m"> m</span></label>
+        <input type="range" id="rng-L" min="0.3" max="1.2" step="0.01" value="0.80" aria-label="绳长滑块">
+      </div>
+
+      <div class="ctl">
+        <label>小球质量 m</label>
+        <div class="grid-btns b3" role="group" aria-label="小球质量选择">
+          <button data-mul="1" aria-pressed="true">m = 0.10 kg</button>
+          <button data-mul="2" aria-pressed="false">2m = 0.20 kg</button>
+          <button data-mul="3" aria-pressed="false">3m = 0.30 kg</button>
+        </div>
+      </div>
+
+      <div class="hr"></div>
+
+      <div class="ctl">
+        <label><span><input type="checkbox" id="chk-lockH"> 锁定高度 h（反解 θ）</span>
+          <span class="nowrap"><input type="number" id="num-h" min="0.05" max="1.2" step="0.01" value="0.40" aria-label="锁定高度 m"> m</span></label>
+        <input type="range" id="rng-h" min="0.05" max="1.2" step="0.01" value="0.40" disabled aria-label="锁定高度滑块">
+        <p class="mini-note" style="margin:4px 0 0">开启后 ω=√(g/h) 自动给定，θ=arccos(h/L)；h&gt;L 时自动夹紧。</p>
+      </div>
+
+      <div class="ctl">
+        <label>预设 / 对照实验</label>
+        <div class="preset-row">
+          <button data-preset="low">低速小角</button>
+          <button data-preset="mid">中速</button>
+          <button data-preset="high">高速大角</button>
+          <button data-preset="crit">低于临界</button>
+          <button data-preset="mass">A：同 h 换质量</button>
+          <button data-preset="len">C：同 h 换绳长</button>
+        </div>
+      </div>
+
+      <div class="ctl">
+        <label>ω 自动扫描（B 组）</label>
+        <div class="row">
+          <input type="number" id="num-w1" value="2.0" step="0.1" min="0" aria-label="起始 ω">
+          <span>→</span>
+          <input type="number" id="num-w2" value="8.0" step="0.1" min="0" aria-label="终止 ω">
+          <input type="number" id="num-wstep" value="0.25" step="0.05" min="0.02" aria-label="步长" style="width:64px">
+        </div>
+        <div class="rowbtns" style="margin-top:6px">
+          <button id="btn-sweep" class="small">开始扫描</button>
+          <button id="btn-sweep-stop" class="small">停止</button>
+        </div>
+      </div>
+
+      <div class="hr"></div>
+
+      <div class="ctl">
+        <label>演示控制</label>
+        <div class="rowbtns">
+          <button id="btn-play" class="small">⏸ 暂停</button>
+          <button id="btn-step" class="small">⏭ 单步</button>
+          <button id="btn-reset" class="small">↺ 重置</button>
+          <select id="sel-speed" class="small" aria-label="慢动作倍率">
+            <option value="1">1×</option><option value="0.5">0.5×</option><option value="0.25">0.25×</option>
+          </select>
+        </div>
+      </div>
+
+      <div class="ctl">
+        <label>频闪仪 <input type="checkbox" id="chk-strobe"></label>
+        <div class="row">
+          <input type="range" id="rng-strobe" min="0.5" max="20" step="0.1" value="8" disabled aria-label="频闪频率">
+          <input type="number" id="num-strobe" value="8" min="0.5" max="20" step="0.1" style="width:64px" disabled aria-label="频闪频率 Hz">
+          <button id="btn-strobe-sync" class="small" disabled>同步锁定</button>
+        </div>
+      </div>
+
+      <div class="ctl">
+        <label>图层开关</label>
+        <div class="sw">
+          <label><input type="checkbox" id="sw-vec" checked>矢量 mg/T/v</label>
+          <label><input type="checkbox" id="sw-res" checked>合力+平行四边形</label>
+          <label><input type="checkbox" id="sw-hr" checked>h / r 辅助线</label>
+          <label><input type="checkbox" id="sw-theta" checked>θ 刻度盘</label>
+          <label><input type="checkbox" id="sw-trace" checked>圆周轨迹</label>
+          <label><input type="checkbox" id="sw-ghost" checked>幽灵对比</label>
+          <label><input type="checkbox" id="sw-sound">音效（每圈）</label>
+          <label><input type="checkbox" id="sw-hand">手摇模式（拖拽画面）</label>
+        </div>
+      </div>
+
+      <div class="hr"></div>
+      <h3>测量与记录</h3>
+      <div class="ctl">
+        <div class="rowbtns">
+          <button id="btn-timer" class="small">⏱ 开始计时</button>
+          <button id="btn-record" class="small">＋ 记录当前</button>
+        </div>
+        <p class="mini-note" style="margin:6px 0 0">
+          计时：<span id="timer-laps">0</span> 圈 / <span id="timer-t">0.00</span> s →
+          T<sub>周期</sub>=<b id="timer-T">—</b> s
+        </p>
+        <label style="margin-top:4px"><input type="checkbox" id="chk-jitter"> 模拟测量误差（±0.3%）</label>
+      </div>
+      <div class="ctl">
+        <div class="rowbtns">
+          <button id="btn-csv" class="small">⬇ 导出 CSV</button>
+          <button id="btn-clear" class="small">🗑 清空记录</button>
+        </div>
+        <div class="scroll" style="margin-top:8px">
+          <table class="data" id="recTable">
+            <thead><tr>
+              <th>组</th><th>L/m</th><th>m/kg</th><th>n</th><th>ω</th><th>θ/°</th><th>h/m</th>
+              <th>T测/s</th><th>T理/s</th><th>误差</th>
+            </tr></thead>
+            <tbody id="recBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </aside>
+  </div>
+
+  <!-- ================= 图表区 ================= -->
+  <div class="lower">
+    <section class="card">
+      <h3>图像联动（带坐标轴、符号、单位）</h3>
+      <div class="tabs" role="tablist" aria-label="图表切换">
+        <button data-chart="thw" aria-pressed="true">θ–ω 曲线（含 ω₀）</button>
+        <button data-chart="hw" aria-pressed="false">h–ω 曲线</button>
+        <button data-chart="tm" aria-pressed="false">T<sub>周期</sub>–m</button>
+        <button data-chart="t2h" aria-pressed="false">T²–h</button>
+        <button data-chart="fm" aria-pressed="false">T<sub>拉力</sub>–m</button>
+      </div>
+      <div class="chart-box"><canvas id="chart-thw" aria-label="theta-omega 曲线"></canvas></div>
+      <div class="chart-box" hidden><canvas id="chart-hw" aria-label="h-omega 曲线"></canvas></div>
+      <div class="chart-box" hidden><canvas id="chart-tm" aria-label="周期-质量曲线"></canvas></div>
+      <div class="chart-box" hidden><canvas id="chart-t2h" aria-label="T平方-h 曲线"></canvas></div>
+      <div class="chart-box" hidden><canvas id="chart-fm" aria-label="拉力-质量曲线"></canvas></div>
+      <div class="body" style="padding-top:0">
+        <p class="mini-note" id="chart-note"></p>
+      </div>
+    </section>
+
+    <section class="card quiz">
+      <h3>即时练习（5 题，答错自动跳卡片）</h3>
+      <div class="body">
+        <div class="rowbtns" style="margin-bottom:10px">
+          <button id="btn-teacher" class="small">👩‍🏫 教师考核模式：关</button>
+          <button id="btn-quiz-reset" class="small">↺ 重做</button>
+          <span class="muted" id="quiz-score" style="font-size:13px"></span>
+        </div>
+        <div id="quizArea"></div>
+      </div>
+    </section>
+  </div>
+</div>
+
+<!-- ================= 知识卡片抽屉 ================= -->
+<div class="drawer" id="drawer" aria-label="知识卡片库" aria-hidden="true">
+  <header>
+    <h3>知识点卡片库 <span class="muted" id="cardCount" style="font-size:12px"></span></h3>
+    <button id="btn-drawer-close" aria-label="关闭卡片库">✕</button>
+  </header>
+  <div class="filters">
+    <input type="text" id="cardSearch" placeholder="搜索关键词：周期 / 质量 / 临界 / 向心力 …" aria-label="卡片搜索">
+    <div class="catTabs" id="cardTabs" role="group" aria-label="分类筛选"></div>
+  </div>
+  <div class="cardlist" id="cardList"></div>
+  <footer>
+    <button id="btn-prev-card" class="small">← 上一张</button>
+    <span class="muted" id="navInfo" style="font-size:12px"></span>
+    <button id="btn-next-card" class="small">下一张 →</button>
+  </footer>
+</div>
+
+<!-- ================= 卡片弹窗 ================= -->
+<div class="mask" id="mask"></div>
+<div class="modal card" id="modal" role="dialog" aria-modal="true" aria-labelledby="modalTitle" tabindex="-1">
+  <header>
+    <h3 id="modalTitle">卡片标题</h3>
+    <div class="rowbtns">
+      <button id="btn-flip" class="small">🔁 翻面</button>
+      <button id="btn-pin" class="small">📌 钉住</button>
+      <button id="btn-modal-close" class="small" aria-label="关闭卡片">✕</button>
+    </div>
+  </header>
+  <div class="mbody">
+    <div class="flipbox" id="flipbox">
+      <div class="flipinner">
+        <div class="face front" id="cardFront"></div>
+        <div class="face back" id="cardBack"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 教学引导 ================= -->
+<div class="card teachbar" id="teachbar" aria-label="教学引导">
+  <div class="body">
+    <div class="step"><b id="teach-no">1</b><span class="muted" style="font-size:12px">/6</span>
+      <div class="dots" id="teach-dots"></div>
+    </div>
+    <div class="txt">
+      <div id="teach-title" style="font-weight:700"></div>
+      <div id="teach-text" style="font-size:13.5px"></div>
+      <div id="teach-q" class="flowbox" style="margin-top:6px"></div>
+    </div>
+    <div class="acts">
+      <button id="btn-teach-prev" class="small">← 上一步</button>
+      <button id="btn-teach-next" class="small">下一步 →</button>
+      <button id="btn-teach-auto" class="small">▶ 自动播放</button>
+      <button id="btn-teach-close" class="small">✕ 关闭</button>
+    </div>
+  </div>
+</div>
+
+<script>
+/* =========================================================================
+   模型 33 · 圆锥摆 单文件交互演示
+   结构：P1 配置与数据 / P2 场景绘制 / P3 图表 / P4 实验与记录 / P5 交互与教学
+   ========================================================================= */
+
+/* ===================== P1-1 通用工具 ===================== */
+const $  = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+const RAD = Math.PI / 180, DEG = 180 / Math.PI;
+const fmt = (v, d = 2) => (Number.isFinite(v) ? v.toFixed(d) : '—');
+const lerp = (a, b, t) => a + (b - a) * t;
+const REDUCE = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* 小球配色（按质量） */
+const MASS_COLOR = { 1: '#38bdf8', 2: '#a78bfa', 3: '#f472b6' };
+const massLabel = mul => ({ 1: 'm', 2: '2m', 3: '3m' }[mul] || 'm');
+
+/* ===================== P1-2 迷你 SVG（卡片插图，全部内联） ===================== */
+const SV = (body, label) =>
+  `<svg class="mini" viewBox="0 0 240 128" role="img" aria-label="${label}">${body}</svg>`;
+
+const MINI = {
+  /* 正视圆锥摆 + h + r + θ */
+  conical: SV(`
+    <line x1="112" y1="16" x2="112" y2="104" stroke="#b8c2d4" stroke-width="1.2" stroke-dasharray="4 4"/>
+    <ellipse cx="112" cy="66" rx="66" ry="17" fill="none" stroke="#94a3b8" stroke-width="1.2" stroke-dasharray="4 4"/>
+    <line x1="112" y1="16" x2="178" y2="66" stroke="#334155" stroke-width="2"/>
+    <circle cx="178" cy="66" r="9" fill="#38bdf8" stroke="#0e7490" stroke-width="1.2"/>
+    <line x1="112" y1="16" x2="112" y2="66" stroke="#10b981" stroke-width="2.4"/>
+    <line x1="112" y1="66" x2="178" y2="66" stroke="#a855f7" stroke-width="2.4"/>
+    <path d="M112 46 A 30 30 0 0 1 132 50" fill="none" stroke="#2563eb" stroke-width="1.6"/>
+    <text x="120" y="45" font-size="12" fill="#2563eb">θ</text>
+    <text x="88" y="46" font-size="12" fill="#10b981">h</text>
+    <text x="136" y="60" font-size="12" fill="#a855f7">r</text>
+    <text x="170" y="90" font-size="12" fill="#334155">m,ω</text>
+    <rect x="96" y="8" width="32" height="9" rx="2" fill="#475569"/>`,
+    '圆锥摆正视示意图'),
+
+  /* 受力：mg + T + 合力 */
+  forces: SV(`
+    <line x1="112" y1="14" x2="112" y2="112" stroke="#b8c2d4" stroke-dasharray="4 4"/>
+    <line x1="112" y1="14" x2="186" y2="62" stroke="#334155" stroke-width="1.6"/>
+    <circle cx="186" cy="62" r="8" fill="#38bdf8" stroke="#0e7490"/>
+    <line x1="186" y1="62" x2="186" y2="112" stroke="#8a94a6" stroke-width="2.6"/>
+    <text x="190" y="106" font-size="12" fill="#6b7280">mg</text>
+    <line x1="186" y1="62" x2="140" y2="35" stroke="#f59e0b" stroke-width="2.6"/>
+    <text x="112" y="34" font-size="12" fill="#b45309">T</text>
+    <line x1="186" y1="62" x2="140" y2="112" stroke="#ef4444" stroke-width="3"/>
+    <text x="112" y="118" font-size="12" fill="#b91c1c">F合=mg·tanθ</text>
+    <line x1="140" y1="35" x2="140" y2="112" stroke="#cbd5e1" stroke-dasharray="3 3"/>`,
+    '受力与合力示意图'),
+
+  /* 向心力方向：水平指向圆心 */
+  dirCenter: SV(`
+    <line x1="120" y1="12" x2="120" y2="116" stroke="#b8c2d4" stroke-dasharray="4 4"/>
+    <ellipse cx="120" cy="70" rx="70" ry="18" fill="none" stroke="#94a3b8" stroke-dasharray="4 4"/>
+    <circle cx="190" cy="70" r="9" fill="#38bdf8" stroke="#0e7490"/>
+    <line x1="188" y1="70" x2="130" y2="70" stroke="#ef4444" stroke-width="3"/>
+    <polygon points="124,70 136,64 136,76" fill="#ef4444"/>
+    <text x="140" y="60" font-size="12" fill="#b91c1c">指向圆心（水平）</text>
+    <line x1="186" y1="76" x2="150" y2="56" stroke="#cbd5e1" stroke-dasharray="3 3"/>
+    <text x="150" y="96" font-size="11" fill="#94a3b8">✗ 沿绳指向悬点</text>`,
+    '向心力方向'),
+
+  /* 只对-不对对照 */
+  vectorWrong: SV(`
+    <circle cx="60" cy="64" r="6" fill="#38bdf8"/>
+    <text x="52" y="86" font-size="11" fill="#475569">× 错：三个力</text>
+    <line x1="60" y1="64" x2="60" y2="110" stroke="#8a94a6" stroke-width="2"/>
+    <line x1="60" y1="64" x2="26" y2="32" stroke="#f59e0b" stroke-width="2"/>
+    <line x1="60" y1="64" x2="96" y2="32" stroke="#ef4444" stroke-width="2"/>
+    <text x="20" y="120" font-size="11" fill="#94a3b8">T + mg + "向心力"</text>
+    <line x1="150" y1="20" x2="150" y2="120" stroke="#b8c2d4" stroke-dasharray="4 4"/>
+    <circle cx="204" cy="64" r="6" fill="#38bdf8"/>
+    <line x1="204" y1="64" x2="204" y2="110" stroke="#8a94a6" stroke-width="2"/>
+    <line x1="204" y1="64" x2="168" y2="34" stroke="#f59e0b" stroke-width="2"/>
+    <line x1="204" y1="64" x2="164" y2="64" stroke="#ef4444" stroke-width="2.6"/>
+    <text x="158" y="120" font-size="11" fill="#047857">√ 对：合力水平的</text>`,
+    '向心力辨析'),
+
+  /* h 的定义 */
+  hDef: SV(`
+    <line x1="70" y1="16" x2="70" y2="108" stroke="#b8c2d4" stroke-dasharray="4 4"/>
+    <line x1="70" y1="16" x2="70" y2="70" stroke="#10b981" stroke-width="3"/>
+    <ellipse cx="70" cy="70" rx="56" ry="14" fill="none" stroke="#94a3b8" stroke-dasharray="4 4"/>
+    <circle cx="126" cy="70" r="8" fill="#38bdf8" stroke="#0e7490"/>
+    <path d="M62 16 h16 M62 70 h16" stroke="#10b981" stroke-width="1.6"/>
+    <text x="26" y="46" font-size="12" fill="#047857">h</text>
+    <text x="82" y="92" font-size="11.5" fill="#475569">圆周平面</text>
+    <text x="150" y="26" font-size="11.5" fill="#475569">悬点</text>`,
+    'h 的定义'),
+
+  /* 三球对比 */
+  threeBalls: SV(`
+    <ellipse cx="120" cy="74" rx="70" ry="18" fill="none" stroke="#94a3b8" stroke-dasharray="4 4"/>
+    <circle cx="120" cy="74" r="7" fill="#38bdf8"/><circle cx="70" cy="74" r="9" fill="#a78bfa"/>
+    <circle cx="170" cy="74" r="11" fill="#f472b6"/>
+    <text x="52" y="104" font-size="11" fill="#7c3aed">2m</text>
+    <text x="98" y="104" font-size="11" fill="#0369a1">m</text>
+    <text x="152" y="104" font-size="11" fill="#be185d">3m</text>
+    <rect x="30" y="20" width="180" height="26" rx="8" fill="#ecfeff" stroke="#a5f3fc"/>
+    <text x="42" y="37" font-size="12" fill="#0e7490">周期 T 完全相同</text>`,
+    '同 h 换质量'),
+
+  /* 临界 */
+  critical: SV(`
+    <g>
+      <line x1="60" y1="16" x2="60" y2="100" stroke="#334155" stroke-width="1.6"/>
+      <circle cx="60" cy="106" r="9" fill="#38bdf8" stroke="#0e7490"/>
+      <text x="34" y="122" font-size="11.5" fill="#475569">ω&lt;ω₀：竖直下垂</text>
+      <text x="34" y="12" font-size="12" fill="#b91c1c">ω₀=√(g/L)</text>
+    </g>
+    <g>
+      <line x1="180" y1="16" x2="206" y2="64" stroke="#334155" stroke-width="1.6"/>
+      <ellipse cx="180" cy="64" rx="42" ry="12" fill="none" stroke="#94a3b8" stroke-dasharray="4 4"/>
+      <circle cx="206" cy="64" r="9" fill="#38bdf8" stroke="#0e7490"/>
+      <text x="150" y="106" font-size="11.5" fill="#047857">ω&gt;ω₀：形成圆锥摆</text>
+    </g>`,
+    '临界转速'),
+
+  /* θ–ω 曲线 */
+  graphThW: SV(`
+    <line x1="26" y1="110" x2="226" y2="110" stroke="#475569"/>
+    <line x1="26" y1="110" x2="26" y2="16" stroke="#475569"/>
+    <text x="228" y="112" font-size="11" fill="#475569">ω</text>
+    <text x="10" y="20" font-size="11" fill="#475569">θ</text>
+    <line x1="86" y1="110" x2="86" y2="16" stroke="#ef4444" stroke-dasharray="4 3"/>
+    <text x="80" y="126" font-size="11" fill="#b91c1c">ω₀</text>
+    <path d="M86 110 C 120 40 180 24 222 22" fill="none" stroke="#2563eb" stroke-width="2.4"/>
+    <line x1="26" y1="110" x2="86" y2="110" stroke="#2563eb" stroke-width="2.4"/>
+    <circle cx="170" cy="32" r="4" fill="#2563eb"/>`,
+    'theta-omega 曲线'),
+
+  /* h–ω 曲线 */
+  graphHW: SV(`
+    <line x1="26" y1="110" x2="226" y2="110" stroke="#475569"/>
+    <line x1="26" y1="110" x2="26" y2="16" stroke="#475569"/>
+    <text x="228" y="112" font-size="11" fill="#475569">ω</text>
+    <text x="10" y="20" font-size="11" fill="#475569">h</text>
+    <line x1="86" y1="110" x2="86" y2="16" stroke="#ef4444" stroke-dasharray="4 3"/>
+    <text x="80" y="126" font-size="11" fill="#b91c1c">ω₀</text>
+    <path d="M86 40 C 120 70 180 100 222 104" fill="none" stroke="#10b981" stroke-width="2.4"/>
+    <text x="140" y="60" font-size="11" fill="#047857">h=g/ω²</text>`,
+    'h-omega 曲线'),
+
+  /* T–m 水平直线 */
+  graphTm: SV(`
+    <line x1="30" y1="104" x2="226" y2="104" stroke="#475569"/>
+    <line x1="30" y1="104" x2="30" y2="18" stroke="#475569"/>
+    <text x="228" y="106" font-size="11" fill="#475569">m</text>
+    <text x="12" y="22" font-size="11" fill="#475569">T</text>
+    <line x1="40" y1="56" x2="216" y2="56" stroke="#2563eb" stroke-width="2.6"/>
+    <circle cx="70" cy="56" r="4.5" fill="#ef4444"/><circle cx="130" cy="56" r="4.5" fill="#ef4444"/>
+    <circle cx="190" cy="56" r="4.5" fill="#ef4444"/>
+    <text x="96" y="44" font-size="11.5" fill="#1b4ed0">水平直线：T 与 m 无关</text>`,
+    '周期-质量水平直线'),
+
+  /* T²–h 直线 */
+  graphT2h: SV(`
+    <line x1="30" y1="106" x2="226" y2="106" stroke="#475569"/>
+    <line x1="30" y1="106" x2="30" y2="18" stroke="#475569"/>
+    <text x="228" y="108" font-size="11" fill="#475569">h</text>
+    <text x="12" y="22" font-size="11" fill="#475569">T²</text>
+    <line x1="32" y1="104" x2="212" y2="30" stroke="#2563eb" stroke-width="2.4"/>
+    <circle cx="92" cy="74" r="4" fill="#ef4444"/><circle cx="150" cy="52" r="4" fill="#ef4444"/>
+    <text x="120" y="94" font-size="11" fill="#1b4ed0">斜率 4π²/g</text>`,
+    'T平方-h 直线'),
+
+  /* T拉力–m 直线 */
+  graphFm: SV(`
+    <line x1="30" y1="106" x2="226" y2="106" stroke="#475569"/>
+    <line x1="30" y1="106" x2="30" y2="18" stroke="#475569"/>
+    <text x="228" y="108" font-size="11" fill="#475569">m</text>
+    <text x="12" y="22" font-size="11" fill="#475569">T拉</text>
+    <line x1="32" y1="104" x2="212" y2="30" stroke="#f59e0b" stroke-width="2.4"/>
+    <circle cx="70" cy="88" r="4" fill="#ef4444"/><circle cx="130" cy="70" r="4" fill="#ef4444"/>
+    <circle cx="190" cy="50" r="4" fill="#ef4444"/>
+    <text x="110" y="96" font-size="11" fill="#b45309">过原点：T拉 ∝ m</text>`,
+    '拉力-质量直线'),
+
+  /* 秒表测周期 */
+  timing: SV(`
+    <circle cx="80" cy="64" r="42" fill="none" stroke="#475569" stroke-width="2"/>
+    <line x1="80" y1="64" x2="80" y2="34" stroke="#2563eb" stroke-width="2.4"/>
+    <line x1="80" y1="64" x2="104" y2="72" stroke="#2563eb" stroke-width="2.4"/>
+    <polygon points="80,18 74,30 86,30" fill="#475569"/>
+    <text x="140" y="56" font-size="13" fill="#1b2430">T = t / N</text>
+    <text x="140" y="78" font-size="11.5" fill="#475569">数 N 圈求平均</text>`,
+    '圈数计时法'),
+
+  /* 控制变量表 */
+  ctrl: SV(`
+    <rect x="30" y="24" width="180" height="80" rx="8" fill="none" stroke="#475569"/>
+    <line x1="30" y1="50" x2="210" y2="50" stroke="#475569"/>
+    <line x1="90" y1="24" x2="90" y2="104" stroke="#475569"/>
+    <line x1="150" y1="24" x2="150" y2="104" stroke="#475569"/>
+    <text x="42" y="42" font-size="11" fill="#475569">组</text>
+    <text x="100" y="42" font-size="11" fill="#475569">不变</text>
+    <text x="160" y="42" font-size="11" fill="#475569">改变</text>
+    <text x="42" y="68" font-size="11" fill="#1b2430">A</text><text x="98" y="68" font-size="11" fill="#1b2430">h、L</text><text x="158" y="68" font-size="11" fill="#1b2430">m</text>
+    <text x="42" y="90" font-size="11" fill="#1b2430">B</text><text x="98" y="90" font-size="11" fill="#1b2430">L、m</text><text x="158" y="90" font-size="11" fill="#1b2430">ω</text>
+    <text x="42" y="104" font-size="10" fill="#64748b">…</text>`,
+    '控制变量法'),
+
+  /* 单摆对比 */
+  pendulum: SV(`
+    <g><line x1="66" y1="16" x2="66" y2="88" stroke="#334155" stroke-width="1.6"/>
+    <circle cx="66" cy="94" r="9" fill="#38bdf8" stroke="#0e7490"/>
+    <path d="M50 100 Q66 116 82 100" fill="none" stroke="#2563eb" stroke-dasharray="3 3"/>
+    <text x="34" y="122" font-size="11" fill="#2563eb">单摆 2π√(L/g)</text></g>
+    <g><line x1="170" y1="16" x2="196" y2="64" stroke="#334155" stroke-width="1.6"/>
+    <ellipse cx="170" cy="64" rx="40" ry="11" fill="none" stroke="#94a3b8" stroke-dasharray="4 4"/>
+    <circle cx="196" cy="64" r="9" fill="#38bdf8" stroke="#0e7490"/>
+    <text x="132" y="112" font-size="11" fill="#047857">圆锥摆 2π√(Lcosθ/g)</text></g>`,
+    '圆锥摆与单摆'),
+
+  /* 竖直平面圆周 */
+  vcircle: SV(`
+    <circle cx="80" cy="64" r="46" fill="none" stroke="#94a3b8" stroke-dasharray="4 4"/>
+    <circle cx="80" cy="18" r="8" fill="#38bdf8" stroke="#0e7490"/>
+    <circle cx="80" cy="110" r="8" fill="#38bdf8" stroke="#0e7490"/>
+    <text x="96" y="24" font-size="11" fill="#b91c1c">最高点 v≥√(gR)</text>
+    <line x1="150" y1="20" x2="150" y2="108" stroke="#b8c2d4" stroke-dasharray="4 4"/>
+    <ellipse cx="150" cy="70" rx="56" ry="14" fill="none" stroke="#94a3b8" stroke-dasharray="4 4"/>
+    <circle cx="206" cy="70" r="8" fill="#38bdf8" stroke="#0e7490"/>
+    <text x="86" y="126" font-size="11" fill="#475569">竖直圆周（变速率） vs 圆锥摆（匀速率）</text>`,
+    '竖直圆周与圆锥摆'),
+
+  /* 旋转飞椅 */
+  chair: SV(`
+    <line x1="120" y1="16" x2="120" y2="40" stroke="#475569" stroke-width="2"/>
+    <circle cx="120" cy="16" r="10" fill="#475569"/>
+    <line x1="120" y1="40" x2="182" y2="72" stroke="#334155" stroke-width="1.6"/>
+    <line x1="120" y1="40" x2="58" y2="72" stroke="#334155" stroke-width="1.6"/>
+    <rect x="170" y="72" width="26" height="26" rx="4" fill="#fbbf24" stroke="#b45309"/>
+    <rect x="46" y="72" width="26" height="26" rx="4" fill="#fbbf24" stroke="#b45309"/>
+    <ellipse cx="120" cy="72" rx="66" ry="14" fill="none" stroke="#94a3b8" stroke-dasharray="4 4"/>
+    <text x="96" y="120" font-size="11.5" fill="#475569">旋转飞椅 ≈ 圆锥摆</text>`,
+    '旋转飞椅'),
+
+  /* 直升机／甩干 */
+  rotor: SV(`
+    <circle cx="66" cy="60" r="10" fill="#475569"/>
+    <line x1="66" y1="60" x2="126" y2="76" stroke="#334155" stroke-width="3"/>
+    <line x1="66" y1="60" x2="6" y2="76" stroke="#334155" stroke-width="3"/>
+    <ellipse cx="66" cy="76" rx="62" ry="10" fill="none" stroke="#f59e0b" stroke-dasharray="4 3"/>
+    <text x="30" y="106" font-size="11" fill="#b45309">桨叶挥舞</text>
+    <circle cx="180" cy="62" r="42" fill="none" stroke="#94a3b8" stroke-dasharray="4 4"/>
+    <circle cx="180" cy="62" r="26" fill="#e0f2fe" stroke="#38bdf8"/>
+    <path d="M180 40 L206 62 M180 84 L154 62" stroke="#2563eb" stroke-width="2"/>
+    <text x="152" y="116" font-size="11" fill="#475569">甩干 ω 大</text>`,
+    '桨叶挥舞与甩干'),
+
+  /* 绳系小球 / 塔吊 */
+  swing: SV(`
+    <line x1="40" y1="16" x2="40" y2="40" stroke="#475569" stroke-width="2"/>
+    <line x1="40" y1="16" x2="200" y2="16" stroke="#475569" stroke-width="2"/>
+    <line x1="150" y1="16" x2="176" y2="52" stroke="#334155" stroke-width="1.6"/>
+    <circle cx="176" cy="58" r="9" fill="#38bdf8" stroke="#0e7490"/>
+    <ellipse cx="150" cy="58" rx="34" ry="10" fill="none" stroke="#94a3b8" stroke-dasharray="4 4"/>
+    <text x="120" y="88" font-size="11" fill="#475569">塔吊吊物 / 甩球</text>`,
+    '塔吊吊物'),
+
+  /* 安全 */
+  safetyIcon: SV(`
+    <path d="M120 22 L24 110 H216 Z" fill="#fff7ed" stroke="#f59e0b" stroke-width="2.4"/>
+    <line x1="120" y1="52" x2="120" y2="84" stroke="#b45309" stroke-width="4" stroke-linecap="round"/>
+    <circle cx="120" cy="96" r="3.4" fill="#b45309"/>
+    <text x="150" y="60" font-size="12" fill="#b45309">护目镜</text>
+    <text x="150" y="80" font-size="12" fill="#b45309">固定底座</text>
+    <text x="150" y="100" font-size="12" fill="#b45309">禁伸手</text>`,
+    '安全提示'),
+
+  /* 量角器 */
+  protractor: SV(`
+    <line x1="120" y1="14" x2="120" y2="112" stroke="#b8c2d4" stroke-dasharray="4 4"/>
+    <path d="M60 112 A 60 60 0 0 1 180 112" fill="none" stroke="#475569" stroke-width="1.6"/>
+    <line x1="120" y1="14" x2="176" y2="66" stroke="#334155" stroke-width="2"/>
+    <line x1="120" y1="112" x2="176" y2="66" stroke="#2563eb" stroke-width="2"/>
+    <text x="128" y="96" font-size="13" fill="#2563eb">θ</text>
+    <text x="60" y="126" font-size="11" fill="#475569">0°</text>
+    <text x="176" y="126" font-size="11" fill="#475569">90°</text>`,
+    '量角器'),
+
+  /* 通用 αβ 对照 */
+  compare: SV(`
+    <rect x="16" y="26" width="92" height="76" rx="8" fill="#eff6ff" stroke="#93c5fd"/>
+    <rect x="132" y="26" width="92" height="76" rx="8" fill="#f0fdf4" stroke="#86efac"/>
+    <text x="34" y="50" font-size="12" fill="#1e40af">A</text>
+    <text x="150" y="50" font-size="12" fill="#166534">B</text>
+    <text x="26" y="74" font-size="11" fill="#334155">差异在此</text>
+    <text x="142" y="74" font-size="11" fill="#334155">差异在此</text>`,
+    '对照'),
+
+  /* 能量 */
+  energy: SV(`
+    <ellipse cx="120" cy="70" rx="66" ry="16" fill="none" stroke="#94a3b8" stroke-dasharray="4 4"/>
+    <circle cx="186" cy="70" r="9" fill="#38bdf8" stroke="#0e7490"/>
+    <line x1="186" y1="70" x2="150" y2="70" stroke="#f59e0b" stroke-width="2.4"/>
+    <line x1="186" y1="70" x2="186" y2="86" stroke="#3b82f6" stroke-width="2.4"/>
+    <rect x="150" y="70" width="36" height="16" fill="none" stroke="#cbd5e1"/>
+    <text x="96" y="106" font-size="11.5" fill="#475569">T⊥v → 不做功</text>`,
+    '功与能量')
+};
+
+/* ===================== P1-3 知识点卡片数据 ===================== */
+const KNOWLEDGE_CARDS = [
+  /* ---- 概念 ---- */
+  { id:'k1', cat:'概念', title:'圆锥摆（模型）', svg:'conical',
+    concl:'细线悬挂的小球在水平面内做匀速圆周运动，细线扫出的轨迹面是一个圆锥面。',
+    f:'r = L·sinθ，h = L·cosθ（L 绳长，θ 与竖直方向夹角）',
+    how:'点「中速」预设，正视看椭圆轨迹；点画面左上角切「俯视」看真正的圆。',
+    back:'构成：①悬点固定；②细线质量不计不可伸长；③小球视为质点；④小球在同一水平面内运动，加速度水平指向圆心。',
+    warn:'θ 必须与<b>竖直方向</b>的夹角，不是与水平面的夹角。' },
+
+  { id:'k2', cat:'概念', title:'稳定构型：θ 由 ω 唯一决定', svg:'conical',
+    concl:'给定 L、ω、g，摆角满足 cosθ = g/(ω²L)，是唯一的稳定解——不是任意 θ 都能稳定。',
+    f:'cosθ = g/(ω²L)',
+    how:'拖动转速滑块，观察 θ 立即跳到新的稳定值（不来回摆动）。',
+    back:'由竖直平衡 T·cosθ=mg 与水平方向 T·sinθ=mω²L sinθ 联立消去 T、m 即得。',
+    warn:'' },
+
+  { id:'k3', cat:'概念', title:'向心力是效果力，不是第三个力', svg:'vectorWrong',
+    concl:'小球只受重力 mg 与拉力 T 两个力；所谓向心力是这两个力的<b>合力</b>（效果上的名字）。',
+    f:'F合 = T + mg（矢量合成）= mω²r 效果力',
+    how:'打开「矢量 / 合力+平行四边形」开关，看灰色 mg 与橙色 T 如何合成红色合力。',
+    back:'受力分析时画两个力即可；写方程时用合力充当 maₙ。若再画一个"向心力"，会把同一效果重复计入。',
+    warn:'易错：把向心力当成重力、拉力之外的第三个力。' },
+
+  { id:'k4', cat:'概念', title:'高度 h 的定义与测量', svg:'hDef',
+    concl:'h 是<b>悬点到小球圆周运动平面的竖直距离</b>，h = L·cosθ，它才是决定周期的量。',
+    f:'h = L·cosθ = g/ω²',
+    how:'看画面左侧绿色竖直虚线与双箭头，读数卡里的 h 与它对应。',
+    back:'因为竖直方向平衡，h 与 ω 一一对应：ω 越大 h 越小。',
+    warn:'h 不是绳长 L！只有 θ=0 时才有 h=L。' },
+
+  { id:'k5', cat:'概念', title:'临界转速 ω₀ = √(g/L)', svg:'critical',
+    concl:'ω ≤ √(g/L) 时 cosθ ≥ 1 无解，小球只能竖直下垂，<b>不形成圆锥摆</b>。',
+    f:'ω₀ = √(g/L)，对应 n₀ = 60ω₀/2π（r/min）',
+    how:'点预设「低于临界」，可见小球竖直下垂、不画圆锥轨迹、出现红色警示。',
+    back:'由 cosθ = g/(ω²L) ≤ 1 得 ω² ≥ g/L。ω 略大于 ω₀ 时 θ 很小（可用近似 cosθ≈1-θ²/2 估算）。',
+    warn:'低于临界时电机仍在转，但绳不能传递扭矩，小球不会跟着做圆运动。' },
+
+  /* ---- 公式 ---- */
+  { id:'k6', cat:'公式', title:'合力提供向心力：mg·tanθ = mω²r', svg:'forces',
+    concl:'把重力与拉力沿竖直、水平正交分解，水平合力就是向心力，大小为 mg·tanθ。',
+    f:'竖直：T·cosθ = mg；水平：T·sinθ = mω²r = mω²L sinθ',
+    how:'画面中红色箭头恒水平指向圆心，旁边标有 mg·tanθ 的数值（也可看读数卡 F向）。',
+    back:'两式相除：tanθ = ω²r/g ⇒ tanθ = ω²L sinθ/g ⇒ cosθ = g/(ω²L)；再代入即得 mg·tanθ = mω²r。',
+    warn:'合力方向<b>水平</b>，不沿绳。' },
+
+  { id:'k7', cat:'公式', title:'ω = √(g/h)', svg:'graphHW',
+    concl:'角速度只由高度 h 决定：ω = √(g/h)，与质量无关。',
+    f:'ω = √(g/h) = √(g/(L·cosθ))',
+    how:'开启「锁定高度 h」，改 h 看 ω 读数按 √(1/h) 变化；关闭后可调 ω 反看 h。',
+    back:'由 T·cosθ=mg、T·sinθ=mω²L sinθ；θ≠0 时相除得 cosθ=g/(ω²L)；而 h=L cosθ，故 ω²=g/h。',
+    warn:'' },
+
+  { id:'k8', cat:'公式', title:'T周期 = 2π√(h/g)', svg:'graphT2h',
+    concl:'周期只由高度 h 决定：<b>与质量无关</b>，也不单独由 r 或 θ 决定。',
+    f:'T周期 = 2π√(h/g) = 2π√(L·cosθ/g) = 2π/ω',
+    how:'做 A 组（同 h 换质量）与 C 组（同 h 换绳长）实验，周期读数始终相同。',
+    back:'T = 2π/ω 且 ω = √(g/h) ⇒ T = 2π√(h/g)。注意 h = L cosθ 里同时含 L 与 θ，故"周期与摆长有关"的说法不完整。',
+    warn:'θ→90° 时 h→0、T→0，是理想化极限（实际不可达）。' },
+
+  { id:'k9', cat:'公式', title:'T拉力 = mg/cosθ = mω²L', svg:'graphFm',
+    concl:'拉力与质量成<b>正比</b>（T拉 ∝ m），这一点与周期恰好相反。',
+    f:'T拉力 = mg/cosθ = mω²L',
+    how:'A 组实验中三球周期相同，但拉力读数 1:2:3，看 T拉力–m 图是过原点直线。',
+    back:'由竖直平衡 T cosθ = mg 直接得到；又因 mω²L 中 ω、L 与 m 无关，故正比于 m。',
+    warn:'周期与 m 无关，但拉力与 m 成正比——两条一起记，别混。' },
+
+  { id:'k10', cat:'公式', title:'转速 n 与 ω、临界转速', svg:'critical',
+    concl:'n（r/min）与 ω（rad/s）换算：ω = 2πn/60 = πn/30。',
+    f:'ω = πn/30；ω₀ = √(g/L)；n₀ = 30ω₀/π',
+    how:'控制面板可互输 n 与 ω；低于临界时 n 读数旁出现警示。',
+    back:'例如 L=0.80 m：ω₀=√(9.8/0.8)=3.50 rad/s，n₀=30×3.50/π≈33.4 r/min。',
+    warn:'' },
+
+  { id:'k11', cat:'公式', title:'线速度 v = ωL sinθ', svg:'conical',
+    concl:'小球的线速度 v = ωr = ωL sinθ，方向沿圆周切线（水平）。',
+    f:'v = ω·r = ω·L·sinθ',
+    how:'打开矢量开关看蓝色切向箭头；读数卡 v 与之对应。',
+    back:'θ 增大时 ω 与 r 同时增大，故 v 增大较快。',
+    warn:'' },
+
+  /* ---- 规律 ---- */
+  { id:'k12', cat:'规律', title:'ω↑ ⇒ θ↑、r↑、h↓、T周期↓', svg:'graphThW',
+    concl:'转速增大：摆角变大、半径变大、高度变小、周期变短。',
+    f:'cosθ = g/(ω²L)，h = g/ω²，T = 2π/ω',
+    how:'点「ω 自动扫描」，看 θ–ω 曲线上升、h–ω 曲线下降、周期读数变小。',
+    back:'ω→∞ 时 θ→90°、h→0、T→0；实际受绳质量、空气阻力、装置限制，θ 只能到某一有限值。',
+    warn:'易错：认为"转速越大周期越长"。实际上 ω 大 ⇒ T 小。' },
+
+  { id:'k13', cat:'规律', title:'周期与质量无关，拉力与质量成正比', svg:'threeBalls',
+    concl:'换 2m、3m 的小球，若 h 相同，周期完全不变；而拉力按 1:2:3 增大。',
+    f:'T周期 = 2π√(h/g)（不含 m）；T拉力 = mg/cosθ（∝ m）',
+    how:'点预设「A：同 h 换质量」，看三球依次运行后的对比表与两张图。',
+    back:'推导中所有 m 都被约掉；而 mg 出现在拉力式里，故不能约。',
+    warn:'不要把"拉力变了"误认为"周期也该变"。' },
+
+  { id:'k14', cat:'规律', title:'h 不变 ⇒ 周期不变（换球、换绳长都不变）', svg:'compare',
+    concl:'只要保持 h 不变，无论换质量还是换绳长（同时改 θ），周期都恒定。',
+    f:'h 恒定 ⇒ T = 2π√(h/g) = 常数',
+    how:'点「C：同 h 换绳长」，自动改 L 并反解 θ，周期读数始终相同。',
+    back:'由 T² = 4π²h/g 可见 T 只依赖单一变量 h，是最强的验证。',
+    warn:'只有同时锁定 h 才有此结论，单独改 L 而 ω 不变时 h 会变。' },
+
+  /* ---- 方法 ---- */
+  { id:'k15', cat:'方法', title:'控制变量法：三组对照', svg:'ctrl',
+    concl:'A 同 h 换 m；B 同 L 变 ω；C 同 h 换 L——三组分别控制不同变量得出结论。',
+    f:'A：h、L 定，m 变；B：L、m 定，ω 变；C：h、m 定，L、θ 变',
+    how:'右侧「预设 / 对照实验」一键跑三组，结论板与记录表自动填表着色。',
+    back:'控制变量法是高中物理实验的核心方法：一次只改一个自变量，其余保持不变。',
+    warn:'' },
+
+  { id:'k16', cat:'方法', title:'圈数计时法测周期', svg:'timing',
+    concl:'用秒表测 N 圈总时间再除以 N，可显著减小单次计时误差。',
+    f:'T = t / N',
+    how:'点「⏱ 开始计时」，等若干圈后停止，读出 T 并与理论值 T=2π√(h/g) 对照。',
+    back:'误差来源：按表反应时间（约 0.1–0.2 s）与计数起点选择；N 越大相对误差越小。',
+    warn:'' },
+
+  { id:'k17', cat:'方法', title:'图像线性化：T²–h 直线', svg:'graphT2h',
+    concl:'把 T = 2π√(h/g) 两边平方得 T² = (4π²/g)·h，T²–h 应为过原点直线，斜率 4π²/g。',
+    f:'斜率 k = 4π²/g ≈ 4.03 s²/m（g=9.8）',
+    how:'切到「T²–h」图，跑几组不同 h 的实验，看拟合斜率与 4π²/g 的相对误差。',
+    back:'线性化是验证幂律关系的标准手法；过原点还说明没有常数项（h=0 时 T=0）。',
+    warn:'' },
+
+  /* ---- 辨析 ---- */
+  { id:'k18', cat:'辨析', title:'圆锥摆 vs 单摆', svg:'pendulum',
+    concl:'同一摆长 L 下，圆锥摆周期 2π√(Lcosθ/g) < 单摆小角周期 2π√(L/g)。',
+    f:'圆锥摆 T=2π√(Lcosθ/g)；单摆小角 T=2π√(L/g)',
+    how:'读「T周期(理)」并与同 L 的单摆值 2π√(L/g) 比较（卡背给出算式）。',
+    back:'运动性质也不同：单摆是竖直平面内往复摆动（回复力为重力切向分量），圆锥摆是水平面内匀速圆周运动（向心力水平）。θ→0 时两者趋于一致。',
+    warn:'进阶内容：比较时须強調"同一摆长"。' },
+
+  { id:'k19', cat:'辨析', title:'圆锥摆 vs 竖直平面圆周运动', svg:'vcircle',
+    concl:'圆锥摆是水平面匀速率圆周、速率由 ω 决定；竖直圆周是变速率，还需满足最高点临界速度。',
+    f:'圆锥摆 v = ωL sinθ 恒定；绳模型竖直圆周最高点 v ≥ √(gR)',
+    how:'本 Demo 小球在同一水平面运动，h 恒定、重力不做功；与竖直圆周（速度方向有竖直分量）不同。',
+    back:'能量角度：圆锥摆重力势能不变、拉力与速度垂直不做功，故动能恒定，匀速圆周近似成立。',
+    warn:'进阶内容。' },
+
+  { id:'k20', cat:'辨析', title:'合力方向：水平指向圆心，不沿绳', svg:'dirCenter',
+    concl:'向心力方向在<b>圆周平面内水平指向圆心</b>，不是沿绳指向悬点。',
+    f:'F合 = mg·tanθ，方向 ⊥ 转轴、指向圆心',
+    how:'看红色箭头：始终水平；橙色拉力才沿绳指向悬点。',
+    back:'拉力 T 沿绳有竖直分量 T cosθ 平衡重力，只有水平分量 T sinθ 充当向心力。',
+    warn:'易错：把"指向圆心"画成沿绳方向。' },
+
+  { id:'k21', cat:'辨析', title:'功与能量：谁做功？', svg:'energy',
+    concl:'拉力与速度垂直不做功，重力在同一水平面运动也不做功，故动能不变，匀速圆周近似成立。',
+    f:'P_T = T·v·cos90° = 0；ΔEk = 0',
+    how:'观察 v 的读数恒定；实际装置中空气阻力会使 θ 略减小（非理想因素）。',
+    back:'非理想因素：绳有质量与弹性、小球有尺寸（r 应取球心轨迹半径）、电机转速波动、空气阻力。',
+    warn:'进阶内容。' },
+
+  /* ---- 易错 ---- */
+  { id:'k22', cat:'易错', title:'✗ "重的球摆得慢"', svg:'threeBalls',
+    concl:'错：周期与质量无关，同 h 时 m、2m、3m 的周期读数完全相同。',
+    f:'T = 2π√(h/g)，式中无 m',
+    how:'点预设「A：同 h 换质量」，结论板会高亮"三次周期完全相同"。',
+    back:'记忆口诀：<b>周期看高度，拉力看重力</b>。',
+    warn:'' },
+
+  { id:'k23', cat:'易错', title:'✗ "周期一定与摆长有关"', svg:'compare',
+    concl:'不准确：周期只由 h = L·cosθ 决定；h 不变时换绳长，周期也不变。',
+    f:'T = 2π√(L·cosθ/g)，L 与 θ 共同决定',
+    how:'点「C：同 h 换绳长」：L 改了三次，周期读数不变。',
+    back:'只有在 θ 不变（或 ω 不变导致 h 变）的前提下讨论 L 才有意义。',
+    warn:'' },
+
+  { id:'k24', cat:'易错', title:'✗ "小球受三个力"', svg:'vectorWrong',
+    concl:'错：只受重力与拉力。向心力是合力，不是额外的第三个力（呼应模型31）。',
+    f:'mg + T = F合（效果力 = mω²r）',
+    how:'关掉再打开「合力+平行四边形」开关，看两力如何合成红色合力。',
+    back:'记忆口诀：<b>受力画两个，合力算一个</b>。',
+    warn:'' },
+
+  { id:'k25', cat:'易错', title:'✗ "向心力沿绳指向悬点"', svg:'dirCenter',
+    concl:'错：向心力水平指向圆心；沿绳方向的是拉力。',
+    f:'F合 ⊥ 转轴，水平；T 沿绳',
+    how:'红色箭头始终水平，与灰色 mg、橙色 T 构成平行四边形。',
+    back:'记忆口诀：<b>向心力水平，拉力斜向上</b>。',
+    warn:'' },
+
+  { id:'k26', cat:'易错', title:'✗ "转速越大周期越长"', svg:'graphThW',
+    concl:'错：ω 越大 ⇒ θ 越大、h 越小、T周期 = 2π/ω 越短。',
+    f:'T = 2π/ω = 2π√(h/g)，h = g/ω²',
+    how:'点「ω 自动扫描」，看周期读数随 ω 单调下降。',
+    back:'记忆口诀：<b>转得越快，垂得越低，摆得越大，一圈越短</b>。',
+    warn:'' },
+
+  { id:'k27', cat:'易错', title:'✗ "任意转速都能形成圆锥摆"', svg:'critical',
+    concl:'错：ω 必须大于 ω₀ = √(g/L)；否则小球只能竖直下垂。',
+    f:'形成条件：ω > √(g/L)（θ > 0）',
+    how:'点预设「低于临界」，画面给出明确提示且不再画圆锥轨迹。',
+    back:'θ 接近 90° 时 h→0、T周期→0、拉力→∞，属理想化极限，实际不可达。',
+    warn:'' },
+
+  { id:'k28', cat:'易错', title:'✗ "拉力大小与质量无关"', svg:'graphFm',
+    concl:'错：T拉力 = mg/cosθ 与质量成正比；只有<b>周期</b>与质量无关。',
+    f:'T拉力 = mg/cosθ = mω²L ∝ m',
+    how:'看「T拉力–m」图：过原点直线，斜率 g/cosθ。',
+    back:'记忆口诀：<b>周期不看秤，拉力看重量</b>。',
+    warn:'' },
+
+  /* ---- 应用 ---- */
+  { id:'k29', cat:'应用', title:'旋转飞椅 / 秋千链', svg:'chair',
+    concl:'游乐园旋转飞椅≈圆锥摆：转速越大，吊椅外张 θ 越大、升得越高（h 越小）。',
+    f:'θ 由 ω 与 L 决定：cosθ = g/(ω²L)',
+    how:'把本 Demo 的 L 调大、ω 调大，观察 θ 与 h 的变化趋势与飞椅一致。',
+    back:'工程上需限制 θ 以保证吊椅间安全距离，并设置转速上限。',
+    warn:'' },
+
+  { id:'k30', cat:'应用', title:'直升机桨叶挥舞 / 甩干机', svg:'rotor',
+    concl:'桨叶旋转时因升力与离心效应上挥 α 角；甩干时衣物贴壁也是 ω 大 → "θ 大" 的同类图像。',
+    f:'等效仍有 tanα ∝ ω²',
+    how:'把 ω 调大后看 θ–ω 曲线：θ 随 ω 增大而增大并趋于饱和，与桨叶上挥、衣物贴壁的趋势一致。',
+    back:'两者都用"转速决定张角"的思路建模，实际还涉及空气动力学与材料刚度。',
+    warn:'' },
+
+  { id:'k31', cat:'应用', title:'绳系小球水平甩动 / 塔吊吊物', svg:'swing',
+    concl:'手甩小球做水平圆周、塔吊吊物随风摆转，都可用 θ 与 ω 的关系估算张力与安全半径。',
+    f:'T拉力 = mg/cosθ，r = L sinθ',
+    how:'把 L 调到 1.2 m、ω 调到较大值，读 T拉力 感受张力随 θ 的增长。',
+    back:'塔吊作业限制吊物偏摆，本质就是限制 θ 与 ω。',
+    warn:'' },
+
+  /* ---- 安全 ---- */
+  { id:'k32', cat:'安全', title:'旋转装置实验安全须知', svg:'safetyIcon',
+    concl:'小球有飞出风险：必须戴护目镜、固定底座、旋转平面内禁止伸手，禁用弹性绳。',
+    f:'安全半径 > r + 0.5 m；转速不超过器材标定值',
+    how:'点顶栏「⚠️ 安全须知」或本卡；θ > 75° 时画面给出"理想化极限、实际不可达"提示。',
+    back:'非理想因素（绳质量、空气阻力、电机波动）会使实际 θ 略小于理论值，实验前应空载试运行并逐步升速。',
+    warn:'不要在小球旋转平面内伸手取物；更换小球必须先停机。' }
+];
+
+const CATS = ['全部', ...Array.from(new Set(KNOWLEDGE_CARDS.map(c => c.cat)))];
+
+/* ===================== P1-4 预设方案 ===================== */
+const PRESETS = {
+  low:   { name:'低速小角',   L:0.80, thetaDeg:12 },
+  mid:   { name:'中速',       L:0.80, thetaDeg:45 },
+  high:  { name:'高速大角',   L:0.80, thetaDeg:72 },
+  crit:  { name:'低于临界',   L:0.80, belowCrit:true },
+  mass:  { name:'A：同 h 换质量', exp:'mass' },
+  len:   { name:'C：同 h 换绳长', exp:'len' }
+};
+
+/* ===================== P1-5 练习题 ===================== */
+const QUIZ = [
+  { q:'圆锥摆小球做水平圆周运动的向心力来自哪里？',
+    o:['重力 mg','细线的拉力 T','重力与拉力的合力（mg·tanθ）','一个额外的"向心力"'],
+    a:2, card:'k3',
+    e:'小球只受重力与拉力两个力，二者的合力水平指向圆心，充当向心力。"向心力"是按效果命名的力。' },
+  { q:'在 h 不变的同 h 实验中，把小球从 m 换成 3m，周期如何变化？',
+    o:['变为 3 倍','变为 √3 倍','变为 1/3','不变'],
+    a:3, card:'k13',
+    e:'T周期 = 2π√(h/g)，式中不含质量 m，故周期不变；而拉力变为 3 倍。' },
+  { q:'其它条件不变，增大电机转速 ω 后，摆角 θ 与周期 T周期 分别怎样？',
+    o:['θ 增大，T周期 增大','θ 增大，T周期 减小','θ 减小，T周期 增大','θ 减小，T周期 减小'],
+    a:1, card:'k12',
+    e:'cosθ = g/(ω²L)：ω 增大 ⇒ cosθ 减小 ⇒ θ 增大；h = g/ω² 减小，T周期 = 2π√(h/g) 减小。' },
+  { q:'当电机角速度 ω < √(g/L) 时会发生什么？',
+    o:['摆角变得极小但仍成圆锥摆','小球竖直下垂，不能形成圆锥摆','周期趋于无穷小','绳子一定断裂'],
+    a:1, card:'k5',
+    e:'cosθ = g/(ω²L) 会大于 1 而无解，此时 θ=0，小球只能竖直下垂，属于电机空转。' },
+  { q:'同 h、同装置下，拉力 T拉力 与小球质量的关系是？',
+    o:['与质量无关','与质量成正比','与质量成反比','与 √m 成正比'],
+    a:1, card:'k9',
+    e:'T拉力 = mg/cosθ = mω²L，与 m 成正比；注意周期才与质量无关。' }
+];
+
+/* ===================== P1-6 教学流程（六步） ===================== */
+const TEACH_STEPS = [
+  { t:'① 观察现象',
+    x:'先看 Draw：小球在<b>水平面</b>内做匀速圆周运动，绳扫出一个圆锥面。注意它不是"摆来摆去"，而是绕竖直轴转圈。',
+    q:'小球的圆周运动平面与桌面是什么关系？盯住读数里的 h 是否随时间变化。', card:'k1' },
+  { t:'② 受力分析（画出合力）',
+    x:'打开「矢量」与「合力+平行四边形」图层：灰色 mg 竖直向下、橙色拉力 T 沿绳、二者合成红色水平合力。',
+    q:'红色合力箭头指向哪里？如果有人说"向心力沿绳指向悬点"，你会怎么反驳？', card:'k6' },
+  { t:'③ 推导核心公式',
+    x:'由竖直平衡 T·cosθ = mg 与水平方向 T·sinθ = mω²r 联立，消去 T 与 m。',
+    q:'请自己推出 ω = √(g/h) 与 T周期 = 2π√(h/g)，并说出每一步用了哪个方程。', card:'k7' },
+  { t:'④ 提出猜想',
+    x:'把小球换成更重的（2m、3m），你猜周期会不会变？改成更长的绳（保持 h 不变）呢？',
+    q:'把你的两条猜想写在纸上，下一步用实验检验。', card:'k13' },
+  { t:'⑤ 对照实验（A/B/C 三组）',
+    x:'点预设 A（同 h 换质量）、B（ω 扫描）、C（同 h 换绳长），观察结论板与三张图像。',
+    q:'哪一组最能说明"周期只与 h 有关"？为什么换质量不够有说服力？', card:'k15' },
+  { t:'⑥ 图像结论',
+    x:'θ–ω 曲线上标出临界 ω₀；T周期–m 是水平直线；T²–h 是过原点直线，斜率 4π²/g。',
+    q:'用一句话总结：ω 与 h 的关系、以及周期到底由什么决定。', card:'k17' }
+];
+
+/* ===================== P1-7 运行状态 ===================== */
+const STATE = {
+  g: 9.8, L: 0.80, baseMass: 0.10, massMul: 1,
+  rpm: 45, lockH: false, hLock: 0.40,
+  playing: true, speed: 1, phase: 0, simTime: 0,
+  view: 'front',
+  strobe: { on: false, f: 8 },
+  show: { vec: true, res: true, hr: true, theta: true, trace: true, ghost: true, sound: false, hand: false },
+  ghosts: [],            // 幽灵对比轨迹
+  jitter: false,
+  reduce: REDUCE
+};
+if (STATE.reduce) STATE.playing = false;
+
+const MEAS = { rolling: NaN, timer: { on: false, tStart: 0, t0: NaN, p0: 0, laps: 0, t: 0, T: NaN, tLast: NaN } };
+const RECORDS = [];
+const SWEEP = { on: false, timer: null, data: [], lastOmega: null };
+const HOTPOS = { list: [], idx: 0 };
+
+/* 解析求出当前全部物理量（θ 由 cosθ = g/(ω²L) 解析给出，不做数值积分） */
+function ST() {
+  const S = STATE, g = S.g, L = S.L;
+  const omega0 = Math.sqrt(g / L);
+  const m = S.baseMass * S.massMul;
+  let omega, theta, formed = true, note = '', kind = '';
+  if (S.lockH) {
+    const h = clamp(S.hLock, 0.02, L * 0.999);
+    theta = Math.acos(clamp(h / L, -1, 1));
+    omega = Math.sqrt(g / h);
+    if (S.hLock > L + 1e-9) { note = 'h 不能大于绳长 L，已自动夹紧到 h → L（θ≈0）'; kind = 'warn'; }
+  } else {
+    omega = S.rpm * Math.PI / 30;
+    if (omega <= omega0 + 1e-9) { theta = 0; formed = false; }
+    else theta = Math.acos(clamp(g / (omega * omega * L), -1, 1));
+  }
+  const thDeg = theta * DEG;
+  const r = L * Math.sin(theta), h = L * Math.cos(theta);
+  const v = formed ? omega * r : 0;
+  const Fc = formed ? m * g * Math.tan(theta) : 0;
+  const Tperiod = formed ? 2 * Math.PI * Math.sqrt(h / g) : NaN;
+  const Ttension = formed ? m * omega * omega * L : m * g;
+  const simpleT = 2 * Math.PI * Math.sqrt(L / g);   // 同长单摆（小角）周期，用于对比
+  if (!formed) {
+    note = `ω = ${fmt(omega,2)} rad/s ≤ ω₀ = ${fmt(omega0,2)} rad/s（n₀ ≈ ${fmt(30*omega0/Math.PI,1)} r/min）：` +
+           `cosθ ≥ 1 无解，小球竖直下垂，无法形成圆锥摆。`;
+    kind = 'err';
+  } else if (thDeg > 80) {
+    note = `θ = ${fmt(thDeg,1)}° 已接近理想极限：h→0、T周期→0、拉力 T拉力→∞。` +
+           `实际受绳质量、空气阻力与装置限制，θ 不可能真正达到 90°。`;
+    kind = 'warn';
+  }
+  return { g, L, m, omega, omega0, theta, thDeg, r, h, v, Fc, Tperiod, Ttension, formed, note, kind, simpleT, n: omega*30/Math.PI };
+}
+/* ===================== P2 场景绘制 ===================== */
+const VIEW_K = 0.26;                       // 透视压缩系数（水平圆的屏幕椭圆短轴比例）
+const FONT = '"Microsoft YaHei","PingFang SC","Segoe UI",system-ui,sans-serif';
+const C = { gray:'#8a94a6', orange:'#f59e0b', red:'#ef4444', blue:'#3b82f6',
+            green:'#10b981', purple:'#a855f7', ink:'#334155', light:'#b8c2d4' };
+
+let _cv = null, _ctx = null, CW = 0, CH = 0, DPR = 1;
+function Sctx() {
+  if (!_ctx) { _cv = document.getElementById('scene'); _ctx = _cv.getContext('2d'); }
+  return _ctx;
+}
+function sizeCanvas() {
+  const c = Sctx(); if (!c) return;
+  const rect = _cv.getBoundingClientRect();
+  const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+  const w = Math.max(320, Math.round(rect.width));
+  const h = Math.max(260, Math.round(rect.height));
+  const pw = Math.round(w * dpr), ph = Math.round(h * dpr);
+  // 只在尺寸/DPR 变化时重建位图：给 canvas.width 赋值会清空画布，逐帧重建既浪费又会抖
+  if (_cv.width === pw && _cv.height === ph && DPR === dpr && CW === w && CH === h) return;
+  DPR = dpr; CW = w; CH = h;
+  _cv.width = pw; _cv.height = ph;
+  c.setTransform(DPR, 0, 0, DPR, 0, 0);
+}
+const setFont = (size, w = '400') => { const c = CTX(); c.font = `${w} ${size}px ${FONT}`; };
+/* 当前绘图上下文：场景默认；画图表时临时切换到图表 ctx，避免文字画错画布 */
+let _CUR = null;
+function CTX() { return _CUR || Sctx(); }
+function useCtx(c) { _CUR = c; }
+
+/* --- 基础绘图工具 --- */
+function dash(x1, y1, x2, y2, color, pat = [5, 4], w = 1.4) {
+  const c = CTX(); c.save(); c.setLineDash(pat); c.strokeStyle = color; c.lineWidth = w;
+  c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2, y2); c.stroke(); c.restore();
+}
+function arrow(x1, y1, x2, y2, color, w = 2, head = 10) {
+  const c = CTX(); if (!Number.isFinite(x1 + x2)) return;
+  const len = Math.hypot(x2 - x1, y2 - y1); if (len < 1) return;
+  const a = Math.atan2(y2 - y1, x2 - x1), hx = Math.min(head, len * 0.5);
+  c.strokeStyle = color; c.fillStyle = color; c.lineWidth = w; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(x1, y1); c.lineTo(x2 - Math.cos(a) * hx * 0.7, y2 - Math.sin(a) * hx * 0.7); c.stroke();
+  c.beginPath(); c.moveTo(x2, y2);
+  c.lineTo(x2 - Math.cos(a - 0.42) * hx, y2 - Math.sin(a - 0.42) * hx);
+  c.lineTo(x2 - Math.cos(a + 0.42) * hx, y2 - Math.sin(a + 0.42) * hx);
+  c.closePath(); c.fill();
+}
+function label(text, x, y, color, o = {}) {
+  const c = CTX();
+  setFont(o.size || 12.5, o.weight || '600');
+  c.textAlign = o.align || 'left'; c.textBaseline = o.base || 'middle';
+  if (o.bg !== false) {
+    const w = c.measureText(text).width, pad = 3;
+    const bx = (o.align === 'center') ? x - w / 2 : (o.align === 'right' ? x - w : x);
+    c.fillStyle = o.bg || 'rgba(255,255,255,.86)';
+    c.fillRect(bx - pad, y - (o.size || 12.5) / 2 - 1, w + pad * 2, (o.size || 12.5) + 4);
+  }
+  c.fillStyle = color; c.fillText(text, x, y);
+}
+function dot(x, y, r, fill, stroke) {
+  const c = CTX(); c.beginPath(); c.arc(x, y, r, 0, 7); c.fillStyle = fill; c.fill();
+  if (stroke) { c.strokeStyle = stroke; c.lineWidth = 1.6; c.stroke(); }
+}
+function roundRect(x, y, w, h, r, fill, stroke) {
+  const c = CTX(); c.beginPath();
+  c.moveTo(x + r, y); c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r);
+  c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
+  if (fill) { c.fillStyle = fill; c.fill(); }
+  if (stroke) { c.strokeStyle = stroke; c.lineWidth = 1; c.stroke(); }
+}
+
+/* --- 布局：世界坐标（m）→ 屏幕坐标（px）自适应缩放 --- */
+const SC = { s: 220, ox: 0, oy: 0, ready: false };
+function updateScale(st) {
+  const padT = 52, padB = 46, padL = 66, padR = 46;
+  const needY = STATE.L + 0.26;
+  const rmax = Math.max(st.r, STATE.L * 0.45) + 0.20;
+  const ox0 = padL + (CW - padL - padR) * 0.455;
+  const sTarget = Math.max(60, Math.min((CH - padT - padB) / needY,
+    (CW - padR - ox0) / rmax, (ox0 - padL) / rmax, 520));
+  SC.ox = ox0; SC.oy = padT;
+  SC.s = (!SC.ready || STATE.reduce) ? sTarget : lerp(SC.s, sTarget, 0.18);
+  SC.ready = true;
+}
+/* 投影：x 水平（右正）、down 竖直向下（m）、depth 纵深（远离观察者为正） */
+const PX = (x, down, depth) => [SC.ox + x * SC.s, SC.oy + down * SC.s - VIEW_K * depth * SC.s];
+
+/* --- 背景：坐标纸底纹 --- */
+function drawBackdrop() {
+  const c = Sctx();
+  c.fillStyle = '#fbfdff'; c.fillRect(0, 0, CW, CH);
+  c.strokeStyle = '#eef3fa'; c.lineWidth = 1;
+  for (let x = 0; x < CW; x += 28) { c.beginPath(); c.moveTo(x, 0); c.lineTo(x, CH); c.stroke(); }
+  for (let y = 0; y < CH; y += 28) { c.beginPath(); c.moveTo(0, y); c.lineTo(CW, y); c.stroke(); }
+}
+
+/* --- 电机与支架 --- */
+function drawMotor(st) {
+  const c = Sctx(); const [px, py] = PX(0, 0, 0);
+  c.fillStyle = '#e6ebf4'; c.strokeStyle = '#c3cddd'; c.lineWidth = 1;
+  roundRect(px - 52, py - 40, 104, 16, 4, '#e6ebf4', '#c3cddd');   // 天花板横梁
+  c.beginPath();                                                    // 斜纹
+  for (let i = -48; i < 48; i += 8) {
+    c.moveTo(px + i, py - 24); c.lineTo(px + i + 6, py - 40);
+  }
+  c.strokeStyle = '#cfd7e6'; c.stroke();
+  c.beginPath(); c.moveTo(px, py - 24); c.lineTo(px, py); c.strokeStyle = '#94a3b8'; c.lineWidth = 2; c.stroke();
+  roundRect(px - 20, py - 22, 40, 22, 5, '#475569', '#334155');     // 电机盒
+  label('电机', px, py - 11, '#fff', { size: 11, align: 'center', bg: false });
+  // 转速稳定指示
+  const okNow = st.formed;
+  label(okNow ? `ω=${fmt(st.omega,2)}` : '空转', px + 28, py - 11, okNow ? '#047857' : '#b91c1c',
+    { size: 11, align: 'left' });
+  // 转轴旋转标记
+  const rr = 9, ph = STATE.phase;
+  c.strokeStyle = '#0ea5e9'; c.lineWidth = 2;
+  c.beginPath(); c.arc(px, py - 22, 3, 0, 7); c.stroke();
+  c.beginPath(); c.arc(px, py - 22, rr, ph, ph + 2.2); c.stroke();
+  label('悬点', px - 30, py - 30, '#64748b', { size: 11, align: 'right' });
+}
+
+/* --- 标尺（始终绘制，作为"测量仪器"） --- */
+function drawRulers(st) {
+  const c = Sctx(); const [px, py] = PX(0, 0, 0);
+  const rulerX = 30, y0 = py, yEnd = py + STATE.L * SC.s;
+  // 竖直标尺
+  c.strokeStyle = '#9aa6bb'; c.lineWidth = 1.2;
+  c.beginPath(); c.moveTo(rulerX, y0); c.lineTo(rulerX, yEnd + 16); c.stroke();
+  setFont(10.5); c.fillStyle = '#8290a8'; c.textAlign = 'right'; c.textBaseline = 'middle';
+  for (let d = 0; d <= STATE.L + 0.001; d += 0.05) {
+    const y = py + d * SC.s, major = Math.abs(d / 0.1 - Math.round(d / 0.1)) < 1e-6;
+    c.beginPath(); c.moveTo(rulerX, y); c.lineTo(rulerX + (major ? 9 : 5), y);
+    c.strokeStyle = '#9aa6bb'; c.stroke();
+    if (major) c.fillText((d).toFixed(1), rulerX - 3, y);
+  }
+  label('竖直标尺 / m', rulerX + 2, y0 - 14, '#64748b', { size: 11 });
+  // h 双侧界线虚线
+  const yh = py + st.h * SC.s;
+  if (st.formed) {
+    dash(rulerX, yh, px + (st.r + 0.14) * SC.s, yh, '#94a3b8', [2, 5], 1);
+    label('圆周平面', rulerX + 4, yh - 9, '#64748b', { size: 11 });
+  }
+  return { rulerX, y0, yEnd, yh, px, py };
+}
+
+/* --- h 与 r 辅助虚线（可开关） --- */
+function drawHR(st, R) {
+  if (!STATE.show.hr || !st.formed) return;
+  const c = Sctx();
+  const [px, py] = PX(0, 0, 0);
+  const yh = R.yh, xEnd = px + st.r * SC.s;
+  // h：绿色
+  dash(px, py, px, yh, C.green, [6, 4], 2.2);
+  c.strokeStyle = C.green; c.lineWidth = 1.6;
+  c.beginPath(); c.moveTo(px - 7, py); c.lineTo(px + 7, py); c.stroke();
+  c.beginPath(); c.moveTo(px - 7, yh); c.lineTo(px + 7, yh); c.stroke();
+  label(`h = ${fmt(st.h, 3)} m`, px - 12, (py + yh) / 2, '#047857', { size: 12.5, align: 'right' });
+  // r：紫色
+  dash(px, yh, xEnd, yh, C.purple, [6, 4], 2.2);
+  c.strokeStyle = C.purple; c.lineWidth = 1.6;
+  c.beginPath(); c.moveTo(xEnd, yh - 7); c.lineTo(xEnd, yh + 7); c.stroke();
+  label(`r = ${fmt(st.r, 3)} m`, (px + xEnd) / 2, yh - 14, '#7e22ce', { size: 12.5, align: 'center' });
+  label('中心轴', px, yh + 16, '#94a3b8', { size: 11, align: 'center' });
+}
+
+/* --- θ 刻度盘（量角器，随绳所在竖直剖面透视） --- */
+function drawProtractor(st, phi) {
+  if (!STATE.show.theta) return;
+  const c = Sctx(); const [px, py] = PX(0, 0, 0);
+  const rho = Math.min(0.30 * STATE.L, 0.30) * SC.s;
+  const cf = Math.cos(phi), sf = Math.sin(phi);
+  const pt = a => [px + rho * Math.sin(a) * cf,
+                   py + rho * (Math.cos(a) - VIEW_K * Math.sin(a) * sf)];
+  c.strokeStyle = '#cbd5e1'; c.lineWidth = 1.2;
+  c.beginPath();
+  for (let k = 0; k <= 90; k += 2) { const p = pt(k * RAD); k ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1]); }
+  c.stroke();
+  for (let k = 0; k <= 90; k += 5) {          // 每 5° 一格
+    const p = pt(k * RAD), major = (k % 15 === 0);
+    const inner = pt(Math.max(0, k - (major ? 4 : 2)) * RAD);
+    c.beginPath(); c.moveTo(inner[0], inner[1]); c.lineTo(p[0], p[1]);
+    c.strokeStyle = major ? '#94a3b8' : '#dbe3ef'; c.lineWidth = major ? 1.4 : 1; c.stroke();
+  }
+  if (st.formed && st.theta > 0.005) {        // 高亮 0→θ
+    c.beginPath(); c.moveTo(px, py);
+    for (let k = 0; k <= st.thDeg; k += 2) { const p = pt(k * RAD); c.lineTo(p[0], p[1]); }
+    c.lineTo(px, py); c.closePath();
+    c.fillStyle = 'rgba(59,130,246,.13)'; c.fill();
+    c.strokeStyle = C.blue; c.lineWidth = 2;
+    c.beginPath();
+    for (let k = 0; k <= st.thDeg; k += 2) { const p = pt(k * RAD); k ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1]); }
+    c.stroke();
+  }
+  const pl = pt(90 * RAD);
+  label('90°', pl[0] + 4, pl[1], '#94a3b8', { size: 10.5 });
+  const pm = pt((st.thDeg / 2) * RAD);
+  label(st.formed ? `θ=${fmt(st.thDeg,1)}°` : 'θ=0°', pm[0] + 8, pm[1] - 6, '#1d4fd0', { size: 12.5 });
+}
+
+/* --- 圆轨迹（透视椭圆）与旋转方向 --- */
+function drawTrace(st) {
+  if (!st.formed || !STATE.show.trace) return;
+  const c = Sctx(); const [px, py] = PX(0, 0, 0);
+  const cy = py + st.h * SC.s, rx = st.r * SC.s, ry = VIEW_K * st.r * SC.s;
+  c.save(); c.setLineDash([7, 5]); c.strokeStyle = '#7c8aa3'; c.lineWidth = 1.6;
+  c.beginPath(); c.ellipse(px, cy, rx, ry, 0, 0, 7); c.stroke(); c.restore();
+  // 旋转方向箭头
+  const ax = px + rx * 0.72, ay = cy - ry * 0.72;
+  c.strokeStyle = '#94a3b8'; c.lineWidth = 1.4;
+  c.beginPath(); c.arc(px, cy, rx * 0.86, -0.75, -0.28); c.stroke();
+  const tipA = -0.28, tx = px + Math.cos(tipA) * rx * 0.86, ty = cy + Math.sin(tipA) * ry * 0.86;
+  arrow(tx, ty, tx + 6, ty + 3, '#94a3b8', 1.4, 6);
+  label(`ω=${fmt(st.omega,2)} rad/s`, ax - 10, ay + 14, '#64748b', { size: 11 });
+}
+
+/* --- 频闪残影 --- */
+function drawStrobe(st, phi) {
+  if (!STATE.strobe.on || !st.formed) return;
+  const c = Sctx();
+  const dPhi = st.omega / STATE.strobe.f;
+  for (let j = 1; j <= 6; j++) {
+    const p = phi - j * dPhi;
+    const bx = st.r * Math.cos(p), dp = st.r * Math.sin(p);
+    const [sx, sy] = PX(bx, st.h, dp);
+    c.globalAlpha = 0.45 * (1 - j / 7);
+    dot(sx, sy, ballRadius(st) * 0.9, MASS_COLOR[STATE.massMul] || '#38bdf8', null);
+    c.globalAlpha = 1;
+  }
+  label(`频闪 ${fmt(STATE.strobe.f,1)} Hz`, 12, CH - 16, '#0369a1', { size: 11.5 });
+}
+
+/* --- 幽灵对比（同 h 不同质量 / 不同绳长的对照轨迹） --- */
+function drawGhosts(st, phi) {
+  if (!STATE.show.ghost || !STATE.ghosts.length) return;
+  const c = Sctx(); const [px, py] = PX(0, 0, 0);
+  STATE.ghosts.forEach(g => {
+    if (g.type === 'trace') {
+      const cy = py + g.h * SC.s, rx = g.r * SC.s, ry = VIEW_K * g.r * SC.s;
+      c.save(); c.setLineDash([3, 4]); c.globalAlpha = .75; c.strokeStyle = g.color; c.lineWidth = 1.4;
+      c.beginPath(); c.ellipse(px, cy, rx, ry, 0, 0, 7); c.stroke(); c.restore();
+      if (g.label) label(g.label, px + rx + 6, cy, g.color, { size: 11 });
+    } else {
+      const p = phi + (g.phaseOffset || 0);
+      const bx = st.r * Math.cos(p), dp = st.r * Math.sin(p);
+      const [sx, sy] = PX(bx, st.h, dp);
+      c.globalAlpha = .45; dot(sx, sy, ballRadius(st) * 0.85, g.color, null); c.globalAlpha = 1;
+      if (g.label) label(g.label, sx, sy - ballRadius(st) - 10, g.color, { size: 11, align: 'center' });
+    }
+  });
+}
+
+function ballRadius(st) {
+  const base = clamp(0.028 * SC.s, 7, 22);
+  return base * Math.cbrt(STATE.massMul);
+}
+/* 受力示意图的箭头长度：以 mg = 62px 为基准，拉力按 1/cosθ 放大。
+   大角度（θ>72°）时拉力会超出画面，此时 mg 与 T 必须等比缩小，
+   否则 T+mg 的合力不再水平，与"合力水平指向圆心"的结论自相矛盾。 */
+function forceLens(st) {
+  const cosT = Math.max(0.03, Math.cos(st.theta));
+  const t0 = 62 / cosT;
+  const k = Math.min(1, 210 / t0);
+  return { mg: 62 * k, T: t0 * k };
+}
+
+/* --- 受力矢量 + 平行四边形 + 速度 --- */
+function drawVectors(st, phi, B) {
+  if (!STATE.show.vec && !STATE.show.res) return;
+  const c = Sctx(); const [px, py] = PX(0, 0, 0);
+  const [bx, by] = B;
+  const { mg: lenMg, T: lenT } = forceLens(st);
+  // 重力
+  if (STATE.show.vec) {
+    arrow(bx, by, bx, by + lenMg, C.gray, 2.6, 11);
+    label(`mg=${fmt(st.m * st.g, 2)} N`, bx + 8, by + lenMg + 12, '#6b7280', { size: 12 });
+  }
+  // 拉力（沿绳指向悬点）
+  const dx = px - bx, dy = py - by, dd = Math.hypot(dx, dy) || 1;
+  const tx = bx + dx / dd * lenT, ty = by + dy / dd * lenT;
+  if (STATE.show.vec) {
+    arrow(bx, by, tx, ty, C.orange, 2.6, 11);
+    label(`T=${fmt(st.Ttension, 2)} N`, tx, ty - 12, '#b45309', { size: 12, align: 'center' });
+  }
+  // 合力：由 mg 与 T 矢量相加得到（水平指向圆心，透视下指向圆心投影）
+  if (st.formed && STATE.show.res) {
+    const fx = bx + (tx - bx), fy = by + (ty - by) + lenMg;   // T + mg
+    if (STATE.show.vec) {                                      // 平行四边形辅助虚线
+      dash(bx + 0, by + lenMg, fx, fy, '#cbd5e1', [4, 3], 1.2);
+      dash(tx, ty, fx, fy, '#cbd5e1', [4, 3], 1.2);
+    }
+    arrow(bx, by, fx, fy, C.red, 3, 12);
+    label(`F合=${fmt(st.Fc, 2)} N（水平指圆心）`, fx, fy + 14, '#b91c1c', { size: 12, align: 'center' });
+  }
+  // 速度（切线方向）
+  if (STATE.show.vec && st.formed) {
+    const txv = -Math.sin(phi), dpv = Math.cos(phi);          // 水平切向单位矢量
+    // 屏幕位移 = (txv·长度, -VIEW_K·dpv·长度)，与轨迹椭圆的投影保持一致
+    const exx = bx + txv * 58, eyy = by - VIEW_K * dpv * 58;
+    arrow(bx, by, exx, eyy, C.blue, 2.4, 10);
+    label(`v=${fmt(st.v, 2)} m/s`, exx, eyy - 12, '#1d4ed8', { size: 12, align: 'center' });
+  }
+}
+
+/* --- 右下角：瞬时受力剖面图（无透视，合力严格水平） --- */
+function drawProfile(st) {
+  if (!st.formed || !STATE.show.res) return;
+  const w = 168, h = 132, x = CW - w - 12, y = CH - h - 12;
+  const c = Sctx();
+  roundRect(x, y, w, h, 10, 'rgba(255,255,255,.93)', '#dbe3ef');
+  label('受力剖面（沿绳竖直剖面）', x + w / 2, y + 14, '#334155', { size: 11.5, align: 'center', bg: false });
+  const ox0 = x + 96, oy0 = y + 34, Lp = 42;
+  const bx0 = ox0 + Lp * Math.sin(st.theta), by0 = oy0 + Lp * Math.cos(st.theta);
+  dash(ox0, oy0, ox0, oy0 + Lp + 30, '#cbd5e1', [4, 3], 1);
+  c.strokeStyle = '#334155'; c.lineWidth = 1.8;
+  c.beginPath(); c.moveTo(ox0, oy0); c.lineTo(bx0, by0); c.stroke();
+  dot(bx0, by0, 6, MASS_COLOR[STATE.massMul] || '#38bdf8', '#0369a1');
+  // 大角度时 tanθ 很大，F合 会冲出面板：按面板内可用宽度等比缩小三个箭头
+  const room = Math.max(16, (bx0 - x) - 14);
+  const g0 = Math.min(34, room / Math.max(1e-6, Math.tan(st.theta)));
+  arrow(bx0, by0, bx0, by0 + g0, C.gray, 2, 8);
+  const t0 = g0 / Math.max(0.03, Math.cos(st.theta));
+  const ux = (ox0 - bx0) / Lp, uy = (oy0 - by0) / Lp;
+  arrow(bx0, by0, bx0 + ux * t0, by0 + uy * t0, C.orange, 2, 8);
+  arrow(bx0, by0, bx0 - g0 * Math.tan(st.theta), by0, C.red, 2.2, 9);
+  label('mg', bx0 + 4, by0 + g0 + 8, '#6b7280', { size: 10, bg: false });
+  label('T', bx0 + ux * t0 + 2, by0 + uy * t0 - 4, '#b45309', { size: 10, bg: false });
+  label('F合', bx0 - g0 * Math.tan(st.theta) - 14, by0 - 8, '#b91c1c', { size: 10, bg: false, align: 'right' });
+  label('θ', ox0 + 12, oy0 + 18, '#1d4fd0', { size: 11 });
+  label('（剖面内 F合 严格水平）', x + w / 2, y + h - 8, '#94a3b8', { size: 10, align: 'center', bg: false });
+}
+
+/* --- 比例尺 --- */
+function drawScaleBar() {
+  const c = Sctx(); const x0 = 16, y0 = CH - 22;
+  const dm = 0.2, len = dm * SC.s;
+  c.strokeStyle = '#64748b'; c.lineWidth = 1.6;
+  c.beginPath(); c.moveTo(x0, y0); c.lineTo(x0 + len, y0);
+  c.moveTo(x0, y0 - 5); c.lineTo(x0, y0 + 5);
+  c.moveTo(x0 + len, y0 - 5); c.lineTo(x0 + len, y0 + 5); c.stroke();
+  label(`${dm} m`, x0 + len / 2, y0 - 12, '#475569', { size: 11, align: 'center' });
+}
+
+/* --- 热点（知识与[k]对应） --- */
+const HOT_DEFS = [
+  { id: 'motor',  card: 'k5',  tip: '电机转速与临界 ω₀' },
+  { id: 'proc',   card: 'k2',  tip: '量角器：θ 由 ω 唯一决定' },
+  { id: 'h',      card: 'k4',  tip: '竖直标尺：h 的定义' },
+  { id: 'r',      card: 'k1',  tip: 'r = L·sinθ' },
+  { id: 'force',  card: 'k6',  tip: '合力提供向心力' },
+  { id: 'tension',card: 'k9',  tip: '拉力 T = mg/cosθ' },
+  { id: 'ball',   card: 'k13', tip: '周期与质量无关' }
+];
+function pushHot(id, x, y) {
+  if (!Number.isFinite(x) || !Number.isFinite(y)) return;
+  const exist = HOTPOS.list.find(h => h.id === id);
+  const item = exist || { id }; item.x = x; item.y = y;
+  const def = HOT_DEFS.find(d => d.id === id); item.card = def.card; item.tip = def.tip;
+  if (!exist) HOTPOS.list.push(item);
+}
+function drawHotspots() {
+  const c = Sctx();
+  HOTPOS.list.forEach((h, i) => {
+    const active = i === HOTPOS.idx;
+    c.beginPath(); c.arc(h.x, h.y, active ? 12 : 9, 0, 7);
+    c.fillStyle = active ? 'rgba(47,109,246,.95)' : 'rgba(47,109,246,.62)'; c.fill();
+    c.strokeStyle = '#fff'; c.lineWidth = 2; c.stroke();
+    setFont(11, '700'); c.fillStyle = '#fff'; c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillText('?', h.x, h.y + .5);
+  });
+  const act = HOTPOS.list[HOTPOS.idx];
+  if (act) label(act.tip, act.x, act.y - 20, '#1d4fd0', { size: 11.5, align: 'center' });
+}
+
+/* --- 俯视图 --- */
+function drawTopView(st) {
+  const c = Sctx();
+  const cx = CW * 0.5, cy = CH * 0.52;
+  const R = Math.max(40, Math.min(CW, CH) * 0.34);
+  const Rs = st.formed ? (st.r / Math.max(st.r, STATE.L * 0.5)) * R : 0;
+  c.save();
+  c.setLineDash([6, 5]); c.strokeStyle = '#94a3b8'; c.lineWidth = 1.6;
+  c.beginPath(); c.arc(cx, cy, Rs, 0, 7); c.stroke(); c.restore();
+  dash(cx - R - 20, cy, cx + R + 20, cy, '#e2e8f0', [4, 4], 1);
+  dash(cx, cy - R - 20, cx, cy + R + 20, '#e2e8f0', [4, 4], 1);
+  dot(cx, cy, 5, '#475569', '#334155');
+  label('悬点投影（圆心）', cx, cy - 14, '#475569', { size: 11.5, align: 'center' });
+  if (!st.formed) {
+    label('ω ≤ ω₀：小球竖直下垂，俯视只有一个点', cx, cy + 40, '#b91c1c', { size: 13, align: 'center' });
+    pushHot('motor', cx, cy);
+    return;
+  }
+  const phi = STATE.phase;
+  const bx = cx + Rs * Math.cos(phi), by = cy + Rs * Math.sin(phi);
+  // 频闪残影
+  if (STATE.strobe.on) {
+    const dPhi = st.omega / STATE.strobe.f;
+    for (let j = 1; j <= 6; j++) {
+      const p = phi - j * dPhi;
+      c.globalAlpha = .45 * (1 - j / 7);
+      dot(cx + Rs * Math.cos(p), cy + Rs * Math.sin(p), 9, MASS_COLOR[STATE.massMul], null);
+      c.globalAlpha = 1;
+    }
+  }
+  // 半径 r 与向心方向
+  dash(cx, cy, bx, by, C.purple, [5, 4], 1.8);
+  label(`r=${fmt(st.r,3)} m`, cx + Rs / 2, cy - 12, '#7e22ce', { size: 12, align: 'center' });
+  c.strokeStyle = C.red; c.lineWidth = 2.6;
+  arrow(bx, by, cx, cy, C.red, 2.6, 10);
+  // 速度切线
+  arrow(bx, by, bx - Math.sin(phi) * 56, by + Math.cos(phi) * 56, C.blue, 2.4, 10);
+  // 球
+  dot(bx, by, clamp(0.028 * Math.min(CW, CH), 8, 20) * Math.cbrt(STATE.massMul),
+    MASS_COLOR[STATE.massMul], '#334155');
+  const ml = `${massLabel(STATE.massMul)}=${fmt(st.m,2)}kg`;
+  label(ml, bx, by - 26, '#334155', { size: 12, align: 'center' });
+  if (STATE.reduce) {                                        // 减少动效：俯视静态分帧
+    for (let k = 1; k < 8; k++) {
+      const p = phi + k * Math.PI / 4;
+      c.globalAlpha = .34;
+      dot(cx + Rs * Math.cos(p), cy + Rs * Math.sin(p), 8, MASS_COLOR[STATE.massMul], null);
+      c.globalAlpha = 1;
+      label(String(k), cx + Rs * Math.cos(p), cy + Rs * Math.sin(p), '#475569',
+        { size: 10, align: 'center', bg: false });
+    }
+  }
+  // 旋转方向
+  c.strokeStyle = '#0ea5e9'; c.lineWidth = 1.6;
+  c.beginPath(); c.arc(cx, cy, Rs * 0.55, phi - 0.9, phi - 0.15); c.stroke();
+  const ta = phi - 0.15, tx = cx + Math.cos(ta) * Rs * .55, ty = cy + Math.sin(ta) * Rs * .55;
+  arrow(tx, ty, tx + Math.sin(ta) * 8, ty - Math.cos(ta) * 8, '#0ea5e9', 1.6, 7);
+  label(`ω=${fmt(st.omega,2)} rad/s　T周期=${fmt(st.Tperiod,3)} s`, cx, cy + R + 34, '#334155',
+    { size: 12.5, align: 'center' });
+  label('俯视：真实圆轨迹，红色合力严格沿半径指向圆心', cx, 14, '#64748b', { size: 12, align: 'center' });
+  pushHot('force', (bx + cx) / 2, (by + cy) / 2);
+  pushHot('r', cx + Rs * 0.6, cy + 22);
+  pushHot('ball', bx, by);
+  // 底部提示
+  label('俯视：真实圆轨迹，红色合力严格沿半径指向圆心，与中国物理教材图示一致', 12, CH - 14,
+    '#64748b', { size: 11 });
+}
+
+/* --- 正视主绘制 --- */
+/* 减少动效（prefers-reduced-motion）时的静态分帧图：用 8 个等相位位置表达运动 */
+function drawStaticFrames(st, phi, rr) {
+  const c = CTX();
+  for (let k = 1; k < 8; k++) {
+    const p = phi + k * Math.PI / 4;
+    const g = PX(st.r * Math.cos(p), st.h, st.r * Math.sin(p));
+    c.globalAlpha = .32;
+    dot(g[0], g[1], rr * 0.8, MASS_COLOR[STATE.massMul] || '#38bdf8', null);
+    c.globalAlpha = 1;
+    label(String(k), g[0], g[1], '#475569', { size: 10, align: 'center', bg: false });
+  }
+  label('静态分帧（每 1/8 圈一帧）', 12, 34, '#64748b', { size: 11 });
+}
+
+function drawFrontView(st) {
+  const c = Sctx();
+  updateScale(st);
+  const px = SC.ox, py = SC.oy;
+  const phi = STATE.phase;
+  drawMotor(st);
+  const R = drawRulers(st);
+  drawTrace(st);
+  drawHR(st, R);
+  drawGhosts(st, phi);
+  // 竖直参考轴
+  dash(px, py, px, py + (STATE.L + 0.10) * SC.s, C.light, [4, 4], 1.2);
+  drawProtractor(st, phi);
+
+  if (!st.formed) {                       // 低于临界：竖直下垂
+    const by = py + STATE.L * SC.s;
+    c.strokeStyle = '#334155'; c.lineWidth = 2;
+    c.beginPath(); c.moveTo(px, py); c.lineTo(px, by); c.stroke();
+    const rr = ballRadius(st);
+    dot(px, by + rr, rr, MASS_COLOR[STATE.massMul], '#334155');
+    if (STATE.show.vec) {
+      arrow(px, by + rr, px, by + rr + 62, C.gray, 2.6, 11);
+      label(`mg=${fmt(st.m * st.g,2)} N`, px + 8, by + rr + 74, '#6b7280', { size: 12 });
+      arrow(px, by + rr, px, by + rr - 62, C.orange, 2.6, 11);
+      label(`T=mg=${fmt(st.m * st.g,2)} N`, px + 8, by + rr - 62, '#b45309', { size: 12 });
+      label('合力 = 0，故不转动（电机空转）', px + 10, by + rr - 84, '#b91c1c', { size: 12 });
+    }
+    pushHot('proc', px + 40, py + 34); pushHot('ball', px, by + rr);
+    pushHot('motor', px - 20, py - 22); pushHot('tension', px, by + rr - 40);
+    drawScaleBar();
+    return;
+  }
+
+  // 绳 + 球
+  const bx = st.r * Math.cos(phi), dp = st.r * Math.sin(phi);
+  const B = PX(bx, st.h, dp);
+  c.strokeStyle = '#334155'; c.lineWidth = 2;
+  c.beginPath(); c.moveTo(px, py); c.lineTo(B[0], B[1]); c.stroke();
+  // L 标注（沿绳中点）
+  label(`L=${fmt(STATE.L,2)} m`, (px + B[0]) / 2 + 14, (py + B[1]) / 2, '#334155', { size: 11.5 });
+  drawStrobe(st, phi);
+  const rr = ballRadius(st);
+  dot(B[0], B[1], rr, MASS_COLOR[STATE.massMul], '#334155');
+  label(`${massLabel(STATE.massMul)}=${fmt(st.m,2)} kg`, B[0], B[1] - rr - 12, '#334155',
+    { size: 12, align: 'center' });
+  if (STATE.reduce) drawStaticFrames(st, phi, rr);          // 减少动效：静态分帧图
+  drawVectors(st, phi, B);
+  drawProfile(st);
+  drawScaleBar();
+
+  // 热点位置登记
+  const pm = [px + 30 * Math.sin(st.theta / 2), py + 30 * Math.cos(st.theta / 2)];
+  pushHot('proc', pm[0], pm[1]);
+  pushHot('h', px, (py + R.yh) / 2);
+  pushHot('r', px + st.r * SC.s * 0.55, R.yh);
+  pushHot('motor', px - 20, py - 22);
+  const lenT = forceLens(st).T;
+  const dx = px - B[0], dy = py - B[1], dd = Math.hypot(dx, dy) || 1;
+  pushHot('tension', B[0] + dx / dd * lenT * 0.6, B[1] + dy / dd * lenT * 0.6);
+  pushHot('force', (B[0] + px) / 2, B[1] + 26);
+  pushHot('ball', B[0], B[1]);
+}
+
+/* --- 每帧总入口 --- */
+function renderScene() {
+  const c = Sctx(); sizeCanvas(); useCtx(null);
+  const st = ST();
+  HOTPOS.list.length = 0;
+  c.clearRect(0, 0, CW, CH);
+  drawBackdrop();
+  if (STATE.view === 'top') drawTopView(st); else drawFrontView(st);
+  if (HOTPOS.idx >= HOTPOS.list.length) HOTPOS.idx = 0;   // 热点数变化后防越界
+  drawHotspots();
+  // 角标：当前构型一句话
+  if (STATE.reduce) label('减少动效模式：静态分帧图', 12, 18, '#64748b', { size: 11.5 });
+}
+/* ===================== P3 图表 ===================== */
+function chartSurf(id) {
+  const el = document.getElementById(id);
+  const rect = el.getBoundingClientRect();
+  const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+  const w = Math.max(320, Math.round(rect.width)), h = Math.max(210, Math.round(rect.height));
+  el.width = Math.round(w * dpr); el.height = Math.round(h * dpr);
+  const c = el.getContext('2d'); c.setTransform(dpr, 0, 0, dpr, 0, 0);
+  c.clearRect(0, 0, w, h);
+  return { c, w, h, el };
+}
+/* 建立坐标系：返回屏幕映射 X(v) / Y(v) */
+function axes(o) {
+  const { c, w, h } = o;
+  const pad = { l: 54, r: 16, t: 22, b: 40 };
+  const X = v => pad.l + (v - o.xmin) / (o.xmax - o.xmin) * (w - pad.l - pad.r);
+  const Y = v => h - pad.b - (v - o.ymin) / (o.ymax - o.ymin) * (h - pad.t - pad.b);
+  c.fillStyle = '#fff'; c.fillRect(0, 0, w, h);
+  // 网格
+  c.strokeStyle = '#eef2f8'; c.lineWidth = 1;
+  const xt = o.xticks, yt = o.yticks;
+  xt.forEach(v => { c.beginPath(); c.moveTo(X(v), Y(o.ymin)); c.lineTo(X(v), Y(o.ymax)); c.stroke(); });
+  yt.forEach(v => { c.beginPath(); c.moveTo(X(o.xmin), Y(v)); c.lineTo(X(o.xmax), Y(v)); c.stroke(); });
+  // 轴
+  c.strokeStyle = '#64748b'; c.lineWidth = 1.4;
+  c.beginPath(); c.moveTo(X(o.xmin), Y(o.ymin)); c.lineTo(X(o.xmax), Y(o.ymin)); c.stroke();
+  c.beginPath(); c.moveTo(X(o.xmin), Y(o.ymin)); c.lineTo(X(o.xmin), Y(o.ymax)); c.stroke();
+  // 箭头与标签
+  arrow(X(o.xmax) - 10, Y(o.ymin), X(o.xmax), Y(o.ymin), '#64748b', 1.4, 7);
+  arrow(X(o.xmin), Y(o.ymax) + 10, X(o.xmin), Y(o.ymax), '#64748b', 1.4, 7);
+  c.textAlign = 'center'; c.textBaseline = 'top';
+  setFont(11.5, '600'); c.fillStyle = '#475569';
+  xt.forEach(v => c.fillText(o.xfmt ? o.xfmt(v) : String(v), X(v), Y(o.ymin) + 5));
+  c.textAlign = 'right'; c.textBaseline = 'middle';
+  yt.forEach(v => c.fillText(o.yfmt ? o.yfmt(v) : String(v), X(o.xmin) - 6, Y(v)));
+  setFont(12.5, '700'); c.fillStyle = '#334155';
+  c.textAlign = 'right'; c.textBaseline = 'bottom';
+  c.fillText(o.xLabel, o.w - 6, o.h - 6);
+  c.textAlign = 'left'; c.textBaseline = 'top';
+  c.fillText(o.yLabel, 6, 4);
+  if (o.title) { c.textAlign = 'left'; setFont(12.5, '700'); c.fillText(o.title, pad.l + 4, 4); }
+  return { X, Y, pad };
+}
+function series(c, pts, color, dashPat, lw = 2.2, closed) {
+  if (!pts.length) return;
+  c.save(); if (dashPat) c.setLineDash(dashPat);
+  c.strokeStyle = color; c.lineWidth = lw; c.lineJoin = 'round';
+  c.beginPath();
+  pts.forEach((p, i) => i ? c.lineTo(p[0], p[1]) : c.moveTo(p[0], p[1]));
+  c.stroke(); c.restore();
+}
+function markers(c, pts, color, r = 4) {
+  pts.forEach(p => {
+    c.beginPath(); c.arc(p[0], p[1], r, 0, 7);
+    c.fillStyle = color; c.fill(); c.strokeStyle = '#fff'; c.lineWidth = 1.2; c.stroke();
+  });
+}
+function vline(c, X, Y, x, ymin, ymax, color, text) {
+  const c2 = c; c2.save(); c2.setLineDash([5, 4]); c2.strokeStyle = color; c2.lineWidth = 1.6;
+  c2.beginPath(); c2.moveTo(X(x), Y(ymin)); c2.lineTo(X(x), Y(ymax)); c2.stroke(); c2.restore();
+  if (text) label(text, X(x), Y(ymax) + 10, color, { size: 11.5, align: 'center' });
+}
+function legendRow(c, x, y, items) {
+  let cx = x; setFont(11.5, '600'); c.textAlign = 'left'; c.textBaseline = 'middle';
+  items.forEach(it => {
+    c.strokeStyle = it.color; c.lineWidth = 2.4;
+    c.beginPath(); c.moveTo(cx, y); c.lineTo(cx + 16, y); c.stroke();
+    if (it.dot) { c.beginPath(); c.arc(cx + 8, y, 3.6, 0, 7); c.fillStyle = it.color; c.fill(); }
+    c.fillStyle = '#475569'; c.fillText(it.text, cx + 20, y);
+    cx += 24 + c.measureText(it.text).width;
+  });
+}
+
+/* ---------- θ–ω ---------- */
+function drawThW() {
+  const s = chartSurf('chart-thw'), st = ST();
+  useCtx(s.c);
+  const xmax = Math.max(8, st.omega0 * 2.4, st.omega * 1.35);
+  const o = Object.assign(s, {
+    xmin: 0, xmax, ymin: 0, ymax: 90,
+    xticks: tickList(0, xmax), yticks: [0, 15, 30, 45, 60, 75, 90],
+    xLabel: 'ω / (rad·s⁻¹)', yLabel: 'θ / °', title: `θ–ω 曲线　L = ${fmt(STATE.L,2)} m　g = ${STATE.g} m/s²`,
+    xfmt: v => v.toFixed(1), yfmt: v => String(v)
+  });
+  const { X, Y } = axes(o);
+  const c = s.c;
+  // 不形成区域
+  c.fillStyle = 'rgba(239,68,68,.07)';
+  c.fillRect(X(0), Y(90), X(st.omega0) - X(0), Y(0) - Y(90));
+  label('不形成圆锥摆', X(st.omega0 / 2), Y(78), '#b91c1c', { size: 11.5, align: 'center' });
+  // 理论曲线
+  const pts = [];
+  for (let w = st.omega0; w <= xmax; w += xmax / 320) {
+    const th = Math.acos(clamp(STATE.g / (w * w * STATE.L), 0, 1)) * DEG;
+    pts.push([X(w), Y(th)]);
+  }
+  pts.unshift([X(st.omega0), Y(0)]);
+  pts.unshift([X(0), Y(0)]);
+  series(c, pts, '#2563eb', null, 2.4);
+  // 扫描点
+  if (SWEEP.data.length) {
+    markers(c, SWEEP.data.map(d => [X(d.w), Y(d.th * DEG)]), '#ef4444', 3.4);
+  }
+  vline(c, X, Y, st.omega0, 0, 90, '#ef4444', `ω₀=${fmt(st.omega0,2)}`);
+  if (st.formed) {
+    c.beginPath(); c.arc(X(st.omega), Y(st.thDeg), 5.5, 0, 7);
+    c.fillStyle = '#f59e0b'; c.fill(); c.strokeStyle = '#fff'; c.lineWidth = 1.6; c.stroke();
+    label(`当前 θ=${fmt(st.thDeg,1)}°`, X(st.omega) + 8, Y(st.thDeg) - 12, '#b45309', { size: 11.5 });
+  }
+  legendRow(c, o.pad ? X(0) + 6 : 60, Y(0) - 14,
+    [{ color: '#2563eb', text: `理论 cosθ=g/(ω²L)` }, { color: '#ef4444', text: 'ω 扫描实测点', dot: true }]);
+  setNote(`θ–ω：ω ≤ ω₀ = ${fmt(st.omega0, 2)} rad/s（红色区）时 cosθ = g/(ω²L) ≥ 1 无解，θ = 0，` +
+    `小球竖直下垂；ω 一旦超过 ω₀，θ 迅速增大并渐近 90°（理想极限，实际不可达）。`);
+}
+function tickList(a, b) {
+  const step = niceStep((b - a) / 8), out = [];
+  for (let v = 0; v <= b + 1e-9; v += step) out.push(Math.round(v * 100) / 100);
+  return out;
+}
+function niceStep(raw) {
+  const p = Math.pow(10, Math.floor(Math.log10(Math.max(raw, 1e-6))));
+  const n = raw / p; return (n < 1.5 ? 1 : n < 3 ? 2 : n < 7 ? 5 : 10) * p;
+}
+
+/* ---------- h–ω ---------- */
+function drawHW() {
+  const s = chartSurf('chart-hw'), st = ST();
+  useCtx(s.c);
+  const xmax = Math.max(8, st.omega0 * 2.4, st.omega * 1.35);
+  const ymax = Math.max(STATE.L * 1.05, 0.2);
+  const o = Object.assign(s, {
+    xmin: 0, xmax, ymin: 0, ymax,
+    xticks: tickList(0, xmax), yticks: tickList(0, ymax),
+    xLabel: 'ω / (rad·s⁻¹)', yLabel: 'h / m', title: 'h–ω 曲线　h = g/ω²（ω>ω₀）',
+    xfmt: v => v.toFixed(1), yfmt: v => v.toFixed(2)
+  });
+  const { X, Y } = axes(o), c = s.c;
+  c.fillStyle = 'rgba(239,68,68,.07)';
+  c.fillRect(X(0), Y(ymax), X(st.omega0) - X(0), Y(0) - Y(ymax));
+  series(c, [[X(0), Y(STATE.L)], [X(st.omega0), Y(STATE.L)]], '#94a3b8', [5, 4], 2);
+  label('θ=0：h=L（下垂）', X(st.omega0 * 0.5), Y(STATE.L) - 12, '#64748b', { size: 11.5, align: 'center' });
+  const pts = [];
+  for (let w = st.omega0; w <= xmax; w += xmax / 400) pts.push([X(w), Y(STATE.g / (w * w))]);
+  series(c, pts, '#10b981', null, 2.4);
+  vline(c, X, Y, st.omega0, 0, ymax, '#ef4444', `ω₀=${fmt(st.omega0,2)}`);
+  if (st.formed) {
+    c.beginPath(); c.arc(X(st.omega), Y(st.h), 5.5, 0, 7);
+    c.fillStyle = '#f59e0b'; c.fill(); c.strokeStyle = '#fff'; c.lineWidth = 1.6; c.stroke();
+    label(`当前 h=${fmt(st.h,3)} m`, X(st.omega) + 8, Y(st.h) + 14, '#b45309', { size: 11.5 });
+  }
+  legendRow(c, X(0) + 6, Y(0) - 14, [{ color: '#10b981', text: 'h = g/ω²' }]);
+  setNote(`h–ω：h = g/ω²，<b>只与 ω、g 有关，与质量 m、绳长 L 无关</b>；ω 越大 h 越小，` +
+    `于是 T周期 = 2π√(h/g) = 2π/ω 越短。θ = 0（下垂）时 h = L = ${fmt(STATE.L, 2)} m。`);
+}
+
+/* ---------- T周期–m ---------- */
+function drawTm() {
+  const s = chartSurf('chart-tm'), st = ST();
+  useCtx(s.c);
+  const rows = RECORDS.filter(r => r.group === 'A');
+  const useTheo = rows.length === 0;
+  const pts = useTheo
+    ? [0.10, 0.20, 0.30].map(m => ({ m, T: st.formed ? st.Tperiod : NaN }))
+    : rows.map(r => ({ m: r.m, T: r.Tm }));
+  const Ts = pts.map(p => p.T).filter(Number.isFinite);
+  if (!Ts.length) { noData(s, '请先运行 A 组（同 h 换质量）实验'); return; }
+  const T0 = Ts[0];
+  const dev = Math.max(...Ts.map(t => Math.abs(t - T0) / T0)) * 100;
+  const ymin = Math.max(0, T0 * 0.72), ymax = T0 * 1.28;
+  const o = Object.assign(s, {
+    xmin: 0, xmax: 0.35, ymin, ymax,
+    xticks: [0, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35], yticks: tickList(ymin, ymax),
+    xLabel: 'm / kg', yLabel: 'T周期 / s',
+    title: `T周期–m 图　h = ${fmt(useTheo ? st.h : rows[0].h, 3)} m（同 h）`,
+    xfmt: v => v.toFixed(2), yfmt: v => v.toFixed(2)
+  });
+  const { X, Y } = axes(o), c = s.c;
+  series(c, [[X(0.02), Y(T0)], [X(0.34), Y(T0)]], '#2563eb', null, 2.6);
+  markers(c, pts.filter(p => Number.isFinite(p.T)).map(p => [X(p.m), Y(p.T)]), '#ef4444', 5);
+  label('水平直线 ⇒ T周期 与 m 无关', X(0.18), Y(T0) - 16, '#1d4fd0', { size: 12.5, align: 'center' });
+  vline(c, X, Y, 0.2, ymin, ymax, '#cbd5e1', null);
+  legendRow(c, X(0.02), Y(ymin) - 14,
+    [{ color: '#2563eb', text: `理论 T=2π√(h/g)=${fmt(T0,3)} s` },
+     { color: '#ef4444', text: useTheo ? '预期三球位置' : '实测读数', dot: true }]);
+  setNote(`同 h 换质量：三球周期读数最大相对偏差 <b>${dev.toFixed(2)}%</b>（验收要求 &lt; 1%），` +
+    `而拉力 T拉力 = mg/cosθ 与质量成正比。`);
+}
+
+/* ---------- T²–h ---------- */
+function drawT2h() {
+  const s = chartSurf('chart-t2h'), st = ST();
+  useCtx(s.c);
+  const rows = RECORDS.filter(r => Number.isFinite(r.Tm) && Number.isFinite(r.h) && r.h > 0);
+  const g = STATE.g, kTh = 4 * Math.PI * Math.PI / g;
+  const hmax = Math.max(STATE.L * 1.02, 0.3, ...rows.map(r => r.h));
+  const o = Object.assign(s, {
+    xmin: 0, xmax: hmax, ymin: 0, ymax: kTh * hmax * 1.06,
+    xticks: tickList(0, hmax), yticks: tickList(0, kTh * hmax * 1.06),
+    xLabel: 'h / m', yLabel: 'T² / s²',
+    title: 'T²–h 图（线性化验证 T=2π√(h/g)）',
+    xfmt: v => v.toFixed(2), yfmt: v => v.toFixed(2)
+  });
+  const { X, Y } = axes(o), c = s.c;
+  series(c, [[X(0), Y(0)], [X(hmax), Y(kTh * hmax)]], '#2563eb', null, 2.4);
+  label(`斜率 4π²/g = ${kTh.toFixed(2)} s²/m`, X(hmax * 0.45), Y(kTh * hmax * 0.62), '#1d4fd0', { size: 12 });
+  let note = `理论直线：T² = (4π²/g)·h，斜率 = ${kTh.toFixed(3)} s²/m（g=${g}）。`;
+  if (rows.length >= 2) {
+    let sh = 0, ss = 0;
+    rows.forEach(r => { sh += r.h * r.Tm * r.Tm; ss += r.h * r.h; });
+    const k = ss ? sh / ss : NaN;
+    const err = Math.abs(k - kTh) / kTh * 100;
+    markers(c, rows.map(r => [X(r.h), Y(r.Tm * r.Tm)]), '#ef4444', 4.6);
+    // 拟合直线
+    series(c, [[X(0), Y(0)], [X(hmax), Y(k * hmax)]], '#f59e0b', [6, 4], 2);
+    note += ` 实测最小二乘拟合斜率 = <b>${k.toFixed(3)}</b> s²/m，相对误差 <b>${err.toFixed(2)}%</b>。`;
+    legendRow(c, X(0.02), Y(0) - 16,
+      [{ color: '#2563eb', text: '理论' }, { color: '#f59e0b', text: '拟合' },
+       { color: '#ef4444', text: '实测点', dot: true }]);
+  } else {
+    legendRow(c, X(0.02), Y(0) - 16, [{ color: '#2563eb', text: '理论直线' }]);
+    note += ' 记录若干组不同 h 的数据（如跑 ω 扫描或 C 组）即可叠加实测点并给出斜率误差。';
+  }
+  setNote(note);
+}
+
+/* ---------- T拉力–m ---------- */
+function drawFm() {
+  const s = chartSurf('chart-fm'), st = ST();
+  useCtx(s.c);
+  const rows = RECORDS.filter(r => r.group === 'A');
+  const cosT = st.formed ? Math.cos(st.theta) : 1;
+  const kTh = STATE.g / Math.max(0.05, cosT);
+  const pts = rows.length
+    ? rows.map(r => ({ m: r.m, F: r.F }))
+    : [0.10, 0.20, 0.30].map(m => ({ m, F: m * STATE.g / Math.max(0.05, cosT) }));
+  const ymax = Math.max(0.5, ...pts.map(p => p.F)) * 1.18;
+  const o = Object.assign(s, {
+    xmin: 0, xmax: 0.35, ymin: 0, ymax,
+    xticks: [0, 0.05, 0.10, 0.15, 0.20, 0.25, 0.30, 0.35], yticks: tickList(0, ymax),
+    xLabel: 'm / kg', yLabel: 'T拉力 / N',
+    title: `T拉力–m 图　θ = ${fmt(st.thDeg,1)}°`,
+    xfmt: v => v.toFixed(2), yfmt: v => v.toFixed(2)
+  });
+  const { X, Y } = axes(o), c = s.c;
+  series(c, [[X(0), Y(0)], [X(0.34), Y(kTh * 0.34)]], '#f59e0b', null, 2.4);
+  markers(c, pts.map(p => [X(p.m), Y(p.F)]), '#ef4444', 5);
+  label('过原点直线 ⇒ T拉力 ∝ m', X(0.16), Y(ymax * 0.5), '#b45309', { size: 12.5, align: 'center' });
+  legendRow(c, X(0.02), Y(0) - 16,
+    [{ color: '#f59e0b', text: `斜率 g/cosθ = ${kTh.toFixed(2)} N/kg` },
+     { color: '#ef4444', text: rows.length ? '实测读数' : '预期三球位置', dot: true }]);
+  if (rows.length >= 2) {
+    const ratios = rows.map(r => r.F / r.m);
+    const dev = (Math.max(...ratios) - Math.min(...ratios)) / (Math.max(...ratios)) * 100;
+    setNote(`拉力 / 质量比值：${ratios.map(v => v.toFixed(2)).join(' / ')} N/kg，离散度 <b>${dev.toFixed(2)}%</b> ⇒ 严格正比。`);
+  }
+}
+function noData(s, text) {
+  const c = s.c; c.fillStyle = '#fff'; c.fillRect(0, 0, s.w, s.h);
+  label(text, s.w / 2, s.h / 2, '#94a3b8', { size: 13, align: 'center' });
+}
+function setNote(html) { const el = document.getElementById('chart-note'); if (el) el.innerHTML = html; }
+
+const CHART_FN = { thw: drawThW, hw: drawHW, tm: drawTm, t2h: drawT2h, fm: drawFm };
+let ACTIVE_CHART = 'thw';
+function drawActiveChart() { try { CHART_FN[ACTIVE_CHART](); } catch (e) { console.warn('[chart]', e); } }
+function drawAllCharts() {
+  Object.keys(CHART_FN).forEach(k => { try { CHART_FN[k](); } catch (e) { console.warn('[chart]', e); } });
+  // 各图都会写「图表说明」，最后重画当前激活图，保证说明文字与显示中的图一致
+  try { CHART_FN[ACTIVE_CHART](); } catch (e) { console.warn('[chart]', e); }
+}
+/* ===================== P4 读数、实验、记录、主循环 ===================== */
+const READOUTS = [
+  { k: 'n',        label: 'n',         unit: 'r/min',  card: 'k10', get: s => fmt(s.n, 1) },
+  { k: 'omega',    label: 'ω',         unit: 'rad/s',  card: 'k7',  get: s => fmt(s.omega, 3) },
+  { k: 'omega0',   label: 'ω₀=√(g/L)', unit: 'rad/s',  card: 'k5',  get: s => fmt(s.omega0, 3) },
+  { k: 'theta',    label: 'θ',         unit: '°',      card: 'k2',  get: s => fmt(s.thDeg, 1) },
+  { k: 'r',        label: 'r',         unit: 'm',      card: 'k1',  get: s => fmt(s.r, 3) },
+  { k: 'h',        label: 'h',         unit: 'm',      card: 'k4',  get: s => fmt(s.h, 3) },
+  { k: 'v',        label: 'v',         unit: 'm/s',    card: 'k11', get: s => fmt(s.v, 3) },
+  { k: 'Fc',       label: 'F向',       unit: 'N',      card: 'k6',  get: s => fmt(s.Fc, 3) },
+  { k: 'Ften',     label: 'T拉力',     unit: 'N',      card: 'k9',  get: s => fmt(s.Ttension, 3) },
+  { k: 'Tth',      label: 'T周期(理)', unit: 's',      card: 'k8',  get: s => fmt(s.Tperiod, 3) },
+  { k: 'Tm',       label: 'T周期(测)', unit: 's',      card: 'k16', get: s => fmt(MEAS.rolling, 3) },
+  { k: 'm',        label: 'm',         unit: 'kg',     card: 'k13', get: s => fmt(s.m, 3) }
+];
+function buildReadouts() {
+  const box = document.getElementById('readouts');
+  box.innerHTML = READOUTS.map(r => `
+    <div class="ro" data-card="${r.card}" tabindex="0" role="button"
+         aria-label="${r.label} 读数，点击查看对应卡片">
+      <span class="pin">卡</span>
+      <span class="k">${r.label}</span>
+      <span class="v" id="ro-${r.k}">—</span><span class="u">${r.unit}</span>
+    </div>`).join('');
+  box.querySelectorAll('.ro').forEach(el => {
+    const open = () => openCard(el.dataset.card);
+    el.addEventListener('click', open);
+    el.addEventListener('keydown', e => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); }
+    });
+  });
+}
+let _roTick = 0;
+function updateReadouts(st) {
+  if (++_roTick % 3) return;                       // 约 20 Hz 更新，降低 DOM 压力
+  READOUTS.forEach(r => {
+    const el = document.getElementById('ro-' + r.k);
+    if (el) el.textContent = r.get(st);
+  });
+}
+let _lastNote = '_';
+function updateWarn(st) {
+  const el = document.getElementById('warn');
+  const note = st.note || '';
+  if (note === _lastNote) return;                     // 内容未变时不刷新 DOM
+  _lastNote = note;
+  if (!note) { el.hidden = true; return; }
+  el.hidden = false;
+  el.className = 'warn-banner' + (st.kind === 'err' ? ' err' : '');
+  el.innerHTML = st.note;
+}
+
+/* ---------- 音效 ---------- */
+let AC = null;
+function tickSound() {
+  if (!STATE.show.sound) return;
+  try {
+    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+    const o = AC.createOscillator(), g = AC.createGain();
+    o.type = 'square'; o.frequency.value = 1200; g.gain.value = 0.03;
+    o.connect(g); g.connect(AC.destination); o.start();
+    setTimeout(() => { try { o.stop(); } catch (e) {} }, 45);
+  } catch (e) { /* 忽略音频异常 */ }
+}
+
+/* ---------- 测量误差模拟 ---------- */
+const jit = () => (STATE.jitter ? (Math.random() - 0.5) * 0.006 : 0);   // ±0.3%
+
+/* ---------- 记录表 ---------- */
+const GROUP_COLOR = { A: '#2563eb', B: '#f59e0b', C: '#10b981', M: '#a855f7' };
+function addRecord(r) { RECORDS.push(r); renderRecords(); drawAllCharts(); }
+function renderRecords() {
+  const tb = document.getElementById('recBody');
+  tb.innerHTML = RECORDS.map((r, i) => `
+    <tr style="color:${GROUP_COLOR[r.group] || '#334155'}">
+      <td>${r.group}</td><td>${fmt(r.L, 2)}</td><td>${fmt(r.m, 3)}</td><td>${fmt(r.n, 1)}</td>
+      <td>${fmt(r.omega, 3)}</td><td>${fmt(r.theta, 1)}</td><td>${fmt(r.h, 3)}</td>
+      <td>${fmt(r.Tm, 3)}</td><td>${fmt(r.Tth, 3)}</td>
+      <td>${r.Tth ? fmt(Math.abs(r.Tm - r.Tth) / r.Tth * 100, 2) + '%' : '—'}</td>
+    </tr>`).join('');
+}
+function exportCSV() {
+  const head = ['组别', 'L/m', 'm/kg', 'n/(r/min)', 'ω/(rad/s)', 'θ/°', 'h/m', 'T测/s', 'T理/s', '误差/%'];
+  const rows = RECORDS.map(r => [r.group, r.L.toFixed(3), r.m.toFixed(3), r.n.toFixed(2),
+    r.omega.toFixed(4), r.theta.toFixed(2), r.h.toFixed(4), r.Tm.toFixed(4), r.Tth.toFixed(4),
+    (Math.abs(r.Tm - r.Tth) / r.Tth * 100).toFixed(3)]);
+  const csv = '\ufeff' + [head, ...rows].map(a => a.join(',')).join('\n');
+  const blob = new Blob([csv], { type: 'text/csv;charset=utf-8' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = '圆锥摆实验记录.csv';
+  document.body.appendChild(a); a.click(); a.remove();
+}
+function snapshot(group) {          // 取当前状态一行测量数据
+  const st = ST();
+  const Tm = Number.isFinite(MEAS.rolling) ? MEAS.rolling : st.Tperiod;
+  return { group, L: st.L, m: st.m, n: st.n, omega: st.omega, theta: st.thDeg,
+           h: st.h, Tm: Number.isFinite(st.Tperiod) ? Tm * (1 + 0) : NaN,
+           Tth: st.Tperiod, F: st.Ttension };
+}
+
+/* ---------- 对照实验 A：同 h 换质量 ---------- */
+const EXP = { timer: null, id: 0 };
+function cancelExp() { if (EXP.timer) { clearTimeout(EXP.timer); EXP.timer = null; } EXP.id++; }
+function setExpBox(html) { document.getElementById('expResult').innerHTML = html; }
+function expMass() {
+  cancelExp(); const myId = ++EXP.id;
+  STATE.lockH = true;
+  const st0 = ST();
+  STATE.hLock = clamp(st0.formed ? st0.h : 0.40, 0.05, STATE.L * 0.98);
+  STATE.playing = true; STATE.ghosts = []; syncUI();
+  const order = [1, 2, 3], rows = [];
+  let i = 0;
+  const step = () => {
+    if (myId !== EXP.id) return;
+    if (i >= order.length) { finishMass(rows); return; }
+    STATE.massMul = order[i]; syncUI();
+    EXP.timer = setTimeout(() => {
+      if (myId !== EXP.id) return;
+      const st = ST();
+      const row = snapshot('A'); row.Tm = st.Tperiod * (1 + jit()); row.mMul = order[i];
+      rows.push(row); RECORDS.push(row); renderRecords();
+      STATE.ghosts.push({ type: 'ball', massMul: order[i], color: MASS_COLOR[order[i]],
+        label: `${massLabel(order[i])}=${fmt(st.m, 2)}kg`, phaseOffset: (i - 1) * 2.094 });
+      i++; step();
+    }, 2200);
+  };
+  const finishMass = rows => {
+    const T0 = rows[0].Tm;
+    const dev = Math.max(...rows.map(r => Math.abs(r.Tm - T0) / T0)) * 100;
+    setExpBox(`
+      <b>A 组：锁定 h = ${fmt(rows[0].h, 3)} m，依次换成 m / 2m / 3m</b>
+      <table>
+        <tr><th>小球</th>${rows.map(r => `<th>${massLabel(r.mMul)} = ${fmt(r.m, 2)} kg</th>`).join('')}</tr>
+        <tr><td>h / m</td>${rows.map(r => `<td>${fmt(r.h, 3)}</td>`).join('')}</tr>
+        <tr><td>θ / °</td>${rows.map(r => `<td>${fmt(r.theta, 1)}</td>`).join('')}</tr>
+        <tr><td>ω / (rad/s)</td>${rows.map(r => `<td>${fmt(r.omega, 3)}</td>`).join('')}</tr>
+        <tr><td><b>T周期(测) / s</b></td>${rows.map(r => `<td><b>${fmt(r.Tm, 3)}</b></td>`).join('')}</tr>
+        <tr><td><b>T拉力 / N</b></td>${rows.map(r => `<td><b>${fmt(r.F, 3)}</b></td>`).join('')}</tr>
+      </table>
+      <div class="ok-line">✔ 结论①：<b>三次周期读数完全相同</b>（最大相对偏差 ${dev.toFixed(2)}% &lt; 1%），
+      h 相同 ⇒ ω=√(g/h) 相同 ⇒ T周期=2π√(h/g) 相同；而拉力读数 ${rows.map(r => fmt(r.F, 2)).join(' / ')} N
+      成 <b>1:2:3</b>，与质量成正比（T拉力 = mg/cosθ）。</div>`);
+    drawAllCharts();
+    flashCard('k13');
+  };
+  step();
+}
+
+/* ---------- 对照实验 C：同 h 换绳长 ---------- */
+function expLen() {
+  cancelExp(); const myId = ++EXP.id;
+  STATE.lockH = true;
+  const st0 = ST();
+  // 取一个便于演示的 h（不沿用上一组实验残留的 h，保证 L 序列落在 0.3–1.2 m 内）
+  const h0 = clamp(st0.formed ? Math.min(st0.h, 0.55) : 0.40, 0.20, 0.55);
+  STATE.hLock = h0; STATE.playing = true; STATE.ghosts = []; syncUI();
+  // 由目标摆角反解绳长 L = h/cosθ（θ 取 25°/45°/62°），再夹紧到器材量程并去重
+  let Ls = [...new Set([25, 45, 62].map(t => +clamp(h0 / Math.cos(t * RAD), 0.3, 1.2).toFixed(2)))];
+  if (Ls.length < 2) Ls = [0.50, 0.80, 1.10].filter(L => L > h0 + 0.02);
+  const rows = []; let i = 0;
+  const step = () => {
+    if (myId !== EXP.id) return;
+    if (i >= Ls.length) { finishLen(rows); return; }
+    STATE.L = Ls[i]; syncUI();
+    EXP.timer = setTimeout(() => {
+      if (myId !== EXP.id) return;
+      const st = ST();
+      const row = snapshot('C'); row.Tm = st.Tperiod * (1 + jit()); row.L = Ls[i];
+      rows.push(row); RECORDS.push(row); renderRecords();
+      STATE.ghosts.push({ type: 'trace', r: st.r, h: st.h, color: MASS_COLOR[[1, 2, 3][i]],
+        label: `L=${fmt(Ls[i], 2)}m` });
+      i++; step();
+    }, 2000);
+  };
+  const finishLen = rows => {
+    const T0 = rows[0].Tm;
+    const dev = Math.max(...rows.map(r => Math.abs(r.Tm - T0) / T0)) * 100;
+    setExpBox(`
+      <b>C 组：h 锁定为 ${fmt(h0, 3)} m，改变绳长 L（θ 自动反解 θ=arccos(h/L)）</b>
+      <table>
+        <tr><th>绳长 L / m</th>${rows.map(r => `<th>${fmt(r.L, 2)}</th>`).join('')}</tr>
+        <tr><td>θ / °</td>${rows.map(r => `<td>${fmt(r.theta, 1)}</td>`).join('')}</tr>
+        <tr><td>r / m</td>${rows.map(r => `<td>${fmt(r.L * Math.sin(r.theta * RAD), 3)}</td>`).join('')}</tr>
+        <tr><td>h / m</td>${rows.map(r => `<td>${fmt(r.h, 3)}</td>`).join('')}</tr>
+        <tr><td><b>T周期(测) / s</b></td>${rows.map(r => `<td><b>${fmt(r.Tm, 3)}</b></td>`).join('')}</tr>
+      </table>
+      <div class="ok-line">✔ 结论②：<b>L 改了三次、θ 与 r 都变了，周期读数仍完全相同</b>（偏差 ${dev.toFixed(2)}%），
+      因为 T周期 = 2π√(h/g) 中的摆长是以 <b>h = L·cosθ</b> 的组合出现的——周期只由 h 决定。</div>`);
+    drawAllCharts();
+    flashCard('k14');
+  };
+  step();
+}
+
+/* ---------- 对照实验 B：ω 自动扫描 ---------- */
+function startSweep() {
+  stopSweep();
+  const w1 = parseFloat(document.getElementById('num-w1').value) || 0;
+  const w2 = parseFloat(document.getElementById('num-w2').value) || 8;
+  const step = Math.max(0.02, parseFloat(document.getElementById('num-wstep').value) || 0.25);
+  STATE.lockH = false; STATE.playing = true; syncUI();
+  SWEEP.data = []; SWEEP.on = true;
+  let w = Math.min(w1, w2), cnt = 0;
+  const tick = () => {
+    if (!SWEEP.on) return;
+    STATE.rpm = clamp(w * 30 / Math.PI, 0, 200); syncUI();
+    const st = ST();
+    const row = { w: st.omega, th: st.theta, h: st.h, T: st.Tperiod, formed: st.formed };
+    if (st.formed) SWEEP.data.push(row);
+    if (st.formed && cnt % 2 === 0) { const r = snapshot('B'); RECORDS.push(r); renderRecords(); }
+    cnt++;
+    if (w >= Math.max(w1, w2)) { stopSweep(true); return; }
+    w += step;
+    SWEEP.timer = setTimeout(tick, 240);
+  };
+  tick();
+}
+function stopSweep(finished) {
+  SWEEP.on = false;
+  if (SWEEP.timer) { clearTimeout(SWEEP.timer); SWEEP.timer = null; }
+  if (finished) {
+    const st = ST();
+    const rows = RECORDS.filter(r => r.group === 'B');
+    if (rows.length >= 2) {
+      const wmin = rows[0].omega, wmax = rows[rows.length - 1].omega;
+      setExpBox(`
+        <b>B 组：同 L = ${fmt(st.L, 2)} m、同 ${fmt(st.m, 2)} kg，ω 从 ${fmt(wmin, 2)} 扫到 ${fmt(wmax, 2)} rad/s</b>
+        <table>
+          <tr><th>ω</th>${rows.slice(0, 6).map(r => `<th>${fmt(r.omega, 2)}</th>`).join('')}</tr>
+          <tr><td>θ / °</td>${rows.slice(0, 6).map(r => `<td>${fmt(r.theta, 1)}</td>`).join('')}</tr>
+          <tr><td>h / m</td>${rows.slice(0, 6).map(r => `<td>${fmt(r.h, 3)}</td>`).join('')}</tr>
+          <tr><td>T周期 / s</td>${rows.slice(0, 6).map(r => `<td>${fmt(r.Tth, 3)}</td>`).join('')}</tr>
+        </table>
+        <div class="ok-line">✔ 结论③：ω 增大 ⇒ θ 增大、h 减小、T周期 变短；低于 ω₀=${fmt(st.omega0, 2)} rad/s
+        时曲线为零——小球竖直下垂不形成圆锥摆。θ–ω 图上红点与理论曲线 cosθ=g/(ω²L) 重合。</div>`);
+    }
+    drawAllCharts();
+    flashCard('k12');
+  }
+}
+
+/* ---------- 预设 ---------- */
+function applyPreset(key) {
+  const p = PRESETS[key]; if (!p) return;
+  if (p.exp === 'mass') return expMass();
+  if (p.exp === 'len') return expLen();
+  cancelExp(); stopSweep(false);
+  STATE.lockH = false; STATE.L = p.L; STATE.massMul = 1; STATE.ghosts = [];
+  if (p.belowCrit) {
+    STATE.rpm = 0.85 * Math.sqrt(STATE.g / p.L) * 30 / Math.PI;
+  } else {
+    const th = p.thetaDeg * RAD;
+    STATE.rpm = Math.sqrt(STATE.g / (p.L * Math.cos(th))) * 30 / Math.PI;
+  }
+  STATE.playing = true;
+  syncUI();
+  setExpBox(`<p class="mini-note">已载入预设「${p.name}」：L = ${fmt(STATE.L, 2)} m，` +
+    `n = ${fmt(STATE.rpm, 1)} r/min（ω = ${fmt(STATE.rpm * Math.PI / 30, 3)} rad/s），` +
+    `ω₀ = ${fmt(Math.sqrt(STATE.g / STATE.L), 3)} rad/s。</p>`);
+}
+
+/* ---------- 计时器（N 圈计时求 T） ---------- */
+function toggleTimer() {
+  const T = MEAS.timer;
+  if (!T.on) {
+    const st = ST();
+    if (!st.formed) { updateWarn(Object.assign({}, st, { note: '当前未形成圆锥摆，无法计时。请先提高转速至 ω > ω₀。', kind: 'err' })); return; }
+    T.on = true; T.tStart = STATE.simTime; T.t0 = NaN; T.p0 = STATE.phase;
+    T.laps = 0; T.t = 0; T.T = NaN; T.tLast = NaN;
+    document.getElementById('btn-timer').textContent = '⏹ 停止计时';
+  } else {
+    T.on = false;
+    document.getElementById('btn-timer').textContent = '⏱ 开始计时';
+    const st = ST();
+    if (T.laps >= 1 && Number.isFinite(T.tLast) && Number.isFinite(T.t0)) {
+      // 只统计完整圈：从第一次过线到最后一次过线，除以圈数
+      T.T = (T.tLast - T.t0) / T.laps * (1 + (STATE.jitter ? (Math.random() - .5) * .004 : 0));
+      MEAS.rolling = T.T;
+    }
+  }
+  updateTimerUI();
+}
+function updateTimerUI() {
+  const T = MEAS.timer;
+  document.getElementById('timer-laps').textContent = String(T.laps);
+  const span = T.on
+    ? (Number.isFinite(T.t0) ? STATE.simTime - T.t0 : 0)                       // 已过第一次参考线后才开始累积
+    : (Number.isFinite(T.t0) && Number.isFinite(T.tLast) ? T.tLast - T.t0 : 0);
+  document.getElementById('timer-t').textContent = fmt(span, 2);
+  const el = document.getElementById('timer-T');
+  const st = ST();
+  if (Number.isFinite(T.T)) {
+    const err = Math.abs(T.T - st.Tperiod) / st.Tperiod * 100;
+    el.innerHTML = `${fmt(T.T, 3)}（理论 ${fmt(st.Tperiod, 3)}，误差 ${err.toFixed(2)}%）`;
+  } else el.textContent = '—';
+}
+
+/* ---------- 主循环：解析推进 φ(t)=ωt+φ₀ ---------- */
+let _lastTs = 0, _chartAcc = 0, _lastCross = NaN;
+function loop(ts) {
+  const dtReal = Math.min(0.05, (_lastTs ? (ts - _lastTs) / 1000 : 0));
+  _lastTs = ts;
+  const st = ST();
+  const spinning = STATE.playing && !STATE.show.hand && st.formed;
+  if (spinning) {
+    const dt = dtReal * STATE.speed;
+    const tBefore = STATE.simTime;
+    STATE.simTime += dt;
+    const pBefore = STATE.phase;
+    const pAfter = pBefore + st.omega * dt;                  // 解析积分 φ=ωt+φ₀：慢动作/帧率无关
+    STATE.phase = pAfter;
+    const kBefore = Math.floor(pBefore / (2 * Math.PI));
+    const kAfter = Math.floor(pAfter / (2 * Math.PI));
+    if (kAfter > kBefore) {
+      // 亚帧插值求“过参考线”的精确时刻：消除帧率量化误差，保证 N 圈计时误差 ≪1%
+      for (let k = kBefore + 1; k <= kAfter; k++) {
+        const frac = (k * 2 * Math.PI - pBefore) / (st.omega * dt);
+        const tCross = tBefore + clamp(frac, 0, 1) * dt;
+        if (Number.isFinite(_lastCross)) MEAS.rolling = (tCross - _lastCross) * (1 + jit());
+        _lastCross = tCross;
+        if (MEAS.timer.on) {
+          // 真实实验是“过参考线时按表”：这里自动把 t0 对齐到第一次过线，只计满圈
+          if (!Number.isFinite(MEAS.timer.t0)) { MEAS.timer.t0 = tCross; }
+          else { MEAS.timer.laps += 1; MEAS.timer.tLast = tCross; }
+        }
+        tickSound();
+      }
+    }
+  } else {
+    // 暂停 / 手摇 / 未形成圆锥摆：丢弃上一次过线时刻，
+    // 否则恢复转动后首圈会把停顿时间算进周期，测出荒谬的 T
+    _lastCross = NaN;
+    if (STATE.playing && !STATE.show.hand) STATE.simTime += dtReal * STATE.speed;   // 电机空转计时
+  }
+  if (STATE.phase > 1e6) STATE.phase %= 2 * Math.PI;
+  renderScene();
+  updateReadouts(st);
+  updateWarn(st);
+  if (MEAS.timer.on) updateTimerUI();
+  _chartAcc += dtReal;
+  if (_chartAcc > 0.18) { _chartAcc = 0; drawActiveChart(); }
+  requestAnimationFrame(loop);
+}
+function stepOnce() {                                  // 单步：前进 1/24 圈
+  const st = ST();
+  STATE.phase += (2 * Math.PI) / 24;
+  if (st.formed) STATE.simTime += st.Tperiod / 24;
+  renderScene(); drawActiveChart();
+}
+/* ===================== P5 交互、知识卡片、教学流程、练习 ===================== */
+let modalMode = 'card', currentCard = null, pinned = false, cardIndex = 0, catFilter = '全部';
+let visibleCards = KNOWLEDGE_CARDS.slice();
+
+/* ---------- 卡片渲染 ---------- */
+function cardFaceHTML(c, back) {
+  if (modalMode === 'info') return c.html;
+  const mini = MINI[c.svg] || '';
+  if (back) {
+    return `<dl class="kv"><dt>推导</dt><dd>${c.back || '—'}</dd></dl>
+      ${c.f ? `<div class="flowbox">关联公式：${c.f}</div>` : ''}
+      ${c.warn ? `<div class="tips" style="margin-top:8px">${c.warn}</div>` : ''}
+      ${mini}`;
+  }
+  return `<p style="margin:0 0 6px"><b>${c.concl}</b></p>
+    ${c.f ? `<div class="formula-box">${c.f}</div>` : ''}
+    ${mini}
+    <dl class="kv">
+      <dt>结论</dt><dd>${c.concl}</dd>
+      <dt>在本 Demo</dt><dd>${c.how || '—'}</dd>
+    </dl>
+    ${c.warn ? `<div class="tips">⚠ ${c.warn}</div>` : ''}`;
+}
+function renderCardList() {
+  const box = document.getElementById('cardList');
+  const q = (document.getElementById('cardSearch').value || '').trim().toLowerCase();
+  visibleCards = KNOWLEDGE_CARDS.filter(c =>
+    (catFilter === '全部' || c.cat === catFilter) &&
+    (!q || (c.title + c.concl + c.f + c.cat + (c.how || '')).toLowerCase().includes(q)));
+  document.getElementById('cardCount').textContent = `共 ${visibleCards.length} 张（总 ${KNOWLEDGE_CARDS.length}）`;
+  box.innerHTML = visibleCards.map((c, i) => `
+    <div class="citem" data-id="${c.id}" tabindex="0" role="button" aria-label="卡片 ${c.title}">
+      <div class="ttl">${c.title}</div>
+      <div class="cc">${c.concl}</div>
+      <div class="meta"><span class="tag">${c.cat}</span>${c.f ? `<span>${c.f}</span>` : ''}</div>
+    </div>`).join('') || '<p class="mini-note">没有匹配的卡片。</p>';
+  box.querySelectorAll('.citem').forEach(el => {
+    const open = () => { cardIndex = visibleCards.findIndex(c => c.id === el.dataset.id); openCard(el.dataset.id); };
+    el.addEventListener('click', open);
+    el.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); open(); } });
+  });
+  updateNavInfo();
+}
+function updateNavInfo() {
+  document.getElementById('navInfo').textContent =
+    visibleCards.length ? `${cardIndex + 1} / ${visibleCards.length}` : '0 / 0';
+}
+function renderCatTabs() {
+  const box = document.getElementById('cardTabs');
+  box.innerHTML = CATS.map(c => `<button data-cat="${c}" aria-pressed="${c === catFilter}">${c}</button>`).join('');
+  box.querySelectorAll('button').forEach(b => b.addEventListener('click', () => {
+    catFilter = b.dataset.cat; renderCatTabs(); renderCardList();
+  }));
+}
+function flashCard(id) {                                  // 实验结束时在抽屉里高亮该卡（不遮挡画面）
+  catFilter = '全部'; renderCatTabs(); renderCardList();
+  const el = document.querySelector(`.citem[data-id="${id}"]`);
+  if (el) {
+    try { if (typeof el.scrollIntoView === 'function') el.scrollIntoView({ block: 'center' }); } catch (e) {}
+    el.style.boxShadow = '0 0 0 3px #fcd34d';
+    setTimeout(() => { el.style.boxShadow = ''; }, 2600);
+  }
+}
+/* ---------- 弹窗 ---------- */
+function openCard(id) {
+  const c = KNOWLEDGE_CARDS.find(x => x.id === id);
+  if (!c) return;
+  modalMode = 'card'; currentCard = c;
+  document.getElementById('modalTitle').textContent = `${c.cat} · ${c.title}`;
+  document.getElementById('cardFront').innerHTML = cardFaceHTML(c, false);
+  document.getElementById('cardBack').innerHTML = cardFaceHTML(c, true);
+  document.getElementById('flipbox').classList.remove('flipped');
+  document.getElementById('btn-flip').style.display = '';
+  placeModal(); showModal(true);
+  document.getElementById('modal').focus();
+}
+function openInfo(title, html) {
+  modalMode = 'info';
+  document.getElementById('modalTitle').textContent = title;
+  document.getElementById('cardFront').innerHTML = html;
+  document.getElementById('cardBack').innerHTML = html;
+  document.getElementById('btn-flip').style.display = 'none';
+  document.getElementById('flipbox').classList.remove('flipped');
+  placeModal(); showModal(true);
+  document.getElementById('modal').focus();
+}
+function placeModal() {
+  const el = document.getElementById('modal');
+  // 居中：left=50% 配合 translateX(-50%)，避免宽屏/窄屏下弹窗偏出视口
+  el.style.left = '50%';
+  el.style.top = '8%';
+  el.style.transform = 'translateX(-50%)';
+  el.style.maxHeight = '84vh';
+}
+function showModal(on) {
+  document.getElementById('modal').classList.toggle('show', on);
+  document.getElementById('mask').classList.toggle('show', on && !pinned);
+  const pb = document.getElementById('btn-pin');      // 与 pinned 状态保持同步
+  if (pb) pb.textContent = pinned ? '📌 已钉住' : '📌 钉住';
+  if (!on) { currentCard = null; }
+}
+function closeModal() {
+  if (pinned) {                       // 钉住时只收起遮罩，卡片保留，便于边看卡片边操作画面
+    document.getElementById('mask').classList.remove('show');
+    return;
+  }
+  showModal(false);
+}
+/* 拖拽：卡片可拖动，避免遮挡读数区 */
+(function bindDrag() {
+  const el = document.getElementById('modal'), hd = el.querySelector('header');
+  let sx = 0, sy = 0, dragging = false;
+  hd.addEventListener('pointerdown', e => {
+    if (e.target.closest && e.target.closest('button')) return;   // 头部按钮不参与拖拽
+    dragging = true;
+    const r = el.getBoundingClientRect();                          // 用实际位置，兼容 transform 居中
+    sx = e.clientX - r.left; sy = e.clientY - r.top;
+    hd.setPointerCapture && hd.setPointerCapture(e.pointerId);
+  });
+  hd.addEventListener('pointermove', e => {
+    if (!dragging) return;
+    el.style.transform = 'none';
+    el.style.left = clamp(e.clientX - sx, 0, Math.max(0, window.innerWidth - 120)) + 'px';
+    el.style.top = clamp(e.clientY - sy, 0, Math.max(0, window.innerHeight - 60)) + 'px';
+  });
+  const endDrag = () => { dragging = false; };
+  hd.addEventListener('pointerup', endDrag);
+  hd.addEventListener('pointercancel', endDrag);
+})();
+
+/* ---------- 抽屉 ---------- */
+function openDrawer(on) {
+  document.getElementById('drawer').classList.toggle('open', on);
+  document.getElementById('drawer').setAttribute('aria-hidden', String(!on));
+}
+
+/* ---------- 教学流程 ---------- */
+let teachStep = 0, teachTimer = null, teachAutoCard = true;
+function renderTeach() {
+  const s = TEACH_STEPS[teachStep];
+  document.getElementById('teach-no').textContent = String(teachStep + 1);
+  document.getElementById('teach-title').textContent = s.t;
+  document.getElementById('teach-text').innerHTML = s.x;
+  document.getElementById('teach-q').innerHTML = `<b>待答问题：</b>${s.q}`;
+  document.getElementById('teach-dots').innerHTML =
+    TEACH_STEPS.map((_, i) => `<i class="${i === teachStep ? 'on' : (i < teachStep ? 'done' : '')}"></i>`).join('');
+  document.getElementById('btn-teach-prev').disabled = teachStep === 0;
+  document.getElementById('btn-teach-next').textContent =
+    teachStep === TEACH_STEPS.length - 1 ? '✔ 结论页' : '下一步 →';
+  if (teachAutoCard) setTimeout(() => openCard(s.card), 350);
+}
+function showConclusion() {
+  const st = ST();
+  openInfo('🎉 结论页：三条公式 + 两条实验结论', `
+    <div class="formula-box">ω = √(g/h)　　T周期 = 2π√(h/g) = 2π√(L·cosθ/g)　　ω₀ = √(g/L)</div>
+    <dl class="kv">
+      <dt>受力</dt><dd>只受 mg 与 T；二者合力水平指向圆心：mg·tanθ = mω²r = mω²L sinθ</dd>
+      <dt>结论一</dt><dd><b>周期只与高度 h 有关</b>：同 h 换质量、同 h 换绳长，周期都不变；拉力 T拉力=mg/cosθ 与质量成正比</dd>
+      <dt>结论二</dt><dd><b>转速改变 ⇒ 摆角改变</b>：ω 增大 ⇒ cosθ=g/(ω²L) 减小 ⇒ θ 增大、r 增大、h 减小、T周期 变短</dd>
+      <dt>临界</dt><dd>ω ≤ √(g/L) 时不能形成圆锥摆，小球竖直下垂（当前 L=${fmt(STATE.L,2)} m，ω₀=${fmt(st.omega0,3)} rad/s）</dd>
+      <dt>对比</dt><dd>同摆长单摆（小角）T=2π√(L/g)=${fmt(st.simpleT,3)} s，圆锥摆更短：T=${fmt(st.Tperiod,3)} s</dd>
+    </dl>`);
+}
+
+/* ---------- 练习 ---------- */
+const QS = { teacher: false, done: {}, order: QUIZ.map((_, i) => i) };
+function renderQuiz() {
+  const area = document.getElementById('quizArea');
+  let order = QS.order;
+  if (QS.teacher) order = order.slice().sort(() => Math.random() - 0.5);
+  area.innerHTML = order.map((qi, pos) => {
+    const q = QUIZ[qi];
+    return `<div class="q" data-qi="${qi}">
+      <div><b>第 ${pos + 1} 题.</b> ${q.q}</div>
+      ${q.o.map((o, k) => `<span class="opt" role="button" tabindex="0" data-k="${k}">${'ABCD'[k]}. ${o}</span>`).join('')}
+      <div class="fb" hidden></div></div>`;
+  }).join('');
+  if (QS.teacher) {
+    area.insertAdjacentHTML('beforeend', `<button id="btn-quiz-submit" class="small">📤 提交并查看结果</button>`);
+    document.getElementById('btn-quiz-submit').addEventListener('click', submitTeacher);
+  }
+  area.querySelectorAll('.q').forEach(qel => {
+    qel.querySelectorAll('.opt').forEach(op => {
+      const pick = () => answer(qel, +op.dataset.k);
+      op.addEventListener('click', pick);
+      op.addEventListener('keydown', e => { if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); pick(); } });
+    });
+  });
+  updateScore();
+}
+function answer(qel, k) {
+  const qi = +qel.dataset.qi, q = QUIZ[qi], fb = qel.querySelector('.fb');
+  const opts = qel.querySelectorAll('.opt');
+  if (QS.teacher) {
+    opts.forEach(o => o.style.background = '');
+    opts[k].style.background = '#e9f1ff';
+    QS.done[qi] = k; fb.hidden = false;
+    fb.className = 'fb'; fb.textContent = '已作答（教师模式：提交后统一公布）';
+    return;
+  }
+  opts.forEach((o, idx) => {
+    o.classList.remove('correct', 'wrong');
+    if (idx === q.a) o.classList.add('correct');
+    if (idx === k && k !== q.a) o.classList.add('wrong');
+  });
+  QS.done[qi] = k;
+  fb.hidden = false;
+  fb.className = 'fb ' + (k === q.a ? 'ok' : 'bad');
+  fb.innerHTML = (k === q.a ? '✔ 回答正确！' : '✘ 回答有误 → ' + q.e) +
+    ` &nbsp;<button class="small" data-card="${q.card}">📖 打开对应卡片</button>`;
+  const btn = fb.querySelector('button');
+  if (btn) btn.addEventListener('click', () => openCard(btn.dataset.card));
+  updateScore();
+}
+function submitTeacher() {
+  let right = 0;
+  QUIZ.forEach((q, i) => {
+    const k = QS.done[i], answered = Number.isInteger(k), ok = answered && k === q.a;
+    const qel = document.querySelector(`.q[data-qi="${i}"]`);
+    if (!qel) return;
+    const opts = qel.querySelectorAll('.opt'), fb = qel.querySelector('.fb');
+    opts.forEach((o, idx) => {
+      o.classList.remove('correct', 'wrong');
+      if (idx === q.a) o.classList.add('correct');
+      if (idx === k && !ok) o.classList.add('wrong');
+    });
+    if (ok) right++;
+    fb.hidden = false; fb.className = 'fb ' + (ok ? 'ok' : 'bad');
+    fb.innerHTML = (!answered ? '✘ 未作答。'
+      : ok ? '✔ 正确'
+      : `✘ 你选 ${'ABCD'[k]}，正确答案 ${'ABCD'[q.a]}。`) + (ok ? '' : q.e) +
+      ` &nbsp;<button class="small" data-card="${q.card}">📖 卡片</button>`;
+    const b = fb.querySelector('button');
+    if (b) b.addEventListener('click', () => openCard(b.dataset.card));
+  });
+  alert(`教师模式：共 ${QUIZ.length} 题，答对 ${right} 题，得分 ${Math.round(right / QUIZ.length * 100)} 分。`);
+  updateScore(right);
+}
+function updateScore(forceRight) {
+  let right = forceRight;
+  if (right === undefined) right = QUIZ.filter((q, i) => QS.done[i] === q.a).length;
+  const answered = QUIZ.filter((q, i) => QS.done[i] !== undefined).length;
+  document.getElementById('quiz-score').textContent =
+    `已答 ${answered}/${QUIZ.length}　答对 ${right} 题`;
+}
+
+/* ---------- 画面热点交互 ---------- */
+function canvasHit(mx, my) {
+  let best = null, bd = 24;
+  HOTPOS.list.forEach((h, i) => {
+    const d = Math.hypot(h.x - mx, h.y - my);
+    if (d < bd) { bd = d; best = i; }
+  });
+  if (best !== null) { HOTPOS.idx = best; openCard(HOTPOS.list[best].card); }
+}
+function bindCanvas() {
+  const cv = document.getElementById('scene');
+  cv.addEventListener('click', e => {
+    const r = cv.getBoundingClientRect();
+    canvasHit(e.clientX - r.left, e.clientY - r.top);
+  });
+  cv.addEventListener('keydown', e => {
+    if (!HOTPOS.list.length) return;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown') {
+      HOTPOS.idx = (HOTPOS.idx + 1) % HOTPOS.list.length; e.preventDefault();
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      HOTPOS.idx = (HOTPOS.idx - 1 + HOTPOS.list.length) % HOTPOS.list.length; e.preventDefault();
+    } else if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      const h = HOTPOS.list[HOTPOS.idx % HOTPOS.list.length];
+      if (h) openCard(h.card);
+    } else if (e.key === 'Escape') { closeModal(); }
+  });
+  // 手摇模式：拖拽画面调速
+  let dragging = false, lastX = 0;
+  cv.addEventListener('pointerdown', e => {
+    if (!STATE.show.hand) return;
+    dragging = true; lastX = e.clientX; cv.setPointerCapture(e.pointerId);
+  });
+  cv.addEventListener('pointermove', e => {
+    if (!dragging) return;
+    const dx = e.clientX - lastX; lastX = e.clientX;
+    STATE.rpm = clamp(STATE.rpm + dx * 0.35, 0, 200);
+    syncUI();
+  });
+  cv.addEventListener('pointerup', () => { dragging = false; });
+}
+
+/* ---------- UI 同步 ---------- */
+function syncUI() {
+  const st = ST();
+  const setv = (sel, v) => { const el = document.querySelector(sel); if (el) el.value = v; };
+  setv('#num-n', clamp(st.n, 0, 200).toFixed(1));
+  setv('#rng-n', String(clamp(st.n, 0, 200)));
+  setv('#num-omega', st.omega.toFixed(3));
+  setv('#num-L', STATE.L.toFixed(2));
+  setv('#rng-L', String(STATE.L));
+  setv('#num-h', STATE.hLock.toFixed(2));
+  setv('#rng-h', String(clamp(STATE.hLock, 0.05, 1.2)));
+  document.querySelectorAll('[data-mul]').forEach(b =>
+    b.setAttribute('aria-pressed', String(+b.dataset.mul === STATE.massMul)));
+  const lock = $('#chk-lockH'); if (lock) lock.checked = STATE.lockH;
+  ['#num-n', '#rng-n', '#num-omega'].forEach(s => { const el = $(s); if (el) el.disabled = STATE.lockH; });
+  ['#num-h', '#rng-h'].forEach(s => { const el = $(s); if (el) el.disabled = !STATE.lockH; });
+  const play = $('#btn-play'); if (play) play.textContent = STATE.playing ? '⏸ 暂停' : '▶ 播放';
+  const ms = $('#motor-state');
+  if (ms) {
+    ms.textContent = st.formed ? '转速稳定' : '低于临界·空转';
+    ms.style.background = st.formed ? '#e9f1ff' : '#fee2e2';
+    ms.style.color = st.formed ? '#1b4ed0' : '#991b1b';
+  }
+  setv('#sel-speed', String(STATE.speed));
+}
+
+/* ---------- 事件绑定 ---------- */
+function bindUI() {
+  const st0 = ST();
+  $('#sel-g').value = String(STATE.g);
+  $('#sel-g').addEventListener('change', e => { STATE.g = +e.target.value; syncUI(); drawAllCharts(); });
+
+  const setOmega = w => { STATE.lockH = false; STATE.rpm = clamp(w * 30 / Math.PI, 0, 200); syncUI(); };
+  $('#rng-n').addEventListener('input', e => { STATE.lockH = false; STATE.rpm = +e.target.value; syncUI(); });
+  $('#num-n').addEventListener('input', e => { STATE.lockH = false; STATE.rpm = +e.target.value || 0; syncUI(); });
+  $('#num-omega').addEventListener('input', e => setOmega(+e.target.value || 0));
+
+  const setL = v => {
+    STATE.L = clamp(+v, 0.3, 1.2);
+    if (STATE.lockH && STATE.hLock > STATE.L * 0.985) STATE.hLock = STATE.L * 0.985;
+    syncUI(); drawActiveChart();
+  };
+  $('#rng-L').addEventListener('input', e => setL(e.target.value));
+  $('#num-L').addEventListener('input', e => setL(e.target.value));
+
+  document.querySelectorAll('[data-mul]').forEach(b => b.addEventListener('click', () => {
+    STATE.massMul = +b.dataset.mul; syncUI();
+  }));
+
+  $('#chk-lockH').addEventListener('change', e => {
+    STATE.lockH = e.target.checked;
+    if (STATE.lockH) {
+      const s = ST();
+      STATE.hLock = clamp(s.formed ? s.h : 0.40, 0.05, STATE.L * 0.985);
+    }
+    syncUI(); drawActiveChart();
+  });
+  const setH = v => {
+    STATE.hLock = clamp(+v, 0.05, Math.min(1.2, STATE.L * 0.985));
+    syncUI(); drawActiveChart();
+  };
+  $('#rng-h').addEventListener('input', e => setH(e.target.value));
+  $('#num-h').addEventListener('input', e => setH(e.target.value));
+
+  document.querySelectorAll('[data-preset]').forEach(b =>
+    b.addEventListener('click', () => applyPreset(b.dataset.preset)));
+
+  $('#btn-sweep').addEventListener('click', startSweep);
+  $('#btn-sweep-stop').addEventListener('click', () => stopSweep(true));
+
+  $('#btn-play').addEventListener('click', () => { STATE.playing = !STATE.playing; syncUI(); });
+  $('#btn-step').addEventListener('click', stepOnce);
+  $('#btn-reset').addEventListener('click', () => {
+    cancelExp(); stopSweep(false);
+    STATE.playing = true; STATE.phase = 0; STATE.simTime = 0; STATE.massMul = 1;
+    STATE.lockH = false; STATE.L = 0.80; STATE.rpm = 45; STATE.ghosts = [];
+    MEAS.rolling = NaN; MEAS.timer = { on: false, tStart: 0, t0: NaN, p0: 0, laps: 0, t: 0, T: NaN, tLast: NaN };
+    $('#btn-timer').textContent = '⏱ 开始计时'; updateTimerUI();
+    syncUI(); setExpBox('<p class="mini-note">已重置到初始状态。</p>');
+  });
+  $('#sel-speed').addEventListener('change', e => { STATE.speed = +e.target.value; });
+
+  $('#chk-strobe').addEventListener('change', e => {
+    STATE.strobe.on = e.target.checked;
+    ['#rng-strobe', '#num-strobe', '#btn-strobe-sync'].forEach(s => { const el = $(s); if (el) el.disabled = !STATE.strobe.on; });
+  });
+  const setF = v => { STATE.strobe.f = clamp(+v, 0.5, 20); $('#num-strobe').value = STATE.strobe.f; $('#rng-strobe').value = STATE.strobe.f; };
+  $('#rng-strobe').addEventListener('input', e => setF(e.target.value));
+  $('#num-strobe').addEventListener('input', e => setF(e.target.value));
+  $('#btn-strobe-sync').addEventListener('click', () => {
+    const st = ST(); setF(st.omega / (2 * Math.PI));
+    if (!ST().formed) updateWarn(Object.assign({}, st, { note: '未形成圆锥摆，无法同步频闪。', kind: 'err' }));
+  });
+
+  const toggles = { '#sw-vec': 'vec', '#sw-res': 'res', '#sw-hr': 'hr', '#sw-theta': 'theta',
+                    '#sw-trace': 'trace', '#sw-ghost': 'ghost', '#sw-sound': 'sound', '#sw-hand': 'hand' };
+  Object.entries(toggles).forEach(([sel, key]) => {
+    const el = $(sel); el.checked = STATE.show[key];
+    el.addEventListener('change', e => { STATE.show[key] = e.target.checked; });
+  });
+  $('#sw-hand').addEventListener('change', e => {
+    if (e.target.checked) STATE.playing = false; else STATE.playing = true;
+    syncUI();
+  });
+
+  $('#btn-timer').addEventListener('click', toggleTimer);
+  $('#btn-record').addEventListener('click', () => {
+    const st = ST();
+    if (!st.formed) { updateWarn(Object.assign({}, st, { note: '未形成圆锥摆，无法记录。', kind: 'err' })); return; }
+    const row = snapshot('M');
+    if (!Number.isFinite(MEAS.rolling)) {
+      row.Tm = st.Tperiod * (1 + jit()); MEAS.rolling = row.Tm;
+    }
+    addRecord(row);
+  });
+  $('#btn-csv').addEventListener('click', exportCSV);
+  $('#btn-clear').addEventListener('click', () => {
+    RECORDS.length = 0; SWEEP.data = []; renderRecords(); drawAllCharts();
+    setExpBox('<p class="mini-note">记录已清空。</p>');
+  });
+  $('#chk-jitter').addEventListener('change', e => { STATE.jitter = e.target.checked; });
+
+  document.querySelectorAll('[data-chart]').forEach(b => b.addEventListener('click', () => {
+    document.querySelectorAll('[data-chart]').forEach(x => x.setAttribute('aria-pressed', 'false'));
+    b.setAttribute('aria-pressed', 'true');
+    ACTIVE_CHART = b.dataset.chart;
+    document.querySelectorAll('.chart-box').forEach((box, i) => {
+      box.hidden = ['thw', 'hw', 'tm', 't2h', 'fm'].indexOf(ACTIVE_CHART) !== i;
+    });
+    drawActiveChart();
+  }));
+
+  $('#btn-front').addEventListener('click', () => setView('front'));
+  $('#btn-top').addEventListener('click', () => setView('top'));
+
+  $('#btn-cards').addEventListener('click', () => openDrawer(true));
+  $('#btn-drawer-close').addEventListener('click', () => openDrawer(false));
+  $('#cardSearch').addEventListener('input', renderCardList);
+  $('#btn-prev-card').addEventListener('click', () => stepCard(-1));
+  $('#btn-next-card').addEventListener('click', () => stepCard(1));
+
+  $('#btn-modal-close').addEventListener('click', closeModal);
+  $('#mask').addEventListener('click', () => { pinned = false; showModal(false); });
+  $('#btn-flip').addEventListener('click', () => {
+    document.getElementById('flipbox').classList.toggle('flipped');
+  });
+  $('#btn-pin').addEventListener('click', e => {
+    pinned = !pinned;
+    e.target.textContent = pinned ? '📌 已钉住' : '📌 钉住';
+    document.getElementById('mask').classList.toggle('show', !pinned);
+  });
+
+  $('#btn-teach').addEventListener('click', () => {
+    document.getElementById('teachbar').classList.toggle('show');
+    teachStep = 0; renderTeach();
+  });
+  $('#btn-teach-close').addEventListener('click', () =>
+    document.getElementById('teachbar').classList.remove('show'));
+  $('#btn-teach-prev').addEventListener('click', () => { teachStep = Math.max(0, teachStep - 1); renderTeach(); });
+  $('#btn-teach-next').addEventListener('click', () => {
+    if (teachStep >= TEACH_STEPS.length - 1) { showConclusion(); return; }
+    teachStep++; renderTeach();
+  });
+  $('#btn-teach-auto').addEventListener('click', () => {
+    if (teachTimer) { clearTimeout(teachTimer); teachTimer = null; $('#btn-teach-auto').textContent = '▶ 自动播放'; return; }
+    $('#btn-teach-auto').textContent = '⏸ 停止播放';
+    const tick = () => {
+      if (teachStep >= TEACH_STEPS.length - 1) {
+        $('#btn-teach-auto').textContent = '▶ 自动播放'; teachTimer = null; showConclusion(); return;
+      }
+      teachStep++; renderTeach();
+      teachTimer = setTimeout(tick, 9000);
+    };
+    teachTimer = setTimeout(tick, 9000);
+  });
+
+  $('#btn-safety').addEventListener('click', () => showSafety());
+  $('#btn-help').addEventListener('click', () => showHelp());
+  $('#btn-teacher').addEventListener('click', e => {
+    QS.teacher = !QS.teacher; QS.done = {};
+    e.target.textContent = QS.teacher ? '👩‍🏫 教师考核模式：开' : '👩‍🏫 教师考核模式：关';
+    renderQuiz();
+  });
+  $('#btn-quiz-reset').addEventListener('click', () => { QS.done = {}; renderQuiz(); });
+
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape') { openDrawer(false); if (!pinned) showModal(false); }
+  });
+  window.addEventListener('resize', debounce(() => { sizeCanvas(); drawAllCharts(); }, 160));
+}
+function setView(v) {
+  STATE.view = v;
+  $('#btn-front').setAttribute('aria-pressed', String(v === 'front'));
+  $('#btn-top').setAttribute('aria-pressed', String(v === 'top'));
+}
+function stepCard(d) {
+  if (!visibleCards.length) return;
+  cardIndex = (cardIndex + d + visibleCards.length) % visibleCards.length;
+  openCard(visibleCards[cardIndex].id); updateNavInfo();
+}
+function debounce(fn, ms) { let t; return () => { clearTimeout(t); t = setTimeout(fn, ms); }; }
+
+function showSafety() {
+  const c = KNOWLEDGE_CARDS.find(x => x.id === 'k32');
+  openInfo('⚠️ 实验安全须知', cardFaceHTML(c, false) + `<dl class="kv"><dt>补充</dt><dd>${c.back}</dd></dl>`);
+}
+function showHelp() {
+  openInfo('❓ 使用说明（教师 / 学生）', `
+    <ol style="padding-left:20px;margin:0">
+      <li><b>看现象</b>：右侧调 n（或 ω）与绳长 L；正视看椭圆轨迹，俯视看真实圆。</li>
+      <li><b>受力</b>：图层开关打开「矢量」「合力+平行四边形」；右下角是无透视的受力剖面图。</li>
+      <li><b>三组对照</b>：预设按钮 A（同 h 换质量）、B（ω 扫描）、C（同 h 换绳长）。</li>
+      <li><b>测周期</b>：点「⏱ 开始计时」数若干圈后停止 → T=t/N；「＋记录当前」写入表格 → 导出 CSV。</li>
+      <li><b>看图</b>：θ–ω 标出 ω₀；T周期–m 水平直线；T²–h 斜率 4π²/g；T拉力–m 过原点直线。</li>
+      <li><b>知识卡片</b>：画面上的 ? 热点、下方读数卡、右下抽屉都可打开；支持翻转/钉住/搜索。</li>
+      <li><b>键盘</b>：Tab 聚焦 → Enter/Space 打开，方向键切换热点，Esc 关闭。</li>
+      <li><b>减少动效</b>：系统开启 prefers-reduced-motion 时默认暂停，画面为静态分帧，卡片仍可浏览。</li>
+    </ol>
+    <div class="flowbox">物理量的符号区分：T<sub>周期</sub> 指运动一周的时间，T<sub>拉力</sub> 指绳的张力，文中用「拉力」二字明确区分。</div>`);
+}
+
+/* ---------- 初始化 ---------- */
+function init() {
+  sizeCanvas();
+  setView('front');
+  buildReadouts();
+  renderCatTabs();
+  renderCardList();
+  renderQuiz();
+  renderRecords();
+  bindCanvas();
+  bindUI();
+  syncUI();
+  drawAllCharts();
+  if (window.ResizeObserver) {
+    const ro = new ResizeObserver(debounce(() => { sizeCanvas(); drawActiveChart(); }, 120));
+    ro.observe(document.querySelector('.canvas-box'));
+  }
+  requestAnimationFrame(loop);
+}
+if (document.readyState === 'loading') document.addEventListener('DOMContentLoaded', init);
+else init();
+</script>
+</body>
+</html>

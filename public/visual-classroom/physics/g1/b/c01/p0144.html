@@ -1,0 +1,1872 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>模型27 · 多变量平抛对比装置（控制变量法）</title>
+<style>
+:root{
+  --bg:#f4f7fb; --panel:#ffffff; --ink:#0f172a; --muted:#5b6b82;
+  --line:#e4e9f0; --line2:#cbd5e1;
+  --blue:#2563eb; --red:#dc2626; --amber:#d97706; --gray:#6b7280; --teal:#0f766e;
+  --shadow:0 1px 2px rgba(15,23,42,.06), 0 8px 24px rgba(15,23,42,.07);
+  --r:12px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg); color:var(--ink);
+  font-family:"Microsoft YaHei","PingFang SC","Noto Sans SC",system-ui,sans-serif;
+  font-size:14px; line-height:1.6; -webkit-font-smoothing:antialiased;
+}
+h1,h2,h3,h4{margin:0}
+button{font-family:inherit;font-size:13px;cursor:pointer}
+button:focus-visible,input:focus-visible,select:focus-visible,[tabindex]:focus-visible{
+  outline:3px solid #93c5fd; outline-offset:2px;
+}
+.wrap{max-width:1560px;margin:0 auto;padding:14px 16px 60px}
+
+/* ---------- 顶栏 ---------- */
+header.top{
+  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+  padding:12px 16px;box-shadow:var(--shadow);margin-bottom:12px;
+}
+header.top .ttl{font-size:19px;font-weight:800;letter-spacing:.3px}
+header.top .sub{font-size:12.5px;color:var(--muted)}
+.legend{display:flex;gap:12px;flex-wrap:wrap;align-items:center;margin-left:auto}
+.legend .lg{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--muted)}
+.legend .sw{width:16px;height:4px;border-radius:3px;display:inline-block}
+.legend .dot{width:11px;height:11px;border-radius:50%;display:inline-block}
+.topbtns{display:flex;gap:8px;flex-wrap:wrap}
+
+.btn{
+  border:1px solid var(--line2);background:#fff;color:var(--ink);
+  border-radius:9px;padding:6px 12px;transition:.15s;white-space:nowrap;
+}
+.btn:hover{background:#f1f5f9;border-color:#94a3b8}
+.btn.primary{background:var(--teal);border-color:var(--teal);color:#fff}
+.btn.primary:hover{background:#0b5f59}
+.btn.warn{background:#fff7ed;border-color:#fdba74;color:#9a3412}
+.btn.sm{padding:4px 9px;font-size:12px;border-radius:8px}
+.btn[aria-pressed="true"]{background:#e0f2fe;border-color:#38bdf8;color:#075985}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+
+/* ---------- 主栅格 ---------- */
+.main{display:grid;grid-template-columns:minmax(0,1fr) 352px;gap:12px;align-items:start}
+.card{
+  background:var(--panel);border:1px solid var(--line);border-radius:var(--r);
+  box-shadow:var(--shadow);
+}
+.card > h3{
+  font-size:13.5px;color:var(--muted);font-weight:700;
+  padding:10px 14px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;
+}
+.card > h3 .tail{margin-left:auto;display:flex;gap:6px;align-items:center}
+.pad{padding:12px 14px}
+
+/* ---------- 舞台 ---------- */
+.stage{position:relative;overflow:hidden}
+#scene{display:block;width:100%;height:520px}
+.hotlayer{position:absolute;inset:0;pointer-events:none}
+.hot{
+  position:absolute;left:0;top:0;width:24px;height:24px;margin:-12px 0 0 -12px;
+  border-radius:50%;border:2px solid #fff;background:var(--teal);color:#fff;
+  font-size:12px;font-weight:800;line-height:1;display:grid;place-items:center;
+  box-shadow:0 2px 8px rgba(15,23,42,.35);pointer-events:auto;cursor:pointer;
+  /* 位置由 JS 写入 --tx/--ty：若直接写 inline transform，会覆盖 :hover 的 scale */
+  transform:translate(var(--tx,0px),var(--ty,0px));
+  animation:pulse 2.2s ease-in-out infinite;
+}
+.hot:hover{transform:translate(var(--tx,0px),var(--ty,0px)) scale(1.14)}
+@keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(15,118,110,.45)}50%{box-shadow:0 0 0 7px rgba(15,118,110,0)}}
+/* 实时数据面板：放在画布下方独立成行，避免遮挡落点标记板与刻度 */
+.hud{
+  border-top:1px solid var(--line);background:#fff;padding:8px 12px;font-size:12px;
+}
+.hud table{border-collapse:collapse;width:100%}
+.hud th,.hud td{padding:1px 5px;text-align:right;font-variant-numeric:tabular-nums;white-space:nowrap}
+.hud th{color:var(--muted);font-weight:600;font-size:11px}
+.hud td.name{text-align:left;font-weight:700}
+.hud .sw{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px}
+.hud tr[data-i]{cursor:pointer}
+.hud tr[data-i]:hover td{background:#f1f5f9}
+.hud tr.sel td{background:#e0f2fe}
+
+/* ---------- 控制面板 ---------- */
+.side{display:flex;flex-direction:column;gap:12px}
+.row{display:flex;align-items:center;gap:8px;margin:7px 0}
+.row label{font-size:12.5px;color:var(--muted);min-width:64px}
+.row .val{font-variant-numeric:tabular-nums;font-weight:700;font-size:13px;min-width:62px;text-align:right}
+input[type=range]{flex:1;min-width:0;accent-color:var(--teal)}
+.fieldset{border:1px solid var(--line);border-radius:10px;padding:8px 10px;margin:8px 0}
+.fieldset legend{font-size:12px;color:var(--muted);padding:0 5px;font-weight:700}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.grid3{display:grid;grid-template-columns:1fr 1fr 1fr;gap:6px}
+.toggles{display:grid;grid-template-columns:1fr 1fr;gap:2px 10px}
+.toggles label{display:flex;align-items:center;gap:6px;font-size:12.5px;cursor:pointer}
+.seg{display:inline-flex;border:1px solid var(--line2);border-radius:9px;overflow:hidden}
+.seg button{border:0;background:#fff;padding:5px 10px;font-size:12.5px;border-right:1px solid var(--line)}
+.seg button:last-child{border-right:0}
+.seg button[aria-pressed="true"]{background:var(--teal);color:#fff}
+
+/* ---------- 图表条 ---------- */
+.charts{margin-top:12px}
+.chartstrip{display:grid;grid-template-columns:repeat(auto-fit,minmax(238px,1fr));gap:10px}
+.chbox{border:1px solid var(--line);border-radius:10px;padding:6px 8px 2px;background:#fff}
+.chbox .ct{font-size:12px;color:var(--muted);font-weight:700;display:flex;gap:6px;align-items:center}
+.chbox .ct .hint{margin-left:auto;font-weight:400;color:#94a3b8;font-size:11px}
+.chbox canvas{display:block;width:100%;height:158px}
+
+/* ---------- 数据表 ---------- */
+.tablewrap{overflow:auto;max-height:280px}
+table.data{border-collapse:collapse;width:100%;font-size:12px;font-variant-numeric:tabular-nums}
+table.data th,table.data td{border-bottom:1px solid var(--line);padding:4px 7px;white-space:nowrap;text-align:right}
+table.data th{position:sticky;top:0;background:#f8fafc;color:var(--muted);font-weight:700;z-index:1}
+table.data td.g{text-align:left;font-weight:700}
+.gA{color:#0369a1}.gB{color:#b45309}.gC{color:#6b7280}
+tr.grpA td{background:#f0f9ff}tr.grpB td{background:#fffbeb}tr.grpC td{background:#f8fafc}
+
+/* ---------- 教学流程 ---------- */
+.flow{margin-top:12px}
+.flowbar{display:flex;gap:6px;flex-wrap:wrap;padding:10px 14px}
+.flowbar button{flex:1;min-width:118px;text-align:left;border:1px solid var(--line2);background:#fff;border-radius:9px;padding:6px 9px;font-size:12px}
+.flowbar button[aria-current="step"]{background:var(--teal);color:#fff;border-color:var(--teal)}
+.flowbar button .n{font-weight:800;margin-right:4px}
+.flowbody{padding:0 14px 12px;border-top:1px solid var(--line);padding-top:12px}
+.flowbody .q{background:#fff7ed;border:1px solid #fed7aa;border-radius:9px;padding:8px 11px;margin-top:8px;font-size:13px}
+.flowbody .vt{margin-top:10px}
+table.var{border-collapse:collapse;font-size:12px;width:100%}
+table.var th,table.var td{border:1px solid var(--line2);padding:4px 7px;text-align:center}
+table.var th{background:#f8fafc;color:var(--muted)}
+table.var td.k{background:#ecfdf5;font-weight:700;color:#047857}
+
+/* ---------- 卡片抽屉 ---------- */
+.drawer{
+  position:fixed;top:0;right:0;height:100%;width:392px;max-width:94vw;background:#fff;
+  border-left:1px solid var(--line2);box-shadow:-10px 0 34px rgba(15,23,42,.14);
+  transform:translateX(102%);transition:transform .25s ease;z-index:60;display:flex;flex-direction:column;
+}
+.drawer.open{transform:none}
+.drawer header{display:flex;align-items:center;gap:8px;padding:12px 14px;border-bottom:1px solid var(--line)}
+.drawer header .t{font-weight:800;font-size:15px}
+.searchbox{padding:10px 14px 6px;display:flex;gap:6px}
+.searchbox input{flex:1;border:1px solid var(--line2);border-radius:9px;padding:6px 9px;font-size:13px}
+.tabs{display:flex;gap:5px;flex-wrap:wrap;padding:0 14px 8px}
+.clist{flex:1;overflow:auto;padding:6px 14px 20px}
+.citem{
+  display:block;width:100%;text-align:left;border:1px solid var(--line);border-radius:10px;
+  background:#fff;padding:8px 11px;margin-bottom:7px;
+}
+.citem:hover{background:#f1f5f9;border-color:#94a3b8}
+.citem .ct{font-weight:800;font-size:13.5px}
+.citem .cc{font-size:12px;color:var(--muted);margin-top:2px}
+.tag{display:inline-block;font-size:10.5px;padding:1px 6px;border-radius:20px;background:#eef2f7;color:var(--muted);margin-right:5px;vertical-align:1px}
+.tag.概念{background:#e0f2fe;color:#075985}
+.tag.公式{background:#ede9fe;color:#5b21b6}
+.tag.方法{background:#dcfce7;color:#166534}
+.tag.易错{background:#fee2e2;color:#991b1b}
+.tag.应用{background:#ffedd5;color:#9a3412}
+
+/* ---------- 卡片弹窗（可翻转/钉住） ---------- */
+.modal{position:fixed;inset:0;background:rgba(15,23,42,.42);display:none;place-items:center;z-index:80;padding:16px}
+.modal.open{display:grid}
+.flipwrap{width:430px;max-width:96vw;perspective:1400px}
+.flip{position:relative;transition:transform .45s cubic-bezier(.4,.2,.2,1);transform-style:preserve-3d;min-height:400px}
+.flip.flipped{transform:rotateY(180deg)}
+.face{
+  background:#fff;border:1px solid var(--line2);border-radius:14px;box-shadow:0 24px 60px rgba(15,23,42,.3);
+  padding:16px 18px;backface-visibility:hidden;-webkit-backface-visibility:hidden;
+}
+.face.back{position:absolute;inset:0;transform:rotateY(180deg);overflow:auto}
+.face h4{font-size:16.5px;margin-bottom:4px}
+.face .concl{background:#ecfdf5;border-left:4px solid #10b981;padding:7px 10px;border-radius:0 8px 8px 0;font-size:13.5px;font-weight:700;margin:8px 0}
+.face .fm{font-family:"Cambria Math",Cambria,"Times New Roman",serif;font-size:16px;background:#f8fafc;border:1px dashed var(--line2);border-radius:9px;padding:7px 10px;text-align:center;margin:8px 0}
+.face .how{background:#eff6ff;border:1px solid #bfdbfe;border-radius:9px;padding:8px 10px;font-size:12.5px}
+.face .warn{background:#fef2f2;border:1px solid #fecaca;border-radius:9px;padding:8px 10px;font-size:12.5px;margin-top:8px}
+.face .sec{font-size:12px;color:var(--muted);font-weight:800;margin:10px 0 3px;letter-spacing:.5px}
+.face svg{display:block;width:100%;height:auto;border:1px solid var(--line);border-radius:9px;background:#fbfdff;margin:6px 0}
+.facefoot{display:flex;gap:6px;flex-wrap:wrap;margin-top:12px;align-items:center}
+.facefoot .sp{margin-left:auto;display:flex;gap:6px}
+.closebtn{margin-left:auto;width:30px;height:30px;border-radius:8px;border:1px solid var(--line2);background:#fff;font-size:16px;line-height:1}
+
+/* 钉住的卡片 */
+.pinlayer{position:fixed;inset:0;pointer-events:none;z-index:70}
+.pinned{
+  position:absolute;width:290px;pointer-events:auto;background:#fff;border:1px solid var(--line2);
+  border-radius:11px;box-shadow:0 12px 30px rgba(15,23,42,.2);font-size:12px;padding:9px 11px;
+}
+.pinned .ph{display:flex;align-items:center;gap:6px;cursor:move;font-weight:800;font-size:13px}
+.pinned .ph .x{margin-left:auto;cursor:pointer;border:1px solid var(--line2);background:#fff;border-radius:6px;width:20px;height:20px;line-height:1;font-size:12px}
+.pinned .pc{margin-top:5px;color:#334155}
+.pinned svg{width:100%;height:auto;background:#fbfdff;border:1px solid var(--line);border-radius:7px;margin-top:5px}
+
+/* ---------- 自测 ---------- */
+.quiz .qq{font-size:14.5px;font-weight:700;margin-bottom:9px}
+.quiz .opt{display:block;width:100%;text-align:left;border:1px solid var(--line2);background:#fff;border-radius:9px;padding:8px 11px;margin:6px 0;font-size:13.5px}
+.quiz .opt:hover{background:#f1f5f9}
+.quiz .opt.right{background:#dcfce7;border-color:#22c55e}
+.quiz .opt.wrong{background:#fee2e2;border-color:#ef4444}
+.quiz .fb{margin-top:9px;font-size:13px;border-radius:9px;padding:9px 11px}
+.quiz .fb.ok{background:#ecfdf5;border:1px solid #a7f3d0}
+.quiz .fb.no{background:#fef2f2;border:1px solid #fecaca}
+
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0);white-space:nowrap}
+.note{font-size:11.5px;color:var(--muted)}
+.kbd{border:1px solid var(--line2);border-bottom-width:2px;border-radius:5px;padding:0 4px;font-size:11px;background:#f8fafc}
+
+@media (max-width:1080px){
+  .main{grid-template-columns:minmax(0,1fr)}
+  #scene{height:430px}
+  .side{order:2}
+}
+@media (prefers-reduced-motion:reduce){
+  .hot{animation:none}
+  .flip{transition:none}
+  .drawer{transition:none}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <!-- ================= 顶栏 ================= -->
+  <header class="top">
+    <div>
+      <div class="ttl">模型27 · 多变量平抛对比装置</div>
+      <div class="sub">控制变量法 · 实验①固定 h 变 v₀ ／ 实验②固定 v₀ 变 h —— 从数据自己得出结论</div>
+    </div>
+    <div class="legend" aria-label="视觉编码图例">
+      <span class="lg"><i class="sw" style="background:#2563eb"></i>水平分运动（等间距）</span>
+      <span class="lg"><i class="sw" style="background:#dc2626"></i>竖直分运动（1:3:5:7）</span>
+      <span class="lg"><i class="sw" style="background:#d97706"></i>合运动 / 速度矢量</span>
+      <span class="lg"><i class="dot" style="background:#6b7280"></i>自由落体对照球</span>
+      <span class="lg"><i class="sw" style="background:#0ea5e9"></i>多球按参数渐变</span>
+    </div>
+    <div class="topbtns">
+      <button class="btn primary" id="btnDeck">知识卡片库（14）</button>
+      <button class="btn" id="btnQuiz">即时自测</button>
+      <button class="btn" id="btnHelp">操作说明</button>
+    </div>
+  </header>
+
+  <div class="main">
+    <!-- ================= 舞台 ================= -->
+    <div>
+      <div class="card stage">
+        <canvas id="scene" role="img" aria-label="平抛弹射器与多球对比动画：可调节高度 h 与初速度 v0，显示轨迹、频闪残影、落点标记与计时读数"></canvas>
+        <div class="hotlayer" id="hotlayer"></div>
+        <div class="hud" id="hud" aria-live="off"></div>
+      </div>
+
+      <!-- 图表条 -->
+      <div class="card charts">
+        <h3>图像联动（带坐标轴、符号、单位）
+          <span class="tail">
+            <label style="font-weight:400"><input type="checkbox" id="ckFit" checked> 拟合直线</label>
+            <label style="font-weight:400"><input type="checkbox" id="ckTheory" checked> 理论曲线</label>
+          </span>
+        </h3>
+        <div class="pad">
+          <div class="chartstrip">
+            <div class="chbox"><div class="ct">x–t 图 <span class="hint">斜率 = v₀</span></div><canvas id="ch1"></canvas></div>
+            <div class="chbox"><div class="ct">y–t 图 <span class="hint">下落量 y = ½gt²</span></div><canvas id="ch2"></canvas></div>
+            <div class="chbox"><div class="ct">v<sub>y</sub>–t 图 <span class="hint">斜率 = g</span></div><canvas id="ch3"></canvas></div>
+            <div class="chbox"><div class="ct">结论图A：t–v₀（实验①）<span class="hint">水平直线</span></div><canvas id="ch4"></canvas></div>
+            <div class="chbox"><div class="ct">结论图B：t–√h（实验②）<span class="hint">过原点直线</span></div><canvas id="ch5"></canvas></div>
+            <div class="chbox"><div class="ct">结论图C1：x–v₀（h 固定）</div><canvas id="ch6"></canvas></div>
+            <div class="chbox"><div class="ct">结论图C2：x–√h（v₀ 固定）</div><canvas id="ch7"></canvas></div>
+          </div>
+        </div>
+      </div>
+
+      <!-- 数据记录表 -->
+      <div class="card charts">
+        <h3>数据记录表
+          <span class="tail">
+            <button class="btn sm" id="btnCsv">导出 CSV</button>
+            <button class="btn sm warn" id="btnClearData">清空数据</button>
+          </span>
+        </h3>
+        <div class="tablewrap" id="twrap">
+          <table class="data" id="tbl">
+            <thead><tr>
+              <th>编号</th><th>组别</th><th>h (m)</th><th>v₀ (m/s)</th><th>√h (√m)</th>
+              <th>t 实测 (s)</th><th>t 理论 (s)</th><th>t 误差</th>
+              <th>x 实测 (m)</th><th>x 理论 (m)</th><th>x 误差</th>
+            </tr></thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ================= 控制面板 ================= -->
+    <div class="side">
+      <div class="card">
+        <h3>控制面板 · 弹射器参数
+          <span class="tail"><span class="note" id="gNote"></span></span>
+        </h3>
+        <div class="pad">
+          <div class="row">
+            <label for="rH">高度 h</label>
+            <input type="range" id="rH" min="0.2" max="2.0" step="0.05" value="0.8" aria-describedby="vH">
+            <span class="val" id="vH">0.80 m</span>
+          </div>
+          <div class="row">
+            <label for="rV">初速度 v₀</label>
+            <input type="range" id="rV" min="1" max="10" step="0.1" value="4" aria-describedby="vV">
+            <span class="val" id="vV">4.0 m/s</span>
+          </div>
+          <div class="row">
+            <label>重力 g</label>
+            <div class="seg" role="group" aria-label="重力加速度取值">
+              <button id="g98" aria-pressed="true">9.8 m/s²</button>
+              <button id="g10" aria-pressed="false">10 m/s²</button>
+            </div>
+            <span class="val" id="vT">t = 0.404 s</span>
+          </div>
+
+          <fieldset class="fieldset">
+            <legend>预设对照实验</legend>
+            <div class="grid2">
+              <button class="btn primary" id="pE1">实验① 固定 h，v₀=2/4/6（同时）</button>
+              <button class="btn primary" id="pE2">实验② 固定 v₀=4，h=0.2/0.8/1.8（依次）</button>
+              <button class="btn" id="pFF">对照自由落体球</button>
+              <button class="btn" id="pOne">按当前参数发射 1 球</button>
+            </div>
+            <div class="note" style="margin-top:6px">实验①验证「时间由 h 决定」；实验②验证「t ∝ √h、x 随 h 增大」。</div>
+          </fieldset>
+
+          <fieldset class="fieldset">
+            <legend>播放控制</legend>
+            <div class="grid3" style="margin-bottom:6px">
+              <button class="btn" id="bPlay">▶ 播放</button>
+              <button class="btn" id="bPause">⏸ 暂停</button>
+              <button class="btn" id="bReset">↺ 重置</button>
+            </div>
+            <div class="grid3">
+              <button class="btn" id="bStep">⏭ 单步</button>
+              <button class="btn" id="bFrame">▦ 静态分帧</button>
+              <div class="seg" role="group" aria-label="播放速度">
+                <button class="sp0" data-s="0.25" aria-pressed="false" style="padding:5px 7px">0.25×</button>
+                <button class="sp1" data-s="0.5" aria-pressed="false" style="padding:5px 7px">0.5×</button>
+                <button class="sp2" data-s="1" aria-pressed="true" style="padding:5px 7px">1×</button>
+              </div>
+            </div>
+          </fieldset>
+
+          <fieldset class="fieldset">
+            <legend>图层开关</legend>
+            <div class="toggles">
+              <label><input type="checkbox" id="tTrail" checked> 轨迹线</label>
+              <label><input type="checkbox" id="tStrobe" checked> 频闪残影</label>
+              <label><input type="checkbox" id="tVec" checked> 速度矢量（合+分量）</label>
+              <label><input type="checkbox" id="tDisp"> 位移矢量与方向角</label>
+              <label><input type="checkbox" id="tAux" checked> 分运动辅助线</label>
+              <label><input type="checkbox" id="tGrid" checked> 方格底板</label>
+              <label><input type="checkbox" id="tMarks" checked> 落点历史</label>
+              <label><input type="checkbox" id="tTimer" checked> 计时器</label>
+              <label><input type="checkbox" id="tFF"> 对照自由落体球</label>
+              <label><input type="checkbox" id="tSound"> 音效（落地提示音）</label>
+            </div>
+          </fieldset>
+          <div class="note">提示：关闭全部辅助图层后，仅凭<b>落点标记板</b>与<b>计时器</b>仍可得出两组结论。</div>
+        </div>
+      </div>
+
+      <div class="card">
+        <h3>教学引导流程（六步）</h3>
+        <div class="flowbar" id="flowbar"></div>
+        <div class="flowbody" id="flowbody"></div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 卡片抽屉 ================= -->
+<aside class="drawer" id="drawer" role="dialog" aria-modal="false" aria-label="知识卡片库">
+  <header>
+    <span class="t">知识卡片库</span>
+    <span class="note" id="cardCount"></span>
+    <button class="btn sm" id="btnCloseDrawer" style="margin-left:auto">关闭</button>
+  </header>
+  <div class="searchbox">
+    <input type="search" id="cardSearch" placeholder="关键词搜索：时间 / 射程 / 控制变量 / 误解…" aria-label="卡片关键词搜索">
+  </div>
+  <div class="tabs" id="cardTabs" role="tablist"></div>
+  <div class="clist" id="cardList"></div>
+  <div style="padding:8px 14px;border-top:1px solid var(--line);display:flex;gap:6px;align-items:center">
+    <button class="btn sm" id="cardPrev">← 上一张</button>
+    <button class="btn sm" id="cardNext">下一张 →</button>
+    <span class="note" style="margin-left:auto"><span class="kbd">Enter</span> 打开 · <span class="kbd">Esc</span> 关闭 · <span class="kbd">←</span><span class="kbd">→</span> 切换</span>
+  </div>
+</aside>
+
+<!-- ================= 卡片弹窗（可翻转） ================= -->
+<div class="modal" id="cardModal" role="dialog" aria-modal="true" aria-labelledby="cmTitle">
+  <div class="flipwrap">
+    <div class="flip" id="flip">
+      <section class="face front" id="faceF"></section>
+      <section class="face back" id="faceB"></section>
+    </div>
+  </div>
+</div>
+
+<!-- ================= 自测弹窗 ================= -->
+<div class="modal" id="quizModal" role="dialog" aria-modal="true" aria-labelledby="qzTitle">
+  <div class="flipwrap" style="width:470px">
+    <section class="face" id="quizFace"></section>
+  </div>
+</div>
+
+<!-- ================= 帮助弹窗 ================= -->
+<div class="modal" id="helpModal" role="dialog" aria-modal="true" aria-labelledby="hpTitle">
+  <div class="flipwrap" style="width:470px">
+    <section class="face" id="helpFace"></section>
+  </div>
+</div>
+
+<div class="pinlayer" id="pinlayer"></div>
+
+<script>
+"use strict";
+/* =========================================================================
+   模型27 · 多变量平抛对比装置
+   物理内核：固定步长积分（dt=1/240 s，内部 16 个子步 → 有效 1/3840 s）
+             落地时刻用解析解 t=√(2h/g) 与数值积分双轨校验
+   ========================================================================= */
+
+/* ---------------------- 1. 全局配置 ---------------------- */
+const CFG = {
+  DT: 1/240,          // 基础时间步长（s）
+  SUB: 16,            // 每基础步细分子步数 → 有效步长 1/3840 s（落地判定也在子步粒度上）
+  STEP_ONCE: 0.02,    // 单步按钮推进的仿真时长（s）
+  strobeK: 8,         // 频闪分段数（落地时间 8 等分 → 竖直间距 1:3:5:7…15）
+  hRange: [0.2, 2.0], vRange: [1, 10],
+  colors: { blue:"#2563eb", red:"#dc2626", amber:"#d97706", gray:"#6b7280",
+            ink:"#0f172a", muted:"#5b6b82", grid:"#e6ecf3", ground:"#94a3b8" },
+  palette: ["#0ea5e9","#16a34a","#f97316","#a855f7","#e11d48"], // 多球按参数渐变
+  ballR: 9            // 球屏幕半径（px）
+};
+
+const REDUCE = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ---------------------- 2. 知识卡片数据（14 张） ---------------------- */
+/* 字段：id / cat / title / concl / formula / svg / how / back / warn */
+const KNOWLEDGE_CARDS = [
+{ id:"k1", cat:"概念", title:"平抛运动的条件与性质",
+  concl:"初速度水平、只受重力 → 加速度恒为 g 的匀变速曲线运动，轨迹是抛物线。",
+  formula:"v₀ ⊥ g ； a = g = 9.8 m/s²（竖直向下，恒定）",
+  svg:`<svg viewBox="0 0 200 110"><rect x="0" y="0" width="200" height="110" fill="#fbfdff"/>
+    <line x1="20" y1="90" x2="190" y2="90" stroke="#94a3b8" stroke-width="2"/>
+    <line x1="24" y1="90" x2="24" y2="16" stroke="#475569" stroke-width="3"/>
+    <circle cx="24" cy="20" r="4" fill="#0f172a"/>
+    <path d="M24 20 Q90 20 178 88" fill="none" stroke="#d97706" stroke-width="2.2" stroke-dasharray="4 3"/>
+    <circle cx="24" cy="20" r="3.5" fill="#d97706"/>
+    <line x1="24" y1="20" x2="56" y2="20" stroke="#2563eb" stroke-width="2.4" marker-end="url(#a)"/>
+    <line x1="24" y1="20" x2="24" y2="44" stroke="#dc2626" stroke-width="2.4" marker-end="url(#b)"/>
+    <defs><marker id="a" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0 0 L7 3 L0 6 z" fill="#2563eb"/></marker>
+    <marker id="b" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0 0 L7 3 L0 6 z" fill="#dc2626"/></marker></defs>
+    <text x="58" y="17" font-size="10" fill="#2563eb">v₀ 水平</text>
+    <text x="28" y="46" font-size="10" fill="#dc2626">g 竖直</text>
+    <text x="120" y="104" font-size="10" fill="#5b6b82">轨迹：抛物线</text></svg>`,
+  how:"打开「对照自由落体球」开关，再点「按当前参数发射 1 球」：灰色对照球与平抛球任意时刻等高，说明竖直方向就是自由落体、水平方向不受力。",
+  back:"推导：由牛顿第二定律，水平方向 ΣF_x = 0 → a_x = 0；竖直方向 ΣF_y = mg → a_y = g。加速度大小方向恒定且与初速度不在同一直线，故为匀变速曲线运动。消去 t：x=v₀t，y=½gt² ⟹ y = g·x²/(2v₀²)，是抛物线方程。",
+  warn:"成立前提：不计空气阻力、地面水平、出口严格水平（可用水平气泡校准）。" },
+
+{ id:"k2", cat:"概念", title:"运动的独立性与等时性",
+  concl:"水平方向的匀速运动与竖直方向的自由落体互不干扰；两分运动与合运动同时开始、同时结束。",
+  formula:"x = v₀t ； y = ½gt² ； 两式由同一个 t 联系",
+  svg:`<svg viewBox="0 0 200 110"><rect width="200" height="110" fill="#fbfdff"/>
+    <line x1="14" y1="94" x2="192" y2="94" stroke="#94a3b8" stroke-width="2"/>
+    <line x1="26" y1="94" x2="26" y2="12" stroke="#475569" stroke-width="2.5"/>
+    <circle cx="26" cy="22" r="4" fill="#d97706"/>
+    <circle cx="26" cy="60" r="4" fill="#6b7280"/>
+    <circle cx="120" cy="60" r="4.5" fill="#d97706"/>
+    <path d="M26 22 Q70 22 120 60" fill="none" stroke="#d97706" stroke-width="1.8" stroke-dasharray="4 3"/>
+    <line x1="26" y1="60" x2="120" y2="60" stroke="#2563eb" stroke-width="1.4" stroke-dasharray="3 3"/>
+    <text x="126" y="63" font-size="9.5" fill="#0f172a">平抛球</text>
+    <text x="32" y="58" font-size="9.5" fill="#6b7280">自由落体球</text>
+    <text x="40" y="80" font-size="10" fill="#2563eb">任意时刻等高 → 等时</text></svg>`,
+  how:"勾选「对照自由落体球」发射，看画面中两球之间的蓝色等高虚线始终水平：说明水平运动完全不影响竖直下落。",
+  back:"说明：平抛球在竖直方向的初速度分量为 0，受力与自由落体完全相同，因此竖直分运动就是自由落体。两者同时释放必然同时落地。等时性指的是「分运动与合运动共用同一时间变量 t」，不是指不同高度的物体同时落地。",
+  warn:"易错：不同高度的平抛球落地时间不同（t=√(2h/g)），不要把「等时性」理解成任何平抛都一样久。" },
+
+{ id:"k3", cat:"概念", title:"匀变速曲线运动与轨迹方程",
+  concl:"任意相等时间内速度变化量 Δv = g·Δt 相同且竖直向下 → 匀变速；轨迹是抛物线 y = gx²/(2v₀²)。",
+  formula:"y = g·x² / (2v₀²)  （以抛出点为原点、向下为 y 正）",
+  svg:`<svg viewBox="0 0 200 110"><rect width="200" height="110" fill="#fbfdff"/>
+    <line x1="18" y1="14" x2="18" y2="98" stroke="#475569" stroke-width="2"/>
+    <line x1="18" y1="14" x2="190" y2="14" stroke="#475569" stroke-width="2"/>
+    <path d="M18 14 Q90 14 186 96" fill="none" stroke="#d97706" stroke-width="2.4"/>
+    <circle cx="18" cy="14" r="3.5" fill="#0f172a"/>
+    <text x="150" y="40" font-size="10" fill="#d97706">y ∝ x²</text>
+    <text x="24" y="108" font-size="9.5" fill="#5b6b82">抛出点为原点，向下为正</text></svg>`,
+  how:"开「轨迹线」，把 v₀ 从 1 调到 10 m/s：v₀ 越大抛物线越「平缓」，与 y = gx²/(2v₀²) 中 v₀² 在分母一致。",
+  back:"推导：x = v₀t ⟹ t = x/v₀，代入 y = ½gt² 得 y = ½g(x/v₀)² = gx²/(2v₀²)。这是顶点在抛出点、开口向下的抛物线。速度矢量沿轨迹切线，方向时刻变化但 Δv 恒竖直向下。",
+  warn:""
+
+},
+{ id:"k4", cat:"公式", title:"落地时间 t = √(2h/g)",
+  concl:"落地时间只由下落高度 h 决定，与初速度 v₀ 无关，也与质量无关。",
+  formula:"t = √(2h/g)　（h：m，g：m/s²，t：s）",
+  svg:`<svg viewBox="0 0 200 110"><rect width="200" height="110" fill="#fbfdff"/>
+    <line x1="12" y1="92" x2="192" y2="92" stroke="#94a3b8" stroke-width="2"/>
+    <line x1="24" y1="92" x2="24" y2="24" stroke="#475569" stroke-width="2.5"/>
+    <circle cx="24" cy="28" r="4" fill="#0ea5e9"/><circle cx="24" cy="28" r="4" fill="#16a34a" opacity=".55"/><circle cx="24" cy="28" r="4" fill="#f97316" opacity=".35"/>
+    <path d="M24 28 Q60 28 92 92" fill="none" stroke="#0ea5e9" stroke-width="1.8"/>
+    <path d="M24 28 Q100 28 148 92" fill="none" stroke="#16a34a" stroke-width="1.8"/>
+    <path d="M24 28 Q140 28 188 92" fill="none" stroke="#f97316" stroke-width="1.8"/>
+    <circle cx="92" cy="92" r="3" fill="#0ea5e9"/><circle cx="148" cy="92" r="3" fill="#16a34a"/><circle cx="188" cy="92" r="3" fill="#f97316"/>
+    <text x="60" y="108" font-size="10" fill="#0f172a" font-weight="bold">三球 t 相同，x 不同</text></svg>`,
+  how:"点「实验① 固定 h，v₀=2/4/6（同时）」：三球同时弹出同时落地，三个停表读数（0.01 s 精度）完全相同，落点却明显不同。",
+  back:"推导：竖直方向 y = ½gt²，落地时下落高度 = h，即 h = ½gt² ⟹ t = √(2h/g)。式中没有 v₀，也没有 m。h=0.8 m、g=9.8 m/s² 时 t = √(1.6/9.8) = 0.404 s；h=0.2 m → 0.202 s；h=1.8 m → 0.606 s。",
+  warn:"误：认为 v₀ 越大飞得越远所以「落得越晚」。正：飞得远是因为水平速度大，竖直下落完全不受 v₀ 影响。" },
+
+{ id:"k5", cat:"公式", title:"水平射程 x = v₀·√(2h/g)",
+  concl:"水平射程由初速度 v₀ 与高度 h 共同决定：v₀ 相同时 h 越大射程越大，h 相同时 x ∝ v₀。",
+  formula:"x = v₀·t = v₀·√(2h/g)　（x：m，v₀：m/s）",
+  svg:`<svg viewBox="0 0 200 110"><rect width="200" height="110" fill="#fbfdff"/>
+    <line x1="14" y1="96" x2="192" y2="96" stroke="#94a3b8" stroke-width="2"/>
+    <rect x="26" y="76" width="40" height="8" fill="#0ea5e9" rx="2"/><text x="30" y="73" font-size="9" fill="#0ea5e9">x=0.81</text>
+    <rect x="26" y="56" width="80" height="8" fill="#16a34a" rx="2"/><text x="30" y="53" font-size="9" fill="#16a34a">x=1.62</text>
+    <rect x="26" y="36" width="120" height="8" fill="#f97316" rx="2"/><text x="30" y="33" font-size="9" fill="#f97316">x=2.42</text>
+    <text x="120" y="90" font-size="9.5" fill="#5b6b82">h=0.8 m 时 v₀=2/4/6 m/s</text></svg>`,
+  how:"分别跑实验①与实验②，对比数据表中 x 实测列：实验①里 x 与 v₀ 成正比（1:2:3），实验②里 v₀ 相同但 h 越大 x 越大。",
+  back:"推导：水平匀速 x = v₀t，代入 t=√(2h/g) 得 x = v₀√(2h/g)。因此 x 同时含 v₀ 与 h 两个因子：x ∝ v₀（h 固定），x ∝ √h（v₀ 固定）。h=0.8 m、g=9.8 时 v₀=2/4/6 → x = 0.808/1.616/2.424 m。",
+  warn:"误：「射程只由初速度决定」。正：高度改变会改变飞行时间，从而改变射程。" },
+
+{ id:"k6", cat:"公式", title:"竖直分运动：y = ½gt²，v_y = gt",
+  concl:"竖直方向是自由落体：从零开始的匀加速，连续相等时间内下落距离之比为 1:3:5:7。",
+  formula:"y = ½gt² ； v_y = gt ； 逐段位移比 1:3:5:7:…:(2n−1)",
+  svg:`<svg viewBox="0 0 200 110"><rect width="200" height="110" fill="#fbfdff"/>
+    <line x1="28" y1="12" x2="28" y2="100" stroke="#dc2626" stroke-width="1.6"/>
+    <rect x="34" y="12" width="16" height="5"  fill="#dc2626"/>
+    <rect x="34" y="17" width="16" height="15" fill="#dc2626" opacity=".82"/>
+    <rect x="34" y="32" width="16" height="25" fill="#dc2626" opacity=".64"/>
+    <rect x="34" y="57" width="16" height="35" fill="#dc2626" opacity=".46"/>
+    <circle cx="28" cy="12" r="3.2" fill="#dc2626"/><circle cx="28" cy="17" r="3.2" fill="#dc2626"/>
+    <circle cx="28" cy="32" r="3.2" fill="#dc2626"/><circle cx="28" cy="57" r="3.2" fill="#dc2626"/>
+    <circle cx="28" cy="92" r="3.2" fill="#dc2626"/>
+    <text x="56" y="18" font-size="9.5" fill="#dc2626">1</text>
+    <text x="56" y="28" font-size="9.5" fill="#dc2626">3</text>
+    <text x="56" y="48" font-size="9.5" fill="#dc2626">5</text>
+    <text x="56" y="78" font-size="9.5" fill="#dc2626">7</text>
+    <text x="88" y="52" font-size="10" fill="#5b6b82">等时间间隔</text>
+    <text x="88" y="66" font-size="10" fill="#5b6b82">竖直间距 1:3:5:7</text>
+    <text x="88" y="80" font-size="9.5" fill="#475569">累计 0:1:4:9:16</text></svg>`,
+  how:"开「频闪残影 + 分运动辅助线」，看发射点竖直线上的红色分段旁标注的 1、3、5、7；水平方向蓝色分段则是等间距。",
+  back:"推导：第 n 个 Δt 内下落量 Δy_n = ½g(nΔt)² − ½g[(n−1)Δt]² = ½gΔt²(2n−1)，故 Δy₁:Δy₂:Δy₃:Δy₄ = 1:3:5:7。同时 v_y = gt 与 t 成正比。",
+  warn:""
+
+},
+{ id:"k7", cat:"公式", title:"方向角：tanθ = gt/v₀，tanα = gt/(2v₀)",
+  concl:"速度方向角 θ 与位移方向角 α 不相等，恒有 tanθ = 2·tanα（同一时刻）。",
+  formula:"tanθ = v_y/vₓ = gt/v₀ ； tanα = y/x = gt/(2v₀) ； θ ≠ α",
+  svg:`<svg viewBox="0 0 200 110"><rect width="200" height="110" fill="#fbfdff"/>
+    <line x1="20" y1="20" x2="180" y2="20" stroke="#2563eb" stroke-width="2" stroke-dasharray="4 3"/>
+    <line x1="20" y1="20" x2="20" y2="98" stroke="#475569" stroke-width="2"/>
+    <path d="M20 20 Q100 20 176 96" fill="none" stroke="#d97706" stroke-width="2" stroke-dasharray="4 3"/>
+    <circle cx="150" cy="72" r="4" fill="#d97706"/>
+    <line x1="20" y1="20" x2="150" y2="72" stroke="#0f172a" stroke-width="1.6"/>
+    <line x1="150" y1="72" x2="176" y2="96" stroke="#d97706" stroke-width="2.4"/>
+    <text x="34" y="42" font-size="10" fill="#0f172a">α 位移方向</text>
+    <text x="158" y="70" font-size="10" fill="#d97706">θ 速度方向</text>
+    <text x="96" y="30" font-size="9.5" fill="#5b6b82">tanθ = 2 tanα</text></svg>`,
+  how:"勾选「位移矢量与方向角」，看数据面板中的 θ 与 α：θ 始终大于 α，且满足 tanθ = 2tanα。",
+  back:"推导：α 是抛出点到当前位置的连线与水平方向夹角，tanα = (½gt²)/(v₀t) = gt/(2v₀)；θ 是速度矢量（轨迹切线）与水平方向夹角，tanθ = (gt)/v₀。所以 tanθ = 2tanα，θ > α。落地的位移方向角是全过程平均值，速度方向角是瞬时值，二者当然不同。",
+  warn:"高频错误：把「速度方向」当成「位移方向」代入计算，或误用 tanα = gt/v₀。" },
+
+{ id:"k8", cat:"方法", title:"控制变量法（本模型的灵魂）",
+  concl:"每次只改变一个自变量、其余全部保持不变，才能把结论唯一地归因于这个变量。",
+  formula:"实验①：h 不变，v₀ = 2/4/6 m/s　→　t 不变，x ∝ v₀\n实验②：v₀ 不变，h = 0.2/0.8/1.8 m　→　t ∝ √h，x ∝ √h",
+  svg:`<svg viewBox="0 0 200 110"><rect width="200" height="110" fill="#fbfdff"/>
+    <rect x="12" y="16" width="86" height="34" rx="5" fill="#ecfdf5" stroke="#10b981"/>
+    <text x="20" y="31" font-size="9.5" fill="#047857">实验①：h 固定</text><text x="20" y="44" font-size="9.5" fill="#047857">改 v₀ → 测 t、x</text>
+    <rect x="102" y="16" width="86" height="34" rx="5" fill="#eff6ff" stroke="#3b82f6"/>
+    <text x="110" y="31" font-size="9.5" fill="#1e40af">实验②：v₀ 固定</text><text x="110" y="44" font-size="9.5" fill="#1e40af">改 h → 测 t、x</text>
+    <text x="12" y="70" font-size="10" fill="#0f172a" font-weight="bold">其余量（g、地面、出口水平、球）保持不变</text>
+    <text x="12" y="88" font-size="9.5" fill="#5b6b82">同一压缩量弹簧 → v₀ 可复现</text></svg>`,
+  how:"点两个预设按钮分别运行，对照下方变量表：每次只动一列，看结论图 A 与 B。",
+  back:"为什么必须用控制变量法：t 与 x 都可能同时受 h 与 v₀ 影响，若一次同时改两个量，就无法判断观测到的变化来自哪一个。本装置用「同一压缩量的弹簧」保证 v₀ 可复现，用「带刻度的竖直支架」保证 h 可复现，这正是可重复实验的前提。",
+  warn:"误：一次同时改 h 和 v₀ 就想下结论。正：必须分组对照。" },
+
+{ id:"k9", cat:"方法", title:"图像法处理数据（化曲为直）",
+  concl:"把变量换成合适的坐标（如用 √h 代替 h），曲线就能变成过原点的直线，从而一眼看出正比关系。",
+  formula:"t ∝ √h（不是 t ∝ h）；x ∝ v₀；x ∝ √h；t 与 v₀ 无关 → t–v₀ 图为水平直线",
+  svg:`<svg viewBox="0 0 200 110"><rect width="200" height="110" fill="#fbfdff"/>
+    <line x1="18" y1="96" x2="92" y2="96" stroke="#475569" stroke-width="1.6"/><line x1="18" y1="96" x2="18" y2="16" stroke="#475569" stroke-width="1.6"/>
+    <path d="M18 96 Q50 70 88 22" fill="none" stroke="#dc2626" stroke-width="2"/>
+    <text x="30" y="108" font-size="9.5" fill="#dc2626">t–h：曲线，难判断</text>
+    <line x1="110" y1="96" x2="184" y2="96" stroke="#475569" stroke-width="1.6"/><line x1="110" y1="96" x2="110" y2="16" stroke="#475569" stroke-width="1.6"/>
+    <line x1="110" y1="96" x2="182" y2="24" stroke="#16a34a" stroke-width="2.4"/>
+    <text x="122" y="108" font-size="9.5" fill="#16a34a">t–√h：直线 → t ∝ √h</text></svg>`,
+  how:"看结论图 B（t–√h）与结论图 A（t–v₀）：一条是过原点直线（斜率 ≈ 1/√g），一条是水平直线。勾选「拟合直线 / 理论曲线」可叠加对比。",
+  back:"原理：若 y = k·x 则 y–x 图是过原点直线，斜率即 k。t = √(2h/g) = √(2/g)·√h，故以 √h 为横轴时 t–√h 是过原点直线，斜率 = √(2/g)。注意：只有在图象是过原点直线时才能说「成正比」，若只是直线但不过原点，则是线性关系而非正比。",
+  warn:"误：看见 t–h 是曲线就说「t 与 h 成正比」。正：t 与 √h 成正比（t ∝ √h）。" },
+
+{ id:"k10", cat:"易错", title:"误解①：初速度越大，落地越晚（或越早）",
+  concl:"错。落地时间 t = √(2h/g) 与 v₀ 完全无关，v₀ 只改变射程。",
+  formula:"t = √(2h/g)（不含 v₀）；x = v₀·√(2h/g)（含 v₀）",
+  svg:`<svg viewBox="0 0 200 110"><rect width="200" height="110" fill="#fbfdff"/>
+    <line x1="14" y1="88" x2="190" y2="88" stroke="#94a3b8" stroke-width="2"/>
+    <circle cx="40" cy="88" r="4" fill="#0ea5e9"/><circle cx="110" cy="88" r="4" fill="#16a34a"/><circle cx="176" cy="88" r="4" fill="#f97316"/>
+    <text x="26" y="104" font-size="9.5" fill="#0f172a">三个落点不同 → 但计时器读数相同</text>
+    <rect x="120" y="20" width="62" height="20" rx="4" fill="#fff" stroke="#dc2626"/><text x="128" y="34" font-size="10" fill="#dc2626">t = 0.40 s</text></svg>`,
+  how:"运行实验①：三个停表读数都停在 0.40 s（h=0.8 m、g=9.8），落点却在 0.81 / 1.62 / 2.42 m。",
+  back:"归因：直觉把「飞得远」等同于「飞得久」。实际上远近由水平速度决定，久暂由竖直高度决定，二者由同一个 t 联系但互不影响。极值检验：v₀ = 0（自由落体）时 t 仍为 √(2h/g)，与任何 v₀ 相同。",
+  warn:"一句话记忆：高度定时间，速度定远近。" },
+
+{ id:"k11", cat:"易错", title:"误解②：平抛下落比自由落体慢",
+  concl:"错。平抛的竖直分运动就是自由落体，任意时刻等高、同时落地。",
+  formula:"y_平抛 = y_自由落体 = ½gt² ； v_y = gt（两者相同）",
+  svg:`<svg viewBox="0 0 200 110"><rect width="200" height="110" fill="#fbfdff"/>
+    <line x1="12" y1="94" x2="192" y2="94" stroke="#94a3b8" stroke-width="2"/>
+    <line x1="30" y1="94" x2="30" y2="16" stroke="#475569" stroke-width="2.5"/>
+    <circle cx="30" cy="24" r="4" fill="#d97706"/><circle cx="30" cy="24" r="4" fill="#6b7280" opacity=".6"/>
+    <circle cx="30" cy="70" r="4" fill="#6b7280"/><circle cx="140" cy="70" r="4.5" fill="#d97706"/>
+    <line x1="30" y1="70" x2="140" y2="70" stroke="#2563eb" stroke-width="1.3" stroke-dasharray="3 3"/>
+    <text x="60" y="66" font-size="9.5" fill="#2563eb">始终等高</text></svg>`,
+  how:"勾选「对照自由落体球」并发射，观察两球之间的等高虚线始终水平，且同时触地闪光。",
+  back:"归因：平抛球走过的路径更长（曲线），直觉认为「路程长所以要更久」。但竖直方向的位移、加速度、初竖直速度都与自由落体完全相同，因此下落用时必然相同。这也是运动的独立性的直接证据。",
+  warn:"一句话记忆：水平速度不参与竖直下落。" },
+
+{ id:"k12", cat:"易错", title:"误解③：水平方向有加速度 / 时间由 v₀ 和 h 共同决定",
+  concl:"错。水平方向不受力，a_x = 0，vₓ ≡ v₀；落地时间只由 h 决定。",
+  formula:"a_x = 0，vₓ = v₀（常量）； a_y = g ； t = √(2h/g)",
+  svg:`<svg viewBox="0 0 200 110"><rect width="200" height="110" fill="#fbfdff"/>
+    <line x1="20" y1="34" x2="180" y2="34" stroke="#2563eb" stroke-width="1.6"/>
+    <circle cx="34" cy="34" r="5" fill="#2563eb"/><circle cx="82" cy="34" r="5" fill="#2563eb"/><circle cx="130" cy="34" r="5" fill="#2563eb"/><circle cx="176" cy="34" r="5" fill="#2563eb"/>
+    <text x="34" y="56" font-size="9" fill="#2563eb">Δx</text><text x="82" y="56" font-size="9" fill="#2563eb">Δx</text><text x="130" y="56" font-size="9" fill="#2563eb">Δx</text>
+    <text x="30" y="84" font-size="10.5" fill="#0f172a" font-weight="bold">水平分运动：等间距 → 匀速</text>
+    <text x="30" y="100" font-size="9.5" fill="#5b6b82">数据面板中 vₓ 始终等于 v₀</text></svg>`,
+  how:"开「频闪残影」，看水平方向相邻残影间距相等；看实时数据面板中 vₓ 一列始终等于设定值 v₀。",
+  back:"归因：把「曲线运动的轨迹弯曲」误认为「水平方向被减速」。曲线弯曲来自竖直速度不断增大，使合速度方向不断下压，水平分量始终为 v₀。若水平真有加速度，频闪残影的水平间距就不会相等。",
+  warn:"一句话记忆：水平匀速、竖直自由落体。" },
+
+{ id:"k13", cat:"易错", title:"误解④：射程只由初速度决定",
+  concl:"错。x = v₀√(2h/g)，高度通过延长飞行时间来增大射程。",
+  formula:"x = v₀·√(2h/g)　→　v₀ 相同时 h 变为 4 倍，t 变 2 倍，x 变 2 倍",
+  svg:`<svg viewBox="0 0 200 110"><rect width="200" height="110" fill="#fbfdff"/>
+    <line x1="14" y1="96" x2="192" y2="96" stroke="#94a3b8" stroke-width="2"/>
+    <line x1="26" y1="96" x2="26" y2="80" stroke="#475569" stroke-width="2"/>
+    <rect x="26" y="70" width="43" height="8" rx="2" fill="#0ea5e9"/><text x="30" y="66" font-size="9" fill="#0ea5e9">h=0.2</text><text x="73" y="78" font-size="8.5" fill="#0ea5e9">0.81</text>
+    <line x1="26" y1="96" x2="26" y2="48" stroke="#475569" stroke-width="2"/>
+    <rect x="26" y="38" width="87" height="8" rx="2" fill="#16a34a"/><text x="30" y="34" font-size="9" fill="#16a34a">h=0.8</text><text x="117" y="46" font-size="8.5" fill="#16a34a">1.62</text>
+    <line x1="26" y1="96" x2="26" y2="28" stroke="#475569" stroke-width="2"/>
+    <rect x="26" y="18" width="130" height="8" rx="2" fill="#f97316"/><text x="30" y="14" font-size="9" fill="#f97316">h=1.8</text><text x="160" y="26" font-size="8.5" fill="#f97316">2.42</text>
+    <text x="120" y="88" font-size="9.5" fill="#5b6b82">v₀ 相同，h 越大 x 越大</text></svg>`,
+  how:"运行实验②（v₀ 固定 4 m/s，h = 0.2/0.8/1.8 m），看数据表中 x 实测：0.81 / 1.62 / 2.42 m，随 h 增大。",
+  back:"推导：h 变为 4 倍 → t = √(2h/g) 变为 2 倍 → x = v₀t 也变为 2 倍。所以射程对高度是「平方根依赖」，不是线性依赖。这也是投弹、跳台、喷泉设计中高度很重要的原因。",
+  warn:"一句话记忆：射程 = 速度 × 时间，时间归高度管。" },
+
+{ id:"k14", cat:"应用", title:"生活与工程实例：飞机投弹 / 喷泉 / 台阶飞出",
+  concl:"凡是「水平抛出、只受重力」的过程都可分解为水平匀速 + 竖直自由落体，用 t=√(2h/g) 与 x=v₀√(2h/g) 估算。",
+  formula:"投弹提前量 L = v·√(2H/g)；喷泉水平射程 x = v₀√(2h/g)",
+  svg:`<svg viewBox="0 0 200 110"><rect width="200" height="110" fill="#fbfdff"/>
+    <line x1="10" y1="96" x2="192" y2="96" stroke="#94a3b8" stroke-width="2"/>
+    <path d="M28 40 L58 30 L58 44 L92 34 L92 48 L28 52 z" fill="#475569"/>
+    <circle cx="60" cy="60" r="4" fill="#0f172a"/>
+    <path d="M60 60 Q110 62 150 96" fill="none" stroke="#d97706" stroke-width="2" stroke-dasharray="4 3"/>
+    <circle cx="150" cy="96" r="3.5" fill="#dc2626"/>
+    <line x1="60" y1="60" x2="60" y2="96" stroke="#94a3b8" stroke-width="1" stroke-dasharray="3 3"/>
+    <text x="66" y="82" font-size="9.5" fill="#5b6b82">H</text><text x="92" y="92" font-size="9.5" fill="#dc2626">目标</text>
+    <text x="14" y="26" font-size="10" fill="#0f172a" font-weight="bold">必须提前投放</text></svg>`,
+  how:"把 v₀ 调大后发射，观察落点随 v₀ 线性前移——这正是飞机速度越快、投弹提前量越大的定性原因。",
+  back:"①飞机投弹：炸弹离开飞机时具有与飞机相同的水平速度，要在目标前方 L = v√(2H/g) 处提前投；高度越高提前量越大。②喷泉水平出流：出口越高、流速越大，射程越远。③乒乓球水平击出 / 车辆从台阶或滑坡边缘飞出：台高决定落地时间，车速决定射程，故「飞得越远」往往意味着起跳点越高或车速越快。工程上还要考虑空气阻力，本模型只给出不计阻力时的上限估算。",
+  warn:"实际工程需叠加空气阻力、风、旋转（马格努斯效应）等修正，定性结论不变但数值会偏小。" }
+];
+
+/* ---------------------- 3. 自测题 ---------------------- */
+const QUIZ = [
+  { q:"在同一高度 h = 0.8 m 处水平抛出 A、B 两球，v₀A = 2 m/s，v₀B = 6 m/s（不计空气阻力）。谁先落地？",
+    opts:["A 球先落地","B 球先落地","同时落地","无法判断"], ans:2, card:"k4",
+    ok:"正确！t = √(2h/g) 中不含 v₀，两球落地时间都是 0.404 s，B 只是落点更远（2.42 m 对 0.81 m）。",
+    no:{0:"不对。B 的初速度大只让它飞得更远，竖直方向的下落与 A 完全相同。",
+        1:"不对。A 初速度小，落点近，但下落时间不受初速度影响。",
+        3:"可以判断：只要高度相同、出口水平，落地时间就被唯一确定。"} },
+  { q:"平抛物体的落地时间由哪些因素决定？",
+    opts:["只有下落高度 h","只有初速度 v₀","h 和 v₀ 共同决定","由质量决定"], ans:0, card:"k4",
+    ok:"正确！t = √(2h/g)，只与 h 和 g 有关。",
+    no:{1:"不对。v₀ 只影响射程 x = v₀t。",
+        2:"不对。这是最常见的误解，务必用实验①的计时器读数来否定它。",
+        3:"不对。伽利略早已证明：不计阻力时与质量无关。"} },
+  { q:"水平射程 x 由哪些因素决定？",
+    opts:["只有 v₀","只有 h","v₀ 和 h 共同决定","只由 g 决定"], ans:2, card:"k5",
+    ok:"正确！x = v₀√(2h/g)，两个因子缺一不可。",
+    no:{0:"不全面。高度改变会改变飞行时间，从而改变射程（见实验②）。",
+        1:"不全面。没有水平初速度就只是自由落体，射程为 0。",
+        3:"g 只是常量，射程还需要 v₀ 与 h。"} },
+  { q:"同一高度同时释放的平抛球与自由落体球相比：",
+    opts:["平抛球下落更慢","平抛球下落更快","任意时刻等高、同时落地","平抛球先落地"], ans:2, card:"k11",
+    ok:"正确！这就是运动的独立性与等时性。",
+    no:{0:"不对。竖直分运动完全相同，不存在「更慢」。",
+        1:"不对。水平速度不参与竖直下落，不会「更快」。",
+        3:"不对。两者竖直初速度都为 0、加速度都为 g，必然同时落地。"} }
+];
+
+/* ---------------------- 4. 教学流程（六步） ---------------------- */
+const FLOW = [
+  { n:"①", t:"提出问题", tip:"改变初速度 v₀ 或抛出高度 h，平抛物体的落地时间 t 与水平射程 x 会怎么变？",
+    q:"你的直觉是：v₀ 越大，落地越晚吗？h 越大，射程越远吗？", cards:["k1"], act:null },
+  { n:"②", t:"猜想与假设", tip:"先写下猜想，再用实验检验。猜想必须可证伪：给出「若……则……」的预期结果。",
+    q:"若 t 只由 h 决定，那么实验①中三个不同 v₀ 的球应当出现什么现象？", cards:["k4","k5"], act:null },
+  { n:"③", t:"设计对照实验", tip:"用控制变量法：每次只改变一个变量，其余全部保持不变。",
+    q:"实验①与实验②分别固定了什么、改变了什么、要测什么？", cards:["k8"], act:null, table:true },
+  { n:"④", t:"采集数据", tip:"运行两组预设实验，把 t 与 x 记入数据表（含理论值与相对误差）。",
+    q:"三次测量的 t 是否完全相同？x 是否随 v₀ 成倍增长？", cards:["k6"], act:"pE1" },
+  { n:"⑤", t:"图像分析", tip:"看结论图 A（t–v₀）、B（t–√h）、C（x–v₀ 与 x–√h），用「化曲为直」找正比关系。",
+    q:"t–v₀ 图是什么形状？t–√h 图的斜率理论上等于多少？", cards:["k9"], act:"pE2" },
+  { n:"⑥", t:"得出结论", tip:"结论一：t 只由 h 决定；结论二：x 由 v₀ 与 h 共同决定。成立前提：不计空气阻力、地面水平、出口水平。",
+    q:"用一句话向同学解释：为什么「高度定时间、速度定远近」？", cards:["k4","k5","k10","k13"], act:null, summary:true }
+];
+
+/* ---------------------- 5. 状态 ---------------------- */
+const S = {
+  g:9.8, h:0.8, v0:4,
+  playing:false, speed:1, acc:0, simT:0,
+  balls:[], marks:[], pending:[], waitT:0,
+  records:[], recNo:0, group:"",
+  showFF:false, flash:[],
+  sound:false,
+  sel:0,
+  strobeK:8,  // 频闪分段数
+  staticFrames:false
+};
+const T = { trail:true, strobe:true, vec:true, disp:false, aux:true, grid:true, marks:true, timer:true };
+
+/* ---------------------- 6. 工具函数 ---------------------- */
+const $ = id => document.getElementById(id);
+const fmt = (v,n=2) => (Math.abs(v)<1e-12?0:v).toFixed(n);
+const clamp = (v,a,b) => v<a?a:(v>b?b:v);
+function niceStep(range, n){
+  if(!(range>0)) return 1;
+  const raw = range/n, p = Math.pow(10, Math.floor(Math.log10(raw))), m = raw/p;
+  let s = 1; if(m>5) s = 10; else if(m>2) s = 5; else if(m>1) s = 2;
+  return s*p;
+}
+function tTheory(h){ return Math.sqrt(2*h/S.g); }
+function xTheory(h,v0){ return v0*tTheory(h); }
+function errPct(a,b){ return b===0?0:Math.abs(a-b)/Math.abs(b)*100; }
+
+/* ---------------------- 7. 画布与坐标系 ---------------------- */
+const cv = $("scene"), ctx = cv.getContext("2d");
+let DPR = Math.min(window.devicePixelRatio||1, 2.5);
+let VW = 900, VH = 520;
+const VIEW = { scale:200, ox:56, oy:0, xMax:5, yMax:2 };
+
+function fitCanvas(){
+  DPR = Math.min(window.devicePixelRatio||1, 2.5);
+  VW = cv.clientWidth; VH = cv.clientHeight;
+  cv.width = Math.round(VW*DPR); cv.height = Math.round(VH*DPR);
+  ctx.setTransform(DPR,0,0,DPR,0,0);
+}
+function computeView(){
+  // 世界坐标：原点在弹射器正下方的地面点；x 向右（m），y 向上（m，地面 y=0）
+  let xMax = 0.6, yMax = 0.4;
+  const add = (h,v0) => { xMax = Math.max(xMax, v0*tTheory(h)); yMax = Math.max(yMax, h); };
+  add(S.h, S.v0);
+  S.balls.forEach(b => add(b.h, b.v0));
+  if(S.pending.length) S.pending.forEach(p => p.balls.forEach(b => add(b.h,b.v0)));
+  S.marks.forEach(m => { xMax = Math.max(xMax, m.x+0.35); });
+  VIEW.xMax = xMax*1.16 + 0.5;
+  VIEW.yMax = yMax*1.34 + 0.22;
+  const padL = 74, padR = 26, padT = 30, padB = 62;
+  VIEW.scale = Math.min((VW-padL-padR)/VIEW.xMax, (VH-padT-padB)/VIEW.yMax);
+  VIEW.ox = padL; VIEW.oy = VH - padB;
+}
+const sx = x => VIEW.ox + x*VIEW.scale;
+const sy = y => VIEW.oy - y*VIEW.scale;
+
+/* ---------------------- 8. 仿真内核 ---------------------- */
+let BALL_SEQ = 0;
+function makeBall(h, v0, color, label){
+  return {
+    id:++BALL_SEQ, h, v0, color, label,
+    t:0, x:0, y:h, vx:v0, vy:0,           // vy 取向下为正的大小；y 为离地高度，向下运动则减小
+    landed:false, tMeas:0, xMeas:0,
+    trail:[], samples:[], strobe:[], nextStrobe:0,
+    ff: S.showFF ? { y:h, vy:0, t:0, landed:false } : null
+  };
+}
+function addSample(b){
+  b.samples.push({ t:b.t, x:b.x, y:b.h-b.y, vy:b.vy });
+  if(b.samples.length > 4000) b.samples.shift();
+}
+function launchBall(b){
+  b.strobe.push({ x:0, y:b.h, t:0 });
+  b.nextStrobe = tTheory(b.h)/CFG.strobeK;   // 频闪间隔 = 落地时间/8
+  b.samples.length = 0; addSample(b);
+  S.balls.push(b);
+}
+/* 落地收尾：数值积分的「实测值」先记录，再以解析解 t=√(2h/g) 校正（双轨校验） */
+function finalizeBall(b, g){
+  const tLand = tTheory(b.h);
+  b.tMeas = b.t;                 // 实测：数值积分跨过地面的时刻
+  b.xMeas = b.x;
+  b.t = tLand;                   // 校正：落地时刻取解析解
+  b.x = b.v0*tLand; b.y = 0; b.vy = g*tLand;
+  b.strobe.push({ x:b.x, y:0, t:tLand });
+  addSample(b);
+  b.landed = true;
+  onLand(b);
+}
+function stepSim(dt){
+  const g = S.g;
+  const sub = dt/CFG.SUB;
+  for(const b of S.balls){
+    if(b.landed) continue;
+    const tLand = tTheory(b.h);
+    // —— 固定步长积分（16 子步）：对匀加速运动为精确的梯形更新 ——
+    for(let k=0;k<CFG.SUB;k++){
+      if(b.t >= tLand || b.y <= 0){ finalizeBall(b,g); break; }
+      b.t += sub;
+      const vyNew = b.vy + g*sub;
+      b.x += b.vx*sub;
+      b.y -= 0.5*(b.vy + vyNew)*sub;      // y 为离地高度，向下运动则减小
+      b.vy = vyNew;
+      // 频闪采样（等时间间隔）
+      if(b.t >= b.nextStrobe){
+        b.strobe.push({ x:b.x, y:b.y, t:b.t });
+        b.nextStrobe += tLand/CFG.strobeK;
+      }
+      // 图线采样（约每 0.01 s 一点）
+      if(!b.samples.length || b.t - b.samples[b.samples.length-1].t >= 0.01) addSample(b);
+      if(b.t >= tLand || b.y <= 0){ finalizeBall(b,g); break; }
+    }
+    if(b.landed) continue;
+    if(b.t >= tLand || b.y <= 0){ finalizeBall(b,g); continue; }
+    if(b.ff && !b.ff.landed){
+      b.ff.t = Math.min(b.ff.t + dt, tLand);
+      b.ff.vy = g*b.ff.t;
+      b.ff.y = b.h - 0.5*g*b.ff.t*b.ff.t;
+      if(b.ff.t >= tLand){ b.ff.y = 0; b.ff.landed = true; }
+    }
+  }
+  if(S.balls.length && S.balls.every(b => b.landed)){
+    if(S.pending.length){ S.waitT += dt; if(S.waitT > 0.75){ S.waitT = 0; startNext(); } }
+    else { S.playing = false; syncPlayBtn(); }
+  }
+}
+function onLand(b){
+  const tTh = tTheory(b.h), xTh = xTheory(b.h, b.v0);
+  S.marks.push({ x:b.x, h:b.h, v0:b.v0, color:b.color, label:b.label, group:S.group });
+  S.flash.push({ x:b.x, y:0, life:0.45, color:b.color });
+  const row = {
+    no:++S.recNo, group:S.group||"自由", h:b.h, v0:b.v0,
+    sqrtH:Math.sqrt(b.h), t:b.tMeas, x:b.xMeas, tTh, xTh,
+    et:errPct(b.tMeas,tTh), ex:errPct(b.xMeas,xTh)
+  };
+  S.records.push(row); appendRow(row);
+  beep(720 + b.v0*40, 0.09);
+}
+
+/* ---------------------- 9. 主画面绘制 ---------------------- */
+function drawScene(){
+  computeView();
+  const c = ctx, W = VW, H = VH;
+  c.setTransform(DPR,0,0,DPR,0,0);
+  c.clearRect(0,0,W,H);
+  c.fillStyle = "#fbfdff"; c.fillRect(0,0,W,H);
+
+  drawGrid(c);
+  drawGround(c);
+  if(T.marks) drawMarks(c);
+  drawLauncher(c);
+  if(T.grid) drawScaleBar(c);
+
+  for(const b of S.balls){
+    if(T.aux) drawAux(c,b);
+    if(T.trail) drawTrail(c,b);
+    if(T.strobe) drawStrobe(c,b);
+  }
+  drawFreeFall(c);
+  for(const b of S.balls){
+    if(T.vec) drawVectors(c,b);
+    if(T.disp) drawDisp(c,b);
+    drawBall(c,b);
+  }
+  drawFlashes(c);
+  if(T.timer) drawTimer(c);
+  drawIdlePreview(c);
+  updateHotspots();
+  updateHUD();
+}
+
+function drawGrid(c){
+  if(!T.grid) return;
+  const stepM = VIEW.scale>260 ? 0.1 : (VIEW.scale>120 ? 0.2 : 0.5);
+  c.save(); c.strokeStyle = CFG.colors.grid; c.lineWidth = 1;
+  for(let x=0; x<=VIEW.xMax; x+=stepM){
+    c.beginPath(); c.moveTo(sx(x), sy(VIEW.yMax)); c.lineTo(sx(x), sy(0)); c.stroke();
+  }
+  for(let y=0; y<=VIEW.yMax; y+=stepM){
+    c.beginPath(); c.moveTo(sx(0), sy(y)); c.lineTo(sx(VIEW.xMax), sy(y)); c.stroke();
+  }
+  c.restore();
+}
+function drawGround(c){
+  const y0 = sy(0);
+  c.save();
+  c.strokeStyle = CFG.colors.ground; c.lineWidth = 2.5;
+  c.beginPath(); c.moveTo(sx(-0.05), y0); c.lineTo(sx(VIEW.xMax), y0); c.stroke();
+  // 米尺刻度：最小分度 1 cm（像素足够时），否则退到 5 cm
+  const pxPerM = VIEW.scale, minor = (pxPerM*0.01 >= 3.2) ? 0.01 : 0.05;
+  c.lineWidth = 1; c.strokeStyle = "#64748b"; c.fillStyle = "#475569"; c.font = "10px system-ui";
+  // 用整数下标推进，避免 0.01/0.05 累加的浮点误差使 x%0.5 判不出主刻度（会漏掉 0.5 m 等标注）
+  const nTick = Math.floor((VIEW.xMax+1e-9)/minor);
+  for(let i=0;i<=nTick;i++){
+    const x = i*minor;
+    const X = sx(x), isMajor = Math.abs(x/0.5 - Math.round(x/0.5))<1e-6,
+          isMid = !isMajor && Math.abs(x/0.1 - Math.round(x/0.1))<1e-6;
+    c.globalAlpha = isMajor?1:(isMid?0.85:0.5);
+    c.beginPath(); c.moveTo(X, y0); c.lineTo(X, y0 + (isMajor?11:(isMid?7:4))); c.stroke();
+    if(isMajor && x>0){ c.globalAlpha=1; c.textAlign="center"; c.fillText(fmt(x,1)+" m", X, y0+24); }
+  }
+  c.globalAlpha = 1;
+  c.fillStyle = "#5b6b82"; c.textAlign="left"; c.font="11px system-ui";
+  c.fillText("落点标记板（最小分度 1 cm）", sx(0.02), y0+40);
+  c.restore();
+}
+function drawScaleBar(c){
+  // 置于画面右下、地面线之上，避开计时器与落点标签
+  const L = clamp(0.5*VIEW.scale, 40, 170), x0 = VW-L-30, y0 = sy(0)-26;
+  c.save(); c.strokeStyle="#0f172a"; c.lineWidth=2;
+  c.beginPath(); c.moveTo(x0,y0); c.lineTo(x0+L,y0); c.moveTo(x0,y0-5); c.lineTo(x0,y0+5);
+  c.moveTo(x0+L,y0-5); c.lineTo(x0+L,y0+5); c.stroke();
+  c.fillStyle="#0f172a"; c.font="11px system-ui"; c.textAlign="center";
+  c.fillText("0.5 m", x0+L/2, y0-9);
+  c.textAlign="right"; c.fillStyle="#5b6b82";
+  c.fillText("比例尺 1 m = "+fmt(VIEW.scale,0)+" px", x0+L, y0+18);
+  c.restore();
+}
+function drawLauncher(c){
+  const X = sx(0), yTop = sy(S.h+0.30), y0 = sy(0);
+  c.save();
+  // 支架立柱
+  c.strokeStyle="#334155"; c.lineWidth=7; c.lineCap="round";
+  c.beginPath(); c.moveTo(X, y0); c.lineTo(X, yTop+8); c.stroke();
+  // 高度刻度（每 0.1 m）
+  c.strokeStyle="#64748b"; c.lineWidth=1; c.fillStyle="#475569"; c.font="10px system-ui"; c.textAlign="right";
+  // 同样用整数下标推进（0.1 累加会让 h=1.0 变成 0.9999999999999999，漏掉主刻度）
+  for(let i=0;i<=20;i++){
+    const h = i*0.1;
+    if(h > VIEW.yMax+0.2) break;
+    const Y = sy(h), major = Math.abs(h/0.5 - Math.round(h/0.5))<1e-6;
+    c.globalAlpha = major?1:0.6;
+    c.beginPath(); c.moveTo(X-6, Y); c.lineTo(X-6-(major?12:7), Y); c.stroke();
+    if(major){ c.globalAlpha=1; c.fillText(fmt(h,1), X-22, Y+3.5); }
+  }
+  c.globalAlpha=1;
+  // 释放点高度指示（虚线 + 标注放在右侧空白区，避免压住弹射器）
+  const Yh = sy(S.h);
+  c.strokeStyle="#dc2626"; c.lineWidth=1.4; c.setLineDash([5,4]);
+  c.beginPath(); c.moveTo(X-32, Yh); c.lineTo(sx(VIEW.xMax*0.62), Yh); c.stroke(); c.setLineDash([]);
+  // 出口（水平炮管）
+  c.fillStyle="#0f766e"; c.fillRect(X-4, Yh-9, 34, 18);
+  c.strokeStyle="#0b5f59"; c.lineWidth=2; c.strokeRect(X-4, Yh-9, 34, 18);
+  c.fillStyle="#fff"; c.font="bold 10px system-ui"; c.textAlign="center";
+  c.fillText("出口", X+13, Yh+3.5);
+  // 弹簧机构（同一压缩量 → v₀ 可控且可复现）
+  c.strokeStyle="#94a3b8"; c.lineWidth=2; c.beginPath();
+  for(let i=0;i<5;i++){ c.moveTo(X-12-i*3, Yh-8); c.lineTo(X-9-i*3, Yh+8); }
+  c.stroke();
+  c.fillStyle="#64748b"; c.font="9px system-ui"; c.textAlign="right";
+  c.fillText("弹簧（同压缩量）", X-10, Yh+20);
+  // 水平气泡
+  c.beginPath(); c.arc(X+48, Yh-16, 8, 0, Math.PI*2); c.fillStyle="#e0f2fe"; c.fill();
+  c.strokeStyle="#0284c7"; c.lineWidth=1.5; c.stroke();
+  c.beginPath(); c.arc(X+48, Yh-16, 3, 0, Math.PI*2); c.fillStyle="#0284c7"; c.fill();
+  c.fillStyle="#0369a1"; c.font="9px system-ui"; c.textAlign="left";
+  c.fillText("水平气泡", X+58, Yh-13);
+  // 铅垂线
+  c.strokeStyle="#94a3b8"; c.lineWidth=1; c.setLineDash([3,3]);
+  c.beginPath(); c.moveTo(X+24, Yh+12); c.lineTo(X+24, Yh+38); c.stroke(); c.setLineDash([]);
+  c.beginPath(); c.arc(X+24, Yh+42, 4, 0, Math.PI*2); c.fillStyle="#64748b"; c.fill();
+  c.fillStyle="#64748b"; c.font="9px system-ui"; c.fillText("铅垂线", X+32, Yh+46);
+  // v₀ 箭头
+  c.strokeStyle=CFG.colors.blue; c.lineWidth=2.6;
+  const vlen = clamp(S.v0*7, 18, 64);
+  c.beginPath(); c.moveTo(X+36, Yh); c.lineTo(X+36+vlen, Yh); c.stroke();
+  c.beginPath(); c.moveTo(X+36+vlen+9, Yh); c.lineTo(X+36+vlen, Yh-5); c.lineTo(X+36+vlen, Yh+5); c.fillStyle=CFG.colors.blue; c.fill();
+  c.fillStyle=CFG.colors.blue; c.font="bold 11px system-ui";
+  c.fillText("v₀ = "+fmt(S.v0,1)+" m/s", X+36+vlen+14, Yh+4);
+  // 高度标注（放在 v₀ 标注上方）
+  c.fillStyle="#dc2626"; c.font="bold 11px system-ui"; c.textAlign="left";
+  c.fillText("释放点 h = "+fmt(S.h,2)+" m", X+36+vlen+14, Yh-11);
+  // 底座
+  c.fillStyle="#475569"; c.fillRect(X-26, y0-4, 52, 8);
+  c.restore();
+}
+function drawTrail(c,b){
+  if(b.samples.length<2) return;
+  c.save(); c.strokeStyle=b.color; c.lineWidth=2; c.globalAlpha=.9;
+  c.beginPath(); c.moveTo(sx(0), sy(b.h));
+  for(const s of b.samples) c.lineTo(sx(s.x), sy(b.h - s.y));
+  c.lineTo(sx(b.x), sy(b.y)); c.stroke(); c.restore();
+}
+function drawStrobe(c,b){
+  c.save();
+  b.strobe.forEach((p,i) => {
+    c.globalAlpha = 0.30 + 0.5*(i/Math.max(1,b.strobe.length));
+    c.fillStyle = b.color;
+    c.beginPath(); c.arc(sx(p.x), sy(p.y), CFG.ballR*0.72, 0, Math.PI*2); c.fill();
+  });
+  c.globalAlpha = 1; c.restore();
+}
+/* 分运动辅助线：水平等间距（蓝）+ 竖直 1:3:5:7（红）+ 影子球 */
+function drawAux(c,b){
+  // 只用已完成的频闪点画阶梯，保证竖直间距严格为 1:3:5:7（不受当前半段影响）
+  const pts = b.strobe;
+  if(pts.length<2) return;
+  c.save(); c.lineWidth=2.4; c.lineCap="round";
+  // 水平分运动（沿释放高度线，等间距）
+  for(let i=1;i<pts.length;i++){
+    c.strokeStyle=CFG.colors.blue;
+    c.beginPath(); c.moveTo(sx(pts[i-1].x), sy(b.h)); c.lineTo(sx(pts[i].x), sy(b.h)); c.stroke();
+  }
+  // 竖直分运动（沿释放竖直线，1:3:5:7）
+  let d1 = null;
+  for(let i=1;i<pts.length;i++){
+    const d = pts[i-1].y - pts[i].y;
+    if(d1===null && d>1e-9) d1 = d;
+    c.strokeStyle=CFG.colors.red;
+    c.beginPath(); c.moveTo(sx(0), sy(pts[i-1].y)); c.lineTo(sx(0), sy(pts[i].y)); c.stroke();
+    if(d1 && i<=4){
+      const r = Math.round(d/d1);
+      c.fillStyle=CFG.colors.red; c.font="bold 11px system-ui"; c.textAlign="right";
+      c.fillText(String(r), sx(0)-8, sy((pts[i-1].y+pts[i].y)/2)+4);
+    }
+  }
+  // 影子球
+  c.globalAlpha=.85;
+  c.fillStyle=CFG.colors.blue; c.beginPath(); c.arc(sx(b.x), sy(b.h), 5, 0, Math.PI*2); c.fill();
+  c.fillStyle=CFG.colors.red;  c.beginPath(); c.arc(sx(0), sy(b.y), 5, 0, Math.PI*2); c.fill();
+  c.globalAlpha=1;
+  // 等高/等x 虚线
+  c.setLineDash([4,4]); c.lineWidth=1;
+  c.strokeStyle="#94a3b8";
+  c.beginPath(); c.moveTo(sx(b.x), sy(b.h)); c.lineTo(sx(b.x), sy(b.y)); c.stroke();
+  c.beginPath(); c.moveTo(sx(0), sy(b.y)); c.lineTo(sx(b.x), sy(b.y)); c.stroke();
+  c.setLineDash([]);
+  c.restore();
+}
+function drawFreeFall(c){
+  if(!S.showFF) return;
+  for(const b of S.balls){
+    if(!b.ff) continue;
+    const X = sx(0)-50, Y = sy(b.ff.y);
+    c.save();
+    c.strokeStyle="#94a3b8"; c.lineWidth=1; c.setLineDash([3,3]);
+    c.beginPath(); c.moveTo(X, sy(b.h)); c.lineTo(X, sy(0)); c.stroke(); c.setLineDash([]);
+    if(!b.landed){
+      c.strokeStyle=CFG.colors.blue; c.lineWidth=1.2; c.setLineDash([3,3]);
+      c.beginPath(); c.moveTo(X, Y); c.lineTo(sx(b.x), sy(b.y)); c.stroke(); c.setLineDash([]);
+    }
+    c.fillStyle=CFG.colors.gray; c.beginPath(); c.arc(X, Y, CFG.ballR, 0, Math.PI*2); c.fill();
+    c.strokeStyle="#374151"; c.lineWidth=1.2; c.stroke();
+    c.fillStyle=CFG.colors.gray; c.font="bold 10px system-ui"; c.textAlign="center";
+    c.fillText("自由落体", X, Y-14);
+    c.restore();
+  }
+}
+function drawVectors(c,b){
+  if(b.landed && S.flash.length===0) { /* 仍显示落地末速度 */ }
+  const X = sx(b.x), Y = sy(b.y), k = clamp(VIEW.scale/42, 3.2, 9); // 速度矢量比例
+  const dxv = b.vx*k, dyv = b.vy*k;
+  c.save(); c.lineCap="round";
+  // 分量
+  c.strokeStyle=CFG.colors.blue; c.lineWidth=2; c.beginPath(); c.moveTo(X,Y); c.lineTo(X+dxv,Y); c.stroke();
+  c.strokeStyle=CFG.colors.red;  c.lineWidth=2; c.beginPath(); c.moveTo(X+dxv,Y); c.lineTo(X+dxv,Y+dyv); c.stroke();
+  // 合速度
+  c.strokeStyle=CFG.colors.amber; c.lineWidth=3; c.beginPath(); c.moveTo(X,Y); c.lineTo(X+dxv,Y+dyv); c.stroke();
+  // 箭头
+  const ang = Math.atan2(dyv,dxv), ah=8;
+  c.fillStyle=CFG.colors.amber; c.beginPath();
+  c.moveTo(X+dxv,Y+dyv);
+  c.lineTo(X+dxv-ah*Math.cos(ang-0.4), Y+dyv-ah*Math.sin(ang-0.4));
+  c.lineTo(X+dxv-ah*Math.cos(ang+0.4), Y+dyv-ah*Math.sin(ang+0.4));
+  c.closePath(); c.fill();
+  // 角度标注
+  const th = Math.atan2(b.vy, b.vx)*180/Math.PI;
+  c.fillStyle="#9a3412"; c.font="bold 10px system-ui"; c.textAlign="left";
+  c.fillText("θ="+fmt(th,1)+"°", X+6, Y+ (dyv>0? dyv+16 : -8));
+  c.restore();
+}
+function drawDisp(c,b){
+  const X0=sx(0), Y0=sy(b.h), X=sx(b.x), Y=sy(b.y);
+  const a = Math.atan2(Y-Y0, X-X0)*180/Math.PI;
+  c.save();
+  c.strokeStyle="#0f172a"; c.lineWidth=1.8; c.setLineDash([6,4]);
+  c.beginPath(); c.moveTo(X0,Y0); c.lineTo(X,Y); c.stroke(); c.setLineDash([]);
+  c.fillStyle="#0f172a"; c.beginPath(); c.arc(X0,Y0,3.5,0,Math.PI*2); c.fill();
+  c.fillStyle="#0f172a"; c.font="bold 10px system-ui"; c.textAlign="left";
+  c.fillText("α="+fmt(a,1)+"°", (X0+X)/2+6, (Y0+Y)/2);
+  c.restore();
+}
+function drawBall(c,b){
+  const X=sx(b.x), Y=sy(b.y);
+  c.save();
+  c.beginPath(); c.arc(X+1.5, Y+2, CFG.ballR, 0, Math.PI*2); c.fillStyle="rgba(15,23,42,.16)"; c.fill();
+  const grd = c.createRadialGradient(X-3, Y-3, 1, X, Y, CFG.ballR);
+  grd.addColorStop(0, "#ffffff"); grd.addColorStop(0.35, b.color); grd.addColorStop(1, shade(b.color,-38));
+  c.beginPath(); c.arc(X, Y, CFG.ballR, 0, Math.PI*2); c.fillStyle=grd; c.fill();
+  c.strokeStyle="#0f172a"; c.lineWidth=1.2; c.stroke();
+  // 常驻标签
+  c.fillStyle="rgba(255,255,255,.92)"; c.strokeStyle=b.color; c.lineWidth=1.2;
+  const txt = b.label || ("v₀="+fmt(b.v0,1));
+  c.font="bold 11px system-ui"; const w = c.measureText(txt).width+10;
+  roundRect(c, X+13, Y-9, w, 18, 5); c.fill(); c.stroke();
+  c.fillStyle="#0f172a"; c.textAlign="left"; c.fillText(txt, X+18, Y+4);
+  c.restore();
+}
+function drawMarks(c){
+  const y0 = sy(0);
+  c.save();
+  S.marks.forEach((m,i) => {
+    const X = sx(m.x);
+    c.strokeStyle=m.color; c.lineWidth=2;
+    c.beginPath(); c.moveTo(X, y0-14); c.lineTo(X, y0+4); c.stroke();
+    c.beginPath(); c.arc(X, y0+4, 3.5, 0, Math.PI*2); c.fillStyle=m.color; c.fill();
+    // 标签（简错峰避免重叠）
+    const up = (i%2)?30:48;
+    c.fillStyle="rgba(255,255,255,.94)"; c.strokeStyle=m.color; c.lineWidth=1;
+    const t1 = m.label||("v₀="+fmt(m.v0,1)), t2 = "h="+fmt(m.h,2)+"m x="+fmt(m.x,2)+"m";
+    c.font="bold 10px system-ui"; const w1=c.measureText(t1).width;
+    c.font="10px system-ui"; const w2=c.measureText(t2).width;
+    const w = Math.max(w1,w2)+12;
+    roundRect(c, X-w/2, y0+up-14, w, 30, 5); c.fill(); c.stroke();
+    c.textAlign="center"; c.font="bold 10px system-ui"; c.fillStyle="#0f172a"; c.fillText(t1, X, y0+up-2);
+    c.font="10px system-ui"; c.fillStyle="#5b6b82"; c.fillText(t2, X, y0+up+11);
+  });
+  c.restore();
+}
+function drawFlashes(c){
+  for(const f of S.flash){
+    const r = (0.45-f.life)*120+6;
+    c.save(); c.globalAlpha = clamp(f.life/0.45,0,1);
+    c.strokeStyle=f.color; c.lineWidth=3;
+    c.beginPath(); c.arc(sx(f.x), sy(0), r, 0, Math.PI*2); c.stroke(); c.restore();
+  }
+}
+function drawTimer(c){
+  c.save();
+  const w=176, x0=VW-w-16, y0=16;
+  c.fillStyle="rgba(255,255,255,.95)"; c.strokeStyle="#cbd5e1"; c.lineWidth=1;
+  roundRect(c, x0, y0, w, 26, 8); c.fill(); c.stroke();
+  c.fillStyle="#0f172a"; c.font="bold 13px system-ui"; c.textAlign="left";
+  c.fillText("停表", x0+10, y0+18);
+  let yy = y0+26+6;
+  const list = S.balls.length? S.balls : [];
+  const hgt = 20*Math.max(1,list.length)+10;
+  c.fillStyle="rgba(255,255,255,.95)"; c.strokeStyle="#cbd5e1";
+  roundRect(c, x0, yy, w, hgt, 8); c.fill(); c.stroke();
+  if(!list.length){
+    c.fillStyle="#94a3b8"; c.font="11px system-ui"; c.textAlign="center";
+    c.fillText("尚未发射（t = 0.00 s）", x0+w/2, yy+22);
+  } else {
+    list.forEach((b,i) => {
+      const ty = yy+20+i*20;
+      c.fillStyle=b.color; c.beginPath(); c.arc(x0+14, ty-4, 4, 0, Math.PI*2); c.fill();
+      c.fillStyle="#0f172a"; c.font="bold 11px system-ui"; c.textAlign="left";
+      c.fillText((b.label||("v₀="+fmt(b.v0,1))).replace(" m/s",""), x0+24, ty);
+      c.textAlign="right"; c.font="bold 12px system-ui";
+      c.fillText("t = "+fmt(b.landed?b.tMeas:b.t,3)+" s", x0+w-10, ty);
+    });
+  }
+  c.restore();
+}
+function drawIdlePreview(c){
+  if(S.balls.length) return;
+  const tL = tTheory(S.h);
+  c.save(); c.strokeStyle="#d97706"; c.lineWidth=1.6; c.setLineDash([6,5]); c.globalAlpha=.65;
+  c.beginPath(); c.moveTo(sx(0), sy(S.h));
+  for(let i=1;i<=40;i++){ const t=tL*i/40; c.lineTo(sx(S.v0*t), sy(S.h-0.5*S.g*t*t)); }
+  c.stroke(); c.setLineDash([]); c.globalAlpha=1;
+  c.fillStyle="#9a3412"; c.font="bold 11px system-ui"; c.textAlign="center";
+  c.fillText("理论预告：t = "+fmt(tL,3)+" s，x = "+fmt(xTheory(S.h,S.v0),2)+" m", sx(S.v0*tL*0.5), sy(S.h)-10);
+  c.restore();
+}
+function roundRect(c,x,y,w,h,r){
+  c.beginPath();
+  c.moveTo(x+r,y); c.arcTo(x+w,y,x+w,y+h,r); c.arcTo(x+w,y+h,x,y+h,r);
+  c.arcTo(x,y+h,x,y,r); c.arcTo(x,y,x+w,y,r); c.closePath();
+}
+function shade(hex,p){
+  const n = parseInt(hex.slice(1),16);
+  let r=(n>>16)+p, g=((n>>8)&255)+p, b=(n&255)+p;
+  r=clamp(r,0,255); g=clamp(g,0,255); b=clamp(b,0,255);
+  return "rgb("+r+","+g+","+b+")";
+}
+
+/* ---------------------- 10. HUD 实时数据 ---------------------- */
+function updateHUD(){
+  const el = $("hud");
+  let html = "<table><tr><th style='text-align:left'>球</th><th>t/s</th><th>x/m</th><th>y/m</th><th>vₓ</th><th>v_y</th><th>v</th><th>θ</th><th>α</th></tr>";
+  const list = S.balls.length? S.balls : [];
+  if(S.sel >= list.length) S.sel = 0;
+  list.forEach((b,i) => {
+    const v = Math.hypot(b.vx,b.vy);
+    const th = Math.atan2(b.vy,b.vx)*180/Math.PI;
+    const drop = b.h-b.y;
+    const al = b.x>1e-9 ? Math.atan2(drop,b.x)*180/Math.PI : 0;
+    html += "<tr data-i='"+i+"' class='"+(i===S.sel?"sel":"")+"' title='点击选中该球，下方图像随之切换'><td class='name'><span class='sw' style='background:"+b.color+"'></span>"+(b.label||("v₀="+fmt(b.v0,1)))+
+      "</td><td>"+fmt(b.landed?b.tMeas:b.t,3)+"</td><td>"+fmt(b.x,3)+"</td><td>"+fmt(drop,3)+
+      "</td><td>"+fmt(b.vx,2)+"</td><td>"+fmt(b.vy,2)+"</td><td>"+fmt(v,2)+"</td><td>"+fmt(th,1)+"°</td><td>"+fmt(al,1)+"°</td></tr>";
+  });
+  if(!list.length){
+    html += "<tr><td class='name' style='color:#94a3b8'>待发射</td><td colspan='8' style='text-align:left;color:#94a3b8'>h="+fmt(S.h,2)+" m, v₀="+fmt(S.v0,1)+" m/s → t理论="+fmt(tTheory(S.h),3)+" s, x理论="+fmt(xTheory(S.h,S.v0),3)+" m</td></tr>";
+  }
+  // 落地后补充理论值与误差
+  if(list.length && list.every(b=>b.landed)){
+    const b0 = list[0];
+    // 注意：b0.x 已被 finalizeBall 校正为解析解，误差必须用实测值 b0.xMeas 计算
+    html += "<tr><td class='name'>理论值</td><td>"+fmt(tTheory(b0.h),3)+"</td><td>"+fmt(xTheory(b0.h,b0.v0),3)+
+      "</td><td colspan='6' style='text-align:left'>相对误差 t:"+fmt(errPct(b0.tMeas,tTheory(b0.h)),3)+"%  x:"+fmt(errPct(b0.xMeas,xTheory(b0.h,b0.v0)),3)+"%</td></tr>";
+  }
+  html += "</table>";
+  el.innerHTML = html;
+}
+
+/* ---------------------- 11. 热点（画面锚点） ---------------------- */
+const HOTSPOTS = [
+  { id:"hL",  card:"k4",  txt:"h", pos:()=>({x:sx(0)+8, y:sy(S.h)-4}) },
+  { id:"hV",  card:"k5",  txt:"v₀", pos:()=>({x:sx(0)+70, y:sy(S.h)+6}) },
+  { id:"hM",  card:"k8",  txt:"落", pos:()=>{ const m=S.marks[S.marks.length-1];
+      return m? {x:sx(m.x), y:sy(0)-26} : {x:sx(VIEW.xMax*0.6), y:sy(0)-26}; } },
+  { id:"hT",  card:"k2",  txt:"时", pos:()=>({x:VW-28, y:24}) },
+  { id:"hS",  card:"k6",  txt:"闪", pos:()=>{ const b=S.balls[0];
+      return b? {x:sx(b.x*0.55), y:sy(b.h*0.62)} : {x:sx(S.v0*tTheory(S.h)*0.5), y:sy(S.h*0.55)}; } },
+  { id:"hF",  card:"k11", txt:"落体", pos:()=>({x:sx(0)-30, y:sy(S.h*0.5)}), when:()=>S.showFF },
+  { id:"hC",  card:"k9",  txt:"图", pos:()=>({x:VW-34, y:VH-40}) }
+];
+function buildHotspots(){
+  const layer = $("hotlayer"); layer.innerHTML = "";
+  HOTSPOTS.forEach(h => {
+    const b = document.createElement("button");
+    b.className="hot"; b.textContent=h.txt; b.id=h.id;
+    b.setAttribute("aria-label","打开知识点卡片：" + (KNOWLEDGE_CARDS.find(c=>c.id===h.card)||{}).title);
+    b.onclick = () => openCardById(h.card);
+    layer.appendChild(b);
+  });
+}
+function updateHotspots(){
+  HOTSPOTS.forEach(h => {
+    const el = $(h.id); if(!el) return;
+    if(h.when && !h.when()){ el.style.display="none"; return; }
+    el.style.display="grid";
+    const p = h.pos();
+    el.style.setProperty("--tx", clamp(p.x,16,VW-16)+"px");
+    el.style.setProperty("--ty", clamp(p.y,16,VH-16)+"px");
+  });
+}
+
+/* ---------------------- 12. 图表绘制 ---------------------- */
+function chartCtx(id){ const cv2=$(id); return { cv:cv2, c:cv2.getContext("2d"), W:cv2.clientWidth, H:cv2.clientHeight }; }
+function fitAllCharts(){ ["ch1","ch2","ch3","ch4","ch5","ch6","ch7"].forEach(id=>{
+  const cv2=$(id); cv2.width=Math.round(cv2.clientWidth*DPR); cv2.height=Math.round(cv2.clientHeight*DPR);
+}); }
+function plot(id, o){
+  const {c,W,H} = chartCtx(id); if(W<10) return;
+  c.setTransform(DPR,0,0,DPR,0,0); c.clearRect(0,0,W,H);
+  const m={l:46,r:14,t:16,b:30};
+  const xmin=o.xmin, xmax=o.xmax, ymin=o.ymin, ymax=o.ymax;
+  const PX = x => m.l + (x-xmin)/(xmax-xmin||1)*(W-m.l-m.r);
+  const PY = y => H-m.b - (y-ymin)/(ymax-ymin||1)*(H-m.t-m.b);
+  // 网格
+  c.strokeStyle="#eef2f7"; c.lineWidth=1; c.font="10px system-ui"; c.fillStyle="#94a3b8";
+  const xs = niceStep(xmax-xmin,5), ys = niceStep(ymax-ymin,4);
+  for(let x=Math.ceil(xmin/xs)*xs; x<=xmax+1e-9; x+=xs){
+    c.beginPath(); c.moveTo(PX(x),m.t); c.lineTo(PX(x),H-m.b); c.stroke();
+    c.textAlign="center"; c.fillText(o.xfmt?o.xfmt(x):fmt(x,2), PX(x), H-m.b+13);
+  }
+  for(let y=Math.ceil(ymin/ys)*ys; y<=ymax+1e-9; y+=ys){
+    c.beginPath(); c.moveTo(m.l,PY(y)); c.lineTo(W-m.r,PY(y)); c.stroke();
+    c.textAlign="right"; c.fillText(fmt(y,2), m.l-5, PY(y)+3.5);
+  }
+  // 轴
+  c.strokeStyle="#64748b"; c.lineWidth=1.4;
+  c.beginPath(); c.moveTo(m.l,m.t); c.lineTo(m.l,H-m.b); c.lineTo(W-m.r,H-m.b); c.stroke();
+  // 轴名
+  c.fillStyle="#475569"; c.font="10.5px system-ui"; c.textAlign="right";
+  c.fillText(o.xlabel, W-m.r, H-4);
+  c.save(); c.translate(12, m.t+4); c.rotate(-Math.PI/2); c.textAlign="right";
+  c.fillText(o.ylabel, 0, 0); c.restore();
+  // 数据系列
+  (o.series||[]).forEach(s => {
+    if(!s.pts || s.pts.length===0) return;
+    c.strokeStyle=s.color; c.lineWidth=s.w||2.2; c.setLineDash(s.dash||[]);
+    c.beginPath();
+    s.pts.forEach((p,i)=> i? c.lineTo(PX(p[0]),PY(p[1])) : c.moveTo(PX(p[0]),PY(p[1])));
+    c.stroke(); c.setLineDash([]);
+    if(s.dot){ c.fillStyle=s.color; s.pts.forEach(p=>{ c.beginPath(); c.arc(PX(p[0]),PY(p[1]),3,0,Math.PI*2); c.fill(); }); }
+  });
+  // 标注
+  if(o.note){ c.fillStyle="#0f766e"; c.font="bold 10.5px system-ui"; c.textAlign="left";
+    c.fillText(o.note, m.l+6, m.t+11); }
+  if(o.empty){ c.fillStyle="#cbd5e1"; c.font="12px system-ui"; c.textAlign="center";
+    c.fillText(o.empty, W/2, H/2); }
+}
+function drawCharts(){
+  const fit = $("ckFit").checked, th = $("ckTheory").checked;
+  const b = S.balls[S.sel] || S.balls[0];
+  // —— 实时图 ——
+  if(b){
+    const tL = tTheory(b.h);
+    const pts = b.samples.map(s=>[s.t,s.x]);
+    plot("ch1",{ xmin:0, xmax:Math.max(tL,0.05)*1.05, ymin:0, ymax:Math.max(xTheory(b.h,b.v0),0.2)*1.08,
+      xlabel:"t / s", ylabel:"x / m",
+      series:[{pts, color:b.color, w:2.4}].concat(th?[{pts:[[0,0],[tL,xTheory(b.h,b.v0)]], color:"#94a3b8", dash:[5,4], w:1.6}]:[]),
+      note:"斜率 = v₀ = "+fmt(b.v0,2)+" m/s" });
+    plot("ch2",{ xmin:0, xmax:Math.max(tL,0.05)*1.05, ymin:0, ymax:b.h*1.08,
+      xlabel:"t / s", ylabel:"y / m（下落量）",
+      series: [{pts:b.samples.map(s=>[s.t,s.y]), color:b.color, w:2.4}]
+        .concat(th?[{pts:Array.from({length:41},(_,i)=>{const t=tL*i/40;return[t,0.5*S.g*t*t];}), color:"#94a3b8", dash:[5,4], w:1.6}]:[]),
+      note:"y = ½gt²（抛物线）" });
+    plot("ch3",{ xmin:0, xmax:Math.max(tL,0.05)*1.05, ymin:0, ymax:S.g*tL*1.1,
+      xlabel:"t / s", ylabel:"v_y / (m/s)",
+      series:[{pts:b.samples.map(s=>[s.t,s.vy]), color:CFG.colors.red, w:2.4}].concat(th?[{pts:[[0,0],[tL,S.g*tL]], color:"#94a3b8", dash:[5,4], w:1.6}]:[]),
+      note:"斜率 = g = "+fmt(S.g,1)+" m/s²" });
+  } else {
+    ["ch1","ch2","ch3"].forEach(id=>plot(id,{xmin:0,xmax:1,ymin:0,ymax:1,xlabel:"t / s",ylabel:"—",empty:"发射后显示实时曲线"}));
+  }
+  // —— 结论图 A：t–v₀（实验①） ——
+  const A = S.records.filter(r=>r.group==="实验①");
+  if(A.length){
+    const vs = A.map(r=>r.v0), ts = A.map(r=>r.t);
+    const vmax = Math.max(...vs)*1.1, tmax = Math.max(...ts)*1.25;
+    const ser = [{pts:A.map(r=>[r.v0,r.t]), color:"#0ea5e9", dot:true, w:2.2}];
+    if(fit){ const k = leastSquare(A.map(r=>r.v0), A.map(r=>r.t));
+      ser.push({pts:[[0,k.b],[vmax,k.a*vmax+k.b]], color:"#16a34a", dash:[6,4], w:2}); }
+    if(th){ const tt = tTheory(A[0].h);
+      ser.push({pts:[[0,tt],[vmax,tt]], color:"#dc2626", dash:[3,3], w:1.8}); }
+    plot("ch4",{xmin:0,xmax:vmax,ymin:0,ymax:tmax,xlabel:"v₀ / (m/s)",ylabel:"t / s",series:ser,
+      note:"水平直线 → t 与 v₀ 无关"});
+  } else plot("ch4",{xmin:0,xmax:8,ymin:0,ymax:1,xlabel:"v₀ / (m/s)",ylabel:"t / s",empty:"运行实验①后生成"});
+
+  // —— 结论图 B：t–√h（实验②） ——
+  const B = S.records.filter(r=>r.group==="实验②");
+  if(B.length){
+    const hs = B.map(r=>r.sqrtH), ts = B.map(r=>r.t);
+    const hmax = Math.max(...hs)*1.12, tmax = Math.max(...ts)*1.25;
+    const ser = [{pts:B.map(r=>[r.sqrtH,r.t]), color:"#16a34a", dot:true, w:2.2}];
+    if(fit){ const k = leastSquare(hs,ts);
+      ser.push({pts:[[0,k.b],[hmax,k.a*hmax+k.b]], color:"#0f766e", dash:[6,4], w:2}); }
+    if(th) ser.push({pts:[[0,0],[hmax,Math.sqrt(2/S.g)*hmax]], color:"#dc2626", dash:[3,3], w:1.8});
+    const kk = fit? leastSquare(hs,ts) : {a:Math.sqrt(2/S.g)};
+    plot("ch5",{xmin:0,xmax:hmax,ymin:0,ymax:tmax,xlabel:"√h / √m",ylabel:"t / s",series:ser,
+      note:"斜率 ≈ "+fmt(kk.a,3)+"（理论 √(2/g)="+fmt(Math.sqrt(2/S.g),3)+"）"});
+  } else plot("ch5",{xmin:0,xmax:1.6,ymin:0,ymax:0.8,xlabel:"√h / √m",ylabel:"t / s",empty:"运行实验②后生成"});
+
+  // —— 结论图 C1：x–v₀（h 固定） ——
+  if(A.length){
+    const vmax=Math.max(...A.map(r=>r.v0))*1.1, xmax=Math.max(...A.map(r=>r.x))*1.15;
+    const ser=[{pts:A.map(r=>[r.v0,r.x]), color:"#f97316", dot:true, w:2.2}];
+    if(fit){ const k=leastSquare(A.map(r=>r.v0),A.map(r=>r.x));
+      ser.push({pts:[[0,k.b],[vmax,k.a*vmax+k.b]], color:"#16a34a", dash:[6,4], w:2}); }
+    if(th) ser.push({pts:[[0,0],[vmax,vmax*tTheory(A[0].h)]], color:"#dc2626", dash:[3,3], w:1.8});
+    plot("ch6",{xmin:0,xmax:vmax,ymin:0,ymax:xmax,xlabel:"v₀ / (m/s)",ylabel:"x / m",series:ser,
+      note:"过原点直线 → x ∝ v₀"});
+  } else plot("ch6",{xmin:0,xmax:8,ymin:0,ymax:3,xlabel:"v₀ / (m/s)",ylabel:"x / m",empty:"运行实验①后生成"});
+
+  // —— 结论图 C2：x–√h（v₀ 固定） ——
+  if(B.length){
+    const hmax=Math.max(...B.map(r=>r.sqrtH))*1.12, xmax=Math.max(...B.map(r=>r.x))*1.15;
+    const ser=[{pts:B.map(r=>[r.sqrtH,r.x]), color:"#a855f7", dot:true, w:2.2}];
+    if(fit){ const k=leastSquare(B.map(r=>r.sqrtH),B.map(r=>r.x));
+      ser.push({pts:[[0,k.b],[hmax,k.a*hmax+k.b]], color:"#16a34a", dash:[6,4], w:2}); }
+    if(th) ser.push({pts:[[0,0],[hmax,hmax*B[0].v0*Math.sqrt(2/S.g)]], color:"#dc2626", dash:[3,3], w:1.8});
+    plot("ch7",{xmin:0,xmax:hmax,ymin:0,ymax:xmax,xlabel:"√h / √m",ylabel:"x / m",series:ser,
+      note:"过原点直线 → x ∝ √h"});
+  } else plot("ch7",{xmin:0,xmax:1.6,ymin:0,ymax:3,xlabel:"√h / √m",ylabel:"x / m",empty:"运行实验②后生成"});
+}
+function leastSquare(xs,ys){
+  const n=xs.length; if(!n) return {a:0,b:0};
+  const mx=xs.reduce((a,b)=>a+b,0)/n, my=ys.reduce((a,b)=>a+b,0)/n;
+  let num=0,den=0;
+  for(let i=0;i<n;i++){ num+=(xs[i]-mx)*(ys[i]-my); den+=(xs[i]-mx)**2; }
+  const a = den? num/den : 0;
+  return { a, b: my - a*mx };
+}
+
+/* ---------------------- 13. 数据表 ---------------------- */
+const GRP_CLS = { "实验①":"grpA", "实验②":"grpB", "自由":"grpC" };
+const GRP_TC  = { "实验①":"gA", "实验②":"gB", "自由":"gC" };
+function appendRow(r){
+  const tr = document.createElement("tr");
+  tr.className = GRP_CLS[r.group]||"grpC";
+  tr.innerHTML = "<td>"+r.no+"</td><td class='g "+GRP_TC[r.group]+"'>"+r.group+"</td><td>"+fmt(r.h,2)+
+    "</td><td>"+fmt(r.v0,2)+"</td><td>"+fmt(r.sqrtH,3)+"</td><td>"+fmt(r.t,3)+"</td><td>"+fmt(r.tTh,3)+
+    "</td><td>"+fmt(r.et,2)+"%</td><td>"+fmt(r.x,3)+"</td><td>"+fmt(r.xTh,3)+"</td><td>"+fmt(r.ex,2)+"%</td>";
+  $("tbody").appendChild(tr);
+  const w = $("twrap"); if(w) w.scrollTop = w.scrollHeight;
+}
+function exportCsv(){
+  const head = ["编号","组别","h(m)","v0(m/s)","sqrt(h)(sqrt m)","t实测(s)","t理论(s)","t误差(%)","x实测(m)","x理论(m)","x误差(%)"];
+  const lines = [head.join(",")];
+  S.records.forEach(r=>{
+    lines.push([r.no,r.group,fmt(r.h,3),fmt(r.v0,3),fmt(r.sqrtH,4),fmt(r.t,4),fmt(r.tTh,4),fmt(r.et,3),fmt(r.x,4),fmt(r.xTh,4),fmt(r.ex,3)].join(","));
+  });
+  const blob = new Blob(["\ufeff"+lines.join("\r\n")], {type:"text/csv;charset=utf-8"});
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = "模型27_平抛对比实验数据.csv";
+  document.body.appendChild(a); a.click();
+  setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 300);
+}
+
+/* ---------------------- 14. 音效 ---------------------- */
+let AC_ = null;
+function AC(){ if(!AC_) AC_ = new (window.AudioContext||window.webkitAudioContext)(); return AC_; }
+function beep(f, dur){
+  if(!S.sound) return;
+  try{
+    const ac = AC(), o = ac.createOscillator(), g = ac.createGain();
+    o.type="sine"; o.frequency.value=f; o.connect(g); g.connect(ac.destination);
+    const t0 = ac.currentTime;
+    g.gain.setValueAtTime(0.0001,t0);
+    g.gain.exponentialRampToValueAtTime(0.16,t0+0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001,t0+dur);
+    o.start(t0); o.stop(t0+dur+0.03);
+  }catch(e){}
+}
+
+/* ---------------------- 15. 发射与预设 ---------------------- */
+function palette(i){ return CFG.palette[i%CFG.palette.length]; }
+function resetBalls(){
+  S.balls = []; S.flash = []; S.waitT = 0; S.simT = 0; S.sel = 0; S.playing = false; syncPlayBtn();
+}
+function startNext(){
+  if(!S.pending.length){ S.playing=false; syncPlayBtn(); return; }
+  const item = S.pending.shift();
+  S.balls = [];
+  S.group = item.group;
+  if(S.h !== undefined && item.setH!=null){ S.h = item.setH; $("rH").value=S.h; $("vH").textContent=fmt(S.h,2)+" m"; }
+  if(item.setV!=null){ S.v0 = item.setV; $("rV").value=S.v0; $("vV").textContent=fmt(S.v0,1)+" m/s"; }
+  updT();
+  item.balls.forEach((bb,i)=>{
+    const b = makeBall(bb.h, bb.v0, palette(S.marks.length + i), bb.label || ("v₀="+fmt(bb.v0,1)+" m/s"));
+    launchBall(b);
+  });
+  S.playing = true; syncPlayBtn();
+}
+function runPreset(items){
+  resetBalls(); S.pending = items.slice(1); 
+  const first = items[0];
+  S.group = first.group;
+  if(first.setH!=null){ S.h=first.setH; $("rH").value=S.h; $("vH").textContent=fmt(S.h,2)+" m"; }
+  if(first.setV!=null){ S.v0=first.setV; $("rV").value=S.v0; $("vV").textContent=fmt(S.v0,1)+" m/s"; }
+  updT();
+  S.balls = [];
+  first.balls.forEach((bb,i)=>{
+    launchBall(makeBall(bb.h, bb.v0, palette(i), bb.label || ("v₀="+fmt(bb.v0,1)+" m/s")));
+  });
+  S.playing = true; S.waitT=0; syncPlayBtn();
+}
+function presetE1(){
+  const h = 0.8;
+  runPreset([{ group:"实验①", setH:h, setV:4, balls:[{h:h,v0:2},{h:h,v0:4},{h:h,v0:6}] }]);
+}
+function presetE2(){
+  const v0 = 4;
+  runPreset([
+    { group:"实验②", setH:0.2, setV:v0, balls:[{h:0.2,v0:v0,label:"h=0.20 m"}] },
+    { group:"实验②", setH:0.8, setV:v0, balls:[{h:0.8,v0:v0,label:"h=0.80 m"}] },
+    { group:"实验②", setH:1.8, setV:v0, balls:[{h:1.8,v0:v0,label:"h=1.80 m"}] }
+  ]);
+}
+function presetFF(){
+  S.showFF = true; $("tFF").checked = true;
+  runPreset([{ group:"自由", setH:S.h, setV:S.v0, balls:[{h:S.h,v0:S.v0}] }]);
+}
+function presetOne(){
+  runPreset([{ group:"自由", setH:S.h, setV:S.v0, balls:[{h:S.h,v0:S.v0}] }]);
+}
+
+/* ---------------------- 16. 主循环 ---------------------- */
+let last = 0, chartTick = 0;
+function loop(ts){
+  requestAnimationFrame(loop);
+  if(!last) last = ts;
+  let dtReal = (ts-last)/1000; last = ts;
+  if(dtReal > 0.25) dtReal = 0.25;
+  // 落地闪光按真实时间衰减（不能放在 stepSim 里：全部落地后 playing=false，光圈会冻结在画面上）
+  if(S.flash.length) S.flash = S.flash.filter(f => (f.life -= dtReal) > 0);
+  if(S.playing){
+    S.acc += dtReal*S.speed;
+    const base = CFG.DT;
+    let guard = 0;
+    while(S.acc >= base && guard++ < 600){ stepSim(base); S.acc -= base; }
+  } else {
+    S.acc = 0;
+  }
+  drawScene();
+  if(++chartTick % 2 === 0) drawCharts();
+}
+function syncPlayBtn(){
+  $("bPlay").textContent = S.playing? "▶ 播放中" : "▶ 播放";
+  $("bPlay").disabled = S.playing;
+  $("bPause").disabled = !S.playing;
+}
+
+/* ---------------------- 17. 卡片 UI ---------------------- */
+let deckIndex = 0, deckFilter = "全部", deckQuery = "";
+let modalIndex = 0, lastFocus = null;
+function catList(){ return ["全部","概念","公式","方法","易错","应用"]; }
+function buildTabs(){
+  const el = $("cardTabs"); el.innerHTML="";
+  catList().forEach(cat=>{
+    const n = cat==="全部"? KNOWLEDGE_CARDS.length : KNOWLEDGE_CARDS.filter(c=>c.cat===cat).length;
+    const b = document.createElement("button");
+    b.className="btn sm"; b.textContent = cat+"（"+n+"）";
+    b.setAttribute("role","tab");
+    b.setAttribute("aria-selected", String(deckFilter===cat));
+    b.setAttribute("aria-pressed", String(deckFilter===cat));
+    b.onclick = ()=>{ deckFilter=cat; buildTabs(); buildList(); };
+    el.appendChild(b);
+  });
+}
+function filtered(){
+  const q = deckQuery.trim();
+  return KNOWLEDGE_CARDS.filter(c=>{
+    const okCat = deckFilter==="全部" || c.cat===deckFilter;
+    if(!okCat) return false;
+    if(!q) return true;
+    return (c.title+c.concl+c.formula+c.how+c.back+c.cat).indexOf(q)>=0;
+  });
+}
+function buildList(){
+  const el = $("cardList"); el.innerHTML="";
+  const list = filtered();
+  $("cardCount").textContent = "共 "+list.length+" 张";
+  if(!list.length){ el.innerHTML='<p class="note">没有匹配的卡片，换个关键词试试。</p>'; return; }
+  list.forEach((c,i)=>{
+    const b = document.createElement("button");
+    b.className="citem"; b.type="button";
+    b.setAttribute("aria-label","打开卡片："+c.title);
+    b.innerHTML = '<span class="tag '+c.cat+'">'+c.cat+'</span><span class="ct">'+c.title+'</span>'+
+      '<div class="cc">'+c.concl+'</div>';
+    b.onclick = ()=>{ modalIndex = KNOWLEDGE_CARDS.indexOf(c); renderCard(modalIndex); openModal(); };
+    el.appendChild(b);
+  });
+}
+function renderCard(i){
+  const c = KNOWLEDGE_CARDS[i]; if(!c) return;
+  modalIndex = i;
+  $("faceF").innerHTML =
+    '<div style="display:flex;align-items:center;gap:8px">'+
+      '<span class="tag '+c.cat+'">'+c.cat+'</span><h4 id="cmTitle" style="flex:1">'+c.title+'</h4>'+
+      '<button class="closebtn" id="cmClose" aria-label="关闭卡片">✕</button></div>'+
+    '<div class="concl">'+c.concl+'</div>'+
+    '<div class="fm">'+(c.formula||"").replace(/\n/g,"<br>")+'</div>'+
+    '<div class="sec">迷你示意图</div>'+ (c.svg||"") +
+    '<div class="sec">在本 Demo 中怎么看</div><div class="how">'+c.how+'</div>'+
+    (c.warn? '<div class="warn"><b>易错提醒：</b>'+c.warn+'</div>':'')+
+    '<div class="facefoot">'+
+      '<button class="btn sm" id="cmFlip">🔄 翻转看推导</button>'+
+      '<button class="btn sm" id="cmPin">📌 钉住常驻</button>'+
+      '<span class="sp"><button class="btn sm" id="cmPrev">←</button>'+
+      '<span class="note" style="align-self:center">'+(i+1)+'/'+KNOWLEDGE_CARDS.length+'</span>'+
+      '<button class="btn sm" id="cmNext">→</button></span>'+
+    '</div>';
+  $("faceB").innerHTML =
+    '<div style="display:flex;align-items:center;gap:8px">'+
+      '<span class="tag '+c.cat+'">'+c.cat+'</span><h4 style="flex:1">'+c.title+' · 推导与说明</h4>'+
+      '<button class="closebtn" id="cmClose2" aria-label="关闭卡片">✕</button></div>'+
+    '<div class="sec">推导与说明</div><div style="font-size:13.5px">'+c.back+'</div>'+
+    (c.warn? '<div class="warn"><b>易错提醒：</b>'+c.warn+'</div>':'')+
+    '<div class="facefoot"><button class="btn sm" id="cmFlip2">🔄 返回正面</button></div>';
+  $("flip").classList.remove("flipped");
+  $("cmClose").onclick = closeModal;
+  $("cmClose2").onclick = closeModal;
+  $("cmFlip").onclick = ()=> $("flip").classList.add("flipped");
+  $("cmFlip2").onclick = ()=> $("flip").classList.remove("flipped");
+  $("cmPin").onclick = ()=>{ pinCard(c); closeModal(); };
+  $("cmPrev").onclick = ()=> renderCard((i-1+KNOWLEDGE_CARDS.length)%KNOWLEDGE_CARDS.length);
+  $("cmNext").onclick = ()=> renderCard((i+1)%KNOWLEDGE_CARDS.length);
+}
+function openCardById(id){
+  const i = KNOWLEDGE_CARDS.findIndex(c=>c.id===id);
+  if(i<0) return;
+  renderCard(i); openModal();
+}
+function openModal(){
+  lastFocus = document.activeElement;
+  $("cardModal").classList.add("open");
+  const f = $("cmClose"); if(f) f.focus();
+}
+function closeModal(){
+  $("cardModal").classList.remove("open");
+  if(lastFocus && lastFocus.focus) lastFocus.focus();
+}
+/* 钉住的卡片（可拖动）—— 全局只挂一份拖拽监听，避免每次钉卡片都新增 listener */
+let pinN = 0, dragState = null;
+let pinDragReady = false;
+function initPinDrag(){
+  if(pinDragReady) return; pinDragReady = true;
+  window.addEventListener("mousemove", e=>{
+    if(!dragState) return;
+    dragState.el.style.left = (e.clientX-dragState.ox)+"px";
+    dragState.el.style.top  = (e.clientY-dragState.oy)+"px";
+  });
+  window.addEventListener("touchmove", e=>{
+    if(!dragState) return; const t=e.touches[0];
+    dragState.el.style.left = (t.clientX-dragState.ox)+"px";
+    dragState.el.style.top  = (t.clientY-dragState.oy)+"px";
+  }, {passive:true});
+  const stop = ()=>{ dragState = null; };
+  window.addEventListener("mouseup", stop);
+  window.addEventListener("touchend", stop);
+  window.addEventListener("touchcancel", stop);
+}
+function pinCard(c){
+  initPinDrag();
+  const el = document.createElement("div");
+  el.className="pinned";
+  el.style.left = (18 + (pinN%4)*306) + "px";
+  el.style.top  = (80 + Math.floor(pinN/4)*30) + "px";
+  pinN++;
+  el.innerHTML = '<div class="ph"><span class="tag '+c.cat+'">'+c.cat+'</span><span>'+c.title+'</span>'+
+    '<button class="x" aria-label="取消钉住">✕</button></div>'+
+    '<div class="pc">'+c.concl+'</div>'+(c.svg||"");
+  const h = el.querySelector(".ph"), xb = el.querySelector(".x");
+  xb.onclick = ()=>{ if(dragState && dragState.el===el) dragState=null; el.remove(); };
+  const startDrag = (cx, cy)=>{ dragState = { el, ox:cx-el.offsetLeft, oy:cy-el.offsetTop }; };
+  h.addEventListener("mousedown", e=> startDrag(e.clientX, e.clientY));
+  h.addEventListener("touchstart", e=>{ const t=e.touches[0]; startDrag(t.clientX, t.clientY); }, {passive:true});
+  $("pinlayer").appendChild(el);
+}
+/* 抽屉 */
+function toggleDeck(open){
+  const d = $("drawer");
+  d.classList.toggle("open", open);
+  if(open){ buildList(); const i=$("cardSearch"); if(i) i.focus(); }
+}
+
+/* ---------------------- 18. 教学流程 UI ---------------------- */
+let flowStep = 0, autoCard = true;
+function buildFlow(auto){
+  const bar = $("flowbar"); bar.innerHTML="";
+  FLOW.forEach((f,i)=>{
+    const b = document.createElement("button");
+    b.type="button"; b.innerHTML = '<span class="n">'+f.n+'</span>'+f.t;
+    b.setAttribute("aria-current", i===flowStep? "step":"false");
+    b.onclick = ()=>{ flowStep=i; buildFlow(true); };
+    bar.appendChild(b);
+  });
+  renderFlow(!!auto);   // 初次进入不自动弹卡片，避免打断浏览；切步时按 autoCard 决定
+}
+function renderFlow(doAuto){
+  const f = FLOW[flowStep];
+  let html = '<div style="font-size:13.5px"><b>'+f.t+'：</b>'+f.tip+'</div>'+
+    '<div class="q"><b>待答问题：</b>'+f.q+'</div>';
+  if(f.table){
+    html += '<div class="vt"><table class="var"><tr><th>实验</th><th>自变量（改变）</th><th>控制不变的量</th><th>测量的量</th><th>预期结论</th></tr>'+
+      '<tr><td>① 固定 h</td><td class="k">v₀ = 2 / 4 / 6 m/s</td><td>h = 0.80 m、g、地面水平、出口水平、同一钢球</td><td>t、x</td><td>t 相同，x ∝ v₀</td></tr>'+
+      '<tr><td>② 固定 v₀</td><td class="k">h = 0.20 / 0.80 / 1.80 m</td><td>v₀ = 4.0 m/s、g、地面水平、出口水平、同一钢球</td><td>t、x</td><td>t ∝ √h，x ∝ √h</td></tr>'+
+      '</table></div>';
+  }
+  if(f.summary){
+    html += '<div class="vt" style="background:#ecfdf5;border:1px solid #a7f3d0;border-radius:9px;padding:9px 11px;font-size:13px">'+
+      '<b>结论一（时间）：</b>t = √(2h/g)，只由高度决定，与 v₀ 无关。'+
+      '<br><b>结论二（射程）：</b>x = v₀√(2h/g)，由 v₀ 与 h 共同决定。'+
+      '<br><b>成立前提：</b>不计空气阻力、地面水平、出口水平、同一钢球（同一压缩量弹簧保证 v₀ 可复现）。</div>';
+  }
+  html += '<div style="margin-top:9px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">'+
+    '<button class="btn sm" id="fCard">📖 打开本步卡片（'+f.cards.length+'）</button>'+
+    '<label style="font-size:12px"><input type="checkbox" id="fAuto" '+(autoCard?"checked":"")+'> 切步时自动弹出卡片</label>'+
+    (f.act? '<button class="btn sm primary" id="fAct">▶ 立即运行本步实验</button>':'')+
+    '</div>';
+  $("flowbody").innerHTML = html;
+  $("fCard").onclick = ()=> f.cards.forEach((id,i)=> setTimeout(()=>openCardById(id), i*120));
+  $("fAuto").onchange = e => autoCard = e.target.checked;
+  const act = $("fAct");
+  if(act && f.act==="pE1") act.onclick = presetE1;
+  if(act && f.act==="pE2") act.onclick = presetE2;
+  if(doAuto && autoCard && f.cards.length) setTimeout(()=>openCardById(f.cards[0]), 60);
+}
+
+/* ---------------------- 19. 自测 ---------------------- */
+let qi = 0, answered = false;
+function renderQuiz(){
+  const q = QUIZ[qi];
+  answered = false;
+  let html = '<div style="display:flex;align-items:center;gap:8px"><span class="tag 易错">即时自测</span>'+
+    '<h4 id="qzTitle" style="flex:1">第 '+(qi+1)+' / '+QUIZ.length+' 题</h4>'+
+    '<button class="closebtn" id="qzClose" aria-label="关闭自测">✕</button></div>'+
+    '<div class="quiz"><div class="qq">'+q.q+'</div><div id="qopts"></div><div id="qfb"></div></div>'+
+    '<div class="facefoot"><button class="btn sm" id="qPrev"'+(qi===0?" disabled":"")+'>← 上一题</button>'+
+    '<button class="btn sm" id="qNext">下一题 →</button>'+
+    '<span class="sp"><button class="btn sm" id="qCard">📖 看对应卡片</button>'+
+    '<button class="btn sm primary" id="qDone">完成</button></span></div>';
+  $("quizFace").innerHTML = html;
+  const box = $("qopts");
+  q.opts.forEach((t,i)=>{
+    const b = document.createElement("button");
+    b.className="opt"; b.type="button"; b.textContent = String.fromCharCode(65+i)+". "+t;
+    b.onclick = ()=> answer(i,b);
+    box.appendChild(b);
+  });
+  $("qzClose").onclick = ()=> $("quizModal").classList.remove("open");
+  $("qPrev").onclick = ()=>{ if(qi>0){ qi--; renderQuiz(); } };
+  $("qNext").onclick = ()=>{ if(qi<QUIZ.length-1){ qi++; renderQuiz(); } };
+  $("qCard").onclick = ()=> openCardById(q.card);
+  $("qDone").onclick = ()=> $("quizModal").classList.remove("open");
+}
+function answer(i, btn){
+  if(answered) return; answered = true;
+  const q = QUIZ[qi];
+  const btns = [...$("qopts").children];
+  btns.forEach((b,k)=>{ if(k===q.ans) b.classList.add("right"); });
+  if(i===q.ans){
+    $("qfb").innerHTML = '<div class="fb ok"><b>✅ 正确。</b>'+q.ok+'</div>';
+  } else {
+    btn.classList.add("wrong");
+    const msg = (q.no && q.no[i]) ? q.no[i] : "再想想。";
+    $("qfb").innerHTML = '<div class="fb no"><b>❌ '+msg+'</b><br>正确答案：'+String.fromCharCode(65+q.ans)+'. '+q.opts[q.ans]+
+      '<br><button class="btn sm" id="qGoCard" style="margin-top:6px">📖 跳转到对应卡片</button></div>';
+    $("qGoCard").onclick = ()=> openCardById(q.card);
+  }
+}
+
+/* ---------------------- 20. 帮助 ---------------------- */
+function renderHelp(){
+  $("helpFace").innerHTML =
+    '<div style="display:flex;align-items:center;gap:8px"><h4 id="hpTitle" style="flex:1">操作说明</h4>'+
+    '<button class="closebtn" id="hpClose" aria-label="关闭">✕</button></div>'+
+    '<div style="font-size:13.5px">'+
+    '<p><b>1. 改参数：</b>拖「高度 h」「初速度 v₀」滑块，或切换 g = 9.8 / 10 m/s²。</p>'+
+    '<p><b>2. 跑对照实验：</b>「实验①」三球同时（固定 h 变 v₀）；「实验②」三次依次（固定 v₀ 变 h）；「对照自由落体球」验证等时性。</p>'+
+    '<p><b>3. 看结论：</b>结论图 A（t–v₀ 水平直线）、B（t–√h 过原点直线）、C（x–v₀ 与 x–√h）；数据表给出实测 / 理论 / 相对误差。</p>'+
+    '<p><b>4. 看卡片：</b>点画面上的小圆标（热点）或右上角「知识卡片库」，卡片可翻转、钉住、键盘 ←→ 切换、Esc 关闭。</p>'+
+    '<p><b>5. 慢动作：</b>0.25× / 0.5× / 1× 与「单步」「静态分帧」都不改变物理结果（固定步长积分 + 解析解双轨校验）。</p>'+
+    '<p class="note">键盘：Enter/Space 打开卡片，Esc 关闭，← → 切换上一张/下一张。</p>'+
+    '</div><div class="facefoot"><button class="btn sm primary" id="hpOk">知道了</button></div>';
+  $("hpClose").onclick = ()=> $("helpModal").classList.remove("open");
+  $("hpOk").onclick = ()=> $("helpModal").classList.remove("open");
+}
+
+/* ---------------------- 21. 事件绑定 ---------------------- */
+function bind(){
+  $("rH").oninput = e => { S.h = parseFloat(e.target.value); $("vH").textContent = fmt(S.h,2)+" m"; updT(); };
+  $("rV").oninput = e => { S.v0 = parseFloat(e.target.value); $("vV").textContent = fmt(S.v0,1)+" m/s"; updT(); };
+  const setG = (v, b1, b2) => { S.g=v; $(b1).setAttribute("aria-pressed","true"); $(b2).setAttribute("aria-pressed","false"); updT(); };
+  $("g98").onclick = ()=> setG(9.8,"g98","g10");
+  $("g10").onclick = ()=> setG(10,"g98","g10");
+
+  $("pE1").onclick = presetE1;
+  $("pE2").onclick = presetE2;
+  $("pFF").onclick = presetFF;
+  $("pOne").onclick = presetOne;
+
+  $("bPlay").onclick = ()=>{
+    if(!S.balls.length || S.balls.every(b=>b.landed)){ presetOne(); }
+    else { S.playing=true; syncPlayBtn(); }
+  };
+  $("bPause").onclick = ()=>{ S.playing=false; syncPlayBtn(); };
+  $("bReset").onclick = ()=>{ S.pending=[]; resetBalls(); };
+  $("bStep").onclick = ()=>{
+    if(!S.balls.length) presetOne();
+    S.playing=false;
+    let left = CFG.STEP_ONCE;
+    while(left>1e-9){ const d=Math.min(CFG.DT,left); stepSim(d); left-=d; }
+    syncPlayBtn();
+  };
+  $("bFrame").onclick = ()=>{ // 静态分帧图（无障碍 / 减少动效）
+    resetBalls();
+    const b = makeBall(S.h, S.v0, palette(0), "v₀="+fmt(S.v0,1)+" m/s");
+    const tL = tTheory(b.h);
+    // 必须先补 t=0 的起点，否则频闪序列缺少抛出点，
+    // drawAux 会把第 1 段当作「第 2 个间隔」，竖直间距比被算成 1:2:2:3 而非 1:3:5:7
+    b.strobe.push({ x:0, y:b.h, t:0 });
+    b.samples.push({ t:0, x:0, y:0, vy:0 });
+    for(let i=1;i<=CFG.strobeK;i++){ const t=tL*i/CFG.strobeK;
+      b.strobe.push({x:b.v0*t, y:b.h-0.5*S.g*t*t, t});
+      b.samples.push({t, x:b.v0*t, y:0.5*S.g*t*t, vy:S.g*t});
+    }
+    b.t=tL; b.x=b.v0*tL; b.y=0; b.vy=S.g*tL; b.landed=true; b.tMeas=tL; b.xMeas=b.x;
+    b.ff = S.showFF? {y:0,vy:S.g*tL,t:tL,landed:true} : null;
+    S.balls=[b]; S.marks.push({x:b.x,h:b.h,v0:b.v0,color:b.color,label:b.label,group:"自由"});
+    S.flash=[]; S.playing=false; syncPlayBtn();
+  };
+  document.querySelectorAll(".seg .sp0,.seg .sp1,.seg .sp2").forEach(b=>{
+    b.onclick = ()=>{
+      S.speed = parseFloat(b.dataset.s);
+      document.querySelectorAll(".seg .sp0,.seg .sp1,.seg .sp2").forEach(x=>x.setAttribute("aria-pressed", String(x===b)));
+    };
+  });
+
+  const tg = { tTrail:"trail", tStrobe:"strobe", tVec:"vec", tDisp:"disp", tAux:"aux",
+               tGrid:"grid", tMarks:"marks", tTimer:"timer" };
+  Object.keys(tg).forEach(id => {
+    $(id).onchange = e => { T[tg[id]] = e.target.checked; };
+  });
+  $("tFF").onchange = e => {
+    S.showFF = e.target.checked;
+    // 补挂对照球：飞行途中勾选也要立刻可见，且状态必须与当前球同步（同一 t、同一高度）
+    if(S.showFF) S.balls.forEach(b=>{
+      if(!b.ff) b.ff = { t:b.t, vy:S.g*b.t, y:b.h - 0.5*S.g*b.t*b.t, landed:b.landed };
+    });
+    else S.balls.forEach(b=>{ b.ff = null; });
+  };
+  $("tSound").onchange = e => { S.sound = e.target.checked; if(S.sound) try{ AC().resume(); }catch(err){} };
+
+  // HUD 表格每帧重建，只能用事件委托选中「当前球」（决定下方实时图像画哪一颗）
+  $("hud").addEventListener("click", e=>{
+    const tr = e.target.closest ? e.target.closest("tr[data-i]") : null;
+    if(tr) S.sel = parseInt(tr.getAttribute("data-i"),10) || 0;
+  });
+
+  $("btnCsv").onclick = exportCsv;
+  $("btnClearData").onclick = ()=>{ S.records=[]; S.recNo=0; $("tbody").innerHTML=""; };
+  $("btnDeck").onclick = ()=> toggleDeck(!$("drawer").classList.contains("open"));
+  $("btnCloseDrawer").onclick = ()=> toggleDeck(false);
+  $("cardSearch").oninput = e => { deckQuery = e.target.value; buildList(); };
+  $("cardPrev").onclick = ()=>{ const l=filtered(); deckIndex=(deckIndex-1+l.length)%l.length;
+    if(l[deckIndex]){ modalIndex=KNOWLEDGE_CARDS.indexOf(l[deckIndex]); renderCard(modalIndex); openModal(); } };
+  $("cardNext").onclick = ()=>{ const l=filtered(); deckIndex=(deckIndex+1)%l.length;
+    if(l[deckIndex]){ modalIndex=KNOWLEDGE_CARDS.indexOf(l[deckIndex]); renderCard(modalIndex); openModal(); } };
+  $("btnQuiz").onclick = ()=>{ qi=0; renderQuiz(); $("quizModal").classList.add("open"); };
+  $("btnHelp").onclick = ()=>{ renderHelp(); $("helpModal").classList.add("open"); };
+
+  // 键盘：Esc 关闭；←/→ 切换卡片
+  document.addEventListener("keydown", e=>{
+    if(e.key==="Escape"){
+      if($("cardModal").classList.contains("open")) closeModal();
+      else if($("quizModal").classList.contains("open")) $("quizModal").classList.remove("open");
+      else if($("helpModal").classList.contains("open")) $("helpModal").classList.remove("open");
+      else if($("drawer").classList.contains("open")) toggleDeck(false);
+      return;
+    }
+    if($("cardModal").classList.contains("open")){
+      if(e.key==="ArrowLeft"){ e.preventDefault(); renderCard((modalIndex-1+KNOWLEDGE_CARDS.length)%KNOWLEDGE_CARDS.length); }
+      if(e.key==="ArrowRight"){ e.preventDefault(); renderCard((modalIndex+1)%KNOWLEDGE_CARDS.length); }
+    }
+  });
+  // 点击遮罩关闭
+  ["cardModal","quizModal","helpModal"].forEach(id=>{
+    $(id).addEventListener("mousedown", e=>{ if(e.target.id===id){
+      if(id==="cardModal") closeModal(); else $(id).classList.remove("open");
+    }});
+  });
+
+  window.addEventListener("resize", ()=>{ fitCanvas(); fitAllCharts(); });
+}
+function updT(){ $("vT").textContent = "t = "+fmt(tTheory(S.h),3)+" s"; }
+
+/* ---------------------- 22. 启动 ---------------------- */
+function init(){
+  fitCanvas(); fitAllCharts();
+  buildHotspots(); buildTabs(); buildList(); buildFlow(); renderHelp(); updT();
+  bind();                       // 必须先绑定控件，否则滑块/按钮无响应
+  $("gNote").textContent = "g = "+S.g+" m/s²";
+  if(REDUCE){ // 尊重 prefers-reduced-motion：默认慢放 + 关闭脉冲
+    S.speed = 0.25;
+    document.querySelectorAll(".seg .sp0,.seg .sp1,.seg .sp2").forEach(x=>x.setAttribute("aria-pressed", String(x.dataset.s==="0.25")));
+  }
+  requestAnimationFrame(loop);
+}
+init();
+</script>
+</body>
+</html>

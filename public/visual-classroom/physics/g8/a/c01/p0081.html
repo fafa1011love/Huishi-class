@@ -1,0 +1,1092 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>声音的产生与传播 · 可交互演示（含真空不能传声）</title>
+<style>
+:root{
+  --blue:#2563EB;
+  --blue-d:#1D4ED8;
+  --blue-l:#EFF4FF;
+  --green:#10B981;
+  --red:#EF4444;
+  --red-l:#FEF2F2;
+  --amber:#F59E0B;
+  --amber-l:#FFFBEB;
+  --ink:#1F2937;
+  --ink-2:#4B5563;
+  --ink-3:#6B7280;
+  --line:#E5E7EB;
+  --bg:#F5F7FB;
+  --card:#FFFFFF;
+  --radius:14px;
+  --shadow:0 1px 2px rgba(16,24,40,.04), 0 8px 24px rgba(16,24,40,.06);
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:"Microsoft YaHei","PingFang SC","Hiragino Sans GB",system-ui,-apple-system,"Segoe UI",sans-serif;
+  background:var(--bg);
+  color:var(--ink);
+  line-height:1.65;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ---------- header ---------- */
+.site-header{
+  background:linear-gradient(135deg,#0F766E 0%,#0EA5A4 45%,#2563EB 100%);
+  color:#fff;padding:26px 0 28px;
+}
+.header-inner{
+  max-width:1080px;margin:0 auto;padding:0 24px;
+  display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;
+}
+.header-text h1{margin:0;font-size:25px;letter-spacing:.4px;font-weight:700;}
+.header-text p{margin:6px 0 0;font-size:14px;opacity:.92;}
+.header-nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.header-badge{
+  border:1px solid rgba(255,255,255,.4);border-radius:999px;
+  padding:7px 16px;font-size:13px;background:rgba(255,255,255,.12);white-space:nowrap;
+}
+.header-link{
+  border:1px solid rgba(255,255,255,.45);border-radius:999px;padding:7px 16px;font-size:13px;
+  color:#fff;text-decoration:none;background:rgba(255,255,255,.08);white-space:nowrap;transition:.16s;
+}
+.header-link:hover{background:rgba(255,255,255,.24);}
+
+/* ---------- layout ---------- */
+.wrap{max-width:1080px;margin:0 auto;padding:26px 24px 40px;}
+.card{
+  background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);
+  padding:24px;border:1px solid rgba(229,231,235,.7);margin-bottom:18px;
+}
+.card h2{margin:0 0 6px;font-size:19px;font-weight:700;}
+.card h2 .step{
+  display:inline-block;width:26px;height:26px;line-height:26px;text-align:center;
+  background:var(--blue);color:#fff;border-radius:8px;font-size:14px;margin-right:8px;vertical-align:2px;
+}
+/* 标题后面直接跟控件/图形时补一点间距（删掉引导段之后） */
+.card h2 + .seg.tabs{margin-top:14px;}
+.card h2 + .fig{margin-top:14px;}
+
+/* ---------- figure ---------- */
+.fig{
+  background:#F8FAFC;border:1px solid var(--line);border-radius:12px;
+  padding:12px;display:flex;justify-content:center;overflow-x:auto;
+}
+.fig svg{display:block;width:100%;max-width:880px;height:auto;}
+
+/* ---------- controls ---------- */
+.controls{
+  display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));
+  gap:14px 18px;margin-top:16px;
+}
+.ctrl label{display:block;font-size:13px;color:var(--ink-2);margin-bottom:6px;}
+.ctrl label b{color:var(--blue);font-variant-numeric:tabular-nums;}
+.ctrl input[type=range]{width:100%;accent-color:var(--blue);cursor:pointer;}
+.tick{display:flex;justify-content:space-between;font-size:11px;color:var(--ink-3);margin-top:1px;}
+
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;margin-top:16px;align-items:center;}
+.btn{
+  border:1px solid var(--blue);background:#fff;color:var(--blue);border-radius:9px;
+  padding:8px 16px;font-size:13.5px;cursor:pointer;font-family:inherit;transition:.16s;
+}
+.btn:hover{background:var(--blue-l);}
+.btn.primary{background:var(--blue);color:#fff;border-color:var(--blue);box-shadow:0 1px 2px rgba(37,99,235,.25);}
+.btn.primary:hover{background:var(--blue-d);}
+.btn.ghost{border-color:var(--line);color:var(--ink-2);}
+.btn.ghost:hover{background:#F3F4F6;}
+.btn.on{background:var(--green);border-color:var(--green);color:#fff;}
+.btn.on:hover{background:#0EA371;}
+.btn:disabled{opacity:.45;cursor:not-allowed;}
+
+/* 分段选择（介质） */
+.seg{display:inline-flex;border:1px solid var(--line);border-radius:9px;overflow:hidden;}
+.seg button{
+  border:none;background:#fff;padding:7px 13px;font-size:13px;cursor:pointer;
+  font-family:inherit;color:var(--ink-2);border-right:1px solid var(--line);transition:.16s;
+}
+.seg button:last-child{border-right:none;}
+.seg button.active{background:var(--blue);color:#fff;font-weight:600;}
+.seg button:hover:not(.active){background:var(--blue-l);}
+
+/* 三个放大法的切换标签 */
+.seg.tabs{display:flex;width:100%;margin:0 0 14px;}
+.seg.tabs button{flex:1;padding:9px 8px;font-size:13.5px;text-align:center;white-space:nowrap;}
+@media(max-width:640px){.seg.tabs button{font-size:12.5px;padding:8px 4px;}}
+
+/* ---------- readout ---------- */
+.ro-wrap{border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-top:14px;}
+.ro{display:flex;justify-content:space-between;gap:10px;padding:8px 14px;font-size:13.5px;border-bottom:1px solid var(--line);}
+.ro:last-child{border-bottom:none;}
+.ro span{color:var(--ink-3);}
+.ro b{font-variant-numeric:tabular-nums;color:var(--ink);font-weight:600;}
+.ro b.ok{color:var(--green);}
+.ro b.warn{color:var(--amber);}
+.ro b.bad{color:var(--red);}
+
+/* 响度条 */
+.meter{margin-top:12px;}
+.meter-bar{height:12px;border-radius:6px;background:#EEF2F7;overflow:hidden;border:1px solid var(--line);}
+.meter-fill{height:100%;background:linear-gradient(90deg,#EF4444,#F59E0B,#10B981);width:100%;transition:width .12s linear;}
+.meter-tag{display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink-3);margin-top:3px;}
+
+/* ---------- 结论 ---------- */
+.conclusion{
+  margin-top:14px;padding:12px 14px;background:var(--blue-l);border-left:4px solid var(--blue);
+  border-radius:8px;font-size:13.5px;color:var(--ink-2);
+}
+.conclusion b{color:var(--blue-d);}
+.conclusion.warn{background:var(--amber-l);border-left-color:var(--amber);}
+.conclusion.warn b{color:#B45309;}
+.conclusion.bad{background:var(--red-l);border-left-color:var(--red);}
+.conclusion.bad b{color:#B91C1C;}
+/* ---------- footer ---------- */
+.site-footer{text-align:center;padding:8px 0 34px;color:var(--ink-3);font-size:12.5px;}
+
+@media(max-width:640px){
+  .card{padding:18px;}
+  .wrap{padding:18px 14px 30px;}
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-text">
+      <h1>声音的产生与传播</h1>
+      <p>振动 → 声波 → 要有介质：把「振动看不见」和「真空不传声」都做给你看、给你听</p>
+    </div>
+    <div class="header-nav">
+      <a class="header-link" href="#">« 返回实验目录</a>
+      <span class="header-badge">八年级物理 · 声现象 · §2.1</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- ==================== ① 声音的产生 ==================== -->
+  <section class="card">
+    <h2><span class="step">1</span>声音是怎样产生的？——把看不见的振动「放大」</h2>
+
+    <div class="seg tabs" id="segProbe">
+      <button data-probe="ball" class="active">音叉弹乒乓球</button>
+      <button data-probe="laser">激光光杠杆</button>
+      <button data-probe="paper">撒纸屑看振膜</button>
+    </div>
+
+    <div class="fig" id="figProbe"></div>
+
+    <div class="controls">
+      <div class="ctrl">
+        <label>振动快慢（音调）：<b id="vF1">440</b> Hz</label>
+        <input type="range" id="rngF1" min="128" max="880" step="1" value="440">
+        <div class="tick"><span>低沉 128</span><span>440</span><span>尖细 880</span></div>
+      </div>
+      <div class="ctrl">
+        <label>振动幅度（响度）：<b id="vA1">70</b> %</label>
+        <input type="range" id="rngA1" min="0" max="100" step="1" value="70">
+        <div class="tick"><span>停止 0</span><span>50</span><span>最大 100</span></div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn primary" id="btnSound1">🔊 让它发出声音</button>
+      <button class="btn ghost" id="btnHit">🔨 敲一下（自然衰减）</button>
+      <button class="btn ghost" id="btnStop1">✋ 按住它（停振）</button>
+    </div>
+
+    <div class="ro-wrap">
+      <div class="ro"><span>振动频率 f</span><b id="ro1f">440 Hz</b></div>
+      <div class="ro"><span>振动的真实振幅</span><b id="ro1a">0.29 mm</b></div>
+      <div class="ro"><span id="lb1b">放大后看得见的现象</span><b id="ro1b">乒乓球被弹开 18°</b></div>
+      <div class="ro"><span>放大靠的是什么</span><b id="ro1c">被弹开的乒乓球</b></div>
+    </div>
+
+  </section>
+
+  <!-- ==================== ② 声音的传播 ==================== -->
+  <section class="card">
+    <h2><span class="step">2</span>声音是怎样传出去的？——介质中的疏密波</h2>
+
+    <div class="fig" id="figWave"></div>
+
+    <div class="controls">
+      <div class="ctrl">
+        <label>声源频率 f：<b id="vF2">440</b> Hz（由声源决定，换介质不变）</label>
+        <input type="range" id="rngF2" min="100" max="1000" step="10" value="440">
+        <div class="tick"><span>100</span><span>550</span><span>1000</span></div>
+      </div>
+      <div class="ctrl">
+        <label>振幅：<b id="vA2">80</b> %</label>
+        <input type="range" id="rngA2" min="0" max="100" step="1" value="80">
+        <div class="tick"><span>0</span><span>50</span><span>100</span></div>
+      </div>
+      <div class="ctrl">
+        <label>传声的介质（决定声速 v）</label>
+        <div class="seg" id="segMed">
+          <button data-med="air" class="active">空气 340</button>
+          <button data-med="water">水 1500</button>
+          <button data-med="steel">钢铁 5200</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="ro-wrap">
+      <div class="ro"><span>声速 v</span><b id="ro2v">340 m/s</b></div>
+      <div class="ro"><span>波长 λ = v / f</span><b id="ro2l">0.77 m</b></div>
+      <div class="ro"><span>传 100 m 需要</span><b id="ro2t">0.294 s</b></div>
+      <div class="ro"><span>声速是空气的</span><b id="ro2k">1.0 倍</b></div>
+    </div>
+  </section>
+
+  <!-- ==================== ③ 真空不能传声 ==================== -->
+  <section class="card">
+    <h2><span class="step">3</span>真空能传声吗？——钟罩里的闹钟</h2>
+
+    <div class="fig" id="figBell"></div>
+
+    <div class="controls">
+      <div class="ctrl" style="grid-column:1/-1;">
+        <label>抽气进度：<b id="vP">0</b> %　（罩内残留空气 <b id="vAir">100</b> %）</label>
+        <input type="range" id="rngP" min="0" max="100" step="0.5" value="0">
+        <div class="tick"><span>充满空气</span><span>抽气中…</span><span>抽气机的极限</span></div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn primary" id="btnPump">▶ 自动抽气（边抽边听）</button>
+      <button class="btn ghost" id="btnBack">◀ 放回空气（声音回来）</button>
+      <button class="btn" id="btnSound3">🔔 打开闹铃声</button>
+    </div>
+
+    <div class="meter">
+      <div class="meter-bar"><div class="meter-fill" id="mFill" style="width:100%"></div></div>
+      <div class="meter-tag"><span>听不见</span><span>很轻</span><span>清晰</span></div>
+    </div>
+
+    <div class="ro-wrap">
+      <div class="ro"><span>罩内残留空气</span><b id="ro3a">100 %</b></div>
+      <div class="ro"><span>罩内气压（约）</span><b id="ro3p">101 kPa</b></div>
+      <div class="ro"><span>罩内分子数（示意）</span><b id="ro3n">165 个</b></div>
+      <div class="ro"><span>传到耳朵的响度</span><b id="ro3d">60 dB</b></div>
+    </div>
+
+    <div class="conclusion" id="c3">空气充足，铃声清晰可闻</div>
+  </section>
+
+</div>
+
+<footer class="site-footer">
+  纯静态页面 · 手写 SVG 绘制 · 声音由浏览器实时合成，可直接双击打开
+</footer>
+
+<script>
+/* ---------- audio.js ---------- */
+/* ============================================================
+   audio.js —— 发声引擎（Web Audio 实时合成，不依赖音频文件）
+   fork  = 音叉：接近纯音
+   clock = 闹铃：基频 + 非整数倍泛音，听起来「金属、带铃感」
+   ============================================================ */
+
+const Sound = (() => {
+  const TIMBRE = {
+    fork:  [{ m: 1, g: 1.00 }, { m: 2.76, g: 0.00 }, { m: 5.40, g: 0.00 }],
+    clock: [{ m: 1, g: 1.00 }, { m: 2.02, g: 0.42 }, { m: 3.01, g: 0.22 }]
+  };
+
+  let ctx = null, master = null, parts = [], ready = false;
+  let freq = 440, timbre = "fork";
+
+  function ensure() {
+    if (!ready) {
+      const AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      ctx = new AC();
+      master = ctx.createGain();
+      master.gain.value = 0;
+      master.connect(ctx.destination);
+      parts = TIMBRE.fork.map(p => {
+        const osc = ctx.createOscillator();
+        osc.type = "sine";
+        osc.frequency.value = 440 * p.m;
+        const g = ctx.createGain();
+        g.gain.value = p.g;
+        osc.connect(g); g.connect(master);
+        osc.start();
+        return { osc, gain: g };
+      });
+      ready = true;
+    }
+    if (ctx.state === "suspended") ctx.resume();
+    return ctx;
+  }
+
+  return {
+    setVolume(v) {
+      if (!ensure()) return;
+      master.gain.setTargetAtTime(Math.max(0, Math.min(1, v)), ctx.currentTime, 0.02);
+    },
+    setFreq(f) {
+      freq = f;
+      if (!ready) return;
+      const t = ctx.currentTime;
+      parts.forEach((p, i) => p.osc.frequency.setTargetAtTime(f * TIMBRE[timbre][i].m, t, 0.015));
+    },
+    setTimbre(name) {
+      timbre = TIMBRE[name] ? name : "fork";
+      if (!ready) return;
+      const t = ctx.currentTime;
+      parts.forEach((p, i) => {
+        p.gain.gain.setTargetAtTime(TIMBRE[timbre][i].g, t, 0.04);
+        p.osc.frequency.setTargetAtTime(freq * TIMBRE[timbre][i].m, t, 0.015);
+      });
+    },
+    stop() {
+      if (!ready) return;
+      master.gain.cancelScheduledValues(ctx.currentTime);
+      master.gain.setTargetAtTime(0, ctx.currentTime, 0.03);
+    },
+    isReady() { return ready && ctx && ctx.state === "running"; }
+  };
+})();
+</script>
+<script>
+/* ---------- figures.js ---------- */
+/* ============================================================
+   figures.js —— 全部图形用手写 SVG 字符串生成，不引入任何图形库
+   五张图：
+     1) ballSVG   音叉 + 乒乓球（转换放大）
+     2) laserSVG  激光光杠杆（把叉股的转角放大成光点的位移）
+     3) paperSVG  扬声器振膜 + 纸屑（撒屑显形）
+     4) waveSVG   介质中的疏密波
+     5) bellSVG   钟罩 + 闹钟 + 抽气机（含罩内分子疏密）
+   ============================================================ */
+
+const FF = "&quot;Microsoft YaHei&quot;,sans-serif";
+const TAU = Math.PI * 2;
+const rad = d => d * Math.PI / 180;
+const clamp01 = v => Math.min(1, Math.max(0, v));
+
+/* 圆弧路径（角度制，屏幕坐标） */
+function arcPath(cx, cy, r, a1, a2) {
+  const x1 = cx + r * Math.cos(rad(a1)), y1 = cy + r * Math.sin(rad(a1));
+  const x2 = cx + r * Math.cos(rad(a2)), y2 = cy + r * Math.sin(rad(a2));
+  const large = Math.abs(a2 - a1) > 180 ? 1 : 0;
+  const sweep = a2 > a1 ? 1 : 0;
+  return `M${x1.toFixed(1)},${y1.toFixed(1)} A${r.toFixed(1)},${r.toFixed(1)} 0 ${large} ${sweep} ${x2.toFixed(1)},${y2.toFixed(1)}`;
+}
+
+function txt(x, y, s, o = {}) {
+  return `<text x="${x}" y="${y}" font-size="${o.size ?? 13}" fill="${o.fill ?? "#1F2937"}"
+    font-weight="${o.w ?? 400}" text-anchor="${o.a ?? "start"}" font-family="${FF}"
+    ${o.op !== undefined ? `opacity="${o.op}"` : ""}>${s}</text>`;
+}
+
+function svgWrap(W, H, body) {
+  return `<svg viewBox="0 0 ${W} ${H}" width="${W}" height="${H}" xmlns="http://www.w3.org/2000/svg">${body}</svg>`;
+}
+
+/* 桌面（虚线地面） */
+function tableLine(y, x1, x2) {
+  let g = `<line x1="${x1}" y1="${y}" x2="${x2}" y2="${y}" stroke="#CBD5E1" stroke-width="3" stroke-linecap="round"/>`;
+  for (let x = x1 + 8; x < x2; x += 22) {
+    g += `<line x1="${x}" y1="${y}" x2="${x - 10}" y2="${y + 14}" stroke="#E2E8F0" stroke-width="2"/>`;
+  }
+  return g;
+}
+
+/* ============================================================
+   ①-A  音叉 + 乒乓球
+   ============================================================ */
+function ballSVG(s) {
+  const W = 700, H = 330;
+  const fv = s.f / 400;                        // 画面慢放 400 倍
+  const ph = TAU * fv * s.t;
+  const amp = s.amp;
+  const d = 13 * amp * Math.sin(ph);           // 叉股偏移（px）
+  const A = 12 * amp;                          // 虚影用振幅
+  const g = [];
+
+  g.push(tableLine(300, 30, 670));
+
+  /* 声波（从叉股向四周扩散） */
+  if (amp > 0.02) {
+    for (let i = 0; i < 4; i++) {
+      const r = 72 + ((s.t * 42 + i * 36) % 128);
+      const fade = (1 - r / 200) * (0.8 - i * 0.14) * (0.3 + 0.7 * amp);
+      if (fade <= 0.03) continue;
+      g.push(`<path d="${arcPath(238, 168, r, 150, 232)}" fill="none" stroke="#2563EB"
+        stroke-width="${(2.4 * (0.4 + 0.6 * amp)).toFixed(1)}" opacity="${fade.toFixed(2)}"/>`);
+    }
+  }
+
+  /* 音叉 */
+  const sw = 9;
+  g.push(`<path d="M206,236 C${206 - d},186 ${206 - d},120 206,96" fill="none" stroke="#334155" stroke-width="${sw}" stroke-linecap="round"/>`);
+  g.push(`<path d="M276,236 C${276 + d},186 ${276 + d},120 276,96" fill="none" stroke="#334155" stroke-width="${sw}" stroke-linecap="round"/>`);
+  g.push(`<path d="M206,236 Q241,290 276,236" fill="none" stroke="#334155" stroke-width="${sw}" stroke-linecap="round"/>`);
+  g.push(`<line x1="241" y1="263" x2="241" y2="293" stroke="#334155" stroke-width="${sw}" stroke-linecap="round"/>`);
+  g.push(`<rect x="211" y="290" width="60" height="9" rx="3" fill="#475569"/>`);
+
+  /* 振幅虚线（两端极限位置） */
+  if (amp > 0.05) {
+    g.push(`<path d="M${206 - A},236 C${206 - A - 3},186 ${206 - A - 3},120 ${206 - A},96" fill="none" stroke="#94A3B8" stroke-width="1" stroke-dasharray="4 5" opacity=".5"/>`);
+    g.push(`<path d="M${206 + A},236 C${206 + A - 3},186 ${206 + A - 3},120 ${206 + A},96" fill="none" stroke="#94A3B8" stroke-width="1" stroke-dasharray="4 5" opacity=".5"/>`);
+    g.push(`<path d="M${276 - A},236 C${276 - A + 3},186 ${276 - A + 3},120 ${276 - A},96" fill="none" stroke="#94A3B8" stroke-width="1" stroke-dasharray="4 5" opacity=".5"/>`);
+    g.push(`<path d="M${276 + A},236 C${276 + A + 3},186 ${276 + A + 3},120 ${276 + A},96" fill="none" stroke="#94A3B8" stroke-width="1" stroke-dasharray="4 5" opacity=".5"/>`);
+    g.push(`<line x1="${206 - A}" y1="82" x2="${206 + A}" y2="82" stroke="#F59E0B" stroke-width="1.6"/>`);
+    g.push(`<line x1="${206 - A}" y1="77" x2="${206 - A}" y2="87" stroke="#F59E0B" stroke-width="1.6"/>`);
+    g.push(`<line x1="${206 + A}" y1="77" x2="${206 + A}" y2="87" stroke="#F59E0B" stroke-width="1.6"/>`);
+    g.push(txt(206, 66, "叉股摆幅（毫米级）", { size: 11.5, fill: "#B45309", a: "middle", w: 600 }));
+  }
+
+  /* 支架 + 悬线 */
+  g.push(`<line x1="430" y1="44" x2="430" y2="300" stroke="#94A3B8" stroke-width="5" stroke-linecap="round"/>`);
+  g.push(`<line x1="430" y1="46" x2="293" y2="46" stroke="#94A3B8" stroke-width="4" stroke-linecap="round"/>`);
+  g.push(`<rect x="414" y="294" width="32" height="8" rx="3" fill="#94A3B8"/>`);
+
+  /* 乒乓球：叉股向外推得最远的那一瞬被弹开 */
+  const tau = ((s.t * fv + 0.75) % 1 + 1) % 1;
+  const thMax = rad(26 * amp);
+  const th = tau < 0.36 ? thMax * Math.sin(Math.PI * tau / 0.36) : 0;
+  const L = 112, px = 293 + L * Math.sin(th), py = 46 + L * Math.cos(th);
+  g.push(`<line x1="293" y1="46" x2="${px.toFixed(1)}" y2="${py.toFixed(1)}" stroke="#64748B" stroke-width="1.4"/>`);
+  g.push(`<circle cx="${px.toFixed(1)}" cy="${py.toFixed(1)}" r="13" fill="#FDE68A" stroke="#F59E0B" stroke-width="2"/>`);
+  g.push(`<path d="M${(px - 8).toFixed(1)},${(py - 5).toFixed(1)} A10,10 0 0 1 ${(px + 2).toFixed(1)},${(py - 10).toFixed(1)}" fill="none" stroke="#F59E0B" stroke-width="1.4" opacity=".8"/>`);
+  if (th > 0.02) {
+    g.push(`<line x1="${(px + 16).toFixed(1)}" y1="${(py - 9).toFixed(1)}" x2="${(px + 31).toFixed(1)}" y2="${(py - 15).toFixed(1)}" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" opacity=".85"/>`);
+    g.push(`<line x1="${(px + 16).toFixed(1)}" y1="${(py + 2).toFixed(1)}" x2="${(px + 29).toFixed(1)}" y2="${(py + 4).toFixed(1)}" stroke="#F59E0B" stroke-width="2" stroke-linecap="round" opacity=".6"/>`);
+  }
+
+  /* 标注 */
+  g.push(txt(470, 118, "乒乓球被一次次弹开", { size: 13, fill: "#B45309", w: 700 }));
+  g.push(txt(470, 138, "→ 叉股在振动（只是看不见）", { size: 12.5, fill: "#6B7280" }));
+
+  if (amp < 0.02) {
+    g.push(txt(350, 322, "振幅 = 0：叉股不动，乒乓球不动，也没有声音", { size: 12.5, fill: "#B91C1C", a: "middle", w: 600 }));
+  } else {
+    g.push(txt(350, 322, `画面慢放约 400 倍（真实音叉每秒振动 ${s.f} 次，肉眼根本看不清）`, { size: 11.5, fill: "#9CA3AF", a: "middle" }));
+  }
+  return svgWrap(W, H, g.join(""));
+}
+
+/* ============================================================
+   ①-B  激光光杠杆
+   ============================================================ */
+function laserSVG(s) {
+  const W = 700, H = 320;
+  const fv = s.f / 400, ph = TAU * fv * s.t;
+  const amp = s.amp;
+  const th = rad(15 * amp) * Math.sin(ph);      // 小镜转过的角度（示意，已放大）
+  const M = { x: 300, y: 176 };                 // 小镜中心
+  const SRC = { x: 74, y: 176 };                // 激光笔出口
+  const CEIL = 44, SCREEN_Y = CEIL + 12;        // 刻度屏下沿
+
+  /* θ = 0 时反射光竖直向上 */
+  const n0 = { x: -0.7071, y: -0.7071 };
+  const c0 = Math.cos(-th), s0 = Math.sin(-th);
+  const n = { x: n0.x * c0 - n0.y * s0, y: n0.x * s0 + n0.y * c0 };
+  const dir = { x: 1 - 2 * n.x * n.x, y: -2 * n.x * n.y };
+  const tpar = (SCREEN_Y - M.y) / dir.y;
+  const spotX = M.x + tpar * dir.x;
+
+  /* 给定小镜转角 tt，光点在屏上的横坐标（用于残影与摆动范围） */
+  const spotAt = tt => {
+    const c = Math.cos(-tt), t2 = Math.sin(-tt);
+    const nn = { x: n0.x * c - n0.y * t2, y: n0.x * t2 + n0.y * c };
+    return M.x + (SCREEN_Y - M.y) * (1 - 2 * nn.x * nn.x) / (-2 * nn.x * nn.y);
+  };
+  const g = [];
+
+  /* —— 刻度屏 —— */
+  g.push(`<rect x="104" y="${CEIL - 12}" width="500" height="24" rx="4" fill="#F1F5F9" stroke="#CBD5E1" stroke-width="1"/>`);
+  for (let x = 114; x <= 594; x += 10) {
+    const big = (x - M.x) % 50 === 0;
+    g.push(`<line x1="${x}" y1="${CEIL + 12}" x2="${x}" y2="${CEIL + 12 - (big ? 11 : 5)}" stroke="#94A3B8" stroke-width="1"/>`);
+  }
+  g.push(txt(104, 22, "刻度屏（离小镜 3 m）", { size: 11.5, fill: "#6B7280" }));
+
+  /* 零位参考线 */
+  g.push(`<line x1="${M.x}" y1="${CEIL + 14}" x2="${M.x}" y2="${M.y - 22}" stroke="#CBD5E1" stroke-width="1" stroke-dasharray="4 5"/>`);
+
+  /* 光点摆动的范围 */
+  const half = Math.abs(spotAt(rad(15 * amp)) - M.x);
+  if (half > 4) {
+    const x1 = M.x - half, x2 = M.x + half;
+    g.push(`<line x1="${x1.toFixed(1)}" y1="${CEIL + 34}" x2="${x2.toFixed(1)}" y2="${CEIL + 34}" stroke="#F87171" stroke-width="1.3"/>`);
+    g.push(`<line x1="${x1.toFixed(1)}" y1="${CEIL + 29}" x2="${x1.toFixed(1)}" y2="${CEIL + 39}" stroke="#F87171" stroke-width="1.3"/>`);
+    g.push(`<line x1="${x2.toFixed(1)}" y1="${CEIL + 29}" x2="${x2.toFixed(1)}" y2="${CEIL + 39}" stroke="#F87171" stroke-width="1.3"/>`);
+    g.push(txt(x2 + 9, CEIL + 38, "光点扫过的范围", { size: 11.5, fill: "#B91C1C", w: 600 }));
+  }
+
+  /* —— 反射光与光点 —— */
+  g.push(`<line x1="${M.x}" y1="${M.y}" x2="${spotX.toFixed(1)}" y2="${SCREEN_Y}" stroke="#EF4444" stroke-width="7" opacity=".12" stroke-linecap="round"/>`);
+  g.push(`<line x1="${M.x}" y1="${M.y}" x2="${spotX.toFixed(1)}" y2="${SCREEN_Y}" stroke="#EF4444" stroke-width="2" opacity=".95"/>`);
+  if (amp > 0.04) {
+    for (let k = 1; k <= 5; k++) {
+      const sx = spotAt(rad(15 * amp) * Math.sin(ph - k * 0.13));
+      g.push(`<circle cx="${sx.toFixed(1)}" cy="${SCREEN_Y}" r="3.2" fill="#EF4444" opacity="${(0.3 / k).toFixed(2)}"/>`);
+    }
+  }
+  g.push(`<circle cx="${spotX.toFixed(1)}" cy="${SCREEN_Y}" r="10" fill="#EF4444" opacity=".16"/>`);
+  g.push(`<circle cx="${spotX.toFixed(1)}" cy="${SCREEN_Y}" r="4.2" fill="#EF4444"/>`);
+
+  /* —— 入射光与激光笔 —— */
+  g.push(`<line x1="${SRC.x}" y1="${SRC.y}" x2="${M.x - 4}" y2="${SRC.y}" stroke="#EF4444" stroke-width="7" opacity=".12" stroke-linecap="round"/>`);
+  g.push(`<line x1="${SRC.x}" y1="${SRC.y}" x2="${M.x - 4}" y2="${SRC.y}" stroke="#EF4444" stroke-width="2"/>`);
+  g.push(`<rect x="${SRC.x - 46}" y="${SRC.y - 9}" width="50" height="18" rx="4" fill="#334155"/>`);
+  g.push(`<rect x="${SRC.x + 2}" y="${SRC.y - 5}" width="8" height="10" rx="2" fill="#0F172A"/>`);
+  g.push(txt(SRC.x - 46, SRC.y + 30, "激光笔", { size: 12, fill: "#475569", w: 600 }));
+
+  /* —— 音叉（小镜固定在叉股顶端） —— */
+  const dd = 2.4 * amp * Math.sin(ph);
+  g.push(tableLine(284, 196, 512));
+  g.push(`<path d="M266,232 C${266 - dd},210 ${266 - dd},196 266,190" fill="none" stroke="#334155" stroke-width="8" stroke-linecap="round"/>`);
+  g.push(`<path d="M300,232 C${300 + dd},210 ${300 + dd},196 300,190" fill="none" stroke="#334155" stroke-width="8" stroke-linecap="round"/>`);
+  g.push(`<path d="M266,232 Q283,262 300,232" fill="none" stroke="#334155" stroke-width="8" stroke-linecap="round"/>`);
+  g.push(`<line x1="283" y1="250" x2="283" y2="278" stroke="#334155" stroke-width="8" stroke-linecap="round"/>`);
+  g.push(`<rect x="257" y="276" width="52" height="8" rx="3" fill="#475569"/>`);
+  g.push(txt(186, 262, "音叉", { size: 12.5, fill: "#475569", w: 600 }));
+
+  /* 小镜：先画连接杆，再画镜面 */
+  g.push(`<line x1="300" y1="191" x2="300" y2="178" stroke="#64748B" stroke-width="3.4" stroke-linecap="round"/>`);
+  const mx = -n.y, my = n.x, hw = 19;
+  g.push(`<line x1="${(M.x - mx * hw).toFixed(1)}" y1="${(M.y - my * hw).toFixed(1)}"
+            x2="${(M.x + mx * hw).toFixed(1)}" y2="${(M.y + my * hw).toFixed(1)}"
+            stroke="#0EA5E9" stroke-width="6" stroke-linecap="round"/>`);
+  g.push(`<line x1="${(M.x - mx * hw).toFixed(1)}" y1="${(M.y - my * hw).toFixed(1)}"
+            x2="${(M.x + mx * hw).toFixed(1)}" y2="${(M.y + my * hw).toFixed(1)}"
+            stroke="#E0F2FE" stroke-width="1.8" stroke-linecap="round"/>`);
+  g.push(txt(330, 208, "小反射镜（粘在叉股顶端）", { size: 11.5, fill: "#0369A1", w: 600 }));
+
+  if (amp < 0.02) {
+    g.push(txt(350, 312, "振幅 = 0：镜面不动，光点钉在零位不动", { size: 12.5, fill: "#B91C1C", a: "middle", w: 600 }));
+  }
+
+  return svgWrap(W, H, g.join(""));
+}
+
+/* ============================================================
+   ①-C  扬声器振膜 + 纸屑
+   ============================================================ */
+const SCRAP = (() => {
+  let seed = 7717;
+  const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+  const arr = [];
+  for (let i = 0; i < 12; i++) {
+    arr.push({
+      x: 246 + rnd() * 208,
+      ph: rnd() * TAU,
+      sz: 8 + rnd() * 5,
+      rot: -50 + rnd() * 100,
+      c: ["#F59E0B", "#FBBF24", "#FDE68A", "#D97706"][i % 4]
+    });
+  }
+  return arr;
+})();
+
+function paperSVG(s) {
+  const W = 700, H = 310;
+  const fv = s.f / 400, ph = TAU * fv * s.t;
+  const amp = s.amp;
+  const MY = 186;                                  // 盆口（振膜）静止高度
+  const g = [];
+
+  g.push(tableLine(268, 178, 542));
+
+  /* 扬声器箱体 */
+  g.push(`<path d="M204,${MY + 10} L204,256 Q204,264 212,264 L488,264 Q496,264 496,256 L496,${MY + 10} Z" fill="#334155"/>`);
+  g.push(txt(350, 232, "扬声器", { size: 12, fill: "#CBD5E1", a: "middle", w: 600 }));
+
+  /* 振膜 = 盆口那个椭圆，随振动整体上下 */
+  const dy = 8 * amp * Math.sin(ph);
+  const my = MY + dy;
+  if (amp > 0.05) {
+    g.push(`<ellipse cx="350" cy="${(MY - 8 * amp).toFixed(1)}" rx="140" ry="22" fill="none" stroke="#94A3B8" stroke-width="1" stroke-dasharray="4 4" opacity=".55"/>`);
+    g.push(`<ellipse cx="350" cy="${(MY + 8 * amp).toFixed(1)}" rx="140" ry="22" fill="none" stroke="#94A3B8" stroke-width="1" stroke-dasharray="4 4" opacity=".55"/>`);
+  }
+  g.push(`<ellipse cx="350" cy="${my.toFixed(1)}" rx="150" ry="27" fill="#1F2937" stroke="#475569" stroke-width="2"/>`);
+  g.push(`<ellipse cx="350" cy="${my.toFixed(1)}" rx="141" ry="22" fill="#38BDF8" fill-opacity=".22" stroke="#0EA5E9" stroke-width="2.6"/>`);
+  g.push(`<ellipse cx="350" cy="${(my + 4).toFixed(1)}" rx="92" ry="13" fill="#0EA5E9" fill-opacity=".12"/>`);
+
+  /* 纸屑 */
+  SCRAP.forEach(p => {
+    const hop = amp * 56 * Math.max(0, Math.sin(ph + p.ph));
+    const y = my - 12 - hop;
+    g.push(`<g transform="translate(${p.x.toFixed(1)},${y.toFixed(1)}) rotate(${p.rot.toFixed(1)})">
+      <rect x="${(-p.sz / 2).toFixed(1)}" y="${(-p.sz / 3).toFixed(1)}" width="${p.sz.toFixed(1)}" height="${(p.sz * 0.62).toFixed(1)}"
+        rx="1" fill="${p.c}" stroke="#B45309" stroke-width=".6" opacity=".95"/></g>`);
+    if (hop > 10) {
+      g.push(`<line x1="${p.x.toFixed(1)}" y1="${(y + 9).toFixed(1)}" x2="${p.x.toFixed(1)}" y2="${(y + 16).toFixed(1)}"
+        stroke="${p.c}" stroke-width="1.4" opacity=".5"/>`);
+    }
+  });
+
+  /* 标注 */
+  g.push(txt(26, 104, "纸屑被弹起来", { size: 13, fill: "#B45309", w: 700 }));
+  g.push(txt(26, 124, "→ 振膜在振动", { size: 12.5, fill: "#6B7280" }));
+  g.push(`<line x1="122" y1="120" x2="240" y2="146" stroke="#CBD5E1" stroke-width="1" stroke-dasharray="3 3"/>`);
+  g.push(txt(520, 210, "振膜（纸盆）", { size: 12, fill: "#0369A1", w: 600 }));
+  g.push(`<line x1="516" y1="206" x2="474" y2="198" stroke="#CBD5E1" stroke-width="1" stroke-dasharray="3 3"/>`);
+
+  if (amp < 0.02) {
+    g.push(txt(350, 300, "振幅 = 0：振膜不动，纸屑安静地躺着", { size: 12.5, fill: "#B91C1C", a: "middle", w: 600 }));
+  }
+
+  return svgWrap(W, H, g.join(""));
+}
+/* ============================================================
+   ②  介质中的疏密波
+   ============================================================ */
+const MEDIA = {
+  air:   { name: "空气（15 ℃）", v: 340,  color: "#2563EB", unit: "气体" },
+  water: { name: "水（常温）",    v: 1500, color: "#0EA5A4", unit: "液体" },
+  steel: { name: "钢铁",          v: 5200, color: "#7C3AED", unit: "固体" }
+};
+
+function waveSVG(s) {
+  const W = 700, H = 260;
+  const med = MEDIA[s.med];
+  const g = [];
+
+  const lamM = med.v / s.f;                       // 真实波长（m）
+  const lamPx = 80 * Math.sqrt(lamM / 0.7727);    // 图上波长（px，做过压缩）
+  const fv = 1.15 * s.f / 440;
+  const k = TAU / lamPx, w = TAU * fv;
+  const A = 10 * s.amp;
+  const vp = lamPx * fv;
+
+  /* 介质区域 */
+  g.push(`<rect x="18" y="52" width="664" height="60" rx="8" fill="#F8FAFC" stroke="#E5E7EB" stroke-width="1"/>`);
+  g.push(txt(26, 40, `介质：${med.name}`, { size: 12, fill: "#4B5563", w: 600 }));
+  g.push(txt(674, 40, `${med.unit}　v = ${med.v} m/s`, { size: 12, fill: med.color, a: "end", w: 600 }));
+
+  /* 分子：原地来回振动 → 疏密相间 */
+  const N = 108, x0 = 26, gap = 6.2;
+  let dots = "";
+  for (let i = 0; i < N; i++) {
+    const bx = x0 + i * gap;
+    const x = bx + A * Math.sin(k * bx - w * s.t);
+    const dens = -Math.cos(k * bx - w * s.t);        // +1 密、-1 疏
+    const op = (0.4 + 0.5 * (0.5 + 0.5 * dens)).toFixed(2);
+    dots += `<circle cx="${x.toFixed(1)}" cy="86" r="2.9" fill="${med.color}" opacity="${op}"/>`;
+  }
+  g.push(dots);
+
+  /* 重点标注一个分子：只在原地附近来回动 */
+  const hlX = 200 + 9 * Math.sin(k * 200 - w * s.t);
+  g.push(`<circle cx="${hlX.toFixed(1)}" cy="86" r="5.6" fill="none" stroke="#F59E0B" stroke-width="1.8"/>`);
+  g.push(`<line x1="${(200 - 9).toFixed(1)}" y1="104" x2="${(200 + 9).toFixed(1)}" y2="104" stroke="#F59E0B" stroke-width="1.4"/>`);
+  g.push(`<line x1="${(200 - 9).toFixed(1)}" y1="101" x2="${(200 - 9).toFixed(1)}" y2="107" stroke="#F59E0B" stroke-width="1.4"/>`);
+  g.push(`<line x1="${(200 + 9).toFixed(1)}" y1="101" x2="${(200 + 9).toFixed(1)}" y2="107" stroke="#F59E0B" stroke-width="1.4"/>`);
+  g.push(txt(200, 126, "这一个分子只在原地附近来回，不跟着波跑", { size: 11, fill: "#B45309", a: "middle", w: 600 }));
+
+  /* 密部 / 疏部标记：随波一起移动，只保留画面中段的一对 */
+  const xs = ((vp * s.t) % lamPx + lamPx) % lamPx;
+  for (const [off, label, color] of [[0, "疏", "#10B981"], [lamPx / 2, "密", "#EF4444"]]) {
+    const ph0 = ((xs + off) % lamPx + lamPx) % lamPx;
+    let X = 300 + (((ph0 - 300) % lamPx) + lamPx) % lamPx;
+    if (X > 600) X -= lamPx;
+    if (X < 60 || X > 620) continue;
+    g.push(`<rect x="${(X - 10).toFixed(1)}" y="54" width="20" height="56" fill="${color}" opacity=".09"/>`);
+    g.push(`<line x1="${X.toFixed(1)}" y1="56" x2="${X.toFixed(1)}" y2="110" stroke="${color}" stroke-width="1" stroke-dasharray="3 4" opacity=".5"/>`);
+    g.push(txt(X, 68, label, { size: 11.5, fill: color, a: "middle", w: 700 }));
+  }
+
+  /* 位移—位置曲线 */
+  let path = "";
+  for (let i = 0; i <= 170; i++) {
+    const bx = 26 + i * (628 / 170);
+    const y = 176 - 30 * s.amp * Math.sin(k * bx - w * s.t);
+    path += (i ? "L" : "M") + bx.toFixed(1) + "," + y.toFixed(1) + " ";
+  }
+  g.push(`<line x1="26" y1="176" x2="654" y2="176" stroke="#CBD5E1" stroke-width="1" stroke-dasharray="5 5"/>`);
+  g.push(`<path d="${path}" fill="none" stroke="${med.color}" stroke-width="2.4" stroke-linecap="round"/>`);
+
+
+  /* 波长括注 */
+  const base = ((vp * s.t + lamPx * 0.25) % lamPx + lamPx) % lamPx;
+  const p1 = 26 + base, p2 = p1 + lamPx;
+  if (p2 < 656) {
+    g.push(`<line x1="${p1.toFixed(1)}" y1="216" x2="${p2.toFixed(1)}" y2="216" stroke="#6B7280" stroke-width="1.2"/>`);
+    g.push(`<line x1="${p1.toFixed(1)}" y1="211" x2="${p1.toFixed(1)}" y2="221" stroke="#6B7280" stroke-width="1.2"/>`);
+    g.push(`<line x1="${p2.toFixed(1)}" y1="211" x2="${p2.toFixed(1)}" y2="221" stroke="#6B7280" stroke-width="1.2"/>`);
+    g.push(txt((p1 + p2) / 2, 210, `λ = ${lamM.toFixed(2)} m`, { size: 12, fill: "#4B5563", a: "middle", w: 600 }));
+  }
+
+  /* 传播方向 */
+  g.push(`<line x1="470" y1="242" x2="600" y2="242" stroke="#F59E0B" stroke-width="2"/>`);
+  g.push(`<path d="M600,242 L588,236 L588,248 Z" fill="#F59E0B"/>`);
+  g.push(txt(460, 247, "波传播方向", { size: 11.5, fill: "#B45309", a: "end", w: 600 }));
+
+  return svgWrap(W, H, g.join(""));
+}
+
+/* ============================================================
+   ③  钟罩 + 闹钟 + 抽气机
+   ============================================================ */
+const JAR = { cx: 340, l: 196, r: 484, top: 92, base: 296 };
+const CLOCK = { x: 340, y: 250, rad: 38 };
+
+const MOLS = (() => {
+  let seed = 20240921;
+  const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+  const arr = [];
+  while (arr.length < 165) {
+    const x = JAR.l + 12 + rnd() * (JAR.r - JAR.l - 24);
+    const y = JAR.top + 20 + rnd() * (JAR.base - JAR.top - 34);
+    if (Math.hypot(x - CLOCK.x, y - CLOCK.y) < CLOCK.rad + 22) continue;
+    if (y > JAR.base - 18) continue;
+    arr.push({ x, y });
+  }
+  return arr;
+})();
+
+function bellSVG(s) {
+  const W = 700, H = 340;
+  const a = s.a;
+  const g = [];
+  const silent = a <= 0.00105;                 // 抽气机极限：响度已到听阈以下
+
+  /* —— 罩外声波：浓淡随残留空气 —— */
+  for (let i = 0; i < 4; i++) {
+    const rr = 8 + ((s.t * 26 + i * 16) % 54);
+    const op = (1 - rr / 66) * (0.85 - i * 0.13) * Math.pow(a, 0.7);
+    if (op <= 0.03) continue;
+    g.push(`<path d="${arcPath(JAR.l - 4, 196, rr, 148, 212)}" fill="none" stroke="#2563EB"
+      stroke-width="${(2.6 * (0.4 + 0.6 * a)).toFixed(1)}" opacity="${op.toFixed(2)}"/>`);
+  }
+
+  /* —— 听者（侧脸 + 耳朵） —— */
+  g.push(`<circle cx="100" cy="186" r="27" fill="#FDE68A" stroke="#D97706" stroke-width="2.2"/>`);
+  g.push(`<path d="M125,170 C135,173 135,187 128,191 C124,194 127,199 130,201"
+           fill="none" stroke="#D97706" stroke-width="2.6" stroke-linecap="round"/>`);
+  g.push(txt(100, 232, "耳朵", { size: 12, fill: "#475569", a: "middle", w: 600 }));
+  g.push(txt(100, 250, silent ? "听不见" : a < 0.12 ? "几乎听不到" : a < 0.45 ? "声音很轻" : "听得很清楚",
+    { size: 11.5, fill: silent ? "#B91C1C" : a < 0.45 ? "#B45309" : "#047857", a: "middle", w: 700 }));
+
+  /* —— 底座与气室 —— */
+  g.push(`<rect x="176" y="${JAR.base}" width="328" height="14" rx="3" fill="#E2E8F0" stroke="#94A3B8" stroke-width="1.2"/>`);
+
+  /* —— 罩内分子：从闹钟向外的一圈圈疏密 —— */
+  const n = Math.max(1, Math.round(MOLS.length * a));
+  const k = TAU / 27, amp = 5.4;
+  let dots = "";
+  for (let i = 0; i < n; i++) {
+    const p = MOLS[i];
+    const dx = p.x - CLOCK.x, dy = p.y - CLOCK.y;
+    const rr = Math.hypot(dx, dy) || 1;
+    const dr = amp * Math.sin(k * (rr - 62 * s.t));
+    const x = p.x + dr * dx / rr, y = p.y + dr * dy / rr;
+    dots += `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.5" fill="#3B82F6" opacity=".6"/>`;
+  }
+  g.push(dots);
+
+  /* —— 玻璃钟罩 —— */
+  g.push(`<path d="M${JAR.l},${JAR.base} L${JAR.l},152 Q${JAR.l},${JAR.top} ${JAR.cx},${JAR.top} Q${JAR.r},${JAR.top} ${JAR.r},152 L${JAR.r},${JAR.base}"
+           fill="rgba(37,99,235,.045)" stroke="#64748B" stroke-width="2.4"/>`);
+  g.push(`<path d="M232,262 L252,140" stroke="#FFFFFF" stroke-width="7" opacity=".5" stroke-linecap="round"/>`);
+  g.push(`<path d="M246,262 L264,140" stroke="#FFFFFF" stroke-width="2.5" opacity=".4" stroke-linecap="round"/>`);
+
+  /* —— 闹钟 —— */
+  const shake = Math.sin(s.t * 18);
+  /* 两只铃铛 + 小锤 */
+  g.push(`<circle cx="${CLOCK.x - 22}" cy="${CLOCK.y - 34}" r="12" fill="#FCD34D" stroke="#B45309" stroke-width="2"/>`);
+  g.push(`<circle cx="${CLOCK.x + 22}" cy="${CLOCK.y - 34}" r="12" fill="#FCD34D" stroke="#B45309" stroke-width="2"/>`);
+  g.push(`<line x1="${CLOCK.x}" y1="${CLOCK.y - 20}" x2="${(CLOCK.x + shake * 12).toFixed(1)}" y2="${(CLOCK.y - 44).toFixed(1)}"
+           stroke="#78350F" stroke-width="2.6" stroke-linecap="round"/>`);
+  g.push(`<circle cx="${(CLOCK.x + shake * 12).toFixed(1)}" cy="${(CLOCK.y - 44).toFixed(1)}" r="3.6" fill="#78350F"/>`);
+  /* 钟体 */
+  g.push(`<circle cx="${CLOCK.x}" cy="${CLOCK.y}" r="${CLOCK.rad}" fill="#FEF3C7" stroke="#B45309" stroke-width="2.6"/>`);
+  g.push(`<circle cx="${CLOCK.x}" cy="${CLOCK.y}" r="${CLOCK.rad - 8}" fill="#FFFBEB" stroke="#FCD34D" stroke-width="1.2"/>`);
+  for (let i = 0; i < 12; i++) {
+    const an = rad(i * 30 - 90);
+    const r1 = CLOCK.rad - 10, r2 = CLOCK.rad - (i % 3 === 0 ? 15 : 13);
+    g.push(`<line x1="${(CLOCK.x + r1 * Math.cos(an)).toFixed(1)}" y1="${(CLOCK.y + r1 * Math.sin(an)).toFixed(1)}"
+             x2="${(CLOCK.x + r2 * Math.cos(an)).toFixed(1)}" y2="${(CLOCK.y + r2 * Math.sin(an)).toFixed(1)}"
+             stroke="#92400E" stroke-width="${i % 3 === 0 ? 1.8 : 1}"/>`);
+  }
+  /* 指针（秒针飞快地转，说明它一直在工作） */
+  const sec = rad(s.t * 220 - 90), min = rad(s.t * 6 - 60), hr = rad(40);
+  g.push(`<line x1="${CLOCK.x}" y1="${CLOCK.y}" x2="${(CLOCK.x + 13 * Math.cos(hr)).toFixed(1)}" y2="${(CLOCK.y + 13 * Math.sin(hr)).toFixed(1)}" stroke="#78350F" stroke-width="3.4" stroke-linecap="round"/>`);
+  g.push(`<line x1="${CLOCK.x}" y1="${CLOCK.y}" x2="${(CLOCK.x + 19 * Math.cos(min)).toFixed(1)}" y2="${(CLOCK.y + 19 * Math.sin(min)).toFixed(1)}" stroke="#78350F" stroke-width="2.4" stroke-linecap="round"/>`);
+  g.push(`<line x1="${CLOCK.x}" y1="${CLOCK.y}" x2="${(CLOCK.x + 22 * Math.cos(sec)).toFixed(1)}" y2="${(CLOCK.y + 22 * Math.sin(sec)).toFixed(1)}" stroke="#EF4444" stroke-width="1.4" stroke-linecap="round"/>`);
+  g.push(`<circle cx="${CLOCK.x}" cy="${CLOCK.y}" r="2.6" fill="#78350F"/>`);
+  /* 脚 */
+  g.push(`<line x1="${CLOCK.x - 20}" y1="${CLOCK.y + 34}" x2="${CLOCK.x - 30}" y2="${CLOCK.y + 46}" stroke="#B45309" stroke-width="3.4" stroke-linecap="round"/>`);
+  g.push(`<line x1="${CLOCK.x + 20}" y1="${CLOCK.y + 34}" x2="${CLOCK.x + 30}" y2="${CLOCK.y + 46}" stroke="#B45309" stroke-width="3.4" stroke-linecap="round"/>`);
+
+  g.push(txt(CLOCK.x, JAR.top - 12, "闹钟一直在振动发声", { size: 12.5, fill: "#B45309", a: "middle", w: 700 }));
+
+  /* —— 抽气管 + 抽气机 —— */
+  g.push(`<path d="M${JAR.r},${JAR.base - 6} L530,${JAR.base - 6}" stroke="#94A3B8" stroke-width="7" stroke-linecap="round"/>`);
+  g.push(`<rect x="530" y="240" width="122" height="60" rx="8" fill="#F1F5F9" stroke="#64748B" stroke-width="2"/>`);
+  const piston = s.pumping ? 22 * (0.5 + 0.5 * Math.sin(s.t * 9)) : 0;
+  g.push(`<rect x="${(538 + piston).toFixed(1)}" y="250" width="36" height="40" rx="3" fill="#CBD5E1" stroke="#64748B" stroke-width="1.4"/>`);
+  g.push(`<line x1="${(574 + piston).toFixed(1)}" y1="270" x2="${(622 + piston * 0.6).toFixed(1)}" y2="270" stroke="#64748B" stroke-width="4" stroke-linecap="round"/>`);
+  g.push(txt(591, 232, s.pumping === 1 ? "抽气机 · 抽气中" : s.pumping === -1 ? "放气阀 · 打开" : "抽气机",
+    { size: 12, fill: s.pumping ? "#B45309" : "#4B5563", a: "middle", w: 600 }));
+  g.push(txt(591, 316, `罩内空气 ${a >= 0.9995 ? 100 : a < 0.01 ? (a * 100).toFixed(2) : Math.round(a * 100)} %`,
+    { size: 11.5, fill: "#4B5563", a: "middle" }));
+
+  /* —— 传到 / 传不到 —— */
+  if (silent) {
+    g.push(`<line x1="160" y1="186" x2="184" y2="210" stroke="#EF4444" stroke-width="3.6" stroke-linecap="round"/>`);
+    g.push(`<line x1="184" y1="186" x2="160" y2="210" stroke="#EF4444" stroke-width="3.6" stroke-linecap="round"/>`);
+  } else if (a < 0.45) {
+    g.push(txt(160, 138, "空气稀薄 →", { size: 11.5, fill: "#B45309", a: "middle" }));
+  }
+
+  return svgWrap(W, H, g.join(""));
+}
+</script>
+<script>
+/* ---------- main.js ---------- */
+/* ============================================================
+   main.js —— 状态、交互与动画循环
+   ① 声音的产生（三种放大法）② 声波的传播 ③ 真空不能传声
+   ============================================================ */
+
+const $ = s => document.querySelector(s);
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const fmt = (n, d = 2) => Number(n).toFixed(d);
+
+const S = {
+  t: 0,
+  src: null,                  // 当前占用发声器的模块："m1" / "m3" / null
+  timbreNow: null,
+  m1: { probe: "ball", f: 440, amp: 0.70, hit: 0, sound: false },
+  m2: { f: 440, amp: 0.80, med: "air" },
+  m3: { p: 0, pump: 0, sound: false }
+};
+
+/* 三种放大法各自的说明 */
+const PROBE = {
+  ball: {
+    method: "被弹开的乒乓球"
+  },
+  laser: {
+    method: "光杠杆：2L/d ≈ 300 倍"
+  },
+  paper: {
+    method: "被弹起的碎纸屑"
+  }
+};
+
+/* ---------- 抽气模型 ----------
+   p(0~100) → 罩内残留空气比例 a：1 → 0.001
+   抽气机抽不到绝对真空：极限停在「残留 0.1%」，此时响度正好降到听阈 0 dB。
+   所以全程是连续变小的，最后一格不会「突然消失」。
+   「真空不能传声」是在这个趋势上做科学推理得到的。 */
+const airOf = p => Math.pow(10, -3 * p / 100);
+const SILENT = 0.001;
+const isSilent = a => a <= SILENT * 1.05;
+const dbOf = a => Math.max(0, 60 + 20 * Math.log10(a));
+
+function pctStr(a) {
+  if (a >= 0.9995) return "100 %";
+  if (a < 0.1) return fmt(a * 100, 2) + " %";
+  return Math.round(a * 100) + " %";
+}
+
+/* ---------- 模块①：振动放大 ---------- */
+function effAmp() {
+  const m = S.m1;
+  return clamp(m.amp + (1 - m.amp) * m.hit, 0, 1);
+}
+
+function updateM1() {
+  const m = S.m1, amp = effAmp();
+  const A = 0.04 + 0.36 * amp;                 // 真实单侧振幅（mm）
+
+  $("#vF1").textContent = m.f;
+  $("#vA1").textContent = Math.round(amp * 100);
+  $("#ro1f").textContent = `${m.f} Hz（每秒 ${m.f} 次）`;
+  $("#ro1a").textContent = fmt(A, 2) + " mm";
+
+  if (m.probe === "ball") {
+    $("#lb1b").textContent = "放大后看得见的现象";
+    $("#ro1b").textContent = amp < 0.02 ? "不动，也没有声音" : `乒乓球被弹开 ${Math.round(26 * amp)}°`;
+  } else if (m.probe === "laser") {
+    $("#lb1b").textContent = "光点在屏上扫过";
+    $("#ro1b").textContent = amp < 0.02 ? "光点钉在零位不动" : `${fmt(30 * A, 1)} cm`;
+  } else {
+    $("#lb1b").textContent = "放大后看得见的现象";
+    $("#ro1b").textContent = amp < 0.02 ? "纸屑安静地躺着" : `纸屑被弹起约 ${fmt(amp * 7, 1)} cm`;
+  }
+  $("#ro1c").textContent = PROBE[m.probe].method;
+}
+
+/* ---------- 模块②：声波 ---------- */
+function updateM2() {
+  const m = S.m2, med = MEDIA[m.med];
+  $("#vF2").textContent = m.f;
+  $("#vA2").textContent = Math.round(m.amp * 100);
+  $("#ro2v").textContent = med.v + " m/s";
+  $("#ro2l").textContent = fmt(med.v / m.f, 2) + " m";
+  $("#ro2t").textContent = fmt(100 / med.v, 3) + " s";
+  $("#ro2k").textContent = fmt(med.v / 340, 1) + " 倍";
+}
+
+/* ---------- 模块③：真空钟罩 ---------- */
+const C3_TEXT = [
+  { test: a => isSilent(a), cls: "bad",
+    html: "已到抽气机极限，铃声降到听阈以下、听不见；闹钟仍在振 → <b>真空不能传声</b>（由趋势推理得出）" },
+  { test: a => a < 0.02, cls: "warn", html: "空气极稀薄，铃声几乎听不见，仍在继续变轻" },
+  { test: a => a < 0.30, cls: "warn", html: "空气变稀薄，铃声明显变轻" },
+  { test: () => true, cls: "", html: "空气充足，铃声清晰可闻" }
+];
+
+function updateM3() {
+  const m = S.m3, a = airOf(m.p), L = dbOf(a);
+  $("#vP").textContent = fmt(m.p, 0);
+  $("#vAir").textContent = pctStr(a).replace(" %", "");
+  $("#ro3a").textContent = pctStr(a);
+  $("#ro3p").textContent = (a >= 0.1 ? fmt(101.3 * a, 0) : fmt(101.3 * a, 2)) + " kPa";
+  $("#ro3n").textContent = Math.max(1, Math.round(MOLS.length * a)) + " 个";
+  $("#ro3d").textContent = isSilent(a) ? "0 dB（听阈以下，听不见）" : fmt(L, 1) + " dB";
+  $("#ro3d").className = isSilent(a) ? "bad" : L < 15 ? "bad" : L < 40 ? "warn" : "ok";
+  $("#mFill").style.width = clamp(L / 60 * 100, 0, 100).toFixed(1) + "%";
+  const c = C3_TEXT.find(x => x.test(a));
+  const box = $("#c3");
+  box.className = "conclusion " + c.cls;
+  box.innerHTML = c.html;
+}
+
+/* ---------- 发声器 ---------- */
+let lastF = -1, lastV = -1;
+function syncAudio() {
+  if (!S.src || !Sound.isReady()) return;
+  const want = S.src === "m1" ? "fork" : "clock";
+  if (S.timbreNow !== want) { S.timbreNow = want; Sound.setTimbre(want); lastF = -1; }
+  const f = S.src === "m1" ? S.m1.f : 880;
+  const v = S.src === "m1" ? 0.20 * effAmp() : 0.22 * airOf(S.m3.p);
+  if (f !== lastF) { Sound.setFreq(f); lastF = f; }
+  if (Math.abs(v - lastV) > 0.0015) { Sound.setVolume(v); lastV = v; }
+}
+
+function setSource(name) {
+  S.m1.sound = name === "m1";
+  S.m3.sound = name === "m3";
+  S.src = name;
+  if (!name) { Sound.stop(); S.timbreNow = null; lastV = -1; }
+  else { Sound.setVolume(0); syncAudio(); }      // 借这次点击解锁音频
+  $("#btnSound1").classList.toggle("on", name === "m1");
+  $("#btnSound3").classList.toggle("on", name === "m3");
+}
+
+/* ---------- 抽气 ---------- */
+function setPump(dir) {
+  S.m3.pump = dir;
+  $("#btnPump").textContent = dir === 1 ? "⏸ 暂停抽气" : "▶ 自动抽气（边抽边听）";
+  $("#btnPump").className = "btn " + (dir === 1 ? "on" : "primary");
+  $("#btnBack").textContent = dir === -1 ? "⏸ 暂停放气" : "◀ 放回空气（声音回来）";
+  $("#btnBack").className = "btn " + (dir === -1 ? "on" : "ghost");
+}
+
+/* ---------- 绘制 ---------- */
+function visible(el) {
+  const r = el.getBoundingClientRect();
+  return r.bottom > -80 && r.top < (window.innerHeight || 900) + 80;
+}
+
+function draw() {
+  if (visible($("#figProbe"))) {
+    const amp = effAmp();
+    const arg = { t: S.t, f: S.m1.f, amp };
+    $("#figProbe").innerHTML = S.m1.probe === "ball" ? ballSVG(arg)
+      : S.m1.probe === "laser" ? laserSVG(arg) : paperSVG(arg);
+  }
+  if (visible($("#figWave"))) {
+    $("#figWave").innerHTML = waveSVG({ t: S.t, f: S.m2.f, amp: S.m2.amp, med: S.m2.med });
+  }
+  if (visible($("#figBell"))) {
+    $("#figBell").innerHTML = bellSVG({ t: S.t, a: airOf(S.m3.p), pumping: S.m3.pump });
+  }
+}
+
+/* ---------- 事件 ---------- */
+function setProbe(name) {
+  S.m1.probe = name;
+  Array.from($("#segProbe").children).forEach(b => b.classList.toggle("active", b.dataset.probe === name));
+  updateM1();
+  draw();
+}
+
+function bind() {
+  $("#segProbe").addEventListener("click", e => {
+    const b = e.target.closest("button[data-probe]");
+    if (b) setProbe(b.dataset.probe);
+  });
+
+  $("#rngF1").addEventListener("input", e => { S.m1.f = +e.target.value; updateM1(); });
+  $("#rngA1").addEventListener("input", e => {
+    S.m1.amp = +e.target.value / 100; S.m1.hit = 0; updateM1();
+  });
+  $("#btnSound1").addEventListener("click", () => setSource(S.src === "m1" ? null : "m1"));
+  $("#btnHit").addEventListener("click", () => { S.m1.hit = 1; updateM1(); });
+  $("#btnStop1").addEventListener("click", () => {
+    S.m1.amp = 0; S.m1.hit = 0; $("#rngA1").value = 0; updateM1();
+  });
+
+  $("#rngF2").addEventListener("input", e => { S.m2.f = +e.target.value; updateM2(); });
+  $("#rngA2").addEventListener("input", e => { S.m2.amp = +e.target.value / 100; updateM2(); });
+  $("#segMed").addEventListener("click", e => {
+    const b = e.target.closest("button[data-med]");
+    if (!b) return;
+    S.m2.med = b.dataset.med;
+    Array.from($("#segMed").children).forEach(x => x.classList.toggle("active", x === b));
+    updateM2();
+  });
+
+  $("#rngP").addEventListener("input", e => {
+    S.m3.p = +e.target.value;
+    if (S.m3.pump) setPump(0);
+    updateM3();
+  });
+  $("#btnPump").addEventListener("click", () => setPump(S.m3.pump === 1 ? 0 : 1));
+  $("#btnBack").addEventListener("click", () => setPump(S.m3.pump === -1 ? 0 : -1));
+  $("#btnSound3").addEventListener("click", () => setSource(S.src === "m3" ? null : "m3"));
+}
+
+/* ---------- 主循环 ---------- */
+let lastT = 0, lastDraw = 0;
+function loop(ts) {
+  const dt = lastT ? Math.min(0.05, (ts - lastT) / 1000) : 0;
+  lastT = ts;
+  S.t += dt;
+
+  if (S.m1.hit > 0) {
+    S.m1.hit = Math.max(0, S.m1.hit - dt / 1.8);
+    updateM1();
+  }
+  if (S.m3.pump) {
+    const p = clamp(S.m3.p + S.m3.pump * dt * (100 / 8), 0, 100);
+    S.m3.p = p;
+    $("#rngP").value = p;
+    updateM3();
+    if (p === 0 || p === 100) setPump(0);
+  }
+
+  syncAudio();
+  if (ts - lastDraw > 30) { lastDraw = ts; draw(); }
+  requestAnimationFrame(loop);
+}
+
+/* ---------- 启动 ---------- */
+document.addEventListener("DOMContentLoaded", () => {
+  bind();
+  setPump(0);
+  setProbe("ball");
+  updateM2(); updateM3();
+  draw();
+  requestAnimationFrame(loop);
+});
+</script>
+</body>
+</html>

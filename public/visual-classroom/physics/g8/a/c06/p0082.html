@@ -1,0 +1,725 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>天平的使用与质量的属性 · 交互式可视化（人教版八年级上册 §6.1）</title>
+<style>
+:root{
+  --blue:#2563EB; --blue-d:#1D4ED8; --blue-l:#EFF4FF;
+  --green:#10B981; --green-l:#EAFBF4; --red:#EF4444; --red-l:#FEF2F2;
+  --amber:#F59E0B;
+  --ink:#1F2937; --ink-2:#4B5563; --ink-3:#6B7280;
+  --line:#E5E7EB; --bg:#F5F7FB; --card:#FFFFFF;
+  --radius:14px;
+  --shadow:0 1px 2px rgba(16,24,40,.04), 0 10px 28px -14px rgba(16,24,40,.26);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:"Microsoft YaHei","PingFang SC","Hiragino Sans GB",system-ui,-apple-system,"Segoe UI",sans-serif;
+  background:var(--bg);color:var(--ink);line-height:1.68;-webkit-font-smoothing:antialiased;
+}
+svg{display:block;width:100%;height:auto;font-family:inherit;touch-action:none;}
+svg text{font-family:inherit;}
+
+.site-header{background:linear-gradient(120deg,#1D4ED8,#2563EB 55%,#3B82F6);color:#fff;padding:22px 0 24px;}
+.header-inner{max-width:1120px;margin:0 auto;padding:0 22px;display:flex;justify-content:space-between;align-items:flex-end;gap:18px;flex-wrap:wrap;}
+.header-text h1{margin:0;font-size:24px;font-weight:700;letter-spacing:.5px;}
+.header-text p{margin:6px 0 0;font-size:13.5px;color:rgba(255,255,255,.88);}
+.header-nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.header-link{border:1px solid rgba(255,255,255,.45);border-radius:999px;padding:7px 16px;font-size:13px;color:#fff;text-decoration:none;background:rgba(255,255,255,.08);white-space:nowrap;}
+.header-link:hover{background:rgba(255,255,255,.2);}
+.header-badge{border:1px solid rgba(255,255,255,.4);border-radius:999px;padding:7px 16px;font-size:13px;background:rgba(255,255,255,.12);white-space:nowrap;}
+
+.wrap{max-width:1120px;margin:0 auto;padding:24px 22px 40px;}
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:24px 26px;margin-bottom:20px;border:1px solid rgba(229,231,235,.7);}
+.chead{display:flex;gap:14px;align-items:flex-start;margin-bottom:16px;}
+.idx{flex:0 0 auto;width:34px;height:34px;border-radius:11px;background:var(--blue-l);color:var(--blue);font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;margin-top:2px;}
+.chead h2{margin:0 0 3px;font-size:19px;font-weight:700;letter-spacing:.2px;}
+.chead p{margin:0;color:var(--ink-3);font-size:13.3px;}
+
+.grid2{display:grid;grid-template-columns:1.34fr 1fr;gap:22px;align-items:start;}
+.stage{border:1px solid var(--line);border-radius:12px;background:#FBFCFE;padding:6px 6px 2px;}
+
+.ctl{margin:13px 0 0;}
+.ctl-h{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--ink-2);margin-bottom:5px;gap:10px;}
+.ctl-h b{font-variant-numeric:tabular-nums;color:var(--blue);font-size:13.5px;white-space:nowrap;}
+input[type=range]{width:100%;accent-color:var(--blue);margin:0;}
+input[type=range]:disabled{opacity:.4;}
+
+.btnrow{display:flex;gap:8px;flex-wrap:wrap;margin-top:13px;}
+.btn{border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:9px;padding:8px 14px;font-size:13.5px;cursor:pointer;font-family:inherit;}
+.btn:hover{border-color:var(--blue);color:var(--blue);}
+.btn.pri{background:var(--blue);border-color:var(--blue);color:#fff;}
+.btn.pri:hover{background:var(--blue-d);color:#fff;}
+
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:14px;}
+.tab{border:1px solid var(--line);background:#fff;border-radius:999px;padding:6px 14px;font-size:13px;cursor:pointer;color:var(--ink-2);font-family:inherit;}
+.tab:hover{border-color:var(--blue);color:var(--blue);}
+.tab.on{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600;}
+
+.chips{display:flex;gap:7px;flex-wrap:wrap;}
+.chip{border:1px solid var(--line);background:#fff;border-radius:9px;padding:7px 11px;font-size:13px;cursor:pointer;font-family:inherit;color:var(--ink-2);font-variant-numeric:tabular-nums;}
+.chip:hover{border-color:var(--blue);color:var(--blue);}
+.chip.on{background:var(--amber);border-color:var(--amber);color:#fff;font-weight:700;}
+
+.ro-wrap{border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-top:13px;}
+.ro{display:flex;justify-content:space-between;gap:12px;padding:8px 13px;font-size:13.3px;border-bottom:1px solid var(--line);}
+.ro:last-child{border-bottom:none;}
+.ro>span{color:var(--ink-3);flex:none;}
+.ro>b{font-variant-numeric:tabular-nums;text-align:right;}
+.ro b.ok{color:var(--green);}
+.ro b.bad{color:var(--red);}
+.ro b.hi{color:var(--blue);}
+
+.note{margin-top:11px;padding:10px 13px;border-radius:9px;font-size:13.3px;background:var(--blue-l);color:var(--ink-2);border:1px solid rgba(37,99,235,.18);}
+.note.ok{background:var(--green-l);border-color:rgba(16,185,129,.28);color:#065F46;}
+.note.bad{background:var(--red-l);border-color:rgba(239,68,68,.28);color:#991B1B;}
+
+.steps{margin:2px 0 4px;}
+.step{display:flex;gap:10px;align-items:flex-start;font-size:13.4px;color:var(--ink-3);padding:6px 0;border-bottom:1px dashed var(--line);}
+.step:last-child{border-bottom:none;}
+.step i{flex:none;width:20px;height:20px;border-radius:50%;background:#E5E7EB;color:#6B7280;font-size:12px;font-style:normal;display:inline-flex;align-items:center;justify-content:center;margin-top:2px;}
+.step.now{color:var(--ink);font-weight:600;}
+.step.now i{background:var(--amber);color:#fff;}
+.step.done i{background:var(--green);color:#fff;}
+
+.site-footer{text-align:center;padding:8px 0 34px;color:var(--ink-3);font-size:12.5px;}
+@media(max-width:920px){ .grid2{grid-template-columns:1fr;} .card{padding:20px 16px;} }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-text">
+      <h1>天平的使用与质量的属性</h1>
+      <p>托盘天平怎么调、怎么读、错在哪 · 以及质量为什么不随形状、状态、位置改变</p>
+    </div>
+    <div class="header-nav">
+      <a class="header-link" href="#">« 返回实验目录</a>
+      <span class="header-badge">八年级物理 · 质量与密度 · §6.1</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <section class="card">
+    <div class="chead">
+      <div class="idx">1</div>
+      <div>
+        <h2>调节：放平 → 游码归零 → 调平衡螺母</h2>
+        <p>指针偏向哪边，就是横梁那一端低；平衡螺母要往<b>翘起来的那一端</b>拧（左偏右调）。</p>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="stage"><svg id="svg1" viewBox="0 0 660 372"></svg></div>
+      <div>
+        <div class="steps">
+          <div class="step" id="s1"><i>1</i><span>把天平放在水平台面上</span></div>
+          <div class="step" id="s2"><i>2</i><span>把游码拨到标尺左端的零刻线</span></div>
+          <div class="step" id="s3"><i>3</i><span>调节平衡螺母，使指针指在分度盘中央</span></div>
+        </div>
+        <div class="btnrow">
+          <button class="btn" id="b1level">① 放平</button>
+          <button class="btn" id="b1zero">② 游码归零</button>
+          <button class="btn pri" id="b1auto">自动调平</button>
+          <button class="btn" id="b1reset">复位</button>
+        </div>
+        <div class="ctl">
+          <div class="ctl-h"><span>左端平衡螺母　左 ← → 右</span><b id="v1nl">0.00</b></div>
+          <input type="range" id="r1nl" min="-1" max="1" step="0.02" value="0">
+        </div>
+        <div class="ctl">
+          <div class="ctl-h"><span>右端平衡螺母　左 ← → 右</span><b id="v1nr">0.00</b></div>
+          <input type="range" id="r1nr" min="-1" max="1" step="0.02" value="0">
+        </div>
+        <div class="ro-wrap">
+          <div class="ro"><span>指针位置</span><b id="o1p">—</b></div>
+          <div class="ro"><span>横梁两端高低</span><b id="o1t">—</b></div>
+        </div>
+        <div class="note" id="n1">先把天平放平。</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="chead">
+      <div class="idx">2</div>
+      <div>
+        <h2>测量：左物右码，读数 = 砝码总质量 + 游码示数</h2>
+        <p>砝码从大到小试加；最小的 5 g 也压不住时，剩下的零头用游码补。标尺分度值 0.2 g。</p>
+      </div>
+    </div>
+    <div class="grid2">
+      <div class="stage"><svg id="svg2" viewBox="0 0 660 372"></svg></div>
+      <div>
+        <div class="ctl-h" style="margin-top:2px;"><span>在右盘加／减砝码</span><b id="v2w">0 g</b></div>
+        <div class="chips" id="w2box"></div>
+        <div class="ctl">
+          <div class="ctl-h"><span>游码位置（也可直接拖天平上的游码）</span><b id="v2r">0.0 g</b></div>
+          <input type="range" id="r2rider" min="0" max="5" step="0.2" value="0">
+        </div>
+        <div class="btnrow">
+          <button class="btn pri" id="b2auto">自动配平</button>
+          <button class="btn" id="b2new">换一个物体</button>
+          <button class="btn" id="b2clear">全部取下</button>
+        </div>
+        <div class="ro-wrap">
+          <div class="ro"><span>砝码总质量</span><b id="o2w">0 g</b></div>
+          <div class="ro"><span>游码示数</span><b id="o2r">0.0 g</b></div>
+          <div class="ro"><span>读数 m = 砝码＋游码</span><b class="hi" id="o2m">0.0 g</b></div>
+          <div class="ro"><span>天平状态</span><b id="o2s">—</b></div>
+          <div class="ro"><span>物体真实质量</span><b id="o2t">待测</b></div>
+        </div>
+        <div class="note" id="n2">先加最大的砝码试试。</div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="chead">
+      <div class="idx">3</div>
+      <div>
+        <h2>四种典型错法：天平照样能平衡，读数却偏了</h2>
+        <p>待测物真实质量都是 48.2 g，看看每种错法下"砝码＋游码"会读出多少。</p>
+      </div>
+    </div>
+    <div class="tabs" id="t3"></div>
+    <div class="grid2">
+      <div class="stage"><svg id="svg3" viewBox="0 0 660 372"></svg></div>
+      <div>
+        <div class="ro-wrap" style="margin-top:0;">
+          <div class="ro"><span>左盘</span><b id="o3l">—</b></div>
+          <div class="ro"><span>右盘</span><b id="o3r">—</b></div>
+          <div class="ro"><span>游码示数</span><b id="o3s">—</b></div>
+          <div class="ro"><span>按"砝码＋游码"读数</span><b class="hi" id="o3m">—</b></div>
+          <div class="ro"><span>物体真实质量</span><b id="o3t">48.2 g</b></div>
+          <div class="ro"><span>偏差</span><b id="o3d">—</b></div>
+        </div>
+        <div class="note" id="n3"></div>
+      </div>
+    </div>
+  </section>
+
+  <section class="card">
+    <div class="chead">
+      <div class="idx">4</div>
+      <div>
+        <h2>质量是物体本身的属性：形状变了、状态变了、位置变了，天平照样平衡</h2>
+        <p>拖动滑块看连续变化，注意指针会不会动。</p>
+      </div>
+    </div>
+    <div class="tabs" id="t4"></div>
+    <div class="grid2">
+      <div class="stage"><svg id="svg4" viewBox="0 0 660 372"></svg></div>
+      <div>
+        <div class="ctl" style="margin-top:2px;">
+          <div class="ctl-h"><span id="h4c">变化</span><b id="v4c">0 %</b></div>
+          <input type="range" id="r4c" min="0" max="1" step="0.005" value="0">
+        </div>
+        <div class="ro-wrap">
+          <div class="ro"><span id="h4a">天平读数</span><b class="hi" id="o4a">—</b></div>
+          <div class="ro"><span id="h4b">指针</span><b id="o4b">—</b></div>
+          <div class="ro" id="row4c"><span>所在位置</span><b id="o4c">—</b></div>
+        </div>
+        <div class="note" id="n4"></div>
+      </div>
+    </div>
+  </section>
+
+  <div class="site-footer">八年级物理 · 质量与密度 · §6.1　|　拖动滑块与游码，边操作边看指针</div>
+</div>
+
+<script>
+/* ==================== 工具 ==================== */
+function $(s){return document.querySelector(s);}
+function T(sel,v){var e=$(sel); if(e) e.textContent=v;}
+function HH(sel,v){var e=$(sel); if(e) e.innerHTML=v;}
+function fmt(n,d){var p=Math.pow(10,d||0); return (Math.round(n*p)/p).toFixed(d||0);}
+function clamp(v,a,b){return v<a?a:(v>b?b:v);}
+function tween(dur,cb){
+  var t0=Date.now();
+  function step(){
+    var k=Math.min(1,(Date.now()-t0)/dur);
+    try{cb(k);}catch(e){}
+    if(k<1) requestAnimationFrame(step);
+  }
+  requestAnimationFrame(step);
+  setTimeout(function(){try{cb(1);}catch(e){}}, dur+80);
+}
+function flash(sel){
+  var e=$(sel); if(!e) return;
+  var old=e.style.borderColor; e.style.borderColor='#F59E0B';
+  setTimeout(function(){ e.style.borderColor=old||''; },420);
+}
+
+/* ==================== 天平引擎 ====================
+   支点固定在 (cx,cy)。横梁倾角 t>0 表示左端下沉。
+   指针与横梁固连、由支点向上伸出 → 左端下沉时指针向左偏。
+   于是：左盘重 → 指针偏左 → 平衡螺母往右拧（往翘起的一端）。   */
+var GEO={cx:330,cy:168,arm:132,hang:68,ptr:70,pw:92,base:352};
+var TMAX=0.075, MS=2.4;          // 横梁最大可视倾角 / 不平衡量饱和标度(g)
+var TBL=5.0, OFF0=2.0, KN=3.0;   // 台面不平附加 / 横梁固有偏差 / 螺母灵敏度
+var RMAX=5, RLEN=118;            // 游码量程 5 g、标尺长度
+var PGAIN=6, NTICK=5;            // 指针偏转的图示放大倍数 / 分度盘每侧格数
+var ASTEP=PGAIN*TMAX/NTICK;      // 分度盘一格对应的指针偏转角
+
+function tiltOf(dm){ return TMAX*Math.tanh(dm/MS); }
+function ticksOf(t){ return -PGAIN*t/ASTEP; }   // 负=指针偏左，满偏 ±NTICK 格
+function pol(r,ad){ var a=ad*Math.PI/180; return [GEO.cx+r*Math.sin(a), GEO.cy-r*Math.cos(a)]; }
+function dialPath(r1,r2,a1,a2){
+  var p1=pol(r1,a1),p2=pol(r1,a2),p3=pol(r2,a2),p4=pol(r2,a1);
+  return 'M'+fmt(p1[0],1)+','+fmt(p1[1],1)+' L'+fmt(p2[0],1)+','+fmt(p2[1],1)
+       +' L'+fmt(p3[0],1)+','+fmt(p3[1],1)+' L'+fmt(p4[0],1)+','+fmt(p4[1],1)+' Z';
+}
+
+/* 盘内物件：局部坐标，原点=托盘中心，物件向 y<0 生长 */
+var WD={100:[40,14],50:[34,12],20:[28,10],10:[22,9],5:[18,8]};
+function weightsG(list,mark){
+  var rows=[], cur=[], wsum=0;
+  (list||[]).forEach(function(w,i){
+    var d=WD[w]||[20,12];
+    if(cur.length && wsum+d[0]+6>86){ rows.push(cur); cur=[]; wsum=0; }
+    cur.push({w:w,i:i}); wsum+=d[0]+6;
+  });
+  if(cur.length) rows.push(cur);
+  var s='', y=0;
+  rows.forEach(function(row){
+    var rh=0, tw=0;
+    row.forEach(function(o){ var d=WD[o.w]||[20,12]; rh=Math.max(rh,d[1]); tw+=d[0]+6; });
+    var x=-(tw-6)/2;
+    row.forEach(function(o){
+      var d=WD[o.w]||[20,12];
+      var rust=(mark&&mark.idx===o.i&&mark.kind==='rust');
+      var wear=(mark&&mark.idx===o.i&&mark.kind==='wear');
+      var fill=rust?'#D9B24C':(wear?'#EDE0BE':'#F1D9A7');
+      var st=rust?'#8A6A16':(wear?'#B3A487':'#B98A3C');
+      s+='<rect x="'+fmt(x,1)+'" y="'+fmt(-y-d[1],1)+'" width="'+d[0]+'" height="'+d[1]+'" rx="2" fill="'+fill+'" stroke="'+st+'" stroke-width="1.4"/>';
+      if(rust){
+        s+='<circle cx="'+fmt(x+d[0]*0.3,1)+'" cy="'+fmt(-y-d[1]*0.45,1)+'" r="2.2" fill="#8A6A16" opacity=".7"/>';
+        s+='<circle cx="'+fmt(x+d[0]*0.72,1)+'" cy="'+fmt(-y-d[1]*0.7,1)+'" r="1.5" fill="#8A6A16" opacity=".6"/>';
+      }
+      if(wear){
+        s+='<path d="M'+fmt(x+d[0]-6,1)+','+fmt(-y-d[1],1)+' l6,3 l-6,3 z" fill="#FBFCFE" stroke="'+st+'" stroke-width="1"/>';
+      }
+      s+='<text x="'+fmt(x+d[0]/2,1)+'" y="'+fmt(-y-d[1]/2+3,1)+'" font-size="8" text-anchor="middle" fill="#7A5518">'+o.w+'</text>';
+      x+=d[0]+6;
+    });
+    y+=rh;
+  });
+  return s;
+}
+function blockG(txt){
+  var t=(txt===undefined)?'?':txt;
+  return '<path d="M-26,0 L-31,-25 L-23,-33 L25,-33 L30,-24 L26,0 Z" fill="#B7C3D2" stroke="#4B5B6E" stroke-width="1.6"/>'
+       + '<text x="0" y="-15" font-size="11" text-anchor="middle" fill="#334155">'+t+'</text>';
+}
+function clayG(k){
+  var w=40+38*k, h=34*(40/w), r=Math.min(16,5+20*k);
+  return '<rect x="'+fmt(-w/2,1)+'" y="'+fmt(-h,1)+'" width="'+fmt(w,1)+'" height="'+fmt(h,1)+'" rx="'+fmt(r,1)+'" fill="#F9A8D4" stroke="#BE185D" stroke-width="1.5"/>'
+       + '<ellipse cx="'+fmt(-w*0.16,1)+'" cy="'+fmt(-h*0.62,1)+'" rx="'+fmt(w*0.22,1)+'" ry="'+fmt(h*0.17,1)+'" fill="#fff" opacity=".35"/>';
+}
+function beakerG(k,uid){
+  var iceH=30*(1-k), watH=26*k, iceW=38-7*k;
+  var s='<clipPath id="bk'+uid+'"><rect x="-24" y="-46" width="48" height="46"/></clipPath>';
+  s+='<g clip-path="url(#bk'+uid+')">';
+  s+='<rect x="-24" y="'+fmt(-watH,1)+'" width="48" height="'+fmt(watH,1)+'" fill="#93C5FD" opacity=".9"/>';
+  if(iceH>1.5){
+    s+='<path d="M'+fmt(-iceW/2,1)+','+fmt(-watH,1)+' L'+fmt(-iceW/2+4,1)+','+fmt(-watH-iceH*0.72,1)
+      +' L'+fmt(-iceW/6,1)+','+fmt(-watH-iceH,1)+' L'+fmt(iceW/4,1)+','+fmt(-watH-iceH*0.66,1)
+      +' L'+fmt(iceW/2-3,1)+','+fmt(-watH-iceH*0.88,1)+' L'+fmt(iceW/2,1)+','+fmt(-watH,1)+' Z" fill="#E8F6FE" stroke="#60A5FA" stroke-width="1.3"/>';
+  }
+  s+='</g>';
+  s+='<path d="M-26,-48 L-24,0 L24,0 L26,-48 Z" fill="none" stroke="#64748B" stroke-width="2.2" stroke-linejoin="round"/>';
+  s+='<rect x="-31" y="-55" width="62" height="8" rx="3" fill="#7C8CA1" stroke="#475569" stroke-width="1.4"/>';
+  return s;
+}
+
+/* 主绘制 */
+function balanceSVG(o,uid){
+  o=o||{}; uid=uid||'g';
+  var t=o.tilt||0, cx=GEO.cx, cy=GEO.cy;
+  var C=Math.cos(t), S=Math.sin(t);
+  function pt(x,y){ return [cx+x*C+y*S, cy-x*S+y*C]; }
+  var A=pt(-GEO.arm,0), B=pt(GEO.arm,0);
+  var pa=PGAIN*t;                                   // 指针与横梁固连，偏转角按图示放大
+  var P=[cx-GEO.ptr*Math.sin(pa), cy-GEO.ptr*Math.cos(pa)];
+  var s='';
+
+  s+='<line x1="26" y1="'+GEO.base+'" x2="634" y2="'+GEO.base+'" stroke="#CBD5E1" stroke-width="4" stroke-linecap="round"/>';
+  for(var i=38;i<624;i+=26){ s+='<line x1="'+i+'" y1="'+(GEO.base+2)+'" x2="'+(i-9)+'" y2="'+(GEO.base+12)+'" stroke="#E2E8F0" stroke-width="2"/>'; }
+
+  s+='<g transform="rotate('+fmt((o.tableTilt||0)*180/Math.PI,2)+' '+cx+' '+GEO.base+')">';
+
+  s+='<path d="M214,332 L446,332 L438,350 L222,350 Z" fill="#D7DEE8" stroke="#94A3B8" stroke-width="1.6" stroke-linejoin="round"/>';
+  s+='<rect x="322" y="176" width="16" height="156" rx="3" fill="#CBD5E1" stroke="#94A3B8" stroke-width="1.5"/>';
+  s+='<path d="M323,178 L337,178 L330,166 Z" fill="#94A3B8"/>';
+
+  var AD=ASTEP*180/Math.PI, DG=NTICK*AD+1.6;
+  s+='<path d="'+dialPath(56,84,-DG,DG)+'" fill="#FFFFFF" stroke="#7C8CA1" stroke-width="1.6"/>';
+  for(var n=-NTICK;n<=NTICK;n++){
+    var a=n*AD;
+    var q1=pol(n===0?56:64,a), q2=pol(n===0?84:79,a);
+    s+='<line x1="'+fmt(q1[0],1)+'" y1="'+fmt(q1[1],1)+'" x2="'+fmt(q2[0],1)+'" y2="'+fmt(q2[1],1)+'" stroke="'+(n===0?'#1F2937':'#64748B')+'" stroke-width="'+(n===0?3.2:1.5)+'"/>';
+  }
+
+  s+='<line x1="'+cx+'" y1="'+cy+'" x2="'+fmt(P[0],1)+'" y2="'+fmt(P[1],1)+'" stroke="#DC2626" stroke-width="3" stroke-linecap="round"/>';
+
+  var b1=pt(-GEO.arm,-5), b2=pt(GEO.arm,-5), b3=pt(GEO.arm,5), b4=pt(-GEO.arm,5);
+  s+='<path d="M'+fmt(b1[0],1)+','+fmt(b1[1],1)+' L'+fmt(b2[0],1)+','+fmt(b2[1],1)+' L'+fmt(b3[0],1)+','+fmt(b3[1],1)+' L'+fmt(b4[0],1)+','+fmt(b4[1],1)+' Z" fill="#DDE3EC" stroke="#64748B" stroke-width="1.6"/>';
+  s+='<circle cx="'+cx+'" cy="'+cy+'" r="4" fill="#475569"/>';
+
+  function nut(x0,val){
+    var q=pt(x0+val*13,0);
+    return '<circle cx="'+fmt(q[0],1)+'" cy="'+fmt(q[1],1)+'" r="7" fill="#F8FAFC" stroke="#475569" stroke-width="1.6"/>'
+         + '<line x1="'+fmt(q[0]-4,1)+'" y1="'+fmt(q[1],1)+'" x2="'+fmt(q[0]+4,1)+'" y2="'+fmt(q[1],1)+'" stroke="#475569" stroke-width="1.4"/>'
+         + '<line x1="'+fmt(q[0],1)+'" y1="'+fmt(q[1]-4,1)+'" x2="'+fmt(q[0],1)+'" y2="'+fmt(q[1]+4,1)+'" stroke="#475569" stroke-width="1.4"/>';
+  }
+  s+=nut(-(GEO.arm-26),o.nutL||0); s+=nut(GEO.arm-26,o.nutR||0);
+
+  if(o.riderOn!==false){
+    var s0=pt(0,-5), s1=pt(RLEN,-5);
+    s+='<line x1="'+fmt(s0[0],1)+'" y1="'+fmt(s0[1],1)+'" x2="'+fmt(s1[0],1)+'" y2="'+fmt(s1[1],1)+'" stroke="#94A3B8" stroke-width="1.6"/>';
+    for(var gi=0;gi<=25;gi++){                       // 分度值 0.2 g，共 25 小格
+      var d=gi/25*RLEN, big=(gi%5===0);              // 每 5 小格 = 1 g
+      var q1=pt(d,-5), q2=pt(d,big?-14:-10);
+      s+='<line x1="'+fmt(q1[0],1)+'" y1="'+fmt(q1[1],1)+'" x2="'+fmt(q2[0],1)+'" y2="'+fmt(q2[1],1)+'" stroke="#64748B" stroke-width="'+(big?1.5:1)+'"/>';
+      if(big&&gi>0){ var q3=pt(d,-21); s+='<text x="'+fmt(q3[0],1)+'" y="'+fmt(q3[1],1)+'" font-size="10" text-anchor="middle" fill="#64748B">'+(gi/5)+'</text>'; }
+    }
+    var dr=(o.rider||0)/RMAX*RLEN;
+    var r1=pt(dr,-7), r2=pt(dr,7), r3=pt(dr,-17), rm=pt(dr,0);
+    s+='<line x1="'+fmt(r3[0],1)+'" y1="'+fmt(r3[1],1)+'" x2="'+fmt(r1[0],1)+'" y2="'+fmt(r1[1],1)+'" stroke="#2563EB" stroke-width="1.6"/>';
+    s+='<rect x="'+fmt(rm[0]-6,1)+'" y="'+fmt(rm[1]-7,1)+'" width="12" height="14" rx="2.5" fill="#2563EB" stroke="#1D4ED8" stroke-width="1.2" transform="rotate('+fmt(t*180/Math.PI,2)+' '+fmt(rm[0],1)+' '+fmt(rm[1],1)+')"/>';
+  }
+
+  function pan(anchor,inner,lab){
+    var px=anchor[0], py=anchor[1]+GEO.hang;
+    var q='<line x1="'+fmt(anchor[0],1)+'" y1="'+fmt(anchor[1],1)+'" x2="'+fmt(px,1)+'" y2="'+fmt(py,1)+'" stroke="#64748B" stroke-width="2.2"/>';
+    q+='<line x1="'+fmt(anchor[0],1)+'" y1="'+fmt(anchor[1],1)+'" x2="'+fmt(px-GEO.pw/2+10,1)+'" y2="'+fmt(py-1,1)+'" stroke="#94A3B8" stroke-width="1.8"/>';
+    q+='<line x1="'+fmt(anchor[0],1)+'" y1="'+fmt(anchor[1],1)+'" x2="'+fmt(px+GEO.pw/2-10,1)+'" y2="'+fmt(py-1,1)+'" stroke="#94A3B8" stroke-width="1.8"/>';
+    q+='<circle cx="'+fmt(anchor[0],1)+'" cy="'+fmt(anchor[1],1)+'" r="3.2" fill="#F8FAFC" stroke="#64748B" stroke-width="1.6"/>';
+    q+='<path d="M'+fmt(px-GEO.pw/2,1)+','+fmt(py,1)+' L'+fmt(px-GEO.pw/2+7,1)+','+fmt(py+11,1)+' L'+fmt(px+GEO.pw/2-7,1)+','+fmt(py+11,1)+' L'+fmt(px+GEO.pw/2,1)+','+fmt(py,1)+' Z" fill="#E6EBF2" stroke="#94A3B8" stroke-width="1.6" stroke-linejoin="round"/>';
+    q+='<line x1="'+fmt(px-GEO.pw/2,1)+'" y1="'+fmt(py,1)+'" x2="'+fmt(px+GEO.pw/2,1)+'" y2="'+fmt(py,1)+'" stroke="#64748B" stroke-width="2"/>';
+    q+='<g transform="translate('+fmt(px,1)+','+fmt(py+2,1)+')">'+(inner||'')+'</g>';
+    if(lab) q+='<text x="'+fmt(px,1)+'" y="'+fmt(py+28,1)+'" font-size="11.5" text-anchor="middle" fill="#2563EB">'+lab+'</text>';
+    return q;
+  }
+  s+=pan(A,o.left,o.leftLab);
+  s+=pan(B,o.right,o.rightLab);
+  s+='</g>';
+
+  if(o.labels){
+    s+='<text x="298" y="74" font-size="11.5" fill="#DC2626" text-anchor="end">指针</text>';
+    s+='<line x1="300" y1="76" x2="326" y2="100" stroke="#FCA5A5" stroke-width="1.3"/>';
+    s+='<text x="366" y="74" font-size="11.5" fill="#6B7280">分度盘</text>';
+    s+='<line x1="364" y1="76" x2="352" y2="94" stroke="#9CA3AF" stroke-width="1.3"/>';
+    s+='<text x="188" y="146" font-size="11.5" fill="#6B7280" text-anchor="end">平衡螺母</text>';
+    s+='<line x1="190" y1="148" x2="222" y2="164" stroke="#9CA3AF" stroke-width="1.3"/>';
+    s+='<text x="470" y="146" font-size="11.5" fill="#6B7280">标尺 · 游码</text>';
+    s+='<line x1="468" y1="148" x2="410" y2="160" stroke="#9CA3AF" stroke-width="1.3"/>';
+  }
+  return s;
+}
+
+/* 地点徽标（模块 4 位置档）：教室里 / 高山上 / 月球上，拖动时交叉淡入 */
+function placeBadgeG(k){
+  var p=clamp(k,0,1)*2;
+  var w=[Math.max(0,1-Math.abs(p)), Math.max(0,1-Math.abs(p-1)), Math.max(0,1-Math.abs(p-2))];
+  var nm=['教室里','高山上','月球上'];
+  var idx=(w[1]>w[0])?(w[2]>w[1]?2:1):(w[2]>w[0]?2:0);
+  var s='<g transform="translate(556,48)">';
+  s+='<rect x="-46" y="-33" width="92" height="72" rx="10" fill="#FFFFFF" stroke="#CBD5E1" stroke-width="1.4"/>';
+  s+='<g opacity="'+fmt(w[0],2)+'">'
+    +'<rect x="-17" y="-9" width="34" height="5" rx="2" fill="#94A3B8"/>'
+    +'<line x1="-13" y1="-4" x2="-13" y2="12" stroke="#94A3B8" stroke-width="2.6"/>'
+    +'<line x1="13" y1="-4" x2="13" y2="12" stroke="#94A3B8" stroke-width="2.6"/>'
+    +'</g>';
+  s+='<g opacity="'+fmt(w[1],2)+'">'
+    +'<path d="M-19,12 L0,-13 L19,12 Z" fill="#BFDBFE" stroke="#3B82F6" stroke-width="1.5" stroke-linejoin="round"/>'
+    +'<path d="M-6,-5 L0,-13 L6,-5 L3,-8 L0,-4 L-3,-8 Z" fill="#FFFFFF"/>'
+    +'</g>';
+  s+='<g opacity="'+fmt(w[2],2)+'">'
+    +'<circle cx="0" cy="0" r="15" fill="#E2E8F0" stroke="#94A3B8" stroke-width="1.5"/>'
+    +'<ellipse cx="-5" cy="-4" rx="4" ry="3" fill="#CBD5E1"/>'
+    +'<ellipse cx="6" cy="5" rx="3" ry="2.2" fill="#CBD5E1"/>'
+    +'</g>';
+  s+='<text x="0" y="31" font-size="12.5" font-weight="600" text-anchor="middle" fill="#1F2937">'+nm[idx]+'</text>';
+  s+='</g>';
+  return {svg:s, idx:idx, name:nm[idx]};
+}
+
+/* ==================== 模块 1：调节 ==================== */
+var s1={level:false, zeroed:false, nutL:0, nutR:0, rider:1.8};
+function dm1(){ return (s1.level?0:TBL)+OFF0-s1.rider-KN*(s1.nutL+s1.nutR); }
+function draw1(){
+  var dm=dm1(), t=tiltOf(dm), p=ticksOf(t);
+  HH('#svg1', balanceSVG({tilt:t, tableTilt:s1.level?0:-0.075, nutL:s1.nutL, nutR:s1.nutR, rider:s1.rider, labels:true},'m1'));
+  var dir=p<-0.5?'偏左':(p>0.5?'偏右':'指中央');
+  T('#o1p', dir+'　'+fmt(Math.abs(p),1)+' 格');
+  T('#o1t', dm>0.15?'左端低 · 右端高':(dm<-0.15?'右端低 · 左端高':'水平'));
+  var bal=Math.abs(p)<0.5;
+  var step=s1.level?(s1.zeroed?3:2):1;
+  [1,2,3].forEach(function(i){
+    var e=$('#s'+i); if(!e) return;
+    e.className='step'+(i<step?' done':(i===step?' now':''));
+  });
+  var lock=!s1.level||!s1.zeroed;
+  var rl=$('#r1nl'), rr=$('#r1nr');
+  if(rl) rl.disabled=lock; if(rr) rr.disabled=lock;
+  T('#v1nl', fmt(s1.nutL,2)); T('#v1nr', fmt(s1.nutR,2));
+  var msg, cls='note';
+  if(!s1.level){
+    msg='台面是斜的，指针怎么拧都回不到中央 —— 第一步必须先<b>把天平放在水平台上</b>。';
+  }else if(!s1.zeroed){
+    msg='指针好像不太偏？那是游码停在 '+fmt(s1.rider,1)+' g 处替你抵消了横梁的偏差，这种"平衡"是假的。先<b>把游码拨到零刻线</b>。';
+  }else if(bal){
+    msg='指针指在分度盘中央，横梁水平，<b>调节完成</b>，可以开始称量了。'; cls='note ok';
+  }else{
+    msg='指针'+dir+' '+fmt(Math.abs(p),1)+' 格，说明'+(dm>0?'左':'右')+'端低。平衡螺母要往<b>'+(dm>0?'右':'左')+'端（翘起来的那一端）</b>拧。';
+  }
+  var ne=$('#n1'); if(ne){ ne.className=cls; HH('#n1',msg); }
+}
+
+/* ==================== 模块 2：测量与读数 ==================== */
+var WSET=[100,50,20,20,10,5];
+var OBJS=[12.4,27.6,48.2,63.8,85.6,104.2,137.4,158.8];
+var s2={obj:48.2, sel:[], rider:0};
+function mass2(){ var m=0; s2.sel.forEach(function(i){m+=WSET[i];}); return m; }
+function draw2(){
+  var dm=s2.obj-(mass2()+s2.rider);
+  var t=tiltOf(dm), p=ticksOf(t);
+  var list=s2.sel.map(function(i){return WSET[i];});
+  HH('#svg2', balanceSVG({tilt:t, rider:s2.rider, nutL:0.55, nutR:0.55,
+    left:blockG('?'), leftLab:'待测物（左）', right:weightsG(list), rightLab:'砝码（右）'},'m2'));
+  var wm=mass2(), read=wm+s2.rider, bal=Math.abs(p)<0.5;
+  T('#v2w', wm+' g'); T('#v2r', fmt(s2.rider,1)+' g');
+  T('#o2w', wm+' g'); T('#o2r', fmt(s2.rider,1)+' g'); T('#o2m', fmt(read,1)+' g');
+  var bs=$('#o2s');
+  if(bs){ bs.className=bal?'ok':'bad'; bs.textContent=bal?'✓ 平衡，指针指中央':(p<0?'指针偏左：砝码还轻':'指针偏右：砝码压过头'); }
+  var box=$('#w2box');
+  if(box) Array.prototype.forEach.call(box.children,function(b,i){ b.className='chip'+(s2.sel.indexOf(i)>=0?' on':''); });
+  var rr=$('#r2rider'); if(rr) rr.value=s2.rider;
+  var msg, cls='note';
+  if(bal){
+    T('#o2t', fmt(s2.obj,1)+' g');
+    msg='天平平衡：待测物质量 = 砝码 '+wm+' g ＋ 游码 '+fmt(s2.rider,1)+' g = <b>'+fmt(read,1)+' g</b>，与真实值一致。';
+    cls='note ok';
+  }else{
+    T('#o2t','待测');
+    if(dm>0){
+      msg='还差 <b>'+fmt(dm,1)+' g</b> 才平衡。'+(dm>5?'继续往右盘加砝码。':'最小砝码是 5 g，加进去就压过头了 —— 剩下的零头<b>用游码</b>补。');
+    }else{
+      msg='砝码加多了 <b>'+fmt(-dm,1)+' g</b>，右端沉下去了，取下最小的那个再拨游码。'; cls='note bad';
+    }
+  }
+  var ne=$('#n2'); if(ne){ ne.className=cls; HH('#n2',msg); }
+}
+
+/* ==================== 模块 3：错法诊断 ==================== */
+var M3=[
+ {name:'✔ 正确操作',
+  L:'待测物', R:'砝码', wl:[20,20,5], rider:3.2, read:48.2, dv:0,
+  left:blockG(''), right:weightsG([20,20,5]),
+  note:'左物右码，游码也已归零：<b>m = 砝码 + 游码 = 45 + 3.2 = 48.2 g</b>，读数正确。'},
+ {name:'物码放反了',
+  L:'砝码（放错在左盘）', R:'待测物（放错在右盘）', wl:[50], rider:1.8, read:51.8, dv:3.6,
+  left:weightsG([50]), right:blockG(''),
+  note:'物体在右盘时，游码是跟物体一头的，平衡条件是 <b>m物 = 砝码 − 游码 = 50 − 1.8 = 48.2 g</b>。若还按"砝码＋游码"读，会偏大 2 倍游码（3.6 g）。'},
+ {name:'砝码生锈',
+  L:'待测物', R:'砝码（20 g 那颗生锈）', wl:[20,20,5], rider:0.8, read:45.8, dv:-2.4,
+  left:blockG(''), right:weightsG([20,20,5],{idx:0,kind:'rust'}),
+  note:'生锈的砝码实际比标称重（20 g 那颗实际 22.4 g），右盘提前压住天平，游码就不用拨那么多 —— 读数<b>偏小</b> 2.4 g。'},
+ {name:'砝码磨损',
+  L:'待测物', R:'砝码（20 g 那颗磨损）', wl:[20,20,5], rider:3.8, read:48.8, dv:0.6,
+  left:blockG(''), right:weightsG([20,20,5],{idx:0,kind:'wear'}),
+  note:'磨损的砝码实际比标称轻（20 g 那颗实际 19.4 g），只好靠游码多补一截才平衡 —— 读数<b>偏大</b> 0.6 g。'},
+ {name:'调平时游码没归零',
+  L:'待测物', R:'砝码', wl:[20,20,5], rider:4.4, read:49.4, dv:1.2,
+  left:blockG(''), right:weightsG([20,20,5]),
+  note:'调平时游码停在 1.2 g 处，这 1.2 g 已经在"调平"里被抵消掉了，称量时又读了一遍 —— 读数<b>偏大 1.2 g</b>。'}
+];
+var s3=0;
+function draw3(){
+  var d=M3[s3], wm=0;
+  d.wl.forEach(function(w){wm+=w;});
+  HH('#svg3', balanceSVG({tilt:0, rider:d.rider, nutL:0.55, nutR:0.55,
+    left:d.left, leftLab:d.L, right:d.right, rightLab:d.R},'m3'));
+  T('#o3l', (s3===1?('砝码　'+wm+' g'):('待测物　48.2 g')));
+  T('#o3r', (s3===1?('待测物　48.2 g'):('砝码　'+wm+' g')));
+  T('#o3s', fmt(d.rider,1)+' g');
+  T('#o3m', fmt(d.read,1)+' g');
+  var db=$('#o3d'), ne=$('#n3');
+  if(Math.abs(d.dv)<0.05){
+    if(db){ db.className='ok'; db.textContent='0.0 g（正确）'; }
+    if(ne){ ne.className='note ok'; ne.innerHTML=d.note; }
+  }else{
+    if(db){ db.className='bad'; db.textContent=(d.dv>0?'偏大 +':'偏小 ')+fmt(Math.abs(d.dv),1)+' g'; }
+    if(ne){ ne.className='note bad'; ne.innerHTML=d.note; }
+  }
+}
+
+/* ==================== 模块 4：质量的属性 ==================== */
+var T4=[{name:'形状改变'},{name:'状态改变'},{name:'位置改变'}];
+var s4=0;
+function draw4(){
+  var k=parseFloat($('#r4c').value)||0;
+  var inner, lab, read, msg, loc='—';
+  if(s4===0){
+    inner=clayG(k); lab='橡皮泥'; read='50.0 g';
+    msg='从方块捏成饼，橡皮泥所含物质的多少没变 —— 天平<b>始终平衡</b>，读数恒为 50.0 g。';
+  }else if(s4===1){
+    inner=beakerG(k,'m4'); lab='密封烧杯'; read='100.0 g';
+    msg=(k<0.02)?'烧杯里是 100 g 冰，右盘放 100 g 砝码，天平平衡，读数是 100.0 g。'
+       :(k>0.98?'冰全部化成水，还是 100 g —— 天平<b>仍然平衡</b>。状态变了，质量不变。'
+                :'冰在熔化：冰块变小、水变多，但<b>总质量一直是 100 g</b>，指针纹丝不动。');
+  }else{
+    var pb=placeBadgeG(k);
+    loc=pb.name;
+    inner=blockG('100 g'); lab='100 g 物体'; read='100.0 g';
+    msg=(pb.idx===0)
+      ? '在<b>教室里</b>称这个物体：天平平衡，读数是 <b>100.0 g</b>。向右拖滑块，把它搬到别处再称一次。'
+      : ((pb.idx===1?'搬到<b>高山上</b>：天平照样平衡，读数还是 <b>100.0 g</b>。'
+                    :'搬到<b>月球上</b>：天平依然平衡，读数仍是 <b>100.0 g</b>。')
+         +'位置变了，物体所含物质的多少没变 —— <b>质量不随位置而改变</b>。');
+  }
+  var right=(s4===0)?weightsG([50]):(s4===1?weightsG([100]):weightsG([50,50]));
+  HH('#svg4', balanceSVG({tilt:0, rider:0, nutL:0.55, nutR:0.55,
+    left:inner, leftLab:lab, right:right, rightLab:'砝码 '+(s4===0?'50 g':'100 g')},'m4')
+    +(s4===2?placeBadgeG(k).svg:''));
+  T('#h4c', s4===2?'搬到哪里':(s4===0?'把橡皮泥捏扁':'加热使冰熔化'));
+  T('#v4c', s4===2?loc:(Math.round(k*100)+' %'));
+  T('#o4a', read);
+  var ob=$('#o4b'); if(ob){ ob.className='ok'; ob.textContent='指中央 · 始终平衡'; }
+  var rc=$('#row4c'); if(rc) rc.style.display=(s4===2)?'':'none';
+  T('#o4c', loc);
+  var n4=$('#n4'); if(n4){ n4.className='note ok'; n4.innerHTML=msg; }
+}
+
+/* ==================== 交互 ==================== */
+function bindRange(sel,fn){
+  var e=$(sel); if(!e) return;
+  e.addEventListener('input',function(){ try{ fn(parseFloat(e.value)||0); }catch(err){} });
+}
+function bindTabs(host,items,get,set){
+  var h=$(host); if(!h) return;
+  h.innerHTML='';
+  items.forEach(function(it,i){
+    var b=document.createElement('button');
+    b.className='tab'+(i===get()?' on':''); b.textContent=it.name||it;
+    b.addEventListener('click',function(){
+      set(i);
+      Array.prototype.forEach.call(h.children,function(c,j){ c.className='tab'+(j===i?' on':''); });
+    });
+    h.appendChild(b);
+  });
+}
+function svgDrag(sel,onDown,onMove){
+  var svg=$(sel); if(!svg) return;
+  var active=false;
+  function toVB(ev){
+    var r=svg.getBoundingClientRect();
+    var px=(ev.touches?ev.touches[0].clientX:ev.clientX);
+    var py=(ev.touches?ev.touches[0].clientY:ev.clientY);
+    var vb=svg.viewBox.baseVal;
+    return [vb.x+(px-r.left)/r.width*vb.width, vb.y+(py-r.top)/r.height*vb.height];
+  }
+  function start(ev){ var q=toVB(ev); if(onDown(q)){ active=true; ev.preventDefault(); } }
+  function move(ev){ if(!active) return; onMove(toVB(ev)); ev.preventDefault(); }
+  function end(){ active=false; }
+  svg.addEventListener('mousedown',start);
+  svg.addEventListener('touchstart',start,{passive:false});
+  svg.addEventListener('mousemove',move);
+  svg.addEventListener('touchmove',move,{passive:false});
+  svg.addEventListener('mouseup',end);
+  svg.addEventListener('mouseleave',end);
+  svg.addEventListener('touchend',end);
+}
+
+/* 模块1 */
+$('#b1level').addEventListener('click',function(){ s1.level=true; draw1(); });
+$('#b1zero').addEventListener('click',function(){
+  if(!s1.level){ flash('#n1'); return; }
+  var a=s1.rider;
+  tween(620,function(p){ s1.rider=a*(1-p); if(p>=1) s1.zeroed=true; draw1(); });
+});
+$('#b1auto').addEventListener('click',function(){
+  if(!s1.level||!s1.zeroed){ flash('#n1'); return; }
+  var need=OFF0/KN, a=s1.nutL, b=s1.nutR;
+  var half=clamp((need-a-b)/2,-1,1);      // 两端螺母一起往同一方向拧（左偏右调）
+  var tL=clamp(a+half,-1,1), tR=clamp(b+half,-1,1);
+  tween(950,function(p){
+    s1.nutR=b+(tR-b)*p; s1.nutL=a+(tL-a)*p;
+    var rl=$('#r1nl'), rr=$('#r1nr');
+    if(rl) rl.value=s1.nutL; if(rr) rr.value=s1.nutR;
+    draw1();
+  });
+});
+$('#b1reset').addEventListener('click',function(){
+  s1.level=false; s1.zeroed=false; s1.nutL=0; s1.nutR=0; s1.rider=1.8;
+  var rl=$('#r1nl'), rr=$('#r1nr'); if(rl) rl.value=0; if(rr) rr.value=0;
+  draw1();
+});
+bindRange('#r1nl',function(v){ if(!s1.level||!s1.zeroed) return; s1.nutL=v; draw1(); });
+bindRange('#r1nr',function(v){ if(!s1.level||!s1.zeroed) return; s1.nutR=v; draw1(); });
+
+/* 模块2 */
+var w2box=$('#w2box');
+WSET.forEach(function(w,i){
+  var b=document.createElement('button');
+  b.className='chip'; b.textContent=w+' g';
+  b.addEventListener('click',function(){
+    var k=s2.sel.indexOf(i);
+    if(k>=0) s2.sel.splice(k,1); else s2.sel.push(i);
+    s2.sel.sort(function(a,c){return WSET[c]-WSET[a];});
+    draw2();
+  });
+  if(w2box) w2box.appendChild(b);
+});
+$('#b2clear').addEventListener('click',function(){ s2.sel=[]; s2.rider=0; draw2(); });
+$('#b2new').addEventListener('click',function(){
+  var rest=OBJS.filter(function(x){ return Math.abs(x-s2.obj)>0.01; });
+  s2.obj=rest[Math.floor(Math.random()*rest.length)];
+  s2.sel=[]; s2.rider=0; draw2();
+});
+$('#b2auto').addEventListener('click',function(){
+  s2.sel=[]; s2.rider=0; draw2();
+  var rest=s2.obj, seq=[];
+  WSET.forEach(function(w,i){ if(rest>=w-1e-6){ seq.push(i); rest-=w; } });
+  var k=0;
+  function next(){
+    if(k>=seq.length){ tween(560,function(p){ s2.rider=clamp(rest*p,0,5); draw2(); }); return; }
+    s2.sel.push(seq[k]); s2.sel.sort(function(a,b){return WSET[b]-WSET[a];}); draw2(); k++;
+    setTimeout(next,300);
+  }
+  setTimeout(next,150);
+});
+bindRange('#r2rider',function(v){ s2.rider=clamp(Math.round(v/0.2)*0.2,0,5); draw2(); });
+svgDrag('#svg2',
+  function(q){ return Math.abs(q[1]-GEO.cy)<48 && q[0]>GEO.cx-24 && q[0]<GEO.cx+RLEN+24; },
+  function(q){
+    var t=tiltOf(s2.obj-(mass2()+s2.rider));
+    var proj=(q[0]-GEO.cx)*Math.cos(t)-(q[1]-GEO.cy)*Math.sin(t);
+    s2.rider=clamp(Math.round(proj/RLEN*RMAX/0.2)*0.2,0,RMAX);
+    var rr=$('#r2rider'); if(rr) rr.value=s2.rider;
+    draw2();
+  });
+
+/* 模块3 */
+bindTabs('#t3',M3,function(){return s3;},function(i){ s3=i; draw3(); });
+
+/* 模块4 */
+bindTabs('#t4',T4,function(){return s4;},function(i){ s4=i; var r=$('#r4c'); if(r) r.value=0; draw4(); });
+bindRange('#r4c',function(){ draw4(); });
+
+/* 启动 */
+try{ draw1(); }catch(e){}
+try{ draw2(); }catch(e){}
+try{ draw3(); }catch(e){}
+try{ draw4(); }catch(e){}
+</script>
+
+</body>
+</html>

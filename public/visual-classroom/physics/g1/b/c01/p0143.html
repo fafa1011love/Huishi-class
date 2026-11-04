@@ -1,0 +1,2901 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>模型26 · 曲线运动的切线方向（交互演示）</title>
+<style>
+:root{
+  --bg:#eef2f7;
+  --card:#ffffff;
+  --line:#dbe3ee;
+  --line2:#e8eef6;
+  --text:#16202e;
+  --muted:#61708a;
+  --blue:#2563eb;
+  --red:#dc2626;
+  --orange:#ea580c;
+  --purple:#7c3aed;
+  --green:#16a34a;
+  --ink:#374151;
+  --teal:#0f766e;
+  --amber:#b45309;
+  --radius:10px;
+  --shadow:0 1px 2px rgba(16,32,56,.06), 0 6px 18px rgba(16,32,56,.06);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  background:var(--bg);
+  color:var(--text);
+  font-family:-apple-system, BlinkMacSystemFont, "Segoe UI", "Microsoft YaHei", "PingFang SC", "Hiragino Sans GB", sans-serif;
+  font-size:14px;
+  line-height:1.55;
+  -webkit-font-smoothing:antialiased;
+}
+button{font-family:inherit;font-size:13px;cursor:pointer;border-radius:8px;border:1px solid var(--line);background:#fff;color:var(--text);padding:6px 10px;transition:.15s}
+button:hover{border-color:#b9c8dd;background:#f7faff}
+button:active{transform:translateY(1px)}
+button.primary{background:var(--blue);border-color:var(--blue);color:#fff}
+button.primary:hover{background:#1d4ed8}
+button.warn{background:#fff1f2;border-color:#fecdd3;color:#b91c1c}
+button.warn:hover{background:#ffe4e6}
+button.ghost{background:#f8fafc}
+select,input[type=range]{font-family:inherit}
+select{padding:5px 8px;border-radius:8px;border:1px solid var(--line);background:#fff;color:var(--text);font-size:13px;width:100%}
+input[type=range]{
+  -webkit-appearance:none;appearance:none;width:100%;height:22px;background:transparent;margin:0;
+}
+input[type=range]::-webkit-slider-runnable-track{height:5px;border-radius:3px;background:#dfe7f2}
+input[type=range]::-webkit-slider-thumb{
+  -webkit-appearance:none;appearance:none;width:16px;height:16px;border-radius:50%;
+  background:var(--blue);border:2px solid #fff;box-shadow:0 1px 4px rgba(37,99,235,.5);margin-top:-6px;
+}
+input[type=range]::-moz-range-track{height:5px;border-radius:3px;background:#dfe7f2}
+input[type=range]::-moz-range-thumb{width:14px;height:14px;border:2px solid #fff;border-radius:50%;background:var(--blue)}
+
+.app{max-width:1560px;margin:0 auto;padding:14px 16px 40px}
+
+/* ---------- 顶栏 ---------- */
+.topbar{display:flex;flex-wrap:wrap;gap:12px;align-items:center;justify-content:space-between;margin-bottom:12px}
+.topbar h1{font-size:19px;margin:0;letter-spacing:.5px}
+.topbar .sub{font-size:12px;color:var(--muted);margin-top:2px}
+.viewtabs{display:flex;gap:6px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:4px;box-shadow:var(--shadow)}
+.viewtabs button{border:none;background:transparent;padding:6px 14px;border-radius:7px;color:var(--muted);font-weight:600}
+.viewtabs button.active{background:var(--blue);color:#fff}
+
+/* ---------- 主区 ---------- */
+.main{display:grid;grid-template-columns:minmax(0,1fr) 356px;gap:12px;align-items:start}
+@media (max-width:1080px){ .main{grid-template-columns:1fr} }
+
+.stagewrap{
+  position:relative;background:#fff;border:1px solid var(--line);border-radius:var(--radius);
+  box-shadow:var(--shadow);overflow:hidden;
+}
+#stage{display:block;width:100%;height:min(58vh,600px);min-height:360px;touch-action:none;cursor:crosshair}
+.legend{
+  position:absolute;left:10px;top:10px;display:flex;flex-wrap:wrap;gap:1px 12px;
+  max-width:min(56%,430px);
+  background:rgba(255,255,255,.92);backdrop-filter:blur(4px);
+  border:1px solid var(--line);border-radius:9px;padding:6px 10px;font-size:11px;line-height:1.75;
+  pointer-events:none;box-shadow:0 2px 8px rgba(16,32,56,.06);
+}
+.legend span{white-space:nowrap}
+.legend i{display:inline-block;width:14px;height:4px;border-radius:2px;margin-right:5px;vertical-align:middle}
+.legend i.dot{height:8px;width:8px;border-radius:50%}
+.banner{
+  position:absolute;left:50%;top:10px;transform:translate(-50%,-16px);
+  max-width:82%;padding:8px 14px;border-radius:9px;font-size:12.5px;font-weight:600;
+  background:#fff1f2;border:1px solid #fecdd3;color:#b91c1c;box-shadow:0 6px 18px rgba(185,28,28,.15);
+  opacity:0;pointer-events:none;transition:.22s;line-height:1.5;
+}
+.banner.show{opacity:1;transform:translate(-50%,0)}
+.banner.info{background:#eff6ff;border-color:#bfdbfe;color:#1e40af}
+.stagefoot{
+  position:absolute;left:10px;bottom:8px;max-width:66%;font-size:11px;color:var(--muted);
+  display:flex;gap:10px;pointer-events:none;
+  background:rgba(255,255,255,.82);border-radius:7px;padding:2px 8px;
+}
+.stagefoot b{color:#0f172a}
+@media (max-width:640px){ .stagefoot{max-width:92%;font-size:10px} }
+
+/* ---------- 控制面板 ---------- */
+.panel{
+  background:#fff;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);
+  padding:12px;max-height:calc(100vh - 120px);overflow-y:auto;
+}
+@media (max-width:1080px){ .panel{max-height:none} }
+.panel::-webkit-scrollbar{width:8px}
+.panel::-webkit-scrollbar-thumb{background:#d5deea;border-radius:4px}
+.sec{margin-bottom:14px}
+.sec:last-child{margin-bottom:0}
+.sec h3{
+  font-size:12px;margin:0 0 8px;color:#3b4a61;font-weight:700;letter-spacing:.6px;
+  display:flex;align-items:center;gap:6px;
+}
+.sec h3::before{content:"";width:3px;height:12px;border-radius:2px;background:var(--blue)}
+.row{display:flex;align-items:center;gap:8px;margin-bottom:8px}
+.row label{font-size:12.5px;color:var(--muted);flex:0 0 84px}
+.row .val{font-size:12px;color:#0f172a;font-variant-numeric:tabular-nums;flex:0 0 66px;text-align:right;font-weight:600}
+.row .val.wide{flex:0 0 94px;font-size:11px}
+.row .grp{display:flex;gap:5px;flex:1}
+.row .grp button{flex:1;padding:5px 0;font-size:12px;text-align:center}
+.row .grp button.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.row .grp button.onbad{background:var(--red);border-color:var(--red);color:#fff}
+.btnrow{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:8px}
+.btnrow button{flex:1;min-width:64px}
+.chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{
+  font-size:12px;padding:4px 9px;border-radius:20px;border:1px solid var(--line);
+  background:#f8fafc;color:var(--muted);cursor:pointer;user-select:none;transition:.15s;
+}
+.chip:hover{border-color:#b9c8dd}
+.chip.on{background:#e8f0ff;border-color:#b6ccf7;color:#1d4ed8;font-weight:600}
+.chip.on::before{content:"✓ "}
+.hintline{font-size:11.5px;color:var(--muted);line-height:1.5;margin-top:6px;background:#f8fafc;border-left:3px solid #cbd5e1;padding:5px 8px;border-radius:0 6px 6px 0}
+.hintline.warn{border-left-color:#fca5a5;background:#fff5f5;color:#b91c1c}
+
+/* ---------- 下方卡片 ---------- */
+.grid2{display:grid;grid-template-columns:minmax(0,1fr) minmax(0,1fr);gap:12px;margin-top:12px}
+@media (max-width:1080px){ .grid2{grid-template-columns:1fr} }
+.card{background:#fff;border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);padding:12px 14px}
+.card h2{font-size:13.5px;margin:0 0 10px;font-weight:700;display:flex;align-items:center;gap:7px;color:#22303f}
+.card h2 span.tag{font-size:11px;font-weight:500;color:var(--muted)}
+
+.kv{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:5px 14px}
+.kv .item{display:flex;justify-content:space-between;align-items:baseline;border-bottom:1px dashed var(--line2);padding:3px 0;gap:8px}
+.kv .item span{font-size:12px;color:var(--muted);white-space:nowrap}
+.kv .item b{font-size:12.5px;font-variant-numeric:tabular-nums;color:#0f172a;white-space:nowrap}
+.kv .item b.hl{color:var(--blue)}
+.kv .item b.ok{color:var(--green)}
+.kv .item b.bad{color:var(--red)}
+
+#charts{display:block;width:100%;height:296px}
+#life{display:block;width:100%;height:168px;border:1px solid var(--line2);border-radius:9px;background:#fbfdff}
+
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{padding:5px 6px;text-align:center;border-bottom:1px solid var(--line2);font-variant-numeric:tabular-nums}
+th{color:var(--muted);font-weight:600;background:#f8fafc;font-size:11.5px;position:sticky;top:0}
+tbody tr:hover{background:#f7faff}
+.tablescroll{max-height:190px;overflow:auto;border:1px solid var(--line2);border-radius:8px}
+textarea.csv{
+  width:100%;height:74px;margin-top:8px;font-family:ui-monospace,Consolas,monospace;font-size:11.5px;
+  padding:6px 8px;border:1px solid var(--line);border-radius:8px;resize:vertical;color:#334155;background:#fcfdff;
+}
+
+/* ---------- 教学流程 ---------- */
+.steps{display:flex;gap:6px;margin-bottom:10px;flex-wrap:wrap}
+.steps .st{
+  flex:1;min-width:60px;text-align:center;font-size:12px;padding:6px 4px;border-radius:8px;
+  background:#f1f5f9;color:var(--muted);border:1px solid transparent;cursor:pointer;font-weight:600;
+}
+.steps .st.on{background:var(--blue);color:#fff}
+.steps .st.done{background:#dcfce7;color:#15803d}
+.stepbody{background:#f8fafc;border:1px solid var(--line2);border-radius:9px;padding:10px 12px;min-height:104px}
+.stepbody .tip{font-size:12.5px;color:#334155;line-height:1.65}
+.stepbody .q{font-size:12.5px;color:#1e40af;font-weight:600;margin-top:8px;line-height:1.6}
+.stepbody .ans{font-size:12px;color:#15803d;margin-top:6px;line-height:1.65;display:none;background:#f0fdf4;border-left:3px solid #86efac;padding:6px 8px;border-radius:0 6px 6px 0}
+.stepbody .ans.show{display:block}
+
+/* ---------- 测验 ---------- */
+.qz{margin-bottom:12px}
+.qz:last-child{margin-bottom:0}
+.qz .qt{font-size:12.5px;font-weight:600;margin-bottom:6px;line-height:1.6}
+.qz .opts{display:flex;flex-direction:column;gap:5px}
+.qz .opt{
+  font-size:12px;padding:6px 10px;border:1px solid var(--line);border-radius:8px;background:#fff;
+  cursor:pointer;text-align:left;line-height:1.5;transition:.15s;
+}
+.qz .opt:hover{background:#f7faff;border-color:#b9c8dd}
+.qz .opt.right{background:#eafaf0;border-color:#86efac;color:#15803d;font-weight:600}
+.qz .opt.wrong{background:#fef2f2;border-color:#fca5a5;color:#b91c1c}
+.qz .why{display:none;font-size:11.5px;margin-top:6px;padding:6px 9px;border-radius:7px;background:#f8fafc;color:#475569;line-height:1.6;border-left:3px solid #cbd5e1}
+.qz .why.show{display:block}
+
+details.about{margin-top:14px;background:#fff;border:1px solid var(--line);border-radius:var(--radius);padding:10px 14px;box-shadow:var(--shadow)}
+details.about summary{cursor:pointer;font-size:13px;font-weight:700;color:#22303f;outline:none}
+details.about .inner{font-size:12.5px;color:#475569;line-height:1.75;padding-top:8px}
+details.about h4{font-size:12.5px;margin:10px 0 4px;color:#1e293b}
+details.about ul{margin:4px 0;padding-left:20px}
+details.about li{margin:2px 0}
+.small{font-size:11.5px;color:var(--muted)}
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div class="topbar">
+    <div>
+      <h1>曲线运动 · 切线方向交互模型</h1>
+      <div class="sub">模型 26 &nbsp;|&nbsp; 瞬时速度沿切线 &nbsp;·&nbsp; 合力指向凹侧 &nbsp;·&nbsp; 飞出后沿出口切线</div>
+    </div>
+    <div class="viewtabs" id="viewTabs">
+      <button data-view="top" class="active">俯视（水平桌面）</button>
+      <button data-view="side">侧视（竖直平面）</button>
+    </div>
+  </div>
+
+  <div class="main">
+    <section class="stagewrap">
+      <canvas id="stage"></canvas>
+      <div class="legend" id="legend"></div>
+      <div class="banner" id="banner"></div>
+      <div class="stagefoot">
+        <span id="viewHint"></span>
+        <span id="scaleInfo"></span>
+      </div>
+    </section>
+
+    <aside class="panel" id="panel">
+      <div class="sec">
+        <h3>轨道与运动</h3>
+        <div class="row">
+          <label>轨道形状</label>
+          <select id="shapeSel" style="flex:1">
+            <option value="arc">圆弧</option>
+            <option value="parabola">抛物线</option>
+            <option value="ellipse">椭圆弧</option>
+            <option value="s">S 形</option>
+            <option value="custom">自定义（三点绘制）</option>
+          </select>
+        </div>
+        <div class="row">
+          <label>出口角</label>
+          <input type="range" id="exitDeg" min="0" max="360" step="1" value="0" />
+          <span class="val" id="exitDegV">0°</span>
+        </div>
+        <div class="row">
+          <label>释放位置</label>
+          <input type="range" id="relPct" min="0" max="80" step="1" value="0" />
+          <span class="val wide" id="relPctV">0%</span>
+        </div>
+        <div class="row">
+          <label id="v0Label">初速度 v₀</label>
+          <input type="range" id="v0" min="0" max="4" step="0.05" value="2" />
+          <span class="val" id="v0V">2.00</span>
+        </div>
+        <div class="hintline" id="v0Hint">俯视：水平面内无切向力，速率处处恒为 v₀。</div>
+        <div class="row">
+          <label>小球质量 m</label>
+          <input type="range" id="mass" min="0.1" max="2" step="0.05" value="0.5" />
+          <span class="val" id="massV">0.50</span>
+        </div>
+        <div class="row">
+          <label>重力 g</label>
+          <div class="grp" id="gGrp">
+            <button data-g="9.8" class="on">9.8</button>
+            <button data-g="10">10</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="sec">
+        <h3>脱离轨道后的合力（假设情景）</h3>
+        <div class="row">
+          <div class="grp" id="forceGrp" style="flex:1">
+            <button data-f="concave" class="on">指向凹侧（正确）</button>
+          </div>
+        </div>
+        <div class="row">
+          <div class="grp" id="forceGrp2" style="flex:1">
+            <button data-f="tangent">沿切线（错误）</button>
+            <button data-f="convex">指向凸侧（错误）</button>
+          </div>
+        </div>
+        <div class="hintline" id="forceHint">正确：飞出后不再有侧向力，俯视时沿切线匀速直线；侧视时只受重力，做抛体运动。</div>
+      </div>
+
+      <div class="sec">
+        <h3>播放控制</h3>
+        <div class="btnrow">
+          <button id="btnPlay" class="primary">▶ 播放</button>
+          <button id="btnStep">单步</button>
+          <button id="btnReset" class="ghost">重置</button>
+        </div>
+        <div class="row">
+          <label>慢动作</label>
+          <div class="grp" id="spdGrp">
+            <button data-s="0.25">0.25×</button>
+            <button data-s="0.5">0.5×</button>
+            <button data-s="1" class="on">1×</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="sec">
+        <h3>图层开关</h3>
+        <div class="chips" id="layerChips"></div>
+      </div>
+
+      <div class="sec">
+        <h3>对比模式</h3>
+        <div class="btnrow"><button id="cmpMulti">叠加多出口角飞出直线</button></div>
+        <div class="btnrow"><button id="cmpRelease" class="warn">撤去侧向力（从探针点飞出）</button></div>
+        <div class="btnrow"><button id="cmpReverse" class="warn">合力反向 → 弯曲反向</button></div>
+        <div class="btnrow"><button id="cmpClear" class="ghost">清除对比线</button></div>
+        <div class="hintline">提示：先在轨迹上点一下取探针点，再点“撤去侧向力”，小球会从该点沿切线直飞出去。</div>
+      </div>
+    </aside>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>实时数据 <span class="tag">（探针读数见画面浮标）</span></h2>
+      <div class="kv" id="hud"></div>
+    </div>
+    <div class="card">
+      <h2>图像联动 <span class="tag">v–t &nbsp;/&nbsp; θ–t &nbsp;/&nbsp; F_t、F_n–t</span></h2>
+      <canvas id="charts"></canvas>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>数据记录 <span class="tag">每次飞出自动追加一行</span></h2>
+      <div class="tablescroll">
+        <table>
+          <thead><tr><th>#</th><th>轨道</th><th>出口角/°</th><th>飞出方向角/°</th><th>差值/°</th></tr></thead>
+          <tbody id="recBody"><tr><td colspan="5" class="small" style="color:#94a3b8;padding:14px">暂无记录，点击“播放”让小球飞出轨道</td></tr></tbody>
+        </table>
+      </div>
+      <div class="btnrow" style="margin-top:8px">
+        <button id="btnCsv">导出 CSV</button>
+        <button id="btnCopyCsv" class="ghost">生成 CSV 文本</button>
+        <button id="btnClearRec" class="ghost">清空</button>
+      </div>
+      <textarea class="csv" id="csvOut" readonly placeholder="点击“生成 CSV 文本”后在此显示，可全选复制"></textarea>
+    </div>
+
+    <div class="card">
+      <h2>教学引导 <span class="tag">猜想 → 实验 → 数据 → 结论</span></h2>
+      <div class="steps" id="steps"></div>
+      <div class="stepbody">
+        <div class="tip" id="stepTip"></div>
+        <div class="q" id="stepQ"></div>
+        <div class="ans" id="stepA"></div>
+        <div class="btnrow" style="margin-top:9px">
+          <button id="stepPrev" class="ghost">上一步</button>
+          <button id="stepReveal" class="ghost">查看参考答案</button>
+          <button id="stepNext" class="primary">下一步</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2>即时反馈 <span class="tag">选一个答案，立即判卷</span></h2>
+      <div id="quiz"></div>
+    </div>
+
+    <div class="card">
+      <h2>拓展 · 进阶层 <span class="tag">曲率与法向力（定性）</span></h2>
+      <div class="row" style="margin-top:2px">
+        <label style="flex:0 0 auto;font-size:12.5px">开启进阶层</label>
+        <div class="grp" id="advGrp" style="flex:0 0 92px">
+          <button id="advBtn" data-on="1">开启</button>
+        </div>
+      </div>
+      <div id="advBody" class="small" style="line-height:1.75;color:#475569">
+        <p style="margin:6px 0 4px">一般曲线运动中，把合力沿切向和法向分解：</p>
+        <p style="margin:0 0 4px;font-size:13px;color:#1e293b">
+          F<sub>t</sub> = m·a<sub>t</sub> &nbsp;&nbsp;（只改变速率）<br>
+          F<sub>n</sub> = m·v²/ρ &nbsp;&nbsp;（只改变方向，ρ 为曲率半径）
+        </p>
+        <p style="margin:0 0 4px">等速率通过时：<b>曲率越大（ρ 越小，弯得越急），需要的法向力越大</b>；v 越大，需要的法向力也越大（与 v² 成正比）。</p>
+        <p style="margin:0;color:#94a3b8">本模型对 F_n、ρ 只作定性提示，不做定量要求。</p>
+      </div>
+      <div class="hintline" style="margin-top:10px" id="advReadout">当前探针点：ρ = — ，F_n = —</div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:12px">
+    <h2>生活实例 <span class="tag">点击任一实例，看速度如何沿切线“甩”出去</span></h2>
+    <div class="chips" id="lifeChips" style="margin-bottom:8px"></div>
+    <canvas id="life"></canvas>
+    <div class="hintline" id="lifeTip"></div>
+  </div>
+
+  <details class="about">
+    <summary>设计说明 · 验收清单（点击展开）</summary>
+    <div class="inner">
+      <h4>一、两套物理模型严格区分</h4>
+      <ul>
+        <li><b>俯视（水平桌面）</b>：重力被支持力平衡，轨道在水平面内，速度大小恒定；合外力只由轨道侧向弹力提供，是纯法向力 m·v²/ρ。小球飞出后无侧向力 → 沿出口切线做匀速直线运动。</li>
+        <li><b>侧视（竖直平面）</b>：轨道在竖直平面内，合力 = 重力 + 轨道弹力 = m·a<sub>t</sub>·t̂ + m·v²/ρ·n̂。小球飞出后只受重力 → 抛体运动，但<b>初速度方向仍是出口切线</b>。</li>
+        <li>两种情境下受力箭头、文字说明、飞行轨迹全部不同，不混用。</li>
+      </ul>
+      <h4>二、几何与数值</h4>
+      <ul>
+        <li>轨道用解析参数曲线描述（圆弧/抛物线/椭圆弧/双圆弧 S 形/三点二次贝塞尔），切线由解析一阶导数求得，曲率由一阶、二阶导数按 κ=(x′y″−y′x″)/|p′|³ 求得，<b>不做像素差分</b>。</li>
+        <li>按弧长重参数化，固定步长 dt = 1/240 s 积分，不同帧率下结果完全一致。</li>
+        <li><b>v₀ 的含义随视角而变，且真实生效</b>：俯视时水平面内没有切向力、轨道弹力不做功，v₀ 就是<b>全程恒定速率</b>（严格处处相等，不是“初”速度），改它只改变快慢、不改变轨迹；侧视时 v₀ 是真正的<b>释放点初速度</b>，之后速率由能量守恒 v² = v₀² + 2g(h₀ − h) 给出，v₀ 过小时小球到不了出口，会沿轨道滑回并停住。实时读数、探针读数、静态分帧、主积分全部调用<b>同一个速率函数</b>，不会出现“读数一个值、动画另一个值”。</li>
+        <li>出口角滑块把整条轨道绕出口点旋转，使末端解析切线角精确等于设定值；出口点固定在原点，因此多次实验的飞出直线从同一点发出，便于逐一比对。</li>
+        <li>“出口切线角”取自末端<b>解析切向量</b>；“飞出方向角”取自飞出瞬间的<b>速度矢量</b>（v<sub>x</sub>、v<sub>y</sub>，由受约束运动积分得到，与切线公式相互独立）。两者吻合即为“瞬时速度沿切线”的数值证据，显示精度下差值恒为 0.0°。</li>
+        <li>侧视时另设“当前速度偏离切线”一栏：飞出瞬间为 0°，随后因重力持续增大——这正是“抛体运动的初速度沿切线，之后方向不断改变”的直观体现。</li>
+      </ul>
+      <h4>三、画面分区</h4>
+      <ul>
+        <li>左上：图例（常驻）；中上：提示横幅；主画布：白纸底板 + 轨道 + 小球 + 各类矢量；右下：比例尺。</li>
+        <li>右侧：控制面板（窄屏自动折叠到下方）；下方四张卡片依次为数据、图像、记录表、教学引导、测验与拓展。</li>
+      </ul>
+      <h4>四、验收清单</h4>
+      <ul>
+        <li><b>瞬时速度沿切线</b>：探针工具提示中“切线角 θ”与“速度方向”完全一致（同一单位向量），蓝色速度箭头与黑色轨迹切线段共线。</li>
+        <li><b>飞出方向即出口切线</b>：记录表“差值”列恒为 0.0°（平均 < 1e-12，仅在显示精度内为 0）。</li>
+        <li><b>合力指向凹侧</b>：红色合力箭头恒在蓝色半透明凹侧阴影内；数据面板“v 与 F 夹角”< 90° 时速率增大、> 90° 时减小、= 90° 时不变。</li>
+        <li><b>合力反向则弯曲反向</b>：点“合力反向 → 弯曲反向”，轨迹向原理弯曲方向的反侧弯曲，并弹出红色纠错。</li>
+        <li><b>曲线运动必有加速度</b>：任何取点处 F_n = m·v²/ρ ≠ 0（ρ 有限），轨迹切线角 θ–t 曲线随时间单调（或持续）变化，速度方向一直在变。</li>
+        <li><b>撤去侧向力</b>：任意点撤去后沿该点切线做直线运动，速率读数在俯视模型下保持常数。</li>
+        <li><b>仅凭墨水印迹</b>：关闭全部辅助图层后，仍能看到“轨道墨迹”与“飞出直线墨迹”在出口处光滑相切。</li>
+      </ul>
+      <h4>五、自测步骤</h4>
+      <ul>
+        <li>① 出口角设为 30°，播放到飞出 → 读出“飞出方向角”与“出口切线角”，差值应 ≤ 0.1°（验收线 0.5°）。</li>
+        <li>② 在轨迹上点三处取探针 → 蓝色速度箭头始终指向运动一侧，红色合力箭头始终落在凹侧阴影内。</li>
+        <li>③ 选“指向凸侧（错误示范）” → 轨迹朝凸侧反向弯曲，顶部弹出红色纠错说明；改回“指向凹侧（正确）”后恢复相切直线。</li>
+      </ul>
+    </div>
+  </details>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* ============================================================
+   1. 基础工具
+   ============================================================ */
+const TAU = Math.PI * 2;
+const D2R = Math.PI / 180;
+const R2D = 180 / Math.PI;
+const clamp = (v,a,b)=> v<a?a:(v>b?b:v);
+const lerp  = (a,b,t)=> a + (b-a)*t;
+const normDeg = d => ((d % 360) + 360) % 360;
+const angDiff = (a,b)=>{ let d = normDeg(a-b); if(d>180) d-=360; return d; };
+const $ = id => document.getElementById(id);
+
+const C = {
+  tangent:'#2563eb',
+  force:'#dc2626',
+  ft:'#ea580c',
+  fn:'#7c3aed',
+  accel:'#16a34a',
+  ink:'#374151',
+  track:'#0f766e',
+  trackLight:'#99f6e4',
+  ghost:'#94a3b8',
+  paper:'#ffffff',
+  grid:'#eef2f7',
+  grid2:'#e2e8f0'
+};
+
+/* ============================================================
+   2. 配置（物理参数集中在此）
+   ============================================================ */
+const CFG = {
+  dt: 1/240,            // 固定物理步长 s
+  maxSubSteps: 900,
+  trackLen: 1.30,       // 轨道统一弧长 m
+  ghostLen: 1.30,       // 幽灵切线长度 m
+  flyLimit: 2.40,       // 飞出记录区半径 m（超出后暂停）
+  ballR: 0.042,         // 小球半径 m
+  sampleN: 1400,        // 曲线采样点数
+  probeRange: 0.22,     // 探针凹侧阴影半宽 m
+  probeDepth: 0.26,     // 探针凹侧阴影深度 m
+  shadeDepth: 0.13,     // 整条轨道凹侧阴影深度 m
+  fakeA: 3.0,           // 反例模式附加加速度 m/s²
+  vEps: 1e-4,           // 速率判零阈值 m/s（到达转折点时近似静止）
+  inkStep: 0.006,       // 墨水采样最小位移 m
+  strobeDt: 0.09,       // 频闪间隔 s
+  seriesDt: 1/60        // 图像采样间隔 s
+};
+
+/* ============================================================
+   3. 解析曲线定义
+   ============================================================ */
+function arcCurve(cx,cy,R,a0,a1){
+  const da = a1 - a0;
+  return {
+    p:   u => { const t = a0+da*u; return { x: cx + R*Math.cos(t), y: cy + R*Math.sin(t) }; },
+    dp:  u => { const t = a0+da*u; return { x: -R*Math.sin(t)*da, y: R*Math.cos(t)*da }; },
+    d2p: u => { const t = a0+da*u; return { x: -R*Math.cos(t)*da*da, y: -R*Math.sin(t)*da*da }; }
+  };
+}
+function ellipseCurve(cx,cy,a,b,a0,a1){
+  const da = a1 - a0;
+  return {
+    p:   u => { const t = a0+da*u; return { x: cx + a*Math.cos(t), y: cy + b*Math.sin(t) }; },
+    dp:  u => { const t = a0+da*u; return { x: -a*Math.sin(t)*da, y: b*Math.cos(t)*da }; },
+    d2p: u => { const t = a0+da*u; return { x: -a*Math.cos(t)*da*da, y: -b*Math.sin(t)*da*da }; }
+  };
+}
+/* 三点二次贝塞尔：曲线在 u=0.5 处精确通过 P1 */
+function quadThrough3(P0,P1,P2){
+  const Q0 = { x:P0.x, y:P0.y };
+  const Q2 = { x:P2.x, y:P2.y };
+  const Q1 = { x: 2*P1.x - (P0.x+P2.x)/2, y: 2*P1.y - (P0.y+P2.y)/2 };
+  return {
+    p:   u => { const m=1-u; return { x: m*m*Q0.x + 2*m*u*Q1.x + u*u*Q2.x, y: m*m*Q0.y + 2*m*u*Q1.y + u*u*Q2.y }; },
+    dp:  u => { const m=1-u; return { x: 2*m*(Q1.x-Q0.x) + 2*u*(Q2.x-Q1.x), y: 2*m*(Q1.y-Q0.y) + 2*u*(Q2.y-Q1.y) }; },
+    d2p: () => ({ x: 2*(Q0.x - 2*Q1.x + Q2.x), y: 2*(Q0.y - 2*Q1.y + Q2.y) })
+  };
+}
+/* S 形：两段反向圆弧拼接（C1 连续） */
+function sShapeDef(){
+  const A1 = arcCurve(-0.80, 0.40, 0.40, Math.PI/2, 0);
+  const A2 = arcCurve( 0.00, 0.40, 0.40, Math.PI, 1.5*Math.PI);
+  const pick = u => (u < 0.5) ? [A1, u*2] : [A2, (u-0.5)*2];
+  return {
+    p:   u => { const a = pick(u); return a[0].p(a[1]); },
+    dp:  u => { const a = pick(u); return a[0].dp(a[1]); },
+    d2p: u => { const a = pick(u); return a[0].d2p(a[1]); }
+  };
+}
+
+/* 自定义三点默认位置（局部坐标） */
+const customPts = [
+  { x:-1.15, y:0.95 },
+  { x:-0.72, y:0.18 },
+  { x: 0.00, y:0.00 }
+];
+
+function getShapeDef(){
+  switch(ST.shape){
+    case 'parabola':
+      return {
+        p:   u => { const x = -1+u; return { x, y: x*x }; },
+        dp:  u => { const x = -1+u; return { x:1, y:2*x }; },
+        d2p: () => ({ x:0, y:2 })
+      };
+    case 'ellipse':
+      return ellipseCurve(0,0, 1.25, 0.80, Math.PI, 1.5*Math.PI);
+    case 's':
+      return sShapeDef();
+    case 'custom':
+      return quadThrough3(customPts[0], customPts[1], customPts[2]);
+    case 'arc':
+    default:
+      return arcCurve(0,0, 1.0, Math.PI, 1.5*Math.PI);
+  }
+}
+
+/* ============================================================
+   4. 轨道构建（采样 + 弧长参数化 + 旋转/缩放）
+   ============================================================ */
+function sampleCurve(def, N){
+  const pts = [];
+  let L = 0, px = 0, py = 0;
+  for(let i=0;i<=N;i++){
+    const u = i/N;
+    const p = def.p(u);
+    const d = def.dp(u);
+    const dd = def.d2p(u);
+    const sp = Math.hypot(d.x,d.y) || 1e-9;
+    const k = (d.x*dd.y - d.y*dd.x) / (sp*sp*sp);
+    if(i>0) L += Math.hypot(p.x-px, p.y-py);
+    pts.push({ s:L, x:p.x, y:p.y, tx:d.x/sp, ty:d.y/sp, kappa:k });
+    px = p.x; py = p.y;
+  }
+  return { pts, L };
+}
+
+let track = null;          // { pts, L, local:{k,rot,ex,ey}, shapeName }
+let paperRect = null;      // 白纸世界坐标矩形
+
+function rebuildTrack(frozen){
+  const def = getShapeDef();
+  const raw = sampleCurve(def, CFG.sampleN);
+  const k = frozen ? frozen.k : CFG.trackLen / (raw.L || 1);
+  const last = raw.pts[raw.pts.length-1];
+  const baseAng = Math.atan2(last.ty, last.tx);
+  /* frozen：自定义拖拽过程中冻结缩放与旋转，避免手感跳动 */
+  const rot = frozen ? frozen.rot : (ST.exitDeg*D2R - baseAng);
+  const cs = Math.cos(rot), sn = Math.sin(rot);
+  const ex = last.x, ey = last.y;
+
+  const pts = new Array(raw.pts.length);
+  for(let i=0;i<raw.pts.length;i++){
+    const q = raw.pts[i];
+    const dx = (q.x-ex)*k, dy = (q.y-ey)*k;
+    pts[i] = {
+      s: q.s*k,
+      x: dx*cs - dy*sn,
+      y: dx*sn + dy*cs,
+      tx: q.tx*cs - q.ty*sn,
+      ty: q.tx*sn + q.ty*cs,
+      kappa: q.kappa / k
+    };
+  }
+  const e = pts[pts.length-1];
+  track = {
+    pts: pts,
+    L: raw.L*k,
+    local: { k, rot, ex, ey },
+    exit: { x:0, y:0 },
+    /* 出口方向直接取末端解析切向量，保证幽灵直线与轨道严格相切 */
+    exitDir: { x: e.tx, y: e.ty },
+    exitAngleDeg: normDeg(Math.atan2(e.ty, e.tx) * R2D),
+    exitKappa: e.kappa
+  };
+  paperRect = null;
+}
+
+/* 按弧长取点（线性插值，切线/曲率线性混合后归一） */
+function pointAtS(s){
+  const pts = track.pts;
+  s = clamp(s, 0, track.L);
+  let lo = 0, hi = pts.length-1;
+  while(hi - lo > 1){
+    const mid = (lo+hi) >> 1;
+    if(pts[mid].s <= s) lo = mid; else hi = mid;
+  }
+  const a = pts[lo], b = pts[hi];
+  const den = b.s - a.s;
+  const f = den > 1e-12 ? (s - a.s)/den : 0;
+  let tx = lerp(a.tx,b.tx,f), ty = lerp(a.ty,b.ty,f);
+  const m = Math.hypot(tx,ty) || 1;
+  return {
+    x: lerp(a.x,b.x,f), y: lerp(a.y,b.y,f),
+    tx: tx/m, ty: ty/m,
+    kappa: lerp(a.kappa,b.kappa,f)
+  };
+}
+
+/* ------------------------------------------------------------
+   全模型唯一的速度来源：给定弧长 s，返回该处“速率”（非负标量）
+   · 俯视（水平面）：轨道弹力 ⊥ 速度，不做功，也没有切向力
+     ⇒ 速率处处等于设定值 v₀，不做任何隐藏抬升（v₀=0 就是静止）
+   · 侧视（竖直面）：只有重力做功 ⇒ 能量守恒
+     v² = v₀² + 2g(h0 − h)，h 取轨道上该点的高度 y
+   探针读数、实时读数、静态分帧、主积分全部调用此函数，
+   保证“同一处读数唯一”，不再出现积分法与能量法打架的情况。
+   ------------------------------------------------------------ */
+function speedAtS(s, s0){
+  if(ST.view !== 'side') return ST.v0;
+  const p  = pointAtS(s);
+  const p0 = pointAtS(s0 == null ? sim.s0 : s0);
+  const v2 = ST.v0*ST.v0 + 2*ST.g*(p0.y - p.y);
+  return Math.sqrt(Math.max(0, v2));      // 允许为 0：真实转折点
+}
+
+/* 该点沿 s 增大方向是否下坡（重力能推动前进） */
+function downhillAtS(s){
+  return -pointAtS(s).ty > 0;
+}
+
+/* 按弧长反查采样点索引（二分，供阴影分段等使用） */
+function indexAtS(s){
+  const pts = track.pts;
+  s = clamp(s, 0, track.L);
+  let lo = 0, hi = pts.length-1;
+  while(hi - lo > 1){
+    const mid = (lo+hi) >> 1;
+    if(pts[mid].s <= s) lo = mid; else hi = mid;
+  }
+  return lo;
+}
+
+/* 世界坐标 → 最近弧长（探针取点） */
+function nearestS(wx, wy){
+  const pts = track.pts;
+  let best = 0, bd = Infinity;
+  for(let i=0;i<pts.length;i+=2){
+    const d = (pts[i].x-wx)*(pts[i].x-wx) + (pts[i].y-wy)*(pts[i].y-wy);
+    if(d < bd){ bd = d; best = i; }
+  }
+  // 在邻域内细化
+  let s = pts[best].s;
+  let fine = s, fd = bd;
+  for(let j=-6;j<=6;j++){
+    const idx = best + j;
+    if(idx < 0 || idx >= pts.length) continue;
+    const d = (pts[idx].x-wx)*(pts[idx].x-wx) + (pts[idx].y-wy)*(pts[idx].y-wy);
+    if(d < fd){ fd = d; fine = pts[idx].s; }
+  }
+  return { s: fine, dist: Math.sqrt(fd) };
+}
+
+/* ============================================================
+   5. 状态
+   ============================================================ */
+const ST = {
+  view: 'top',
+  shape: 'arc',
+  exitDeg: 0,
+  relPct: 0,
+  v0: 2.0,
+  mass: 0.5,
+  g: 9.8,
+  forceMode: 'concave',   // concave | tangent | convex
+  playing: false,
+  speedMul: 1,
+  probeS: null,
+  insideTrack: { x:-0.9, y:0.55 },  // 自定义三点拖拽点在屏幕上的命中记录
+  layers: {
+    ink:true, strobe:false, tangent:true, vel:true, force:true, comp:true,
+    shade:true, ghost:true, board:true, sound:true, frames:false
+  }
+};
+
+const sim = {
+  t: 0, phase: 'track', s: 0, s0: 0, v: 0,
+  dir: 1,                  // 沿轨道运动方向：+1 沿 s 增大；-1 退回（初速度不足时）
+  stalled: false,          // 是否已停在轨道上（无法到达出口）
+  stalledNotice: false,    // “到不了出口”的提示是否已经弹过
+  turns: 0,                // 换向次数（识别“往复滑动出不了口”）
+  x: 0, y: 0, vx: 0, vy: 0,
+  trail: [], strobe: [], series: [],
+  acc: 0, lastStrobeT: -1, lastSeriesT: -1, lastInk: null,
+  exitInfo: null,          // {tangentDeg, dirDeg, diffDeg, measured}
+  outOfRange: false,       // 是否已飞出记录区（冻结积分）
+  measureStart: null,
+  ghostPaths: [],          // 对比：历史飞出直线
+  multiRays: null,         // 对比：多出口角射线
+  releasedFrom: null       // 对比：撤去侧向力的点
+};
+
+const records = [];
+let probeInfoCache = null;
+
+/* ============================================================
+   6. 仿真控制
+   ============================================================ */
+function resetSim(keepCompare){
+  rebuildTrack();
+  sim.t = 0;
+  sim.phase = 'track';
+  sim.s0 = clamp(ST.relPct/100, 0, 0.8) * track.L;
+  sim.s = sim.s0;
+  const p = pointAtS(sim.s);
+  sim.x = p.x; sim.y = p.y;
+  sim.dir = 1;
+  sim.stalled = false;
+  sim.stalledNotice = false;
+  sim.turns = 0;
+  sim.v = speedAtS(sim.s);                     // 与探针、图像共用同一个速度来源
+  sim.vx = p.tx * sim.v; sim.vy = p.ty * sim.v;
+  sim.trail = []; sim.strobe = []; sim.series = [];
+  sim.acc = 0; sim.lastStrobeT = -1; sim.lastSeriesT = -1;
+  sim.lastInk = { x: p.x, y: p.y };
+  sim.exitInfo = null;
+  sim.outOfRange = false;
+  sim.measureStart = null;
+  sim.releasedFrom = null;
+  if(!keepCompare){ sim.ghostPaths = []; sim.multiRays = null; }
+  probeInfoCache = null;
+  updateRelLabel();
+  drawCharts(true);
+  updateHUD();
+}
+
+/* 释放位置 / 释放高度 读数（俯视无高度概念 → 显示沿轨道弧长） */
+function updateRelLabel(){
+  const el = $('relPctV');
+  if(!el) return;
+  const p = pointAtS(sim.s0);
+  el.textContent = ST.relPct.toFixed(0) + '% · ' +
+    (ST.view === 'top' ? 's=' + sim.s0.toFixed(2) + 'm' : 'h=' + p.y.toFixed(2) + 'm');
+}
+
+function freeAccel(){
+  let ax = 0, ay = 0;
+  if(ST.view === 'side') ay -= ST.g;
+  if(ST.forceMode !== 'concave' && sim.exitInfo){
+    const d = sim.exitInfo.dirVec;
+    const n = sim.exitInfo.normalVec;
+    const k = CFG.fakeA;
+    if(ST.forceMode === 'tangent'){ ax += d.x*k; ay += d.y*k; }
+    else if(ST.forceMode === 'convex'){ ax -= n.x*k; ay -= n.y*k; }
+  }
+  return { x: ax, y: ay };
+}
+
+/* 飞出：位置精确取轨道末端，速度沿解析切线
+   注意：这里的 vx、vy 来自受约束运动的积分状态，与末端解析切线方向独立求得，
+   二者吻合即为“瞬时速度沿切线”的数值证据。 */
+function doLaunch(){
+  const e = track.pts[track.pts.length-1];
+  const v = speedAtS(track.L);        // 出口速率：与探针/图像同一来源，不用上一帧缓存值
+  sim.v = v;
+  const sgn = Math.sign(e.kappa) || 1;
+  sim.phase = 'fly';
+  sim.x = 0; sim.y = 0;
+  sim.vx = e.tx * v; sim.vy = e.ty * v;
+  const tangentDeg = normDeg(Math.atan2(e.ty, e.tx) * R2D);
+  const dirDeg = normDeg(Math.atan2(sim.vy, sim.vx) * R2D);   // 飞出瞬间的速度方向
+  sim.exitInfo = {
+    tangentDeg: tangentDeg,
+    dirVec: { x:e.tx, y:e.ty },
+    normalVec: { x:-e.ty*sgn, y:e.tx*sgn },
+    dirDeg: dirDeg,
+    diffDeg: angDiff(dirDeg, tangentDeg),
+    measured: true,
+    speed: v
+  };
+  sim.measureStart = null;
+  pushRecord();
+  beep(880, 1320, 0.16);
+  if(ST.view === 'side' && v < 0.55){
+    showBanner('注意：该出口方向下重力做负功，出口速率较低。但“速度沿切线”与速率大小无关——方向仍严格沿切线。', 'info', 4500);
+  }
+}
+
+/* 从任意点撤去侧向力（沿该点切线直飞） */
+function releaseAt(s){
+  const p = pointAtS(s);
+  const v = speedAtS(s);           // 该点的真实速率（俯视=v₀，侧视=能量守恒）
+  const sgn = Math.sign(p.kappa) || 1;
+  sim.phase = 'fly';
+  sim.x = p.x; sim.y = p.y;
+  sim.vx = p.tx * v; sim.vy = p.ty * v;
+  sim.exitInfo = {
+    tangentDeg: normDeg(Math.atan2(p.ty, p.tx) * R2D),
+    dirVec: { x:p.tx, y:p.ty },
+    normalVec: { x:-p.ty*sgn, y:p.tx*sgn },
+    dirDeg: normDeg(Math.atan2(p.ty, p.tx) * R2D),
+    diffDeg: 0,
+    measured: true
+  };
+  sim.measureStart = null;
+  sim.outOfRange = false;
+  sim.releasedFrom = { s: s, x: p.x, y: p.y };
+  sim.trail.push({ x: p.x, y: p.y, t: sim.t });
+  sim.lastInk = { x: p.x, y: p.y };
+  beep(760, 1180, 0.14);
+}
+
+function physicsStep(dt){
+  if(sim.phase === 'track'){
+    if(sim.stalled){
+      sim.v = 0;                       // 停在轨道上：不再推进
+    } else {
+      const p = pointAtS(sim.s);
+      /* 切向加速度：侧视由重力沿切线分量提供；俯视水平面无切向力，恒为 0 */
+      const at = (ST.view === 'side') ? -ST.g * p.ty : 0;
+      const v = speedAtS(sim.s);       // 速率：唯一来源（俯视=v₀，侧视=能量守恒）
+
+      if(v <= CFG.vEps){
+        /* 速率降为 0（转折点）或本来就静止：由切向加速度决定往哪边走。
+           这是“初速度不足”的正确表现——小球到不了出口，会沿轨道退回。 */
+        if(Math.abs(at) > 1e-6){
+          const nd = at > 0 ? 1 : -1;
+          if(nd !== sim.dir) sim.turns++;          // 统计换向次数：用来识别“来回滑动出不了口”
+          sim.dir = nd;
+        } else sim.stalled = true;                 // 俯视且 v₀=0：无任何切向力，保持静止
+      }
+      sim.v = v;
+      const vs = sim.dir * v;                     // 有符号切向速度
+      sim.s += vs*dt + 0.5*at*dt*dt;              // 含 ½at² 项，v=0 时也能起步
+
+      if(sim.s >= track.L){
+        sim.s = track.L;
+        sim.dir = 1;
+        doLaunch();
+      } else {
+        sim.s = Math.max(sim.s, 0);
+        /* 退回轨道顶端仍要往后退 ⇒ 再也走不动了；往复两趟也说明能量不足 */
+        if(sim.s <= 0 && sim.dir < 0){ sim.s = 0; sim.stalled = true; }
+        if(sim.turns >= 3) sim.stalled = true;
+        const q = pointAtS(sim.s);
+        sim.x = q.x; sim.y = q.y;
+        sim.vx = q.tx * sim.v * sim.dir;
+        sim.vy = q.ty * sim.v * sim.dir;
+      }
+    }
+    /* 到不了出口：暂停并说明原因（每次重置只提示一次） */
+    if(sim.stalled && !sim.stalledNotice){
+      sim.stalledNotice = true;
+      ST.playing = false;
+      $('btnPlay').textContent = '▶ 播放';
+      showBanner(ST.view === 'top'
+        ? '俯视模型下 v₀ = 0：水平面内没有切向力，小球保持静止。请把 v₀ 调到 0 以上。'
+        : '能量不足：v₀ = ' + ST.v0.toFixed(2) + ' m/s 到不了出口（出口比起始点高 ' +
+          Math.max(0, pointAtS(track.L).y - pointAtS(sim.s0).y).toFixed(2) +
+          ' m），小球沿轨道滑回并停住。增大 v₀ 或提高释放位置即可飞出。', '', 0);
+    }
+  } else {
+    /* 飞出记录区后冻结积分：无论播放还是单步，避免视野无限缩小、读数发散 */
+    if(!sim.outOfRange){
+      const a = freeAccel();
+      sim.vx += a.x * dt;
+      sim.vy += a.y * dt;
+      sim.x += sim.vx * dt;
+      sim.y += sim.vy * dt;
+      if(Math.hypot(sim.x, sim.y) > CFG.flyLimit){
+        sim.outOfRange = true;
+        ST.playing = false;
+        $('btnPlay').textContent = '▶ 播放';
+        showBanner('小球已飞出记录区，点击“重置”可重新实验。', 'info', 3200);
+      }
+    }
+  }
+
+  sim.t += dt;
+
+  /* 墨水轨迹 */
+  const lx = sim.x - (sim.lastInk ? sim.lastInk.x : 0);
+  const ly = sim.y - (sim.lastInk ? sim.lastInk.y : 0);
+  if(!sim.lastInk || Math.hypot(lx,ly) >= CFG.inkStep){
+    sim.trail.push({ x: sim.x, y: sim.y, t: sim.t });
+    sim.lastInk = { x: sim.x, y: sim.y };
+    if(sim.trail.length > 6000) sim.trail.shift();
+  }
+
+  /* 频闪残影 */
+  if(sim.lastStrobeT < 0 || sim.t - sim.lastStrobeT >= CFG.strobeDt){
+    sim.strobe.push({ x: sim.x, y: sim.y, t: sim.t });
+    sim.lastStrobeT = sim.t;
+    if(sim.strobe.length > 200) sim.strobe.shift();
+  }
+
+  /* 图像数据 */
+  if(sim.lastSeriesT < 0 || sim.t - sim.lastSeriesT >= CFG.seriesDt){
+    const ph = livePhysics();
+    sim.series.push({ t: sim.t, v: ph.v, th: ph.th, ft: ph.Ft, fn: ph.Fn });
+    sim.lastSeriesT = sim.t;
+    if(sim.series.length > 4000) sim.series.shift();
+  }
+}
+
+/* ============================================================
+   7. 实时物理量计算
+   ============================================================ */
+function livePhysics(){
+  if(sim.phase === 'track'){
+    const p = pointAtS(sim.s);
+    const dir = sim.dir || 1;
+    const v = sim.stalled ? 0 : speedAtS(sim.s);
+    const sgn0 = Math.sign(p.kappa) || 1;
+    const nx = -p.ty*sgn0, ny = p.tx*sgn0;        // 指向曲率中心（凹侧），与运动方向无关
+    const rho = Math.abs(p.kappa) < 1e-6 ? Infinity : 1/Math.abs(p.kappa);
+    const at0 = ST.view === 'side' ? -ST.g*p.ty : 0;   // 沿 +s 的切向加速度
+    const an = rho === Infinity ? 0 : v*v/rho;
+    const fx = ST.mass*(at0*p.tx + an*nx);
+    const fy = ST.mass*(at0*p.ty + an*ny);
+    return {
+      phase:'track',
+      x:p.x, y:p.y, v:v,
+      th: normDeg(Math.atan2(p.ty*dir, p.tx*dir)*R2D),   // 实际速度方向（回退时反向）
+      F: Math.hypot(fx,fy), Fd: normDeg(Math.atan2(fy,fx)*R2D),
+      Ft: ST.mass*at0*dir, Fn: ST.mass*an,
+      ang: Math.abs(Math.atan2(an, at0*dir)*R2D),
+      rho: rho,
+      tx:p.tx*dir, ty:p.ty*dir, nx:nx, ny:ny, fx:fx, fy:fy, kappa:p.kappa
+    };
+  }
+  const a = freeAccel();
+  const fx = ST.mass*a.x, fy = ST.mass*a.y;
+  const v = Math.hypot(sim.vx, sim.vy);
+  const tx = v>1e-9 ? sim.vx/v : 1, ty = v>1e-9 ? sim.vy/v : 0;
+  const nx = -ty, ny = tx;
+  const Ft = fx*tx + fy*ty;
+  const Fn = fx*nx + fy*ny;
+  return {
+    phase:'fly',
+    x:sim.x, y:sim.y, v:v,
+    th: normDeg(Math.atan2(sim.vy,sim.vx)*R2D),
+    F: Math.hypot(fx,fy), Fd: normDeg(Math.atan2(fy,fx)*R2D),
+    Ft: Ft, Fn: Fn,
+    ang: v>1e-9 ? Math.abs(Math.atan2(Fn,Ft)*R2D) : 0,
+    rho: Infinity,
+    tx:tx, ty:ty, nx:nx, ny:ny, fx:fx, fy:fy, kappa:0
+  };
+}
+
+/* 探针点物理量：速率同样走 speedAtS，与主积分完全一致 */
+function probePhysics(s){
+  const p = pointAtS(s);
+  const v = speedAtS(s);            // 俯视=v₀；侧视=能量守恒给出的该点速率
+  const sgn = Math.sign(p.kappa) || 1;
+  const nx = -p.ty*sgn, ny = p.tx*sgn;
+  const rho = Math.abs(p.kappa) < 1e-6 ? Infinity : 1/Math.abs(p.kappa);
+  const at = ST.view === 'side' ? -ST.g*p.ty : 0;
+  const an = rho === Infinity ? 0 : v*v/rho;
+  const fx = ST.mass*(at*p.tx + an*nx);
+  const fy = ST.mass*(at*p.ty + an*ny);
+  return {
+    s: s, x:p.x, y:p.y, v:v,
+    th: normDeg(Math.atan2(p.ty,p.tx)*R2D),
+    F: Math.hypot(fx,fy), Fd: normDeg(Math.atan2(fy,fx)*R2D),
+    Ft: ST.mass*at, Fn: ST.mass*an,
+    ang: Math.abs(Math.atan2(an, at)*R2D),
+    rho: rho, tx:p.tx, ty:p.ty, nx:nx, ny:ny, fx:fx, fy:fy, kappa:p.kappa
+  };
+}
+
+/* ============================================================
+   8. 视图变换（世界 → 屏幕，自适应缩放）
+   ============================================================ */
+const view = { scale: 0, ox: 0, oy: 0, snapped:false };
+const stage = $('stage');
+
+function fitCanvas(cv){
+  const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+  const w = cv.clientWidth, h = cv.clientHeight;
+  if(cv.width !== Math.round(w*dpr) || cv.height !== Math.round(h*dpr)){
+    cv.width = Math.round(w*dpr);
+    cv.height = Math.round(h*dpr);
+  }
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  return { ctx, w, h };
+}
+
+function bboxStatic(){
+  let minX=Infinity,maxX=-Infinity,minY=Infinity,maxY=-Infinity;
+  const add = (x,y)=>{ if(x<minX)minX=x; if(x>maxX)maxX=x; if(y<minY)minY=y; if(y>maxY)maxY=y; };
+  for(const p of track.pts) add(p.x,p.y);
+  add(0,0);
+  add(track.exitDir.x*CFG.ghostLen, track.exitDir.y*CFG.ghostLen);
+  return { minX, maxX, minY, maxY };
+}
+
+function targetView(w,h){
+  let { minX,maxX,minY,maxY } = bboxStatic();
+  const add = (x,y)=>{ if(x<minX)minX=x; if(x>maxX)maxX=x; if(y<minY)minY=y; if(y>maxY)maxY=y; };
+  for(const p of sim.trail) add(p.x,p.y);
+  if(sim.phase !== 'track') add(sim.x, sim.y);
+  if(sim.multiRays){ for(const r of sim.multiRays) add(r.x, r.y); }
+  if(sim.ghostPaths){ for(const g of sim.ghostPaths){ add(g.x1,g.y1); } }
+
+  const bw0 = Math.max(0.4, maxX-minX), bh0 = Math.max(0.4, maxY-minY);
+  const padX = bw0*0.14 + 0.10, padY = bh0*0.16 + 0.10;
+  minX -= padX; maxX += padX; minY -= padY; maxY += padY;
+  const bw = maxX-minX, bh = maxY-minY;
+  const scale = Math.min(w/bw, h/bh);
+  return {
+    scale,
+    ox: (w - bw*scale)/2 - minX*scale,
+    oy: (h - bh*scale)/2 + maxY*scale
+  };
+}
+
+function updateView(w,h){
+  const t = targetView(w,h);
+  if(!view.snapped){ view.scale = t.scale; view.ox = t.ox; view.oy = t.oy; view.snapped = true; }
+  else {
+    view.scale = lerp(view.scale, t.scale, 0.20);
+    view.ox    = lerp(view.ox,    t.ox,    0.20);
+    view.oy    = lerp(view.oy,    t.oy,    0.20);
+  }
+  /* 白纸矩形（仅由静态包围盒决定，避免飞行时纸面抖动） */
+  if(!paperRect){
+    const b = bboxStatic();
+    const pad = 0.18;
+    paperRect = { x0:b.minX-pad, x1:b.maxX+pad, y0:b.minY-pad, y1:b.maxY+pad };
+  }
+}
+function W2S(x,y){ return [view.ox + x*view.scale, view.oy - y*view.scale]; }
+function S2W(sx,sy){ return { x:(sx - view.ox)/view.scale, y:(view.oy - sy)/view.scale }; }
+
+/* ============================================================
+   9. 绘图基元
+   ============================================================ */
+let ctx = null;
+
+function polyline(pts, color, width, dash){
+  if(pts.length < 2) return;
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.lineWidth = width;
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  if(dash) ctx.setLineDash(dash);
+  ctx.beginPath();
+  const a = W2S(pts[0].x, pts[0].y);
+  ctx.moveTo(a[0], a[1]);
+  for(let i=1;i<pts.length;i++){
+    const b = W2S(pts[i].x, pts[i].y);
+    ctx.lineTo(b[0], b[1]);
+  }
+  ctx.stroke();
+  ctx.restore();
+}
+
+function arrow(x1,y1,x2,y2,color,width,dash,head){
+  const ang = Math.atan2(y2-y1, x2-x1);
+  const len = Math.hypot(x2-x1, y2-y1);
+  if(len < 3) return;
+  const hs = head || Math.min(11, Math.max(6, len*0.28));
+  ctx.save();
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = width;
+  ctx.lineCap = 'round';
+  if(dash) ctx.setLineDash(dash);
+  ctx.beginPath();
+  ctx.moveTo(x1,y1);
+  ctx.lineTo(x2 - Math.cos(ang)*hs*0.85, y2 - Math.sin(ang)*hs*0.85);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - Math.cos(ang-0.42)*hs, y2 - Math.sin(ang-0.42)*hs);
+  ctx.lineTo(x2 - Math.cos(ang+0.42)*hs, y2 - Math.sin(ang+0.42)*hs);
+  ctx.closePath();
+  ctx.fill();
+  ctx.restore();
+}
+
+function label(text, sx, sy, color, bg, size, align){
+  ctx.save();
+  ctx.font = '600 ' + (size||11.5) + 'px -apple-system, "Microsoft YaHei", sans-serif';
+  ctx.textAlign = align || 'left';
+  ctx.textBaseline = 'middle';
+  if(bg){
+    const w = ctx.measureText(text).width + 8;
+    const x0 = ctx.textAlign === 'center' ? sx - w/2 : (ctx.textAlign === 'right' ? sx - w : sx - 4);
+    ctx.fillStyle = bg;
+    ctx.beginPath();
+    if(ctx.roundRect) ctx.roundRect(x0, sy-8.5, w, 17, 4);
+    else ctx.rect(x0, sy-8.5, w, 17);
+    ctx.fill();
+  }
+  ctx.fillStyle = color;
+  ctx.fillText(text, sx, sy);
+  ctx.restore();
+}
+
+/* ============================================================
+   10. 各图层绘制
+   ============================================================ */
+function drawPaper(){
+  if(!ST.layers.board) return;
+  const [x0,y0] = W2S(paperRect.x0, paperRect.y1);
+  const [x1,y1] = W2S(paperRect.x1, paperRect.y0);
+  ctx.save();
+  ctx.fillStyle = '#ffffff';
+  ctx.shadowColor = 'rgba(16,32,56,.10)';
+  ctx.shadowBlur = 14;
+  ctx.shadowOffsetY = 3;
+  ctx.fillRect(x0,y0,x1-x0,y1-y0);
+  ctx.restore();
+
+  // 网格 0.1 m
+  ctx.save();
+  ctx.beginPath();
+  ctx.rect(x0,y0,x1-x0,y1-y0);
+  ctx.clip();
+  ctx.strokeStyle = C.grid;
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  const step = 0.1;
+  for(let gx = Math.ceil(paperRect.x0/step)*step; gx <= paperRect.x1; gx += step){
+    const a = W2S(gx, paperRect.y0)[0];
+    ctx.moveTo(a, y0); ctx.lineTo(a, y1);
+  }
+  for(let gy = Math.ceil(paperRect.y0/step)*step; gy <= paperRect.y1; gy += step){
+    const b = W2S(paperRect.x0, gy)[1];
+    ctx.moveTo(x0, b); ctx.lineTo(x1, b);
+  }
+  ctx.stroke();
+  // 0.5 m 主网格
+  ctx.strokeStyle = C.grid2;
+  ctx.beginPath();
+  for(let gx = Math.ceil(paperRect.x0/0.5)*0.5; gx <= paperRect.x1; gx += 0.5){
+    const a = W2S(gx, paperRect.y0)[0];
+    ctx.moveTo(a, y0); ctx.lineTo(a, y1);
+  }
+  for(let gy = Math.ceil(paperRect.y0/0.5)*0.5; gy <= paperRect.y1; gy += 0.5){
+    const b = W2S(paperRect.x0, gy)[1];
+    ctx.moveTo(x0, b); ctx.lineTo(x1, b);
+  }
+  ctx.stroke();
+  ctx.restore();
+
+  // 边框
+  ctx.strokeStyle = '#d8e2ef';
+  ctx.lineWidth = 1;
+  ctx.strokeRect(x0+0.5,y0+0.5,x1-x0-1,y1-y0-1);
+
+  // 刻度尺（下沿）
+  const [r0x, ry] = W2S(paperRect.x0, paperRect.y0);
+  const [r1x] = W2S(paperRect.x1, paperRect.y0);
+  ctx.save();
+  ctx.strokeStyle = '#94a3b8';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  for(let gx = Math.ceil(paperRect.x0/0.1)*0.1; gx <= paperRect.x1; gx += 0.1){
+    const X = W2S(gx, paperRect.y0)[0];
+    const big = Math.abs(gx - Math.round(gx*2)/2) < 1e-6;
+    ctx.moveTo(X, ry-2);
+    ctx.lineTo(X, ry - (big?9:5));
+  }
+  ctx.stroke();
+  ctx.font = '10px ui-monospace, Consolas, monospace';
+  ctx.fillStyle = '#94a3b8';
+  ctx.textAlign = 'center';
+  for(let gx = Math.ceil(paperRect.x0/0.5)*0.5; gx <= paperRect.x1; gx += 0.5){
+    const X = W2S(gx, paperRect.y0)[0];
+    ctx.fillText(gx.toFixed(1), X, ry-12);
+  }
+  ctx.restore();
+}
+
+/* 凹侧阴影：逐段小四边形，避免 S 形曲率变号时阴影翻转 */
+function shadeBand(pts, from, to, depth, fill, sgnFrom){
+  const path = new Path2D();
+  for(let i=from;i<to;i++){
+    const a = pts[i], b = pts[i+1];
+    if(!a || !b) continue;
+    const s1 = Math.sign(a.kappa) || 1;
+    const s2 = Math.sign(b.kappa) || 1;
+    const n1 = { x:-a.ty*s1, y:a.tx*s1 };
+    const n2 = { x:-b.ty*s2, y:b.tx*s2 };
+    const A = W2S(a.x, a.y);
+    const B = W2S(b.x, b.y);
+    const A2 = W2S(a.x + n1.x*depth, a.y + n1.y*depth);
+    const B2 = W2S(b.x + n2.x*depth, b.y + n2.y*depth);
+    path.moveTo(A[0],A[1]);
+    path.lineTo(B[0],B[1]);
+    path.lineTo(B2[0],B2[1]);
+    path.lineTo(A2[0],A2[1]);
+    path.closePath();
+  }
+  ctx.save();
+  ctx.fillStyle = fill;
+  ctx.fill(path);
+  ctx.restore();
+}
+
+function drawShade(){
+  if(!ST.layers.shade) return;
+  const pts = track.pts;
+  // 整条轨道淡阴影
+  shadeBand(pts, 0, pts.length-1, CFG.shadeDepth, 'rgba(37,99,235,0.055)');
+  // 探针附近加强
+  if(ST.probeS != null){
+    /* 用弧长二分反查索引：采样并非按弧长均匀，线性换算会让阴影区在抛物线/椭圆上偏移 */
+    const i0 = indexAtS(ST.probeS - CFG.probeRange);
+    const i1 = Math.min(pts.length-2, indexAtS(ST.probeS + CFG.probeRange));
+    shadeBand(pts, i0, i1, CFG.probeDepth, 'rgba(37,99,235,0.13)');
+    // 边界线
+    const pa = pointAtS(Math.max(0, ST.probeS - CFG.probeRange));
+    const pb = pointAtS(Math.min(track.L, ST.probeS + CFG.probeRange));
+    const sa = Math.sign(pa.kappa)||1, sb = Math.sign(pb.kappa)||1;
+    const A1 = W2S(pa.x, pa.y), A2 = W2S(pa.x - pa.ty*sa*CFG.probeDepth, pa.y + pa.tx*sa*CFG.probeDepth);
+    const B1 = W2S(pb.x, pb.y), B2 = W2S(pb.x - pb.ty*sb*CFG.probeDepth, pb.y + pb.tx*sb*CFG.probeDepth);
+    ctx.save();
+    ctx.strokeStyle = 'rgba(37,99,235,.35)';
+    ctx.setLineDash([4,4]);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(A1[0],A1[1]); ctx.lineTo(A2[0],A2[1]);
+    ctx.moveTo(B1[0],B1[1]); ctx.lineTo(B2[0],B2[1]);
+    ctx.moveTo(A2[0],A2[1]); ctx.lineTo(B2[0],B2[1]);
+    ctx.stroke();
+    ctx.restore();
+    const mx = (A2[0]+B2[0])/2, my = (A2[1]+B2[1])/2;
+    label('凹侧', mx, my + 12, '#2563eb', 'rgba(255,255,255,.85)', 11, 'center');
+  }
+}
+
+function drawTrack(){
+  const pts = track.pts;
+  // 导轨底衬
+  const ds = [];
+  for(let i=0;i<pts.length;i+=3) ds.push(pts[i]);
+  ds.push(pts[pts.length-1]);
+
+  ctx.save();
+  ctx.lineCap = 'round';
+  ctx.lineJoin = 'round';
+  ctx.strokeStyle = C.trackLight;
+  ctx.lineWidth = Math.max(7, CFG.ballR*2*view.scale*0.95);
+  ctx.beginPath();
+  let p0 = W2S(ds[0].x, ds[0].y);
+  ctx.moveTo(p0[0],p0[1]);
+  for(let i=1;i<ds.length;i++){ const p = W2S(ds[i].x, ds[i].y); ctx.lineTo(p[0],p[1]); }
+  ctx.stroke();
+
+  ctx.strokeStyle = C.track;
+  ctx.lineWidth = Math.max(2, CFG.ballR*0.9*view.scale);
+  ctx.stroke();
+  ctx.restore();
+
+  // 轨道起点标记
+  const sp = W2S(pts[0].x, pts[0].y);
+  ctx.save();
+  ctx.fillStyle = '#fff'; ctx.strokeStyle = C.track; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(sp[0],sp[1],4,0,TAU); ctx.fill(); ctx.stroke();
+  ctx.restore();
+  // 释放位置标记
+  const s0p = W2S(pointAtS(sim.s0).x, pointAtS(sim.s0).y);
+  label('释放点', s0p[0]+8, s0p[1]-10, '#0f766e', 'rgba(255,255,255,.9)', 11, 'left');
+}
+
+function drawStaticFrames(){
+  if(!ST.layers.frames) return;
+  const frames = computeStaticFrames();
+  for(let i=0;i<frames.length;i++){
+    const f = frames[i];
+    const sp = W2S(f.x, f.y);
+    ctx.save();
+    ctx.fillStyle = 'rgba(37,99,235,.18)';
+    ctx.strokeStyle = 'rgba(37,99,235,.5)';
+    ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.arc(sp[0], sp[1], Math.max(4, CFG.ballR*view.scale*0.72), 0, TAU); ctx.fill(); ctx.stroke();
+    ctx.restore();
+    // 相邻残影连线即速度方向
+    if(i>0){
+      const pv = W2S(frames[i-1].x, frames[i-1].y);
+      ctx.save();
+      ctx.strokeStyle = 'rgba(37,99,235,.45)';
+      ctx.setLineDash([3,3]);
+      ctx.lineWidth = 1.2;
+      ctx.beginPath(); ctx.moveTo(pv[0],pv[1]); ctx.lineTo(sp[0],sp[1]); ctx.stroke();
+      ctx.restore();
+    }
+    if(i === frames.length-1){
+      const a = W2S(f.x, f.y);
+      const b = W2S(f.x + Math.cos(f.ang)*0.22, f.y + Math.sin(f.ang)*0.22);
+      arrow(a[0],a[1],b[0],b[1], C.tangent, 1.6, null, 7);
+    }
+  }
+}
+
+function computeStaticFrames(){
+  // 用同一物理模型快速跑一遍，取 7 个等时间分帧
+  const p0 = pointAtS(sim.s0);
+  let s = sim.s0;
+  let v = speedAtS(s);                    // 与主仿真同一速度来源
+  let phase = 'track', x = p0.x, y = p0.y, vx = p0.tx*v, vy = p0.ty*v;
+  const dt = 1/240;
+  const out = [];
+  let t = 0, nextMark = 0;
+  const totalGuess = 1.2;
+  let launched = false;
+  for(let i=0;i<4000;i++){
+    if(t >= nextMark){
+      const p = (phase==='track') ? pointAtS(s) : { x, y, tx: vx/Math.max(0.001,Math.hypot(vx,vy)), ty: vy/Math.max(0.001,Math.hypot(vx,vy)) };
+      out.push({ x: p.x, y: p.y, ang: Math.atan2(p.ty, p.tx) });
+      nextMark += totalGuess/7;
+      if(out.length >= 8) break;
+    }
+    if(phase === 'track'){
+      const p = pointAtS(s);
+      v = speedAtS(s);                    // 速率随位置由能量关系给出，不做下限抬升
+      s += v*dt;
+      if(s >= track.L){
+        s = track.L;
+        const e = track.pts[track.pts.length-1];
+        phase = 'fly'; x = 0; y = 0; vx = e.tx*v; vy = e.ty*v;
+        launched = true;
+      } else {
+        const q = pointAtS(s); x = q.x; y = q.y; vx = q.tx*v; vy = q.ty*v;
+      }
+    } else {
+      let ax = 0, ay = 0;
+      if(ST.view === 'side') ay -= ST.g;
+      vx += ax*dt; vy += ay*dt;
+      x += vx*dt; y += vy*dt;
+    }
+    t += dt;
+    if(launched && t > 3.2) break;
+  }
+  return out;
+}
+
+function drawTrail(){
+  if(!ST.layers.ink) return;
+  if(sim.trail.length < 2) return;
+  ctx.save();
+  ctx.lineJoin = 'round';
+  ctx.lineCap = 'round';
+  ctx.strokeStyle = 'rgba(55,65,81,.85)';
+  ctx.lineWidth = 2.6;
+  ctx.beginPath();
+  let a = W2S(sim.trail[0].x, sim.trail[0].y);
+  ctx.moveTo(a[0],a[1]);
+  for(let i=1;i<sim.trail.length;i++){
+    const b = W2S(sim.trail[i].x, sim.trail[i].y);
+    ctx.lineTo(b[0],b[1]);
+  }
+  ctx.stroke();
+  ctx.restore();
+}
+
+function drawStrobe(){
+  if(!ST.layers.strobe) return;
+  for(const g of sim.strobe){
+    const p = W2S(g.x, g.y);
+    ctx.save();
+    ctx.globalAlpha = 0.55;
+    ctx.fillStyle = '#1e293b';
+    ctx.beginPath(); ctx.arc(p[0], p[1], CFG.ballR*view.scale*0.55, 0, TAU); ctx.fill();
+    ctx.restore();
+  }
+  // 残影之间的连线（等时间间隔 → 割线方向趋近切线）
+  if(sim.strobe.length > 1){
+    ctx.save();
+    ctx.strokeStyle = 'rgba(37,99,235,.35)';
+    ctx.setLineDash([2,4]);
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    const a = W2S(sim.strobe[0].x, sim.strobe[0].y);
+    ctx.moveTo(a[0],a[1]);
+    for(let i=1;i<sim.strobe.length;i++){
+      const b = W2S(sim.strobe[i].x, sim.strobe[i].y);
+      ctx.lineTo(b[0],b[1]);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+}
+
+function drawGhostLine(){
+  if(!ST.layers.ghost) return;
+  const d = track.exitDir;
+  const len = CFG.ghostLen;
+  const a = W2S(0,0);
+  const b = W2S(d.x*len, d.y*len);
+
+  // 直尺
+  ctx.save();
+  const ang = Math.atan2(b[1]-a[1], b[0]-a[0]);
+  const halfW = 12;
+  ctx.translate(a[0],a[1]);
+  ctx.rotate(ang);
+  const L = Math.hypot(b[0]-a[0], b[1]-a[1]);
+  ctx.fillStyle = 'rgba(226,232,240,.55)';
+  ctx.strokeStyle = 'rgba(148,163,184,.75)';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.rect(0, -halfW, L, halfW*2);
+  ctx.fill(); ctx.stroke();
+  // 尺刻度（每 0.05 m）
+  ctx.strokeStyle = 'rgba(100,116,139,.55)';
+  ctx.beginPath();
+  for(let t=0; t<=len; t+=0.05){
+    const X = t*view.scale;
+    const big = Math.abs(t*2 - Math.round(t*2)) < 1e-6;
+    ctx.moveTo(X, -halfW);
+    ctx.lineTo(X, -halfW + (big?8:4));
+  }
+  ctx.stroke();
+  ctx.restore();
+
+  // 幽灵直线（高亮虚线）
+  ctx.save();
+  ctx.strokeStyle = C.tangent;
+  ctx.lineWidth = 2;
+  ctx.setLineDash([9,6]);
+  ctx.globalAlpha = 0.85;
+  ctx.beginPath();
+  ctx.moveTo(a[0],a[1]); ctx.lineTo(b[0],b[1]);
+  ctx.stroke();
+  ctx.restore();
+
+  // 出口切线角标注
+  const midp = W2S(d.x*len*0.62, d.y*len*0.62);
+  label('出口切线 ' + track.exitAngleDeg.toFixed(1) + '°', midp[0], midp[1] - 16, C.tangent, 'rgba(255,255,255,.92)', 11.5, 'center');
+}
+
+function drawProtractor(){
+  const [ex,ey] = W2S(0,0);
+  const R = Math.max(38, track.L*0.235*view.scale);
+  ctx.save();
+  ctx.strokeStyle = 'rgba(37,99,235,.28)';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(ex,ey,R,0,TAU); ctx.stroke();
+  ctx.fillStyle = 'rgba(37,99,235,.30)';
+  ctx.font = '9.5px ui-monospace, Consolas, monospace';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  for(let ang=0; ang<360; ang+=10){
+    const rad = -ang*D2R;
+    const big = ang % 30 === 0;
+    const r1 = R, r2 = R + (big?8:4);
+    ctx.strokeStyle = big ? 'rgba(37,99,235,.55)' : 'rgba(37,99,235,.25)';
+    ctx.beginPath();
+    ctx.moveTo(ex + Math.cos(rad)*r1, ey + Math.sin(rad)*r1);
+    ctx.lineTo(ex + Math.cos(rad)*r2, ey + Math.sin(rad)*r2);
+    ctx.stroke();
+    if(big){
+      const rt = R + 19;
+      ctx.fillText(String(ang), ex + Math.cos(rad)*rt, ey + Math.sin(rad)*rt);
+    }
+  }
+  ctx.restore();
+
+  // 出口点
+  ctx.save();
+  ctx.fillStyle = '#fff';
+  ctx.strokeStyle = C.tangent;
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(ex,ey,4.5,0,TAU); ctx.fill(); ctx.stroke();
+  ctx.restore();
+
+  // 实测飞出方向射线
+  if(sim.exitInfo && sim.exitInfo.measured && sim.exitInfo.dirDeg != null){
+    const rad = -sim.exitInfo.dirDeg*D2R;
+    const b = [ex + Math.cos(rad)*(R+34), ey + Math.sin(rad)*(R+34)];
+    arrow(ex,ey,b[0],b[1], 'rgba(22,163,74,.9)', 2, [6,4], 9);
+    label('实测 ' + sim.exitInfo.dirDeg.toFixed(1) + '°', b[0], b[1] - 12,
+          '#15803d', 'rgba(255,255,255,.92)', 11, 'center');
+  }
+}
+
+function drawCompare(){
+  // 历史飞出直线
+  if(ST.layers.ghost){
+    for(const g of sim.ghostPaths){
+      const a = W2S(g.x1,g.y1), b = W2S(g.x2,g.y2);
+      ctx.save();
+      ctx.strokeStyle = g.color;
+      ctx.globalAlpha = 0.5;
+      ctx.lineWidth = 1.8;
+      ctx.setLineDash([5,5]);
+      ctx.beginPath(); ctx.moveTo(a[0],a[1]); ctx.lineTo(b[0],b[1]); ctx.stroke();
+      ctx.restore();
+      if(g.label) label(g.label, b[0], b[1]-9, g.color, 'rgba(255,255,255,.85)', 10, 'center');
+    }
+  }
+  // 多出口角射线
+  if(sim.multiRays){
+    for(const r of sim.multiRays){
+      const a = W2S(0,0), b = W2S(r.x,r.y);
+      ctx.save();
+      ctx.strokeStyle = r.color;
+      ctx.lineWidth = 1.6;
+      ctx.setLineDash([8,5]);
+      ctx.globalAlpha = 0.8;
+      ctx.beginPath(); ctx.moveTo(a[0],a[1]); ctx.lineTo(b[0],b[1]); ctx.stroke();
+      ctx.restore();
+      label(r.label, b[0], b[1]-9, r.color, 'rgba(255,255,255,.88)', 10, 'center');
+    }
+  }
+  // 撤去侧向力后，“若继续沿轨道”的虚线
+  if(sim.releasedFrom){
+    const pts = track.pts;
+    const seg = [];
+    for(const p of pts){ if(p.s >= sim.releasedFrom.s - 1e-9) seg.push(p); }
+    if(seg.length > 1) polyline(seg, 'rgba(148,163,184,.85)', 2, [6,5]);
+    const a = W2S(sim.releasedFrom.x, sim.releasedFrom.y);
+    label('若继续受侧向力', a[0]+10, a[1]+16, '#94a3b8', 'rgba(255,255,255,.9)', 10.5, 'left');
+  }
+}
+
+function drawProbe(){
+  if(ST.probeS == null) return;
+  const pi = probePhysics(ST.probeS);
+  const sp = W2S(pi.x, pi.y);
+  const sc = view.scale;
+
+  // 探测点
+  ctx.save();
+  ctx.fillStyle = '#fff';
+  ctx.strokeStyle = '#0f172a';
+  ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(sp[0],sp[1],5,0,TAU); ctx.fill(); ctx.stroke();
+  ctx.restore();
+
+  // 切线（贯穿的点划线）
+  const tl = 0.36;
+  const t1 = W2S(pi.x - pi.tx*tl, pi.y - pi.ty*tl);
+  const t2 = W2S(pi.x + pi.tx*tl, pi.y + pi.ty*tl);
+  ctx.save();
+  ctx.strokeStyle = 'rgba(37,99,235,.4)';
+  ctx.setLineDash([5,5]);
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(t1[0],t1[1]); ctx.lineTo(t2[0],t2[1]); ctx.stroke();
+  ctx.restore();
+
+  const A = 0.34;
+  // 速度（蓝）
+  const pv = W2S(pi.x + pi.tx*A, pi.y + pi.ty*A);
+  arrow(sp[0],sp[1],pv[0],pv[1], C.tangent, 2.6, null, 11);
+  label('v', pv[0], pv[1]-12, C.tangent, 'rgba(255,255,255,.92)', 11.5, 'center');
+
+  // 合力（红）
+  const fLen = clamp(pi.F*0.20, 0.15, 0.62);
+  const fm = Math.hypot(pi.fx,pi.fy) || 1;
+  const pf = W2S(pi.x + pi.fx/fm*fLen, pi.y + pi.fy/fm*fLen);
+  arrow(sp[0],sp[1],pf[0],pf[1], C.force, 2.6, null, 11);
+  label('F', pf[0], pf[1]-12, C.force, 'rgba(255,255,255,.92)', 11.5, 'center');
+
+  // 分力
+  if(ST.layers.comp && pi.F > 1e-6){
+    const ftAbs = Math.abs(pi.Ft)*0.20;
+    const fnAbs = Math.abs(pi.Fn)*0.20;
+    if(ftAbs > 0.02){
+      const dir = pi.Ft >= 0 ? 1 : -1;
+      const pt = W2S(pi.x + pi.tx*ftAbs*dir, pi.y + pi.ty*ftAbs*dir);
+      arrow(sp[0],sp[1],pt[0],pt[1], C.ft, 2.2, [5,3], 9);
+      label('F_t', pt[0], pt[1]+13, C.ft, 'rgba(255,255,255,.92)', 11, 'center');
+    }
+    if(fnAbs > 0.02){
+      const pt = W2S(pi.x + pi.nx*fnAbs, pi.y + pi.ny*fnAbs);
+      arrow(sp[0],sp[1],pt[0],pt[1], C.fn, 2.2, [5,3], 9);
+      label('F_n', pt[0], pt[1]-12, C.fn, 'rgba(255,255,255,.92)', 11, 'center');
+    }
+    // 平行四边形虚线
+    ctx.save();
+    ctx.strokeStyle = 'rgba(148,163,184,.7)';
+    ctx.setLineDash([3,4]);
+    ctx.lineWidth = 1;
+    const ptE = W2S(pi.x + (pi.Ft>=0?1:-1)*pi.tx*ftAbs + pi.nx*fnAbs,
+                    pi.y + (pi.Ft>=0?1:-1)*pi.ty*ftAbs + pi.ny*fnAbs);
+    ctx.beginPath();
+    if(ftAbs > 0.02){ const pt = W2S(pi.x + (pi.Ft>=0?1:-1)*pi.tx*ftAbs, pi.y + (pi.Ft>=0?1:-1)*pi.ty*ftAbs);
+      ctx.moveTo(pt[0],pt[1]); ctx.lineTo(ptE[0],ptE[1]); }
+    if(fnAbs > 0.02){ const pt = W2S(pi.x + pi.nx*fnAbs, pi.y + pi.ny*fnAbs);
+      ctx.moveTo(pt[0],pt[1]); ctx.lineTo(ptE[0],ptE[1]); }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  // 夹角弧
+  if(pi.F > 1e-6 && pi.v > 1e-6){
+    const r = 34;
+    const aV = Math.atan2(-pi.ty, pi.tx);
+    const aF = Math.atan2(-pi.fy/ (Math.hypot(pi.fx,pi.fy)||1), pi.fx/(Math.hypot(pi.fx,pi.fy)||1));
+    ctx.save();
+    ctx.strokeStyle = 'rgba(220,38,38,.55)';
+    ctx.lineWidth = 1.4;
+    ctx.beginPath();
+    let d = aF - aV;
+    while(d > Math.PI) d -= TAU;
+    while(d < -Math.PI) d += TAU;
+    ctx.arc(sp[0],sp[1], r, aV, aV + d, d < 0);
+    ctx.stroke();
+    ctx.restore();
+    const mid = aV + d/2;
+    label(pi.ang.toFixed(1) + '°', sp[0]+Math.cos(mid)*(r+16), sp[1]+Math.sin(mid)*(r+16),
+          '#b91c1c', 'rgba(255,255,255,.9)', 10.5, 'center');
+  }
+
+  // 探针数据浮标
+  const lines = [
+    '探针读数',
+    'θ = ' + pi.th.toFixed(1) + '°   v = ' + pi.v.toFixed(2) + ' m/s',
+    'F = ' + pi.F.toFixed(2) + ' N   ∠(v,F) = ' + pi.ang.toFixed(1) + '°',
+    'F_t = ' + pi.Ft.toFixed(2) + ' N   F_n = ' + pi.Fn.toFixed(2) + ' N',
+    'ρ = ' + (isFinite(pi.rho) ? pi.rho.toFixed(2) + ' m' : '∞')
+  ];
+  ctx.save();
+  ctx.font = '11px ui-monospace, Consolas, monospace';
+  let wMax = 0;
+  for(const s of lines) wMax = Math.max(wMax, ctx.measureText(s).width);
+  const bw = wMax + 16, bh = lines.length*15 + 10;
+  let bx = sp[0] + 16, by = sp[1] - bh - 16;
+  if(bx + bw > stage.clientWidth - 6) bx = sp[0] - bw - 16;
+  if(by < 6) by = sp[1] + 20;
+  ctx.fillStyle = 'rgba(255,255,255,.96)';
+  ctx.strokeStyle = '#c7d4e6';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  if(ctx.roundRect) ctx.roundRect(bx, by, bw, bh, 8); else ctx.rect(bx,by,bw,bh);
+  ctx.fill(); ctx.stroke();
+  ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+  lines.forEach((s,i)=>{
+    ctx.fillStyle = i===0 ? '#0f172a' : '#334155';
+    ctx.font = (i===0?'700 ':'') + '11px ui-monospace, Consolas, monospace';
+    ctx.fillText(s, bx+8, by + 13 + i*15);
+  });
+  ctx.restore();
+}
+
+function drawBall(){
+  const sp = W2S(sim.x, sim.y);
+  const r = Math.max(4.5, CFG.ballR*view.scale);
+  // 阴影
+  ctx.save();
+  ctx.fillStyle = 'rgba(16,32,56,.10)';
+  ctx.beginPath(); ctx.ellipse(sp[0]+2, sp[1]+3, r*0.95, r*0.7, 0, 0, TAU); ctx.fill();
+  ctx.restore();
+  // 球体
+  const g = ctx.createRadialGradient(sp[0]-r*0.35, sp[1]-r*0.4, r*0.15, sp[0], sp[1], r);
+  g.addColorStop(0,'#f8fafc'); g.addColorStop(0.55,'#94a3b8'); g.addColorStop(1,'#475569');
+  ctx.save();
+  ctx.fillStyle = g;
+  ctx.strokeStyle = '#334155';
+  ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.arc(sp[0],sp[1],r,0,TAU); ctx.fill(); ctx.stroke();
+  ctx.restore();
+}
+
+function drawVectors(){
+  const ph = livePhysics();
+  const sp = W2S(ph.x, ph.y);
+
+  // 速度矢量（蓝）
+  if(ST.layers.vel && ph.v > 1e-6){
+    const L = clamp(ph.v*0.11, 0.10, 0.52);
+    const b = W2S(ph.x + ph.tx*L, ph.y + ph.ty*L);
+    arrow(sp[0],sp[1],b[0],b[1], C.tangent, 2.8, null, 11);
+    label('v=' + ph.v.toFixed(2) + ' m/s', b[0], b[1]-13, C.tangent, 'rgba(255,255,255,.92)', 11, 'center');
+  }
+  // 切线
+  if(ST.layers.tangent){
+    const L = 0.30;
+    const a = W2S(ph.x - ph.tx*L, ph.y - ph.ty*L);
+    const b = W2S(ph.x + ph.tx*L, ph.y + ph.ty*L);
+    ctx.save();
+    ctx.strokeStyle = 'rgba(37,99,235,.55)';
+    ctx.setLineDash([6,4]);
+    ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(a[0],a[1]); ctx.lineTo(b[0],b[1]); ctx.stroke();
+    ctx.restore();
+  }
+  // 合力（红）
+  if(ST.layers.force && ph.F > 1e-6){
+    const L = clamp(ph.F*0.20, 0.12, 0.60);
+    const m = Math.hypot(ph.fx,ph.fy) || 1;
+    const b = W2S(ph.x + ph.fx/m*L, ph.y + ph.fy/m*L);
+    arrow(sp[0],sp[1],b[0],b[1], C.force, 2.8, null, 11);
+    label('F=' + ph.F.toFixed(2) + ' N', b[0], b[1]-13, C.force, 'rgba(255,255,255,.92)', 11, 'center');
+  }
+  // 分力
+  if(ST.layers.comp && ph.F > 1e-6){
+    const ftAbs = Math.abs(ph.Ft)*0.20, fnAbs = Math.abs(ph.Fn)*0.20;
+    if(ftAbs > 0.03){
+      const dir = ph.Ft >= 0 ? 1 : -1;
+      const b = W2S(ph.x + ph.tx*ftAbs*dir, ph.y + ph.ty*ftAbs*dir);
+      arrow(sp[0],sp[1],b[0],b[1], C.ft, 2.2, [5,3], 9);
+    }
+    if(fnAbs > 0.03){
+      const b = W2S(ph.x + ph.nx*fnAbs, ph.y + ph.ny*fnAbs);
+      arrow(sp[0],sp[1],b[0],b[1], C.fn, 2.2, [5,3], 9);
+    }
+  }
+  // 加速度（绿，虚线）
+  if(ST.layers.force && ph.F > 1e-6){
+    const L = clamp(ph.F/ST.mass*0.045, 0.06, 0.34);
+    const m = Math.hypot(ph.fx,ph.fy) || 1;
+    const b = W2S(ph.x + ph.fx/m*L, ph.y + ph.fy/m*L);
+    arrow(sp[0],sp[1],b[0],b[1], C.accel, 1.6, [4,4], 8);
+  }
+}
+
+function drawScaleBar(){
+  const w = stage.clientWidth, h = stage.clientHeight;
+  const targetPx = 110;
+  let m = targetPx / view.scale;
+  const pow = Math.pow(10, Math.floor(Math.log10(m)));
+  const cands = [1,2,5,10].map(x => x*pow);
+  let best = cands[0];
+  for(const c of cands){ if(Math.abs(c*view.scale - targetPx) < Math.abs(best*view.scale - targetPx)) best = c; }
+  const px = best*view.scale;
+  const x0 = w - px - 22, y0 = h - 26;
+  ctx.save();
+  ctx.strokeStyle = '#475569';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(x0, y0); ctx.lineTo(x0+px, y0);
+  ctx.moveTo(x0, y0-5); ctx.lineTo(x0, y0+5);
+  ctx.moveTo(x0+px, y0-5); ctx.lineTo(x0+px, y0+5);
+  ctx.stroke();
+  ctx.fillStyle = '#475569';
+  ctx.font = '11px ui-monospace, Consolas, monospace';
+  ctx.textAlign = 'center';
+  ctx.fillText(best.toFixed(best<1?2:1) + ' m', x0 + px/2, y0 - 9);
+  ctx.restore();
+}
+
+function drawViewTag(){
+  if(stage.clientWidth < 700) return;   // 窄屏时依赖底部文字提示，避免与图例重叠
+  ctx.save();
+  ctx.fillStyle = ST.view === 'top' ? 'rgba(37,99,235,.08)' : 'rgba(220,38,38,.08)';
+  ctx.strokeStyle = ST.view === 'top' ? 'rgba(37,99,235,.25)' : 'rgba(220,38,38,.25)';
+  ctx.lineWidth = 1;
+  const txt = ST.view === 'top' ? '俯视 · 水平桌面（重力与支持力平衡）' : '侧视 · 竖直平面（合力含重力）';
+  ctx.font = '600 11.5px -apple-system, "Microsoft YaHei", sans-serif';
+  const w = ctx.measureText(txt).width + 18;
+  ctx.beginPath();
+  if(ctx.roundRect) ctx.roundRect(stage.clientWidth - w - 10, 10, w, 24, 8); else ctx.rect(stage.clientWidth-w-10,10,w,24);
+  ctx.fill(); ctx.stroke();
+  ctx.fillStyle = ST.view === 'top' ? '#1d4ed8' : '#b91c1c';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(txt, stage.clientWidth - w/2 - 10, 23);
+  ctx.restore();
+}
+
+/* 自定义三点手柄 */
+function drawCustomHandles(){
+  if(ST.shape !== 'custom') return;
+  const lc = track.local;
+  for(let i=0;i<customPts.length;i++){
+    const p = toWorldFromLocal(customPts[i]);
+    const sp = W2S(p.x,p.y);
+    ctx.save();
+    ctx.fillStyle = 'rgba(255,255,255,.9)';
+    ctx.strokeStyle = '#0f766e';
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.arc(sp[0],sp[1],6,0,TAU); ctx.fill(); ctx.stroke();
+    ctx.fillStyle = '#0f766e';
+    ctx.beginPath(); ctx.arc(sp[0],sp[1],2.2,0,TAU); ctx.fill();
+    ctx.restore();
+  }
+}
+function toWorldFromLocal(q){
+  const { k, rot, ex, ey } = track.local;
+  const cs = Math.cos(rot), sn = Math.sin(rot);
+  const dx = (q.x-ex)*k, dy = (q.y-ey)*k;
+  return { x: dx*cs - dy*sn, y: dx*sn + dy*cs };
+}
+function toLocalFromWorld(w){
+  const { k, rot, ex, ey } = track.local;
+  const cs = Math.cos(rot), sn = Math.sin(rot);
+  const x = w.x*cs + w.y*sn;
+  const y = -w.x*sn + w.y*cs;
+  return { x: x/k + ex, y: y/k + ey };
+}
+
+/* ============================================================
+   11. 主渲染
+   ============================================================ */
+function render(){
+  const f = fitCanvas(stage);
+  ctx = f.ctx;
+  const w = f.w, h = f.h;
+  updateView(w, h);
+
+  ctx.clearRect(0,0,w,h);
+  // 背景
+  const bg = ctx.createLinearGradient(0,0,0,h);
+  bg.addColorStop(0,'#f7fafd'); bg.addColorStop(1,'#eef3f9');
+  ctx.fillStyle = bg;
+  ctx.fillRect(0,0,w,h);
+
+  drawPaper();
+  drawShade();
+  drawTrack();
+  drawStaticFrames();
+  drawTrail();
+  drawStrobe();
+  drawCompare();
+  drawGhostLine();
+  drawProtractor();
+  drawProbe();
+  drawBall();
+  drawCustomHandles();
+  drawVectors();
+  drawScaleBar();
+  drawViewTag();
+}
+
+/* ============================================================
+   12. 图像（三格联动）
+   ============================================================ */
+const chartsCanvas = $('charts');
+
+function drawCharts(force){
+  const { ctx: c, w, h } = fitCanvas(chartsCanvas);
+  c.clearRect(0,0,w,h);
+  c.fillStyle = '#fff';
+  c.fillRect(0,0,w,h);
+
+  const padL = 46, padR = 12, padT = 16, padB = 20, gap = 14;
+  const ph = (h - padT - padB - gap*2) / 3;
+  const tMax = Math.max(1.5, sim.t*1.08);
+
+  drawPanel(c, { x:padL, y:padT, w:w-padL-padR, h:ph }, tMax,
+            sim.series.map(s=>({t:s.t, y:s.v})), 'v–t  速率', 'm/s', C.tangent, {min:0});
+  drawPanel(c, { x:padL, y:padT+ph+gap, w:w-padL-padR, h:ph }, tMax,
+            sim.series.map(s=>({t:s.t, y:s.th})), 'θ–t  切线角', '°', '#0f766e', {auto:true});
+  drawPanel(c, { x:padL, y:padT+(ph+gap)*2, w:w-padL-padR, h:ph }, tMax,
+            sim.series.map(s=>({t:s.t, y:s.ft})), 'F_t / F_n – t', 'N', C.ft,
+            {auto:true, second: sim.series.map(s=>({t:s.t, y:s.fn})), secondColor: C.fn});
+}
+
+function drawPanel(c, r, tMax, data, title, unit, color, opt){
+  opt = opt || {};
+  // 边框
+  c.strokeStyle = '#e6edf6';
+  c.lineWidth = 1;
+  c.strokeRect(r.x+0.5, r.y+0.5, r.w-1, r.h-1);
+
+  // Y 范围
+  let ymin = 0, ymax = 1;
+  const all = data.concat(opt.second || []).filter(d=>isFinite(d.y));
+  if(opt.auto && all.length){
+    ymin = Math.min.apply(null, all.map(d=>d.y));
+    ymax = Math.max.apply(null, all.map(d=>d.y));
+    if(ymax - ymin < 1e-6){ ymax = ymin + 1; }
+    const padv = (ymax-ymin)*0.18;
+    ymin -= padv; ymax += padv;
+  } else if(all.length){
+    ymax = Math.max(0.5, Math.max.apply(null, all.map(d=>d.y))) * 1.18;
+    ymin = Math.min(0, Math.min.apply(null, all.map(d=>d.y))) * 1.2;
+  }
+  const X = t => r.x + (clamp(t,0,tMax)/tMax) * r.w;
+  const Y = v => r.y + r.h - ((clamp(v,ymin,ymax)-ymin)/(ymax-ymin)) * r.h;
+
+  // 网格
+  c.strokeStyle = '#f1f5f9';
+  c.lineWidth = 1;
+  c.beginPath();
+  for(let i=1;i<4;i++){
+    const yy = r.y + r.h*i/4;
+    c.moveTo(r.x, yy); c.lineTo(r.x+r.w, yy);
+  }
+  c.stroke();
+  // 零线
+  if(ymin < 0 && ymax > 0){
+    c.strokeStyle = '#cbd5e1';
+    c.beginPath(); c.moveTo(r.x, Y(0)); c.lineTo(r.x+r.w, Y(0)); c.stroke();
+  }
+
+  // 曲线
+  const plot = (arr, col) => {
+    if(arr.length < 2) return;
+    c.strokeStyle = col;
+    c.lineWidth = 1.9;
+    c.lineJoin = 'round';
+    c.beginPath();
+    c.moveTo(X(arr[0].t), Y(arr[0].y));
+    for(let i=1;i<arr.length;i++) c.lineTo(X(arr[i].t), Y(arr[i].y));
+    c.stroke();
+  };
+  plot(data, color);
+  if(opt.second) plot(opt.second, opt.secondColor);
+
+  // 坐标轴标注
+  c.fillStyle = '#64748b';
+  c.font = '10px ui-monospace, Consolas, monospace';
+  c.textAlign = 'right';
+  c.textBaseline = 'middle';
+  c.fillText(ymax.toFixed(Math.abs(ymax) >= 10 ? 0 : 1), r.x - 5, r.y + 6);
+  c.fillText(ymin.toFixed(Math.abs(ymin) >= 10 ? 0 : 1), r.x - 5, r.y + r.h - 6);
+
+  c.textAlign = 'left';
+  c.textBaseline = 'top';
+  c.fillStyle = '#334155';
+  c.font = '600 11px -apple-system, "Microsoft YaHei", sans-serif';
+  c.fillText(title, r.x + 4, r.y + 3);
+  c.textAlign = 'right';
+  c.fillStyle = '#94a3b8';
+  c.font = '10px ui-monospace, Consolas, monospace';
+  c.fillText(unit, r.x + r.w - 4, r.y + 3);
+  c.textBaseline = 'bottom';
+  c.fillText('t/s', r.x + r.w - 4, r.y + r.h + 14);
+
+  // 图例
+  if(opt.second){
+    c.textAlign = 'left'; c.textBaseline = 'top';
+    c.fillStyle = C.ft;
+    c.fillText('F_t', r.x + r.w - 78, r.y + 3);
+    c.fillStyle = C.fn;
+    c.fillText('F_n', r.x + r.w - 50, r.y + 3);
+  }
+}
+
+/* ============================================================
+   12.5 生活实例小动画（图文卡片可点击切换）
+   ============================================================ */
+const LIFE = [
+  { name:'砂轮打磨火星', mode:'spin',
+    tip:'砂轮高速旋转，被磨下的碎屑（火星）随砂轮边缘运动，脱离瞬间速度沿该点切线方向——所以火星是沿直线甩出去的，绝不会绕着砂轮拐弯。' },
+  { name:'旋转雨伞甩水', mode:'spin',
+    tip:'伞面上的水滴随伞做圆周运动，脱离伞面后不再受侧向力，沿该点的切线方向飞出。因此水滴是“甩”出去的，而不是沿半径方向飞走。' },
+  { name:'链球出手', mode:'spin',
+    tip:'链球在手中做圆周运动，松手瞬间它的速度沿该点切线方向。出手后若忽略重力，链球就沿这条切线做直线运动。' },
+  { name:'汽车转弯', mode:'turn',
+    tip:'汽车沿弯道行驶时，速度始终沿轨迹切线；合力（地面摩擦力）指向弯道内侧（凹侧），正是它不断改变速度的方向，使车“转”过来。' },
+  { name:'赛车冲出弯道', mode:'turn',
+    tip:'赛车冲出弯道后不再有侧向力，便沿出口切线方向直冲出去——这正是赛道弯道外侧必须留出足够缓冲区的物理原因。' }
+];
+let lifeSel = 0;
+const lifeS = { t:0, parts:[], lastEmit:-1, ct:0 };
+
+function buildLife(){
+  const box = $('lifeChips');
+  box.innerHTML = '';
+  LIFE.forEach((it,i)=>{
+    const el = document.createElement('div');
+    el.className = 'chip' + (i === 0 ? ' on' : '');
+    el.textContent = it.name;
+    el.addEventListener('click', ()=>{
+      lifeSel = i;
+      const kids = box.children;
+      for(let j=0;j<kids.length;j++) kids[j].className = 'chip' + (j === i ? ' on' : '');
+      $('lifeTip').textContent = it.tip;
+      lifeS.parts = []; lifeS.lastEmit = -1; lifeS.ct = 0;
+    });
+    box.appendChild(el);
+  });
+  $('lifeTip').textContent = LIFE[0].tip;
+}
+
+function drawLife(dt){
+  const { ctx: c, w, h } = fitCanvas($('life'));
+  c.clearRect(0,0,w,h);
+  c.fillStyle = '#fbfdff';
+  c.fillRect(0,0,w,h);
+  if(LIFE[lifeSel].mode === 'spin') drawLifeSpin(c,w,h,dt);
+  else drawLifeTurn(c,w,h,dt);
+
+  // 实例名
+  c.save();
+  c.fillStyle = '#94a3b8';
+  c.font = '600 11px -apple-system, "Microsoft YaHei", sans-serif';
+  c.textAlign = 'left'; c.textBaseline = 'top';
+  c.fillText(LIFE[lifeSel].name, 10, 8);
+  c.restore();
+}
+
+/* 圆周运动 → 沿切线甩出 */
+function drawLifeSpin(c, w, h, dt){
+  const cx = w/2, cy = h/2 + 12;
+  const R = Math.min(w, h) * 0.27;
+  const omega = 2.6;
+  lifeS.t += dt;
+  const th = lifeS.t * omega;
+
+  // 每隔一段时间从边缘“脱离”一个粒子
+  if(lifeS.lastEmit < 0 || lifeS.t - lifeS.lastEmit > 0.40){
+    lifeS.lastEmit = lifeS.t;
+    lifeS.parts.push({
+      x: cx + R*Math.cos(th), y: cy + R*Math.sin(th),
+      vx: -Math.sin(th)*150, vy: Math.cos(th)*150, life: 0
+    });
+    if(lifeS.parts.length > 24) lifeS.parts.shift();
+  }
+
+  // 圆周
+  c.save();
+  c.strokeStyle = '#0f766e'; c.lineWidth = 3; c.lineCap = 'round';
+  c.beginPath(); c.arc(cx, cy, R, 0, TAU); c.stroke();
+  // 转轴与半径
+  c.fillStyle = '#0f766e';
+  c.beginPath(); c.arc(cx, cy, 3.5, 0, TAU); c.fill();
+  c.strokeStyle = 'rgba(15,118,110,.5)'; c.lineWidth = 1.4;
+  c.setLineDash([4,3]);
+  c.beginPath(); c.moveTo(cx, cy); c.lineTo(cx + R*Math.cos(th), cy + R*Math.sin(th)); c.stroke();
+  c.setLineDash([]);
+  // 当前点切线
+  const ex = cx + R*Math.cos(th), ey = cy + R*Math.sin(th);
+  c.strokeStyle = '#2563eb'; c.lineWidth = 1.6; c.setLineDash([6,4]);
+  c.beginPath();
+  c.moveTo(ex - Math.sin(th)*(-60), ey + Math.cos(th)*(-60));
+  c.lineTo(ex + (-Math.sin(th))*60, ey + Math.cos(th)*60);
+  c.stroke();
+  c.setLineDash([]);
+  // 发射点
+  c.fillStyle = '#ea580c';
+  c.beginPath(); c.arc(ex, ey, 4, 0, TAU); c.fill();
+  c.restore();
+
+  // 沿切线直线飞出的粒子
+  for(const p of lifeS.parts){
+    p.x += p.vx*dt; p.y += p.vy*dt; p.life += dt;
+    const a = clamp(1 - p.life/1.5, 0, 1);
+    c.save();
+    c.globalAlpha = a;
+    c.fillStyle = '#ea580c';
+    c.beginPath(); c.arc(p.x, p.y, 2.4, 0, TAU); c.fill();
+    c.strokeStyle = 'rgba(234,88,12,.45)';
+    c.lineWidth = 1.4;
+    c.beginPath(); c.moveTo(p.x - p.vx*0.04, p.y - p.vy*0.04); c.lineTo(p.x, p.y); c.stroke();
+    c.restore();
+  }
+
+  // 图注
+  c.save();
+  c.fillStyle = '#64748b';
+  c.font = '10.5px -apple-system, "Microsoft YaHei", sans-serif';
+  c.textAlign = 'right'; c.textBaseline = 'bottom';
+  c.fillText('橙色：沿切线甩出（直线）', w-10, h-8);
+  c.restore();
+}
+
+/* 沿弯道行驶 → 冲出后沿切线直行 */
+function drawLifeTurn(c, w, h, dt){
+  lifeS.ct += dt;
+  const cyc = 3.4, T1 = 2.2;
+  const ph = lifeS.ct % cyc;
+  const prog = clamp(ph/T1, 0, 1);
+  const flying = ph > T1;
+
+  const cx = w*0.42, cy = h*0.90;
+  const R = Math.min(w*0.52, h*0.74);
+
+  const A0 = Math.PI, A1 = Math.PI*1.5;
+  const pt = a => [cx + R*Math.cos(a), cy + R*Math.sin(a)];
+
+  // 轨道
+  c.save();
+  c.strokeStyle = '#cbd5e1'; c.lineWidth = 7; c.lineCap = 'round';
+  c.beginPath(); c.arc(cx, cy, R, A0, A1); c.stroke();
+  c.strokeStyle = '#0f766e'; c.lineWidth = 3.4;
+  c.beginPath(); c.arc(cx, cy, R, A0, A0 + (A1-A0)*prog); c.stroke();
+  c.restore();
+
+  const th = A0 + (A1-A0)*prog;
+  let px, py, dx, dy;
+  if(!flying){
+    px = cx + R*Math.cos(th); py = cy + R*Math.sin(th);
+    dx = -Math.sin(th); dy = Math.cos(th);
+  } else {
+    const d = (ph - T1)*150;
+    px = cx + d; py = cy - R;
+    dx = 1; dy = 0;
+    // 若继续沿轨道（已不存在）的虚线
+    c.save();
+    c.strokeStyle = '#cbd5e1'; c.lineWidth = 2; c.setLineDash([5,5]);
+    c.beginPath(); c.arc(cx, cy, R, A1-0.001, A1+0.55); c.stroke();
+    c.restore();
+    // 出口切线
+    c.save();
+    c.strokeStyle = 'rgba(37,99,235,.75)'; c.lineWidth = 1.6; c.setLineDash([6,4]);
+    c.beginPath(); c.moveTo(cx, cy-R); c.lineTo(cx + 110, cy-R); c.stroke();
+    c.restore();
+  }
+
+  // 速度矢量（蓝）
+  c.save();
+  c.strokeStyle = '#2563eb'; c.lineWidth = 2.4; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(px, py); c.lineTo(px + dx*40, py + dy*40); c.stroke();
+  const ang = Math.atan2(dy, dx);
+  c.fillStyle = '#2563eb';
+  c.beginPath();
+  c.moveTo(px + dx*46, py + dy*46);
+  c.lineTo(px + dx*40 - Math.cos(ang-0.45)*8, py + dy*40 - Math.sin(ang-0.45)*8);
+  c.lineTo(px + dx*40 - Math.cos(ang+0.45)*8, py + dy*40 - Math.sin(ang+0.45)*8);
+  c.closePath(); c.fill();
+  c.restore();
+
+  // 合力（红，指向圆心 = 凹侧）
+  if(!flying){
+    const nx = (cx - px)/R, ny = (cy - py)/R;
+    c.save();
+    c.strokeStyle = '#dc2626'; c.lineWidth = 2.2;
+    c.beginPath(); c.moveTo(px, py); c.lineTo(px + nx*30, py + ny*30); c.stroke();
+    const a2 = Math.atan2(ny, nx);
+    c.fillStyle = '#dc2626';
+    c.beginPath();
+    c.moveTo(px + nx*36, py + ny*36);
+    c.lineTo(px + nx*30 - Math.cos(a2-0.45)*7, py + ny*30 - Math.sin(a2-0.45)*7);
+    c.lineTo(px + nx*30 - Math.cos(a2+0.45)*7, py + ny*30 - Math.sin(a2+0.45)*7);
+    c.closePath(); c.fill();
+    c.restore();
+  }
+
+  // 小车
+  c.save();
+  c.translate(px, py);
+  c.rotate(Math.atan2(dy, dx));
+  c.fillStyle = flying ? '#ea580c' : '#1e293b';
+  c.beginPath();
+  if(c.roundRect) c.roundRect(-9, -5, 18, 10, 3); else c.rect(-9,-5,18,10);
+  c.fill();
+  c.fillStyle = '#fff';
+  c.beginPath(); c.arc(-3, -2.5, 1.4, 0, TAU); c.arc(3, -2.5, 1.4, 0, TAU); c.fill();
+  c.restore();
+
+  // 图注
+  c.save();
+  c.fillStyle = '#64748b';
+  c.font = '10.5px -apple-system, "Microsoft YaHei", sans-serif';
+  c.textAlign = 'right'; c.textBaseline = 'bottom';
+  c.fillText(flying ? '冲出弯道：沿出口切线直行' : '弯道内：v 沿切线，F 指向凹侧', w-10, h-8);
+  c.restore();
+}
+
+/* ============================================================
+   13. HUD 数据面板
+   ============================================================ */
+const HUD_ITEMS = [
+  ['t',  '时间 t'],
+  ['pos','位置 (x, y)'],
+  ['v',  '速率 v'],
+  ['th', '切线角 θ'],
+  ['F',  '合力 F'],
+  ['Fd', '合力方向'],
+  ['Ft', '切向分力 F_t'],
+  ['Fn', '法向分力 F_n'],
+  ['ang','v 与 F 夹角'],
+  ['rho','曲率半径 ρ'],
+  ['fly','飞出方向角'],
+  ['diff','与出口切线差'],
+  ['dev','当前速度偏离切线']
+];
+
+function buildHUD(){
+  const box = $('hud');
+  box.innerHTML = '';
+  for(const [k, name] of HUD_ITEMS){
+    const d = document.createElement('div');
+    d.className = 'item';
+    d.innerHTML = '<span>' + name + '</span><b id="hud-' + k + '">—</b>';
+    box.appendChild(d);
+  }
+}
+
+function updateHUD(){
+  const ph = livePhysics();
+  const set = (k, val, cls) => {
+    const el = $('hud-' + k);
+    if(!el) return;
+    el.textContent = val;
+    el.className = cls || '';
+  };
+  set('t', sim.t.toFixed(2) + ' s');
+  set('pos', ph.x.toFixed(3) + ', ' + ph.y.toFixed(3) + ' m');
+  set('v', ph.v.toFixed(2) + ' m/s');
+  set('th', ph.th.toFixed(1) + '°');
+  if(ph.F < 1e-6){
+    set('F', '0 N（无侧向力）');
+    set('Fd', '—');
+    set('Ft', '0.00 N');
+    set('Fn', '0.00 N');
+    set('ang', '—');
+  } else {
+    set('F', ph.F.toFixed(2) + ' N');
+    set('Fd', ph.Fd.toFixed(1) + '°');
+    set('Ft', ph.Ft.toFixed(2) + ' N' + (ph.Ft > 1e-6 ? '（加速）' : (ph.Ft < -1e-6 ? '（减速）' : '（速率不变）')));
+    set('Fn', ph.Fn.toFixed(2) + ' N');
+    set('ang', ph.ang.toFixed(1) + '°');
+  }
+  set('rho', isFinite(ph.rho) ? ph.rho.toFixed(2) + ' m' : '∞（直线）');
+
+  if(sim.exitInfo && sim.exitInfo.measured){
+    set('fly', sim.exitInfo.dirDeg.toFixed(1) + '°');
+    const d = sim.exitInfo.diffDeg;
+    set('diff', (d >= 0 ? '+' : '') + d.toFixed(1) + '°', Math.abs(d) < 0.5 ? 'ok' : 'bad');
+    if(sim.phase === 'fly'){
+      const dv = angDiff(ph.th, sim.exitInfo.tangentDeg);
+      set('dev', (dv >= 0 ? '+' : '') + dv.toFixed(1) + '°', Math.abs(dv) > 0.5 ? 'bad' : 'ok');
+    } else {
+      set('dev', '—');
+    }
+  } else {
+    set('fly', '—');
+    set('diff', '—');
+    set('dev', '—');
+  }
+
+  // 进阶层读数
+  if(ST.probeS != null){
+    const pi = probePhysics(ST.probeS);
+    $('advReadout').textContent = '当前探针点：ρ = ' + (isFinite(pi.rho)?pi.rho.toFixed(2)+' m':'∞') +
+      ' ，F_n = ' + pi.Fn.toFixed(2) + ' N （m·v²/ρ = ' + (ST.mass*pi.v*pi.v/(isFinite(pi.rho)?pi.rho:1)).toFixed(2) + ' N）';
+  } else {
+    $('advReadout').textContent = '当前探针点：ρ = — ，F_n = —';
+  }
+
+  // 比例尺文字（画面右下亦有图形比例尺）
+  const si = $('scaleInfo');
+  if(si) si.textContent = '比例 1 m ≈ ' + view.scale.toFixed(0) + ' px';
+}
+
+/* ============================================================
+   14. 数据记录
+   ============================================================ */
+function shapeName(){
+  return { arc:'圆弧', parabola:'抛物线', ellipse:'椭圆弧', s:'S 形', custom:'自定义' }[ST.shape] || ST.shape;
+}
+
+function pushRecord(){
+  if(!sim.exitInfo || sim.exitInfo.dirDeg == null) return;
+  records.push({
+    shape: shapeName(),
+    exitDeg: ST.exitDeg,
+    flyDeg: sim.exitInfo.dirDeg,
+    diff: sim.exitInfo.diffDeg
+  });
+  // 保存本次飞出直线用于叠加对比
+  const d = sim.exitInfo.dirVec;
+  sim.ghostPaths.push({
+    x1: 0, y1: 0,
+    x2: d.x*CFG.ghostLen, y2: d.y*CFG.ghostLen,
+    color: C.tangent,
+    label: 'θ=' + ST.exitDeg.toFixed(0) + '°'
+  });
+  if(sim.ghostPaths.length > 14) sim.ghostPaths.shift();
+  renderRecords();
+}
+
+function renderRecords(){
+  const tb = $('recBody');
+  if(!records.length){
+    tb.innerHTML = '<tr><td colspan="5" class="small" style="color:#94a3b8;padding:14px">暂无记录，点击“播放”让小球飞出轨道</td></tr>';
+    return;
+  }
+  tb.innerHTML = records.map((r,i)=>{
+    const bad = Math.abs(r.diff) >= 0.5;
+    return '<tr><td>' + (i+1) + '</td><td>' + r.shape + '</td><td>' + r.exitDeg.toFixed(0) +
+      '</td><td>' + r.flyDeg.toFixed(1) +
+      '</td><td style="color:' + (bad?'#dc2626':'#16a34a') + ';font-weight:600">' +
+      (r.diff>=0?'+':'') + r.diff.toFixed(1) + '</td></tr>';
+  }).join('');
+}
+
+function csvText(){
+  let s = '序号,轨道,出口角(°),飞出方向角(°),差值(°)\n';
+  records.forEach((r,i)=>{
+    s += (i+1) + ',' + r.shape + ',' + r.exitDeg.toFixed(0) + ',' + r.flyDeg.toFixed(2) + ',' + r.diff.toFixed(2) + '\n';
+  });
+  return s;
+}
+
+/* ============================================================
+   15. 音效
+   ============================================================ */
+let actx = null;
+function beep(f0, f1, dur){
+  if(!ST.layers.sound) return;
+  try{
+    const AC = window.AudioContext || window.webkitAudioContext;
+    if(!AC) return;
+    if(!actx) actx = new AC();
+    if(actx.state === 'suspended') actx.resume();
+    const o = actx.createOscillator(), g = actx.createGain();
+    const now = actx.currentTime;
+    o.type = 'sine';
+    o.frequency.setValueAtTime(f0, now);
+    o.frequency.exponentialRampToValueAtTime(f1, now + dur);
+    g.gain.setValueAtTime(0.0001, now);
+    g.gain.exponentialRampToValueAtTime(0.10, now + 0.012);
+    g.gain.exponentialRampToValueAtTime(0.0001, now + dur);
+    o.connect(g); g.connect(actx.destination);
+    o.start(now); o.stop(now + dur + 0.02);
+  }catch(e){ /* 忽略音频失败 */ }
+}
+
+/* ============================================================
+   16. 提示横幅
+   ============================================================ */
+let bannerTimer = null;
+function showBanner(text, kind, ms){
+  const b = $('banner');
+  b.textContent = text;
+  b.className = 'banner show' + (kind === 'info' ? ' info' : '');
+  clearTimeout(bannerTimer);
+  if(ms !== 0){
+    bannerTimer = setTimeout(()=>{ b.className = 'banner'; }, ms || 4200);
+  }
+}
+
+/* ============================================================
+   17. UI 构建与事件
+   ============================================================ */
+const LAYER_DEFS = [
+  ['ink','墨水轨迹'], ['strobe','频闪残影'], ['tangent','切线'], ['vel','速度矢量'],
+  ['force','合力矢量'], ['comp','切向/法向分解'], ['shade','凹侧阴影'],
+  ['ghost','幽灵直线'], ['board','刻度底板'], ['sound','音效'], ['frames','静态分帧图']
+];
+
+function buildLayers(){
+  const box = $('layerChips');
+  box.innerHTML = '';
+  for(const [k,name] of LAYER_DEFS){
+    const el = document.createElement('div');
+    el.className = 'chip' + (ST.layers[k] ? ' on' : '');
+    el.textContent = name;
+    el.addEventListener('click', ()=>{
+      ST.layers[k] = !ST.layers[k];
+      el.className = 'chip' + (ST.layers[k] ? ' on' : '');
+      if(k === 'sound' && ST.layers.sound) beep(660, 880, 0.09);
+    });
+    box.appendChild(el);
+  }
+}
+
+function buildLegend(){
+  const items = [
+    '<i style="background:#2563eb"></i>速度 / 切线',
+    '<i style="background:#dc2626"></i>合力 F',
+    '<i style="background:#ea580c"></i>切向分力 F_t',
+    '<i style="background:#7c3aed"></i>法向分力 F_n',
+    '<i style="background:#16a34a"></i>加速度 a',
+    '<i class="dot" style="background:#374151"></i>墨水轨迹'
+  ];
+  $('legend').innerHTML = items.map(x=>'<span>' + x + '</span>').join('');
+}
+
+const STEPS = [
+  {
+    tip:'猜想：小球沿弯曲轨道滚下，从末端飞出。它离开轨道后的那一瞬间，速度方向指向哪里？',
+    q:'Q1：请先猜一猜——小球飞出后，会沿着轨道末端继续弯，还是沿着某个确定的方向直飞？',
+    a:'参考答案：会沿着轨道末端的<b>切线方向</b>直飞（俯视模型下）。曲线运动的速度方向总是沿轨迹在该点的切线方向，离开轨道后不再有侧向力，方向就不再改变。'
+  },
+  {
+    tip:'实验：调节出口角（0°–360°），观察小球飞出瞬间的高亮虚线与幽灵直线是否重合。',
+    q:'Q2：把出口角设为 30°，播放后看记录表，“飞出方向角”与“出口角”的差值是多少？',
+    a:'参考答案：差值 ≈ 0.0°。飞出的直线与轨道末端严格相切——这就是"瞬时速度沿切线"的直接证据。'
+  },
+  {
+    tip:'数据：在轨迹上取几个探针点，记录每点的 θ、F、F_t、F_n，比较 v 与 F 的夹角。',
+    q:'Q3：探针点上合力 F 的箭头落在轨迹的哪一侧？夹角 ∠(v,F) 与速率变化是什么关系？',
+    a:'参考答案：F 始终落在<b>凹侧</b>（蓝色阴影内）。∠(v,F) &lt; 90° 速率增大、&gt; 90° 速率减小、= 90° 速率不变（如匀速圆周运动）。'
+  },
+  {
+    tip:'结论：把现象归纳成规律。',
+    q:'Q4：用一句话概括——曲线运动的"速度方向、合力方向、轨迹弯曲方向"三者的关系。',
+    a:'参考答案：<b>速度沿轨迹切线；合力指向轨迹凹侧；轨迹夹在速度方向与合力方向之间，向合力一侧弯曲。</b>因为速度方向时刻改变，曲线运动一定是变速运动，一定有加速度，合力一定不为零。'
+  }
+];
+let stepIdx = 0;
+
+function buildSteps(){
+  const box = $('steps');
+  box.innerHTML = '';
+  ['① 猜想','② 实验','③ 数据','④ 结论'].forEach((t,i)=>{
+    const d = document.createElement('div');
+    d.className = 'st' + (i === stepIdx ? ' on' : '');
+    d.textContent = t;
+    d.addEventListener('click', ()=>{ stepIdx = i; renderStep(); });
+    box.appendChild(d);
+  });
+}
+function renderStep(){
+  const s = STEPS[stepIdx];
+  $('stepTip').innerHTML = s.tip;
+  $('stepQ').innerHTML = s.q;
+  $('stepA').innerHTML = s.a;
+  $('stepA').className = 'ans';
+  const sts = document.querySelectorAll('#steps .st');
+  sts.forEach((el,i)=>{
+    el.className = 'st' + (i === stepIdx ? ' on' : (i < stepIdx ? ' done' : ''));
+  });
+}
+
+const QUIZ = [
+  {
+    q:'1. 做曲线运动的物体，某一时刻的瞬时速度方向是：',
+    opts:['沿轨迹在该点的切线方向','从该点指向轨迹的曲率中心','与该点所受合力方向相同','沿该点与起点的连线方向'],
+    a:0,
+    why:'速度方向沿轨迹切线，并指向运动的一侧。若指向圆心，物体就会沿半径飞出去，与事实不符。'
+  },
+  {
+    q:'2. 物体做曲线运动时，它所受合力的方向：',
+    opts:['指向轨迹的凸侧','指向轨迹的凹侧（内侧）','一定沿轨迹的切线方向','可以与速度方向共线'],
+    a:1,
+    why:'轨迹总是向合力一侧弯曲，所以合力指向凹侧。若合力沿切线，只改变速率不改变方向，物体做直线运动；若合力与速度共线，同样不产生弯曲。'
+  },
+  {
+    q:'3. 在水平桌面上沿弯曲轨道运动的小球，某点突然撤去轨道的侧向弹力，此后小球将：',
+    opts:['继续沿原轨道弯曲前进','沿该点的切线方向做匀速直线运动','立即停止','沿半径方向飞向圆心'],
+    a:1,
+    why:'撤去侧向力后合外力为零（俯视模型下重力被支持力平衡），由牛顿第一定律，小球保持撤去瞬间的速度——沿该点切线方向做匀速直线运动。'
+  },
+  {
+    q:'4. 关于匀速圆周运动，下列说法正确的是：',
+    opts:['速度不变，所以是匀速运动','合力为零','速率不变，但速度方向时刻改变，合力全部为法向并指向圆心','合力沿切线方向'],
+    a:2,
+    why:'“匀速”只指速率不变。速度是矢量，方向时刻在变，所以是变速运动，一定有加速度。此时 F_t = 0，合力全部是法向力，指向圆心，大小 F = m·v²/ρ。'
+  }
+];
+
+function buildQuiz(){
+  const box = $('quiz');
+  box.innerHTML = '';
+  QUIZ.forEach((item, qi)=>{
+    const wrap = document.createElement('div');
+    wrap.className = 'qz';
+    const qt = document.createElement('div');
+    qt.className = 'qt';
+    qt.textContent = item.q;
+    wrap.appendChild(qt);
+    const ops = document.createElement('div');
+    ops.className = 'opts';
+    item.opts.forEach((o, oi)=>{
+      const b = document.createElement('button');
+      b.className = 'opt';
+      b.textContent = String.fromCharCode(65+oi) + '. ' + o;
+      b.addEventListener('click', ()=>{
+        if(wrap.dataset.done) return;
+        wrap.dataset.done = '1';
+        const btns = ops.querySelectorAll('.opt');
+        btns.forEach((x,xi)=>{
+          if(xi === item.a) x.classList.add('right');
+          else if(xi === oi) x.classList.add('wrong');
+        });
+        const why = wrap.querySelector('.why');
+        why.classList.add('show');
+        why.innerHTML = (oi === item.a ? '<b style="color:#15803d">回答正确。</b> ' : '<b style="color:#b91c1c">再想一想。</b> ') + item.why;
+      });
+      ops.appendChild(b);
+    });
+    wrap.appendChild(ops);
+    const why = document.createElement('div');
+    why.className = 'why';
+    wrap.appendChild(why);
+    box.appendChild(wrap);
+  });
+}
+
+/* ---------- 事件绑定 ---------- */
+function bindUI(){
+  // 视角
+  $('viewTabs').addEventListener('click', e=>{
+    const b = e.target.closest('button[data-view]');
+    if(!b) return;
+    ST.view = b.dataset.view;
+    [...$('viewTabs').children].forEach(x=>x.classList.toggle('active', x === b));
+    updateViewHint();
+    resetSim(true);
+    showBanner(ST.view === 'top'
+      ? '俯视模型：重力被支持力平衡，合力只由轨道侧向弹力提供；飞出后无侧向力 → 沿出口切线匀速直线。'
+      : '侧视模型：合力 = 重力 + 轨道弹力；飞出后受重力 → 抛体运动，但初速度方向仍是出口切线。', 'info', 5200);
+  });
+
+  // 轨道形状
+  $('shapeSel').addEventListener('change', e=>{
+    ST.shape = e.target.value;
+    resetSim();
+    if(ST.shape === 'custom'){
+      showBanner('自定义模式：拖动画面上的三个绿色控制点，可任意改变轨道形状。', 'info', 4200);
+    }
+  });
+
+  // 出口角
+  const exitEl = $('exitDeg');
+  exitEl.addEventListener('input', ()=>{
+    ST.exitDeg = parseFloat(exitEl.value);
+    $('exitDegV').textContent = ST.exitDeg.toFixed(0) + '°';
+    resetSim(true);
+  });
+
+  // 释放位置
+  const relEl = $('relPct');
+  relEl.addEventListener('input', ()=>{
+    ST.relPct = parseFloat(relEl.value);
+    resetSim(true);
+  });
+
+  // 初速度 v₀
+  const v0El = $('v0');
+  v0El.addEventListener('input', ()=>{
+    ST.v0 = parseFloat(v0El.value);
+    $('v0V').textContent = ST.v0.toFixed(2);
+    syncV0Hint();
+    resetSim(true);
+  });
+
+  // 质量
+  const mEl = $('mass');
+  mEl.addEventListener('input', ()=>{
+    ST.mass = parseFloat(mEl.value);
+    $('massV').textContent = ST.mass.toFixed(2);
+    updateHUD();
+  });
+
+  // g
+  $('gGrp').addEventListener('click', e=>{
+    const b = e.target.closest('button[data-g]');
+    if(!b) return;
+    ST.g = parseFloat(b.dataset.g);
+    [...$('gGrp').children].forEach(x=>x.classList.toggle('on', x === b));
+    resetSim(true);
+  });
+
+  // 合力方向
+  const fBtns = document.querySelectorAll('#forceGrp button, #forceGrp2 button');
+  fBtns.forEach(b=>{
+    b.addEventListener('click', ()=>{
+      ST.forceMode = b.dataset.f;
+      fBtns.forEach(x=>{
+        x.classList.toggle('on', x.dataset.f === ST.forceMode);
+        x.classList.toggle('onbad', x.dataset.f === ST.forceMode && ST.forceMode !== 'concave');
+      });
+      onForceModeChange();
+    });
+  });
+
+  // 播放
+  $('btnPlay').addEventListener('click', togglePlay);
+  $('btnStep').addEventListener('click', ()=>{
+    ST.playing = false;
+    $('btnPlay').textContent = '▶ 播放';
+    for(let i=0;i<Math.round(0.05/CFG.dt);i++) physicsStep(CFG.dt);
+    drawCharts();
+    updateHUD();
+  });
+  $('btnReset').addEventListener('click', ()=>{ ST.playing = false; $('btnPlay').textContent = '▶ 播放'; resetSim(); });
+
+  // 慢动作
+  $('spdGrp').addEventListener('click', e=>{
+    const b = e.target.closest('button[data-s]');
+    if(!b) return;
+    ST.speedMul = parseFloat(b.dataset.s);
+    [...$('spdGrp').children].forEach(x=>x.classList.toggle('on', x === b));
+  });
+
+  // 对比
+  $('cmpMulti').addEventListener('click', doMultiCompare);
+  $('cmpRelease').addEventListener('click', ()=>{
+    const s = (ST.probeS != null) ? ST.probeS : sim.s;
+    if(sim.phase !== 'track' && ST.probeS == null){
+      showBanner('小球已飞出。请先在蓝色轨迹上点击取一个探针点，再点此按钮。', 'info', 4200);
+      return;
+    }
+    releaseAt(s);
+    ST.playing = false;
+    $('btnPlay').textContent = '▶ 播放';
+    showBanner('已撤去侧向力：小球从该点沿当前切线方向做直线运动，速率保持不变（俯视模型）。', 'info', 5200);
+  });
+  $('cmpReverse').addEventListener('click', ()=>{
+    ST.forceMode = 'convex';
+    fBtns.forEach(x=>{
+      x.classList.toggle('on', x.dataset.f === 'convex');
+      x.classList.toggle('onbad', x.dataset.f === 'convex');
+    });
+    resetSim(true);
+    onForceModeChange();
+    ST.playing = true;
+    $('btnPlay').textContent = '⏸ 暂停';
+  });
+  $('cmpClear').addEventListener('click', ()=>{
+    sim.ghostPaths = [];
+    sim.multiRays = null;
+    showBanner('已清除全部对比线。', 'info', 2200);
+  });
+
+  // 记录
+  $('btnCsv').addEventListener('click', ()=>{
+    if(!records.length){ showBanner('还没有数据，先播放一次让小球飞出。', 'info', 3000); return; }
+    const blob = new Blob(['\ufeff' + csvText()], { type:'text/csv;charset=utf-8' });
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = '模型26_曲线运动切线方向_数据.csv';
+    document.body.appendChild(a);
+    a.click();
+    setTimeout(()=>{ URL.revokeObjectURL(a.href); a.remove(); }, 800);
+  });
+  $('btnCopyCsv').addEventListener('click', ()=>{
+    if(!records.length){ showBanner('还没有数据。', 'info', 2200); return; }
+    $('csvOut').value = csvText();
+    $('csvOut').select();
+    showBanner('CSV 文本已生成，可全选复制。', 'info', 2600);
+  });
+  $('btnClearRec').addEventListener('click', ()=>{
+    records.length = 0;
+    renderRecords();
+    $('csvOut').value = '';
+    showBanner('记录已清空。', 'info', 2000);
+  });
+
+  // 教学步骤
+  $('stepPrev').addEventListener('click', ()=>{ stepIdx = Math.max(0, stepIdx-1); renderStep(); });
+  $('stepNext').addEventListener('click', ()=>{ stepIdx = Math.min(STEPS.length-1, stepIdx+1); renderStep(); });
+  $('stepReveal').addEventListener('click', ()=>{ $('stepA').classList.toggle('show'); });
+
+  // 进阶层
+  $('advBtn').addEventListener('click', ()=>{
+    const on = $('advBtn').dataset.on === '1';
+    $('advBtn').dataset.on = on ? '0' : '1';
+    $('advBtn').textContent = on ? '关闭' : '开启';
+    $('advBody').style.display = on ? 'none' : 'block';
+    if(!on) showBanner('进阶层：F_n = m·v²/ρ。曲率越大（ρ 越小）或速度越大，所需法向力越大——只作定性提示。', 'info', 5200);
+  });
+
+  // 画布交互（探针 + 自定义拖拽）
+  bindCanvas();
+}
+
+function onForceModeChange(){
+  const hint = $('forceHint');
+  if(ST.forceMode === 'concave'){
+    hint.className = 'hintline';
+    hint.innerHTML = '正确：飞出后不再有侧向力，俯视时沿切线匀速直线；侧视时只受重力，做抛体运动。';
+    showBanner('已切换到“合力指向凹侧（正确）”：飞出方向与出口切线重合，差值 ≈ 0.0°。', 'info', 4000);
+  } else if(ST.forceMode === 'tangent'){
+    hint.className = 'hintline warn';
+    hint.innerHTML = '反例：合力沿切线方向时，只能改变<b>速率</b>，不能改变<b>方向</b>——物体仍做直线运动，不会转弯。';
+    showBanner('纠错：合力沿切线 → 只改变速率，不改变方向，物体不会做曲线运动。要使方向改变，合力必须与速度不共线。', '', 0);
+  } else {
+    hint.className = 'hintline warn';
+    hint.innerHTML = '反例：若合力指向凸侧，轨迹就会向凸侧弯曲——与“轨迹向合力一侧弯曲、合力指向凹侧”的规律矛盾。';
+    showBanner('纠错：合力指向凸侧是错的。轨道弹力只能把物体往轨道内侧推，绳只能拉不能推，真实合力必指向轨迹凹侧。', '', 0);
+  }
+  /* 力方向只影响“脱离轨道之后”，因此重启一次即可看到差异 */
+  resetSim(true);
+  if(ST.forceMode !== 'concave'){
+    ST.playing = true;
+    $('btnPlay').textContent = '⏸ 暂停';
+  }
+}
+
+function togglePlay(){
+  ST.playing = !ST.playing;
+  $('btnPlay').textContent = ST.playing ? '⏸ 暂停' : '▶ 播放';
+  if(ST.playing && actx && actx.state === 'suspended') actx.resume();
+  /* v₀ = 0 且俯视：水平面内无任何切向力，小球确实不会动——直接说明原因 */
+  if(ST.playing && ST.view === 'top' && ST.v0 < 1e-9 && sim.phase === 'track'){
+    showBanner('俯视模型下 v₀ = 0 且水平面内无切向力，小球保持静止。请把 v₀ 调到 0 以上；若想看“静止释放”，请切到侧视。', '', 0);
+  }
+}
+
+function doMultiCompare(){
+  const angles = [0,45,90,135,180,225,270,315];
+  const len = CFG.ghostLen * 0.92;
+  sim.multiRays = angles.map((a,i)=>({
+    x: Math.cos(a*D2R)*len,
+    y: Math.sin(a*D2R)*len,
+    color: i%2 ? '#60a5fa' : '#2563eb',
+    label: a + '°/差0.0°'
+  }));
+  showBanner('已叠加 8 个出口角的飞出直线：每条射线都从出口点出发、沿该次设定的出口切线方向，夹角读数均为 0.0°。', 'info', 5600);
+}
+
+function bindCanvas(){
+  let dragging = false;
+  let dragHandle = -1;
+  let dragFreeze = null;
+
+  stage.addEventListener('pointerdown', e=>{
+    const r = stage.getBoundingClientRect();
+    const sx = e.clientX - r.left, sy = e.clientY - r.top;
+    const wp = S2W(sx, sy);
+
+    // 自定义三点拖拽
+    if(ST.shape === 'custom'){
+      for(let i=0;i<customPts.length;i++){
+        const p = toWorldFromLocal(customPts[i]);
+        const sp = W2S(p.x,p.y);
+        if(Math.hypot(sp[0]-sx, sp[1]-sy) < 14){
+          dragHandle = i; dragging = true;
+          dragFreeze = { k: track.local.k, rot: track.local.rot };
+          stage.setPointerCapture(e.pointerId);
+          return;
+        }
+      }
+    }
+    // 探针
+    const near = nearestS(wp.x, wp.y);
+    const tolWorld = Math.max(0.16, 18/view.scale);
+    if(near.dist <= tolWorld){
+      ST.probeS = near.s;
+      probeInfoCache = probePhysics(near.s);
+      dragging = true;
+      stage.setPointerCapture(e.pointerId);
+      updateHUD();
+    } else {
+      ST.probeS = null;
+      updateHUD();
+    }
+  });
+
+  stage.addEventListener('pointermove', e=>{
+    if(!dragging) return;
+    const r = stage.getBoundingClientRect();
+    const sx = e.clientX - r.left, sy = e.clientY - r.top;
+    const wp = S2W(sx, sy);
+    if(dragHandle >= 0){
+      const lp = toLocalFromWorld(wp);
+      customPts[dragHandle] = { x: lp.x, y: lp.y };
+      rebuildTrack(dragFreeze);
+      sim.s0 = clamp(ST.relPct/100, 0, 0.8) * track.L;
+      sim.s = sim.s0;
+      const p = pointAtS(sim.s);
+      sim.x = p.x; sim.y = p.y;
+      sim.trail = []; sim.strobe = []; sim.series = [];
+      sim.exitInfo = null;
+      updateHUD();
+    } else {
+      const near = nearestS(wp.x, wp.y);
+      ST.probeS = near.s;
+      probeInfoCache = probePhysics(near.s);
+      updateHUD();
+    }
+  });
+
+  const endDrag = e=>{
+    if(dragging && dragHandle >= 0){ dragFreeze = null; resetSim(true); }
+    dragging = false; dragHandle = -1;
+    try{ stage.releasePointerCapture(e.pointerId); }catch(err){}
+  };
+  stage.addEventListener('pointerup', endDrag);
+  stage.addEventListener('pointercancel', endDrag);
+}
+
+function updateViewHint(){
+  if(ST.view === 'top'){
+    $('viewHint').innerHTML = '<b>俯视</b>：重力 ⊥ 桌面被支持力平衡 · 合力 = 轨道侧向弹力（纯法向） · 飞出后无侧向力 → <b>匀速直线</b>';
+  } else {
+    $('viewHint').innerHTML = '<b>侧视</b>：合力 = 重力 + 轨道弹力 · 飞出后只受重力 → <b>抛体运动</b>，初速度仍沿出口切线';
+  }
+  syncV0Hint();
+}
+
+/* v₀ 的标签与说明随视角切换：俯视是“恒定速率”，侧视才是真正的“初速度” */
+function syncV0Hint(){
+  const lab = $('v0Label'), hint = $('v0Hint');
+  if(!lab || !hint) return;
+  if(ST.view === 'top'){
+    lab.textContent = '恒定速率 v₀';
+    hint.className = 'hintline';
+    if(ST.v0 < 1e-9){
+      hint.innerHTML = '当前 v₀ = 0：水平面内没有任何切向力，小球保持静止。请把 v₀ 调大；若想看“静止释放”，请切到侧视。';
+    } else if(ST.v0 < 0.30){
+      hint.innerHTML = '俯视：速率恒为 v₀，但当前 v₀ 很低（走完 ' + CFG.trackLen.toFixed(2) +
+        ' m 轨道约需 ' + (CFG.trackLen/ST.v0).toFixed(0) + ' s），动画会很慢。';
+    } else {
+      hint.innerHTML = '俯视：轨道弹力 ⊥ 速度、不做功，水平面内无切向力 ⇒ 全程<b>速率恒为 v₀</b>。改 v₀ 只改变快慢，不改变轨迹形状。';
+    }
+  } else {
+    lab.textContent = '初速度 v₀';
+    hint.className = 'hintline';
+    hint.innerHTML = ST.v0 < 1e-9
+      ? '当前 v₀ = 0：<b>静止释放</b>，小球只靠重力沿轨道下滑（教材标准情境）。'
+      : '侧视：v₀ 是<b>释放点</b>处的速度。之后速率由能量守恒 v² = v₀² + 2g(h₀−h) 决定，下坡加速、上坡减速；v₀ 太小则到不了出口，会沿轨道退回。';
+  }
+}
+
+/* ============================================================
+   18. 主循环
+   ============================================================ */
+let lastT = performance.now();
+let hudAcc = 0, chartAcc = 0;
+
+function loop(now){
+  const raw = Math.min((now - lastT)/1000, 0.1);
+  lastT = now;
+
+  if(ST.playing){
+    sim.acc += raw * ST.speedMul;
+    let guard = 0;
+    while(sim.acc >= CFG.dt && guard < CFG.maxSubSteps){
+      physicsStep(CFG.dt);
+      sim.acc -= CFG.dt;
+      guard++;
+    }
+    if(guard >= CFG.maxSubSteps) sim.acc = 0;
+  }
+
+  render();
+  drawLife(raw);
+
+  hudAcc += raw; chartAcc += raw;
+  if(hudAcc > 0.07){ updateHUD(); hudAcc = 0; }
+  if(chartAcc > 0.12){ drawCharts(); chartAcc = 0; }
+
+  requestAnimationFrame(loop);
+}
+
+/* ============================================================
+   19. 初始化
+   ============================================================ */
+const reduceMotion = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function init(){
+  buildLegend();
+  buildLayers();
+  buildHUD();
+  buildSteps();
+  buildQuiz();
+  buildLife();
+  bindUI();
+  renderRecords();
+
+  if(reduceMotion){
+    ST.layers.frames = true;
+    ST.playing = false;
+    const chips = document.querySelectorAll('#layerChips .chip');
+    if(chips[LAYER_DEFS.findIndex(d=>d[0]==='frames')]) chips[LAYER_DEFS.findIndex(d=>d[0]==='frames')].classList.add('on');
+    setTimeout(()=>showBanner('已检测到系统“减少动效”设置：默认暂停并使用静态分帧图。可点“播放”或“单步”逐帧查看。', 'info', 7000), 400);
+  }
+
+  updateViewHint();
+  resetSim();
+  renderStep();
+
+  $('exitDeg').value = ST.exitDeg;
+  $('exitDegV').textContent = ST.exitDeg.toFixed(0) + '°';
+  $('relPct').value = ST.relPct;
+  $('v0').value = ST.v0;
+  $('v0V').textContent = ST.v0.toFixed(2);
+  $('mass').value = ST.mass;
+  $('massV').textContent = ST.mass.toFixed(2);
+
+  // 让首帧就绪
+  view.snapped = false;
+  render();
+  requestAnimationFrame(loop);
+}
+
+window.addEventListener('resize', ()=>{
+  view.snapped = true;   // 保持平滑，不重置缩放
+  drawCharts(true);
+});
+
+init();
+
+})();
+</script>
+</body>
+</html>

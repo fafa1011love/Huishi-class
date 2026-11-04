@@ -1,0 +1,830 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>光的反射定律 · 三线共面 / 两角相等 / 镜面与漫反射（单文件版）</title>
+<style>
+:root{
+  --blue:#2563EB; --blue-d:#1D4ED8; --blue-l:#EFF4FF;
+  --green:#10B981; --red:#EF4444; --purple:#7C3AED; --amber:#F59E0B;
+  --ink:#1F2937; --ink-2:#4B5563; --ink-3:#6B7280;
+  --line:#E5E7EB; --bg:#F5F7FB; --card:#FFFFFF;
+  --radius:14px;
+  --shadow:0 1px 2px rgba(16,24,40,.04), 0 8px 24px rgba(16,24,40,.06);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:"Microsoft YaHei","PingFang SC","Hiragino Sans GB",system-ui,-apple-system,"Segoe UI",sans-serif;
+  background:var(--bg);color:var(--ink);line-height:1.65;-webkit-font-smoothing:antialiased;
+}
+
+/* ---------- header ---------- */
+.site-header{background:linear-gradient(135deg,#1E40AF 0%,#2563EB 55%,#3B82F6 100%);color:#fff;padding:24px 0 26px;}
+.header-inner{max-width:1140px;margin:0 auto;padding:0 24px;display:flex;align-items:flex-start;justify-content:space-between;gap:20px;flex-wrap:wrap;}
+.header-text h1{margin:0;font-size:24px;letter-spacing:.4px;font-weight:700;}
+.header-text p{margin:6px 0 0;font-size:14px;opacity:.9;}
+.header-nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.header-link{border:1px solid rgba(255,255,255,.45);border-radius:999px;padding:7px 16px;font-size:13px;color:#fff;text-decoration:none;background:rgba(255,255,255,.08);white-space:nowrap;transition:.16s;}
+.header-link:hover{background:rgba(255,255,255,.2);}
+.header-badge{border:1px solid rgba(255,255,255,.4);border-radius:999px;padding:7px 16px;font-size:13px;background:rgba(255,255,255,.12);white-space:nowrap;}
+
+/* ---------- layout ---------- */
+.wrap{max-width:1140px;margin:0 auto;padding:24px 24px 40px;}
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:22px 24px;border:1px solid rgba(229,231,235,.7);margin-bottom:20px;}
+.card h2{margin:0 0 16px;font-size:19px;font-weight:700;}
+.card h2 .no{display:inline-block;width:26px;height:26px;line-height:26px;text-align:center;border-radius:8px;background:var(--blue);color:#fff;font-size:14px;margin-right:9px;vertical-align:2px;}
+.exp{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:20px;align-items:start;}
+.exp > div{min-width:0;}
+@media(max-width:1040px){.exp{grid-template-columns:minmax(0,1fr);}}
+
+.stage{border:1px solid var(--line);border-radius:12px;background:#F8FAFC;padding:6px 6px 3px;overflow:hidden;}
+.stage svg{display:block;width:100%;height:auto;touch-action:none;}
+.stage.drag{cursor:grab;}
+.stage.drag:active{cursor:grabbing;}
+
+/* ---------- 控件 ---------- */
+.ctrl-block{margin-bottom:15px;}
+.ctrl-block > label{display:block;font-size:13px;color:var(--ink-2);margin-bottom:5px;}
+.ctrl-block > label b{color:var(--blue);font-variant-numeric:tabular-nums;font-size:14px;}
+.ctrl-block input[type=range]{width:100%;accent-color:var(--blue);cursor:pointer;}
+.tick{display:flex;justify-content:space-between;font-size:11px;color:var(--ink-3);margin-top:1px;}
+.btns{display:flex;flex-direction:column;gap:8px;margin:14px 0 13px;}
+.btn-row{display:flex;gap:8px;}
+.btn-row .btn{flex:1;}
+.btn{border:1px solid var(--blue);background:#fff;color:var(--blue);border-radius:9px;padding:8px 12px;font-size:12.5px;cursor:pointer;font-family:inherit;transition:.15s;white-space:nowrap;}
+.btn:hover{background:var(--blue-l);}
+.btn.primary{background:var(--blue);color:#fff;box-shadow:0 1px 2px rgba(37,99,235,.25);font-weight:600;}
+.btn.primary:hover{background:var(--blue-d);}
+.btn.on{background:var(--purple);border-color:var(--purple);color:#fff;font-weight:600;}
+.btn.on:hover{background:#6D28D9;}
+
+/* ---------- 读数 ---------- */
+.ro-wrap{border:1px solid var(--line);border-radius:10px;overflow:hidden;}
+.ro{display:flex;justify-content:space-between;padding:7px 13px;font-size:13px;border-bottom:1px solid var(--line);gap:10px;}
+.ro:last-child{border-bottom:none;}
+.ro span{color:var(--ink-3);white-space:nowrap;}
+.ro b{font-variant-numeric:tabular-nums;color:var(--ink);text-align:right;}
+.ro b.hl{color:var(--blue);}
+.ro b.amb{color:#B45309;}
+.ro b.ok{color:var(--green);}
+.ro b.no{color:var(--red);}
+.tip{margin-top:12px;padding:9px 12px;background:#F8FAFC;border:1px dashed var(--line);border-radius:9px;font-size:12.5px;color:var(--ink-2);line-height:1.65;min-height:52px;}
+.tip b{color:var(--blue);}
+.tip .warn{color:var(--red);font-weight:700;}
+
+.site-footer{text-align:center;padding:20px 0 34px;color:var(--ink-3);font-size:12.5px;}
+@media(max-width:560px){
+  .card{padding:18px 15px;}
+  .wrap{padding:20px 14px 32px;}
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-text">
+      <h1>探究光的反射定律</h1>
+      <p>初中物理 · 光的反射 §4.2　|　三线共面 · 两角相等 · 镜面反射与漫反射</p>
+    </div>
+    <div class="header-nav">
+      <a class="header-link" href="#">« 返回实验目录</a>
+      <div class="header-badge">可交互探究 · 拖动 · 折纸 · 放大</div>
+    </div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ 模块一 ============ -->
+  <section class="card">
+    <h2><span class="no">1</span>光具盘：入射角等于反射角吗？</h2>
+    <div class="exp">
+      <div>
+        <div class="stage drag" id="m1Stage"></div>
+      </div>
+      <div>
+        <div class="ctrl-block">
+          <label>入射角 i（与<b>法线</b>的夹角）：<b id="vI">45</b>°　<span style="color:var(--ink-3);font-size:12px">可直接拖光线</span></label>
+          <input type="range" id="inI" min="0" max="80" step="1" value="45">
+          <div class="tick"><span>0 沿法线</span><span>45</span><span>80</span></div>
+        </div>
+        <div class="btns">
+          <button class="btn" id="wrongBtn">演示易错：把角量到镜面</button>
+          <div class="btn-row">
+            <button class="btn" data-i="0">i = 0°</button>
+            <button class="btn" data-i="30">30°</button>
+            <button class="btn" data-i="60">60°</button>
+          </div>
+        </div>
+        <div class="ro-wrap">
+          <div class="ro"><span>入射角 i（与法线）</span><b class="hl" id="ro1i">45°</b></div>
+          <div class="ro"><span>反射角 r（与法线）</span><b class="amb" id="ro1r">45°</b></div>
+          <div class="ro"><span>入射光线与镜面夹角</span><b id="ro1a">45°</b></div>
+          <div class="ro"><span>反射光线与镜面夹角</span><b id="ro1b">45°</b></div>
+        </div>
+        <div class="tip" id="tip1"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 模块二 ============ -->
+  <section class="card">
+    <h2><span class="no">2</span>硬纸板折转：三条线真的在同一个平面里吗？</h2>
+    <div class="exp">
+      <div>
+        <div class="stage" id="m2Stage"></div>
+      </div>
+      <div>
+        <div class="ctrl-block">
+          <label>纸板 F 的折转角 φ：<b id="vPhi">0</b>°　<span id="phiDir" style="color:var(--ink-3);font-size:12px">展开平放</span></label>
+          <input type="range" id="inPhi" min="-60" max="60" step="1" value="0">
+          <div class="tick"><span>−60 向后折</span><span>0 展平</span><span>+60 向前折</span></div>
+        </div>
+        <div class="ctrl-block">
+          <label>入射角 i：<b id="vI2">45</b>°</label>
+          <input type="range" id="inI2" min="10" max="75" step="1" value="45">
+          <div class="tick"><span>10</span><span>75</span></div>
+        </div>
+        <div class="btns">
+          <button class="btn primary" id="foldPlay">▶ 自动折一折</button>
+          <div class="btn-row">
+            <button class="btn" data-p="0">展平</button>
+            <button class="btn" data-p="-55">向后折</button>
+            <button class="btn" data-p="55">向前折</button>
+          </div>
+        </div>
+        <div class="ro-wrap">
+          <div class="ro"><span>入射角 i</span><b class="hl" id="ro2i">45°</b></div>
+          <div class="ro"><span>反射角 r</span><b class="amb" id="ro2r">45°</b></div>
+          <div class="ro"><span>纸板 F 折转角 φ</span><b id="ro2p">0°</b></div>
+          <div class="ro"><span>纸板上能看到反射光</span><b class="ok" id="ro2s">能</b></div>
+        </div>
+        <div class="tip" id="tip2"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 模块三 ============ -->
+  <section class="card">
+    <h2><span class="no">3</span>放大到微观：为什么粗糙表面把光射向四面八方？</h2>
+    <div class="exp">
+      <div>
+        <div class="stage" id="m3Stage"></div>
+      </div>
+      <div>
+        <div class="ctrl-block">
+          <label>表面粗糙程度：<b id="vR">0</b>%　<span id="modeName" style="color:var(--ink-3);font-size:12px">完全平整</span></label>
+          <input type="range" id="inR" min="0" max="100" step="1" value="0">
+          <div class="tick"><span>0 镜面</span><span>50</span><span>100 粗糙</span></div>
+        </div>
+        <div class="ctrl-block">
+          <label>平行光入射角（与竖直方向）：<b id="vI3">25</b>°</label>
+          <input type="range" id="inI3" min="0" max="60" step="1" value="25">
+          <div class="tick"><span>0 正入射</span><span>60</span></div>
+        </div>
+        <div class="btns">
+          <button class="btn primary" id="stepBtn">▶ 逐条作图，画各自的法线</button>
+          <div class="btn-row">
+            <button class="btn" id="allBtn">显示全部法线</button>
+          </div>
+        </div>
+        <div class="ro-wrap">
+          <div class="ro"><span>反射类型</span><b id="ro3m">镜面反射</b></div>
+          <div class="ro"><span>反射光线是否平行</span><b class="ok" id="ro3p">平行</b></div>
+        </div>
+        <div class="tip" id="tip3"></div>
+      </div>
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">物理可视化模型 · 光的反射定律　|　单文件版，CSS 与 JS 全部内嵌，无需外部资源</footer>
+
+<script>
+/* ============================================================
+   通用工具
+   ============================================================ */
+const FONT = "Microsoft YaHei, PingFang SC, sans-serif";
+const $  = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const r2 = v => Math.round(v * 10) / 10;
+const DEG = 180 / Math.PI;
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+
+function T(sel, v){ const e = $(sel); if (e) e.textContent = v; }
+
+function tx(x, y, s, o){
+  o = o || {};
+  const halo = o.halo ? ' paint-order="stroke" stroke="#FFFFFF" stroke-width="' + (o.haloW || 3.4) + '" stroke-linejoin="round"' : '';
+  return '<text x="' + r2(x) + '" y="' + r2(y) + '" font-size="' + (o.size || 12.5) +
+    '" fill="' + (o.fill || '#1F2937') + '" font-weight="' + (o.w || 400) +
+    '" text-anchor="' + (o.a || 'start') + '" font-family="' + FONT + '"' +
+    (o.op ? ' opacity="' + o.op + '"' : '') + halo + '>' + s + '</text>';
+}
+/* 极坐标点，t 为「从 +x 轴向上转」的角度 */
+function pt(cx, cy, rad, t){
+  const a = t / DEG;
+  return [cx + rad * Math.cos(a), cy - rad * Math.sin(a)];
+}
+/* 圆弧折线（同上面的角度约定） */
+function arc(cx, cy, rad, t0, t1, n){
+  n = n || 20;
+  let s = '';
+  for (let k = 0; k <= n; k++){
+    const p = pt(cx, cy, rad, t0 + (t1 - t0) * k / n);
+    s += (k ? ' ' : '') + r2(p[0]) + ',' + r2(p[1]);
+  }
+  return s;
+}
+/* 光束：外发光 + 实线 */
+function beam(x1, y1, x2, y2, color, w, op){
+  w = w || 2.4;
+  if (op === undefined) op = 1;
+  return '<g opacity="' + op + '">' +
+    '<line x1="' + r2(x1) + '" y1="' + r2(y1) + '" x2="' + r2(x2) + '" y2="' + r2(y2) +
+    '" stroke="' + color + '" stroke-width="' + r2(w * 3.4) + '" stroke-linecap="round" opacity=".15"/>' +
+    '<line x1="' + r2(x1) + '" y1="' + r2(y1) + '" x2="' + r2(x2) + '" y2="' + r2(y2) +
+    '" stroke="' + color + '" stroke-width="' + w + '" stroke-linecap="round"/></g>';
+}
+/* 箭头，尖端在 (x,y)，方向 (ux,uy) */
+function arrow(x, y, ux, uy, color, size){
+  size = size || 11;
+  const px = -uy, py = ux, bx = x - ux * size, by = y - uy * size, w = size * 0.52;
+  return '<polygon points="' + r2(x) + ',' + r2(y) + ' ' + r2(bx + px * w) + ',' + r2(by + py * w) +
+    ' ' + r2(bx - px * w) + ',' + r2(by - py * w) + '" fill="' + color + '"/>';
+}
+/* 画布状态条 */
+function chip(x, y, s, color, wid){
+  wid = wid || 300;
+  return '<rect x="' + x + '" y="' + y + '" width="' + wid + '" height="26" rx="13" fill="#FFFFFF" opacity=".92" stroke="' + color + '" stroke-width="1.1"/>' +
+    tx(x + 13, y + 18, s, { fill: color, w: 700, size: 12.5 });
+}
+
+/* ============================================================
+   模块一：光具盘 —— 两角相等 + 「角必须量到法线」易错点
+   ============================================================ */
+const S1 = { i: 45, wrong: false };
+
+function drawM1(){
+  const W = 700, H = 480, CX = 350, CY = 258, R = 205;
+  const i = S1.i;
+  let g = '';
+
+  g += '<defs>' +
+    '<linearGradient id="mir" x1="0" y1="0" x2="0" y2="1">' +
+      '<stop offset="0" stop-color="#F8FAFC"/><stop offset=".45" stop-color="#E3E9F2"/><stop offset="1" stop-color="#A9B6C7"/>' +
+    '</linearGradient>' +
+  '</defs>';
+
+  /* 盘面与刻度 */
+  g += '<circle cx="' + CX + '" cy="' + CY + '" r="' + R + '" fill="#FCFDFF" stroke="#CBD5E1" stroke-width="1.6"/>';
+  g += '<circle cx="' + CX + '" cy="' + CY + '" r="' + (R - 11) + '" fill="none" stroke="#EEF2F7"/>';
+  for (let a = 0; a < 360; a += 5){
+    const major = a % 10 === 0, L = major ? 12 : 6, p1 = pt(CX, CY, R, -a), p2 = pt(CX, CY, R - L, -a);
+    g += '<line x1="' + r2(p1[0]) + '" y1="' + r2(p1[1]) + '" x2="' + r2(p2[0]) + '" y2="' + r2(p2[1]) +
+      '" stroke="' + (major ? '#94A3B8' : '#CBD5E1') + '" stroke-width="' + (major ? 1.4 : 1) + '"/>';
+  }
+  /* 上半圈刻度读数：以法线为 0，两侧读到 90 */
+  for (let v = 10; v <= 80; v += 10){
+    for (const sg of [-1, 1]){
+      const p = pt(CX, CY, R - 22, 90 + sg * v);
+      g += tx(p[0], p[1] + 4, String(v), { size: 10.5, fill: '#94A3B8', a: 'middle' });
+    }
+  }
+  g += tx(CX, CY - R + 20, '0', { size: 10.5, fill: '#94A3B8', a: 'middle' });
+
+  /* 法线 */
+  g += '<line x1="' + CX + '" y1="' + (CY + R - 8) + '" x2="' + CX + '" y2="' + (CY - R - 12) +
+    '" stroke="#7C3AED" stroke-width="1.4" stroke-dasharray="7 5"/>';
+  g += tx(CX, CY - R - 18, 'N', { fill: '#7C3AED', w: 700, size: 13, a: 'middle' });
+  g += tx(CX + 7, CY + R - 22, '法线 ON', { fill: '#7C3AED', w: 600, size: 11.5 });
+
+  /* 镜面 */
+  const mx0 = CX - R - 18, mx1 = CX + R + 18;
+  g += '<rect x="' + mx0 + '" y="' + (CY - 6) + '" width="' + (mx1 - mx0) + '" height="12" rx="2" fill="url(#mir)" stroke="#64748B" stroke-width="1.2"/>';
+  for (let x = mx0 + 5; x < mx1 - 1; x += 9){
+    g += '<line x1="' + r2(x) + '" y1="' + (CY + 6) + '" x2="' + r2(x - 9) + '" y2="' + (CY + 15) + '" stroke="#94A3B8" stroke-width="1"/>';
+  }
+  g += tx(mx1 - 2, CY + 32, '平面镜', { a: 'end', fill: '#475569', size: 12.5, w: 600 });
+
+  /* 入射 / 反射角弧（相对法线，正确量法） */
+  const ti = 90 + i, tr = 90 - i;
+  g += '<polyline points="' + arc(CX, CY, 74, 90, ti) + '" fill="none" stroke="#2563EB" stroke-width="2"/>';
+  g += '<polyline points="' + arc(CX, CY, 74, tr, 90) + '" fill="none" stroke="#F59E0B" stroke-width="2"/>';
+  const sprd = 8 + Math.max(0, 14 - i);            // 入射角很小时把两个标签再分开一些
+  const lp1 = pt(CX, CY, 116, ti + sprd), lp2 = pt(CX, CY, 116, tr - sprd);
+  g += tx(lp1[0], lp1[1], 'i = ' + i + '°', { fill: '#1D4ED8', w: 700, size: 13, a: 'middle', halo: 1 });
+  g += tx(lp2[0], lp2[1], 'r = ' + i + '°', { fill: '#B45309', w: 700, size: 13, a: 'middle', halo: 1 });
+
+  /* 易错：把角量到镜面 */
+  if (S1.wrong){
+    g += '<polyline points="' + arc(CX, CY, 46, 180, ti) + '" fill="none" stroke="#EF4444" stroke-width="1.8" stroke-dasharray="5 4"/>';
+    g += '<polyline points="' + arc(CX, CY, 46, tr, 0) + '" fill="none" stroke="#EF4444" stroke-width="1.8" stroke-dasharray="5 4"/>';
+    const q1 = pt(CX, CY, 60, (180 + ti) / 2), q2 = pt(CX, CY, 60, (tr + 0) / 2);
+    g += tx(q1[0], q1[1] + 3, (90 - i) + '°', { fill: '#EF4444', w: 700, size: 12, a: 'middle' });
+    g += tx(q2[0], q2[1] + 3, (90 - i) + '°', { fill: '#EF4444', w: 700, size: 12, a: 'middle' });
+    g += tx(CX - R, CY + R - 22, '✘ 这是与镜面的夹角，不是入射角', { fill: '#EF4444', w: 700, size: 12.5 });
+  }
+
+  /* 入射光线（由外射向盘心） */
+  const A = pt(CX, CY, R - 16, ti);
+  g += beam(A[0], A[1], CX, CY, '#2563EB', 2.6);
+  const aMid = pt(CX, CY, (R - 16) * 0.55, ti);
+  g += arrow(aMid[0], aMid[1], -Math.cos(ti / DEG), Math.sin(ti / DEG), '#2563EB', 12);
+  /* 激光器 */
+  g += '<g transform="translate(' + r2(A[0]) + ',' + r2(A[1]) + ') rotate(' + r2(-ti) + ')">' +
+    '<rect x="0" y="-11" width="34" height="22" rx="4" fill="#1E293B"/>' +
+    '<rect x="27" y="-4.5" width="9" height="9" rx="2" fill="#EF4444"/>' +
+    '</g>';
+  g += tx(A[0] - 4, A[1] - 20, '入射光线', { fill: '#1D4ED8', w: 700, size: 12.5, a: 'end' });
+  g += '<circle cx="' + r2(A[0]) + '" cy="' + r2(A[1]) + '" r="15" fill="#2563EB" opacity=".1"/>';
+
+  /* 反射光线（由盘心射出） */
+  const B = pt(CX, CY, R - 16, tr);
+  g += beam(CX, CY, B[0], B[1], '#F59E0B', 2.6);
+  const bMid = pt(CX, CY, (R - 16) * 0.55, tr);
+  g += arrow(bMid[0], bMid[1], Math.cos(tr / DEG), -Math.sin(tr / DEG), '#F59E0B', 12);
+  g += tx(B[0] + 4, B[1] - 20, '反射光线', { fill: '#B45309', w: 700, size: 12.5 });
+
+  /* 入射点 */
+  g += '<circle cx="' + CX + '" cy="' + CY + '" r="4.5" fill="#334155"/>';
+  g += tx(CX - 9, CY + 18, 'O', { fill: '#334155', w: 700, size: 12.5, a: 'end' });
+
+  $('#m1Stage').innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg" role="img">' + g + '</svg>';
+
+  T('#ro1i', i + '°'); T('#ro1r', i + '°');
+  T('#ro1a', (90 - i) + '°'); T('#ro1b', (90 - i) + '°');
+  $('#tip1').innerHTML = S1.wrong
+    ? '<span class="warn">易错：</span>把角量到镜面得到的是 <b>' + (90 - i) + '°</b>，它等于 90° − i，只在 i = 45° 时碰巧与我们说的"角"同值。入射角、反射角指的是<b>光线与法线的夹角</b>。'
+    : '无论 i 怎么变，<b>反射角始终等于入射角</b>（r = i）；同时入射光线、反射光线分列法线两侧。共面关系看下一模块的纸板实验。';
+}
+
+/* 拖动改变入射角 */
+function bindDragM1(){
+  const box = $('#m1Stage');
+  if (!box) return;
+  const CXp = 350, CYp = 258, Rp = 205;
+  let dragging = false;
+  const local = ev => {
+    const svg = box.querySelector('svg');
+    if (!svg) return null;
+    const m = svg.getScreenCTM();
+    if (!m) return null;
+    const inv = m.inverse();
+    const p = new DOMPoint(ev.clientX, ev.clientY).matrixTransform(inv);
+    return { x: p.x, y: p.y };
+  };
+  const aim = ev => {
+    const q = local(ev);
+    if (!q) return;
+    const dx = q.x - CXp, dy = CYp - q.y;      // dy：向上为正
+    if (Math.hypot(dx, dy) < 1) return;
+    let ic = clamp(Math.atan2(Math.abs(dx), dy) * DEG, 0, 80);
+    S1.i = Math.round(ic);
+    $('#inI').value = S1.i;
+    T('#vI', S1.i);
+    drawM1();
+  };
+  box.addEventListener('pointerdown', ev => {
+    const q = local(ev);
+    if (q && Math.hypot(q.x - CXp, q.y - CYp) > Rp + 30) return;
+    dragging = true; aim(ev); box.setPointerCapture && box.setPointerCapture(ev.pointerId);
+  });
+  box.addEventListener('pointermove', ev => { if (dragging) aim(ev); });
+  box.addEventListener('pointerup', () => { dragging = false; });
+  box.addEventListener('pointercancel', () => { dragging = false; });
+}
+
+/* ============================================================
+   模块二：硬纸板折转 —— 三线共面（斜二测投影，无透视）
+   世界坐标：x 向右、y 指向观察者、z 向上；镜面在 z = 0
+   屏幕坐标：sx = CX + x ,  sy = CY + KY·y − KZ·z
+   ============================================================ */
+const S2 = { i: 45, phi: 0 };
+const KY = 0.5, KZ = 0.866;
+const M2 = { CX: 356, CY: 306, BW: 150, BH: 200, ML: 185, MD: 78 };
+let foldRaf = null;
+
+function P(x, y, z){
+  return [M2.CX + x, M2.CY + KY * y - KZ * z];
+}
+/* 三维方向向量 → 屏幕方向（单位化后可直接用于箭头） */
+function Pdir(x, y, z){
+  const dx = x, dy = KY * y - KZ * z, L = Math.hypot(dx, dy) || 1;
+  return [dx / L, dy / L];
+}
+function poly(pts, fill, stroke, w, extra){
+  return '<polygon points="' + pts.map(p => r2(p[0]) + ',' + r2(p[1])).join(' ') +
+    '" fill="' + fill + '" stroke="' + stroke + '" stroke-width="' + (w || 1.5) + '"' + (extra || '') + '/>';
+}
+function L3(x1, y1, z1, x2, y2, z2, attr){
+  const a = P(x1, y1, z1), b = P(x2, y2, z2);
+  return '<line x1="' + r2(a[0]) + '" y1="' + r2(a[1]) + '" x2="' + r2(b[0]) + '" y2="' + r2(b[1]) + '" ' + attr + '/>';
+}
+
+function drawM2(){
+  const W = 620, H = 392;
+  const i = S2.i, phi = S2.phi * Math.PI / 180;
+  const BW = M2.BW, BH = M2.BH, ML = M2.ML, MD = M2.MD;
+  let g = '';
+
+  g += '<defs>' +
+    '<linearGradient id="gls" x1="0" y1="0" x2="0.3" y2="1">' +
+      '<stop offset="0" stop-color="#EEF3FA"/><stop offset=".55" stop-color="#DCE5F1"/><stop offset="1" stop-color="#C3D0E0"/>' +
+    '</linearGradient>' +
+  '</defs>';
+
+  /* ---- 镜面（水平铺在桌面上） ---- */
+  g += poly([P(-ML, -MD, 0), P(ML, -MD, 0), P(ML, MD, 0), P(-ML, MD, 0)], 'url(#gls)', '#7C8DA3', 1.3);
+  g += poly([P(-ML, MD, 0), P(ML, MD, 0), P(ML, MD, -11), P(-ML, MD, -11)], '#94A3B8', '#64748B', 1.2);
+  g += L3(-ML, MD, 0, ML, MD, 0, 'stroke="#5B6B80" stroke-width="1.6"');
+  const far = P(-ML - 6, -MD, 0);
+  g += tx(far[0] - 4, far[1] - 6, '平面镜（水平放置）', { fill: '#5B6B80', w: 600, size: 12 });
+
+  /* ---- F 板的原位虚框（öz 提示板转走了多远） ---- */
+  if (Math.abs(S2.phi) > 1){
+    g += poly([P(0, 0, 0), P(BW, 0, 0), P(BW, 0, BH), P(0, 0, BH)], 'none', '#CBD5E1', 1.2, ' stroke-dasharray="6 5"');
+  }
+
+  /* ---- 纸板 E（固定、入射侧） ---- */
+  const ePts = [P(-BW, 0, 0), P(0, 0, 0), P(0, 0, BH), P(-BW, 0, BH)];
+  const fCorners = [
+    [0, 0], [BW, 0], [BW, BH], [0, BH]
+  ].map(c => P(c[0] * Math.cos(phi), c[0] * Math.sin(phi), c[1]));
+
+  const drawE = () => poly(ePts, '#FFFBEB', '#C08A2E', 1.6);
+  const drawF = () => poly(fCorners, '#FFF7E0', '#C08A2E', 1.6);
+  if (S2.phi >= 0){ g += drawE(); g += drawF(); }
+  else { g += drawF(); g += drawE(); }
+
+  /* 板面标签 */
+  const le = P(-BW * 0.72, 0, BH * 0.88);
+  const lf = P(BW * 0.62 * Math.cos(phi), BW * 0.62 * Math.sin(phi), BH * 0.88);
+  g += tx(le[0], le[1] + 4, '纸板 E', { fill: '#B45309', w: 700, size: 12.5, a: 'middle' });
+  g += tx(lf[0], lf[1] + 4, '纸板 F', { fill: '#B45309', w: 700, size: 12.5, a: 'middle' });
+
+  /* ---- 法线 ON（同时是折转轴） ---- */
+  g += L3(0, 0, 0, 0, 0, BH + 26, 'stroke="#7C3AED" stroke-width="1.6" stroke-dasharray="7 5"');
+  const nTop = P(0, 0, BH + 26);
+  g += tx(nTop[0] + 6, nTop[1] - 4, 'N', { fill: '#7C3AED', w: 700, size: 13 });
+  g += tx(M2.CX - 9, M2.CY + 16, 'O', { fill: '#334155', w: 700, size: 12.5, a: 'end' });
+  g += tx(P(0, 0, BH)[0] + 8, P(0, 0, BH)[1] + 30, '法线 ON（折转轴）', { fill: '#7C3AED', w: 600, size: 11.5 });
+
+  /* ---- 入射、反射光线（永远留在 x–z 平面，即 y = 0） ---- */
+  const si = Math.sin(i / DEG), ci = Math.cos(i / DEG);
+  const Di = Math.min(BW / si, BH / ci) * 0.97;
+  const inc0 = P(-Di * si, 0, Di * ci), inc1 = P(0, 0, 0);
+  g += beam(inc0[0], inc0[1], inc1[0], inc1[1], '#2563EB', 2.6);
+  const aim = P(-Di * si * 0.55, 0, Di * ci * 0.55);
+  const uIn = Pdir(si, 0, -ci);                     // 入射传播方向（屏幕向量，已归一化）
+  g += arrow(aim[0], aim[1], uIn[0], uIn[1], '#2563EB', 11);
+
+  /* 激光笔实物（画在入射延长端的 3D 盒） */
+  const cS = [-Di * si, 0, Di * ci];
+  const u3 = [si, 0, -ci];                          // 前进方向
+  const v3 = [ci, 0, si];                           // 面内垂直方向
+  const box = [
+    [cS[0] - u3[0] * 34 - v3[0] * 9, 0, cS[2] - u3[2] * 34 - v3[2] * 9],
+    [cS[0] - u3[0] * 34 + v3[0] * 9, 0, cS[2] - u3[2] * 34 + v3[2] * 9],
+    [cS[0] + v3[0] * 9, 0, cS[2] + v3[2] * 9],
+    [cS[0] - v3[0] * 9, 0, cS[2] - v3[2] * 9]
+  ].map(p => P(p[0], p[1], p[2]));
+  g += poly(box, '#1E293B', '#0F172A', 1);
+
+  /* 反射光线：始终在 y = 0 平面内 */
+  const ref1 = P(Di * si, 0, Di * ci);
+  const hidden = Math.abs(S2.phi) > 3;
+  g += beam(M2.CX, M2.CY, ref1[0], ref1[1], '#F59E0B', hidden ? 2.2 : 2.6);
+  if (hidden){
+    /* 实际反射光线 与 板面痕迹 之间的区域：折转多少度，就张开多少度 */
+    g += '<polygon points="' + [P(0, 0, 0), P(Di * si, 0, Di * ci), P(Di * si * Math.cos(phi), Di * si * Math.sin(phi), Di * ci)]
+      .map(p => r2(p[0]) + ',' + r2(p[1])).join(' ') + '" fill="#F59E0B" opacity=".12"/>';
+  }
+  const rm = P(Di * si * 0.55, 0, Di * ci * 0.55);
+  const uOut = Pdir(si, 0, ci);
+  g += arrow(rm[0], rm[1], uOut[0], uOut[1], '#F59E0B', 11);
+  g += tx(ref1[0] + 6, ref1[1] - 6, '反射光线', { fill: '#B45309', w: 700, size: 12.5 });
+
+  /* 若纸板不折，反射光原本落在 F 板上的痕迹（随板一起转走） */
+  if (Math.abs(S2.phi) > 1){
+    let s = '';
+    for (let k = 0; k <= 8; k++){
+      const u = Di * si * k / 8, z = Di * ci * k / 8;
+      const p = P(u * Math.cos(phi), u * Math.sin(phi), z);
+      s += (k ? ' ' : '') + r2(p[0]) + ',' + r2(p[1]);
+    }
+    g += '<polyline points="' + s + '" fill="none" stroke="#B45309" stroke-width="1.6" stroke-dasharray="5 4" opacity=".65"/>';
+  }
+
+  /* 入射点两侧的角弧 */
+  let ai = '';
+  for (let k = 0; k <= 12; k++){
+    const t = i * k / 12, p = P(66 * Math.sin(t / DEG), 0, 66 * Math.cos(t / DEG));
+    ai += (k ? ' ' : '') + r2(p[0]) + ',' + r2(p[1]);
+  }
+  g += '<polyline points="' + ai + '" fill="none" stroke="#2563EB" stroke-width="1.8"/>';
+  const li = P(84 * Math.sin(i / 2 / DEG), 0, 84 * Math.cos(i / 2 / DEG));
+  g += tx(li[0] - 4, li[1], 'i', { fill: '#1D4ED8', w: 700, size: 12.5, a: 'end' });
+  let ar = '';
+  for (let k = 0; k <= 12; k++){
+    const t = i * k / 12, p = P(-66 * Math.sin(t / DEG), 0, 66 * Math.cos(t / DEG));
+    ar += (k ? ' ' : '') + r2(p[0]) + ',' + r2(p[1]);
+  }
+  g += '<polyline points="' + ar + '" fill="none" stroke="#F59E0B" stroke-width="1.8"/>';
+  const lr = P(-84 * Math.sin(i / 2 / DEG), 0, 84 * Math.cos(i / 2 / DEG));
+  g += tx(lr[0] + 4, lr[1], 'r', { fill: '#B45309', w: 700, size: 12.5 });
+
+  /* 状态条 */
+  const vis = Math.abs(S2.phi) <= 3;
+  g += vis
+    ? chip(14, 16, '✔ 纸板展平：反射光线落在纸板 F 上', '#10B981', 300)
+    : chip(14, 16, '✘ 纸板折转：反射光线已不在纸板上', '#EF4444', 300);
+
+  $('#m2Stage').innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg" role="img">' + g + '</svg>';
+
+  const dirTxt = S2.phi === 0 ? '展开平放' : (S2.phi > 0 ? '向前折（转向观察者）' : '向后折（转离观察者）');
+  T('#vPhi', S2.phi); T('#phiDir', dirTxt); T('#vI2', S2.i);
+  T('#ro2i', S2.i + '°'); T('#ro2r', S2.i + '°');
+  T('#ro2p', Math.abs(S2.phi) + '°');
+  const el = $('#ro2s');
+  if (el){ el.textContent = vis ? '能' : '不能'; el.className = vis ? 'ok' : 'no'; }
+  $('#tip2').innerHTML = vis
+    ? '纸板展平，<b>反射光线、入射光线、法线三条都落在这张纸板所在的平面里</b>，所以能在纸板上画出完整的路径。'
+    : '纸板已经折转 ' + Math.abs(S2.phi) + '°，可<b>反射光线并没有随纸板一起转走</b>——它还留在原来那个平面里（虚线是它原本落在纸板上的位置）。光其实没变，变的是纸板不再和它共面，于是看不见了：这就是<b>三线共面</b>。';
+}
+
+function stopFold(){
+  if (foldRaf){ cancelAnimationFrame(foldRaf); foldRaf = null; }
+  const b = $('#foldPlay');
+  if (b) b.textContent = '▶ 自动折一折';
+}
+function playFold(){
+  if (foldRaf){ stopFold(); return; }
+  const b = $('#foldPlay');
+  if (b) b.textContent = '⏸ 暂停';
+  const T0 = 5200, t0 = performance.now();
+  const loop = now => {
+    foldRaf = requestAnimationFrame(loop);
+    try{
+      const p = ((now - t0) % T0) / T0;
+      /* 0→1→0→−1→0 的来回过程 */
+      const q = p < 0.5 ? p * 2 : 2 - p * 2;
+      const sgn = (p >= 0.25 && p < 0.5) || (p >= 0.75) ? -1 : 1;
+      const e = q * q * (3 - 2 * q);
+      const v = Math.round(sgn * e * 55);
+      if (v !== S2.phi){ S2.phi = v; $('#inPhi').value = v; drawM2(); }
+    }catch(err){ stopFold(); }
+  };
+  foldRaf = requestAnimationFrame(loop);
+}
+
+/* ============================================================
+   模块三：微观放大 —— 逐条光线各自的法线
+   ============================================================ */
+const S3 = { rough: 0, inc: 25, hi: -1, nR: 9, showAll: false, timer: null };
+const M3 = { W: 700, H: 420, X0: 40, X1: 660, BASE: 312, TOP: 22, K: 9 };
+
+function surfY(x){
+  const amp = S3.rough / 100 * 30;
+  if (amp < 0.01) return M3.BASE;
+  const u = (x - M3.X0) / (M3.X1 - M3.X0);
+  const s = Math.sin(2 * Math.PI * (u * 3.1) + 0.6)
+          + 0.62 * Math.sin(2 * Math.PI * (u * 6.7) + 2.1)
+          + 0.38 * Math.sin(2 * Math.PI * (u * 11.3) + 4.4);
+  return M3.BASE + amp * 0.52 * s;
+}
+function surfN(x){
+  const h = 0.7, dy = (surfY(x + h) - surfY(x - h)) / (2 * h);
+  const L = Math.hypot(dy, 1);
+  return [dy / L, -1 / L];            // 屏幕坐标 y 向下，向上法线为 (dy, -1)
+}
+/* 沿某条射线前进，返回第一次被表面挡住（或到达画面边界）时的长度。
+   判定「进入材料」要留 1 px 余量，否则起点正好落在表面上会被误判。 */
+function march(hx, hy, dx, dy, maxT){
+  for (let t = 1; t <= maxT; t += 1){
+    const xr = hx + dx * t, yr = hy + dy * t;
+    if (yr < M3.TOP - 1) return { t: t, hit: 'top' };
+    if (xr < 2 || xr > M3.W - 2) return { t: t, hit: 'side' };
+    if (xr >= M3.X0 && xr <= M3.X1 && surfY(xr) < yr){
+      return { t: Math.max(1, t - 1), hit: 'surf' };   // 回退一步，保证不穿进材料
+    }
+  }
+  return { t: maxT, hit: 'far' };
+}
+/* 挑一个真正被照到的落点：躲开背光面，也躲开被前方凸起挡住的位置 */
+function pickHit(xt, din){
+  const offs = [0, 3, -3, 6, -6, 9, -9, 13, -13, 18, -18, 24, -24, 30, -30, 38, -38];
+  for (const o of offs){
+    const x = xt + o;
+    if (x <= M3.X0 + 8 || x >= M3.X1 - 8) continue;
+    const y = surfY(x), n = surfN(x);
+    if (din[0] * n[0] + din[1] * n[1] > -0.10) continue;         // 背光面：光根本照不到
+    const back = march(x, y, -din[0], -din[1], 900);
+    if (back.hit === 'surf') continue;                            // 前方有凸起挡着
+    return x;
+  }
+  return null;
+}
+function reflect(dx, dy, nx, ny){
+  const k = 2 * (dx * nx + dy * ny);
+  return [dx - k * nx, dy - k * ny];
+}
+
+function drawM3(){
+  const W = M3.W, H = M3.H, TOP = M3.TOP, K = M3.K;
+  let g = '';
+  let raysG = '';        // 光线先算出，最后压在材料下面绘制，避免看着像是把光画进了材料里
+
+  const ai = S3.inc * Math.PI / 180;
+  const din = [Math.sin(ai), Math.cos(ai)];            // 平行光斜向下入射
+
+  const outs = [];
+  const rays = [];
+  for (let k = 0; k < K; k++){
+    const xt = M3.X0 + (M3.X1 - M3.X0) * (0.09 + 0.82 * k / (K - 1));
+    const hx = pickHit(xt, din);
+    if (hx === null) continue;                       // 这一条照不到任何"迎光"的位置，跳过
+    const hy = surfY(hx);
+    const n = surfN(hx);
+    /* 入射：沿反向走到画面顶部 */
+    const back = march(hx, hy, -din[0], -din[1], 900);
+    const sx = hx - din[0] * back.t, sy = hy - din[1] * back.t;
+    /* 反射：走到边界或再次撞面为止 */
+    const dout = reflect(din[0], din[1], n[0], n[1]);
+    const fw = march(hx, hy, dout[0], dout[1], 760);
+    const ex = hx + dout[0] * fw.t, ey = hy + dout[1] * fw.t;
+    const cosv = -(din[0] * n[0] + din[1] * n[1]);
+    const ang = Math.acos(clamp(cosv, -1, 1)) * DEG;
+    const aOut = Math.atan2(dout[0], -dout[1]) * DEG;
+    const faint = fw.hit === 'surf' && fw.t < 26;    // 缩进缝里、几乎看不见
+    rays.push({ hx, hy, n, sx, sy, ex, ey, dout, ang, aOut, faint });
+    if (!faint) outs.push(aOut);
+  }
+
+  /* ---- 光线（画在材料本体之下，并裁剪到「空气」区域） ---- */
+  S3.nR = rays.length;
+  if (S3.hi >= rays.length) S3.hi = rays.length - 1;
+  let profArr = [];
+  for (let x = M3.X0; x <= M3.X1; x += 3) profArr.push(r2(x) + ',' + r2(surfY(x)));
+  profArr.push(M3.X1 + ',' + H, M3.X0 + ',' + H);
+  const profD = 'M' + profArr.join(' L') + ' Z';
+  rays.forEach((r, k) => {
+    const hl = k === S3.hi;
+    raysG += beam(r.sx, r.sy, r.hx, r.hy, '#2563EB', hl ? 2.6 : 1.7, 1);
+    raysG += beam(r.hx, r.hy, r.ex, r.ey, '#F59E0B', hl ? 2.6 : 1.7, r.faint ? 0.35 : 1);
+  });
+  /* 整个画布减去材料本体 = 光线允许出现的区域 */
+  g += '<defs><clipPath id="airOnly"><path d="M0,' + TOP + ' L' + W + ',' + TOP + ' L' + W + ',' + H +
+    ' L0,' + H + ' Z ' + profD + '" clip-rule="evenodd"/></clipPath></defs>';
+  g += '<g clip-path="url(#airOnly)">' + raysG + '</g>';
+
+  /* ---- 材料本体（不透明，会把擦着表面的那点线宽压住） ---- */
+  g += '<polygon points="' + profArr.join(' ') + '" fill="#E9EDF3" stroke="#8B9AAD" stroke-width="1.6"/>';
+  for (let x = M3.X0; x < M3.X1; x += 13){
+    const yy = surfY(x) + 5;
+    g += '<line x1="' + x + '" y1="' + r2(yy) + '" x2="' + r2(x - 8) + '" y2="' + r2(yy + 9) + '" stroke="#BCC7D6" stroke-width="1"/>';
+  }
+  g += tx(M3.X0 + 2, H - 8, '微观放大：表面的微小凹凸', { fill: '#8B9AAD', size: 11.5 });
+  g += tx(12, TOP + 16, '平行光入射', { fill: '#8B9AAD', size: 11.5 });
+
+  /* 入射点（画在材料之上，保证可见） */
+  rays.forEach((r, k) => {
+    const hl = k === S3.hi;
+    g += '<circle cx="' + r2(r.hx) + '" cy="' + r2(r.hy) + '" r="' + (hl ? 4.5 : 3) + '" fill="' + (hl ? '#EF4444' : '#475569') + '"/>';
+  });
+
+  /* 全部法线 */
+  if (S3.showAll){
+    for (const r of rays){
+      const N = 30;
+      g += L2(r.hx + r.n[0] * N, r.hy + r.n[1] * N, r.hx - r.n[0] * 12, r.hy - r.n[1] * 12, '#94A3B8', 1.2, '5 4');
+    }
+  }
+
+  /* 高亮那一条：法线 + 两个角 + 读数 */
+  let spread = 0;
+  if (outs.length){
+    spread = Math.max.apply(null, outs) - Math.min.apply(null, outs);
+  }
+  if (S3.hi >= 0 && S3.hi < rays.length){
+    const r = rays[S3.hi];
+    const N = 74;
+    g += L2(r.hx + r.n[0] * N, r.hy + r.n[1] * N, r.hx - r.n[0] * 20, r.hy - r.n[1] * 20, '#7C3AED', 1.8, '7 5');
+    const nt = [r.hx + r.n[0] * N, r.hy + r.n[1] * N];
+    g += tx(nt[0] + r.n[0] * 6 + 4, nt[1] + r.n[1] * 6 - 4, '法线', { fill: '#7C3AED', w: 700, size: 12, halo: 1 });
+    g += '<circle cx="' + r2(r.hx) + '" cy="' + r2(r.hy) + '" r="7.5" fill="none" stroke="#EF4444" stroke-width="1.6"/>';
+    /* 入射角弧：法线 ↔ 入射反向 */
+    g += '<polyline points="' + angArc(r.hx, r.hy, 38, Math.atan2(-r.n[1], -r.n[0]), Math.atan2(-din[1], -din[0])) + '" fill="none" stroke="#2563EB" stroke-width="2"/>';
+    /* 反射角弧：法线 ↔ 出射方向 */
+    g += '<polyline points="' + angArc(r.hx, r.hy, 56, Math.atan2(r.n[1], r.n[0]), Math.atan2(r.dout[1], r.dout[0])) + '" fill="none" stroke="#F59E0B" stroke-width="2"/>';
+    const p1 = polPt(r.hx, r.hy, 50, Math.atan2((-r.n[1] - din[1]) / 2, (-r.n[0] - din[0]) / 2));
+    const p2 = polPt(r.hx, r.hy, 70, Math.atan2((r.n[1] + r.dout[1]) / 2, (r.n[0] + r.dout[0]) / 2));
+    g += tx(p1[0], p1[1] + 4, 'i = ' + r2(r.ang) + '°', { fill: '#1D4ED8', w: 700, size: 12.5, a: 'middle', halo: 1 });
+    g += tx(p2[0], p2[1] + 4, 'r = ' + r2(r.ang) + '°', { fill: '#B45309', w: 700, size: 12.5, a: 'middle', halo: 1 });
+    g += tx(r.hx, r.hy - 14, '第 ' + (S3.hi + 1) + ' 条', { fill: '#EF4444', w: 700, size: 11.5, a: 'middle', halo: 1 });
+  }
+
+  $('#m3Stage').innerHTML = '<svg viewBox="0 0 ' + W + ' ' + H + '" xmlns="http://www.w3.org/2000/svg" role="img">' + g + '</svg>';
+
+  T('#vR', S3.rough); T('#vI3', S3.inc);
+  const mirror = S3.rough < 2;
+  T('#modeName', mirror ? '完全平整 → 镜面反射' : '凹凸不平 → 漫反射');
+  const mEl = $('#ro3m'); if (mEl){ mEl.textContent = mirror ? '镜面反射' : '漫反射'; }
+  const pEl = $('#ro3p');
+  if (pEl){ pEl.textContent = spread < 2 ? '平行' : '射向各方向'; pEl.className = spread < 2 ? 'ok' : ''; }
+  $('#tip3').innerHTML = mirror
+    ? '表面平整 → <b>各点的法线互相平行</b> → 平行光反射后仍然平行：这就是<b>镜面反射</b>。把粗糙度推大，或者看看每条各自的法线。'
+    : '表面坑坑洼洼 → <b>每一点的法线方向都不相同</b> → 同样的平行光，反射后<b>射向四面八方</b>：这就是<b>漫反射</b>。<br>但注意：不管怎么散，<b>每一条光线都满足反射角 = 入射角</b>，只是各自的法线本来就不平行。';
+}
+function polPt(cx, cy, rad, ang){
+  return [cx + rad * Math.cos(ang), cy + rad * Math.sin(ang)];
+}
+function angArc(cx, cy, rad, a0, a1, n){
+  n = n || 16;
+  let s = '';
+  for (let k = 0; k <= n; k++){
+    const p = polPt(cx, cy, rad, a0 + (a1 - a0) * k / n);
+    s += (k ? ' ' : '') + r2(p[0]) + ',' + r2(p[1]);
+  }
+  return s;
+}
+function L2(x1, y1, x2, y2, color, w, dash){
+  return '<line x1="' + r2(x1) + '" y1="' + r2(y1) + '" x2="' + r2(x2) + '" y2="' + r2(y2) +
+    '" stroke="' + color + '" stroke-width="' + (w || 1.4) + '"' + (dash ? ' stroke-dasharray="' + dash + '"' : '') + '/>';
+}
+
+function stopStep(){
+  if (S3.timer){ clearInterval(S3.timer); S3.timer = null; }
+  const b = $('#stepBtn'); if (b) b.textContent = '▶ 逐条作图，画各自的法线';
+}
+function toggleStep(){
+  if (S3.timer){ stopStep(); return; }
+  const b = $('#stepBtn'); if (b) b.textContent = '⏸ 停止逐条';
+  S3.hi = ((S3.hi + 1) % (S3.nR || M3.K) + (S3.nR || M3.K)) % (S3.nR || M3.K);
+  drawM3();
+  S3.timer = setInterval(() => {
+    try{
+      const n = S3.nR || M3.K;
+      S3.hi = (S3.hi + 1) % n;
+      drawM3();
+    }catch(err){ stopStep(); }
+  }, 1500);
+}
+
+/* ============================================================
+   初始化
+   ============================================================ */
+function initReflect(){
+  /* 模块一 */
+  const bi = $('#inI');
+  bi.addEventListener('input', () => { S1.i = +bi.value; T('#vI', S1.i); drawM1(); });
+  $('#wrongBtn').addEventListener('click', () => {
+    S1.wrong = !S1.wrong;
+    $('#wrongBtn').classList.toggle('on', S1.wrong);
+    $('#wrongBtn').textContent = S1.wrong ? '✓ 正在演示易错量法（点击复原）' : '演示易错：把角量到镜面';
+    drawM1();
+  });
+  $$('[data-i]').forEach(b => b.addEventListener('click', () => {
+    S1.i = +b.dataset.i; bi.value = S1.i; T('#vI', S1.i); drawM1();
+  }));
+  drawM1();
+  bindDragM1();
+
+  /* 模块二 */
+  const bp = $('#inPhi');
+  bp.addEventListener('input', () => { stopFold(); S2.phi = +bp.value; drawM2(); });
+  const bi2 = $('#inI2');
+  bi2.addEventListener('input', () => { S2.i = +bi2.value; drawM2(); });
+  $('#foldPlay').addEventListener('click', playFold);
+  $$('[data-p]').forEach(b => b.addEventListener('click', () => {
+    stopFold(); S2.phi = +b.dataset.p; bp.value = S2.phi; drawM2();
+  }));
+  drawM2();
+
+  /* 模块三 */
+  const br = $('#inR');
+  br.addEventListener('input', () => { S3.rough = +br.value; drawM3(); });
+  const bi3 = $('#inI3');
+  bi3.addEventListener('input', () => { S3.inc = +bi3.value; drawM3(); });
+  $('#stepBtn').addEventListener('click', toggleStep);
+  $('#allBtn').addEventListener('click', () => {
+    S3.showAll = !S3.showAll;
+    $('#allBtn').classList.toggle('on', S3.showAll);
+    $('#allBtn').textContent = S3.showAll ? '✓ 已显示全部法线' : '显示全部法线';
+    drawM3();
+  });
+  drawM3();
+}
+
+if (document.readyState === 'loading'){
+  document.addEventListener('DOMContentLoaded', initReflect);
+} else {
+  initReflect();
+}
+</script>
+</body>
+</html>

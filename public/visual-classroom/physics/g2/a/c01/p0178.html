@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>9.1电荷 ｜ 人教版物理必修第三册</title>
+<style>
+  :root{
+    --blue:#1d4ed8; --blue-soft:#eff6ff; --blue-line:#bfdbfe;
+    --ink:#1e293b; --sub:#64748b; --line:#e2e8f0;
+    --amber-bg:#fffbeb; --amber-line:#fcd34d; --amber-ink:#92400e;
+    --green:#059669; --red:#dc2626;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:#f3f5f9; color:var(--ink);
+    font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif; padding:18px 12px 40px;}
+  .wrap{max-width:1060px; margin:0 auto;}
+  header{background:#fff; border:1px solid var(--line); border-left:6px solid var(--blue);
+    border-radius:12px; padding:16px 22px; box-shadow:0 1px 3px rgba(15,23,42,.06);}
+  header h1{font-size:22px; color:var(--ink);}
+  header .meta{margin-top:6px; font-size:12.5px; color:var(--sub); line-height:1.7;}
+  .mod{background:#fff; border:1px solid var(--line); border-radius:12px;
+    padding:16px 20px 18px; margin-top:16px; box-shadow:0 1px 3px rgba(15,23,42,.05);}
+  .mod-h{display:flex; align-items:center; gap:10px; margin-bottom:10px;}
+  .mod-h .no{background:var(--blue); color:#fff; font-size:12px; border-radius:6px;
+    padding:2px 8px; white-space:nowrap;}
+  .mod-h h2{font-size:16.5px;}
+  .mod-h .kp{margin-left:auto; font-size:12px; color:var(--sub); white-space:nowrap;}
+  .think{background:var(--blue-soft); border:1px solid var(--blue-line); border-radius:8px;
+    padding:8px 12px; font-size:12.5px; color:#1e40af; margin-bottom:10px; line-height:1.7;}
+  .think b{color:var(--blue);}
+  canvas.stage{display:block; width:100%; background:#fbfdff;
+    border:1px solid var(--line); border-radius:10px;}
+  .ctrl{display:flex; flex-wrap:wrap; gap:8px 18px; align-items:center; margin-top:10px;}
+  .row{display:flex; align-items:center; gap:8px; font-size:13px;}
+  .row label{color:var(--sub); white-space:nowrap;}
+  .row input[type=range]{width:150px; accent-color:var(--blue);}
+  .row .val{min-width:64px; font-variant-numeric:tabular-nums; color:var(--ink); font-weight:600;}
+  .btn{border:1px solid var(--blue); color:var(--blue); background:#fff; border-radius:7px;
+    padding:4px 12px; font-size:12.5px; cursor:pointer;}
+  .btn:hover{background:var(--blue-soft);}
+  .btn.on{background:var(--blue); color:#fff;}
+  .note{margin-top:10px; background:var(--amber-bg); border:1px solid var(--amber-line);
+    border-radius:8px; padding:8px 12px; font-size:12.5px; color:var(--amber-ink); line-height:1.8;}
+  .note b{color:#b45309;}
+  footer{margin-top:20px; text-align:center; font-size:12px; color:#94a3b8;}
+  .seg{display:inline-flex; border:1px solid var(--blue); border-radius:8px; overflow:hidden;}
+  .seg button{border:none; background:#fff; color:var(--blue); padding:4px 12px;
+    font-size:12.5px; cursor:pointer;}
+  .seg button.on{background:var(--blue); color:#fff;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>9.1　电荷</h1>
+  <div class="meta">人教版《物理》必修第三册 · 第九章 静电场及其应用 · 教材 P2–P5 ｜ 覆盖知识点：摩擦起电与两种电荷（同斥异吸）、静电感应与验电器、电荷守恒定律、元电荷 e＝1.60×10⁻¹⁹ C 与电荷量的量子化</div>
+</header>
+
+<div class="mod">
+  <div class="mod-h"><span class="no">模块 1</span><h2>摩擦起电与两种电荷</h2><span class="kp">动画演示</span></div>
+  <div class="think"><b>先想一想：</b>玻璃棒跟丝绸摩擦以后，玻璃棒带正电还是负电？摩擦是"造出"了电荷，还是把电子从一个物体搬到了另一个物体？</div>
+  <canvas class="stage" id="cv1" style="height:360px;"></canvas>
+  <div class="ctrl">
+    <div class="seg" id="segA">
+      <button data-p="0" class="on">玻璃棒 × 丝绸</button>
+      <button data-p="1">橡胶棒 × 毛皮</button>
+    </div>
+    <div class="row"><label>转移电子数</label><input type="range" id="nA" min="1" max="12" step="1" value="6"><span class="val" id="nAv"></span></div>
+    <button class="btn" id="bA1">▶ 摩擦起电</button>
+    <button class="btn" id="bA2">重置</button>
+  </div>
+  <div class="ctrl">
+    <span style="font-size:13px;color:var(--sub)">靠近演示：</span>
+    <div class="seg" id="segB">
+      <button data-k="pp" class="on">两根玻璃棒（同种）</button>
+      <button data-k="pn">玻璃棒 + 橡胶棒（异种）</button>
+      <button data-k="nn">两根橡胶棒（同种）</button>
+    </div>
+  </div>
+  <div class="note"><b>观察要点：</b>摩擦时蓝色小球（电子）从一个物体跑到另一个物体上，两个物体带上<b>等量异号</b>的电荷——电荷没有被创造，只是搬了家。下方两根带电棒靠近时：<b>同种电荷相互排斥、异种电荷相互吸引</b>，转移的电子越多（带电量越大），力箭头越长。</div>
+</div>
+
+<div class="mod">
+  <div class="mod-h"><span class="no">模块 2</span><h2>静电感应与验电器</h2><span class="kp">交互仿真</span></div>
+  <div class="think"><b>先想一想：</b>带电棒只是<b>靠近</b>验电器（不碰它），金属箔会张开吗？如果把棒移走，感应起电和接触起电的结果一样吗？</div>
+  <canvas class="stage" id="cv2" style="height:380px;"></canvas>
+  <div class="ctrl">
+    <div class="seg" id="segC">
+      <button data-m="ind" class="on">感应起电（不接触）</button>
+      <button data-m="con">接触起电</button>
+    </div>
+    <div class="row"><label>棒电荷量</label><input type="range" id="qB" min="-8" max="8" step="1" value="6"><span class="val" id="qBv"></span></div>
+    <div class="row"><label>棒的距离</label><input type="range" id="dB" min="0" max="100" step="1" value="45"><span class="val" id="dBv"></span></div>
+    <button class="btn" id="bB1">接触一下</button>
+    <button class="btn" id="bB2">移开带电棒</button>
+    <button class="btn" id="bB3">重置</button>
+  </div>
+  <div class="note"><b>观察要点：</b>棒靠近时，验电器里的自由电子被吸上来（棒带正电）或被推下去（棒带负电），金属箔带同种电荷而张开。<b>感应起电</b>只是电荷重新分布，验电器总电荷仍为零，移走棒后箔片合拢；<b>接触起电</b>真的有电子转移过来，移走棒后箔片<b>仍然张开</b>——这就是两种起电方式的根本区别。</div>
+</div>
+
+<div class="mod">
+  <div class="mod-h"><span class="no">模块 3</span><h2>电荷守恒定律与元电荷</h2><span class="kp">数据图象</span></div>
+  <div class="think"><b>先想一想：</b>带 +6 的球和带 −6 的球接触后，电荷会"消失"吗？物体的带电量能不能等于 2.5 个元电荷？</div>
+  <canvas class="stage" id="cv3a" style="height:300px;"></canvas>
+  <div class="ctrl">
+    <div class="row"><label>A 球电荷</label><input type="range" id="qa" min="-8" max="8" step="1" value="6"><span class="val" id="qav"></span></div>
+    <div class="row"><label>B 球电荷</label><input type="range" id="qb" min="-8" max="8" step="1" value="-6"><span class="val" id="qbv"></span></div>
+    <button class="btn" id="bC1">让两球接触</button>
+    <button class="btn" id="bC2">分开</button>
+    <button class="btn" id="bC3">预设：完全中和</button>
+    <button class="btn" id="bC4">预设：同种电荷</button>
+  </div>
+  <div class="note" style="margin-top:12px"><b>观察要点：</b>无论两球是接触、分开还是完全中和，右下角那个<b>代数和永远不变</b>——电荷既不会创生也不会消灭，只能从一个物体转移到另一个物体。完全中和时两球都变成 0，但 +6 与 −6 加起来本来就是 0，电荷并没有被"消灭"。</div>
+  <canvas class="stage" id="cv3b" style="height:300px; margin-top:12px;"></canvas>
+  <div class="ctrl">
+    <div class="seg" id="segD">
+      <button data-s="1" class="on">正电荷（+）</button>
+      <button data-s="-1">负电荷（−）</button>
+    </div>
+    <div class="row"><label>元电荷个数 n</label><input type="range" id="nD" min="0" max="10" step="1" value="6"><span class="val" id="nDv"></span></div>
+    <button class="btn" id="bD1">n＝1（元电荷）</button>
+    <button class="btn" id="bD2">n＝0（不带电）</button>
+  </div>
+  <div class="note"><b>观察要点：</b>纵轴是电荷量 Q，它只能落在<b>一格一格的台阶</b>上：Q＝n·e，n 必须是整数。两个台阶之间的位置（画红叉的地方）是<b>不可能取到</b>的——这就是电荷量的<b>量子化</b>。e＝1.60×10⁻¹⁹ C，是自然界最小的电荷单元。</div>
+</div>
+
+<footer>人教版高中物理必修第三册 · 可视化交互课件 ｜ 单文件离线运行，双击即可使用</footer>
+</div>
+
+<script>
+(function(){
+'use strict';
+/* ================= 通用工具（与模板完全一致） ================= */
+function $(id){ return document.getElementById(id); }
+function fmt(x, d){
+  if (d === undefined) d = 2;
+  if (!isFinite(x)) return '—';
+  var a = Math.abs(x);
+  if (a >= 10000 || (a > 0 && a < 0.01)) return x.toExponential(2);
+  return (+x.toFixed(d)).toString();
+}
+function fit(cv){
+  var dpr = window.devicePixelRatio || 1;
+  var w = cv.clientWidth, h = cv.clientHeight;
+  cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+  var ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return ctx;
+}
+function bindRange(id, fn){
+  var el = $(id), v = $(id + 'v');
+  function go(){ if (v) v.textContent = el.value; fn(parseFloat(el.value)); }
+  el.addEventListener('input', go); go();
+  return el;
+}
+function arrow(ctx, x1, y1, x2, y2, color, w){
+  ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = w || 2;
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  var a = Math.atan2(y2 - y1, x2 - x1), s = 7;
+  ctx.beginPath(); ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - s * Math.cos(a - 0.42), y2 - s * Math.sin(a - 0.42));
+  ctx.lineTo(x2 - s * Math.cos(a + 0.42), y2 - s * Math.sin(a + 0.42));
+  ctx.closePath(); ctx.fill();
+}
+/* ================= 本文件扩展的小工具 ================= */
+function begin(id){
+  var cv = $(id);
+  var ctx = fit(cv);
+  return {cv:cv, ctx:ctx, W:cv.clientWidth, H:cv.clientHeight};
+}
+function bg(ctx, W, H){ ctx.fillStyle = '#fbfdff'; ctx.fillRect(0, 0, W, H); }
+function rr(ctx, x, y, w, h, r){
+  r = Math.min(r, w/2, h/2);
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.lineTo(x+w-r, y); ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+  ctx.lineTo(x+w, y+h-r); ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+  ctx.lineTo(x+r, y+h); ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+  ctx.lineTo(x, y+r); ctx.quadraticCurveTo(x, y, x+r, y);
+  ctx.closePath();
+}
+function txt(ctx, s, x, y, color, size, align){
+  ctx.fillStyle = color || '#334155';
+  ctx.font = (size || 12) + 'px "Microsoft YaHei",system-ui,sans-serif';
+  ctx.textAlign = align || 'left'; ctx.textBaseline = 'middle';
+  ctx.fillText(s, x, y);
+}
+function mono(ctx, s, x, y, color, size, align){
+  ctx.fillStyle = color || '#334155';
+  ctx.font = (size || 12) + 'px Consolas,Menlo,monospace';
+  ctx.textAlign = align || 'left'; ctx.textBaseline = 'middle';
+  ctx.fillText(s, x, y);
+}
+function dot(ctx, x, y, r, color){
+  ctx.beginPath(); ctx.arc(x, y, r, 0, 6.2832);
+  ctx.fillStyle = color; ctx.fill();
+}
+function segBind(id, cb){
+  var box = $(id), bs = box.getElementsByTagName('button');
+  for (var i = 0; i < bs.length; i++){
+    (function(b){
+      b.addEventListener('click', function(){
+        for (var k = 0; k < bs.length; k++) bs[k].className = '';
+        b.className = 'on';
+        cb(b.getAttribute('data-' + (b.getAttribute('data-p') !== null ? 'p' :
+            (b.getAttribute('data-k') !== null ? 'k' :
+            (b.getAttribute('data-m') !== null ? 'm' : 's')))));
+      });
+    })(bs[i]);
+  }
+}
+
+/* ================= 模块 1：摩擦起电与两种电荷 ================= */
+var A1 = {pair:0, n:6, prog:0, kind:'pp', run:false};
+var raf1 = 0, last1 = 0;
+
+function signDot(ctx, x, y, r, sgn, on){
+  if (!on){
+    ctx.beginPath(); ctx.arc(x, y, r, 0, 6.2832);
+    ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1.2; ctx.stroke();
+    return;
+  }
+  dot(ctx, x, y, r, sgn > 0 ? '#dc2626' : '#2563eb');
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.6;
+  ctx.beginPath(); ctx.moveTo(x - r*0.5, y); ctx.lineTo(x + r*0.5, y); ctx.stroke();
+  if (sgn > 0){ ctx.beginPath(); ctx.moveTo(x, y - r*0.5); ctx.lineTo(x, y + r*0.5); ctx.stroke(); }
+}
+function bodyBox(ctx, cx, cy, w, h, name, q, nmax, sub){
+  var x = cx - w/2, y = cy - h/2;
+  rr(ctx, x, y, w, h, 12);
+  ctx.fillStyle = '#f8fafc'; ctx.fill();
+  ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 1.4; ctx.stroke();
+  txt(ctx, name, cx, y + 17, '#475569', 13, 'center');
+  var col = q > 0 ? '#dc2626' : (q < 0 ? '#2563eb' : '#94a3b8');
+  ctx.fillStyle = col; ctx.font = 'bold 27px Consolas,monospace';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText((q > 0 ? '+' : (q < 0 ? '−' : '0')) + Math.abs(q), cx, y + 45);
+  mono(ctx, sub, cx, y + 68, '#64748b', 11, 'center');
+  var cnt = Math.min(Math.abs(q), nmax);
+  var cols = Math.max(1, nmax);
+  var sx = x + 20, sw = (w - 40) / Math.max(1, cols - 1);
+  for (var i = 0; i < nmax; i++){
+    signDot(ctx, sx + i*sw, y + h - 16, 5.5, q >= 0 ? 1 : -1, i < cnt);
+  }
+  return {x:x, y:y, w:w, h:h};
+}
+function rodDraw(ctx, cx, cy, w, h, sgn, n, name){
+  var x = cx - w/2, y = cy - h/2;
+  rr(ctx, x, y, w, h, h/2);
+  ctx.fillStyle = sgn > 0 ? '#fee2e2' : '#dbeafe'; ctx.fill();
+  ctx.strokeStyle = sgn > 0 ? '#dc2626' : '#2563eb'; ctx.lineWidth = 1.8; ctx.stroke();
+  txt(ctx, name, cx, y + 12, sgn > 0 ? '#b91c1c' : '#1d4ed8', 12.5, 'center');
+  ctx.fillStyle = sgn > 0 ? '#dc2626' : '#2563eb';
+  ctx.font = 'bold 16px Consolas,monospace'; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText((sgn > 0 ? '+' : '−') + n + 'q', cx, y + h - 13);
+}
+function draw1(){
+  var s = begin('cv1'), ctx = s.ctx, W = s.W, H = s.H;
+  bg(ctx, W, H);
+  txt(ctx, '① 摩擦起电：电子的转移', 14, 18, '#1e40af', 13);
+  txt(ctx, '● 蓝色小球 = 电子（带负电）', W - 14, 18, '#2563eb', 12, 'right');
+
+  var cy = 100, bw = Math.min(190, W*0.24), bh = 112;
+  var ax = W*0.28, bx = W*0.70;
+  var nmA = A1.pair === 0 ? '玻璃棒' : '橡胶棒';
+  var nmB = A1.pair === 0 ? '丝绸' : '毛皮';
+  var toB = (A1.pair === 0);
+  var nDone = Math.floor(A1.prog * A1.n + 1e-9);
+  var qA = toB ? nDone : -nDone;
+  var qB = toB ? -nDone : nDone;
+  var subA = qA === 0 ? '电子数未变' : '电子 ' + (qA > 0 ? '−' : '+') + Math.abs(qA);
+  var subB = qB === 0 ? '电子数未变' : '电子 ' + (qB > 0 ? '−' : '+') + Math.abs(qB);
+  bodyBox(ctx, ax, cy, bw, bh, nmA, qA, A1.n, subA);
+  bodyBox(ctx, bx, cy, bw, bh, nmB, qB, A1.n, subB);
+
+  var x0 = toB ? ax : bx, x1 = toB ? bx : ax;
+  ctx.setLineDash([5, 4]);
+  ctx.strokeStyle = 'rgba(37,99,235,.45)'; ctx.lineWidth = 1.4;
+  ctx.beginPath(); ctx.moveTo(x0, cy); ctx.lineTo(x1, cy); ctx.stroke();
+  ctx.setLineDash([]);
+  for (var i = 0; i < A1.n; i++){
+    var p = A1.prog * A1.n - i;
+    if (p <= 0 || p >= 1) continue;
+    var yy = cy - 30 + (i % 5) * 15;
+    var xx = x0 + (x1 - x0) * p;
+    ctx.strokeStyle = 'rgba(37,99,235,.25)'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(x0 + (x1-x0)*Math.max(0, p-0.10), yy); ctx.lineTo(xx, yy); ctx.stroke();
+    dot(ctx, xx, yy, 5, '#2563eb');
+  }
+  txt(ctx, toB ? '电子转移方向 →' : '← 电子转移方向', (ax+bx)/2, cy + bh/2 + 24, '#2563eb', 12, 'center');
+  txt(ctx, '两物体所带电荷：等量、异号', (ax+bx)/2, cy + bh/2 + 44, '#475569', 12, 'center');
+
+  var y2 = H - 150;
+  ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(14, y2 - 26); ctx.lineTo(W - 14, y2 - 26); ctx.stroke();
+  txt(ctx, '② 两种电荷：同种相斥、异种相吸', 14, y2 - 6, '#1e40af', 13);
+
+  var ry = H - 62, rw = Math.min(210, W*0.20), rh = 44;
+  var s1 = A1.kind.charAt(0) === 'p' ? 1 : -1;
+  var s2 = A1.kind.charAt(1) === 'p' ? 1 : -1;
+  var cx1 = W*0.32, cx2 = W*0.68;
+  rodDraw(ctx, cx1, ry, rw, rh, s1, A1.n, s1 > 0 ? '玻璃棒' : '橡胶棒');
+  rodDraw(ctx, cx2, ry, rw, rh, s2, A1.n, s2 > 0 ? '玻璃棒' : '橡胶棒');
+  var same = (s1 === s2);
+  var L = 30 + 4.2 * A1.n;
+  var fc = s1 > 0 ? '#dc2626' : '#2563eb';
+  if (same){
+    arrow(ctx, cx1 - rw/2, ry, cx1 - rw/2 - L, ry, fc, 2.6);
+    arrow(ctx, cx2 + rw/2, ry, cx2 + rw/2 + L, ry, fc, 2.6);
+    txt(ctx, 'F', cx1 - rw/2 - L - 12, ry, fc, 14, 'center');
+    txt(ctx, 'F', cx2 + rw/2 + L + 12, ry, fc, 14, 'center');
+    txt(ctx, '同种电荷 → 相互排斥', W/2, ry - rh/2 - 22, '#b45309', 14, 'center');
+  } else {
+    var room = (cx2 - rw/2) - (cx1 + rw/2);
+    var L2 = Math.max(14, Math.min(L, room/2 - 14));
+    arrow(ctx, cx1 + rw/2, ry, cx1 + rw/2 + L2, ry, fc, 2.6);
+    arrow(ctx, cx2 - rw/2, ry, cx2 - rw/2 - L2, ry, fc, 2.6);
+    txt(ctx, '异种电荷 → 相互吸引', W/2, ry - rh/2 - 22, '#b45309', 14, 'center');
+  }
+}
+function step1(ts){
+  raf1 = 0;
+  if (!A1.run) return;
+  if (!last1) last1 = ts;
+  var dt = Math.min(60, ts - last1); last1 = ts;
+  A1.prog += dt / 2800;
+  if (A1.prog >= 1){ A1.prog = 1; A1.run = false; last1 = 0; }
+  draw1();
+  if (A1.run) raf1 = requestAnimationFrame(step1);
+}
+function play1(){
+  A1.run = true; A1.prog = 0; last1 = 0;
+  if (!raf1) raf1 = requestAnimationFrame(step1);
+}
+
+/* ================= 模块 2：静电感应与验电器 ================= */
+var B2 = {mode:'ind', qr:6, d:45, removed:false, touch:false, theta:0};
+var raf2 = 0;
+function foilQ(){
+  if (B2.removed && !(B2.mode === 'con' && B2.touch)) return 0;
+  if (B2.mode === 'con'){
+    if (B2.touch) return B2.qr * 0.55;
+    return 0;
+  }
+  return B2.qr * (1 - B2.d/100) * 0.95;
+}
+function ballQ(){
+  if (B2.mode === 'con') return foilQ() * 0.6;
+  if (B2.removed) return 0;
+  return -foilQ();
+}
+function thetaTarget(){
+  var qf = foilQ();
+  return 48 * Math.tanh(Math.abs(qf) / 6.5);
+}
+function kick2(){ if (!raf2) raf2 = requestAnimationFrame(loop2); }
+function loop2(){
+  raf2 = 0;
+  var tg = thetaTarget();
+  B2.theta += (tg - B2.theta) * 0.16;
+  if (Math.abs(tg - B2.theta) < 0.06){ B2.theta = tg; draw2(); return; }
+  draw2();
+  raf2 = requestAnimationFrame(loop2);
+}
+function draw2(){
+  var s = begin('cv2'), ctx = s.ctx, W = s.W, H = s.H;
+  bg(ctx, W, H);
+  var cx = W*0.60, ballY = 54, ballR = 19, hingeY = 208, fl = 92;
+  var qf = foilQ(), qb = ballQ();
+
+  /* 带电棒 */
+  var rw = 118, rh = 30;
+  var gap = B2.mode === 'ind' ? (16 + B2.d/100*230) : (B2.d/100*250);
+  var rodX = cx - ballR - gap - rw/2;
+  if (B2.removed){
+    rodX = 70;
+    ctx.globalAlpha = 0.28;
+  }
+  rr(ctx, rodX - rw/2, ballY - rh/2, rw, rh, rh/2);
+  ctx.fillStyle = B2.qr > 0 ? '#fee2e2' : (B2.qr < 0 ? '#dbeafe' : '#f1f5f9'); ctx.fill();
+  ctx.strokeStyle = B2.qr > 0 ? '#dc2626' : (B2.qr < 0 ? '#2563eb' : '#94a3b8');
+  ctx.lineWidth = 1.8; ctx.stroke();
+  txt(ctx, '带电棒 ' + (B2.qr > 0 ? '+' : (B2.qr < 0 ? '−' : '')) + Math.abs(B2.qr) + 'q',
+      rodX, ballY, B2.qr > 0 ? '#b91c1c' : '#1d4ed8', 12.5, 'center');
+  ctx.globalAlpha = 1;
+  if (B2.removed){
+    txt(ctx, '（棒已移开）', rodX, ballY + rh/2 + 14, '#94a3b8', 11.5, 'center');
+  } else if (B2.mode === 'con' && B2.touch){
+    txt(ctx, '接触中：电子正在转移', rodX, ballY + rh/2 + 14, '#b45309', 11.5, 'center');
+  }
+
+  /* 玻璃罩 */
+  rr(ctx, cx - 84, 148, 168, 190, 10);
+  ctx.fillStyle = 'rgba(241,245,249,.55)'; ctx.fill();
+  ctx.setLineDash([4, 4]);
+  ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 1.2; ctx.stroke();
+  ctx.setLineDash([]);
+
+  /* 金属杆与小球 */
+  ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 5; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(cx, ballY + ballR); ctx.lineTo(cx, hingeY); ctx.stroke();
+  ctx.lineCap = 'butt';
+  dot(ctx, cx, ballY, ballR, '#cbd5e1');
+  ctx.strokeStyle = '#64748b'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(cx, ballY, ballR, 0, 6.2832); ctx.stroke();
+
+  /* 金属箔 */
+  var th = B2.theta * Math.PI / 180;
+  var tx1 = cx - fl*Math.sin(th), ty1 = hingeY + fl*Math.cos(th);
+  var tx2 = cx + fl*Math.sin(th), ty2 = hingeY + fl*Math.cos(th);
+  ctx.strokeStyle = qf >= 0 ? '#dc2626' : '#2563eb'; ctx.lineWidth = 5; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(cx, hingeY); ctx.lineTo(tx1, ty1); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cx, hingeY); ctx.lineTo(tx2, ty2); ctx.stroke();
+  ctx.lineCap = 'butt';
+  txt(ctx, 'θ=' + B2.theta.toFixed(0) + '°', cx + 62, hingeY + 34, '#334155', 12.5);
+
+  /* 电荷标记 */
+  var nb = Math.min(8, Math.round(Math.abs(qb) / 1.2));
+  for (var i = 0; i < nb; i++){
+    var a = -Math.PI/2 + (i - (nb-1)/2) * 0.30;
+    signDot(ctx, cx + (ballR+9)*Math.cos(a), ballY + (ballR+9)*Math.sin(a), 5, qb >= 0 ? 1 : -1, true);
+  }
+  if (Math.abs(qb) > 0.05)
+    txt(ctx, qb > 0 ? '小球带正电' : '小球带负电', cx - ballR - 12, ballY - 4,
+        qb > 0 ? '#dc2626' : '#2563eb', 11.5, 'right');
+  var nf = Math.min(6, Math.round(Math.abs(qf) / 1.3));
+  for (var j = 0; j < nf; j++){
+    var f = 0.45 + j * 0.10;
+    var px1 = cx + (tx1 - cx)*f, py1 = hingeY + (ty1 - hingeY)*f;
+    var px2 = cx + (tx2 - cx)*f, py2 = hingeY + (ty2 - hingeY)*f;
+    signDot(ctx, px1 - 9, py1, 4.6, qf >= 0 ? 1 : -1, true);
+    signDot(ctx, px2 + 9, py2, 4.6, qf >= 0 ? 1 : -1, true);
+  }
+
+  /* 读数面板 */
+  var py = H - 58;
+  rr(ctx, 14, py, W - 28, 46, 8);
+  ctx.fillStyle = '#f8fafc'; ctx.fill();
+  ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1; ctx.stroke();
+  var st = '';
+  if (B2.mode === 'ind') st = B2.removed ? '感应起电 · 棒已移开' : '感应起电（未接触）';
+  else st = B2.touch ? (B2.removed ? '接触起电 · 棒已移开' : '接触起电（已转移电荷）') : '接触起电（还没碰到）';
+  var total = B2.mode === 'con' ? qf + qb : 0;
+  var line1 = '棒电荷 ' + (B2.qr > 0 ? '+' : (B2.qr < 0 ? '−' : '')) + Math.abs(B2.qr) + 'q    ｜    ' +
+              '小球 ' + (Math.abs(qb) < 0.05 ? '0' : (qb > 0 ? '+' : '−') + Math.abs(qb).toFixed(1)) + '    ｜    ' +
+              '金属箔 ' + (Math.abs(qf) < 0.05 ? '0' : (qf > 0 ? '+' : '−') + Math.abs(qf).toFixed(1)) + '    ｜    ' +
+              '验电器总电荷 ' + (Math.abs(total) < 0.05 ? '0' : (total > 0 ? '+' : '−') + Math.abs(total).toFixed(1));
+  txt(ctx, line1, 26, py + 15, '#334155', 12.5);
+  txt(ctx, '状态：' + st, 26, py + 33, '#1d4ed8', 12.5);
+  var msg = '';
+  if (B2.removed){
+    msg = B2.mode === 'ind'
+      ? '移开棒后：电荷恢复均匀分布 → 箔片合拢（感应起电没有净电荷转移）'
+      : (B2.touch ? '移开棒后：箔片仍然张开 → 接触起电使验电器带上了净电荷'
+                  : '还没接触过，先把棒移过来接触一下');
+  } else {
+    msg = B2.mode === 'ind'
+      ? '棒越近，感应出的电荷越多，张角越大（总电荷仍为 0）'
+      : '把"棒的距离"拖到 0 让棒碰到小球，或点"接触一下"';
+  }
+  txt(ctx, msg, W - 26, py + 33, '#b45309', 12, 'right');
+}
+
+/* ================= 模块 3a：电荷守恒 ================= */
+var C3 = {a:6, b:-6, t:0, tg:0, ca:6, cb:-6, eq:false};
+var raf3 = 0;
+function draw3a(){
+  var s = begin('cv3a'), ctx = s.ctx, W = s.W, H = s.H;
+  bg(ctx, W, H);
+  var R = 52, cy = H*0.40;
+  var xa0 = W*0.26, xb0 = W*0.74, mid = W*0.5;
+  var xa = xa0 + ((mid - R - 3) - xa0) * C3.t;
+  var xb = xb0 + ((mid + R + 3) - xb0) * C3.t;
+
+  ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1;
+  ctx.beginPath(); ctx.moveTo(14, 24); ctx.lineTo(W - 14, 24); ctx.stroke();
+  txt(ctx, '两个带电导体球：接触 → 电荷重新分配 → 代数和不变', 14, 12, '#1e40af', 12.5);
+
+  sphere(ctx, xa, cy, R, C3.ca, 'A 球');
+  sphere(ctx, xb, cy, R, C3.cb, 'B 球');
+  if (C3.t > 0.98){
+    txt(ctx, '接触中', mid, cy - R - 20, '#b45309', 12, 'center');
+  }
+
+  var sum = C3.ca + C3.cb;
+  var bw = Math.min(150, W*0.17), by = H - 84;
+  counter(ctx, W*0.22, by, bw, 'A 球电荷', C3.ca);
+  counter(ctx, W*0.5, by, bw, 'B 球电荷', C3.cb);
+  counter(ctx, W*0.78, by, bw, '代数和（恒定）', sum, true);
+  txt(ctx, '代数和 = (' + sgn(C3.ca) + Math.abs(C3.ca).toFixed(0) + ') + (' + sgn(C3.cb) +
+      Math.abs(C3.cb).toFixed(0) + ') = ' + sgn(sum) + Math.abs(sum).toFixed(0) + 'q',
+      W/2, H - 20, '#1d4ed8', 13, 'center');
+}
+function sgn(v){ return v > 0 ? '+' : (v < 0 ? '−' : ''); }
+function sphere(ctx, x, y, R, q, name){
+  var g = ctx.createRadialGradient(x - R*0.3, y - R*0.3, 2, x, y, R);
+  g.addColorStop(0, '#f8fafc'); g.addColorStop(1, '#e2e8f0');
+  ctx.beginPath(); ctx.arc(x, y, R, 0, 6.2832); ctx.fillStyle = g; ctx.fill();
+  ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 1.8; ctx.stroke();
+  txt(ctx, name, x, y - R - 16, '#475569', 12.5, 'center');
+  var n = Math.min(10, Math.round(Math.abs(q)));
+  if (n === 0){
+    txt(ctx, '0', x, y, '#94a3b8', 20, 'center');
+  } else {
+    var cols = n <= 5 ? n : 5, rows = Math.ceil(n / 5);
+    for (var i = 0; i < n; i++){
+      var c = i % cols, r0 = Math.floor(i / cols);
+      var px = x + (c - (cols-1)/2) * 15;
+      var py = y + (r0 - (rows-1)/2) * 15;
+      signDot(ctx, px, py, 5, q >= 0 ? 1 : -1, true);
+    }
+  }
+}
+function counter(ctx, cx, y, w, name, v, hi){
+  var h = 52;
+  rr(ctx, cx - w/2, y - h/2, w, h, 8);
+  ctx.fillStyle = hi ? '#eff6ff' : '#f8fafc'; ctx.fill();
+  ctx.strokeStyle = hi ? '#1d4ed8' : '#e2e8f0'; ctx.lineWidth = hi ? 1.8 : 1; ctx.stroke();
+  txt(ctx, name, cx, y - 14, '#64748b', 11.5, 'center');
+  var col = v > 0 ? '#dc2626' : (v < 0 ? '#2563eb' : '#94a3b8');
+  ctx.fillStyle = col; ctx.font = 'bold 20px Consolas,monospace';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(sgn(v) + Math.abs(v).toFixed(v % 1 === 0 ? 0 : 1), cx, y + 10);
+}
+function loop3(){
+  raf3 = 0;
+  C3.t += (C3.tg - C3.t) * 0.16;
+  if (Math.abs(C3.tg - C3.t) < 0.004){
+    C3.t = C3.tg;
+    if (C3.t === 1 && !C3.eq){
+      var sm = C3.ca + C3.cb;
+      C3.ca = sm / 2; C3.cb = sm / 2; C3.eq = true;
+    }
+    draw3a(); return;
+  }
+  draw3a();
+  raf3 = requestAnimationFrame(loop3);
+}
+function kick3(){ if (!raf3) raf3 = requestAnimationFrame(loop3); }
+
+/* ================= 模块 3b：元电荷台阶 ================= */
+var D4 = {n:6, sg:1};
+function draw3b(){
+  var s = begin('cv3b'), ctx = s.ctx, W = s.W, H = s.H;
+  bg(ctx, W, H);
+  var L = 78, Rr = W - 40, T = 34, B = H - 44;
+  var midY = (T + B) / 2;
+  var maxQ = 17.6;
+  var pxu = (midY - T) / maxQ;
+  function yy(q){ return midY - q * pxu; }
+  function xx(n){ return L + (n + 0.5) * (Rr - L) / 11; }
+  var stepW = (Rr - L) / 11;
+
+  ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 1.4;
+  ctx.beginPath(); ctx.moveTo(L - 10, midY); ctx.lineTo(Rr + 10, midY); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(L - 10, T - 8); ctx.lineTo(L - 10, B + 8); ctx.stroke();
+  txt(ctx, 'Q /（×10⁻¹⁹ C）', L - 14, T - 16, '#64748b', 11.5, 'right');
+  txt(ctx, '元电荷个数 n', Rr, B + 24, '#64748b', 11.5, 'right');
+  for (var k = 0; k <= 10; k++){
+    mono(ctx, '' + k, xx(k), B + 12, '#94a3b8', 11, 'center');
+    ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(xx(k), T - 6); ctx.lineTo(xx(k), B + 4); ctx.stroke();
+  }
+  for (var q = -16; q <= 16; q += 8){
+    mono(ctx, '' + q, L - 16, yy(q), '#94a3b8', 11, 'right');
+  }
+
+  /* 台阶（正、负两侧） */
+  for (var sgn2 = -1; sgn2 <= 1; sgn2 += 2){
+    var act = (sgn2 === D4.sg);
+    var col = sgn2 > 0 ? '#dc2626' : '#2563eb';
+    ctx.strokeStyle = act ? col : 'rgba(148,163,184,.45)';
+    ctx.lineWidth = act ? 2.6 : 1.4;
+    for (var n = 0; n <= 10; n++){
+      var q1 = 1.6 * n * sgn2;
+      ctx.beginPath();
+      ctx.moveTo(xx(n) - stepW/2, yy(q1));
+      ctx.lineTo(xx(n) + stepW/2, yy(q1));
+      ctx.stroke();
+      dot(ctx, xx(n), yy(q1), act ? 4.2 : 2.6, act ? col : '#cbd5e1');
+      if (n < 10){
+        var q2 = 1.6 * (n+1) * sgn2;
+        ctx.setLineDash(act ? [] : [3, 3]);
+        ctx.beginPath(); ctx.moveTo(xx(n) + stepW/2, yy(q1)); ctx.lineTo(xx(n) + stepW/2, yy(q2)); ctx.stroke();
+        ctx.setLineDash([]);
+      }
+    }
+  }
+  /* 当前台阶高亮 */
+  var cur = 1.6 * D4.n * D4.sg;
+  var cxc = xx(D4.n), cyc = yy(cur);
+  ctx.strokeStyle = 'rgba(234,88,12,.85)'; ctx.lineWidth = 2;
+  ctx.setLineDash([4, 3]);
+  ctx.beginPath(); ctx.moveTo(L - 10, cyc); ctx.lineTo(cxc, cyc); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(cxc, midY); ctx.lineTo(cxc, cyc); ctx.stroke();
+  ctx.setLineDash([]);
+  dot(ctx, cxc, cyc, 7, '#ea580c');
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.6;
+  ctx.beginPath(); ctx.arc(cxc, cyc, 7, 0, 6.2832); ctx.stroke();
+  var lab = 'Q = ' + sgn(cur) + fmt(Math.abs(cur), 2) + '×10⁻¹⁹ C';
+  var lw = 150;
+  rr(ctx, Math.min(cxc + 12, W - lw - 16), cyc - 26, lw, 22, 5);
+  ctx.fillStyle = 'rgba(255,247,237,.95)'; ctx.fill();
+  ctx.strokeStyle = '#fdba74'; ctx.lineWidth = 1; ctx.stroke();
+  txt(ctx, lab, Math.min(cxc + 12, W - lw - 16) + 8, cyc - 15, '#b45309', 12);
+
+  /* 非法位置 */
+  if (D4.n < 10){
+    var nx = (xx(D4.n) + xx(D4.n + 1)) / 2;
+    var ny = (yy(1.6*D4.n*D4.sg) + yy(1.6*(D4.n+1)*D4.sg)) / 2;
+    ctx.strokeStyle = '#dc2626'; ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(nx - 6, ny - 6); ctx.lineTo(nx + 6, ny + 6);
+    ctx.moveTo(nx + 6, ny - 6); ctx.lineTo(nx - 6, ny + 6); ctx.stroke();
+    txt(ctx, '× 取不到', nx, ny + 18, '#dc2626', 11, 'center');
+  }
+  mono(ctx, 'Q = n·e      e = 1.60×10⁻¹⁹ C      n = 0,1,2,3,…（整数）',
+       W/2, 16, '#334155', 12.5, 'center');
+  var show = 'n = ' + (D4.sg > 0 ? '+' : '−') + D4.n + '    →    Q = ' +
+             (D4.sg > 0 ? '' : '−') + fmt(1.6 * D4.n, 2) + '×10⁻¹⁹ C';
+  txt(ctx, show, W/2, H - 12, '#1d4ed8', 12.5, 'center');
+}
+
+/* ================= 事件绑定 ================= */
+segBind('segA', function(v){ A1.pair = parseInt(v, 10); A1.prog = 0; A1.run = false; draw1(); });
+segBind('segB', function(v){ A1.kind = v; draw1(); });
+segBind('segC', function(v){
+  B2.mode = v; B2.touch = false; B2.removed = false;
+  if (v === 'con' && B2.d > 40){
+    B2.d = 40; $('dB').value = 40; $('dBv').textContent = '40%';
+  }
+  draw2(); kick2();
+});
+segBind('segD', function(v){ D4.sg = parseInt(v, 10); draw3b(); });
+
+bindRange('nA', function(v){
+  A1.n = v; A1.prog = 0; A1.run = false;
+  $('nAv').textContent = v + ' 个';
+  draw1();
+});
+bindRange('qB', function(v){
+  B2.qr = v;
+  $('qBv').textContent = (v > 0 ? '+' : (v < 0 ? '−' : '')) + Math.abs(v) + 'q';
+  draw2(); kick2();
+});
+bindRange('dB', function(v){
+  B2.d = v;
+  $('dBv').textContent = v + '%';
+  if (B2.mode === 'con' && v <= 3) B2.touch = true;
+  draw2(); kick2();
+});
+
+$('bA1').addEventListener('click', play1);
+$('bA2').addEventListener('click', function(){ A1.run = false; A1.prog = 0; draw1(); });
+
+$('bB1').addEventListener('click', function(){
+  B2.mode = 'con';
+  var bs = $('segC').getElementsByTagName('button');
+  for (var i = 0; i < bs.length; i++) bs[i].className = (bs[i].getAttribute('data-m') === 'con' ? 'on' : '');
+  B2.d = 0; $('dB').value = 0; $('dBv').textContent = '0%';
+  B2.touch = true; B2.removed = false;
+  draw2(); kick2();
+});
+$('bB2').addEventListener('click', function(){ B2.removed = true; draw2(); kick2(); });
+$('bB3').addEventListener('click', function(){
+  B2.removed = false; B2.touch = false; B2.d = 45;
+  $('dB').value = 45; $('dBv').textContent = '45%';
+  draw2(); kick2();
+});
+
+bindRange('qa', function(v){
+  C3.a = v; C3.ca = v; C3.cb = C3.b; C3.t = 0; C3.tg = 0; C3.eq = false;
+  $('qav').textContent = sgn(v) + Math.abs(v) + 'q'; draw3a();
+});
+bindRange('qb', function(v){
+  C3.b = v; C3.cb = v; C3.ca = C3.a; C3.t = 0; C3.tg = 0; C3.eq = false;
+  $('qbv').textContent = sgn(v) + Math.abs(v) + 'q'; draw3a();
+});
+$('bC1').addEventListener('click', function(){ C3.tg = 1; kick3(); });
+$('bC2').addEventListener('click', function(){ C3.tg = 0; kick3(); });
+$('bC3').addEventListener('click', function(){
+  $('qa').value = 6; $('qb').value = -6;
+  $('qav').textContent = '+6q'; $('qbv').textContent = '−6q';
+  C3.a = 6; C3.b = -6; C3.ca = 6; C3.cb = -6; C3.t = 0; C3.tg = 0; C3.eq = false; draw3a();
+});
+$('bC4').addEventListener('click', function(){
+  $('qa').value = 5; $('qb').value = 3;
+  $('qav').textContent = '+5q'; $('qbv').textContent = '+3q';
+  C3.a = 5; C3.b = 3; C3.ca = 5; C3.cb = 3; C3.t = 0; C3.tg = 0; C3.eq = false; draw3a();
+});
+
+bindRange('nD', function(v){ D4.n = v; $('nDv').textContent = v + ' 个'; draw3b(); });
+$('bD1').addEventListener('click', function(){
+  $('nD').value = 1; D4.n = 1; $('nDv').textContent = '1 个'; draw3b();
+});
+$('bD2').addEventListener('click', function(){
+  $('nD').value = 0; D4.n = 0; $('nDv').textContent = '0 个'; draw3b();
+});
+
+window.addEventListener('resize', function(){ draw1(); draw2(); draw3a(); draw3b(); });
+draw1(); draw2(); draw3a(); draw3b();
+})();
+</script>
+</body>
+</html>

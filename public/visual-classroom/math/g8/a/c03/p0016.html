@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>15.2 画轴对称的图形 · 互动实验（信息技术应用）</title>
+<style>
+  :root{
+    --bg:#f5f7fa; --panel:#fff; --line:#e2e8f0; --text:#1e293b; --muted:#64748b;
+    --blue:#2563eb; --red:#dc2626; --green:#059669; --orange:#d97706; --purple:#7c3aed; --teal:#0891b2;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:"Microsoft YaHei","PingFang SC",sans-serif;background:var(--bg);color:var(--text);
+    min-height:100vh;display:flex;flex-direction:column;align-items:center;padding:16px;user-select:none;-webkit-user-select:none;}
+  header{text-align:center;margin-bottom:10px;}
+  header h1{font-size:21px;}
+  header p{font-size:13px;color:var(--muted);margin-top:3px;}
+  .mantra{display:flex;align-items:center;gap:10px;background:linear-gradient(90deg,#2563eb,#7c3aed);
+    color:#fff;border-radius:12px;padding:8px 22px;font-size:16px;font-weight:700;letter-spacing:2px;
+    box-shadow:0 3px 10px rgba(37,99,235,.25);margin-bottom:10px;}
+  .mantra small{font-weight:400;font-size:12px;letter-spacing:0;opacity:.9;}
+  .stage{width:min(1160px,100%);background:var(--panel);border:1px solid var(--line);border-radius:14px;
+    box-shadow:0 4px 16px rgba(15,23,42,.06);padding:14px;display:flex;gap:14px;flex-wrap:wrap;}
+  .svg-wrap{flex:1 1 620px;min-width:320px;}
+  svg{width:100%;height:auto;display:block;background:#fafcff;border:1px solid var(--line);border-radius:10px;touch-action:none;}
+  .h{cursor:grab;} .h:active{cursor:grabbing;}
+  .side{flex:0 1 330px;min-width:290px;display:flex;flex-direction:column;gap:10px;}
+  .card{background:#f8fafc;border:1px solid var(--line);border-radius:10px;padding:11px 12px;font-size:13px;line-height:1.65;}
+  .card h3{font-size:13.5px;margin-bottom:6px;color:var(--blue);}
+  .btn-row{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+  button.op{padding:6px 13px;border-radius:8px;border:1px solid var(--line);background:#fff;cursor:pointer;
+    font-size:13px;transition:.15s;font-family:inherit;}
+  button.op:hover{border-color:var(--blue);color:var(--blue);}
+  button.op.on{background:var(--blue);color:#fff;border-color:var(--blue);}
+  button.op:disabled{opacity:.45;cursor:not-allowed;}
+  button.play{padding:8px 18px;border-radius:8px;border:none;cursor:pointer;background:var(--green);
+    color:#fff;font-size:13.5px;font-weight:600;font-family:inherit;}
+  button.play.pause{background:var(--orange);}
+  label.chk{display:flex;align-items:center;gap:6px;cursor:pointer;font-size:13px;padding:2px 0;}
+  .steps{display:flex;gap:6px;margin-bottom:8px;}
+  .step-chip{flex:1;text-align:center;padding:6px 4px;border-radius:8px;border:1px solid var(--line);
+    background:#fff;font-size:12px;font-weight:600;color:var(--muted);}
+  .step-chip.on{background:var(--purple);border-color:var(--purple);color:#fff;}
+  .step-tip{background:#f5f3ff;border:1px dashed var(--purple);border-radius:8px;padding:8px 10px;
+    font-size:14px;font-weight:700;color:var(--purple);text-align:center;}
+  .coord-list{max-height:150px;overflow-y:auto;font-variant-numeric:tabular-nums;font-size:12.5px;}
+  .coord-list div{display:flex;justify-content:space-between;padding:1px 2px;}
+  .rule{margin-top:6px;padding-top:6px;border-top:1px dashed #cbd5e1;color:var(--teal);font-weight:600;}
+  .note{font-size:12px;color:var(--muted);}
+  .ok{color:var(--green);font-weight:600;}
+  .hint{font-size:12px;color:var(--orange);margin-top:4px;}
+  #chainPaths polygon{transition:fill .3s;}
+</style>
+</head>
+<body>
+<header>
+  <h1>15.2 画轴对称的图形 · 互动实验</h1>
+  <p>人教版八年级上册 · 信息技术应用：画轴对称图案 ｜ 支持拖拽探究与自动播放</p>
+</header>
+
+<div class="mantra">口诀：找点 → 作点 → 连线 <small>（找关键点 · 作对称点 · 顺次连接）</small></div>
+
+<div class="stage">
+  <div class="svg-wrap">
+    <svg id="s1" viewBox="0 0 760 520">
+      <defs>
+        <clipPath id="plotClip"><rect x="56" y="44" width="648" height="432"/></clipPath>
+      </defs>
+      <g id="grid"></g>
+      <!-- 连续对称图案（最底层，裁剪在网格区域内） -->
+      <g id="chainPaths" clip-path="url(#plotClip)"></g>
+      <!-- 辅助虚线 + 垂直平分符号 -->
+      <g id="gAux"></g>
+      <g id="gAuxMarks"></g>
+      <!-- 对称图形（三步法成品） -->
+      <g id="gImg"></g>
+      <!-- 原图形 -->
+      <g id="gOrig"></g>
+      <!-- 对称轴 -->
+      <g id="gAxis"></g>
+      <!-- 文本标注 -->
+      <g id="gLabels" font-size="13" font-weight="700"></g>
+      <!-- 拖拽手柄 -->
+      <g id="gHandles"></g>
+    </svg>
+  </div>
+
+  <div class="side">
+    <div class="card">
+      <h3>🧭 三步法演示</h3>
+      <div class="steps">
+        <div class="step-chip on" id="chip0">① 找关键点</div>
+        <div class="step-chip" id="chip1">② 作对称点</div>
+        <div class="step-chip" id="chip2">③ 顺次连接</div>
+      </div>
+      <div class="step-tip" id="stepTip">找关键点（顶点）</div>
+      <div class="btn-row" style="margin-top:8px;justify-content:center">
+        <button class="op" id="prevStep">⬅ 上一步</button>
+        <button class="op" id="nextStep">下一步 ➡</button>
+        <button class="play" id="playBtn">▶ 自动播放</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>📐 对称轴</h3>
+      <div class="btn-row">
+        <button class="op on" id="axY">y 轴</button>
+        <button class="op" id="axX">x 轴</button>
+        <button class="op" id="axC">自定义直线</button>
+      </div>
+      <p class="note" style="margin-top:5px">自定义模式下可拖动直线两端的紫色手柄改变对称轴。</p>
+    </div>
+
+    <div class="card">
+      <h3>👁 显示 / 隐藏</h3>
+      <label class="chk"><input type="checkbox" id="cbOrig" checked> 原图形 ABCDE（可拖拽）</label>
+      <label class="chk"><input type="checkbox" id="cbAux" checked> 辅助虚线（对应点连线）</label>
+      <label class="chk"><input type="checkbox" id="cbPts" checked> 对称点 A′B′C′D′E′</label>
+      <label class="chk"><input type="checkbox" id="cbImg" checked> 最终轴对称图形</label>
+      <div class="btn-row" style="margin-top:7px">
+        <button class="op" id="chainBtn">🦋 连续对称（图案设计）</button>
+      </div>
+      <p class="hint">连续对称：沿对称轴方向反复镜像，生成花边图案</p>
+    </div>
+
+    <div class="card">
+      <h3>🔢 坐标规律</h3>
+      <div class="coord-list" id="coordList"></div>
+      <div class="rule" id="coordRule"></div>
+    </div>
+
+    <div class="card">
+      <div class="btn-row" style="justify-content:space-between">
+        <span class="ok" id="congTxt">原图形 ≌ 对称图形（对应边相等）</span>
+        <button class="op" id="resetBtn">↺ 重置</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+const NS = "http://www.w3.org/2000/svg";
+const $ = id => document.getElementById(id);
+const clamp = (v,a,b) => Math.min(b, Math.max(a, v));
+const lerp = (a,b,t) => a + (b-a)*t;
+const easeIO = k => k<.5 ? 2*k*k : 1 - Math.pow(-2*k+2,2)/2;
+function el(tag, attrs, parent){const e=document.createElementNS(NS,tag);for(const k in attrs)e.setAttribute(k,attrs[k]);if(parent)parent.appendChild(e);return e;}
+function clear(g){while(g.firstChild)g.removeChild(g.firstChild);}
+
+/* ---------- 世界坐标（单位=1格） ↔ 屏幕 ---------- */
+const U = 36, CX = 380, CY = 260, XMAX = 9, YMAX = 6;
+const toScr = p => ({x: CX + p.x*U, y: CY - p.y*U});
+const toWld = v => ({x: (v.x-CX)/U, y: (CY-v.y)/U});
+
+/* ---------- 动画调度器 ---------- */
+const Ticker = {
+  id:null, btn:null,
+  stop(){ if(this.id){cancelAnimationFrame(this.id);this.id=null;}
+    if(this.btn){this.btn.textContent="▶ 自动播放";this.btn.classList.remove("pause");this.btn=null;} },
+  start(btn, fn){ this.stop(); this.btn=btn||null;
+    if(btn){btn.textContent="⏸ 暂停";btn.classList.add("pause");}
+    const t0=performance.now(); let last=t0;
+    const step=now=>{ const t=(now-t0)/1000, dt=(now-last)/1000; last=now;
+      if(fn(t,dt)===false){this.stop();return;} this.id=requestAnimationFrame(step); };
+    this.id=requestAnimationFrame(step); }
+};
+
+/* ---------- 状态 ---------- */
+const HOME = [ {x:2.0,y:4.5}, {x:4.5,y:5.5}, {x:6.0,y:3.0}, {x:4.0,y:1.0}, {x:1.0,y:2.5} ];
+const NAMES = ["A","B","C","D","E"];
+let poly = HOME.map(p => ({...p}));           // 原图形顶点
+let axisMode = "y";                            // y | x | custom
+let cA = {x:-6,y:-6}, cB = {x:6,y:6};          // 自定义轴两端
+let step = 0;                                  // 0,1,2
+let anim = {aux:0, img:0};                     // 步骤2/3 绘制进度
+let chain = false;                             // 连续对称
+const CHAIN_N = 4;                             // 每侧镜像次数
+
+const STEP_TIPS = ["找关键点（顶点）","作对称点（垂直、等距）","顺次连接得图形"];
+const CONG = "原图形 ≌ 对称图形（对应边相等）";
+
+/* ---------- 对称轴几何 ---------- */
+function axisFrame(){
+  if(axisMode==="y")  return {a:{x:0,y:0}, d:{x:0,y:1}};
+  if(axisMode==="x")  return {a:{x:0,y:0}, d:{x:1,y:0}};
+  const L=Math.hypot(cB.x-cA.x,cB.y-cA.y)||1;
+  return {a:{...cA}, d:{x:(cB.x-cA.x)/L, y:(cB.y-cA.y)/L}};
+}
+function reflect(p){
+  const {a,d}=axisFrame(), nx=-d.y, ny=d.x;
+  const s=(p.x-a.x)*nx+(p.y-a.y)*ny;
+  return {x:p.x-2*s*nx, y:p.y-2*s*ny};
+}
+function mirrorChain(){  // 连续对称的镜面位置（沿轴法向的带符号距离）
+  const {a,d}=axisFrame(), nx=-d.y, ny=d.x;
+  const ss=poly.map(p=>(p.x-a.x)*nx+(p.y-a.y)*ny);
+  const lo=Math.min(...ss), hi=Math.max(...ss), w=hi-lo;
+  const mr=[],ml=[];
+  for(let k=1;k<=CHAIN_N;k++){ mr.push(k*hi-(k-1)*lo); ml.push(k*lo-(k-1)*hi); }
+  return {n:{x:nx,y:ny}, right:mr, left:ml};
+}
+function reflectN(p, n, m){  // 关于 {q: q·n=m} 的镜像
+  const s=p.x*n.x+p.y*n.y;
+  return {x:p.x-2*(s-m)*n.x, y:p.y-2*(s-m)*n.y};
+}
+
+/* ---------- 网格与坐标轴（画一次） ---------- */
+(function drawGrid(){
+  const g=$("grid");
+  for(let i=-XMAX;i<=XMAX;i++){
+    el("line",{x1:CX+i*U,y1:CY-YMAX*U,x2:CX+i*U,y2:CY+YMAX*U,
+      stroke:i===0?"none":"#e2e8f0","stroke-width":1},g);
+  }
+  for(let j=-YMAX;j<=YMAX;j++){
+    el("line",{x1:CX-XMAX*U,y1:CY-j*U,x2:CX+XMAX*U,y2:CY-j*U,
+      stroke:j===0?"none":"#e2e8f0","stroke-width":1},g);
+  }
+  // x 轴 / y 轴
+  el("line",{x1:CX-XMAX*U,y1:CY,x2:CX+XMAX*U,y2:CY,stroke:"#94a3b8","stroke-width":1.6},g);
+  el("line",{x1:CX,y1:CY+YMAX*U,x2:CX,y2:CY-YMAX*U,stroke:"#94a3b8","stroke-width":1.6},g);
+  el("path",{d:`M ${CX+XMAX*U} ${CY} l -9 -4.5 v 9 Z`,fill:"#94a3b8"},g);
+  el("path",{d:`M ${CX} ${CY-YMAX*U} l -4.5 9 h 9 Z`,fill:"#94a3b8"},g);
+  const t1=el("text",{x:CX+XMAX*U+2,y:CY+16,"font-size":13,"font-weight":"700",fill:"#64748b"},g); t1.textContent="x";
+  const t2=el("text",{x:CX+8,y:CY-YMAX*U+12,"font-size":13,"font-weight":"700",fill:"#64748b"},g); t2.textContent="y";
+  const o=el("text",{x:CX-14,y:CY+15,"font-size":12,fill:"#94a3b8"},g); o.textContent="O";
+  for(let i=-8;i<=8;i++){ if(i===0)continue;
+    const t=el("text",{x:CX+i*U,y:CY+13,"font-size":9,fill:"#b6c2d1","text-anchor":"middle"},g);
+    t.textContent=i;
+  }
+  for(let j=-6;j<=6;j++){ if(j===0)continue;
+    const t=el("text",{x:CX+5,y:CY-j*U+3,"font-size":9,fill:"#b6c2d1"},g);
+    t.textContent=j;
+  }
+})();
+
+/* ---------- 渲染 ---------- */
+function render(){
+  const {a,d}=axisFrame();
+  const img = poly.map(reflect);
+  const showOrig=$("cbOrig").checked, showAux=$("cbAux").checked,
+        showPts=$("cbPts").checked, showImg=$("cbImg").checked;
+
+  /* --- 对称轴 --- */
+  const gA=$("gAxis"); clear(gA);
+  const ext=14, p1=toScr({x:a.x-d.x*ext,y:a.y-d.y*ext}), p2=toScr({x:a.x+d.x*ext,y:a.y+d.y*ext});
+  el("line",{x1:p1.x,y1:p1.y,x2:p2.x,y2:p2.y,stroke:"#7c3aed","stroke-width":3,"stroke-dasharray":"12 6",opacity:.9},gA);
+  const al=el("text",{x:lerp(p1.x,p2.x,.5)+10,y:lerp(p1.y,p2.y,.5)-8,"font-size":13,"font-weight":700,fill:"#7c3aed",
+    stroke:"#fff","stroke-width":3,"paint-order":"stroke"},gA);
+  al.textContent = axisMode==="y"?"对称轴 l（y 轴）":axisMode==="x"?"对称轴 l（x 轴）":"对称轴 l（自定义）";
+  if(axisMode==="custom"){
+    [cA,cB].forEach((c,i)=>{
+      const s=toScr(c);
+      el("circle",{cx:s.x,cy:s.y,r:8,fill:"#7c3aed",stroke:"#fff","stroke-width":2,class:"h","data-ax":i},gA);
+      el("circle",{cx:s.x,cy:s.y,r:16,fill:"#000",opacity:0,class:"h","data-ax":i},gA);
+    });
+  }
+
+  /* --- 连续对称图案 --- */
+  const gC=$("chainPaths"); clear(gC);
+  if(chain){
+    const {n,right,left}=mirrorChain();
+    const hue=[[37,99,235],[5,150,105],[217,119,6],[124,58,237],[8,145,178],[220,38,38]];
+    let ci=0;
+    const drawChainShape=(pts,k)=>{
+      const [r,g,b]=hue[ci++%hue.length];
+      const sp=pts.map(toScr).map(p=>`${p.x},${p.y}`).join(" ");
+      el("polygon",{points:sp,fill:`rgba(${r},${g},${b},.13)`,stroke:`rgb(${r},${g},${b})`,
+        "stroke-width":1.6,"stroke-linejoin":"round"},gC);
+    };
+    let cur=poly.map(p=>({...p}));
+    for(let k=0;k<CHAIN_N;k++){ cur=cur.map(p=>reflectN(p,n,right[k])); drawChainShape(cur,k); }
+    cur=poly.map(p=>({...p}));
+    for(let k=0;k<CHAIN_N;k++){ cur=cur.map(p=>reflectN(p,n,left[k])); drawChainShape(cur,k); }
+  }
+
+  /* --- 原图形 --- */
+  const gO=$("gOrig"); clear(gO);
+  const scr=poly.map(toScr);
+  if(showOrig){
+    el("polygon",{points:scr.map(p=>`${p.x},${p.y}`).join(" "),fill:"rgba(37,99,235,.22)",
+      stroke:"#2563eb","stroke-width":2.5,"stroke-linejoin":"round",class:"polyDrag"},gO);
+  }
+
+  /* --- 辅助虚线 + 垂直平分符号 --- */
+  const gX=$("gAux"), gM=$("gAuxMarks"); clear(gX); clear(gM);
+  if(showAux && step>=1){
+    poly.forEach((P,i)=>{
+      const Q=img[i], s1=toScr(P), s2=toScr(Q);
+      el("line",{x1:s1.x,y1:s1.y,x2:lerp(s1.x,s2.x,anim.aux),y2:lerp(s1.y,s2.y,anim.aux),
+        stroke:"#0891b2","stroke-width":1.8,"stroke-dasharray":"6 5",opacity:.85},gX);
+      if(anim.aux>0.98){
+        // 垂足：轴与对应点连线的交点
+        const nx=-d.y, ny=d.x;
+        const t=(P.x-a.x)*nx+(P.y-a.y)*ny;
+        const F={x:P.x-t*nx, y:P.y-t*ny};
+        const Fs=toScr(F);
+        // 屏幕系方向向量：沿轴 dv / 沿连线 dn（各半长 7px）
+        const dv={x:d.x*7, y:-d.y*7};
+        const dn={x:nx*7, y:-ny*7};
+        // 垂直符号：小正方形
+        const q1={x:Fs.x+dv.x,y:Fs.y+dv.y}, q2={x:q1.x+dn.x,y:q1.y+dn.y}, q3={x:Fs.x+dn.x,y:Fs.y+dn.y};
+        el("path",{d:`M ${q1.x} ${q1.y} L ${q2.x} ${q2.y} L ${q3.x} ${q3.y}`,fill:"none",
+          stroke:"#0891b2","stroke-width":1.5},gM);
+        // 平分符号：垂足两侧沿轴方向的两条短刻线
+        [-3.5,3.5].forEach(off=>{
+          const c={x:Fs.x+dn.x/7*off, y:Fs.y+dn.y/7*off};
+          el("line",{x1:c.x-dv.x,y1:c.y-dv.y,x2:c.x+dv.x,y2:c.y+dv.y,
+            stroke:"#0891b2","stroke-width":1.5},gM);
+        });
+      }
+    });
+  }
+
+  /* --- 对称点 --- */
+  const gI=$("gImg"); clear(gI);
+  if(showPts && step>=1){
+    img.forEach((Q,i)=>{
+      const s=toScr(Q);
+      el("circle",{cx:s.x,cy:s.y,r:6,fill:anim.img>0.01||step>=2?"#dc2626":"#fff",
+        stroke:"#dc2626","stroke-width":2.5},gI);
+    });
+  }
+
+  /* --- 最终图案 --- */
+  if(showImg && step>=2){
+    const s=img.map(toScr);
+    el("polygon",{points:s.map(p=>`${p.x},${p.y}`).join(" "),
+      fill:`rgba(220,38,38,${.18*anim.img})`,stroke:"#dc2626","stroke-width":2.5,
+      "stroke-linejoin":"round","stroke-dasharray":`${anim.img<1?600:0}`,"stroke-dashoffset":0},gI);
+  }
+
+  /* --- 顶点手柄 --- */
+  const gH=$("gHandles"); clear(gH);
+  if(showOrig){
+    poly.forEach((P,i)=>{
+      const s=toScr(P);
+      el("circle",{cx:s.x,cy:s.y,r:9,fill:"#2563eb",stroke:"#fff","stroke-width":2.5,
+        class:"h","data-v":i},gH);
+      el("circle",{cx:s.x,cy:s.y,r:20,fill:"#000",opacity:0,class:"h","data-v":i},gH);
+    });
+  }
+
+  /* --- 标签 --- */
+  const gL=$("gLabels"); clear(gL);
+  const cen={x:poly.reduce((s,p)=>s+p.x,0)/5, y:poly.reduce((s,p)=>s+p.y,0)/5};
+  if(showOrig) poly.forEach((P,i)=>{
+    const s=toScr(P);
+    const dx=s.x-toScr(cen).x, dy=s.y-toScr(cen).y, L=Math.hypot(dx,dy)||1;
+    const t=el("text",{x:s.x+dx/L*20, y:s.y+dy/L*20+5, "text-anchor":"middle", fill:"#2563eb",
+      stroke:"#fff","stroke-width":3,"paint-order":"stroke"},gL);
+    t.textContent=NAMES[i];
+  });
+  if(showPts && step>=1) img.forEach((Q,i)=>{
+    const s=toScr(Q);
+    const dx=s.x-toScr(cen).x, dy=s.y-toScr(cen).y, L=Math.hypot(dx,dy)||1;
+    const t=el("text",{x:s.x+dx/L*22, y:s.y+dy/L*22+5, "text-anchor":"middle", fill:"#dc2626",
+      stroke:"#fff","stroke-width":3,"paint-order":"stroke"},gL);
+    t.textContent=NAMES[i]+"′";
+  });
+
+  /* --- 坐标面板 --- */
+  const f1=n=>(Math.round(n*10)/10).toString();
+  $("coordList").innerHTML = poly.map((P,i)=>{
+    const Q=reflect(P);
+    return `<div><span style="color:var(--blue)">${NAMES[i]}(${f1(P.x)}, ${f1(P.y)})</span>
+            <span style="color:var(--muted)">→</span>
+            <span style="color:var(--red)">${NAMES[i]}′(${f1(Q.x)}, ${f1(Q.y)})</span></div>`;
+  }).join("");
+  $("coordRule").textContent =
+    axisMode==="y" ? "关于 y 轴对称：(x, y) → (−x, y)\n横坐标相反，纵坐标相同" :
+    axisMode==="x" ? "关于 x 轴对称：(x, y) → (x, −y)\n横坐标相同，纵坐标相反" :
+    "关于直线 l 对称：对应点连线⊥l，且被 l 平分（垂直平分）";
+  $("congTxt").textContent = step>=2 ? CONG : "完成三步后：两图形全等";
+
+  /* --- 步骤 UI --- */
+  [0,1,2].forEach(i=>$("chip"+i).classList.toggle("on",i===step));
+  $("stepTip").textContent = STEP_TIPS[step];
+  $("prevStep").disabled = step===0;
+  $("nextStep").disabled = step===2;
+}
+
+/* ---------- 步骤切换（带动画） ---------- */
+function gotoStep(s, animate=true){
+  step=clamp(s,0,2);
+  if(!animate){ anim.aux=step>=1?1:0; anim.img=step>=2?1:0; render(); return; }
+  if(step===0){ anim.aux=0; anim.img=0; render(); }
+  else if(step===1){ anim.img=0; Ticker.start(null,t=>{
+      anim.aux=easeIO(clamp(t/1.4,0,1)); render();
+      if(t>=1.4) return false; }); }
+  else { anim.aux=1; Ticker.start(null,t=>{
+      anim.img=easeIO(clamp(t/1.2,0,1)); render();
+      if(t>=1.2) return false; }); }
+}
+$("prevStep").addEventListener("click",()=>{ Ticker.stop(); gotoStep(step-1); });
+$("nextStep").addEventListener("click",()=>{ Ticker.stop(); gotoStep(step+1); });
+
+$("playBtn").addEventListener("click",()=>{
+  if(Ticker.btn===$("playBtn")){ Ticker.stop(); return; }
+  step=0; anim.aux=0; anim.img=0; render();
+  Ticker.start($("playBtn"), t=>{
+    if(t<1.0){ step=0; }
+    else if(t<1.0+1.4){ step=1; anim.aux=easeIO((t-1.0)/1.4); anim.img=0; }
+    else if(t<1.0+1.4+0.4){ step=1; anim.aux=1; anim.img=0; }
+    else if(t<1.0+1.4+0.4+1.2){ step=2; anim.aux=1; anim.img=easeIO((t-2.8)/1.2); }
+    else { step=2; anim.aux=1; anim.img=1; render(); return false; }
+    render();
+  });
+});
+
+/* ---------- 对称轴切换 ---------- */
+function setAxis(mode){
+  axisMode=mode;
+  [["axY","y"],["axX","x"],["axC","custom"]].forEach(([id,m])=>
+    $(id).classList.toggle("on",m===mode));
+  Ticker.stop();
+  anim.aux=step>=1?1:0; anim.img=step>=2?1:0;   // 保持当前步骤，即时刷新
+  render();
+}
+$("axY").addEventListener("click",()=>setAxis("y"));
+$("axX").addEventListener("click",()=>setAxis("x"));
+$("axC").addEventListener("click",()=>setAxis("custom"));
+
+/* ---------- 显示/隐藏 与 图案模式 ---------- */
+["cbOrig","cbAux","cbPts","cbImg"].forEach(id=>$(id).addEventListener("change",render));
+$("chainBtn").addEventListener("click",()=>{
+  chain=!chain;
+  $("chainBtn").classList.toggle("on",chain);
+  $("chainBtn").textContent = chain ? "🦋 连续对称（已开启）" : "🦋 连续对称（图案设计）";
+  render();
+});
+$("resetBtn").addEventListener("click",()=>{
+  Ticker.stop(); poly=HOME.map(p=>({...p})); cA={x:-6,y:-6}; cB={x:6,y:6};
+  chain=false; $("chainBtn").classList.remove("on");
+  $("chainBtn").textContent="🦋 连续对称（图案设计）";
+  gotoStep(0,false);
+});
+
+/* ---------- 拖拽（事件委托 + 窗口监听） ---------- */
+(function initDrag(){
+  const svg=$("s1");
+  const toVB=e=>{
+    const m=svg.getScreenCTM(); if(!m) return {x:0,y:0};
+    const p=svg.createSVGPoint(); p.x=e.clientX; p.y=e.clientY;
+    return toWld(p.matrixTransform(m.inverse()));
+  };
+  let drag=null;   // {type:'v'|'ax'|'poly', i, last}
+  svg.addEventListener("pointerdown",e=>{
+    const t=e.target;
+    if(t.classList && t.classList.contains("h")){
+      Ticker.stop();
+      if(t.dataset.v!==undefined) drag={type:"v",i:+t.dataset.v};
+      else if(t.dataset.ax!==undefined) drag={type:"ax",i:+t.dataset.ax};
+      drag.last=toVB(e); e.preventDefault(); return;
+    }
+    if(t.classList && t.classList.contains("polyDrag")){
+      Ticker.stop();
+      drag={type:"poly",last:toVB(e)}; e.preventDefault(); return;
+    }
+  },{passive:false});
+  window.addEventListener("pointermove",e=>{
+    if(!drag) return;
+    e.preventDefault();
+    const w=toVB(e);
+    if(drag.type==="v"){
+      poly[drag.i]={x:clamp(w.x,-XMAX+.3,XMAX-.3), y:clamp(w.y,-YMAX+.3,YMAX-.3)};
+    }else if(drag.type==="ax"){
+      const p={x:clamp(w.x,-XMAX,XMAX), y:clamp(w.y,-YMAX,YMAX)};
+      if(drag.i===0) cA=p; else cB=p;
+    }else if(drag.type==="poly"){
+      const dx=w.x-drag.last.x, dy=w.y-drag.last.y;
+      poly=poly.map(p=>({x:clamp(p.x+dx,-XMAX+.3,XMAX-.3), y:clamp(p.y+dy,-YMAX+.3,YMAX-.3)}));
+    }
+    drag.last=w;
+    render();
+  },{passive:false});
+  const end=()=>{drag=null;};
+  window.addEventListener("pointerup",end);
+  window.addEventListener("pointercancel",end);
+  window.addEventListener("blur",end);
+})();
+
+render();
+window.__demo={get poly(){return poly;}, reflect, gotoStep, setAxis, Ticker,
+  state:()=>({step,axisMode,chain,anim})};
+</script>
+</body>
+</html>

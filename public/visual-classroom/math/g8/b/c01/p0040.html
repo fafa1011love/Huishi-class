@@ -1,0 +1,351 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>19.1 二次根式及其性质 · 课堂演示</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{min-height:100vh;overflow-x:auto;font-family:"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif;background:#eef2f7;color:#1e293b;display:flex;flex-direction:column}
+header{height:56px;display:flex;align-items:center;gap:12px;padding:0 18px;background:#fff;border-bottom:1px solid #e2e8f0;flex-shrink:0}
+header h1{font-size:18px;font-weight:800}
+header h1 small{font-size:12px;color:#64748b;font-weight:500;margin-left:8px}
+main{flex:1;display:grid;grid-template-columns:minmax(0,1.45fr) minmax(400px,1fr);min-height:calc(100vh - 150px)}
+.left{display:flex;flex-direction:column;min-width:0;background:#fff;border-right:1px solid #e2e8f0}
+.left svg{flex:1;width:100%;min-height:380px;display:block}
+.ctrls{flex-shrink:0;padding:10px 16px 14px;border-top:1px solid #e2e8f0;background:#f8fafc}
+.btnrow{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.btn{padding:9px 18px;border:1px solid #cbd5e1;background:#fff;border-radius:10px;cursor:pointer;font-size:14px;color:#334155;transition:all .15s}
+.btn:hover{border-color:#2563eb;color:#2563eb}
+.btn.primary{background:#2563eb;color:#fff;border-color:#2563eb;font-weight:600}
+.btn.primary:hover{background:#1d4ed8}
+.btn.warn{color:#dc2626;border-color:#fca5a5}
+.btn.warn:hover{background:#fef2f2}
+.stepchips{margin-left:auto;display:flex;gap:6px}
+.chip{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:14px;font-weight:700;background:#e2e8f0;color:#64748b;transition:all .3s}
+.chip.on{color:#fff;transform:scale(1.12)}
+.c1.on{background:#2563eb}.c2.on{background:#10b981}.c3.on{background:#8b5cf6}.c4.on{background:#ef4444}
+.sliderrow{display:flex;align-items:center;gap:10px;margin-top:10px;font-size:14px;font-weight:600}
+.sliderrow input[type=range]{flex:1;accent-color:#2563eb}
+.sliderrow .val{min-width:120px;color:#1d4ed8}
+aside{padding:12px 14px 18px;background:#f8fafc}
+.card{background:#fff;border:2px solid #e2e8f0;border-left-width:8px;border-radius:12px;padding:10px 14px;margin-bottom:10px;font-size:14px;line-height:1.85;transition:all .45s;opacity:.72}
+.card h4{font-size:15px;margin-bottom:4px}
+.card.active{opacity:1;transform:scale(1.015);box-shadow:0 4px 16px rgba(15,23,42,.12)}
+.card.done{opacity:.55}
+.card.k1{border-left-color:#2563eb}.card.k1.active{border-color:#2563eb}
+.card.k2{border-left-color:#10b981}.card.k2.active{border-color:#10b981}
+.card.k3{border-left-color:#8b5cf6}.card.k3.active{border-color:#8b5cf6}
+.card.k4{border-left-color:#ef4444}.card.k4.active{border-color:#ef4444}
+.card .formula{font-family:Georgia,"Times New Roman",serif;font-size:17px;font-weight:700}
+.warnbox{margin-top:6px;padding:7px 10px;border-radius:9px;background:#fef2f2;border:1px dashed #fca5a5;color:#b91c1c;font-size:13px;line-height:1.8}
+.exrow{display:flex;align-items:center;gap:8px;margin:6px 0;font-size:13.5px}
+.exrow input[type=range]{flex:1;accent-color:#dc2626}
+.exok{color:#059669;font-weight:700}.exno{color:#dc2626;font-weight:700}
+footer{flex-shrink:0;display:flex;gap:12px;padding:10px 16px;background:#0f172a;color:#fff;align-items:center}
+.fbox{flex:1;border-radius:10px;padding:8px 14px;font-family:Georgia,serif;font-size:17px;font-weight:700;display:flex;align-items:center;gap:12px}
+.fbox small{font-family:"PingFang SC","Microsoft YaHei",sans-serif;font-size:12.5px;font-weight:600;opacity:.92}
+.fbox.a{background:#1e3a8a}.fbox.b{background:#7f1d1d}
+.ftip{font-size:13px;color:#fbbf24;font-weight:700;white-space:nowrap}
+/* SVG 内动画 */
+.pulse{animation:pl 1.5s ease-in-out infinite}
+@keyframes pl{0%,100%{opacity:1}50%{opacity:.35}}
+.fadein{animation:fi .6s ease}
+@keyframes fi{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:none}}
+text{font-family:"PingFang SC","Microsoft YaHei",sans-serif}
+.mono{font-family:Georgia,"Times New Roman",serif}
+</style>
+</head>
+<body>
+<header>
+  <h1>19.1 二次根式及其性质<small>教材模型：正方形面积 S ⇄ 边长 √S ｜ 适合课堂投影</small></h1>
+</header>
+<main>
+  <section class="left">
+    <svg id="stage" viewBox="0 0 620 560" preserveAspectRatio="xMidYMid meet"></svg>
+    <div class="ctrls">
+      <div class="btnrow">
+        <button class="btn primary" id="btnPlay">▶ 播放分步演示</button>
+        <button class="btn" id="btnNext">单步 ▸</button>
+        <button class="btn warn" id="btnReset">↺ 重置</button>
+        <div class="stepchips">
+          <div class="chip c1" id="ch1">1</div><div class="chip c2" id="ch2">2</div>
+          <div class="chip c3" id="ch3">3</div><div class="chip c4" id="ch4">4</div>
+        </div>
+      </div>
+      <div class="sliderrow" id="ctrlS">
+        <label>正方形面积 S：</label>
+        <input type="range" id="slS" min="0" max="16" step="1" value="9">
+        <span class="val" id="valS"></span>
+      </div>
+      <div class="sliderrow" id="ctrlA" style="display:none">
+        <label>实数 a（第4步）：</label>
+        <input type="range" id="slA" min="-5" max="5" step="1" value="-3">
+        <span class="val" id="valA"></span>
+      </div>
+      <div class="sliderrow">
+        <label>每步时长：</label>
+        <input type="range" id="slDur" min="3" max="20" step="1" value="9">
+        <span class="val" id="valDur">9 秒 / 步（可拖动调节）</span>
+      </div>
+    </div>
+  </section>
+  <aside>
+    <div class="card k1" id="card1">
+      <h4>① 定义与几何模型（蓝）</h4>
+      <span class="formula">√a&nbsp;(a ≥ 0)</span> 叫做二次根式，其中 "√" 是二次根号。<br>
+      <b>教材原生模型：</b>正方形面积为 S，则边长 = <span class="formula">√S</span>。<br>
+      如 S=9 → 边长 √9=3；S=2 → 边长 √2。面积决定边长，这就是二次根式的来源。
+    </div>
+    <div class="card k2" id="card2">
+      <h4>② 双重非负性（绿）</h4>
+      <span class="formula">a ≥ 0</span> 且 <span class="formula">√a ≥ 0</span><br>
+      ① 被开方数非负：a&lt;0 时 √a 无意义；② 运算结果非负：根号出来的是<b>算术平方根</b>。<br>
+      几何解释：正方形的<b>面积</b>不能为负，<b>边长</b>也不能为负。
+    </div>
+    <div class="card k3" id="card3">
+      <h4>③ 性质 1（紫）</h4>
+      <span class="formula">(√a)² = a&nbsp;&nbsp;(a ≥ 0)</span><br>
+      先开方、再平方 → 还原回<b>本身</b>。几何：边长 √a 再自乘一次，恰好得到面积 a。例：(√5)² = 5，(√9)² = 9。
+    </div>
+    <div class="card k4" id="card4">
+      <h4>④ 性质 2 与易错警示（红）</h4>
+      <span class="formula">√(a²) = |a|&nbsp;&nbsp;(a 取任意实数)</span><br>
+      先平方、再开方 → 结果等于<b>绝对值</b>。
+      <div class="warnbox">⚠ 易错警示：当 a = −3 时，√((−3)²) = √9 = 3，而 3 <b>≠</b> −3！<br>所以 √(a²) = <b>|a|</b>，而不是 a。只有 a≥0 时才等于 a 本身。</div>
+    </div>
+    <div class="card" id="cardEx" style="border-left-color:#0ea5e9">
+      <h4>✏️ 例题原型：二次根式有意义的条件</h4>
+      x 为何值时 <span class="formula">√(4−3x)</span> 有意义？<br>
+      条件：被开方数 4−3x ≥ 0 ⇔ <b>x ≤ 4/3 ≈ 1.33</b>
+      <div class="exrow">
+        <label>拖动 x：</label><input type="range" id="slX" min="-2" max="3" step="0.5" value="1">
+        <span id="exVal"></span>
+      </div>
+    </div>
+  </aside>
+</main>
+<footer>
+  <div class="fbox a">（√a）² = a <small>a≥0 ｜ 先开后平 → 等于本身</small></div>
+  <div class="fbox b">√(a²) = |a| <small>a 取任意数 ｜ 先平后开 → 等于绝对值</small></div>
+  <div class="ftip">口诀：先开后平等于本身，先平后开等于绝对值</div>
+</footer>
+
+<script>
+"use strict";
+const state = { step: 0, playing: false, S: 9, a: -3, dur: 9 };
+const $ = id => document.getElementById(id);
+const fmt = x => String(Number((+x).toFixed(2)));
+const clampN = (v, lo, hi) => Math.max(lo, Math.min(hi, v));
+
+/* ================= SVG 渲染 ================= */
+function render(){
+  $("stage").innerHTML = state.step === 4 ? drawLine() : drawSquare();
+  $("ctrlS").style.display = state.step === 4 ? "none" : "flex";
+  $("ctrlA").style.display = state.step === 4 ? "flex" : "none";
+  $("valS").textContent = `S=${fmt(state.S)}，边长√S=${fmt(Math.sqrt(state.S))}`;
+  $("valA").textContent = `a=${state.a}，|a|=${Math.abs(state.a)}`;
+  /* 滑块与画面同步（自动播放时滑块也跟着走，可直观看到“点”在 x 轴上移动） */
+  $("slS").value = state.S;
+  $("slA").value = state.a;
+  for (let i = 1; i <= 4; i++){
+    $("ch" + i).classList.toggle("on", state.step === i);
+    const c = $("card" + i);
+    c.classList.toggle("active", state.step === i);
+    c.classList.toggle("done", state.step > i);
+  }
+}
+function drawSquare(){
+  const S = clampN(state.S, 0, 16), r = Math.sqrt(S);
+  const side = 46 * Math.max(r, 0.001), cx = 320, by = 480;
+  const x = cx - side / 2, y = by - side;
+  const fill = { 0: "#eef2ff", 1: "#dbeafe", 2: "#d1fae5", 3: "#ede9fe" }[state.step] || "#eef2ff";
+  const accent = { 0: "#64748b", 1: "#2563eb", 2: "#10b981", 3: "#8b5cf6" }[state.step] || "#64748b";
+  let s = "";
+  /* 标题 */
+  s += `<text x="310" y="40" text-anchor="middle" font-size="19" font-weight="800" fill="${accent}">${
+    state.step === 3 ? "性质1：(√a)² = a —— 边长自乘，还原面积"
+    : state.step === 2 ? "双重非负性：面积 S ≥ 0，边长 √S ≥ 0"
+    : state.step === 1 ? "几何模型：正方形面积 S → 边长 √S"
+    : "正方形模型：面积 S ⇄ 边长 √S（拖动下方滑块）"}</text>`;
+  /* 正方形 */
+  s += `<rect x="${x}" y="${y}" width="${side}" height="${side}" fill="${fill}" fill-opacity=".95" stroke="#334155" stroke-width="3" rx="3"/>`;
+  s += `<text x="${cx}" y="${y + side / 2 - 4}" text-anchor="middle" font-size="24" font-weight="800" fill="#0f172a" class="mono">S = ${fmt(S)}</text>`;
+  s += `<text x="${cx}" y="${y + side / 2 + 20}" text-anchor="middle" font-size="13" fill="#64748b">面积</text>`;
+  /* 边长标注（顶边） */
+  s += `<line x1="${x}" y1="${y - 26}" x2="${x + side}" y2="${y - 26}" stroke="#475569" stroke-width="2"/>`;
+  s += `<line x1="${x}" y1="${y - 32}" x2="${x}" y2="${y - 20}" stroke="#475569" stroke-width="2"/>`;
+  s += `<line x1="${x + side}" y1="${y - 32}" x2="${x + side}" y2="${y - 20}" stroke="#475569" stroke-width="2"/>`;
+  s += `<text x="${cx}" y="${y - 38}" text-anchor="middle" font-size="17" font-weight="700" fill="#1d4ed8" class="mono">边长 = √S = ${fmt(r)}</text>`;
+  /* 右边边长标注 */
+  s += `<line x1="${x + side + 26}" y1="${y}" x2="${x + side + 26}" y2="${by}" stroke="#475569" stroke-width="2"/>`;
+  s += `<text x="${x + side + 40}" y="${by - side / 2}" font-size="15" font-weight="700" fill="#1d4ed8" class="mono">√S</text>`;
+  /* 第2步：双重非负 徽章 */
+  if (state.step >= 2){
+    const on = state.step === 2 ? "pulse" : "";
+    s += `<g class="${on}">
+      <rect x="34" y="80" width="196" height="46" rx="10" fill="#d1fae5" stroke="#10b981" stroke-width="2.5"/>
+      <text x="132" y="109" text-anchor="middle" font-size="15.5" font-weight="700" fill="#065f46">① 被开方数 S ≥ 0 ✓</text>
+      <rect x="34" y="140" width="196" height="46" rx="10" fill="#d1fae5" stroke="#10b981" stroke-width="2.5"/>
+      <text x="132" y="169" text-anchor="middle" font-size="15.5" font-weight="700" fill="#065f46">② 结果 √S ≥ 0 ✓</text>
+      <text x="132" y="215" text-anchor="middle" font-size="13.5" fill="#065f46">面积、边长都不能为负！</text></g>`;
+  }
+  /* 第3步：边长高亮 + 演示式 */
+  if (state.step === 3){
+    s += `<rect x="${x}" y="${y - 8}" width="${side}" height="8" fill="#f59e0b" class="pulse"/>`;
+    s += `<text x="310" y="500" text-anchor="middle" font-size="17" font-weight="800" fill="#7c3aed" class="mono fadein">(√${fmt(S)})² = ${fmt(S)} ✔ （a≥0 时还原为本身）</text>`;
+    s += `<text x="34" y="80" font-size="15.5" font-weight="700" fill="#7c3aed">边长 √a 自乘一次：</text>`;
+    s += `<text x="34" y="110" font-size="15" fill="#475569" class="mono">√a × √a = a</text>`;
+  }
+  if (state.step === 1){
+    s += `<text x="34" y="80" font-size="15.5" font-weight="700" fill="#2563eb">面积 S 变 → 边长 √S 随之变</text>`;
+    s += `<text x="34" y="108" font-size="14" fill="#475569" class="mono">S=9 → √9=3；S=2 → √2</text>`;
+  }
+  return s;
+}
+function drawLine(){
+  const a = state.a, cx = 310, y = 400, u = 48;
+  let s = `<text x="310" y="38" text-anchor="middle" font-size="19" font-weight="800" fill="#ef4444">性质2：√(a²) = |a| （a 可取任意实数）</text>`;
+  /* 正负区域底色 */
+  s += `<rect x="${cx - 5 * u}" y="${y - 14}" width="${5 * u}" height="28" fill="#fee2e2" rx="4"/>`;
+  s += `<rect x="${cx}" y="${y - 14}" width="${5 * u}" height="28" fill="#d1fae5" rx="4"/>`;
+  /* 数轴 */
+  s += `<line x1="${cx - 5 * u - 30}" y1="${y}" x2="${cx + 5 * u + 30}" y2="${y}" stroke="#334155" stroke-width="2.5"/>`;
+  s += `<path d="M${cx + 5 * u + 30},${y} l-10,-5 v10 Z" fill="#334155"/>`;
+  for (let k = -5; k <= 5; k++){
+    s += `<line x1="${cx + k * u}" y1="${y - 7}" x2="${cx + k * u}" y2="${y + 7}" stroke="#334155" stroke-width="2"/>`;
+    s += `<text x="${cx + k * u}" y="${y + 26}" text-anchor="middle" font-size="13" fill="#64748b" class="mono">${k}</text>`;
+  }
+  s += `<text x="${cx + 5 * u + 40}" y="${y + 5}" font-size="13" fill="#64748b">x</text>`;
+  /* a 点 与 |a| 点 */
+  const pa = cx + a * u, pm = cx + Math.abs(a) * u;
+  s += `<circle cx="${pm}" cy="${y}" r="9" fill="#2563eb" class="fadein"/><text x="${pm}" y="${y - 22}" text-anchor="middle" font-size="15" font-weight="800" fill="#2563eb" class="mono">|a| = ${Math.abs(a)}</text>`;
+  s += `<circle cx="${pa}" cy="${y}" r="9" fill="#dc2626" class="fadein"/><text x="${pa}" y="${y + 50}" text-anchor="middle" font-size="15" font-weight="800" fill="#dc2626" class="mono">a = ${a}</text>`;
+  if (a < 0){
+    s += `<path d="M${pa},${y - 40} Q${(pa + pm) / 2},${y - 78} ${pm},${y - 40}" fill="none" stroke="#dc2626" stroke-width="2" stroke-dasharray="5 4"/>`;
+    s += `<text x="${(pa + pm) / 2}" y="${y - 84}" text-anchor="middle" font-size="13.5" font-weight="700" fill="#dc2626">两点不重合 → 结果 ≠ a</text>`;
+  } else {
+    s += `<text x="${(pa + pm) / 2}" y="${y - 50}" text-anchor="middle" font-size="13.5" font-weight="700" fill="#059669">a ≥ 0：两点重合 → 结果 = a 本身</text>`;
+  }
+  /* 推导链 */
+  const warn = a < 0;
+  s += `<g class="fadein">
+    <text x="310" y="76" text-anchor="middle" font-size="19" font-weight="800" fill="#0f172a" class="mono">a = ${a}</text>
+    <text x="310" y="114" text-anchor="middle" font-size="19" font-weight="700" fill="#334155" class="mono">先平方：a² = (${a})² = ${a * a}</text>
+    <text x="310" y="152" text-anchor="middle" font-size="19" font-weight="700" fill="#2563eb" class="mono">再开方：√(a²) = √${a * a} = ${Math.abs(a)}</text>
+    <text x="310" y="196" text-anchor="middle" font-size="${warn ? 18 : 17}" font-weight="800" fill="${warn ? "#dc2626" : "#059669"}" class="mono">${
+      warn ? `⚠ ${Math.abs(a)} ≠ ${a}（不是 a 本身）！但 |${a}| = ${Math.abs(a)} ✔ 即 √(a²) = |a|`
+           : `✔ a ≥ 0 时：√(a²) = ${Math.abs(a)} = a = |a|（三种写法一致）`}</text>
+    ${warn ? `<text x="310" y="228" text-anchor="middle" font-size="13.5" font-weight="700" fill="#b91c1c">易错点：把结果写成 ${a} 是错误的！负数开平方前要先平方，出来必须是非负数。</text>` : ""}
+  </g>`;
+  return s;
+}
+
+/* ================= 分步播放（可调速） ================= */
+const SEQ = [1, 2, 3, 4];
+let playTimer = null, playIdx = 0, animToken = 0, sweepTimer = null;
+
+function cancelAnim(){ animToken++; clearTimeout(sweepTimer); }
+/* 缓动补间：delay 毫秒后开始，dur 毫秒完成 */
+function tween(key, to, dur, done, delay){
+  const tk = ++animToken, from = state[key];
+  setTimeout(() => {
+    if (tk !== animToken) return;
+    const t0 = performance.now();
+    (function f(t){
+      if (tk !== animToken) return;
+      const p = Math.min(1, (t - t0) / dur);
+      const e = p < .5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+      state[key] = from + (to - from) * e;
+      render();
+      if (p < 1) requestAnimationFrame(f);
+      else { state[key] = to; render(); done && done(); }
+    })(t0);
+  }, delay || 0);
+}
+/* 第4步：让点沿 x 轴一格一格地移动（5 → −5），整数取值便于读数 */
+function sweepA(){
+  const tk = ++animToken;
+  const seq = [5, 4, 3, 2, 1, 0, -1, -2, -3, -4, -5];
+  const per = Math.max(420, state.dur * 1000 * 0.058);   // 每格停留时间随“每步时长”缩放
+  let i = 1;
+  state.a = seq[0]; render();
+  const step = () => {
+    if (tk !== animToken) return;
+    state.a = seq[i]; render();
+    i++;
+    if (i < seq.length) sweepTimer = setTimeout(step, per);
+  };
+  sweepTimer = setTimeout(step, per);
+}
+function applyStep(i){
+  cancelAnim();
+  state.step = i; render();
+  const d = state.dur * 1000;
+  if (i === 1){
+    tween("S", state.S >= 9 ? 4 : 9, d * 0.22, () => tween("S", 9, d * 0.22));
+  }
+  if (i === 3){
+    tween("S", 9, d * 0.35);
+  }
+  if (i === 4){
+    setTimeout(() => { if (state.step === 4) sweepA(); }, d * 0.08);
+  }
+}
+function tick(){
+  if (playIdx >= SEQ.length){ stopPlay(); return; }
+  applyStep(SEQ[playIdx++]);
+}
+function startPlay(){
+  if (state.playing) return;
+  state.playing = true; $("btnPlay").textContent = "⏸ 暂停";
+  if (playIdx >= SEQ.length) playIdx = 0;
+  applyStep(SEQ[playIdx++]);
+  playTimer = setInterval(tick, state.dur * 1000 + 700);
+}
+function restartTimer(){
+  if (!state.playing) return;
+  clearInterval(playTimer);
+  playTimer = setInterval(tick, state.dur * 1000 + 700);
+}
+function stopPlay(){
+  state.playing = false; clearInterval(playTimer); playTimer = null;
+  cancelAnim();
+  $("btnPlay").textContent = "▶ 播放分步演示";
+}
+$("btnPlay").addEventListener("click", () => state.playing ? stopPlay() : startPlay());
+$("btnNext").addEventListener("click", () => {
+  stopPlay();
+  const nxt = state.step >= 4 ? 1 : state.step + 1;
+  playIdx = nxt;                 // 接着手动推进
+  applyStep(nxt);
+});
+$("btnReset").addEventListener("click", () => {
+  stopPlay(); playIdx = 0;
+  state.step = 0; state.S = 9; state.a = -3;
+  $("slS").value = 9; $("slA").value = -3; $("slX").value = 1;
+  render(); updEx();
+});
+/* 每步时长可调 */
+$("slDur").addEventListener("input", e => {
+  state.dur = +e.target.value;
+  $("valDur").textContent = `${state.dur} 秒 / 步（可拖动调节）`;
+  restartTimer();
+});
+/* 滑块手动拖动时打断动画；重新播放时会从当前步骤继续 */
+$("slS").addEventListener("input", e => { cancelAnim(); state.S = +e.target.value; render(); });
+$("slA").addEventListener("input", e => { cancelAnim(); state.a = +e.target.value; render(); });
+
+/* ================= 例题：√(4−3x) ================= */
+function updEx(){
+  const x = +$("slX").value, v = 4 - 3 * x;
+  $("exVal").innerHTML = v >= 0
+    ? `<span class="exok">x=${x}：4−3x=${fmt(v)} ≥ 0 ✔ 有意义，√(4−3x) = ${fmt(Math.sqrt(v))}</span>`
+    : `<span class="exno">x=${x}：4−3x=${fmt(v)} &lt; 0 ✘ 无意义！</span>`;
+}
+$("slX").addEventListener("input", updEx);
+
+render(); updEx();
+</script>
+</body>
+</html>

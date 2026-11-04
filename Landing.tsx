@@ -931,7 +931,7 @@ export default function LandingPage({
                     ]},
                   ]},
               ].map((doc) => (
-                <button type="button" key={doc.title} onClick={() => setSelectedDoc(doc)} className="liquid-glass rounded-2xl p-7 min-h-56 flex flex-col text-left group focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan/70">
+                <button type="button" key={doc.title} onClick={() => setSelectedDoc(doc as NonNullable<typeof selectedDoc>)} className="liquid-glass rounded-2xl p-7 min-h-56 flex flex-col text-left group focus:outline-none focus-visible:ring-2 focus-visible:ring-cyan/70">
                   <div className="w-11 h-11 rounded-xl bg-cyan/10 border border-cyan/20 flex items-center justify-center">
                     <doc.icon className="w-5 h-5 text-cyan" />
                   </div>

@@ -1,0 +1,678 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>复数的几何意义 · 交互模型</title>
+<style>
+  :root{
+    --ink:#1e293b;
+    --ink-2:#475569;
+    --muted:#94a3b8;
+    --line:#e2e8f0;
+    --bg:#f4f6fb;
+    --card:#ffffff;
+    --indigo:#4f46e5;
+    --indigo-soft:#eef0ff;
+    --rose:#e11d48;
+    --amber:#d97706;
+    --amber-soft:#fff7e6;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:
+      radial-gradient(1200px 600px at 20% -10%, #e9edff 0%, rgba(233,237,255,0) 60%),
+      var(--bg);
+    color:var(--ink);
+    font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,-apple-system,"Segoe UI",sans-serif;
+    min-height:100vh;
+    padding:28px 24px 40px;
+  }
+  .app{max-width:1180px;margin:0 auto;}
+  header{margin-bottom:20px;}
+  .tag{
+    display:inline-flex;align-items:center;gap:8px;
+    font-size:12px;letter-spacing:.06em;color:var(--indigo);
+    background:var(--indigo-soft);border:1px solid #dfe3ff;
+    padding:5px 12px;border-radius:999px;font-weight:600;
+  }
+  h1{font-size:28px;line-height:1.3;margin:12px 0 6px;letter-spacing:.01em;}
+  .sub{margin:0;color:var(--ink-2);font-size:14.5px;}
+  main{display:grid;grid-template-columns:minmax(0,1fr) 350px;gap:22px;align-items:start;}
+
+  .stage{
+    position:relative;background:var(--card);border:1px solid var(--line);
+    border-radius:18px;box-shadow:0 10px 30px -18px rgba(30,41,59,.35);
+    overflow:hidden;
+  }
+  .stage svg{display:block;width:100%;height:auto;touch-action:none;cursor:default;}
+  .hint{
+    position:absolute;left:16px;bottom:14px;
+    font-size:12.5px;color:var(--muted);background:rgba(255,255,255,.85);
+    padding:5px 10px;border-radius:8px;border:1px solid var(--line);
+    pointer-events:none;
+  }
+  .panel{display:flex;flex-direction:column;gap:14px;}
+  .card{
+    background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:16px 16px 15px;box-shadow:0 8px 24px -20px rgba(30,41,59,.45);
+  }
+  .card-title{
+    display:flex;align-items:center;gap:8px;
+    font-size:12.5px;font-weight:700;color:var(--ink-2);letter-spacing:.04em;
+    margin-bottom:12px;
+  }
+  .dot{width:8px;height:8px;border-radius:50%;}
+  .dot.indigo{background:var(--indigo);}
+  .dot.amber{background:var(--amber);}
+  .dot.rose{background:var(--rose);}
+
+  .zline{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;}
+  .zlabel{font-size:16px;color:var(--ink-2);}
+  .zval{
+    font-size:30px;font-weight:600;letter-spacing:.01em;color:var(--ink);
+    font-family:"Cambria Math","STIX Two Math","Times New Roman",serif;
+  }
+  .zval i{font-style:italic;padding-right:1px;}
+  .map{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:14px;}
+  .chip{
+    font-size:12.5px;color:var(--ink-2);background:#f8fafc;border:1px solid var(--line);
+    padding:5px 9px;border-radius:8px;
+  }
+  .chip b{color:var(--indigo);font-weight:600;}
+  .map .sep{color:var(--muted);font-size:12px;}
+
+  .formula{
+    font-family:"Cambria Math","STIX Two Math","Times New Roman",serif;
+    font-size:16px;line-height:1.85;color:var(--ink);
+    word-break:break-word;
+  }
+  .formula .val{color:var(--amber);font-weight:600;}
+  .formula .small{font-size:13px;color:var(--ink-2);font-family:"PingFang SC","Microsoft YaHei",sans-serif;}
+  .note{margin-top:10px;font-size:12px;color:var(--muted);line-height:1.7;}
+  .tag-fixed{
+    display:inline-block;font-size:11px;font-family:"PingFang SC","Microsoft YaHei",sans-serif;
+    color:#b45309;background:var(--amber-soft);border:1px solid #fde68a;
+    padding:1px 6px;border-radius:6px;
+  }
+  .define{
+    display:flex;align-items:center;gap:7px;flex-wrap:wrap;
+    margin-top:13px;padding-top:12px;border-top:1px dashed var(--line);
+    font-size:12.5px;color:var(--muted);
+  }
+  .define input{
+    width:62px;padding:6px 8px;border:1px solid var(--line);border-radius:8px;
+    background:#fbfcfe;font:inherit;font-size:13px;color:var(--ink);
+    font-family:"Cambria Math","Times New Roman",serif;text-align:center;
+  }
+  .define input:focus{
+    outline:none;border-color:#c7cffb;box-shadow:0 0 0 3px rgba(79,70,229,.1);
+  }
+  .define .i{font-family:"Cambria Math","Times New Roman",serif;font-style:italic;color:var(--ink-2);}
+  .define .btn{padding:6px 12px;margin-left:auto;font-family:inherit;font-size:12.5px;}
+  .row.radiusRow{display:none;}
+  .row.radiusRow.show{display:flex;}
+  .radiusRow input{
+    width:70px;padding:5px 8px;border:1px solid var(--line);border-radius:8px;
+    background:#fffdf7;font:inherit;font-size:13px;color:#b45309;text-align:center;
+    font-family:"Cambria Math","Times New Roman",serif;font-weight:600;
+  }
+  .radiusRow input:focus{outline:none;border-color:#fcd34d;box-shadow:0 0 0 3px rgba(245,158,11,.14);}
+
+  .row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:9px 0;}
+  .row:first-of-type{margin-top:0;}
+  .row-label{font-size:13px;color:var(--ink-2);}
+  .switch{
+    position:relative;width:40px;height:22px;border-radius:999px;background:#dbe1ea;
+    cursor:pointer;transition:background .2s;flex:none;
+  }
+  .switch::after{
+    content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;
+    background:#fff;box-shadow:0 1px 3px rgba(15,23,42,.25);transition:transform .2s;
+  }
+  .switch.on{background:var(--indigo);}
+  .switch.on::after{transform:translateX(18px);}
+  .presets{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:12px;}
+  .btn{
+    appearance:none;border:1px solid var(--line);background:#fbfcfe;color:var(--ink-2);
+    font:inherit;font-size:12.5px;padding:8px 6px;border-radius:9px;cursor:pointer;
+    transition:all .15s;font-family:"Cambria Math","Times New Roman",serif;
+  }
+  .btn:hover{border-color:#c7cffb;background:var(--indigo-soft);color:var(--indigo);}
+  .btn.wide{grid-column:1 / -1;font-family:inherit;}
+  footer{
+    margin-top:22px;padding-top:16px;border-top:1px solid var(--line);
+    font-size:12px;color:var(--muted);line-height:1.8;
+  }
+  footer b{color:var(--ink-2);font-weight:600;}
+
+  @media (max-width:920px){
+    main{grid-template-columns:minmax(0,1fr);}
+    .panel{flex-direction:row;flex-wrap:wrap;}
+    .panel .card{flex:1 1 300px;}
+    h1{font-size:23px;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="tag">人教A版 · 必修第二册 · 第七章 复数 · 7.1.2</div>
+    <h1>复数的几何意义</h1>
+    <p class="sub">在复平面内拖动点 Z，同步观察复数、坐标、向量与模的变化</p>
+  </header>
+
+  <main>
+    <section class="stage">
+      <svg id="plane" viewBox="0 0 700 640" aria-label="复平面交互图" role="img">
+        <defs>
+          <marker id="arrowAxis" viewBox="0 0 10 10" refX="8" refY="5"
+                  markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8"/>
+          </marker>
+          <marker id="arrowVec" viewBox="0 0 10 10" refX="9" refY="5"
+                  markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#4f46e5"/>
+          </marker>
+        </defs>
+        <g id="gridLayer"></g>
+        <g id="axisLayer"></g>
+        <g id="dynLayer"></g>
+      </svg>
+      <div class="hint">拖动红色点 Z 移动</div>
+    </section>
+
+    <aside class="panel">
+      <div class="card">
+        <div class="card-title"><span class="dot indigo"></span>当前复数 z</div>
+        <div class="zline">
+          <span class="zlabel">z =</span>
+          <span class="zval" id="zVal">3 + 4<i>i</i></span>
+        </div>
+        <div class="map">
+          <span class="chip">点 Z(<b id="coordVal">3, 4</b>)</span>
+          <span class="sep">↔</span>
+          <span class="chip">向量 <b>OZ</b> = (<b id="vecVal">3, 4</b>)</span>
+        </div>
+        <div class="define">
+          <span>自定义 z =</span>
+          <input id="inA" type="number" step="0.1" value="3" aria-label="实部 a">
+          <span>+</span>
+          <input id="inB" type="number" step="0.1" value="4" aria-label="虚部 b">
+          <span class="i">i</span>
+          <button class="btn" id="btnApply">定义</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="dot amber"></span>复数的模 |z|</div>
+        <div class="formula" id="modFormula">|z| = √(3² + 4²) = √25 = <span class="val">5</span></div>
+        <div class="note" id="modNote">模就是向量 OZ 的长度，|z| ≥ 0；当且仅当 z = 0 时 |z| = 0。</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="dot rose"></span>显示设置</div>
+        <div class="row">
+          <span class="row-label">显示模的辅助三角形</span>
+          <div class="switch on" id="swTri" role="switch" tabindex="0"></div>
+        </div>
+        <div class="row">
+          <span class="row-label">固定圆：|z| 保持不变</span>
+          <div class="switch" id="swCircle" role="switch" tabindex="0"></div>
+        </div>
+        <div class="row radiusRow" id="radiusRow">
+          <span class="row-label">固定半径 R</span>
+          <input id="inR" type="number" min="0.5" max="6" step="0.5" value="5" aria-label="固定半径 R">
+        </div>
+        <div class="presets">
+          <button class="btn" data-a="3" data-b="4">3 + 4i</button>
+          <button class="btn" data-a="1" data-b="1">1 + i</button>
+          <button class="btn" data-a="-2" data-b="3">−2 + 3i</button>
+          <button class="btn" data-a="0" data-b="5">5i</button>
+          <button class="btn wide" id="btnReset">复位</button>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <footer>
+    <b>教材原话：</b>z = a + bi 与点 Z(a, b) 一一对应，也与向量 OZ 一一对应；
+    |z| = |a + bi| = √(a² + b²) 叫做复数 z 的模。<br>
+    拖动点 Z 时，三个对象同步变化：一个复数 ↔ 复平面内一个点 ↔ 一个向量。<br>
+    开启“固定圆”后，|z| 保持不变，点 Z 只能沿以原点为圆心、半径 R 的圆运动——这正是“模相等的点组成一个圆”。
+  </footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var W = 700, H = 640;
+  var OX = 350, OY = 320;        // 原点位置
+  var U  = 50;                   // 每个单位对应的像素
+  var A_MIN = -6.4, A_MAX = 6.4; // 实部范围
+  var B_MIN = -5.9, B_MAX = 5.9; // 虚部范围
+
+  var svg      = document.getElementById('plane');
+  var gridLayer= document.getElementById('gridLayer');
+  var axisLayer= document.getElementById('axisLayer');
+  var dynLayer = document.getElementById('dynLayer');
+
+  var inA = document.getElementById('inA');
+  var inB = document.getElementById('inB');
+  var inR = document.getElementById('inR');
+
+  var state = { a: 3, b: 4, tri: true, circle: false, fixedR: 5 };
+
+  /* ---------- 静态图层：网格与坐标轴 ---------- */
+  function buildStatic(){
+    var s = '';
+    var x, y;
+    // 网格
+    for (x = Math.ceil((0 - OX) / U); x <= Math.floor((W - OX) / U); x++){
+      var px = OX + x * U;
+      s += '<line x1="' + px + '" y1="0" x2="' + px + '" y2="' + H +
+           '" stroke="#eef1f7" stroke-width="1"/>';
+    }
+    for (y = Math.ceil((0 - OY) / U); y <= Math.floor((H - OY) / U); y++){
+      var py = OY - y * U;
+      s += '<line x1="0" y1="' + py + '" x2="' + W + '" y2="' + py +
+           '" stroke="#eef1f7" stroke-width="1"/>';
+    }
+    gridLayer.innerHTML = s;
+
+    var ax = '';
+    // 坐标轴
+    ax += '<line x1="10" y1="' + OY + '" x2="' + (W - 10) + '" y2="' + OY +
+          '" stroke="#94a3b8" stroke-width="1.6" marker-end="url(#arrowAxis)"/>';
+    ax += '<line x1="' + OX + '" y1="' + (H - 10) + '" x2="' + OX + '" y2="10"' +
+          ' stroke="#94a3b8" stroke-width="1.6" marker-end="url(#arrowAxis)"/>';
+    // 轴名
+    ax += '<text x="' + (W - 26) + '" y="' + (OY + 24) + '" fill="#64748b" ' +
+          'font-size="14" font-style="italic" font-family="Cambria Math, Times New Roman, serif">Re</text>';
+    ax += '<text x="' + (OX + 12) + '" y="24" fill="#64748b" ' +
+          'font-size="14" font-style="italic" font-family="Cambria Math, Times New Roman, serif">Im</text>';
+    // 原点
+    ax += '<text x="' + (OX - 12) + '" y="' + (OY + 18) + '" fill="#64748b" ' +
+          'font-size="13" font-style="italic" font-family="Cambria Math, Times New Roman, serif">O</text>';
+
+    // 刻度数字
+    for (x = 1; x <= 6; x++){
+      ax += tick(OX + x * U, OY + 17, String(x));
+      ax += tick(OX - x * U, OY + 17, '−' + x);
+    }
+    for (y = 1; y <= 5; y++){
+      ax += tick(OX - 9, OY - y * U + 4, String(y), 'end');
+      ax += tick(OX - 9, OY + y * U + 4, '−' + y, 'end');
+    }
+    axisLayer.innerHTML = ax;
+  }
+  function tick(x, y, t, anchor){
+    return '<text x="' + x + '" y="' + y + '" fill="#b0bac8" font-size="11" ' +
+           'text-anchor="' + (anchor || 'middle') + '">' + t + '</text>';
+  }
+
+  /* ---------- 数字格式化 ---------- */
+  function num(v){
+    var r = Math.round(v * 100) / 100;
+    if (Object.is(r, -0)) r = 0;
+    var s = String(r);
+    return s.replace('-', '−');
+  }
+  // number 输入框只能接受 ASCII 负号
+  function plainNum(v){
+    var r = Math.round(v * 100) / 100;
+    if (Object.is(r, -0)) r = 0;
+    return String(r);
+  }
+  // 半径统一保留三位小数，避免与 |z| 的显示精度不一致
+  function num3(v){
+    var r = Math.round(v * 1000) / 1000;
+    if (Object.is(r, -0)) r = 0;
+    return String(r);
+  }
+  function isInt(v){ return Math.abs(v - Math.round(v)) < 1e-9; }
+  function fmtComplex(a, b){
+    var ai = isInt(a), bi = isInt(b);
+    var re = num(a), im = num(b);
+    if (Math.abs(b) < 1e-9) return '<span>' + re + '</span>';
+    var imStr;
+    if (isInt(b) && Math.abs(Math.abs(b) - 1) < 1e-9){
+      imStr = '<i>i</i>';
+    } else {
+      imStr = im + '<i>i</i>';
+    }
+    if (Math.abs(a) < 1e-9) return (b < 0 ? '−' : '') + imStr;
+    var sign = b < 0 ? ' − ' : ' + ';
+    return re + sign + (b < 0 ? im.replace('−', '') : im) + '<i>i</i>';
+  }
+  // 化简根式 √n = k√m
+  function radical(n){
+    var out = 1, inner = n, i = 2;
+    while (i * i <= inner){
+      while (inner % (i * i) === 0){ inner /= i * i; out *= i; }
+      i++;
+    }
+    return { out: out, inner: inner };
+  }
+
+  /* ---------- 动态图层 ---------- */
+  function render(){
+    var a = state.a, b = state.b;
+    var X = OX + a * U;
+    var Y = OY - b * U;
+    var len = Math.sqrt(a * a + b * b);
+
+    var out = '';
+
+    // 固定圆：|z| = R，拖点时半径不变
+    if (state.circle){
+      var Rpx = state.fixedR * U;
+      out += '<circle cx="' + OX + '" cy="' + OY + '" r="' + Rpx +
+             '" fill="rgba(245,158,11,0.06)" stroke="#f59e0b" stroke-width="1.8"/>';
+      var qx = OX - 0.7071 * Rpx, qy = OY + 0.7071 * Rpx;
+      out += '<text x="' + qx + '" y="' + (qy - 9) + '" font-size="12.5" fill="#b45309" ' +
+             'text-anchor="middle" stroke="#fff" stroke-width="4" paint-order="stroke" ' +
+             'font-family="Cambria Math, Times New Roman, serif">R = ' + num3(state.fixedR) + '</text>';
+    }
+
+    // 辅助三角形
+    if (state.tri){
+      out += '<polygon points="' + OX + ',' + OY + ' ' + X + ',' + OY + ' ' + X + ',' + Y +
+             '" fill="rgba(79,70,229,0.07)" stroke="none"/>';
+      out += '<line x1="' + X + '" y1="' + Y + '" x2="' + X + '" y2="' + OY +
+             '" stroke="#a5b4fc" stroke-width="1.6" stroke-dasharray="5 4"/>';
+      out += '<line x1="' + X + '" y1="' + Y + '" x2="' + OX + '" y2="' + Y +
+             '" stroke="#a5b4fc" stroke-width="1.6" stroke-dasharray="5 4"/>';
+      // 直角标记
+      var sx = a >= 0 ? 12 : -12, sy = b >= 0 ? -12 : 12;
+      out += '<path d="M ' + X + ' ' + (OY + sy) + ' L ' + (X + sx) + ' ' + (OY + sy) +
+             ' L ' + (X + sx) + ' ' + OY + '" fill="none" stroke="#c7d2fe" stroke-width="1.2"/>';
+      // 实部、虚部的长度标注
+      out += '<text x="' + (X + (a >= 0 ? 10 : -10)) + '" y="' + (OY + (b >= 0 ? 22 : -10)) +
+             '" font-size="12" fill="#64748b" text-anchor="' + (a >= 0 ? 'start' : 'end') +
+             '" font-family="Cambria Math, Times New Roman, serif">a = ' + num(a) + '</text>';
+      out += '<text x="' + (X + (a >= 0 ? -10 : 10)) + '" y="' + ((Y + OY) / 2 + 4) +
+             '" font-size="12" fill="#64748b" text-anchor="' + (a >= 0 ? 'end' : 'start') +
+             '" font-family="Cambria Math, Times New Roman, serif">b = ' + num(b) + '</text>';
+    }
+
+    // 向量 OZ
+    out += '<line x1="' + OX + '" y1="' + OY + '" x2="' + X + '" y2="' + Y +
+           '" stroke="#4f46e5" stroke-width="3" stroke-linecap="round" marker-end="url(#arrowVec)"/>';
+
+    // 坐标轴上的垂足
+    if (Math.abs(a) > 1e-9){
+      out += '<line x1="' + X + '" y1="' + OY + '" x2="' + X + '" y2="' + (OY + 5) +
+             '" stroke="#e11d48" stroke-width="0" />';
+      out += '<circle cx="' + X + '" cy="' + OY + '" r="3" fill="#e11d48"/>';
+    }
+    if (Math.abs(b) > 1e-9){
+      out += '<circle cx="' + OX + '" cy="' + Y + '" r="3" fill="#e11d48"/>';
+    }
+
+    // 动点 Z
+    out += '<circle cx="' + X + '" cy="' + Y + '" r="20" fill="transparent" ' +
+           'style="cursor:grab" id="hit"/>';
+    out += '<circle cx="' + X + '" cy="' + Y + '" r="8" fill="#e11d48" stroke="#fff" stroke-width="2.5"/>';
+    var lx = X + (a >= 0 ? 14 : -14), ly = Y + (b >= 0 ? -16 : 22);
+    out += '<text x="' + lx + '" y="' + ly + '" font-size="13.5" fill="#be123c" ' +
+           'text-anchor="' + (a >= 0 ? 'start' : 'end') +
+           '" font-family="Cambria Math, Times New Roman, serif">Z(' + num(a) + ', ' + num(b) + ')</text>';
+
+    // 模的数值标注（沿向量方向）
+    if (len > 1e-9){
+      var mx = (OX + X) / 2, my = (OY + Y) / 2;
+      var nx = -(Y - OY) / len, ny = (X - OX) / len;
+      out += '<text x="' + (mx + nx * 18) + '" y="' + (my + ny * 18 + 4) +
+             '" font-size="13" fill="#b45309" text-anchor="middle" ' +
+             'stroke="#fff" stroke-width="4" paint-order="stroke" ' +
+             'font-family="Cambria Math, Times New Roman, serif">|z|</text>';
+    }
+
+    dynLayer.innerHTML = out;
+
+    var hit = document.getElementById('hit');
+    if (hit) hit.addEventListener('pointerdown', startDrag);
+
+    var hintEl = document.querySelector('.hint');
+    if (hintEl){
+      hintEl.textContent = state.circle
+        ? '拖动点 Z：只能沿固定圆移动，|z| 保持不变'
+        : '拖动红色点 Z 移动';
+    }
+
+    updateReadouts(a, b);
+  }
+
+  function updateReadouts(a, b){
+    document.getElementById('zVal').innerHTML = fmtComplex(a, b);
+    document.getElementById('coordVal').textContent = num(a) + ', ' + num(b);
+    document.getElementById('vecVal').textContent = num(a) + ', ' + num(b);
+
+    var a2 = a * a, b2 = b * b, sum = a2 + b2;
+    var html = '|z| = √(' + num(a) + '² + ' + num(b) + '²)';
+
+    if (isInt(a) && isInt(b)){
+      var n = Math.round(sum);
+      html += ' = √' + n;
+      var r = radical(n);
+      var exact;
+      if (r.inner === 1) exact = String(r.out);
+      else exact = (r.out === 1 ? '' : r.out) + '√' + r.inner;
+      html += ' = <span class="val">' + exact + '</span>';
+      if (r.inner !== 1){
+        html += ' <span class="small">≈ ' + (Math.sqrt(n)).toFixed(3).replace('-','−') + '</span>';
+      }
+    } else {
+      html += ' = <span class="val">' + Math.sqrt(sum).toFixed(3).replace('-','−') + '</span>';
+    }
+
+    var note = '模就是向量 OZ 的长度，|z| ≥ 0；当且仅当 z = 0 时 |z| = 0。';
+    if (Math.abs(a) < 1e-9 && Math.abs(b) < 1e-9){
+      note = '此时 z = 0，点 Z 与原点 O 重合，所以 |z| = 0。';
+    } else if (isInt(a) && isInt(b) && Math.abs(sum - Math.pow(Math.round(Math.sqrt(sum)), 2)) < 1e-9){
+      note = '此时 |z| 恰为整数：复数的模就是点 Z 到原点的距离。';
+    }
+    if (state.circle){
+      html += ' <span class="tag-fixed">固定</span>';
+      note = '点 Z 被约束在半径 R = ' + num3(state.fixedR) + ' 的圆上：拖动时 a、b 在变，但 |z| 始终不变。';
+    }
+    document.getElementById('modFormula').innerHTML = html;
+    document.getElementById('modNote').textContent = note;
+
+    // 输入框回填（正在输入时不打断）
+    if (document.activeElement !== inA) inA.value = plainNum(a);
+    if (document.activeElement !== inB) inB.value = plainNum(b);
+  }
+
+  /* ---------- 拖动交互 ---------- */
+  var dragging = false;
+
+  function toSvg(evt){
+    var pt = svg.createSVGPoint();
+    pt.x = evt.clientX;
+    pt.y = evt.clientY;
+    return pt.matrixTransform(svg.getScreenCTM().inverse());
+  }
+  function clamp(v, lo, hi){ return v < lo ? lo : (v > hi ? hi : v); }
+
+  function startDrag(evt){
+    evt.preventDefault();
+    dragging = true;
+    svg.style.cursor = 'grabbing';
+    window.addEventListener('pointermove', onMove);
+    window.addEventListener('pointerup', endDrag);
+  }
+  function onMove(evt){
+    if (!dragging) return;
+    evt.preventDefault();
+    var p = toSvg(evt);
+
+    // 固定圆模式下：只改变方向，模保持不变
+    if (state.circle){
+      var dx = p.x - OX, dy = OY - p.y;
+      if (Math.sqrt(dx * dx + dy * dy) > 6){
+        placeOnCircle(Math.atan2(dy, dx));
+        render();
+      }
+      return;
+    }
+
+    var a = clamp((p.x - OX) / U, A_MIN, A_MAX);
+    var b = clamp((OY - p.y) / U, B_MIN, B_MAX);
+    if (a !== state.a || b !== state.b){
+      state.a = a; state.b = b;
+      render();
+    }
+  }
+  function endDrag(){
+    dragging = false;
+    svg.style.cursor = 'default';
+    window.removeEventListener('pointermove', onMove);
+    window.removeEventListener('pointerup', endDrag);
+    render();
+  }
+
+  // 点击空白处也可以移动点（固定圆模式下落到圆上）
+  svg.addEventListener('pointerdown', function(evt){
+    if (evt.target.id === 'hit') return;
+    var p = toSvg(evt);
+    if (p.x < 0 || p.x > W || p.y < 0 || p.y > H) return;
+    if (state.circle){
+      var dx = p.x - OX, dy = OY - p.y;
+      if (Math.sqrt(dx * dx + dy * dy) < 6) return;
+      placeOnCircle(Math.atan2(dy, dx));
+      render();
+      return;
+    }
+    state.a = clamp((p.x - OX) / U, A_MIN, A_MAX);
+    state.b = clamp((OY - p.y) / U, B_MIN, B_MAX);
+    render();
+  });
+
+  /* ---------- 自定义复数与固定圆 ---------- */
+  function placeOnCircle(theta){
+    state.a = state.fixedR * Math.cos(theta);
+    state.b = state.fixedR * Math.sin(theta);
+  }
+  // 让固定半径等于当前 |z|（定义新复数时同步更新圆）
+  function refitRadius(){
+    var len = Math.sqrt(state.a * state.a + state.b * state.b);
+    if (len < 0.5){
+      state.fixedR = 1;
+      state.a = 1; state.b = 0;
+    } else {
+      state.fixedR = len;
+    }
+    inR.value = num3(state.fixedR);
+  }
+  function setZ(a, b){
+    state.a = clamp(a, A_MIN, A_MAX);
+    state.b = clamp(b, B_MIN, B_MAX);
+    if (state.circle) refitRadius();
+    render();
+  }
+  function enableCircle(){
+    refitRadius();
+    document.getElementById('radiusRow').classList.add('show');
+  }
+  function disableCircle(){
+    document.getElementById('radiusRow').classList.remove('show');
+  }
+
+  /* ---------- 控件 ---------- */
+  function bindSwitch(id, key, onChange){
+    var el = document.getElementById(id);
+    function toggle(){
+      state[key] = !state[key];
+      el.classList.toggle('on', state[key]);
+      if (onChange) onChange();
+      render();
+    }
+    el.addEventListener('click', toggle);
+    el.addEventListener('keydown', function(e){
+      if (e.key === ' ' || e.key === 'Enter'){ e.preventDefault(); toggle(); }
+    });
+  }
+  bindSwitch('swTri', 'tri');
+  bindSwitch('swCircle', 'circle', function(){
+    if (state.circle) enableCircle(); else disableCircle();
+  });
+
+  // 固定半径 R
+  inR.addEventListener('input', function(){
+    var r = parseFloat(inR.value);
+    if (!isFinite(r)) return;
+    state.fixedR = clamp(r, 0.5, 6);
+    var th = (Math.abs(state.a) < 1e-9 && Math.abs(state.b) < 1e-9) ? 0 : Math.atan2(state.b, state.a);
+    placeOnCircle(th);
+    render();
+  });
+  inR.addEventListener('blur', function(){ inR.value = num3(state.fixedR); });
+
+  // 自定义复数 z = a + bi
+  function applyInputs(){
+    var a = parseFloat(inA.value), b = parseFloat(inB.value);
+    if (!isFinite(a) || !isFinite(b)) return;
+    setZ(a, b);
+  }
+  function refreshInputs(){
+    inA.value = plainNum(state.a);
+    inB.value = plainNum(state.b);
+  }
+  inA.addEventListener('input', applyInputs);
+  inB.addEventListener('input', applyInputs);
+  inA.addEventListener('blur', refreshInputs);
+  inB.addEventListener('blur', refreshInputs);
+  Array.prototype.forEach.call([inA, inB], function(el){
+    el.addEventListener('keydown', function(e){
+      if (e.key === 'Enter'){ e.preventDefault(); applyInputs(); el.blur(); }
+    });
+  });
+  document.getElementById('btnApply').addEventListener('click', function(){
+    applyInputs();
+    refreshInputs();
+  });
+
+  Array.prototype.forEach.call(document.querySelectorAll('.btn[data-a]'), function(btn){
+    btn.addEventListener('click', function(){
+      setZ(parseFloat(btn.getAttribute('data-a')), parseFloat(btn.getAttribute('data-b')));
+    });
+  });
+  document.getElementById('btnReset').addEventListener('click', function(){
+    setZ(3, 4);
+  });
+
+  // 键盘微调
+  document.addEventListener('keydown', function(e){
+    if (e.target && e.target.tagName === 'INPUT') return;
+
+    // 固定圆模式：方向键沿圆旋转
+    if (state.circle){
+      if (e.key === 'ArrowLeft' || e.key === 'ArrowRight'){
+        var dir = e.key === 'ArrowRight' ? 1 : -1;
+        e.preventDefault();
+        placeOnCircle(Math.atan2(state.b, state.a) + dir * Math.PI / 90);
+        render();
+      }
+      return;
+    }
+
+    var step = 0.1;
+    var used = true;
+    if (e.key === 'ArrowLeft')  state.a = clamp(state.a - step, A_MIN, A_MAX);
+    else if (e.key === 'ArrowRight') state.a = clamp(state.a + step, A_MIN, A_MAX);
+    else if (e.key === 'ArrowUp')    state.b = clamp(state.b + step, B_MIN, B_MAX);
+    else if (e.key === 'ArrowDown')  state.b = clamp(state.b - step, B_MIN, B_MAX);
+    else used = false;
+    if (used){ e.preventDefault(); render(); }
+  });
+
+  buildStatic();
+  render();
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,900 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>10.5　带电粒子在电场中的运动 ｜ 人教版物理必修第三册</title>
+<style>
+  :root{
+    --blue:#1d4ed8; --blue-soft:#eff6ff; --blue-line:#bfdbfe;
+    --ink:#1e293b; --sub:#64748b; --line:#e2e8f0;
+    --amber-bg:#fffbeb; --amber-line:#fcd34d; --amber-ink:#92400e;
+    --green:#059669; --red:#dc2626;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:#f3f5f9; color:var(--ink);
+    font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif; padding:18px 12px 40px;}
+  .wrap{max-width:1060px; margin:0 auto;}
+  header{background:#fff; border:1px solid var(--line); border-left:6px solid var(--blue);
+    border-radius:12px; padding:16px 22px; box-shadow:0 1px 3px rgba(15,23,42,.06);}
+  header h1{font-size:22px; color:var(--ink);}
+  header .meta{margin-top:6px; font-size:12.5px; color:var(--sub); line-height:1.7;}
+  .mod{background:#fff; border:1px solid var(--line); border-radius:12px;
+    padding:16px 20px 18px; margin-top:16px; box-shadow:0 1px 3px rgba(15,23,42,.05);}
+  .mod-h{display:flex; align-items:center; gap:10px; margin-bottom:10px;}
+  .mod-h .no{background:var(--blue); color:#fff; font-size:12px; border-radius:6px;
+    padding:2px 8px; white-space:nowrap;}
+  .mod-h h2{font-size:16.5px;}
+  .mod-h .kp{margin-left:auto; font-size:12px; color:var(--sub); white-space:nowrap;}
+  .think{background:var(--blue-soft); border:1px solid var(--blue-line); border-radius:8px;
+    padding:8px 12px; font-size:12.5px; color:#1e40af; margin-bottom:10px; line-height:1.7;}
+  .think b{color:var(--blue);}
+  canvas.stage{display:block; width:100%; background:#fbfdff;
+    border:1px solid var(--line); border-radius:10px; touch-action:none;}
+  .ctrl{display:flex; flex-wrap:wrap; gap:8px 18px; align-items:center; margin-top:10px;}
+  .row{display:flex; align-items:center; gap:8px; font-size:13px;}
+  .row label{color:var(--sub); white-space:nowrap;}
+  .row input[type=range]{width:150px; accent-color:var(--blue);}
+  .row .val{min-width:64px; font-variant-numeric:tabular-nums; color:var(--ink); font-weight:600;}
+  .btn{border:1px solid var(--blue); color:var(--blue); background:#fff; border-radius:7px;
+    padding:4px 12px; font-size:12.5px; cursor:pointer;}
+  .btn:hover{background:var(--blue-soft);}
+  .btn.on{background:var(--blue); color:#fff;}
+  .note{margin-top:10px; background:var(--amber-bg); border:1px solid var(--amber-line);
+    border-radius:8px; padding:8px 12px; font-size:12.5px; color:var(--amber-ink); line-height:1.8;}
+  .note b{color:#b45309;}
+  footer{margin-top:20px; text-align:center; font-size:12px; color:#94a3b8;}
+  .seg{display:inline-flex; border:1px solid var(--blue); border-radius:8px; overflow:hidden;}
+  .seg button{border:none; background:#fff; color:var(--blue); padding:4px 12px;
+    font-size:12.5px; cursor:pointer;}
+  .seg button.on{background:var(--blue); color:#fff;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>10.5　带电粒子在电场中的运动</h1>
+  <div class="meta">人教版《物理》必修第三册 · 第十章 静电场中的能量 · 教材 P44–P51 ｜ 覆盖知识点：带电粒子的加速 qU＝½mv²、带电粒子的偏转（类平抛）、示波管原理</div>
+</header>
+
+<div class="mod">
+  <div class="mod-h">
+    <span class="no">模块 1</span>
+    <h2>带电粒子的加速</h2>
+    <span class="kp">动画仿真</span>
+  </div>
+  <div class="think"><b>先想一想：</b>同样的加速电压，质子和电子谁跑得快？把电压变成 4 倍，速度变成几倍？</div>
+  <canvas class="stage" id="cv1" style="height:340px;"></canvas>
+  <div class="ctrl">
+    <div class="seg" id="p1seg">
+      <button class="on" data-p="proton">质子</button>
+      <button data-p="electron">电子</button>
+      <button data-p="alpha">α 粒子</button>
+    </div>
+    <div class="row"><label>加速电压 U</label><input type="range" id="u1" min="50" max="5000" step="50" value="1000"><span class="val" id="u1v"></span></div>
+    <button class="btn" id="run1">发射粒子</button>
+    <button class="btn" id="cmp1">同压对比三种粒子</button>
+  </div>
+  <div class="note"><b>观察要点：</b>qU＝½mv² ⇒ v＝√(2qU/m)：v 与 √(q/m) 成正比，与 √U 成正比。电子的 q/m 约为质子的 1836 倍，所以同电压下电子快得多；U 变 4 倍，v 只变 2 倍。</div>
+</div>
+
+<div class="mod">
+  <div class="mod-h">
+    <span class="no">模块 2</span>
+    <h2>带电粒子的偏转（类平抛）</h2>
+    <span class="kp">实时轨迹交互</span>
+  </div>
+  <div class="think"><b>先想一想：</b>偏转电压 U₂ 加倍，屏上的偏移量加倍吗？把粒子飞进来的速度 v₀ 加倍，偏移量变成几分之几？</div>
+  <canvas class="stage" id="cv2" style="height:400px;"></canvas>
+  <div class="ctrl">
+    <div class="seg" id="p2seg">
+      <button class="on" data-p="electron">电子</button>
+      <button data-p="proton">质子</button>
+      <button data-p="alpha">α 粒子</button>
+    </div>
+    <div class="row"><label>加速电压 U₁</label><input type="range" id="u2a" min="200" max="5000" step="100" value="1000"><span class="val" id="u2av"></span></div>
+    <div class="row"><label>偏转电压 U₂</label><input type="range" id="u2b" min="0" max="300" step="5" value="80"><span class="val" id="u2bv"></span></div>
+    <div class="row"><label>板长 L</label><input type="range" id="l2" min="4" max="16" step="1" value="10"><span class="val" id="l2v"></span></div>
+    <div class="row"><label>板间距 d</label><input type="range" id="d2" min="1" max="5" step="0.5" value="2"><span class="val" id="d2v"></span></div>
+    <button class="btn" id="run2">发射粒子</button>
+    <button class="btn" id="graze2">预设：恰好擦板而出</button>
+  </div>
+  <div class="note"><b>观察要点：</b>板内是类平抛：y＝qU₂L²/(2dmv₀²)＝U₂L²/(4dU₁)，tanθ＝qU₂L/(dmv₀²)。所以 y∝U₂、y∝1/v₀²（即 ∝1/U₁），而 U₁ 相同时偏移量与粒子种类无关，只有偏转方向随电性相反。</div>
+</div>
+
+<div class="mod">
+  <div class="mod-h">
+    <span class="no">模块 3</span>
+    <h2>示波管原理</h2>
+    <span class="kp">扫描动画</span>
+  </div>
+  <div class="think"><b>先想一想：</b>只在 Y 偏转板加正弦信号（不加扫描）屏上看到什么？只在 X 偏转板加扫描电压（Y 不加信号）又看到什么？</div>
+  <canvas class="stage" id="cv3" style="height:400px;"></canvas>
+  <div class="ctrl">
+    <div class="seg" id="y3seg">
+      <button class="on" data-y="sine">Y 加正弦信号</button>
+      <button data-y="zero">Y 不加信号</button>
+    </div>
+    <div class="seg" id="x3seg">
+      <button class="on" data-x="on">X 加扫描</button>
+      <button data-x="off">X 不扫描</button>
+    </div>
+    <div class="row"><label>每扫描周期波形数</label><input type="range" id="n3" min="0.5" max="4" step="0.5" value="2"><span class="val" id="n3v"></span></div>
+    <div class="row"><label>信号幅度</label><input type="range" id="a3" min="10" max="100" step="5" value="70"><span class="val" id="a3v"></span></div>
+    <div class="row"><label>扫描周期</label><input type="range" id="t3" min="0.5" max="4" step="0.1" value="2"><span class="val" id="t3v"></span></div>
+    <button class="btn" id="clear3">清屏</button>
+  </div>
+  <div class="note"><b>观察要点：</b>X 扫描把时间变成水平距离，Y 信号把电压变成竖直偏移，两者同时在屏上就"画"出了波形。只加 Y 信号：一条竖直亮线；只加 X 扫描：一条水平亮线；两者都有：完整波形。</div>
+</div>
+
+<footer>人教版高中物理必修第三册 · 可视化交互课件 ｜ 单文件离线运行，双击即可使用</footer>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* ========== 通用工具（所有文件统一使用） ========== */
+function $(id){
+  return document.getElementById(id);
+}
+
+function fmt(x, d){
+  if (d === undefined) d = 2;
+  if (!isFinite(x)) return '—';
+  var a = Math.abs(x);
+  if (a >= 10000 || (a > 0 && a < 0.01)) return x.toExponential(2);
+  return (+x.toFixed(d)).toString();
+}
+
+function fit(cv){
+  var dpr = window.devicePixelRatio || 1;
+  var w = cv.clientWidth;
+  var h = cv.clientHeight;
+  cv.width = Math.round(w * dpr);
+  cv.height = Math.round(h * dpr);
+  var ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return ctx;
+}
+
+function bindRange(id, fn){
+  var el = $(id);
+  var v = $(id + 'v');
+  function go(){
+    if (v) v.textContent = el.value;
+    fn(parseFloat(el.value));
+  }
+  el.addEventListener('input', go);
+  go();
+  return el;
+}
+
+function arrow(ctx, x1, y1, x2, y2, color, w){
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = w || 2;
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.stroke();
+  var a = Math.atan2(y2 - y1, x2 - x1);
+  var s = 7;
+  ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - s * Math.cos(a - 0.42), y2 - s * Math.sin(a - 0.42));
+  ctx.lineTo(x2 - s * Math.cos(a + 0.42), y2 - s * Math.sin(a + 0.42));
+  ctx.closePath();
+  ctx.fill();
+}
+
+function clamp(x, a, b){
+  return Math.max(a, Math.min(b, x));
+}
+
+function roundBox(ctx, x, y, w, h, fill, stroke){
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, 7);
+  if (fill){
+    ctx.fillStyle = fill;
+    ctx.fill();
+  }
+  if (stroke){
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+}
+
+function label(ctx, text, x, y, color, align, size){
+  ctx.fillStyle = color || '#334155';
+  ctx.font = (size || 12) + 'px "Microsoft YaHei",sans-serif';
+  ctx.textAlign = align || 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, x, y);
+}
+
+var E_CHARGE = 1.60e-19;
+var PARTICLES = {
+  proton:{name:'质子', q:E_CHARGE, m:1.67e-27, sign:1, color:'#dc2626', symbol:'p'},
+  electron:{name:'电子', q:E_CHARGE, m:9.11e-31, sign:-1, color:'#2563eb', symbol:'e'},
+  alpha:{name:'α 粒子', q:2*E_CHARGE, m:6.64e-27, sign:1, color:'#7c3aed', symbol:'α'}
+};
+
+function speedAfterAccel(key, U){
+  var p = PARTICLES[key];
+  return Math.sqrt(2 * p.q * Math.max(U, 0) / p.m);
+}
+
+function drawParticleDot(ctx, x, y, key, r){
+  var p = PARTICLES[key];
+  ctx.beginPath();
+  ctx.arc(x, y, r || 8, 0, Math.PI*2);
+  ctx.fillStyle = p.color;
+  ctx.fill();
+  ctx.strokeStyle = '#fff';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  label(ctx, p.sign > 0 ? '+' : '−', x, y, '#fff', 'center', 11);
+}
+
+/* ========== 模块 1：加速 ========== */
+var cv1 = $('cv1');
+var m1 = {
+  key:'proton',
+  U:1000,
+  running:false,
+  t:0,
+  compare:false,
+  last:0
+};
+
+function geom1(W, H){
+  var cy = H * 0.52;
+  return {
+    cy:cy,
+    x0:W * 0.10,
+    xa:W * 0.24,
+    xb:W * 0.44,
+    xEnd:W * 0.94,
+    gap:H * 0.42
+  };
+}
+
+function drawAccelTube1(ctx, W, H, g, key){
+  var sign = PARTICLES[key].sign;
+  ctx.strokeStyle = '#475569';
+  ctx.lineWidth = 2;
+  var top = g.cy - g.gap/2;
+  var bot = g.cy + g.gap/2;
+  ctx.fillStyle = sign > 0 ? '#dc2626' : '#2563eb';
+  ctx.fillRect(g.xa, top, 10, 62);
+  ctx.fillStyle = sign > 0 ? '#2563eb' : '#dc2626';
+  ctx.fillRect(g.xb, top, 10, 62);
+  ctx.beginPath();
+  ctx.moveTo(g.xa + 5, top);
+  ctx.lineTo(g.xa + 5, top - 26);
+  ctx.moveTo(g.xb + 5, bot + 62);
+  ctx.lineTo(g.xb + 5, bot + 88);
+  ctx.stroke();
+  label(ctx, sign > 0 ? '＋极' : '−极', g.xa + 5, top - 36, sign > 0 ? '#dc2626' : '#2563eb', 'center', 11);
+  label(ctx, sign > 0 ? '−极' : '＋极', g.xb + 5, bot + 100, sign > 0 ? '#2563eb' : '#dc2626', 'center', 11);
+  label(ctx, '加速电压 U', (g.xa + g.xb)/2, top - 36, '#334155', 'center', 12);
+
+  ctx.strokeStyle = 'rgba(29,78,216,.25)';
+  ctx.lineWidth = 1.2;
+  for (var y=top+8; y<top+56; y+=14){
+    if (sign > 0){
+      arrow(ctx, g.xa + 12, y, g.xb - 2, y, 'rgba(29,78,216,.30)', 1.1);
+    } else {
+      arrow(ctx, g.xb - 2, y, g.xa + 12, y, 'rgba(29,78,216,.30)', 1.1);
+    }
+  }
+}
+
+function drawSpeedBars1(ctx, W, H, keys){
+  var bx = W * 0.56;
+  var by = 30;
+  var bw = W * 0.40;
+  var maxV = 0;
+  for (var i=0; i<keys.length; i++){
+    maxV = Math.max(maxV, speedAfterAccel(keys[i], m1.U));
+  }
+  maxV = Math.max(maxV, 1);
+  roundBox(ctx, bx - 10, by - 18, bw + 20, 34 + keys.length * 30, 'rgba(255,255,255,.95)', '#cbd5e1');
+  label(ctx, '出射速度对比（同一 U）', bx, by - 4, '#334155', 'left', 12);
+  for (var j=0; j<keys.length; j++){
+    var key = keys[j];
+    var v = speedAfterAccel(key, m1.U);
+    var ratio = clamp(v / maxV, 0, 1);
+    var yy = by + 20 + j * 30;
+    label(ctx, PARTICLES[key].name, bx, yy, PARTICLES[key].color, 'left', 12);
+    roundBox(ctx, bx + 66, yy - 9, bw - 150, 18, '#f1f5f9', '#e2e8f0');
+    ctx.fillStyle = PARTICLES[key].color;
+    ctx.fillRect(bx + 68, yy - 7, (bw - 154) * ratio, 14);
+    label(ctx, fmt(v / 1e6, 2) + '×10⁶ m/s', bx + bw - 76, yy, '#334155', 'right', 11);
+  }
+}
+
+function draw1(){
+  var ctx = fit(cv1);
+  var W = cv1.clientWidth;
+  var H = cv1.clientHeight;
+  ctx.clearRect(0, 0, W, H);
+  var g = geom1(W, H);
+  drawAccelTube1(ctx, W, H, g, m1.key);
+
+  var v = speedAfterAccel(m1.key, m1.U);
+  var keys = m1.compare ? ['proton', 'electron', 'alpha'] : [m1.key];
+  drawSpeedBars1(ctx, W, H, keys);
+
+  ctx.strokeStyle = '#f97316';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(g.x0, g.cy);
+  ctx.lineTo(Math.min(g.xEnd, g.x0 + (g.xEnd - g.x0) * m1.t), g.cy);
+  ctx.stroke();
+
+  var px = g.x0 + (g.xEnd - g.x0) * m1.t;
+  if (m1.running || m1.t > 0){
+    drawParticleDot(ctx, px, g.cy, m1.key, 9);
+  }
+
+  var p = PARTICLES[m1.key];
+  var ek = p.q * m1.U;
+  roundBox(ctx, 16, 15, 300, 106, 'rgba(255,255,255,.95)', '#cbd5e1');
+  label(ctx, p.name + '：q＝' + fmt(p.q, 2) + ' C　m＝' + fmt(p.m, 2) + ' kg', 30, 38, '#334155', 'left', 12);
+  label(ctx, 'q/m＝' + fmt(p.q / p.m, 3) + ' C/kg', 30, 62, '#1d4ed8', 'left', 12);
+  label(ctx, 'v＝√(2qU/m)＝' + fmt(v / 1e6, 2) + '×10⁶ m/s', 30, 86, '#c2410c', 'left', 13);
+  label(ctx, 'Ek＝qU＝' + fmt(ek, 3) + ' J＝' + fmt(m1.U * (p.q / E_CHARGE), 0) + ' eV', 30, 108, '#334155', 'left', 11);
+  label(ctx, '注：动画为慢放示意，未按真实时间比例', 16, H - 16, '#94a3b8', 'left', 11);
+}
+
+function tick1(dt){
+  if (!m1.running) return;
+  m1.t += dt / 1000 / 2.2;
+  if (m1.t >= 1){
+    m1.t = 1;
+    m1.running = false;
+    $('run1').classList.remove('on');
+  }
+}
+
+bindRange('u1', function(v){
+  m1.U = v;
+  $('u1v').textContent = fmt(v, 0) + ' V';
+  draw1();
+});
+
+$('p1seg').addEventListener('click', function(ev){
+  var btn = ev.target.closest('button');
+  if (!btn) return;
+  var buttons = this.querySelectorAll('button');
+  for (var i=0; i<buttons.length; i++) buttons[i].classList.remove('on');
+  btn.classList.add('on');
+  m1.key = btn.getAttribute('data-p');
+  m1.t = 0;
+  m1.running = false;
+  $('run1').classList.remove('on');
+  draw1();
+});
+
+$('run1').addEventListener('click', function(){
+  m1.t = 0;
+  m1.running = true;
+  this.classList.add('on');
+});
+
+$('cmp1').addEventListener('click', function(){
+  m1.compare = !m1.compare;
+  this.classList.toggle('on', m1.compare);
+  draw1();
+});
+
+/* ========== 模块 2：偏转（类平抛） ========== */
+var cv2 = $('cv2');
+var m2 = {
+  key:'electron',
+  U1:1000,
+  U2:80,
+  Lcm:10,
+  dcm:2,
+  running:false,
+  t:0,
+  trail:[]
+};
+var SCREEN_D = 0.12;          // 板末端到荧光屏的距离（m）
+var PX_PER_CM = 14;           // 板长绘制比例
+
+function physics2(){
+  var p = PARTICLES[m2.key];
+  var L = Math.max(0.001, m2.Lcm / 100);
+  var d = Math.max(0.001, m2.dcm / 100);
+  var v0 = speedAfterAccel(m2.key, m2.U1);
+  var a = p.q * m2.U2 / (p.m * d);
+  var t1 = L / Math.max(v0, 1e-9);
+  var y = 0.5 * a * t1 * t1;
+  var vy = a * t1;
+  var tan = vy / Math.max(v0, 1e-9);
+  var yScreen = y + SCREEN_D * tan;
+  var dir = p.sign;                          // 上板为正：正电荷向下偏，负电荷向上偏
+  return {
+    v0:v0, a:a, t1:t1, y:y, tan:tan, yScreen:yScreen,
+    L:L, d:d, dir:dir, hit:Math.abs(y) > d/2
+  };
+}
+
+function geom2(W, H){
+  var cy = H * 0.50;
+  var Lpx = m2.Lcm * PX_PER_CM;
+  var x0 = W * 0.13;
+  var x1 = x0 + 90;
+  var x2 = x1 + Lpx;
+  var xScreen = Math.min(W * 0.95, x2 + SCREEN_D * 100 * PX_PER_CM);
+  return {
+    cy:cy, x0:x0, x1:x1, x2:x2, xScreen:xScreen,
+    Lpx:Lpx, dpx:m2.dcm * PX_PER_CM, screenH:H * 0.56
+  };
+}
+
+function drawPlates2(ctx, g, ph){
+  var half = g.dpx / 2;
+  var yTop = g.cy - half;
+  var yBot = g.cy + half;
+  ctx.fillStyle = m2.U2 >= 0 ? '#dc2626' : '#2563eb';
+  ctx.fillRect(g.x1, yTop - 10, g.Lpx, 10);
+  ctx.fillStyle = m2.U2 >= 0 ? '#2563eb' : '#dc2626';
+  ctx.fillRect(g.x1, yBot, g.Lpx, 10);
+  label(ctx, '＋', g.x1 + g.Lpx/2, yTop - 22, '#dc2626', 'center', 12);
+  label(ctx, '−', g.x1 + g.Lpx/2, yBot + 22, '#2563eb', 'center', 12);
+  label(ctx, '偏转电压 U₂', g.x1 + g.Lpx/2, yTop - 38, '#334155', 'center', 12);
+
+  if (m2.U2 !== 0){
+    ctx.strokeStyle = 'rgba(29,78,216,.3)';
+    ctx.lineWidth = 1.1;
+    for (var x=g.x1+14; x<g.x1+g.Lpx; x+=16){
+      if (m2.U2 >= 0){
+        arrow(ctx, x, yTop + 4, x, yBot - 4, 'rgba(29,78,216,.32)', 1);
+      } else {
+        arrow(ctx, x, yBot - 4, x, yTop + 4, 'rgba(29,78,216,.32)', 1);
+      }
+    }
+  }
+  ctx.strokeStyle = 'rgba(148,163,184,.5)';
+  ctx.setLineDash([4, 4]);
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.moveTo(g.x1, yTop - 10);
+  ctx.lineTo(g.x1, yBot + 10);
+  ctx.moveTo(g.x2, yTop - 10);
+  ctx.lineTo(g.x2, yBot + 10);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  label(ctx, 'd', g.x1 - 12, g.cy, '#64748b', 'center', 12);
+  label(ctx, 'L', (g.x1 + g.x2)/2, yBot + 40, '#64748b', 'center', 12);
+}
+
+function drawScreen2(ctx, g){
+  var top = g.cy - g.screenH/2;
+  ctx.fillStyle = '#0b3d2e';
+  ctx.fillRect(g.xScreen, top, 16, g.screenH);
+  ctx.strokeStyle = '#134e4a';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(g.xScreen, top, 16, g.screenH);
+  label(ctx, '荧光屏', g.xScreen + 8, top - 16, '#334155', 'center', 11);
+}
+
+function trajectoryPoint2(g, ph, s){
+  var scale = PX_PER_CM * 100;              // m → px
+  var totalLen = (g.x2 - g.x0) + (g.xScreen - g.x2);
+  var travel = totalLen * s;
+  var dirSign = ph.dir >= 0 ? 1 : -1;       // 正电荷向下偏（屏幕 y 增大）
+  if (travel <= g.x2 - g.x0){
+    var frac = travel / Math.max(g.x2 - g.x0, 1);
+    return {
+      x:g.x0 + travel,
+      y:g.cy + dirSign * ph.y * scale * frac * frac,
+      inside:true
+    };
+  }
+  var rest = travel - (g.x2 - g.x0);
+  var frac2 = rest / Math.max(g.xScreen - g.x2, 1);
+  var yExit = ph.y * scale;
+  var yAdd = SCREEN_D * ph.tan * scale * frac2;
+  return {
+    x:g.x2 + rest,
+    y:g.cy + dirSign * (yExit + yAdd),
+    inside:false
+  };
+}
+
+function draw2(){
+  var ctx = fit(cv2);
+  var W = cv2.clientWidth;
+  var H = cv2.clientHeight;
+  ctx.clearRect(0, 0, W, H);
+  var g = geom2(W, H);
+  var ph = physics2();
+
+  ctx.strokeStyle = 'rgba(148,163,184,.4)';
+  ctx.setLineDash([6, 6]);
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.moveTo(g.x0, g.cy);
+  ctx.lineTo(g.xScreen + 40, g.cy);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  drawScreen2(ctx, g);
+  drawPlates2(ctx, g, ph);
+
+  var scale = PX_PER_CM * 100;
+  var dirSign = ph.dir >= 0 ? 1 : -1;
+  ctx.strokeStyle = '#f97316';
+  ctx.lineWidth = 2.6;
+  ctx.beginPath();
+  ctx.moveTo(g.x0, g.cy);
+  for (var i=1; i<=40; i++){
+    var s = i / 40;
+    var pt = trajectoryPoint2(g, ph, s);
+    ctx.lineTo(pt.x, pt.y);
+  }
+  ctx.stroke();
+
+  if (m2.t > 0){
+    var cur = trajectoryPoint2(g, ph, m2.t);
+    drawParticleDot(ctx, cur.x, cur.y, m2.key, 8);
+    if (!cur.inside){
+      ctx.strokeStyle = '#334155';
+      ctx.lineWidth = 1.6;
+      ctx.beginPath();
+      ctx.moveTo(g.x2, g.cy + dirSign * ph.y * scale);
+      ctx.lineTo(cur.x + 26, cur.y + dirSign * ph.tan * 26);
+      ctx.stroke();
+    }
+  }
+
+  var yExitPx = dirSign * ph.y * scale;
+  ctx.strokeStyle = 'rgba(217,119,6,.85)';
+  ctx.lineWidth = 1.6;
+  ctx.setLineDash([4, 3]);
+  ctx.beginPath();
+  ctx.moveTo(g.x2, g.cy);
+  ctx.lineTo(g.x2, g.cy + yExitPx);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  var p = PARTICLES[m2.key];
+  roundBox(ctx, 16, 15, 316, 148, 'rgba(255,255,255,.95)', '#cbd5e1');
+  label(ctx, p.name + '　v₀＝√(2qU₁/m)＝' + fmt(ph.v0 / 1e6, 2) + '×10⁶ m/s', 30, 38, '#334155', 'left', 12);
+  label(ctx, '板内偏移 y＝U₂L²/(4dU₁)＝' + fmt(ph.y * 100, 2) + ' cm', 30, 63, '#1d4ed8', 'left', 13);
+  label(ctx, '偏转角 tanθ＝qU₂L/(dmv₀²)＝' + fmt(ph.tan, 3), 30, 88, '#1d4ed8', 'left', 12);
+  label(ctx, '屏上偏移 Y＝y＋D·tanθ＝' + fmt(ph.yScreen * 100, 2) + ' cm', 30, 113, '#c2410c', 'left', 12);
+  label(ctx, 'θ＝' + fmt(Math.atan(ph.tan) * 180 / Math.PI, 1) + '°　（D＝' + fmt(SCREEN_D * 100, 0) + ' cm）', 30, 136, '#64748b', 'left', 11);
+
+  if (ph.hit){
+    roundBox(ctx, W - 250, 15, 234, 44, 'rgba(254,226,226,.96)', '#fca5a5');
+    label(ctx, '偏移量超过 d/2：粒子打在板上', W - 133, 30, '#b91c1c', 'center', 12);
+    label(ctx, '（“恰好擦板而出”对应 y＝d/2）', W - 133, 50, '#b91c1c', 'center', 11);
+  }
+}
+
+function tick2(dt){
+  if (!m2.running) return;
+  m2.t += dt / 1000 / 2.6;
+  if (m2.t >= 1){
+    m2.t = 1;
+    m2.running = false;
+    $('run2').classList.remove('on');
+  }
+}
+
+bindRange('u2a', function(v){
+  m2.U1 = v;
+  $('u2av').textContent = fmt(v, 0) + ' V';
+  m2.t = 0;
+  m2.running = false;
+  draw2();
+});
+
+bindRange('u2b', function(v){
+  m2.U2 = v;
+  $('u2bv').textContent = fmt(v, 0) + ' V';
+  m2.t = 0;
+  m2.running = false;
+  draw2();
+});
+
+bindRange('l2', function(v){
+  m2.Lcm = v;
+  $('l2v').textContent = fmt(v, 0) + ' cm';
+  m2.t = 0;
+  m2.running = false;
+  draw2();
+});
+
+bindRange('d2', function(v){
+  m2.dcm = v;
+  $('d2v').textContent = fmt(v, 1) + ' cm';
+  m2.t = 0;
+  m2.running = false;
+  draw2();
+});
+
+$('p2seg').addEventListener('click', function(ev){
+  var btn = ev.target.closest('button');
+  if (!btn) return;
+  var buttons = this.querySelectorAll('button');
+  for (var i=0; i<buttons.length; i++) buttons[i].classList.remove('on');
+  btn.classList.add('on');
+  m2.key = btn.getAttribute('data-p');
+  m2.t = 0;
+  m2.running = false;
+  draw2();
+});
+
+$('run2').addEventListener('click', function(){
+  m2.t = 0;
+  m2.running = true;
+  this.classList.add('on');
+});
+
+$('graze2').addEventListener('click', function(){
+  var L = m2.Lcm / 100;
+  var d = m2.dcm / 100;
+  var target = 2 * d * d * m2.U1 / (L * L);
+  if (target > 300){
+    // 偏转电压已到上限：改为调低加速电压，使 U₂＝300 V 时恰好擦板
+    var u1 = clamp(300 * L * L / (2 * d * d), 200, 5000);
+    $('u2a').value = Math.round(u1);
+    $('u2a').dispatchEvent(new Event('input'));
+    target = 300;
+  }
+  target = clamp(target, 0, 300);
+  $('u2b').value = Math.round(target);
+  $('u2b').dispatchEvent(new Event('input'));
+});
+
+/* ========== 模块 3：示波管 ========== */
+var cv3 = $('cv3');
+var m3 = {
+  yMode:'sine',
+  xOn:true,
+  n:2,
+  amp:70,
+  T:2,
+  t:0,
+  running:true,
+  trace:[],
+  lastTrace:[],
+  last:0
+};
+
+function geom3(W, H){
+  var cy = H * 0.42;
+  return {
+    cy:cy,
+    gunX:W * 0.06,
+    accX:W * 0.16,
+    plateX:W * 0.30,
+    plateW:W * 0.16,
+    screenX:W * 0.56,
+    screenW:W * 0.40,
+    screenH:H * 0.66,
+    screenTop:H * 0.42 - H * 0.33
+  };
+}
+
+function signalY3(t){
+  if (m3.yMode === 'zero') return 0;
+  return Math.sin(2 * Math.PI * m3.n * t / Math.max(m3.T, 0.01));
+}
+
+function drawTube3(ctx, W, H, value){
+  var g = geom3(W, H);
+  var ampPx = (g.screenH / 2 - 12) * (m3.amp / 100);
+
+  roundBox(ctx, g.gunX - 10, g.cy - 22, 30, 44, '#e2e8f0', '#94a3b8');
+  label(ctx, '电子枪', g.gunX + 5, g.cy + 36, '#475569', 'center', 11);
+
+  ctx.fillStyle = '#dc2626';
+  ctx.fillRect(g.accX, g.cy - 26, 8, 20);
+  ctx.fillStyle = '#2563eb';
+  ctx.fillRect(g.accX + 46, g.cy - 26, 8, 20);
+  label(ctx, '加速极', g.accX + 27, g.cy + 14, '#475569', 'center', 11);
+
+  var plateGap = 56;
+  ctx.fillStyle = '#dc2626';
+  ctx.fillRect(g.plateX, g.cy - plateGap/2 - 10, g.plateW, 10);
+  ctx.fillStyle = '#2563eb';
+  ctx.fillRect(g.plateX, g.cy + plateGap/2, g.plateW, 10);
+  label(ctx, 'Y 偏转板', g.plateX + g.plateW/2, g.cy - plateGap/2 - 24, '#334155', 'center', 11);
+  label(ctx, m3.yMode === 'sine' ? '正弦信号' : '无信号', g.plateX + g.plateW/2, g.cy + plateGap/2 + 24, m3.yMode === 'sine' ? '#1d4ed8' : '#94a3b8', 'center', 11);
+
+  var deflect = -value * ampPx * 0.34;
+  var beamY = g.cy + deflect;
+  ctx.strokeStyle = '#f97316';
+  ctx.lineWidth = 2.2;
+  ctx.beginPath();
+  ctx.moveTo(g.gunX + 20, g.cy);
+  ctx.lineTo(g.plateX, g.cy);
+  ctx.lineTo(g.plateX + g.plateW, beamY);
+  ctx.lineTo(g.screenX, g.cy - value * ampPx);
+  ctx.stroke();
+
+  ctx.fillStyle = '#0b3d2e';
+  ctx.fillRect(g.screenX, g.screenTop, 14, g.screenH);
+  ctx.strokeStyle = '#134e4a';
+  ctx.lineWidth = 1.5;
+  ctx.strokeRect(g.screenX, g.screenTop, 14, g.screenH);
+  label(ctx, '荧光屏', g.screenX + 7, g.screenTop - 14, '#334155', 'center', 11);
+  return g;
+}
+
+function drawScreen3(ctx, W, H, g, value){
+  var px = m3.xOn ? g.screenX + 40 + (g.screenW - 60) * (m3.t / Math.max(m3.T, 0.01))
+                  : g.screenX + 40 + (g.screenW - 60) * 0.5;
+  var py = g.screenTop + g.screenH/2 - value * (g.screenH/2 - 14) * (m3.amp/100);
+  m3.trace.push({x:px, y:py});
+  if (m3.trace.length > 900) m3.trace.shift();
+
+  roundBox(ctx, g.screenX + 26, g.screenTop - 6, g.screenW - 26, g.screenH + 12, '#0b3d2e', '#134e4a');
+  ctx.strokeStyle = 'rgba(74,222,128,.18)';
+  ctx.lineWidth = 1;
+  for (var i=1; i<4; i++){
+    var yy = g.screenTop + g.screenH * i / 4;
+    ctx.beginPath();
+    ctx.moveTo(g.screenX + 30, yy);
+    ctx.lineTo(g.screenX + g.screenW - 4, yy);
+    ctx.stroke();
+  }
+
+  if (m3.lastTrace.length > 1){
+    ctx.strokeStyle = 'rgba(74,222,128,.35)';
+    ctx.lineWidth = 1.8;
+    ctx.beginPath();
+    ctx.moveTo(m3.lastTrace[0].x, m3.lastTrace[0].y);
+    for (var j=1; j<m3.lastTrace.length; j++) ctx.lineTo(m3.lastTrace[j].x, m3.lastTrace[j].y);
+    ctx.stroke();
+  }
+
+  if (m3.trace.length > 1){
+    ctx.strokeStyle = '#4ade80';
+    ctx.lineWidth = 2.4;
+    ctx.beginPath();
+    ctx.moveTo(m3.trace[0].x, m3.trace[0].y);
+    for (var k=1; k<m3.trace.length; k++) ctx.lineTo(m3.trace[k].x, m3.trace[k].y);
+    ctx.stroke();
+  }
+
+  ctx.beginPath();
+  ctx.arc(px, py, 5, 0, Math.PI*2);
+  ctx.fillStyle = '#bbf7d0';
+  ctx.fill();
+  ctx.strokeStyle = '#4ade80';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+}
+
+function draw3(){
+  var ctx = fit(cv3);
+  var W = cv3.clientWidth;
+  var H = cv3.clientHeight;
+  ctx.clearRect(0, 0, W, H);
+  var value = signalY3(m3.t);
+  var g = drawTube3(ctx, W, H, value);
+  drawScreen3(ctx, W, H, g, value);
+
+  var msg;
+  if (m3.xOn && m3.yMode === 'sine') msg = 'X 扫描 + Y 正弦 ⇒ 屏上显示波形';
+  else if (m3.xOn) msg = '只有 X 扫描 ⇒ 一条水平亮线';
+  else if (m3.yMode === 'sine') msg = '只有 Y 信号 ⇒ 一条竖直亮线';
+  else msg = '都无信号 ⇒ 屏中央一个亮点';
+
+  roundBox(ctx, 16, 15, 320, 76, 'rgba(255,255,255,.95)', '#cbd5e1');
+  label(ctx, msg, 30, 38, '#1d4ed8', 'left', 13);
+  label(ctx, 'Y＝A·sin(2π·' + fmt(m3.n, 1) + '·t/T)　T＝' + fmt(m3.T, 1) + ' s', 30, 62, '#334155', 'left', 12);
+  label(ctx, 'X：' + (m3.xOn ? '锯齿扫描（把时间展开成水平距离）' : '停在中央'), 30, 84, '#64748b', 'left', 11);
+}
+
+function tick3(dt){
+  if (!m3.running) return;
+  m3.t += dt / 1000;
+  if (m3.t > m3.T){
+    m3.t = m3.t % Math.max(m3.T, 0.01);
+    m3.lastTrace = m3.trace.slice();
+    m3.trace = [];
+  }
+}
+
+bindRange('n3', function(v){
+  m3.n = v;
+  $('n3v').textContent = fmt(v, 1);
+  m3.trace = [];
+  m3.lastTrace = [];
+});
+
+bindRange('a3', function(v){
+  m3.amp = v;
+  $('a3v').textContent = fmt(v, 0) + '%';
+  m3.trace = [];
+  m3.lastTrace = [];
+});
+
+bindRange('t3', function(v){
+  m3.T = v;
+  $('t3v').textContent = fmt(v, 1) + ' s';
+  m3.trace = [];
+  m3.lastTrace = [];
+});
+
+$('y3seg').addEventListener('click', function(ev){
+  var btn = ev.target.closest('button');
+  if (!btn) return;
+  var buttons = this.querySelectorAll('button');
+  for (var i=0; i<buttons.length; i++) buttons[i].classList.remove('on');
+  btn.classList.add('on');
+  m3.yMode = btn.getAttribute('data-y');
+  m3.trace = [];
+  m3.lastTrace = [];
+});
+
+$('x3seg').addEventListener('click', function(ev){
+  var btn = ev.target.closest('button');
+  if (!btn) return;
+  var buttons = this.querySelectorAll('button');
+  for (var i=0; i<buttons.length; i++) buttons[i].classList.remove('on');
+  btn.classList.add('on');
+  m3.xOn = btn.getAttribute('data-x') === 'on';
+  m3.trace = [];
+  m3.lastTrace = [];
+});
+
+$('clear3').addEventListener('click', function(){
+  m3.trace = [];
+  m3.lastTrace = [];
+});
+
+/* ========== 统一动画循环 ========== */
+var lastFrame = 0;
+
+function loop(now){
+  if (!lastFrame) lastFrame = now;
+  var dt = Math.min(60, now - lastFrame);
+  lastFrame = now;
+  var need1 = m1.running;
+  var need2 = m2.running;
+  tick1(dt);
+  tick2(dt);
+  tick3(dt);
+  if (need1) draw1();
+  if (need2) draw2();
+  draw3();
+  requestAnimationFrame(loop);
+}
+
+window.addEventListener('resize', function(){
+  m3.trace = [];
+  m3.lastTrace = [];
+  draw1();
+  draw2();
+});
+
+document.addEventListener('visibilitychange', function(){
+  if (document.hidden){
+    m1.running = false;
+    m2.running = false;
+    m3.running = false;
+  } else {
+    m3.running = true;
+    lastFrame = 0;
+  }
+});
+
+draw1();
+draw2();
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

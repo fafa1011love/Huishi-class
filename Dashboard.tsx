@@ -262,6 +262,7 @@ interface DashboardProps {
   onLogout: () => void;
   onUserUpdated: (user: AuthUser) => void;
   onOpenAdmin?: () => void;
+  onOpenVisualClassroom?: () => void;
 }
 
 async function readError(response: Response) {
@@ -369,7 +370,7 @@ function compressFeedbackImage(file: File): Promise<FeedbackAttachment> {
   });
 }
 
-const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, onBack, currentUser, onLogout, onUserUpdated, onOpenAdmin }) => {
+const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, onBack, currentUser, onLogout, onUserUpdated, onOpenAdmin, onOpenVisualClassroom }) => {
   const initialAppliedLesson = useMemo(() => loadAppliedLessonContext(currentUser.id), [currentUser.id]);
   const [workspaceMode, setWorkspaceMode] = useState<'classroom' | 'prep' | 'modeling'>('classroom');
   const [modelUrl, setModelUrl] = useState<string | null>(null);
@@ -3017,6 +3018,22 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
             </div>
           </div>
 
+          {onOpenVisualClassroom && (
+            <button
+              type="button"
+              onClick={onOpenVisualClassroom}
+              title="进入可视化课堂"
+              className="group hidden h-12 shrink-0 items-center gap-2.5 rounded-2xl px-5 text-[15px] font-black text-[#04121f] transition duration-200 hover:-translate-y-0.5 active:translate-y-0 sm:flex"
+              style={{
+                background: 'linear-gradient(135deg,#7dd3fc 0%,#38bdf8 48%,#818cf8 100%)',
+                boxShadow: '0 10px 30px rgba(56,189,248,0.35), inset 0 1px 0 rgba(255,255,255,0.65)',
+              }}
+            >
+              <Sparkles size={19} strokeWidth={2.5} />
+              {/* 内联 display 覆盖窄屏下顶栏隐藏末位 span 的既有规则 */}
+              <span className="whitespace-nowrap" style={{ display: 'inline-block' }}>可视化课堂</span>
+            </button>
+          )}
         </div>
 
         <div className="lab-top-actions flex items-center gap-5">

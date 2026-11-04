@@ -1,0 +1,480 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>17.1 提公因式法 · 分步高亮演示（可输入每一项）</title>
+<style>
+  :root{
+    --ink:#1e293b; --sub:#64748b; --line:#e2e8f0; --paper:#f8fafc;
+    --c1:#dc2626; --c1bg:#fef2f2;            /* 系数：红 */
+    --c2:#2563eb; --c2bg:#eff6ff;            /* 字母：蓝 */
+    --c3:#7c3aed; --c3bg:#f5f3ff;            /* 公因式：紫 */
+    --c4:#16a34a; --c4bg:#f0fdf4;            /* 结果：绿 */
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif; background:var(--paper); color:var(--ink); padding:22px 16px 44px;}
+  .wrap{max-width:1080px; margin:0 auto;}
+  header{text-align:center; margin-bottom:16px;}
+  header h1{font-size:25px; font-weight:800;}
+  header p{color:var(--sub); margin-top:6px; font-size:14px;}
+  .card{background:#fff; border:1px solid var(--line); border-radius:16px; padding:16px 20px; box-shadow:0 1px 3px rgba(15,23,42,.05); margin-bottom:14px;}
+  .card h3{font-size:15px; margin-bottom:10px;}
+  /* 知识点 */
+  .kp{display:flex; gap:12px; flex-wrap:wrap; align-items:stretch;}
+  .kp>div{flex:1 1 280px;}
+  .formula-box{background:#fffbeb; border:1.5px solid #fde68a; border-radius:12px; padding:12px 16px; font-size:16px; font-weight:800; color:#92400e; display:flex; align-items:center; justify-content:center; text-align:center; line-height:1.5;}
+  .koujue{background:#f0fdf4; border-left:4px solid var(--c4); border-radius:0 10px 10px 0; padding:9px 14px; font-size:13.5px; line-height:1.85;}
+  .warn{background:#fef2f2; border-left:4px solid var(--c1); border-radius:0 10px 10px 0; padding:9px 14px; font-size:13px; line-height:1.85; color:#7f1d1d;}
+  /* 输入区 */
+  .inputs{display:flex; align-items:center; gap:8px; flex-wrap:wrap;}
+  .tin{display:flex; align-items:center; gap:6px; background:var(--paper); border:1.5px solid var(--line); border-radius:10px; padding:5px 8px; transition:.2s;}
+  .tin:focus-within{border-color:#93c5fd; background:#fff; box-shadow:0 0 0 3px #dbeafe;}
+  .tin.bad{border-color:#fca5a5; background:#fef2f2;}
+  .tin .idx{font-size:12px; color:var(--sub); font-weight:700;}
+  .tin input{width:104px; border:none; background:transparent; outline:none; font-size:17px; font-family:"Cambria Math",Cambria,Georgia,serif; font-weight:700; color:var(--ink); text-align:center;}
+  .tin .rm{border:none; background:transparent; color:#cbd5e1; font-size:16px; cursor:pointer; line-height:1; padding:0 2px;}
+  .tin .rm:hover{color:var(--c1);}
+  .mini{padding:7px 14px; border-radius:10px; border:1.5px solid var(--line); background:#fff; font-size:13px; font-weight:700; cursor:pointer; color:var(--ink);}
+  .mini:hover{background:var(--paper);}
+  .mini.primary{background:#2563eb; border-color:#2563eb; color:#fff;}
+  .fmt{font-size:12px; color:#94a3b8; margin-top:8px;}
+  .err{font-size:13px; color:var(--c1); font-weight:700; margin-top:6px; display:none;}
+  /* 主舞台 */
+  .stage{display:flex; gap:18px; flex-wrap:wrap;}
+  .main{flex:1 1 580px; min-width:420px;}
+  .side{flex:1 1 270px; min-width:250px;}
+  .expr-wrap{background:#fff; border:1px solid var(--line); border-radius:14px; padding:32px 18px 20px; text-align:center; position:relative; overflow:hidden; transition:padding .4s;}
+  .expr{font-family:"Cambria Math",Cambria,Georgia,"Times New Roman",serif; font-size:clamp(26px,4vw,40px); white-space:nowrap; line-height:1.7; transition:opacity .5s ease, filter .5s ease;}
+  .term{display:inline-block; margin:0 1px;}
+  .op{margin:0 9px; color:#475569;}
+  .p{display:inline-block; padding:2px 6px; border-radius:10px; border:2px solid transparent;
+     transition:background-color .4s ease, border-color .4s ease, color .35s ease, transform .4s ease, opacity .4s ease;}
+  .p.letter{font-style:italic;}
+  .p sup{font-size:.55em; font-style:normal;}
+  /* 各步骤高亮 */
+  .s1 .p.coef{background:var(--c1bg); border-color:var(--c1); color:var(--c1); transform:translateY(-4px) scale(1.08);}
+  .s1 .p.letter{opacity:.4;}
+  .s2 .p.letter{background:var(--c2bg); border-color:var(--c2); color:var(--c2); transform:translateY(-4px) scale(1.08);}
+  .s2 .p.coef{opacity:.4;}
+  .s3 .p{background:var(--c3bg); border-color:var(--c3); color:var(--c3); transform:translateY(-4px) scale(1.06);}
+  .s4{opacity:.25; filter:grayscale(.85);}
+  /* 下移提取区 */
+  .pull{display:flex; align-items:center; justify-content:center; gap:8px; margin-top:12px; font-size:13px; font-weight:700; color:var(--c3);
+        opacity:0; max-height:0; transform:translateY(-6px); overflow:hidden;
+        transition:opacity .45s ease .1s, max-height .45s ease, transform .45s ease;}
+  .pull .ar{font-size:20px; line-height:1; animation:bounce 1.4s ease-in-out infinite;}
+  @keyframes bounce{0%,100%{transform:translateY(0); opacity:.9}50%{transform:translateY(6px); opacity:.45}}
+  .result-row{display:flex; align-items:center; justify-content:center; flex-wrap:wrap; gap:2px;
+    font-family:"Cambria Math",Cambria,Georgia,serif; font-size:clamp(24px,3.6vw,36px);
+    opacity:0; max-height:0; overflow:hidden; transform:translateY(16px);
+    transition:opacity .5s ease, max-height .5s ease, transform .5s ease;}
+  .gf{background:var(--c3bg); border:2.5px solid var(--c3); color:var(--c3); border-radius:12px; padding:1px 12px; margin:0 2px;
+      display:inline-block; opacity:0; transform:scale(.85); transition:opacity .4s ease .15s, transform .4s ease .15s, box-shadow .4s ease;}
+  .eq,.brk,.in{opacity:0; transform:translateY(8px); transition:opacity .5s ease .15s, transform .5s ease .15s;}
+  .in{display:inline-flex; align-items:center; flex-wrap:wrap;}
+  .qvar{font-style:italic;}
+  .qvar sup{font-size:.55em;}
+  .op2{margin:0 7px; color:#475569;}
+  #stage.st3 .pull{opacity:1; max-height:40px; transform:translateY(0);}
+  #stage.st3 .result-row{opacity:1; max-height:220px; transform:translateY(0); margin-top:8px;}
+  #stage.st3 .gf{opacity:1; transform:scale(1);}
+  #stage.st4 .eq,#stage.st4 .brk,#stage.st4 .in{opacity:1; transform:translateY(0);}
+  #stage.st4 .gf{box-shadow:0 0 0 7px rgba(124,58,237,.10);}
+  /* 除法小标签 */
+  .div-chips{display:flex; justify-content:center; gap:9px; flex-wrap:wrap; margin-top:14px;
+    opacity:0; max-height:0; overflow:hidden; transform:translateY(10px);
+    transition:opacity .5s ease .3s, max-height .5s ease .3s, transform .5s ease .3s;}
+  #stage.st4 .div-chips{opacity:1; max-height:120px; transform:none;}
+  .chip{font-size:13px; padding:5px 11px; border-radius:999px; font-weight:700; background:#fff; border:1.5px solid;}
+  /* 结论 */
+  .final{opacity:0; max-height:0; overflow:hidden; transform:translateY(12px);
+    transition:opacity .55s ease .55s, max-height .55s ease .55s, transform .55s ease .55s;}
+  #stage.st4 .final{opacity:1; max-height:240px; transform:none; margin-top:12px;}
+  .final .ans{display:inline-block; background:var(--c4bg); color:var(--c4); border:1.5px solid #bbf7d0; border-radius:12px; padding:9px 18px; font-size:16px; font-weight:800; line-height:1.75;}
+  .final .tip{margin-top:7px; font-size:12.5px; color:#7f1d1d; line-height:1.7;}
+  .notice{display:none; margin-top:12px; font-size:14px; font-weight:700; color:#92400e; background:#fffbeb; border:1px solid #fde68a; border-radius:10px; padding:9px 12px;}
+  #stage.nocf .notice{display:block;}
+  #stage.nocf .pull,#stage.nocf .result-row,#stage.nocf .div-chips,#stage.nocf .final{display:none!important;}
+  /* 说明卡 */
+  .step-callout{border-radius:12px; padding:13px 16px; min-height:104px; border:1.5px solid var(--line); transition:background .4s, border-color .4s;}
+  .step-callout .st{font-size:14.5px; font-weight:800; margin-bottom:5px;}
+  .step-callout .sd{font-size:13.5px; line-height:1.75;}
+  .step-callout .sf{margin-top:7px; font-family:"Cambria Math",Cambria,Georgia,serif; font-size:18px; font-weight:800; word-break:break-all;}
+  .step-callout.k0{background:#fff;}
+  .step-callout.k1{background:var(--c1bg); border-color:var(--c1);} .step-callout.k1 .st,.step-callout.k1 .sf{color:var(--c1);}
+  .step-callout.k2{background:var(--c2bg); border-color:var(--c2);} .step-callout.k2 .st,.step-callout.k2 .sf{color:var(--c2);}
+  .step-callout.k3{background:var(--c3bg); border-color:var(--c3);} .step-callout.k3 .st,.step-callout.k3 .sf{color:var(--c3);}
+  .step-callout.k4{background:var(--c4bg); border-color:var(--c4);} .step-callout.k4 .st,.step-callout.k4 .sf{color:var(--c4);}
+  /* 步骤清单 */
+  .steps{list-style:none;}
+  .steps li{display:flex; align-items:flex-start; gap:9px; padding:8px 11px; border-radius:10px; font-size:13.5px; color:var(--sub); margin-bottom:5px; border:1px solid transparent; transition:.3s;}
+  .steps .dot{flex:0 0 12px; height:12px; border-radius:50%; margin-top:4px; background:#cbd5e1; transition:.3s;}
+  .steps li.cur{background:#fff; border-color:var(--line); color:var(--ink); font-weight:700; box-shadow:0 1px 3px rgba(15,23,42,.06);}
+  .steps li.cur .dot{background:var(--c); box-shadow:0 0 0 4px rgba(148,163,184,.18);}
+  .steps li.done{color:var(--c);} .steps li.done .dot{background:var(--c);}
+  .steps li.done::after{content:"✓"; margin-left:auto; font-weight:800;}
+  .ctrl{display:flex; gap:10px; justify-content:center; margin-top:14px;}
+  .ctrl button{padding:10px 24px; border-radius:12px; border:1.5px solid var(--line); background:#fff; font-size:15px; font-weight:700; cursor:pointer; transition:.15s; color:var(--ink);}
+  .ctrl button.primary{background:#2563eb; border-color:#2563eb; color:#fff;}
+  .ctrl button:hover:not(:disabled){filter:brightness(.96);}
+  .ctrl button:disabled{opacity:.45; cursor:not-allowed;}
+  .dots{display:flex; gap:8px; justify-content:center; margin-top:11px;}
+  .dots i{width:10px; height:10px; border-radius:50%; background:#cbd5e1; transition:.3s;}
+  .dots i.on{background:#2563eb; transform:scale(1.25);}
+  footer{text-align:center; color:#94a3b8; font-size:12px; margin-top:22px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>17.1 提公因式法 · 分步提取演示</h1>
+    <p id="sub">公因式 ＝ 系数GCD × 相同字母的最低次幂 ｜ 口诀「一提」</p>
+  </header>
+
+  <div class="card">
+    <div class="kp">
+      <div class="formula-box">公因式 ＝ 系数 GCD × 相同字母的最低次幂</div>
+      <div class="koujue">
+        <b>口诀「一提」</b>——拿到多项式，第一步先把公因式<b>提</b>到括号外：<br>
+        ① 系数取最大公约数　② 字母取各项相同的　③ 指数取最低次幂　④ 每项 ÷ 公因式放入括号，<b>提净别丢项</b>
+      </div>
+      <div class="warn">
+        <b>⚠ 易错警示：</b>某项提完只剩 1 时（如 −2ab 提出 2ab 后剩 <b>−1</b>），不能漏掉；公因式要"提尽提净"；完成后可用单项式<b>乘回去检验</b>。
+      </div>
+    </div>
+  </div>
+
+  <!-- 输入区 -->
+  <div class="card">
+    <h3>✍ 自己输入每一项（2～5 项），下面的演示全部自动重算</h3>
+    <div class="inputs" id="inputs"></div>
+    <div style="display:flex; gap:8px; margin-top:10px; flex-wrap:wrap;">
+      <button class="mini primary" id="btnAdd">＋ 增加一项</button>
+      <button class="mini" data-preset="6a^3b|8a^2b^2|-2ab">示例：6a³b ＋ 8a²b² － 2ab</button>
+      <button class="mini" data-preset="4x^2y|-6xy^2">示例：4x²y － 6xy²</button>
+      <button class="mini" data-preset="12m^3n|-18m^2n^2|6mn">示例：12m³n － 18m²n² ＋ 6mn</button>
+      <button class="mini" data-preset="3a^2b|6ab|-9a|12ab^2">示例（4 项）：3a²b ＋ 6ab － 9a ＋ 12ab²</button>
+    </div>
+    <div class="fmt">支持写法：<b>6a^3b</b>、<b>6a³b</b>、<b>6a3b</b>、<b>8a^2b^2</b>、<b>-2ab</b>、<b>2ab</b>；字母顺序随意，可含多个字母。</div>
+    <div class="err" id="err"></div>
+  </div>
+
+  <!-- 主舞台 -->
+  <div class="card">
+    <div class="stage">
+      <div class="main">
+        <div class="expr-wrap" id="stage">
+          <div class="expr" id="expr"></div>
+          <div class="pull"><span class="ar">↓</span><span id="pullTxt">从每一项中提取公因式</span></div>
+          <div class="result-row" id="resultRow">
+            <span class="eq">＝</span><span class="gf" id="gfPill"></span>
+            <span class="brk">(</span><span class="in" id="inBox"></span><span class="brk">)</span>
+          </div>
+          <div class="div-chips" id="chips"></div>
+          <div class="final" id="final">
+            <div class="ans" id="ansBox"></div>
+            <div class="tip" id="tipBox"></div>
+          </div>
+          <div class="notice">公因式只有 1 —— 各项没有除 1 以外的公因式，这个多项式"提无可提"。</div>
+        </div>
+        <div class="ctrl">
+          <button id="btnPrev">⏮ 上一步</button>
+          <button id="btnNext" class="primary">下一步 ▶</button>
+          <button id="btnReset">🔁 重播</button>
+        </div>
+        <div class="dots" id="dots"><i></i><i></i><i></i><i></i></div>
+      </div>
+      <div class="side">
+        <div class="step-callout k0" id="callout">
+          <div class="st">准备开始</div>
+          <div class="sd">点击「下一步」，分四步找出公因式并完成提取：<br>① 看系数 → ② 看字母 → ③ 组公因式 → ④ 提取得结果。</div>
+        </div>
+        <ul class="steps" id="steps">
+          <li style="--c:var(--c1)"><span class="dot"></span><span class="tx"></span></li>
+          <li style="--c:var(--c2)"><span class="dot"></span><span class="tx"></span></li>
+          <li style="--c:var(--c3)"><span class="dot"></span><span class="tx"></span></li>
+          <li style="--c:var(--c4)"><span class="dot"></span><span class="tx"></span></li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <footer>教学演示用 · 17.1 提公因式法 · 每一项可自定义 · 适合投影</footer>
+</div>
+
+<script>
+"use strict";
+/* ============ 工具 ============ */
+const SUP='⁰¹²³⁴⁵⁶⁷⁸⁹';
+const sup=n=>String(n).split('').map(d=>SUP[+d]).join('');
+const COL=['#dc2626','#2563eb','#c2410c','#0d9488','#be185d'];
+const gcd2=(a,b)=>{a=Math.abs(a);b=Math.abs(b);while(b){const t=a%b;a=b;b=t;}return a||1;};
+const gcdAll=arr=>arr.reduce((a,b)=>gcd2(a,b));
+
+/* ============ 解析单项式：支持 6a^3b / 6a³b / 6a3b / -2ab ============ */
+function parseTerm(raw){
+  const s=String(raw).replace(/\s+/g,'').replace(/×/g,'*').replace(/−/g,'-');
+  if(!s)throw new Error('这一项是空的');
+  let i=0,sign=1;
+  if(s[0]==='+')i=1;
+  else if(s[0]==='-'){sign=-1;i=1;}
+  let num='';
+  while(i<s.length&&/[0-9]/.test(s[i]))num+=s[i++];
+  const coef=(num?parseInt(num,10):1)*sign;
+  const letters=[];
+  while(i<s.length){
+    const ch=s[i];
+    if(/[a-zA-Z]/.test(ch)){
+      const v=ch.toLowerCase(); i++;
+      let e=1;
+      if(s[i]==='^'){
+        i++; let d='';
+        while(i<s.length&&/[0-9]/.test(s[i]))d+=s[i++];
+        e=d?parseInt(d,10):1;
+      }else if(s[i]&&SUP.includes(s[i])){
+        let d='';
+        while(i<s.length&&s[i]&&SUP.includes(s[i]))d+=String(SUP.indexOf(s[i++]));
+        e=d?parseInt(d,10):1;
+      }else{
+        let d='';
+        while(i<s.length&&/[0-9]/.test(s[i]))d+=s[i++];
+        if(d)e=parseInt(d,10);
+      }
+      const ex=letters.find(l=>l.v===v);
+      if(ex)ex.e+=e; else letters.push({v,e});
+    }else if(ch==='*'){i++;}
+    else throw new Error('无法识别的字符「'+ch+'」');
+  }
+  if(coef===0)throw new Error('系数不能为 0');
+  letters.sort((a,b)=>a.v<b.v?-1:1);
+  return{coef,letters};
+}
+
+/* ============ 分析：公因式与各项的商 ============ */
+function analyze(terms){
+  const g=gcdAll(terms.map(t=>t.coef));
+  const allVars=[...new Set(terms.flatMap(t=>t.letters.map(l=>l.v)))].sort();
+  const common=[];
+  for(const v of allVars){
+    const exps=terms.map(t=>{const f=t.letters.find(l=>l.v===v);return f?f.e:0;});
+    if(exps.every(e=>e>0))common.push({v,e:Math.min(...exps)});
+  }
+  const cf={coef:g,letters:common};
+  const quot=terms.map(t=>{
+    const letters=[];
+    for(const L of t.letters){
+      const c=common.find(x=>x.v===L.v);
+      const e=L.e-(c?c.e:0);
+      if(e>0)letters.push({v:L.v,e});
+    }
+    return{coef:t.coef/g,letters};
+  });
+  return{cf,quot,g};
+}
+
+/* ============ 文本 / HTML 渲染 ============ */
+function monoText(p){
+  const abs=Math.abs(p.coef);
+  let s=(p.coef<0?'−':'')+((abs===1&&p.letters.length)?'':abs);
+  for(const L of p.letters)s+=L.v+(L.e>1?sup(L.e):'');
+  return s;
+}
+function monoHigh(p){ // 表达式内：带 .p 高亮粒子的片段
+  const abs=Math.abs(p.coef);
+  const numTxt=(abs===1&&p.letters.length)?'':String(abs);
+  let h=numTxt?`<span class="p coef">${numTxt}</span>`:'';
+  for(const L of p.letters)h+=`<span class="p letter">${L.v}${L.e>1?`<sup>${L.e}</sup>`:''}</span>`;
+  return h;
+}
+function monoPlain(p){ // 结果行内：无高亮粒子
+  const abs=Math.abs(p.coef);
+  let h=(abs===1&&p.letters.length)?'':String(abs);
+  for(const L of p.letters)h+=`<span class="qvar">${L.v}${L.e>1?`<sup>${L.e}</sup>`:''}</span>`;
+  return h;
+}
+function polyText(terms){
+  return terms.map((t,i)=>{
+    const s=t.coef<0?'−':'＋';
+    return (i===0?(t.coef<0?'−':''):s)+monoText({coef:Math.abs(t.coef),letters:t.letters});
+  }).join(' ');
+}
+function polyHTML(terms){
+  return terms.map((t,i)=>{
+    const neg=t.coef<0;
+    let h='<span class="term">';
+    if(i>0)h+=`<span class="op">${neg?'－':'＋'}</span>`;
+    else if(neg)h+='<span class="op">−</span>';
+    h+=monoHigh({coef:Math.abs(t.coef),letters:t.letters});
+    return h+'</span>';
+  }).join('');
+}
+function quotText(q,i){ // 括号内的项（文字版）
+  const s=q.coef<0?'−':'＋';
+  return (i===0?(q.coef<0?'−':''):s)+monoText({coef:Math.abs(q.coef),letters:q.letters});
+}
+
+/* ============ DOM 与状态 ============ */
+const stage=document.getElementById('stage'),exprEl=document.getElementById('expr');
+const callout=document.getElementById('callout'),items=document.querySelectorAll('#steps li');
+const dots=document.querySelectorAll('#dots i'),btnPrev=document.getElementById('btnPrev'),btnNext=document.getElementById('btnNext');
+const inputsBox=document.getElementById('inputs'),errBox=document.getElementById('err');
+let termsRaw=['6a^3b','8a^2b^2','-2ab'];
+let terms=[],cf={coef:1,letters:[]},quot=[],G=1;
+let cur=0,timer=null;
+
+const STEPS=[
+  {k:'k1',t:'第 1 步｜看系数（取 GCD）',d:'',f:''},
+  {k:'k2',t:'第 2 步｜看字母（相同字母取最低次幂）',d:'',f:''},
+  {k:'k3',t:'第 3 步｜组合公因式，提取到下一行',d:'',f:''},
+  {k:'k4',t:'第 4 步｜「一提」——括号内填剩余项',d:'',f:''},
+];
+const STEPCLS=['s1','s2','s3','s4'];
+
+/* ---------- 输入框 ---------- */
+function buildInputs(){
+  inputsBox.innerHTML='';
+  termsRaw.forEach((v,i)=>{
+    const d=document.createElement('div');
+    d.className='tin';
+    d.innerHTML=`<span class="idx">${'①②③④⑤'[i]||i+1}</span><input spellcheck="false" value="${v.replace(/"/g,'&quot;')}"><button class="rm" title="删除这一项">×</button>`;
+    d.querySelector('input').addEventListener('input',e=>{
+      termsRaw[i]=e.target.value; d.classList.remove('bad'); schedule();
+    });
+    d.querySelector('.rm').onclick=()=>{
+      if(termsRaw.length<=2)return;
+      termsRaw.splice(i,1); buildInputs(); buildScene();
+    };
+    inputsBox.appendChild(d);
+  });
+  document.getElementById('btnAdd').disabled=termsRaw.length>=5;
+}
+function schedule(){clearTimeout(timer);timer=setTimeout(buildScene,200);}
+
+/* ---------- 主构建 ---------- */
+function buildScene(){
+  errBox.style.display='none';
+  document.querySelectorAll('.tin').forEach(t=>t.classList.remove('bad'));
+
+  // 解析（含错误定位）
+  const parsed=[]; let bad=-1,badMsg='';
+  termsRaw.forEach((r,i)=>{
+    if(bad>=0)return;
+    try{parsed.push(parseTerm(r));}
+    catch(e){bad=i;badMsg=e.message;}
+  });
+  if(bad>=0){
+    const box=inputsBox.children[bad];
+    if(box)box.classList.add('bad');
+    errBox.textContent=`⚠ 第 ${bad+1} 项「${termsRaw[bad]}」无法识别：${badMsg}`;
+    errBox.style.display='block';
+    return;
+  }
+  terms=parsed;
+  const A=analyze(terms); cf=A.cf; quot=A.quot; G=A.g;
+  const cfOne=(cf.coef===1&&cf.letters.length===0);
+
+  // 表达式
+  exprEl.innerHTML=polyHTML(terms);
+  document.getElementById('gfPill').textContent=monoText(cf);
+
+  // 括号内剩余项（按各项颜色着色）
+  document.getElementById('inBox').innerHTML=quot.map((q,i)=>
+    (i===0?'':`<span class="op2">${q.coef<0?'－':'＋'}</span>`)
+    +(i===0&&q.coef<0?'<span class="op2">−</span>':'')
+    +`<span style="color:${COL[i%5]};font-weight:700">${monoPlain(q)}</span>`
+  ).join('');
+
+  // 除法标签
+  document.getElementById('chips').innerHTML=terms.map((t,i)=>{
+    const q=quot[i];
+    return `<span class="chip" style="color:${COL[i%5]};border-color:${COL[i%5]}59;background:${COL[i%5]}0d">${monoText(t)} ÷ ${monoText(cf)} ＝ ${monoText(q)}</span>`;
+  }).join('');
+
+  // 最终答案 + 检验
+  const inner=quot.map((q,i)=>quotText(q,i)).join(' ');
+  document.getElementById('ansBox').innerHTML=`✔ 最终答案：${polyText(terms)} ＝ ${monoText(cf)}(${inner})`;
+  document.getElementById('tipBox').innerHTML='检验：'+terms.map((t,i)=>{
+    const q=quot[i];
+    const s=q.coef<0?'－':'＋';
+    const piece=`${monoText(cf)}·${q.coef<0?'('+monoText(q)+')':monoText(q)}`;
+    return (i===0?(q.coef<0?'−':''):s)+piece;
+  }).join(' ')+` ＝ ${polyText(terms)} ✓ 与原式相等`;
+
+  stage.classList.toggle('nocf',cfOne);
+  document.getElementById('sub').textContent=`当前题目：${polyText(terms)} ｜ 公因式 ＝ 系数GCD × 相同字母最低次幂 ｜ 口诀「一提」`;
+
+  // 动态文案
+  const absList=terms.map(t=>Math.abs(t.coef));
+  const coefList=terms.map(t=>t.coef);
+  STEPS[0].d=`各项系数分别为 ${coefList.join('、')}。公因式的系数取它们绝对值的最大公约数：GCD(${absList.join(', ')}) ＝ ${G}。`;
+  STEPS[0].f=`GCD(${absList.join(', ')}) ＝ ${G}`;
+  if(cf.letters.length){
+    STEPS[1].d='各项都含有字母 '+cf.letters.map(l=>l.v).join('、')+'。分别取它们的最低次数：'+
+      cf.letters.map(l=>{
+        const exps=terms.map(t=>{const f=t.letters.find(x=>x.v===l.v);return f?f.e:0;});
+        return `${l.v} 的次数 ${exps.join('、')} → 取 ${l.e}`;
+      }).join('；')+'。';
+    STEPS[1].f=`相同字母的最低次幂 ＝ ${cf.letters.map(l=>l.v+(l.e>1?sup(l.e):'')).join('')}`;
+  }else{
+    STEPS[1].d='各项没有公共的字母（或某项缺少某个字母），所以公因式里不含字母。';
+    STEPS[1].f='相同字母的最低次幂 ＝ 无';
+  }
+  STEPS[2].d=`系数 ${G} 与字母部分 ${cf.letters.length?cf.letters.map(l=>l.v+(l.e>1?sup(l.e):'')).join(''):'（无）'} 相乘，得到公因式 ${monoText(cf)}；把它从每一项中提出来，写到下一行的括号外。`;
+  STEPS[2].f=`公因式 ＝ ${monoText(cf)}`;
+  STEPS[3].d='每一项都除以公因式 '+monoText(cf)+'，把商依次写进括号：'+
+    terms.map((t,i)=>`${monoText(t)}÷${monoText(cf)}＝${monoText(quot[i])}`).join('，')+'。';
+  STEPS[3].f=`${polyText(terms)} ＝ ${monoText(cf)}(${inner})`;
+
+  items.forEach((li,i)=>{li.querySelector('.tx').textContent=STEPTXT[i]();});
+  document.getElementById('pullTxt').textContent=`从每一项中提取公因式 ${monoText(cf)}，写到下一行`;
+
+  cur=0; applyStep();
+}
+const STEPTXT=[
+  ()=>`看系数：GCD(${terms.map(t=>Math.abs(t.coef)).join(', ')}) ＝ ${G}`,
+  ()=>`看字母：${cf.letters.length?'相同字母取最低次幂 → '+monoText({coef:1,letters:cf.letters}):'没有相同字母'}`,
+  ()=>`组公因式：${monoText(cf)}（提取到下一行）`,
+  ()=>`提取得：${monoText(cf)}(${quot.map((q,i)=>quotText(q,i)).join(' ')})`,
+];
+
+/* ---------- 步骤渲染 ---------- */
+function applyStep(){
+  exprEl.classList.remove('s1','s2','s3','s4');
+  if(cur>0)exprEl.classList.add(STEPCLS[cur-1]);
+  stage.classList.remove('st3','st4');
+  if(cur>=3)stage.classList.add('st3');
+  if(cur>=4)stage.classList.add('st4');
+
+  const st=cur===0
+    ?{k:'k0',t:'准备开始',d:'点击「下一步」，分四步找出公因式并完成提取：<br>① 看系数 → ② 看字母 → ③ 组公因式 → ④ 提取得结果。',f:''}
+    :STEPS[cur-1];
+  callout.className='step-callout '+st.k;
+  callout.innerHTML=`<div class="st">${st.t}</div><div class="sd">${st.d}</div>${st.f?`<div class="sf">${st.f}</div>`:''}`;
+
+  items.forEach((li,i)=>{li.classList.toggle('done',i<cur);li.classList.toggle('cur',i===cur-1);});
+  dots.forEach((d,i)=>d.classList.toggle('on',i<cur));
+  btnPrev.disabled=cur===0; btnNext.disabled=cur===4;
+}
+
+/* ---------- 事件 ---------- */
+btnNext.onclick=()=>{if(cur<4){cur++;applyStep();}};
+btnPrev.onclick=()=>{if(cur>0){cur--;applyStep();}};
+document.getElementById('btnReset').onclick=()=>{cur=0;applyStep();};
+document.getElementById('btnAdd').onclick=()=>{
+  if(termsRaw.length>=5)return;
+  termsRaw.push('a^2b'); buildInputs(); buildScene();
+  const last=inputsBox.lastElementChild.querySelector('input');
+  last.focus(); last.select();
+};
+document.querySelectorAll('[data-preset]').forEach(b=>b.onclick=()=>{
+  termsRaw=b.dataset.preset.split('|');
+  buildInputs(); buildScene();
+});
+
+/* ---------- 启动 ---------- */
+buildInputs();
+buildScene();
+</script>
+</body>
+</html>

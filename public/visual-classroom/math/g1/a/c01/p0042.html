@@ -1,0 +1,488 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>集合与韦恩图 · 动态可视化讲解 Demo</title>
+<style>
+  :root{
+    --bg:#f5f7fa; --card:#fff; --ink:#1e293b; --muted:#64748b;
+    --line:#e2e8f0; --brand:#2563eb; --hl:#ef4444;
+  }
+  *{margin:0;padding:0;box-sizing:border-box;font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif}
+  body{background:var(--bg);color:var(--ink);padding-bottom:40px}
+  header{background:linear-gradient(120deg,#1e3a8a,#2563eb 60%,#0ea5e9);color:#fff;padding:18px 28px}
+  header h1{font-size:20px;font-weight:700}
+  header p{font-size:13px;opacity:.85;margin-top:4px}
+  main{max-width:1320px;margin:0 auto;padding:22px}
+  .grid{display:grid;gap:18px}
+  .top{grid-template-columns:300px 1fr}
+  .bot{grid-template-columns:1fr 320px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:18px;box-shadow:0 1px 3px rgba(0,0,0,.05)}
+  .card h3{font-size:15px;margin-bottom:12px;display:flex;align-items:center;gap:8px;flex-wrap:wrap}
+  .tag{font-size:11px;background:#eff6ff;color:var(--brand);padding:2px 8px;border-radius:20px;font-weight:400}
+  .seg{display:flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;margin-bottom:14px}
+  .seg button{flex:1;border:none;background:#fff;padding:8px;font-size:13px;color:var(--muted);cursor:pointer}
+  .seg button.on{background:var(--brand);color:#fff;font-weight:700}
+  .ops{display:flex;flex-direction:column;gap:7px}
+  .ops button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:9px 12px;font-size:13.5px;
+    text-align:left;cursor:pointer;transition:.12s;color:var(--ink)}
+  .ops button:hover{border-color:var(--brand);background:#f8fafc}
+  .ops button.on{background:#fef2f2;border-color:var(--hl);color:#b91c1c;font-weight:700}
+  .ops button small{color:var(--muted);font-weight:400;margin-left:6px}
+  .data-grid{display:grid;grid-template-columns:repeat(4,1fr);gap:12px}
+  @media (max-width:900px){ .data-grid{grid-template-columns:repeat(2,1fr)} }
+  .stage{display:flex;flex-direction:column;gap:16px;align-items:stretch;max-width:780px;margin:0 auto}
+  .svgwrap{min-width:0}
+  svg{width:100%;max-width:600px;display:block;margin:0 auto}
+  .explain{min-width:0;font-size:14px;line-height:1.9;text-align:left;
+    border-top:1px solid var(--line);padding-top:14px}
+  .explain-txt{font-size:16.5px;line-height:2;margin-top:8px;color:#1f2937}
+  .legend{display:flex;gap:14px;justify-content:center;font-size:13px;margin-top:6px;flex-wrap:wrap}
+  .legend i{display:inline-block;width:12px;height:12px;border-radius:50%;margin-right:5px;vertical-align:-1px}
+  .btn{background:var(--brand);color:#fff;border:none;border-radius:8px;padding:9px 16px;font-size:13.5px;cursor:pointer}
+  .btn:hover{background:#1d4ed8}
+  .btn.ghost{background:#fff;color:var(--brand);border:1px solid var(--brand)}
+  .btn.ghost:hover{background:#eff6ff}
+  .btn.play{background:#0f766e}
+  .btn.play:hover{background:#0b5e58}
+  .btns{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap}
+  table{width:100%;border-collapse:collapse;font-size:13.5px}
+  th,td{border-bottom:1px solid var(--line);padding:7px 6px;text-align:left}
+  th{color:var(--muted);font-weight:600;font-size:12.5px}
+  td b{color:var(--brand)}
+  .hint{font-size:12px;color:var(--muted);margin-top:10px;line-height:1.7}
+  .switch{display:flex;align-items:center;justify-content:space-between;gap:10px;font-size:13.5px;
+    border:1px solid var(--line);border-radius:10px;padding:9px 12px;margin-top:12px;cursor:pointer;user-select:none}
+  .switch input{display:none}
+  .track{width:40px;height:22px;border-radius:20px;background:#cbd5e1;position:relative;transition:.2s;flex:0 0 auto}
+  .track::after{content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;
+    background:#fff;transition:.2s;box-shadow:0 1px 2px rgba(0,0,0,.25)}
+  .switch input:checked + .track{background:var(--brand)}
+  .switch input:checked + .track::after{transform:translateX(18px)}
+  .colors{display:flex;gap:14px;margin-top:10px;font-size:13px;color:var(--muted);align-items:center;flex-wrap:wrap}
+  .colors label{display:flex;align-items:center;gap:6px;cursor:pointer}
+  .colors input[type=color]{width:26px;height:26px;border:1px solid var(--line);border-radius:7px;background:none;padding:2px;cursor:pointer}
+  .fld{margin-bottom:10px}
+  .fld span{display:block;font-size:12.5px;color:var(--muted);margin-bottom:4px}
+  input[type=text]{width:100%;border:1px solid var(--line);border-radius:8px;padding:9px;font-size:13px;font-family:inherit}
+  input[type=text]:focus{outline:2px solid #bfdbfe}
+  .note{font-size:13.5px;line-height:2}
+  .kp{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin-top:12px}
+  .kp .box{border:1px solid var(--line);border-radius:10px;padding:12px 14px;background:#f8fafc}
+  .kp h4{font-size:13px;margin-bottom:6px;color:var(--brand)}
+  .kp ul{margin:0;padding-left:18px;font-size:13px;line-height:2;color:#334155}
+  text.el{cursor:pointer}
+  text.el:hover{opacity:.6}
+  .anim{animation:pulse 1.8s ease-in-out infinite}
+  @keyframes pulse{0%,100%{opacity:.30}50%{opacity:.5}}
+</style>
+</head>
+<body>
+<header>
+  <h1>集合与韦恩图 · 动态可视化讲解</h1>
+  <p>数据（自定义 / 随机生成）→ 运算（交 / 并 / 补 / 差）→ 结果（韦恩图）→ 补充说明 → 知识点总结</p>
+</header>
+
+<main>
+  <div class="card" style="margin-bottom:18px">
+    <h3>✏️ 集合数据 <span class="tag">自定义 / 随机生成</span></h3>
+    <div class="data-grid">
+      <div class="fld"><span>全集 U（如 1-16，也可写 a,b,c…）</span>
+        <input type="text" id="uInput" value="1-16"></div>
+      <div class="fld"><span>集合 A 的元素</span><input type="text" id="aInput"></div>
+      <div class="fld"><span>集合 B 的元素</span><input type="text" id="bInput"></div>
+      <div class="fld" id="cField"><span>集合 C 的元素</span><input type="text" id="cInput"></div>
+    </div>
+    <div class="btns">
+      <button class="btn" onclick="applyData()">应用数据</button>
+      <button class="btn" onclick="randomize()">🎲 随机生成</button>
+      <button class="btn ghost" onclick="resetData()">↺ 重置</button>
+    </div>
+    <p class="hint">元素用逗号或空格分隔，如 <b>1,3,5,7</b>；连续数字可用范围 <b>1-16</b>。
+      「随机生成」按当前全集随机分配每个元素的归属区域，一键换题；不属于任何集合的元素会留在方框内、圆圈外。</p>
+  </div>
+
+  <div class="grid top">
+    <div class="card">
+      <h3>🎛 控制台</h3>
+      <div class="seg">
+        <button id="m2" class="on" onclick="setMode(2)">两个集合</button>
+        <button id="m3" onclick="setMode(3)">三个集合</button>
+      </div>
+
+      <label class="switch" for="showEl">
+        <span>显示集合中的元素</span>
+        <input type="checkbox" id="showEl" checked onchange="toggleElements(this.checked)">
+        <span class="track"></span>
+      </label>
+
+      <div class="colors" id="colorBar"></div>
+
+      <h3 style="margin-top:16px">🧮 集合运算 <span class="tag">点击切换</span></h3>
+      <div class="ops" id="ops"></div>
+      <div class="btns">
+        <button class="btn play" id="playBtn" onclick="autoPlay()">▶ 自动演示</button>
+      </div>
+      <p class="hint">💡 课堂用法：先关掉元素讲区域关系，再打开元素讲计数；点击运算按钮让区域「亮起来」。</p>
+    </div>
+
+    <div class="card">
+      <div class="stage">
+        <div class="svgwrap">
+          <svg id="venn" viewBox="0 0 400 400"></svg>
+          <div class="legend" id="legend"></div>
+        </div>
+        <div class="explain" id="explain"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card" style="margin-top:18px">
+    <h3>📝 知识点速览 <span class="tag">高中必修</span></h3>
+    <div style="font-size:13.5px;line-height:2">
+      <b>交集 A∩B</b>：既属于 A 又属于 B 的元素<br>
+      <b>并集 A∪B</b>：属于 A 或属于 B 的元素（公共元素只计一次）<br>
+      <b>补集 ∁<sub>U</sub>A</b>：全集 U 中不属于 A 的元素<br>
+      <b>差集 A−B</b>：属于 A 但不属于 B 的元素<br>
+    </div>
+    <p class="hint">建议先讲区域关系，再打开元素讲计数。</p>
+  </div>
+
+  <div class="card" style="margin-top:18px">
+    <h3>📚 知识点总结 <span class="tag">一表梳理，考前速记</span></h3>
+    <table>
+      <tr><th>运算</th><th>记号</th><th>定义</th><th>韦恩图区域</th><th>常用性质</th></tr>
+      <tr><td>交集</td><td><b>A∩B</b></td><td>{x｜x∈A 且 x∈B}</td><td>两圆重叠部分</td>
+        <td>A∩A=A，A∩∅=∅，(A∩B)⊆A</td></tr>
+      <tr><td>并集</td><td><b>A∪B</b></td><td>{x｜x∈A 或 x∈B}</td><td>两圆覆盖的全部</td>
+        <td>公共元素只写一次；A∪∅=A</td></tr>
+      <tr><td>补集</td><td><b>∁<sub>U</sub>A</b></td><td>{x｜x∈U 且 x∉A}</td><td>圆外、方框内</td>
+        <td>A∪∁<sub>U</sub>A=U，A∩∁<sub>U</sub>A=∅，∁<sub>U</sub>(∁<sub>U</sub>A)=A</td></tr>
+      <tr><td>差集</td><td><b>A−B</b></td><td>{x｜x∈A 且 x∉B}</td><td>A 中挖去重叠部分</td>
+        <td>A−B = A∩∁<sub>U</sub>B；一般 A−B ≠ B−A</td></tr>
+    </table>
+    <div class="kp" style="grid-template-columns:1fr">
+      <div class="box">
+        <h4>运算律</h4>
+        <ul>
+          <li>交换律：A∩B=B∩A，A∪B=B∪A</li>
+          <li>结合律：(A∩B)∩C=A∩(B∩C)，并集同理</li>
+          <li>分配律：A∩(B∪C)=(A∩B)∪(A∩C)</li>
+          <li>德摩根律：∁<sub>U</sub>(A∪B)=∁<sub>U</sub>A∩∁<sub>U</sub>B，　∁<sub>U</sub>(A∩B)=∁<sub>U</sub>A∪∁<sub>U</sub>B</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</main>
+
+<script>
+/* ================= 数据模型 ================= */
+let mode = 2;                 // 2 或 3 个集合
+let curOp = 'inter';
+let showEl = true;
+let timer = null;
+let COLORS = {A:'#2563eb', B:'#f59e0b', C:'#10b981'};
+const NAMES = ['A','B','C'];
+let ELEMS = [];               // 元素标签数组
+let regions = [];             // regions[i]：第 i 个元素所属区域的位掩码
+let dataVer = 0;              // 数据版本号，用于位置缓存失效
+
+const DEFAULT2 = [3,1,1,3,0,2,2,1,3,0,2,1,0,2,3,0];
+const DEFAULT3 = [7,1,2,4,3,5,6,0,1,4,7,2,0,5,3,6];
+
+const OPS2 = [
+  {k:'inter',  t:'A ∩ B', d:'交集', rs:[3],     say:'交集 A∩B：两个集合的<b>公共部分</b>，元素必须同时属于 A 和 B。'},
+  {k:'union',  t:'A ∪ B', d:'并集', rs:[1,2,3], say:'并集 A∪B：属于 A <b>或</b>属于 B 的所有元素，公共部分只算一次。'},
+  {k:'diffA',  t:'A − B', d:'差集', rs:[1],     say:'A−B：属于 A 但<b>不属于 B</b>的元素，即 A 中去掉公共部分后剩下的月牙形。'},
+  {k:'diffB',  t:'B − A', d:'差集', rs:[2],     say:'B−A：属于 B 但不属于 A 的元素。注意 A−B ≠ B−A。'},
+  {k:'compA',  t:'∁ᵤA',   d:'补集', rs:[0,2],   say:'补集 ∁<sub>U</sub>A：全集 U 中<b>不属于 A</b>的元素，含「只在 B 里」和「框内圈外」两块。'}
+];
+const OPS3 = [
+  {k:'inter3', t:'A ∩ B ∩ C',   d:'交集', rs:[7],             say:'A∩B∩C：三个集合的<b>公共部分</b>，元素同时属于 A、B、C。'},
+  {k:'union3', t:'A ∪ B ∪ C',   d:'并集', rs:[1,2,3,4,5,6,7], say:'A∪B∪C：至少属于其中一个集合的全部元素。'},
+  {k:'interAB',t:'A ∩ B',       d:'交集', rs:[3,7],           say:'A∩B：A 与 B 的公共部分，含「只在 A、B 中」与「三者公共」两块。'},
+  {k:'abNotC', t:'(A ∩ B) − C', d:'差集', rs:[3],             say:'(A∩B)−C：属于 A 和 B，但不属于 C 的部分。'},
+  {k:'abUC',   t:'(A ∪ B) ∩ C', d:'混合', rs:[5,6,7],         say:'(A∪B)∩C：先求 A∪B，再与 C 取公共部分。'},
+  {k:'compAB3',t:'∁ᵤ(A ∪ B)',   d:'补集', rs:[0,4],           say:'∁<sub>U</sub>(A∪B)：全集里既不在 A 也不在 B 的元素。'}
+];
+function ops(){ return mode===2 ? OPS2 : OPS3; }
+function op(){ return ops().find(o=>o.k===curOp) || ops()[0]; }
+
+/* ================= 几何与排版 ================= */
+const UBOX = {x0:8, y0:16, x1:392, y1:388};
+function geo(){
+  if(mode===2) return {
+    circles:[{cx:150,cy:205,r:116,c:COLORS.A,n:'A',lx:44,ly:112},
+             {cx:250,cy:205,r:116,c:COLORS.B,n:'B',lx:356,ly:112}]
+  };
+  return {
+    circles:[{cx:146,cy:150,r:112,c:COLORS.A,n:'A',lx:46,ly:70},
+             {cx:254,cy:150,r:112,c:COLORS.B,n:'B',lx:354,ly:70},
+             {cx:200,cy:244,r:112,c:COLORS.C,n:'C',lx:200,ly:376}]
+  };
+}
+const ROW_CACHE = {};
+function inRegion(r, x, y, g, pad){
+  for(const c of g.circles) if(Math.hypot(x-c.lx, y-c.ly) < 24) return false;  // 避开集合名标签
+  if(Math.hypot(x-22, y-32) < 20) return false;                                // 避开 U 标记
+  for(let i=0;i<g.circles.length;i++){
+    const c=g.circles[i], d=Math.hypot(x-c.cx, y-c.cy), inside=(r>>i)&1;
+    if(inside){ if(d > c.r - pad) return false; }
+    else if(d < c.r + pad) return false;
+  }
+  return true;
+}
+function regionRows(r, g, pad){
+  const rows=[];
+  for(let y=UBOX.y0+18; y<=UBOX.y1-18; y+=4){
+    const runs=[]; let start=null;
+    for(let x=UBOX.x0+16; x<=UBOX.x1-16; x+=2){
+      const ok = inRegion(r, x, y, g, pad);
+      if(ok && start===null) start=x;
+      if(!ok && start!==null){ runs.push([start, x-2]); start=null; }
+    }
+    if(start!==null) runs.push([start, UBOX.x1-16]);
+    const good = runs.filter(a=>a[1]-a[0] >= 10);
+    if(good.length) rows.push({y, runs:good});
+  }
+  return rows;
+}
+function layoutRegionPad(r, k, g, pad){
+  const key = mode+'_'+pad;
+  if(!ROW_CACHE[key]){
+    const cache={}, maxR=1<<mode;
+    for(let i=0;i<maxR;i++) cache[i]=regionRows(i, g, pad);
+    ROW_CACHE[key]=cache;
+  }
+  const rows = ROW_CACHE[key][r] || [];
+  if(!rows.length || k<=0) return [];
+  const cy = rows.reduce((s,a)=>s+a.y,0)/rows.length;
+  const width = row => Math.max(...row.runs.map(a=>a[1]-a[0]));
+  const order = rows.slice().sort((a,b)=>
+    (-Math.min(width(a),260) + Math.abs(a.y-cy)*0.6) - (-Math.min(width(b),260) + Math.abs(b.y-cy)*0.6));
+  const used=[], out=[], MAX_STEP=30;
+  for(const row of order){
+    if(out.length>=k) break;
+    if(used.some(y=>Math.abs(y-row.y)<26)) continue;
+    const placed=[];
+    for(const [a,b] of row.runs){
+      const w=b-a, room = Math.max(1, Math.floor((w+14)/24));
+      let n = Math.min(k-out.length-placed.length, room);
+      while(n>0){
+        const step = n>1 ? Math.min((w-8)/(n-1), MAX_STEP) : 0;
+        const sx = (a+b)/2 - step*(n-1)/2;
+        const cand=[]; for(let i=0;i<n;i++) cand.push({x:sx+i*step, y:row.y});
+        const far = p => placed.every(q=>Math.hypot(p.x-q.x,p.y-q.y)>=20)
+                       && out.every(q=>Math.hypot(p.x-q.x,p.y-q.y)>=20);
+        if(cand.every(far)){ placed.push(...cand); break; }
+        n--;
+      }
+    }
+    if(placed.length){ out.push(...placed); used.push(row.y); }
+  }
+  if(out.length<k){   // 元素较多时加密补位
+    for(const row of order){
+      if(out.length>=k) break;
+      for(const [a,b] of row.runs){
+        if(out.length>=k) break;
+        for(let x=a+6; x<=b-4; x+=16){
+          if(out.length>=k) break;
+          const p={x, y:row.y};
+          if(out.every(q=>Math.hypot(p.x-q.x,p.y-q.y)>=15)) out.push(p);
+        }
+      }
+    }
+  }
+  return out;
+}
+function layoutRegion(r, k){
+  const g=geo(); let best=[];
+  for(const pad of [17,11,7]){
+    const got = layoutRegionPad(r, k, g, pad);
+    if(got.length>best.length) best=got;
+    if(got.length>=k) break;
+  }
+  return best;
+}
+
+/* ================= 构建 SVG 骨架（只在模式 / 元素变化时重建） ================= */
+let elNodes = [], hlNodes = [];
+function buildSvg(){
+  const g=geo(), maxR=1<<mode;
+  let clips='', masks='';
+  g.circles.forEach((c,i)=>{ clips += `<clipPath id="c${i}"><circle cx="${c.cx}" cy="${c.cy}" r="${c.r}"/></clipPath>`; });
+  for(let r=0;r<maxR;r++){
+    let chain='<rect x="0" y="0" width="400" height="400" fill="#fff"/>';
+    for(let i=0;i<mode;i++) if(r & (1<<i)) chain = `<g clip-path="url(#c${i})">${chain}</g>`;
+    let black='';
+    for(let i=0;i<mode;i++) if(!(r & (1<<i)))
+      black += `<circle cx="${g.circles[i].cx}" cy="${g.circles[i].cy}" r="${g.circles[i].r}" fill="#000"/>`;
+    masks += `<mask id="mk${r}">${chain}${black}</mask>`;
+  }
+  let fill=''; g.circles.forEach(c=>{ fill += `<circle cx="${c.cx}" cy="${c.cy}" r="${c.r}" fill="${c.c}" fill-opacity="0.13"/>`; });
+  let hl='';   for(let r=0;r<maxR;r++) hl += `<g id="hl${r}" mask="url(#mk${r})" opacity="0"><rect x="0" y="0" width="400" height="400" fill="#ef4444"/></g>`;
+  hl = `<g id="hlWrap" class="anim">${hl}</g>`;   // 统一在一个组上做呼吸动画，保证各区域同步
+  let line=''; g.circles.forEach(c=>{
+    line += `<circle cx="${c.cx}" cy="${c.cy}" r="${c.r}" fill="none" stroke="${c.c}" stroke-width="2.5"/>
+      <text x="${c.lx}" y="${c.ly}" font-size="20" font-weight="700" fill="${c.c}" text-anchor="middle">${c.n}</text>`; });
+  document.getElementById('venn').innerHTML =
+    `<defs>${clips}${masks}</defs>
+     <rect x="8" y="16" width="384" height="372" rx="10" fill="#fff" stroke="#cbd5e1" stroke-width="2"/>
+     <text x="22" y="32" font-size="13" fill="#64748b">U</text>
+     ${fill}${hl}${line}<g id="elLayer"></g>`;
+  hlNodes = []; for(let r=0;r<maxR;r++) hlNodes.push(document.getElementById('hl'+r));
+  buildElNodes();
+  document.getElementById('legend').innerHTML =
+    g.circles.map(c=>`<span><i style="background:${c.c}"></i>集合 ${c.n}</span>`).join('')
+    + `<span><i style="background:#ef4444"></i>运算结果区域</span>`;
+}
+function buildElNodes(){
+  const layer=document.getElementById('elLayer');
+  layer.innerHTML = ELEMS.map((lab,i)=>
+    `<text class="el" id="el${i}" text-anchor="middle" dominant-baseline="middle"
+      onclick="cycle(${i})"><title>点击改变元素 ${lab} 的所属区域</title>${lab}</text>`).join('');
+  elNodes = ELEMS.map((_,i)=>document.getElementById('el'+i));
+}
+
+/* ================= 快速刷新（只改属性，不重绘整张图） ================= */
+let posCache = {ver:-1, map:{}};
+function positionsFor(r, list){
+  if(posCache.ver!==dataVer){ posCache = {ver:dataVer, map:{}}; }
+  if(!posCache.map[r] || posCache.map[r].length!==list.length)
+    posCache.map[r] = layoutRegion(r, list.length);
+  return posCache.map[r];
+}
+function update(){
+  const maxR = 1<<mode, o = op(), hit = o.rs;
+  for(let r=0;r<maxR;r++){
+    const node = hlNodes[r]; if(!node) continue;
+    node.setAttribute('opacity', hit.includes(r) ? 1 : 0);
+  }
+  const layer = document.getElementById('elLayer');
+  layer.setAttribute('display', showEl ? 'inline' : 'none');
+  if(showEl){
+    for(let r=0;r<maxR;r++){
+      const list=[]; for(let i=0;i<regions.length;i++) if(regions[i]===r) list.push(i);
+      if(!list.length) continue;
+      const pos = positionsFor(r, list), on = hit.includes(r);
+      list.forEach((idx,n)=>{
+        const node = elNodes[idx]; if(!node) return;
+        const p = pos[n] || pos[pos.length-1] || {x:200,y:200};
+        node.setAttribute('x', p.x.toFixed(1));
+        node.setAttribute('y', p.y.toFixed(1));
+        node.setAttribute('font-size', on ? 15 : 14);
+        node.setAttribute('font-weight', on ? 700 : 600);
+        node.setAttribute('style', `fill:${on?'#b91c1c':(r===0?'#94a3b8':'#334155')}`);
+      });
+    }
+  }
+  renderExplain();
+}
+function renderAll(){ buildSvg(); update(); }
+
+/* ================= 文本区渲染 ================= */
+function setList(n){ const out=[]; for(let i=0;i<regions.length;i++) if(regions[i] & (1<<n)) out.push(ELEMS[i]); return out; }
+function cap(arr){ return arr.length ? arr.join(', ') : '∅'; }
+function renderExplain(){
+  const o = op();
+  document.getElementById('explain').innerHTML = `
+    <div style="font-size:19px;font-weight:700;color:#b91c1c">${o.t}　<span style="font-size:13px;color:#64748b">${o.d}</span></div>
+    <p class="explain-txt">${o.say}</p>
+    <p class="hint">${showEl?'点击图中元素可改变其所属区域，图形实时更新。':'当前已隐藏元素，仅展示区域关系。'}</p>`;
+}
+function renderOpsBar(){
+  document.getElementById('ops').innerHTML = ops().map(o=>
+    `<button class="${o.k===curOp?'on':''}" onclick="setOp('${o.k}')">${o.t} <small>${o.d}</small></button>`).join('');
+}
+function renderColorBar(){
+  const names = mode===2?['A','B']:['A','B','C'];
+  document.getElementById('colorBar').innerHTML = names.map(n=>
+    `<label title="调整集合 ${n} 的颜色">集合 <b id="clr${n}" style="color:${COLORS[n]}">${n}</b>
+      <input type="color" value="${COLORS[n]}" oninput="setColor('${n}',this.value)"></label>`).join('');
+}
+
+/* ================= 交互 ================= */
+function setMode(m){
+  mode=m;
+  regions = (m===2? DEFAULT2 : DEFAULT3).slice();
+  ELEMS = Array.from({length:16},(_,i)=>String(i+1));
+  curOp = m===2?'inter':'inter3';
+  document.getElementById('m2').classList.toggle('on',m===2);
+  document.getElementById('m3').classList.toggle('on',m===3);
+  document.getElementById('cField').style.display = m===3?'block':'none';
+  stopAuto(); dataVer++; renderOpsBar(); renderColorBar(); syncInputs(); renderAll();
+}
+function setOp(k){ curOp=k; stopAuto(); renderOpsBar(); update(); }
+function cycle(i){ regions[i] = (regions[i]+1) % (1<<mode); dataVer++; update(); }
+function randomize(){
+  const maxR=1<<mode;
+  regions = regions.map(()=>Math.floor(Math.random()*maxR));
+  stopAuto(); dataVer++; syncInputs(); update();
+}
+function resetData(){
+  regions = (mode===2?DEFAULT2:DEFAULT3).slice();
+  ELEMS = Array.from({length:16},(_,i)=>String(i+1));
+  stopAuto(); dataVer++; syncInputs(); renderAll();
+}
+function toggleElements(v){ showEl=v; update(); }
+function setColor(n,v){
+  COLORS[n]=v;
+  const lab=document.getElementById('clr'+n); if(lab) lab.style.color=v;
+  buildSvg(); update();
+}
+function stopAuto(){
+  if(timer){ clearInterval(timer); timer=null; }
+  const b=document.getElementById('playBtn'); if(b){ b.textContent='▶ 自动演示'; b.classList.remove('play'); }
+}
+function autoPlay(){
+  if(timer){ stopAuto(); return; }
+  const b=document.getElementById('playBtn'); b.textContent='⏸ 停止演示'; b.classList.add('play');
+  const list=ops(); let i=list.findIndex(o=>o.k===curOp);
+  timer=setInterval(()=>{ i=(i+1)%list.length; curOp=list[i].k; renderOpsBar(); update(); },1800);
+}
+
+/* ================= 自定义数据 ================= */
+function parseList(s){
+  const out=[];
+  s.split(/[,，、\s;；]+/).forEach(tok=>{
+    if(!tok) return;
+    const m = tok.match(/^(.+?)-(.+)$/);
+    if(m && /^-?\d+$/.test(m[1]) && /^-?\d+$/.test(m[2])){
+      for(let v=+m[1]; v<=+m[2]; v++) out.push(String(v));
+    } else out.push(tok);
+  });
+  return out;
+}
+function applyData(){
+  const elems = parseList(document.getElementById('uInput').value);
+  if(!elems.length){ alert('请填写全集 U 的元素，例如：1-16'); return; }
+  if(elems.length>26){ alert('演示建议全集不超过 26 个元素，当前 '+elems.length+' 个'); }
+  const regs = new Array(elems.length).fill(0);
+  ['aInput','bInput','cInput'].forEach((id,n)=>{
+    if(n>=mode) return;
+    parseList(document.getElementById(id).value).forEach(v=>{
+      const idx = elems.indexOf(v);
+      if(idx>=0) regs[idx] |= (1<<n);
+    });
+  });
+  ELEMS = elems; regions = regs;
+  stopAuto(); dataVer++; renderAll();
+}
+function syncInputs(){
+  const names=['aInput','bInput','cInput'];
+  document.getElementById('uInput').value = ELEMS.join(', ');
+  for(let n=0;n<3;n++){
+    const el=document.getElementById(names[n]);
+    el.value = n<mode ? setList(n).join(', ') : '';
+  }
+}
+
+/* ================= 初始化 ================= */
+ELEMS = Array.from({length:16},(_,i)=>String(i+1));
+regions = DEFAULT2.slice();
+document.getElementById('cField').style.display='none';
+renderOpsBar(); renderColorBar(); syncInputs(); renderAll();
+</script>
+</body>
+</html>

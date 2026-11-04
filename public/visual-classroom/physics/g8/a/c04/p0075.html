@@ -1,0 +1,1137 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>探究凸透镜成像的规律 · 交互式可视化（人教版八年级上册 §5.3）</title>
+<style>
+:root{
+  --blue:#2563EB; --blue-d:#1D4ED8; --blue-l:#EFF4FF;
+  --green:#10B981; --red:#EF4444; --amber:#F59E0B; --violet:#7C3AED;
+  --ink:#1F2937; --ink-2:#4B5563; --ink-3:#6B7280;
+  --line:#E5E7EB; --bg:#F5F7FB; --card:#FFFFFF;
+  --radius:14px;
+  --shadow:0 1px 2px rgba(16,24,40,.04), 0 10px 28px -14px rgba(16,24,40,.26);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{font-family:"Microsoft YaHei","PingFang SC","Hiragino Sans GB",system-ui,-apple-system,"Segoe UI",sans-serif;
+  background:var(--bg);color:var(--ink);line-height:1.68;-webkit-font-smoothing:antialiased;}
+svg{display:block;font-family:inherit;}
+
+.site-header{background:linear-gradient(120deg,#1D4ED8,#2563EB 55%,#3B82F6);color:#fff;padding:22px 0 24px;}
+.header-inner{max-width:1120px;margin:0 auto;padding:0 22px;display:flex;justify-content:space-between;align-items:flex-end;gap:18px;flex-wrap:wrap;}
+.header-text h1{margin:0;font-size:24px;font-weight:700;letter-spacing:.5px;}
+.header-text p{margin:6px 0 0;font-size:13.5px;color:rgba(255,255,255,.88);}
+.header-nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.header-link{border:1px solid rgba(255,255,255,.45);border-radius:999px;padding:7px 16px;font-size:13px;color:#fff;text-decoration:none;background:rgba(255,255,255,.08);white-space:nowrap;}
+.header-link:hover{background:rgba(255,255,255,.2);}
+.header-badge{border:1px solid rgba(255,255,255,.4);border-radius:999px;padding:7px 16px;font-size:13px;background:rgba(255,255,255,.12);white-space:nowrap;}
+
+.wrap{max-width:1120px;margin:0 auto;padding:24px 22px 40px;}
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:24px 26px;margin-bottom:20px;border:1px solid rgba(229,231,235,.7);}
+.chead{display:flex;gap:14px;align-items:flex-start;margin-bottom:18px;}
+.idx{flex:0 0 auto;width:34px;height:34px;border-radius:11px;background:var(--blue-l);color:var(--blue);font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;margin-top:2px;}
+.chead h2{margin:0 0 3px;font-size:19px;font-weight:700;letter-spacing:.2px;}
+.chead p{margin:0;color:var(--ink-3);font-size:13.3px;}
+
+.split{display:grid;grid-template-columns:minmax(0,1.16fr) minmax(280px,.84fr);gap:26px;align-items:start;}
+@media(max-width:900px){.split{grid-template-columns:1fr;}}
+.stage{border:1px solid #1E293B;border-radius:12px;background:#0B1220;padding:6px;overflow:hidden;}
+.stage svg{width:100%;height:auto;border-radius:8px;touch-action:none;}
+
+.panel{display:flex;flex-direction:column;gap:15px;}
+.ctl label{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--ink-3);margin-bottom:6px;}
+.ctl label b{color:var(--ink);font-size:14.5px;font-variant-numeric:tabular-nums;font-weight:700;}
+input[type=range]{width:100%;height:24px;accent-color:var(--blue);cursor:pointer;margin:0;background:transparent;}
+.tick{display:flex;justify-content:space-between;font-size:11px;color:var(--ink-3);margin-top:1px;}
+.seg{display:flex;gap:8px;flex-wrap:wrap;}
+.seg button{border:1px solid var(--line);background:#fff;color:var(--ink-2);border-radius:9px;padding:6px 13px;font-size:12.5px;cursor:pointer;font-family:inherit;transition:.15s;}
+.seg button:hover{border-color:#BFDBFE;background:#F8FAFF;}
+.seg button.on{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600;}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:16px;}
+.tabs button{border:1px solid var(--line);background:#fff;color:var(--ink-2);border-radius:999px;padding:6px 16px;font-size:13px;cursor:pointer;font-family:inherit;transition:.15s;}
+.tabs button:hover{border-color:#BFDBFE;}
+.tabs button.on{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600;}
+.btn{border:1px solid var(--blue);background:#fff;color:var(--blue);border-radius:9px;padding:7px 15px;font-size:13px;cursor:pointer;font-family:inherit;transition:.15s;white-space:nowrap;}
+.btn:hover{background:var(--blue-l);}
+.btn.primary{background:var(--blue);color:#fff;}
+.btn.primary:hover{background:var(--blue-d);}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;}
+.hide{display:none;}
+
+.rows{border:1px solid var(--line);border-radius:11px;overflow:hidden;background:#FCFDFF;}
+.row{display:flex;justify-content:space-between;gap:10px;padding:8px 13px;font-size:13px;border-bottom:1px solid var(--line);}
+.row:last-child{border-bottom:0;}
+.row span{color:var(--ink-3);}
+.row b{font-variant-numeric:tabular-nums;font-weight:700;}
+
+.tagline{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--ink-2);flex-wrap:wrap;}
+.tag{font-size:11.5px;font-weight:700;border-radius:999px;padding:2px 10px;letter-spacing:.3px;white-space:nowrap;}
+.tag.b{background:#E4F9F0;color:#0E9F6E;}
+.tag.r{background:#FEECEC;color:#DC2626;}
+.tag.a{background:#FFF6E5;color:#B45309;}
+.tag.g{background:#EFF4FF;color:#1D4ED8;}
+.tag.v{background:#F3E8FF;color:#7C3AED;}
+.tag.n{background:#F1F5F9;color:#64748B;}
+
+.zbar{display:flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;}
+.zbar div{flex:1;text-align:center;font-size:11.5px;padding:7px 4px;color:var(--ink-3);border-right:1px solid var(--line);transition:.15s;cursor:pointer;line-height:1.4;}
+.zbar div:last-child{border-right:0;}
+.zbar div.on{color:#fff;font-weight:700;}
+.zbar div[data-z="1"].on{background:#2563EB;}
+.zbar div[data-z="2"].on{background:#0E9F6E;}
+.zbar div[data-z="3"].on{background:#D97706;}
+.zbar div[data-z="4"].on{background:#64748B;}
+.zbar div[data-z="5"].on{background:#7C3AED;}
+
+table{width:100%;border-collapse:collapse;font-size:13px;}
+th,td{border-bottom:1px solid var(--line);padding:8px 11px;text-align:left;}
+th{color:var(--ink-3);font-weight:600;font-size:12.5px;background:#FCFDFF;white-space:nowrap;}
+td{font-variant-numeric:tabular-nums;}
+.tblwrap{border:1px solid var(--line);border-radius:11px;overflow:hidden;background:#fff;}
+tbody tr{cursor:pointer;}
+tbody tr:hover td{background:#F6F9FF;}
+tbody tr.on td{background:#EFF4FF;font-weight:600;}
+
+footer{text-align:center;color:#93A2B8;font-size:12.3px;padding:6px 0 0;}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-text">
+      <h1>探究凸透镜成像的规律</h1>
+      <p>物距连续变化时，像的位置、大小和倒正怎么跟着变</p>
+    </div>
+    <div class="header-nav">
+      <a class="header-link" href="#">« 返回实验目录</a>
+      <span class="header-badge">八年级物理 · 光学 · §5.3</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- ① -->
+  <section class="card">
+    <div class="chead">
+      <div class="idx">01</div>
+      <div>
+        <h2>先把焦距测出来：平行光找焦点</h2>
+        <p>平行光经过凸透镜后会聚的那一点就是焦点，光屏上有多"尖"多亮，一眼就能读出来。</p>
+      </div>
+    </div>
+    <div class="split">
+      <div class="stage"><svg id="svg1" viewBox="0 0 700 350" role="img" aria-label="平行光经凸透镜会聚于焦点"></svg></div>
+      <div class="panel">
+        <div class="seg" id="seg1">
+          <button data-m="sun" class="on">平行光（太阳光）会聚</button>
+          <button data-m="rev">光路可逆：焦点处放光源</button>
+        </div>
+        <div class="ctl">
+          <label>凸透镜焦距 f <b id="vf1">10.0 cm</b></label>
+          <input data-fs type="range" min="5" max="15" step="0.5" value="10">
+          <div class="tick"><span>5 cm</span><span>15 cm</span></div>
+        </div>
+        <div class="ctl">
+          <label>光屏到透镜的距离 <b id="v1s">6.0 cm</b></label>
+          <input id="r1s" type="range" min="1" max="42" step="0.5" value="6">
+          <div class="tick"><span>1 cm</span><span id="t1s">42 cm</span></div>
+        </div>
+        <div class="btn-row">
+          <button class="btn primary" id="b1find">▶ 移动光屏找到最小最亮的光斑</button>
+        </div>
+        <div class="rows">
+          <div class="row"><span>屏上光斑直径</span><b id="o1d">—</b></div>
+          <div class="row"><span>相对亮度</span><b id="o1b">—</b></div>
+          <div class="row"><span>透镜到会聚点距离</span><b id="o1f">—</b></div>
+        </div>
+        <div class="tagline" id="o1tag"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ② -->
+  <section class="card">
+    <div class="chead">
+      <div class="idx">02</div>
+      <div>
+        <h2>三条特殊光线：像是怎么画出来的</h2>
+        <p>从烛焰顶端引三条光线，它们各自的去向全是定死的 —— 交点就是像的位置。</p>
+      </div>
+    </div>
+    <div class="split">
+      <div class="stage"><svg id="svg2" viewBox="0 0 720 380" role="img" aria-label="凸透镜三条特殊光线作图"></svg></div>
+      <div class="panel">
+        <div class="ctl">
+          <label>物距 u <b id="v2u">24.0 cm</b></label>
+          <input id="r2u" type="range" min="3" max="36" step="0.5" value="24">
+          <div class="tick"><span>3 cm</span><span>36 cm</span></div>
+        </div>
+        <div class="seg" id="seg2">
+          <button data-k="all" class="on">三条一起</button>
+          <button data-k="a">① 平行主轴</button>
+          <button data-k="b">② 过焦点</button>
+          <button data-k="c">③ 过光心</button>
+        </div>
+        <div class="btn-row" id="j2">
+          <button class="btn" data-j2="30">u=3f</button>
+          <button class="btn" data-j2="20">u=2f</button>
+          <button class="btn" data-j2="15">f&lt;u&lt;2f</button>
+          <button class="btn" data-j2="10">u=f</button>
+          <button class="btn" data-j2="6">u&lt;f</button>
+        </div>
+        <div class="rows">
+          <div class="row"><span>焦距 f</span><b id="vf2">10.0 cm</b></div>
+          <div class="row"><span>像距 v</span><b id="o2v">—</b></div>
+          <div class="row"><span>放大率 |v|/u</span><b id="o2m">—</b></div>
+          <div class="row"><span>三条光线是否相交</span><b id="o2x">—</b></div>
+        </div>
+        <div class="tagline" id="o2tag"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ③ -->
+  <section class="card" id="card3">
+    <div class="chead">
+      <div class="idx">03</div>
+      <div>
+        <h2>光具座实验：拖着蜡烛走一遍</h2>
+        <p>凸透镜固定在 40 cm 刻度处。拖动蜡烛改变物距，再挪动光屏去找清晰的像。</p>
+      </div>
+    </div>
+    <div class="tabs" id="tabs3">
+      <button data-t="find" class="on">探究：找清晰的像</button>
+      <button data-t="height">调：三心同高</button>
+    </div>
+    <div class="split">
+      <div class="stage"><svg id="svg3" viewBox="0 0 740 430" role="img" aria-label="光具座探究凸透镜成像规律"></svg></div>
+      <div class="panel">
+        <div class="ctl">
+          <label>物距 u（蜡烛 → 透镜） <b id="v3u">24.0 cm</b></label>
+          <input id="r3u" type="range" min="3" max="38" step="0.5" value="24">
+          <div class="tick"><span>3 cm</span><span>38 cm</span></div>
+        </div>
+        <div class="ctl">
+          <label>光屏位置（刻度尺读数） <b id="v3p">64.0 cm</b></label>
+          <input id="r3p" type="range" min="2" max="128" step="0.5" value="64">
+          <div class="tick"><span>2 cm</span><span>128 cm</span></div>
+        </div>
+        <div class="ctl hide" id="wrap3h">
+          <label>烛焰中心高（+）/ 低（−）于透镜光心 <b id="v3h">0 cm</b></label>
+          <input id="r3h" type="range" min="-5" max="5" step="0.5" value="0">
+          <div class="tick"><span>低 5 cm</span><span>高 5 cm</span></div>
+        </div>
+
+        <div class="btn-row">
+          <button class="btn primary" id="b3auto">▶ 移动光屏找清晰的像</button>
+          <button class="btn" id="b3scan">▶ 连续扫描物距</button>
+        </div>
+        <div class="btn-row" id="j3">
+          <button class="btn" data-j3="30">u&gt;2f</button>
+          <button class="btn" data-j3="20">u=2f</button>
+          <button class="btn" data-j3="15">f&lt;u&lt;2f</button>
+          <button class="btn" data-j3="10">u=f</button>
+          <button class="btn" data-j3="6">u&lt;f</button>
+        </div>
+
+        <div class="zbar" id="zbar3">
+          <div data-z="5">u&lt;f<br>放大虚像</div>
+          <div data-z="4">u=f<br>不成像</div>
+          <div data-z="3">f&lt;u&lt;2f<br>放大实像</div>
+          <div data-z="2">u=2f<br>等大实像</div>
+          <div data-z="1">u&gt;2f<br>缩小实像</div>
+        </div>
+
+        <div class="rows">
+          <div class="row"><span>焦距 f</span><b id="vf3">10.0 cm</b></div>
+          <div class="row"><span>像的位置（理论）</span><b id="o3pos">—</b></div>
+          <div class="row"><span>像距 v</span><b id="o3v">—</b></div>
+          <div class="row"><span>放大率 |v|/u</span><b id="o3m">—</b></div>
+          <div class="row"><span>1/u + 1/v</span><b id="o3inv">—</b></div>
+          <div class="row"><span>光屏上的清晰度</span><b id="o3clr">—</b></div>
+        </div>
+        <div class="tagline" id="o3tag"></div>
+      </div>
+    </div>
+
+    <div style="margin-top:22px;display:flex;gap:8px;flex-wrap:wrap;align-items:center;">
+      <button class="btn primary" id="b3rec">记录这组数据</button>
+      <button class="btn" id="b3seed">采集五个典型位置</button>
+      <button class="btn" id="b3clr">清空记录</button>
+    </div>
+    <div class="tblwrap" style="margin-top:12px;">
+      <table>
+        <thead><tr><th style="width:48px">组</th><th>物距 u</th><th>像距 v</th><th>像的位置</th><th>像的性质</th><th>应用</th></tr></thead>
+        <tbody id="tb3"></tbody>
+      </table>
+    </div>
+  </section>
+
+  <footer>八年级物理 · 凸透镜成像规律 · 交互式演示</footer>
+</div>
+
+<script>
+(function () {
+'use strict';
+
+/* ================= 通用工具 ================= */
+const $ = id => document.getElementById(id);
+const clamp = (v, a, b) => v < a ? a : (v > b ? b : v);
+const fmt = (n, d) => Number(n).toFixed(d === undefined ? 2 : d);
+const FONT = '"Microsoft YaHei","PingFang SC",sans-serif';
+
+function setTxt(id, v) { const e = $(id); if (e) e.textContent = v; }
+function setHtml(id, v) { const e = $(id); if (e) e.innerHTML = v; }
+function setSVG(id, v) { const e = $(id); if (e) e.innerHTML = v; }
+
+function T(x, y, s, o) {
+  o = o || {};
+  return '<text x="' + fmt(x, 2) + '" y="' + fmt(y, 2) + '" font-size="' + (o.size || 13) + '" fill="' + (o.fill || "#E2E8F0") +
+    '" font-weight="' + (o.w || 400) + '" text-anchor="' + (o.a || "start") +
+    '" font-family=' + "'" + FONT + "'" + (o.op !== undefined ? ' opacity="' + o.op + '"' : "") + '>' + s + '</text>';
+}
+/* 深色台上、会与光线重叠的标注：先铺一块半透明底色再写字，否则字被光穿透看不清 */
+function CT(x, y, s, o) {
+  o = o || {};
+  const size = o.size || 13;
+  let w = 0;
+  for (const ch of String(s)) w += /[\u2E80-\u9FFF\uFF00-\uFFEF]/.test(ch) ? size : size * 0.56;
+  const pad = 5, hh = size + 9;
+  const left = o.a === "middle" ? x - w / 2 : (o.a === "end" ? x - w : x);
+  return '<rect x="' + fmt(left - pad, 2) + '" y="' + fmt(y - size + 1, 2) + '" width="' + fmt(w + pad * 2, 2) +
+    '" height="' + hh + '" rx="5" fill="#0B1220" opacity="0.82"/>' + T(x, y, s, o);
+}
+function line(x1, y1, x2, y2, o) {
+  o = o || {};
+  return '<line x1="' + fmt(x1, 2) + '" y1="' + fmt(y1, 2) + '" x2="' + fmt(x2, 2) + '" y2="' + fmt(y2, 2) +
+    '" stroke="' + (o.c || "#64748B") + '" stroke-width="' + (o.w || 1.5) + '"' +
+    (o.d ? ' stroke-dasharray="' + o.d + '"' : "") + (o.op !== undefined ? ' opacity="' + o.op + '"' : "") +
+    (o.mk ? ' marker-end="url(#' + o.mk + ')"' : "") + (o.cap ? ' stroke-linecap="' + o.cap + '"' : "") + '/>';
+}
+
+/* 箭头 marker：0浅红 1琥珀 2绿 3蓝 4灰 5淡灰 */
+function arwDefs() {
+  const cs = ["#FCA5A5", "#FBBF24", "#34D399", "#93C5FD", "#64748B", "#CBD5E1"];
+  let s = "<defs>";
+  for (let i = 0; i < cs.length; i++) {
+    s += '<marker id="a' + i + '" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">' +
+      '<path d="M0 0 L10 5 L0 10 z" fill="' + cs[i] + '"/></marker>';
+  }
+  return s + "</defs>";
+}
+
+/* 凸透镜外形 */
+function lensShape(cx, axis, halfH, bulge) {
+  const R = (halfH * halfH + bulge * bulge) / (2 * bulge);
+  const rr = fmt(R, 2);
+  return '<path d="M' + cx + ' ' + fmt(axis - halfH, 2) + ' A' + rr + ' ' + rr + ' 0 0 1 ' + cx + ' ' + fmt(axis + halfH, 2) +
+    ' A' + rr + ' ' + rr + ' 0 0 1 ' + cx + ' ' + fmt(axis - halfH, 2) + ' Z" ' +
+    'fill="rgba(147,197,253,.20)" stroke="#93C5FD" stroke-width="2"/>';
+}
+
+/* 蜡烛：底座中心在 (0,0)，向上生长 hpx */
+function candle(hpx) {
+  const w = clamp(hpx * 0.36, 8, 26);
+  const bh = hpx * 0.62, fw = w * 0.5;
+  const yb = -bh, yw = -bh - hpx * 0.07, ft = -hpx;
+  let s = "";
+  s += '<path d="M' + fmt(-fw, 2) + ' ' + fmt(yw, 2) +
+    ' C' + fmt(-fw * 1.25, 2) + ' ' + fmt(ft + hpx * 0.20, 2) + ' ' + fmt(-fw * 0.4, 2) + ' ' + fmt(ft + 1, 2) + ' 0 ' + fmt(ft, 2) +
+    ' C' + fmt(fw * 0.4, 2) + ' ' + fmt(ft + 1, 2) + ' ' + fmt(fw * 1.25, 2) + ' ' + fmt(ft + hpx * 0.20, 2) + ' ' + fmt(fw, 2) + ' ' + fmt(yw, 2) +
+    ' Z" fill="#FBBF24" stroke="#F59E0B" stroke-width="1"/>';
+  s += '<path d="M' + fmt(-fw * 0.42, 2) + ' ' + fmt(yw - 1, 2) +
+    ' C' + fmt(-fw * 0.5, 2) + ' ' + fmt(ft + hpx * 0.24, 2) + ' ' + fmt(-fw * 0.18, 2) + ' ' + fmt(ft + hpx * 0.09, 2) + ' 0 ' + fmt(ft + hpx * 0.055, 2) +
+    ' C' + fmt(fw * 0.18, 2) + ' ' + fmt(ft + hpx * 0.09, 2) + ' ' + fmt(fw * 0.5, 2) + ' ' + fmt(ft + hpx * 0.24, 2) + ' ' + fmt(fw * 0.42, 2) + ' ' + fmt(yw - 1, 2) +
+    ' Z" fill="#FEF9C3"/>';
+  s += '<rect x="' + fmt(-w / 2, 2) + '" y="' + fmt(yb, 2) + '" width="' + fmt(w, 2) + '" height="' + fmt(bh, 2) +
+    '" rx="3" fill="#FDE68A" stroke="#F59E0B" stroke-width="1.4"/>';
+  s += line(0, yb, 0, yw, { c: "#78350F", w: 1.8 });
+  return s;
+}
+
+/* 竖直箭头（物/像），从 (x, y0) 画到 (x, y1) */
+function vArrow(x, y0, y1, color, mk, dash, op) {
+  const o = { c: color, w: 2.6, mk: mk, op: op };
+  if (dash) o.d = dash;
+  return line(x, y0, x, y1, o);
+}
+
+/* ================= 薄透镜核心计算 ================= */
+function imageOf(u, f) {
+  if (Math.abs(u - f) < 0.26) return { kind: "none", v: Infinity, m: Infinity };
+  const v = f * u / (u - f);
+  return { kind: v > 0 ? "real" : "virt", v: v, m: -v / u };
+}
+function classify(u, f) {
+  if (u > 2 * f + 0.26) return { z: 1, txt: "倒立、缩小的实像", app: "照相机", tag: "tag b" };
+  if (Math.abs(u - 2 * f) <= 0.26) return { z: 2, txt: "倒立、等大的实像", app: "测焦距", tag: "tag b" };
+  if (u > f + 0.26) return { z: 3, txt: "倒立、放大的实像", app: "投影仪 · 幻灯机", tag: "tag a" };
+  if (Math.abs(u - f) <= 0.26) return { z: 4, txt: "不成像", app: "—", tag: "tag n" };
+  return { z: 5, txt: "正立、放大的虚像", app: "放大镜", tag: "tag v" };
+}
+
+/* 三条特殊光线（cm 空间，透镜中心为原点，向上为 +y）
+   返回每条光线的入射段/出射段端点，以及出射后的直线方程 y(x) */
+function threeRays(u, f, Ht) {
+  const img = imageOf(u, f);
+  const yL = Ht * f / (f - u);
+  return {
+    img: img, yL: yL,
+    A: { pre: [[-u, Ht], [0, Ht]], y: function (x) { return Ht * (1 - x / f); } },
+    B: { pre: [[-u, Ht], [0, yL]], y: function (x) { return yL; } },
+    C: { pre: [[-u, Ht], [0, 0]], y: function (x) { return -Ht * x / u; } }
+  };
+}
+
+/* ================= 动画 ================= */
+let animId = null;
+function stopAnim() { if (animId) { cancelAnimationFrame(animId); animId = null; } }
+function animate(dur, upd) {
+  stopAnim();
+  const t0 = performance.now();
+  function step(now) {
+    animId = requestAnimationFrame(step);
+    try {
+      let p = (now - t0) / dur; if (p > 1) p = 1;
+      const e = p < 0.5 ? 2 * p * p : 1 - Math.pow(-2 * p + 2, 2) / 2;
+      upd(e);
+      if (p >= 1) stopAnim();
+    } catch (err) { stopAnim(); }
+  }
+  animId = requestAnimationFrame(step);
+}
+
+/* ================= 全局：这块凸透镜的焦距 ================= */
+let F = 10;
+function syncFUI() {
+  const lab = fmt(F, 1) + " cm";
+  setTxt("vf1", lab); setTxt("vf2", lab); setTxt("vf3", lab);
+  const sl = document.querySelectorAll("[data-fs]");
+  for (let i = 0; i < sl.length; i++) sl[i].value = F;
+}
+function setF(v) {
+  F = clamp(v, 5, 15);
+  syncFUI();
+  try { drawM1(); } catch (e) { }
+  try { drawM2(); } catch (e) { }
+  try { drawM3(); } catch (e) { }
+}
+
+/* ============================================================
+   ① 平行光会聚 → 焦点、焦距
+   ============================================================ */
+const G1 = { W: 700, H: 350, AX: 172, LX: 200, ppc: 11, R: 60, halfH: 104 };
+const M1 = { s: 6, mode: "sun", sSun: 6, sRev: 14 };
+
+function drawM1() {
+  try {
+    const g = [];
+    const ppc = G1.ppc, LX = G1.LX, AX = G1.AX, fp = F * ppc;
+    const xRt = G1.W - 26;
+    /* rev（光路可逆）：光从右侧焦点出发向左，出射为向左的平行光，光屏放在左侧 */
+    const rev = M1.mode === "rev";
+    const xLt = 18;
+    const xs = clamp(rev ? LX - M1.s * ppc : LX + M1.s * ppc,
+      rev ? xLt + 6 : LX + 8, rev ? LX - 8 : xRt);
+    const apt = 2 * G1.R / ppc;                       // 通光孔径(cm)
+    const D = rev ? apt : apt * Math.abs(1 - M1.s / F); // 屏上光斑直径(cm)
+    const B = 1 / (1 + Math.pow(D / 0.4, 2));         // 相对亮度
+    const rpx = rev ? G1.R : Math.abs(G1.R * (1 - M1.s / F));
+
+    g.push('<rect x="0" y="0" width="' + G1.W + '" height="' + G1.H + '" fill="#0B1220"/>');
+    g.push(arwDefs());
+
+    /* 主光轴 */
+    g.push(line(20, AX, xRt, AX, { c: "#334155", w: 1.4 }));
+    g.push(line(xRt - 18, AX, xRt, AX, { c: "#475569", w: 1.4, mk: "a4" }));
+
+    /* 透镜 */
+    g.push(lensShape(LX, AX, G1.halfH, 26));
+    g.push(T(LX, AX + G1.halfH + 20, "凸透镜", { size: 12.5, fill: "#93C5FD", a: "middle" }));
+
+    const N = 7, hs = [];
+    for (let k = 0; k < N; k++) hs.push(-G1.R + 2 * G1.R * k / (N - 1));
+
+    if (!rev) {
+      for (let i = 0; i < N; i++) {
+        const y0 = hs[i];
+        const yS = y0 * (1 - M1.s / F) * ppc;
+        g.push(line(16, AX + y0, LX, AX + y0, { c: "#FDE68A", w: 2.2, op: 0.92, mk: "a1" }));
+        g.push(line(LX, AX + y0, xs, AX + yS, { c: "#FDE68A", w: 2.2, op: 0.92, mk: "a1" }));
+      }
+      g.push(T(18, AX - G1.R - 14, "平行光（太阳光）→", { size: 12.5, fill: "#FBBF24", w: 700 }));
+    } else {
+      /* 光源在右焦点 → 光向左穿过透镜 → 出射为向左的平行光 */
+      const fx = LX + fp;
+      for (let i = 0; i < N; i++) {
+        const y0 = hs[i];
+        g.push(line(fx, AX, LX, AX + y0, { c: "#FDE68A", w: 2.2, op: 0.92, mk: "a1" }));
+        g.push(line(LX, AX + y0, xs, AX + y0, { c: "#FDE68A", w: 2.2, op: 0.92, mk: "a1" }));
+      }
+      g.push(T(Math.min((xs + LX) / 2, LX - 70), AX - G1.R - 14, "← 出射变成平行光", { size: 12.5, fill: "#FBBF24", a: "middle" }));
+      g.push(T(fx, AX + G1.R + 26, "← 光从焦点出发", { size: 12.5, fill: "#FBBF24", a: "middle" }));
+    }
+
+    /* 焦点 F 与焦距标注 */
+    const fx2 = LX + fp;
+    g.push(line(fx2, AX - 5, fx2, AX - 78, { c: "#7F1D1D", w: 1.2, d: "4 4" }));
+    g.push('<circle cx="' + fmt(fx2, 2) + '" cy="' + AX + '" r="3.8" fill="#EF4444"/>');
+    g.push(T(fx2, AX - 86, "焦点 F", { size: 12.5, fill: "#FCA5A5", w: 700, a: "middle" }));
+    if (rev) {
+      /* 光源本体：就压在焦点上 */
+      g.push('<circle cx="' + fmt(fx2, 2) + '" cy="' + AX + '" r="11" fill="none" stroke="#FDE68A" stroke-width="1.2" opacity="0.45"/>');
+      g.push('<circle cx="' + fmt(fx2, 2) + '" cy="' + AX + '" r="6.5" fill="#FDE68A"/>');
+      g.push(T(fx2, AX - 104, "光源放在焦点上", { size: 12.5, fill: "#FBBF24", w: 700, a: "middle" }));
+    }
+    const yb = AX - G1.halfH - 34;
+    g.push(line(LX, yb, fx2, yb, { c: "#64748B", w: 1.3 }));
+    g.push(line(LX, yb - 5, LX, yb + 5, { c: "#64748B", w: 1.3 }));
+    g.push(line(fx2, yb - 5, fx2, yb + 5, { c: "#64748B", w: 1.3 }));
+    g.push(T((LX + fx2) / 2, yb - 10, "f = " + fmt(F, 1) + " cm", { size: 13, fill: "#CBD5E1", w: 700, a: "middle" }));
+
+    /* 光屏（rev 时屏在透镜左侧，且要够高才装得下整束平行光） */
+    const scrH = rev ? Math.max(96, rpx * 2 + 20) : 96;
+    g.push('<rect x="' + fmt(xs - 4, 2) + '" y="' + (AX - scrH / 2) + '" width="8" height="' + scrH +
+      '" rx="2" fill="#334155" stroke="#64748B" stroke-width="1.4"/>');
+    const bandW = Math.max(5, rpx * 2);
+    g.push('<rect x="' + fmt(xs - bandW / 2, 2) + '" y="' + fmt(AX - rpx, 2) + '" width="' + fmt(bandW, 2) +
+      '" height="' + fmt(Math.max(1.2, rpx * 2), 2) + '" rx="' + fmt(Math.min(bandW, rpx) / 2, 2) +
+      '" fill="#FDE68A" opacity="' + fmt(0.35 + 0.6 * B, 2) + '"/>');
+    if (rev) {
+      /* 屏在左侧：标注放下方，把上方让给出射平行光的说明 */
+      g.push(T(xs, AX + scrH / 2 + 20, "光屏", { size: 12.5, fill: "#CBD5E1", w: 700, a: "middle" }));
+      g.push(T(xs, AX + scrH / 2 + 38, fmt(M1.s, 1) + " cm", { size: 12, fill: "#94A3B8", a: "middle" }));
+    } else {
+      g.push(T(xs, AX - scrH / 2 - 10, "光屏", { size: 12.5, fill: "#CBD5E1", w: 700, a: "middle" }));
+      g.push(T(xs, AX + scrH / 2 + 20, fmt(M1.s, 1) + " cm", { size: 12, fill: "#94A3B8", a: "middle" }));
+    }
+
+    setSVG("svg1", g.join(""));
+
+    const near = Math.abs(M1.s - F) < 0.35;
+    if (rev) {
+      setTxt("o1d", fmt(D, 2) + " cm");
+      setTxt("o1b", (B < 0.005 ? "<1" : Math.round(B * 100)) + "%");
+      setTxt("o1f", "平行光，不会聚");
+      setHtml("o1tag", '<span class="tag b">出射是平行光</span><span>光屏前后挪，光斑一样大</span>');
+      return;
+    }
+    setTxt("o1d", D < 0.05 ? "几乎一个点" : fmt(D, 2) + " cm");
+    setTxt("o1b", Math.round(B * 100) + "%");
+    setTxt("o1f", fmt(F, 1) + " cm");
+    if (near) {
+      setHtml("o1tag", '<span class="tag b">最小最亮 · 这就是焦点</span><span>焦距 f = ' + fmt(F, 1) + ' cm</span>');
+    } else if (M1.s < F) {
+      setHtml("o1tag", '<span class="tag a">还没会聚完</span><span>继续把光屏往后挪</span>');
+    } else {
+      setHtml("o1tag", '<span class="tag a">已过焦点，又散开了</span><span>把光屏往回挪</span>');
+    }
+  } catch (e) { }
+}
+
+/* ============================================================
+   ② 三条特殊光线作图
+   ============================================================ */
+const G2 = { W: 720, H: 380, AX: 180, LX: 250, ppc: 6, hobj: 5, halfH: 96 };
+const M2 = { u: 24, k: "all" };
+const xRcm2 = (G2.W - 34 - G2.LX) / G2.ppc;
+const xLcm2 = (16 - G2.LX) / G2.ppc;
+
+function drawM2() {
+  try {
+    const g = [];
+    const ppc = G2.ppc, LX = G2.LX, AX = G2.AX;
+    const u = M2.u, ht = G2.hobj;
+    const X = x => LX + x * ppc;
+    const Y = y => AX - y * ppc;
+    const R = threeRays(u, F, ht);
+    const img = R.img;
+
+    g.push('<rect x="0" y="0" width="' + G2.W + '" height="' + G2.H + '" fill="#0B1220"/>');
+    g.push(arwDefs());
+
+    /* 主光轴 */
+    g.push(line(14, AX, G2.W - 14, AX, { c: "#334155", w: 1.4, d: "1 0" }));
+    g.push(line(G2.W - 30, AX, G2.W - 14, AX, { c: "#475569", w: 1.4, mk: "a4" }));
+
+    /* 焦点 */
+    const fxL = LX - F * ppc, fxR = LX + F * ppc;
+    g.push('<circle cx="' + fxL + '" cy="' + AX + '" r="3.4" fill="#FBBF24"/>');
+    g.push('<circle cx="' + fxR + '" cy="' + AX + '" r="3.4" fill="#FBBF24"/>');
+    g.push(T(fxL, AX + 18, "F", { size: 14, fill: "#FBBF24", w: 700, a: "middle" }));
+    g.push(T(fxR, AX + 18, "F", { size: 14, fill: "#FBBF24", w: 700, a: "middle" }));
+
+    /* 透镜 */
+    g.push(lensShape(LX, AX, G2.halfH, 24));
+    g.push(T(LX, AX + G2.halfH + 18, "光心 O", { size: 12, fill: "#93C5FD", a: "middle" }));
+
+    /* 物 */
+    const ox = X(-u);
+    g.push(vArrow(ox, AX, Y(ht), "#FCA5A5", "a0"));
+    g.push(CT(ox, AX + 20, "物", { size: 13, fill: "#FCA5A5", w: 700, a: "middle" }));
+    g.push(CT(ox, Y(ht) - 8, "烛焰顶端", { size: 11.5, fill: "#FCA5A5", a: "middle" }));
+
+    const show = function (k) { return M2.k === "all" || M2.k === k; };
+    const inFrame = img.kind !== "none" && img.v > xLcm2 - 1 && img.v < xRcm2;
+
+    /* 反向延长线（虚像） */
+    if (img.kind === "virt") {
+      const tipX = X(img.v), tipY = Y(img.m * ht);
+      if (show("a")) g.push(line(tipX, tipY, X(0), AX - R.A.y(0) * ppc, { c: "#F87171", w: 1.5, d: "6 5", op: 0.85 }));
+      if (show("b")) g.push(line(tipX, tipY, X(0), AX - R.yL * ppc, { c: "#FBBF24", w: 1.5, d: "6 5", op: 0.85 }));
+      if (show("c")) g.push(line(tipX, tipY, X(0), AX, { c: "#34D399", w: 1.5, d: "6 5", op: 0.85 }));
+    }
+
+    /* 入射段 */
+    function segPair(key, pts, yFn, col, mk) {
+      if (!show(key)) return;
+      g.push(line(X(pts[0][0]), Y(pts[0][1]), X(pts[1][0]), Y(pts[1][1]), { c: col, w: 2.2, op: 0.95, mk: mk }));
+      const y0 = pts[1][1];
+      let xe, ye;
+      if (img.kind === "real") {
+        xe = img.v; ye = img.m * ht;
+      } else if (img.kind === "virt") {
+        xe = xRcm2; ye = yFn(xRcm2);
+      } else {
+        xe = xRcm2; ye = yFn(xRcm2);
+      }
+      let sx = X(0), sy = Y(y0), ex = X(xe), ey = Y(ye);
+      if (xe > xRcm2) { const t = (xRcm2 - 0) / (xe - 0); ex = X(xRcm2); ey = sy + (ey - sy) * t; }
+      g.push(line(sx, sy, ex, ey, { c: col, w: 2.2, op: 0.95, mk: mk }));
+    }
+    segPair("a", R.A.pre, R.A.y, "#F87171", "a0");
+    if (Math.abs(u - F) > 0.6) segPair("b", R.B.pre, R.B.y, "#FBBF24", "a1");
+    segPair("c", R.C.pre, R.C.y, "#34D399", "a2");
+
+    /* 像 */
+    if (img.kind === "none") {
+      g.push(CT(X(xRcm2) - 6, Y(img.m === Infinity ? 0 : 0) - 96, "出射光互相平行 → 不相交", { size: 13, fill: "#94A3B8", a: "end", w: 700 }));
+      g.push(CT(X(xRcm2) - 6, Y(0) - 76, "既不成实像，也不成虚像", { size: 12.5, fill: "#94A3B8", a: "end" }));
+    } else if (img.kind === "real") {
+      const ix = X(img.v), iy = AX - img.m * ht * ppc;
+      const maxDown = G2.H - 26 - AX;
+      const real = (-img.m * ht) * ppc;
+      const cl = Math.min(real, maxDown);
+      g.push(vArrow(ix, AX, AX + cl, "#93C5FD", "a3"));
+      if (cl < real - 1) g.push(CT(ix, AX + cl + 16, "↧ 实际像高 " + fmt(-img.m * G2.hobj, 1) + " cm", { size: 11.5, fill: "#93C5FD", a: "middle" }));
+      g.push(CT(ix, AX + 22, "实像", { size: 13, fill: "#93C5FD", w: 700, a: "middle" }));
+      if (!inFrame) g.push(T(X(xRcm2), 40, "像在画面右侧之外（v = " + fmt(img.v, 1) + " cm）", { size: 12.5, fill: "#93C5FD", a: "end" }));
+    } else {
+      const ix = X(img.v), iy = AX - img.m * ht * ppc;
+      if (ix > 12 && iy > 12) {
+        g.push(vArrow(ix, AX, iy, "#C4B5FD", "a3", "7 5"));
+        g.push(CT(ix, AX + 22, "虚像", { size: 13, fill: "#C4B5FD", w: 700, a: "middle" }));
+      } else {
+        g.push(T(20, 40, "虚像在画面左侧之外（v = " + fmt(img.v, 1) + " cm）", { size: 12.5, fill: "#C4B5FD" }));
+      }
+    }
+
+    /* 图例 */
+    const lg = [["#F87171", "① 平行主轴 → 过焦点"], ["#FBBF24", "② 过焦点 → 平行主轴"], ["#34D399", "③ 过光心 → 方向不变"]];
+    for (let i = 0; i < lg.length; i++) {
+      const ty = 26 + i * 20;
+      const on = (M2.k === "all" || M2.k === ["a", "b", "c"][i]);
+      g.push(line(16, ty - 4, 40, ty - 4, { c: lg[i][0], w: 2.4, op: on ? 0.95 : 0.25 }));
+      g.push(T(46, ty, lg[i][1], { size: 12, fill: on ? "#CBD5E1" : "#475569" }));
+    }
+
+    /* 距离标注 */
+    const yd = G2.H - 16;
+    g.push(line(ox, yd, LX, yd, { c: "#475569", w: 1.2 }));
+    g.push(line(ox, yd - 4, ox, yd + 4, { c: "#475569", w: 1.2 }));
+    g.push(line(LX, yd - 4, LX, yd + 4, { c: "#475569", w: 1.2 }));
+    g.push(T((ox + LX) / 2, yd - 6, "u = " + fmt(u, 1) + " cm", { size: 12.5, fill: "#94A3B8", a: "middle" }));
+    if (img.kind !== "none" && inFrame) {
+      const idx = X(img.v);
+      g.push(line(LX, yd, idx, yd, { c: "#475569", w: 1.2 }));
+      g.push(line(idx, yd - 4, idx, yd + 4, { c: "#475569", w: 1.2 }));
+      g.push(T((LX + idx) / 2, yd - 6, "v = " + fmt(img.v, 1) + " cm", { size: 12.5, fill: "#94A3B8", a: "middle" }));
+    }
+
+    setSVG("svg2", g.join(""));
+
+    const cl = classify(u, F);
+    if (img.kind === "none") {
+      setTxt("o2v", "不成像"); setTxt("o2m", "—"); setTxt("o2x", "三线平行，无交点");
+      setHtml("o2tag", '<span class="' + cl.tag + '">' + cl.txt + '</span><span>三条出射光互相平行</span>');
+    } else if (img.kind === "real") {
+      setTxt("o2v", fmt(img.v, 1) + " cm（透镜右侧）");
+      setTxt("o2m", fmt(Math.abs(img.m), 2));
+      setTxt("o2x", "相交于一点 → 能用光屏接住");
+      setHtml("o2tag", '<span class="' + cl.tag + '">' + cl.txt + '</span><span>像在透镜另一侧</span>');
+    } else {
+      setTxt("o2v", fmt(Math.abs(img.v), 1) + " cm（透镜左侧）");
+      setTxt("o2m", fmt(img.m, 2));
+      setTxt("o2x", "出射光发散 → 反向延长线相交");
+      setHtml("o2tag", '<span class="' + cl.tag + '">' + cl.txt + '</span><span>只能用眼睛看，光屏接不到</span>');
+    }
+  } catch (e) { }
+}
+
+/* ============================================================
+   ③ 光具座探究实验
+   ============================================================ */
+const G3 = { W: 740, H: 430, AX: 200, X0: 40, ppc: 5, LPOS: 40, RAIL: 392, HOBJ: 5, SCRH: 22, LEN: 130, halfH: 92 };
+const M3 = { u: 24, scr: 64, dh: 0, tab: "find", seed: false };
+const X3 = pos => G3.X0 + pos * G3.ppc;                 // 刻度位置 → px
+const XP = dx => X3(G3.LPOS + dx);                      // 相对透镜的 cm → px
+const Y3 = cm => G3.AX - cm * G3.ppc;
+
+function drawM3() {
+  try {
+    const g = [];
+    const ppc = G3.ppc, AX = G3.AX, LPOS = G3.LPOS;
+    const u = M3.u, dh = M3.dh, hobj = G3.HOBJ;
+    const topY = dh + hobj / 2, botY = dh - hobj / 2;
+    const img = imageOf(u, F);
+    const cl = classify(u, F);
+    const imgPos = img.kind === "none" ? NaN : LPOS + img.v;
+
+    g.push('<rect x="0" y="0" width="' + G3.W + '" height="' + G3.H + '" fill="#0B1220"/>');
+    g.push(arwDefs());
+    g.push('<defs><clipPath id="clipStage"><rect x="0" y="0" width="' + G3.W + '" height="' + (G3.RAIL - 2) + '"/></clipPath></defs>');
+
+    /* 导轨 + 刻度 */
+    const x0 = X3(0), x1 = X3(G3.LEN), ry = G3.RAIL;
+    g.push('<rect x="' + x0 + '" y="' + ry + '" width="' + (x1 - x0) + '" height="14" rx="3" fill="#1E293B" stroke="#334155" stroke-width="1.4"/>');
+    for (let p = 0; p <= G3.LEN; p++) {
+      const x = X3(p), big = p % 10 === 0, mid = p % 5 === 0;
+      g.push(line(x, ry, x, ry + (big ? 11 : (mid ? 8 : 5)), { c: big ? "#94A3B8" : "#475569", w: big ? 1.6 : 1 }));
+      if (big) g.push(T(x, ry + 26, String(p), { size: 11, fill: "#94A3B8", a: "middle" }));
+    }
+    g.push(T(x1 + 6, ry + 26, "cm", { size: 11, fill: "#64748B" }));
+
+    /* 主光轴（贯穿） */
+    g.push(line(x0 - 10, AX, x1 + 10, AX, { c: "#1E40AF", w: 1.2, d: "10 6", op: 0.65 }));
+
+    /* 凸透镜（含支架） */
+    const lx = X3(LPOS);
+    g.push('<rect x="' + (lx - 4) + '" y="' + (G3.AX + G3.halfH) + '" width="8" height="' + (ry - AX - G3.halfH) + '" fill="#334155"/>');
+    g.push(lensShape(lx, AX, G3.halfH, 22));
+    g.push(T(lx, AX - G3.halfH - 10, "凸透镜 f=" + fmt(F, 1) + " cm", { size: 12, fill: "#93C5FD", a: "middle" }));
+    /* 焦点刻度提示 */
+    const fL = LPOS - F, fR = LPOS + F;
+    if (fL >= 0) g.push(T(X3(fL), ry - 6, "F", { size: 12, fill: "#FBBF24", a: "middle", w: 700 }));
+    if (fR <= G3.LEN) g.push(T(X3(fR), ry - 6, "F", { size: 12, fill: "#FBBF24", a: "middle", w: 700 }));
+
+    /* 物（蜡烛）：支架立在导轨上，蜡烛底面＝物的最下沿 */
+    const objPos = LPOS - u, ox = X3(objPos);
+    const cyBot = AX - botY * ppc;
+    g.push('<rect x="' + (ox - 3) + '" y="' + fmt(cyBot, 2) + '" width="6" height="' + fmt(ry - cyBot, 2) + '" fill="#334155"/>');
+    g.push('<g transform="translate(' + fmt(ox, 2) + ',' + fmt(cyBot, 2) + ')">' + candle(hobj * ppc) + '</g>');
+    g.push(T(ox, cyBot - hobj * ppc - 10, "蜡烛（物）", { size: 12.5, fill: "#FBBF24", w: 700, a: "middle" }));
+    /* 拖拽手柄 */
+    g.push('<rect x="' + (ox - 16) + '" y="' + (ry - 13) + '" width="32" height="20" rx="5" fill="#1D4ED8" stroke="#60A5FA" stroke-width="1.2"/>');
+    g.push(T(ox, ry + 2, "↔", { size: 12, fill: "#EFF6FF", a: "middle", w: 700 }));
+
+    /* 光屏 */
+    const sx = X3(M3.scr);
+    g.push('<rect x="' + (sx - 3) + '" y="' + (AX + G3.SCRH / 2 * ppc) + '" width="6" height="' + (ry - AX - G3.SCRH / 2 * ppc) + '" fill="#334155"/>');
+    g.push('<rect x="' + (sx - 5) + '" y="' + (AX - G3.SCRH / 2 * ppc) + '" width="10" height="' + (G3.SCRH * ppc) +
+      '" rx="2" fill="#CBD5E1" stroke="#94A3B8" stroke-width="1.2"/>');
+    g.push(T(sx, AX - G3.SCRH / 2 * ppc - 10, "光屏", { size: 12.5, fill: "#CBD5E1", w: 700, a: "middle" }));
+    g.push('<rect x="' + (sx - 16) + '" y="' + (ry - 13) + '" width="32" height="20" rx="5" fill="#0E7490" stroke="#67E8F9" stroke-width="1.2"/>');
+    g.push(T(sx, ry + 2, "↔", { size: 12, fill: "#ECFEFF", a: "middle", w: 700 }));
+
+    /* 三条光线（从烛焰顶端） */
+    if (img.kind !== "none") {
+      const R = threeRays(u, F, topY);
+      const xRcm = (x1 + 6 - lx) / ppc;
+      const inView = (imgPos >= 0.2 && imgPos <= G3.LEN - 0.2);
+      let xe;
+      if (img.kind === "real") xe = Math.min(img.v, xRcm); else xe = xRcm;
+
+      function drawRay(pre, yFn, col, mk) {
+        /* 入射段：烛焰顶端 → 透镜 */
+        g.push(line(XP(pre[0][0]), Y3(pre[0][1]), XP(pre[1][0]), Y3(pre[1][1]), { c: col, w: 2, op: 0.9, mk: mk }));
+        /* 出射段：透镜 → 像点（或画面边缘） */
+        const y0 = pre[1][1];
+        let ex = xe, ey = yFn(xe);
+        if (xe > xRcm) { ex = xRcm; ey = yFn(xRcm); }
+        let px = XP(0), py = Y3(y0), qx = XP(ex), qy = Y3(ey);
+        const yMin = 10, yMax = ry - 4;
+        if (qy > yMax || qy < yMin) {
+          const lim = qy > yMax ? yMax : yMin;
+          const t = clamp((lim - py) / (qy - py || 1e-6), 0, 1);
+          qx = px + (qx - px) * t; qy = lim;
+        }
+        g.push(line(px, py, qx, qy, { c: col, w: 2, op: 0.9, mk: mk }));
+        /* 虚像：出射光的反向延长线（虚线） */
+        if (img.kind === "virt") {
+          const tx = XP(img.v), ty = Y3(img.m * topY);
+          g.push(line(px, py, tx, ty, { c: col, w: 1.4, d: "6 5", op: 0.8 }));
+        }
+      }
+      drawRay(R.A.pre, R.A.y, "#F87171", "a0");
+      if (Math.abs(u - F) > 0.8) drawRay(R.B.pre, R.B.y, "#FBBF24", "a1");
+      drawRay(R.C.pre, R.C.y, "#34D399", "a2");
+    } else {
+      const R = threeRays(u, F, topY);
+      const xRcm = (x1 + 6 - lx) / ppc;
+      g.push(line(XP(-u), Y3(topY), XP(0), Y3(topY), { c: "#F87171", w: 2, op: 0.9, mk: "a0" }));
+      g.push(line(XP(0), Y3(topY), XP(xRcm), Y3(R.A.y(xRcm)), { c: "#F87171", w: 2, op: 0.9, mk: "a0" }));
+      g.push(line(XP(-u), Y3(topY), XP(0), Y3(0), { c: "#34D399", w: 2, op: 0.9, mk: "a2" }));
+      g.push(line(XP(0), Y3(0), XP(xRcm), Y3(R.C.y(xRcm)), { c: "#34D399", w: 2, op: 0.9, mk: "a2" }));
+    }
+
+    /* ============ 像 ============ */
+    const dPx = (img.kind === "none") ? 0 : Math.abs(+M3.scr - imgPos);
+    const sharp = dPx < 0.6;
+    const sd = M3.scr - LPOS;                        /* 光屏到透镜的距离 */
+
+    /* ① 光屏这会儿呈现出什么：位置在屏上，大小按屏距缩放，离焦就糊成一团 */
+    if (img.kind === "real" && sd > 0.8 && M3.scr <= G3.LEN) {
+      const ms = sd / u, blur = clamp(dPx * 1.5, 0, 13);
+      const py0 = AX - G3.SCRH / 2 * ppc, ph = G3.SCRH * ppc;
+      g.push('<defs>' +
+        '<clipPath id="clipScr"><rect x="' + fmt(sx - 5, 2) + '" y="' + fmt(py0, 2) + '" width="10" height="' + fmt(ph, 2) + '"/></clipPath>' +
+        '<filter id="bl" x="-60%" y="-60%" width="220%" height="220%"><feGaussianBlur stdDeviation="' + fmt(blur, 2) + '"/></filter>' +
+        '</defs>');
+      const op = sharp ? 1 : clamp(0.9 - dPx * 0.05, 0.16, 0.9);
+      g.push('<g clip-path="url(#clipScr)"' + (blur > 0.3 ? ' filter="url(#bl)"' : '') + ' opacity="' + fmt(op, 2) + '">' +
+        '<g transform="translate(' + fmt(sx, 2) + ',' + AX + ') scale(1,' + fmt(-ms, 4) + ')">' +
+        '<g transform="translate(0,' + fmt(-botY * ppc, 2) + ')">' + candle(hobj * ppc) + '</g></g></g>');
+    }
+
+    /* ② 三条光线真正会聚在哪儿：对准了就是实像，没对准就只是一团待对准的光 */
+    if (img.kind === "real" && imgPos <= G3.LEN + 6) {
+      const ipx = X3(Math.min(imgPos, x1 + 4));
+      const k2 = img.m;
+      g.push('<g clip-path="url(#clipStage)" opacity="' + (sharp ? 1 : 0.5) + '">' +
+        '<g transform="translate(' + fmt(ipx, 2) + ',' + AX + ') scale(1,' + fmt(k2, 4) + ')">' +
+        '<g transform="translate(0,' + fmt(-botY * ppc, 2) + ')">' + candle(hobj * ppc) + '</g></g></g>');
+      g.push(CT(ipx, AX - k2 * topY * ppc - 12, sharp ? "实像" : "光线真正会聚处",
+        { size: 12.5, fill: sharp ? "#93C5FD" : "#64748B", w: 700, a: "middle" }));
+      if (imgPos > G3.LEN) g.push(CT(x1 - 4, AX + 76, "像已在光具座之外", { size: 12, fill: "#FCA5A5", a: "end" }));
+    } else if (img.kind === "real") {
+      g.push(CT(x1 - 4, AX + 76, "像距太大，光具座上放不下光屏", { size: 12.5, fill: "#FCA5A5", a: "end" }));
+    } else if (img.kind === "virt") {
+      if (imgPos >= -2) {
+        const ipx = X3(Math.max(imgPos, -1));
+        g.push('<g clip-path="url(#clipStage)" opacity="0.92">' +
+          '<g transform="translate(' + fmt(ipx, 2) + ',' + AX + ') scale(1,' + fmt(img.m, 4) + ')">' +
+          '<g transform="translate(0,' + fmt(-botY * ppc, 2) + ')">' + candle(hobj * ppc) + '</g></g></g>');
+        g.push(CT(ipx, AX - img.m * topY * ppc - 12, "虚像", { size: 12.5, fill: "#C4B5FD", w: 700, a: "middle" }));
+      } else {
+        g.push(CT(x0 + 4, AX + 76, "放大的虚像在光具座左侧之外（v = " + fmt(img.v, 1) + " cm）", { size: 12.5, fill: "#C4B5FD" }));
+      }
+    }
+
+    /* 三心同高模式：参考线 */
+    if (M3.tab === "height") {
+      g.push(line(x0 - 10, AX, x1 + 10, AX, { c: "#F59E0B", w: 1.2, d: "8 5", op: 0.9 }));
+      g.push(T(x0 - 6, AX - 6, "透镜光心高度", { size: 11.5, fill: "#F59E0B" }));
+      const fc = Y3(dh);
+      g.push(line(ox - 40, fc, lx, fc, { c: "#FBBF24", w: 1.2, d: "4 4", op: 0.9 }));
+      g.push(T(ox - 44, fc + 4, "烛焰中心", { size: 11.5, fill: "#FBBF24", a: "end" }));
+      if (img.kind !== "none") {
+        const icErr = img.m * dh;
+        g.push(line(lx, Y3(icErr), X3(imgPos) + 30, Y3(icErr), { c: "#93C5FD", w: 1.2, d: "4 4", op: 0.9 }));
+        g.push(T(X3(imgPos) + 34, Y3(icErr) + 4, "像的中心", { size: 11.5, fill: "#93C5FD" }));
+      }
+    }
+
+    setSVG("svg3", g.join(""));
+    updateM3Read(img, cl, imgPos, dPx, sharp);
+  } catch (e) { }
+}
+
+function updateM3Read(img, cl, imgPos, dPx, sharp) {
+  if (img.kind === "none") {
+    setTxt("o3pos", "不存在");
+    setTxt("o3v", "∞（折射光平行射出）");
+    setTxt("o3m", "—");
+    setTxt("o3inv", "—");
+    setTxt("o3clr", "光屏上怎么挪都没有像");
+    setHtml("o3tag", '<span class="tag n">u = f 不成像</span><span>折射光平行射出，既不相交也无反向延长线交点</span>');
+  } else if (img.kind === "virt") {
+    setTxt("o3pos", fmt(imgPos, 1) + " cm（透镜左侧）");
+    setTxt("o3v", fmt(img.v, 1) + " cm");
+    setTxt("o3m", fmt(img.m, 2));
+    setTxt("o3inv", "成实像公式不适用");
+    setTxt("o3clr", "光屏接不到");
+    setHtml("o3tag", '<span class="' + cl.tag + '">' + cl.txt + '</span><span>要透过凸透镜才能看到</span>');
+  } else {
+    setTxt("o3pos", fmt(imgPos, 1) + " cm" + (imgPos > G3.LEN ? "（超出光具座）" : ""));
+    setTxt("o3v", fmt(img.v, 1) + " cm");
+    setTxt("o3m", fmt(Math.abs(img.m), 2));
+    setTxt("o3inv", fmt(1 / M3.u + 1 / img.v, 4) + " = 1/f = " + fmt(1 / F, 4));
+    const pct = Math.round(clamp(1 - dPx / 8, 0, 1) * 100);
+    setTxt("o3clr", sharp ? "清晰（像刚好落在光屏上）" : (dPx < 3 ? fmt(pct, 0) + "%　略糊" : fmt(pct, 0) + "%　很糊"));
+    let tail = "物近像远像变大";
+    if (imgPos > G3.LEN) tail = "像距太大，光具座上放不下光屏";
+    else if (dPx > 0.6) tail = (M3.scr < imgPos ? "把光屏往后挪，像才清晰" : "把光屏往前挪，像才清晰");
+    setHtml("o3tag", '<span class="' + cl.tag + '">' + cl.txt + '</span><span>' + tail + '</span>');
+  }
+  /* 区间条 */
+  const zb = $("zbar3");
+  if (zb) {
+    const ds = zb.children;
+    for (let i = 0; i < ds.length; i++) {
+      ds[i].classList.toggle("on", +ds[i].getAttribute("data-z") === cl.z);
+    }
+  }
+}
+
+/* ================= 记录表 ================= */
+let recs = [];
+function benchRow(i, u, img, cl) {
+  return '<tr data-u="' + u + '"><td>' + i + '</td><td>' + fmt(u, 1) + ' cm</td><td>' +
+    (img.kind === "none" ? "不成像" : fmt(Math.abs(img.v), 1) + " cm") + '</td><td>' +
+    (img.kind === "none" ? "—" : fmt(G3.LPOS + img.v, 1) + " cm") + '</td><td>' + cl.txt + '</td><td>' + cl.app + '</td></tr>';
+}
+function renderRecs() {
+  const tb = $("tb3");
+  if (!tb) return;
+  if (!recs.length) {
+    setHtml("tb3", '<tr><td colspan="6" style="text-align:center;color:#94A3B8;padding:16px;">还没有记录。调好一组数据后点「记录这组数据」。</td></tr>');
+    return;
+  }
+  let s = "";
+  for (let i = 0; i < recs.length; i++) s += benchRow(i + 1, recs[i], imageOf(recs[i], F), classify(recs[i], F));
+  setHtml("tb3", s);
+  bindRecRows();
+}
+function bindRecRows() {
+  const tb = $("tb3");
+  if (!tb) return;
+  const trs = tb.querySelectorAll("tr[data-u]");
+  for (let i = 0; i < trs.length; i++) {
+    trs[i].onclick = function () {
+      stopAnim();
+      applyU(+this.getAttribute("data-u"), true);
+    };
+  }
+}
+function seedRecs() {
+  const list = [F * 3, F * 2, F * 1.5, F, F * 0.5].map(v => clamp(v, 3, 38));
+  recs = list.slice();
+  renderRecs();
+}
+
+/* 物距联动：更新滑块并把光屏挪到位 */
+function applyU(u, autoScreen) {
+  M3.u = clamp(u, 3, 38);
+  if ($("r3u")) $("r3u").value = M3.u;
+  setTxt("v3u", fmt(M3.u, 1) + " cm");
+  if (autoScreen) {
+    const img = imageOf(M3.u, F);
+    if (img.kind === "real") {
+      const tgt = clamp(G3.LPOS + img.v, 2, G3.LEN - 1);
+      M3.scr = tgt;
+      if ($("r3p")) $("r3p").value = tgt;
+      setTxt("v3p", fmt(tgt, 1) + " cm");
+    }
+  }
+  drawM3();
+}
+
+/* ================= 控件绑定 ================= */
+function bindSeg(id, attr, cb) {
+  const box = $(id);
+  if (!box) return;
+  const bs = box.querySelectorAll("button");
+  for (let i = 0; i < bs.length; i++) {
+    bs[i].onclick = function () {
+      for (let j = 0; j < bs.length; j++) bs[j].classList.toggle("on", bs[j] === this);
+      /* 注意：HTML 上写的是 data-xxx，取attr时要带上前缀，
+         否则取回 null → 状态值变 null → show() 全判 false → 画面上什么都没有 */
+      const dn = "data-" + attr;
+      cb(this.hasAttribute(dn) ? this.getAttribute(dn) : this.getAttribute(attr));
+    };
+  }
+}
+
+/* ---- 焦距（两处滑块同步） ---- */
+(function () {
+  const sl = document.querySelectorAll("[data-fs]");
+  for (let i = 0; i < sl.length; i++) {
+    sl[i].oninput = function () { stopAnim(); setF(+this.value); };
+  }
+})();
+
+/* ---- ① ---- */
+if ($("r1s")) $("r1s").oninput = function () { stopAnim(); M1.s = +this.value; setTxt("v1s", fmt(+this.value, 1) + " cm"); drawM1(); };
+bindSeg("seg1", "m", function (m) {
+  if (M1.mode === "sun") M1.sSun = M1.s; else M1.sRev = M1.s;
+  M1.mode = m;
+  M1.s = (m === "rev") ? M1.sRev : M1.sSun;
+  if ($("r1s")) { $("r1s").max = (m === "rev") ? 15 : 42; $("r1s").value = M1.s; }
+  setTxt("t1s", (m === "rev") ? "15 cm" : "42 cm");
+  if ($("b1find")) $("b1find").textContent = (m === "rev") ? "▶ 前后移动光屏，看光斑变不变" : "▶ 移动光屏找到最小最亮的光斑";
+  setTxt("v1s", fmt(M1.s, 1) + " cm");
+  drawM1();
+});
+if ($("b1find")) $("b1find").onclick = function () {
+  const s0 = M1.s;
+  /* rev：没有会聚点，改成前后扫一遍证明光斑不变 */
+  const tgt = (M1.mode === "rev") ? (s0 < 9 ? 14 : 4) : F;
+  animate(900, function (t) {
+    M1.s = s0 + (tgt - s0) * t;
+    if ($("r1s")) $("r1s").value = M1.s;
+    setTxt("v1s", fmt(M1.s, 1) + " cm");
+    drawM1();
+  });
+};
+
+/* ---- ② ---- */
+function setU2(u) {
+  M2.u = clamp(u, 3, 36);
+  if ($("r2u")) $("r2u").value = M2.u;
+  setTxt("v2u", fmt(M2.u, 1) + " cm");
+  drawM2();
+}
+if ($("r2u")) $("r2u").oninput = function () { setU2(+this.value); };
+bindSeg("seg2", "k", function (k) { M2.k = k; drawM2(); });
+(function () {
+  const bs = document.querySelectorAll("#j2 button");
+  for (let i = 0; i < bs.length; i++) {
+    bs[i].onclick = function () { setU2(F * (+this.getAttribute("data-j2") === 30 ? 3 : (+this.getAttribute("data-j2") === 20 ? 2 : (+this.getAttribute("data-j2") === 15 ? 1.5 : (+this.getAttribute("data-j2") === 10 ? 1 : 0.6))))); };
+  }
+})();
+
+/* ---- ③ ---- */
+function setScr(p) {
+  M3.scr = clamp(p, 2, G3.LEN - 1);
+  if ($("r3p")) $("r3p").value = M3.scr;
+  setTxt("v3p", fmt(M3.scr, 1) + " cm");
+  drawM3();
+}
+if ($("r3u")) $("r3u").oninput = function () { stopAnim(); applyU(+this.value, false); };
+if ($("r3p")) $("r3p").oninput = function () { stopAnim(); setScr(+this.value); };
+if ($("r3h")) $("r3h").oninput = function () {
+  M3.dh = +this.value;
+  setTxt("v3h", fmt(M3.dh, 1) + " cm");
+  drawM3();
+};
+bindSeg("tabs3", "t", function (t) {
+  M3.tab = t;
+  $("wrap3h").classList.toggle("hide", t !== "height");
+  if (t !== "height") M3.dh = 0;
+  else M3.u = clamp(1.5 * F, 3, 38);
+  applyU(M3.u, true);
+});
+(function () {
+  const bs = document.querySelectorAll("#j3 button");
+  for (let i = 0; i < bs.length; i++) {
+    bs[i].onclick = function () {
+      stopAnim();
+      const k = +this.getAttribute("data-j3");
+      const f = (k === 30 ? 3 : (k === 20 ? 2 : (k === 15 ? 1.5 : (k === 10 ? 1 : 0.6))));
+      applyU(clamp(F * f, 3, 38), true);
+    };
+  }
+})();
+if ($("b3auto")) $("b3auto").onclick = function () {
+  const img = imageOf(M3.u, F);
+  const p0 = M3.scr;
+  let tgt = p0;
+  if (img.kind === "real") tgt = clamp(G3.LPOS + img.v, 2, G3.LEN - 1);
+  animate(800, function (t) {
+    M3.scr = clamp(p0 + (tgt - p0) * t, 2, G3.LEN - 1);
+    if ($("r3p")) $("r3p").value = M3.scr;
+    setTxt("v3p", fmt(M3.scr, 1) + " cm");
+    drawM3();
+  });
+};
+if ($("b3scan")) $("b3scan").onclick = function () {
+  const u0 = 38;
+  applyU(u0, true);
+  animate(7000, function (t) {
+    const u = u0 + (3.5 - u0) * t;
+    applyU(u, true);
+  });
+};
+if ($("b3rec")) $("b3rec").onclick = function () {
+  recs.push(M3.u);
+  renderRecs();
+};
+if ($("b3seed")) $("b3seed").onclick = function () { seedRecs(); };
+if ($("b3clr")) $("b3clr").onclick = function () { recs = []; renderRecs(); };
+
+/* ---- 图上直接拖：③ ---- */
+function svgPt(svg, ev) {
+  const r = svg.getBoundingClientRect();
+  const vb = svg.viewBox.baseVal;
+  return {
+    x: (ev.clientX - r.left) * (vb.width / r.width) + vb.x,
+    y: (ev.clientY - r.top) * (vb.height / r.height) + vb.y
+  };
+}
+(function () {
+  const svg = $("svg3");
+  if (!svg) return;
+  let mode = 0;
+  svg.addEventListener("pointerdown", function (ev) {
+    const p = svgPt(svg, ev);
+    const ox = X3(G3.LPOS - M3.u), sx = X3(M3.scr);
+    if (p.y > G3.AX - 130 && p.y < G3.RAIL + 24) {
+      if (Math.abs(p.x - ox) < 34) mode = 1;
+      else if (Math.abs(p.x - sx) < 30) mode = 2;
+    }
+    if (!mode) return;
+    stopAnim();
+    ev.preventDefault();
+    svg.setPointerCapture && svg.setPointerCapture(ev.pointerId);
+  });
+  svg.addEventListener("pointermove", function (ev) {
+    if (!mode) return;
+    const p = svgPt(svg, ev);
+    if (mode === 1) {
+      const pos = (p.x - G3.X0) / G3.ppc;
+      applyU(clamp(G3.LPOS - pos, 3, 38), false);
+    } else {
+      const pos = (p.x - G3.X0) / G3.ppc;
+      setScr(clamp(pos, 2, G3.LEN - 1));
+    }
+    ev.preventDefault();
+  });
+  function end() { mode = 0; }
+  svg.addEventListener("pointerup", end);
+  svg.addEventListener("pointercancel", end);
+  svg.addEventListener("pointerleave", end);
+})();
+
+/* ---- 图上直接拖：② ---- */
+(function () {
+  const svg = $("svg2");
+  if (!svg) return;
+  let mode = 0;
+  svg.addEventListener("pointerdown", function (ev) {
+    const p = svgPt(svg, ev);
+    const ox = G2.LX - M2.u * G2.ppc;
+    if (Math.abs(p.x - ox) < 34 && p.y > G2.AX - 90 && p.y < G2.AX + 40) { mode = 1; stopAnim(); ev.preventDefault(); svg.setPointerCapture && svg.setPointerCapture(ev.pointerId); }
+  });
+  svg.addEventListener("pointermove", function (ev) {
+    if (!mode) return;
+    const p = svgPt(svg, ev);
+    setU2(clamp((G2.LX - p.x) / G2.ppc, 3, 36));
+    ev.preventDefault();
+  });
+  function end() { mode = 0; }
+  svg.addEventListener("pointerup", end);
+  svg.addEventListener("pointercancel", end);
+  svg.addEventListener("pointerleave", end);
+})();
+
+/* ---- 首帧 ---- */
+syncFUI();
+setF(10);
+setTxt("v1s", fmt(M1.s, 1) + " cm");
+setTxt("v2u", fmt(M2.u, 1) + " cm");
+setTxt("v3u", fmt(M3.u, 1) + " cm");
+setTxt("v3p", fmt(M3.scr, 1) + " cm");
+setTxt("v3h", "0 cm");
+seedRecs();
+applyU(24, true);
+drawM1();
+drawM2();
+
+})();
+</script>
+</body>
+</html>

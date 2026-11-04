@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>滑动摩擦力测量 · 两种实验方法</title>
+<style>
+  * { box-sizing: border-box; }
+  body {
+    margin: 0; font-family: "Microsoft YaHei", "PingFang SC", sans-serif;
+    background: #f4f1e8; color: #2c2a26; padding: 14px;
+  }
+  h1 { font-size: 20px; margin: 0 0 4px; }
+  .sub { color: #6b665c; font-size: 13px; margin-bottom: 12px; }
+  .exp-btns { display: flex; gap: 10px; margin-bottom: 12px; }
+  .exp-btns button {
+    flex: 1; padding: 11px 8px; font-size: 15px; font-weight: 700;
+    border: 2px solid #c9c2b2; background: #fff; border-radius: 8px; cursor: pointer;
+  }
+  .exp-btns button.active { background: #2f6fed; color: #fff; border-color: #2f6fed; }
+  .exp-btns button small { display: block; font-weight: 400; font-size: 12px; margin-top: 3px; opacity: .9; }
+  .main { display: flex; gap: 12px; flex-wrap: wrap; align-items: stretch; }
+  .stage { background: #fff; border: 1px solid #ddd6c6; border-radius: 10px; padding: 8px; }
+  .panel {
+    width: 270px; background: #fff; border: 1px solid #ddd6c6; border-radius: 10px;
+    padding: 12px; display: flex; flex-direction: column; gap: 10px;
+  }
+  .pull {
+    width: 100%; padding: 14px; font-size: 17px; font-weight: 700; border: none; border-radius: 8px;
+    background: #ff8c1a; color: #fff; cursor: pointer;
+  }
+  .pull.on { background: #d33; }
+  .row { display: flex; align-items: center; justify-content: space-between; gap: 8px; }
+  .row label { font-size: 14px; font-weight: 600; }
+  .stepper { display: flex; align-items: center; gap: 8px; }
+  .stepper button {
+    width: 34px; height: 34px; font-size: 18px; border: 1px solid #c9c2b2; background: #f7f4ec;
+    border-radius: 6px; cursor: pointer;
+  }
+  .stepper .val { min-width: 60px; text-align: center; font-size: 16px; font-weight: 700; }
+  select, .toggle {
+    padding: 8px; border: 1px solid #c9c2b2; border-radius: 6px; font-size: 14px; background: #f7f4ec; cursor: pointer;
+  }
+  .readbox {
+    background: #1f2430; color: #fff; border-radius: 8px; padding: 12px; text-align: center;
+  }
+  .readbox .big { font-size: 30px; font-weight: 800; font-variant-numeric: tabular-nums; }
+  .readbox .lbl { font-size: 12px; color: #aab2c0; }
+  .readbox.stable .big { color: #5fd38a; }
+  .readbox.jitter .big { color: #ffb454; }
+  .legend { font-size: 12px; color: #6b665c; line-height: 1.5; }
+  .bottom { display: flex; gap: 12px; flex-wrap: wrap; margin-top: 12px; }
+  .card { background: #fff; border: 1px solid #ddd6c6; border-radius: 10px; padding: 10px 12px; flex: 1; min-width: 300px; }
+  .card h3 { font-size: 14px; margin: 0 0 8px; }
+  .card p { margin: 6px 0; font-size: 14px; line-height: 1.65; }
+  .card ol { margin: 6px 0 6px 20px; font-size: 14px; line-height: 1.65; }
+  .kp-card {
+    background: #fff; border: 1px solid #ddd6c6; border-left: 4px solid #2f6fed;
+    border-radius: 10px; padding: 12px 16px; margin-top: 12px;
+  }
+  .kp-card h3 { font-size: 15px; margin: 0 0 8px; color: #2f6fed; }
+  .kp-card p { margin: 6px 0; font-size: 14px; line-height: 1.7; }
+  .kp-card ol { margin: 6px 0 6px 22px; font-size: 14px; line-height: 1.7; }
+  .kp-note { color: #b0621a; }
+  table { border-collapse: collapse; width: 100%; font-size: 13px; }
+  th, td { border: 1px solid #e0dacb; padding: 5px 6px; text-align: center; }
+  th { background: #f0ecdf; }
+  canvas { display: block; }
+  .hint { font-size: 12px; color: #6b665c; margin-top: 6px; }
+  .tag { font-size: 11px; padding: 1px 6px; border-radius: 4px; color: #fff; }
+</style>
+</head>
+<body>
+  <h1>测量滑动摩擦力大小 · 两种实验方法</h1>
+  <div class="sub">点哪个实验按钮就做哪个。两个实验都需要先点「开始拉」才会动。</div>
+
+  <div class="exp-btns">
+    <button id="btn1" class="active" onclick="setMethod(1)">实验一：手拉木块<small>用测力计水平拉木块匀速运动</small></button>
+    <button id="btn2" onclick="setMethod(2)">实验二：拉木板<small>固定测力计、拉出长木板</small></button>
+  </div>
+
+  <div class="main">
+    <div class="stage">
+      <canvas id="scene" width="820" height="440"></canvas>
+    </div>
+
+    <div class="panel">
+      <button id="pullBtn" class="pull" onclick="togglePull()">▶ 开始拉木块</button>
+
+      <div class="row">
+        <label>钩码（压力）</label>
+        <div class="stepper">
+          <button onclick="changeWeight(-1)">−</button>
+          <span class="val" id="wVal">0 个</span>
+          <button onclick="changeWeight(1)">＋</button>
+        </div>
+      </div>
+
+      <div class="row">
+        <label>接触面</label>
+        <select id="surfSel" onchange="changeSurface()">
+          <option value="smooth">光滑</option>
+          <option value="medium" selected>较粗糙</option>
+          <option value="rough">很粗糙</option>
+        </select>
+      </div>
+
+      <div class="row">
+        <label>微观接触面</label>
+        <button class="toggle" id="microBtn" onclick="toggleMicro()">关闭</button>
+      </div>
+
+      <div class="readbox jitter" id="readbox">
+        <div class="lbl">弹簧测力计读数</div>
+        <div class="big" id="readVal">0.00 N</div>
+      </div>
+
+      </div>
+  </div>
+
+  <div class="kp-card">
+    <h3 id="kpTitle">知识点讲解 · 实验一（手拉木块）</h3>
+    <div id="kpBody"></div>
+  </div>
+
+  <div class="bottom">
+    <div class="card">
+      <h3>实验数据记录表</h3>
+      <table id="dataTable">
+        <thead><tr><th>接触面</th><th>压力 N (N)</th><th>摩擦力 f (N)</th></tr></thead>
+        <tbody><tr><td colspan="3">尚无数据</td></tr></tbody>
+      </table>
+      <div class="hint">改变钩码或接触面会自动记录一行（示意数值，非实测）。</div>
+    </div>
+    <div class="card">
+      <h3>摩擦力 — 压力关系图</h3>
+      <canvas id="chart" width="360" height="280"></canvas>
+      <div class="legend">同色：压力越大，摩擦力越大；不同色斜率不同：接触面越粗糙，摩擦力越大。</div>
+    </div>
+  </div>
+
+<script>
+const MU = { smooth: 0.10, medium: 0.30, rough: 0.55 };   // 示意摩擦系数
+const BLOCK_W = 2.0;   // 木块重（N）
+const WEIGHT_W = 1.0;  // 每个钩码重（N）
+const SURF_CN = { smooth: '光滑', medium: '较粗糙', rough: '很粗糙' };
+const SURF_COLOR = { smooth: '#3aa0ff', medium: '#ff8c1a', rough: '#e0392b' };
+
+const state = {
+  method: 1,
+  running: false,
+  weights: 0,
+  surface: 'medium',
+  micro: false,
+  blockX: 120,      // 实验一：木块位置
+  boardShift: 0,    // 实验二：木板向右位移
+  sampleRead: 0,
+  data: [],         // {surface, N, F}
+  lastT: 0,
+};
+
+function N() { return BLOCK_W + state.weights * WEIGHT_W; }
+function Ftrue() { return MU[state.surface] * N(); }
+
+function setMethod(m) {
+  state.method = m;
+  state.running = false;
+  state.blockX = 120;
+  state.boardShift = 0;
+  state.sampleRead = 0;
+  document.getElementById('btn1').classList.toggle('active', m === 1);
+  document.getElementById('btn2').classList.toggle('active', m === 2);
+  document.getElementById('pullBtn').textContent = (m === 1 ? '▶ 开始拉木块' : '▶ 开始拉木板');
+  document.getElementById('pullBtn').classList.remove('on');
+  // 实验二木块固定位置
+  if (m === 2) state.blockX = 200;
+  updateReadBox();
+  renderKP();
+  afterParamChange();
+}
+
+function togglePull() {
+  state.running = !state.running;
+  syncPullBtn();
+}
+
+function stopPull() {
+  state.running = false;
+  syncPullBtn();
+}
+
+function syncPullBtn() {
+  const b = document.getElementById('pullBtn');
+  b.classList.toggle('on', state.running);
+  b.textContent = state.running
+    ? '⏸ 停止'
+    : (state.method === 1 ? '▶ 开始拉木块' : '▶ 开始拉木板');
+}
+
+function changeWeight(d) {
+  state.weights = Math.max(0, Math.min(5, state.weights + d));
+  document.getElementById('wVal').textContent = state.weights + ' 个';
+  afterParamChange();
+}
+
+function changeSurface() {
+  state.surface = document.getElementById('surfSel').value;
+  afterParamChange();
+}
+
+function toggleMicro() {
+  state.micro = !state.micro;
+  document.getElementById('microBtn').textContent = state.micro ? '开启' : '关闭';
+}
+
+function afterParamChange() {
+  record();
+  drawChart();
+}
+
+function record() {
+  const Nv = N(), Fv = Ftrue();
+  const i = state.data.findIndex(d => d.surface === state.surface && d.N === Nv);
+  if (i >= 0) state.data[i].F = Fv;
+  else state.data.push({ surface: state.surface, N: Nv, F: Fv });
+  renderTable();
+}
+
+function renderTable() {
+  const tb = document.querySelector('#dataTable tbody');
+  if (!state.data.length) { tb.innerHTML = '<tr><td colspan="3">尚无数据</td></tr>'; return; }
+  tb.innerHTML = state.data.map(d =>
+    `<tr><td><span class="tag" style="background:${SURF_COLOR[d.surface]}">${SURF_CN[d.surface]}</span></td>` +
+    `<td>${d.N.toFixed(1)}</td><td>${d.F.toFixed(2)}</td></tr>`
+  ).join('');
+}
+
+function updateReadBox() {
+  const box = document.getElementById('readbox');
+  box.classList.toggle('stable', state.method === 2);
+  box.classList.toggle('jitter', state.method === 1);
+}
+
+function renderKP() {
+  const title = document.getElementById('kpTitle');
+  const body = document.getElementById('kpBody');
+  if (state.method === 1) {
+    title.textContent = '知识点讲解 · 实验一（手拉木块）';
+    body.innerHTML =
+      '<p><b>测量原理：</b>用弹簧测力计沿水平方向拉动木块，使它在长木板上做<b>匀速直线运动</b>。此时木块在水平方向只受两个力——拉力（测力计）和滑动摩擦力，二者<b>大小相等、方向相反、互相平衡</b>。所以测力计的示数就等于滑动摩擦力的大小。</p>' +
+      '<p><b>实验步骤（控制变量法）：</b></p>' +
+      '<ol>' +
+      '<li>水平匀速拉动木块，读出测力计示数，即为滑动摩擦力。</li>' +
+      '<li>在木块上放不同数量的钩码，<b>改变压力</b>，保持接触面粗糙程度不变，重复测量。</li>' +
+      '<li>换用粗糙程度不同的长木板，<b>保持压力不变</b>，重复测量。</li>' +
+      '</ol>' +
+      '<p><b>实验结论：</b>滑动摩擦力的大小与接触面所受的<b>压力</b>有关——压力越大，摩擦力越大；与接触面的<b>粗糙程度</b>有关——越粗糙，摩擦力越大；还与接触面的<b>材料</b>有关。</p>' +
+      '<p class="kp-note">注意：人手很难做到严格匀速，木块速度忽快忽慢，测力计读数会随之抖动，应读取速度较平稳瞬间的示数。这正是实验二要解决的问题。</p>';
+  } else {
+    title.textContent = '知识点讲解 · 实验二（拉木板）';
+    body.innerHTML =
+      '<p><b>设计目的：</b>实验一要靠人手匀速拉动木块，难以做到，读数上下跳动，不便读数。</p>' +
+      '<p><b>做法：</b>把弹簧测力计的一端固定、另一端拉住木块不动，改为水平向右<b>拉出长木板</b>。</p>' +
+      '<p><b>测量原理：</b>木块被拉住保持<b>静止</b>，在水平方向受滑动摩擦力（向右）和测力计拉力（向左），二力平衡，测力计示数仍等于滑动摩擦力。虽然木板被拉出、木块相对木板仍在滑动，所以仍是<b>滑动摩擦力</b>。</p>' +
+      '<p><b>优点：</b>木块静止受力平衡，木板毋须匀速运动，测力计示数稳定，便于读数。</p>' +
+      '<p><b>结论：</b>同样用控制变量法改变压力、改变接触面粗糙程度，得到的结论与实验一相同。</p>';
+  }
+}
+
+// ---------- 绘制 ----------
+const cv = document.getElementById('scene');
+const ctx = cv.getContext('2d');
+
+function drawSpring(x1, x2, y, ext) {
+  // 教科书样式弹簧测力计：圆筒 + 刻度窗 + 指针
+  const h = 22;
+  ctx.save();
+  ctx.fillStyle = '#f3f0e6'; ctx.strokeStyle = '#5a554a'; ctx.lineWidth = 2;
+  roundRect(x1, y - h/2, x2 - x1, h, 6); ctx.fill(); ctx.stroke();
+  // 刻度窗
+  const wx = x1 + (x2 - x1) * 0.18, ww = (x2 - x1) * 0.55, wy = y - 6, wh = 12;
+  ctx.fillStyle = '#fff'; ctx.fillRect(wx, wy, ww, wh);
+  ctx.strokeStyle = '#333'; ctx.lineWidth = 1;
+  for (let i = 0; i <= 10; i++) {
+    const tx = wx + ww * i / 10;
+    ctx.beginPath(); ctx.moveTo(tx, wy); ctx.lineTo(tx, wy + (i % 5 === 0 ? 7 : 4)); ctx.stroke();
+  }
+  // 指针：ext 0..1
+  const px = wx + ww * Math.min(1, Math.max(0, ext));
+  ctx.strokeStyle = '#e0392b'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(px, wy - 1); ctx.lineTo(px, wy + wh + 1); ctx.stroke();
+  // 两端圆环
+  ring(x1, y); ring(x2, y);
+  ctx.restore();
+}
+function ring(x, y) {
+  ctx.strokeStyle = '#5a554a'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.arc(x, y, 5, 0, Math.PI * 2); ctx.stroke();
+}
+function roundRect(x, y, w, h, r) {
+  ctx.beginPath();
+  ctx.moveTo(x + r, y);
+  ctx.arcTo(x + w, y, x + w, y + h, r);
+  ctx.arcTo(x + w, y + h, x, y + h, r);
+  ctx.arcTo(x, y + h, x, y, r);
+  ctx.arcTo(x, y, x + w, y, r);
+  ctx.closePath();
+}
+
+function drawArrow(x, y, dir, label) {
+  ctx.save();
+  ctx.strokeStyle = '#2c2a26'; ctx.fillStyle = '#2c2a26'; ctx.lineWidth = 3;
+  const len = 34;
+  const ex = x + dir * len;
+  ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(ex, y); ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(ex, y); ctx.lineTo(ex - dir * 10, y - 6); ctx.lineTo(ex - dir * 10, y + 6); ctx.closePath(); ctx.fill();
+  if (label) { ctx.font = '14px sans-serif'; ctx.fillText(label, x - 4 + (dir>0?0:-28), y - 12); }
+  ctx.restore();
+}
+
+function drawScene() {
+  ctx.clearRect(0, 0, 820, 440);
+  const TY = 330;           // 桌面（固定，不动）
+  // 桌面
+  ctx.fillStyle = '#e9dfca'; ctx.fillRect(0, TY, 820, 110);
+  ctx.strokeStyle = '#c9b88f'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(0, TY); ctx.lineTo(820, TY); ctx.stroke();
+
+  const blockW = 92, blockH = 56, blockTop = TY - 22 - blockH; // 254
+  const boardTop = TY - 22;
+
+  // 木板（实验一固定铺满；实验二缩小并右移）
+  let boardX, boardLen;
+  if (state.method === 1) { boardX = 0; boardLen = 820; }
+  else { boardLen = 720; boardX = -160 + state.boardShift; }
+  ctx.fillStyle = '#b5824a'; ctx.fillRect(boardX, boardTop, boardLen, 22);
+  ctx.strokeStyle = '#7c5326'; ctx.lineWidth = 2; ctx.strokeRect(boardX, boardTop, boardLen, 22);
+  // 木纹（随木板移动，能看出木板在动）
+  ctx.strokeStyle = 'rgba(90,55,20,.45)'; ctx.lineWidth = 2;
+  for (let i = 0; i < boardLen; i += 26) {
+    const x = boardX + i;
+    ctx.beginPath(); ctx.moveTo(x, boardTop + 3); ctx.lineTo(x + 4, boardTop + 19); ctx.stroke();
+  }
+
+  // 木块位置
+  const bx = state.blockX;
+  // 钩码（叠在木块上）
+  ctx.fillStyle = '#8d6e3a';
+  for (let i = 0; i < state.weights; i++) {
+    ctx.fillRect(bx + 26 + i * 4, blockTop - 14 * (i + 1), 40, 14);
+    ctx.strokeStyle = '#5e4622'; ctx.lineWidth = 1;
+    ctx.strokeRect(bx + 26 + i * 4, blockTop - 14 * (i + 1), 40, 14);
+  }
+  // 木块
+  ctx.fillStyle = '#d9a441'; ctx.fillRect(bx, blockTop, blockW, blockH);
+  ctx.strokeStyle = '#9c6f1f'; ctx.lineWidth = 2; ctx.strokeRect(bx, blockTop, blockW, blockH);
+
+  const yc = boardTop - blockH / 2; // 测力计中心高度
+
+  if (state.method === 1) {
+    // 测力计在木块右侧，手向右拉
+    const sx1 = bx + blockW, sx2 = sx1 + 150;
+    drawSpring(sx1, sx2, yc, state.sampleRead / 5);
+    drawArrow(sx2, yc, 1, '手拉');
+  } else {
+    // 测力计在木块左侧，固定在左支架
+    const postX = 34, sx1 = postX, sx2 = bx;
+    // 左支架
+    ctx.fillStyle = '#7c7c7c'; ctx.fillRect(postX - 6, TY - 70, 12, 70);
+    ctx.fillStyle = '#9a9a9a'; ctx.fillRect(postX - 14, TY - 70, 28, 6);
+    drawSpring(sx1, sx2, yc, state.sampleRead / 5);
+    // 手向右拉木板右端
+    drawArrow(boardX + boardLen, boardTop + 11, 1, '拉木板');
+  }
+
+  if (state.micro) drawMicro();
+}
+
+function drawMicro() {
+  const x = 560, y = 18, w = 250, h = 150;
+  ctx.save();
+  ctx.fillStyle = '#000'; ctx.fillRect(x, y, w, h);
+  ctx.fillStyle = '#fff'; ctx.font = '12px sans-serif';
+  ctx.fillText('微观接触面（压力越大，咬合越深）', x + 8, y + 16);
+  const midY = y + 95;
+  const press = N() / 7; // 0..1
+  // 上表面（木块底，向下凸）
+  ctx.fillStyle = '#d9a441';
+  ctx.beginPath(); ctx.moveTo(x, midY - 10);
+  for (let i = 0; i <= w; i += 10) {
+    const py = midY - 10 + (i % 20 === 0 ? 12 : -2) - press * 6;
+    ctx.lineTo(x + i, py);
+  }
+  ctx.lineTo(x + w, y + 20); ctx.lineTo(x, y + 20); ctx.closePath(); ctx.fill();
+  // 下表面（木板面，向上凸）
+  ctx.fillStyle = '#b5824a';
+  ctx.beginPath(); ctx.moveTo(x, midY + 10);
+  for (let i = 0; i <= w; i += 10) {
+    const py = midY + 10 + (i % 20 === 0 ? -12 : 2) + press * 6;
+    ctx.lineTo(x + i, py);
+  }
+  ctx.lineTo(x + w, y + h - 6); ctx.lineTo(x, y + h - 6); ctx.closePath(); ctx.fill();
+  ctx.restore();
+}
+
+// ---------- 图线 ----------
+const ch = document.getElementById('chart');
+const cx = ch.getContext('2d');
+function drawChart() {
+  cx.clearRect(0, 0, 360, 280);
+  const ox = 46, oy = 240, pw = 290, ph = 200;
+  // 轴
+  cx.strokeStyle = '#444'; cx.lineWidth = 1.5;
+  cx.beginPath(); cx.moveTo(ox, 20); cx.lineTo(ox, oy); cx.lineTo(ox + pw, oy); cx.stroke();
+  cx.fillStyle = '#333'; cx.font = '12px sans-serif';
+  cx.fillText('摩擦力 f / N', ox - 40, 16);
+  cx.fillText('压力 N / N', ox + pw - 50, oy + 18);
+  // 刻度
+  for (let v = 0; v <= 8; v += 2) { const x = ox + pw * v / 8; cx.fillText(v, x - 4, oy + 14); }
+  for (let v = 0; v <= 5; v += 1) { const y = oy - ph * v / 5; cx.fillText(v.toFixed(0), ox - 16, y + 4); }
+
+  // 按接触面分组连线
+  const surfaces = ['smooth', 'medium', 'rough'];
+  surfaces.forEach(s => {
+    const pts = state.data.filter(d => d.surface === s).sort((a, b) => a.N - b.N);
+    if (pts.length === 0) return;
+    cx.strokeStyle = SURF_COLOR[s];
+    cx.lineWidth = 2;
+    cx.beginPath();
+    pts.forEach((d, i) => {
+      const x = ox + pw * d.N / 8;
+      const y = oy - ph * d.F / 5;
+      if (i === 0) cx.moveTo(x, y); else cx.lineTo(x, y);
+    });
+    cx.stroke();
+    // 数据点
+    cx.fillStyle = SURF_COLOR[s];
+    pts.forEach(d => {
+      const x = ox + pw * d.N / 8;
+      const y = oy - ph * d.F / 5;
+      cx.beginPath(); cx.arc(x, y, 5, 0, Math.PI * 2); cx.fill();
+    });
+  });
+  // 图例
+  const lx = ox + pw - 80, ly = 26;
+  surfaces.forEach((s, i) => {
+    cx.fillStyle = SURF_COLOR[s];
+    cx.fillRect(lx, ly + i * 16, 14, 10);
+    cx.fillStyle = '#333'; cx.font = '11px sans-serif';
+    cx.fillText(SURF_CN[s], lx + 18, ly + i * 16 + 9);
+  });
+  if (!state.data.length) {
+    cx.fillStyle = '#999'; cx.font = '12px sans-serif';
+    cx.fillText('（改变钩码/接触面后出点连线）', ox + 40, oy - 90);
+  }
+}
+
+// ---------- 动画循环 ----------
+let jitter = 0;
+let speedJitter = 0;
+function loop(t) {
+  if (state.running) {
+    if (state.method === 1) {
+      // 手难匀速：速度忽快忽慢（对应读数抖动的根源）
+      speedJitter += (Math.random() - 0.5) * 0.25;
+      speedJitter = Math.max(-0.28, Math.min(0.28, speedJitter));
+      const v = 0.45 + speedJitter;
+      state.blockX += Math.max(0.12, v);
+      if (state.blockX > 620) { state.running = false; state.blockX = 120; stopPull(); }
+    } else {
+      // 木板匀速拉出（无需严格匀速，这里匀速即可）
+      state.boardShift += 0.5;
+      if (state.boardShift > 340) { state.running = false; state.boardShift = 0; stopPull(); }
+    }
+  }
+  // 读数采样（每 ~240ms，跳变更可读）
+  if (!state.lastT) state.lastT = t;
+  if (t - state.lastT > 240) {
+    state.lastT = t;
+    if (!state.running) state.sampleRead = 0;
+    else if (state.method === 1) {
+      // 难匀速：读数围绕真值抖动，幅度降低到可读但仍明显跳动
+      jitter += (Math.random() - 0.5) * 0.18;
+      jitter = Math.max(-0.12, Math.min(0.12, jitter));
+      state.sampleRead = Ftrue() + jitter;
+    } else {
+      // 木块静止：读数稳定
+      state.sampleRead = Ftrue() + (Math.random() - 0.5) * 0.02;
+    }
+  }
+  document.getElementById('readVal').textContent = state.sampleRead.toFixed(2) + ' N';
+  drawScene();
+  requestAnimationFrame(loop);
+}
+
+// 初始化
+setMethod(1);
+document.getElementById('wVal').textContent = '0 个';
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

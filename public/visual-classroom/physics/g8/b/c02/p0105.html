@@ -1,0 +1,386 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>连通器原理 · 物理仿真</title>
+<style>
+  :root{
+    --bg:#eef4fb; --panel:#ffffff; --ink:#1f2d3d; --sub:#5b6b7c;
+    --accent:#1f8fff; --line:#ff7a18; --good:#16a34a; --liquid:#d62828;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0; font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    background:linear-gradient(160deg,#eef4fb,#dfeaf6); color:var(--ink); min-height:100vh; padding:18px;}
+  .wrap{max-width:1060px; margin:0 auto;}
+  h1{font-size:22px; margin:0 0 4px;}
+  .lead{color:var(--sub); font-size:14px; margin:0 0 16px; line-height:1.6;}
+  .stage{background:var(--panel); border-radius:16px; padding:14px;
+    box-shadow:0 10px 30px rgba(31,143,255,.12); position:relative;}
+  canvas{width:100%; display:block; border-radius:10px;
+    background:linear-gradient(#fbfdff,#e8f1ff);}
+  .controls{display:flex; flex-wrap:wrap; gap:10px; align-items:center; margin-top:14px;}
+  button{border:0; border-radius:10px; padding:10px 16px; font-size:14px; cursor:pointer; font-weight:600; transition:.15s;}
+  .btn-primary{background:var(--accent); color:#fff;}
+  .btn-primary:hover{filter:brightness(1.07);}
+  .btn-ghost{background:#eaf2ff; color:var(--accent);}
+  .btn-ghost:hover{background:#dcebff;}
+  .btn-warn{background:#fff0ec; color:#e0552b;}
+  .seg{display:inline-flex; background:#eaf2ff; border-radius:10px; padding:4px; gap:4px;}
+  .seg button{background:transparent; color:var(--sub); padding:8px 12px; font-size:13px;}
+  .seg button.on{background:#fff; color:var(--accent); box-shadow:0 2px 6px rgba(0,0,0,.08);}
+  label.tg{display:inline-flex; align-items:center; gap:6px; font-size:13px; color:var(--sub); cursor:pointer;}
+  .readout{display:flex; gap:18px; flex-wrap:wrap; margin-top:10px; font-size:13px;}
+  .readout .k{color:var(--sub);} .readout .v{font-weight:700; color:var(--good); font-size:15px;}
+  .hint{position:absolute; left:22px; top:22px; background:rgba(31,45,61,.78); color:#fff;
+    padding:6px 12px; border-radius:20px; font-size:12px; pointer-events:none;}
+
+  /* 知识点讲解 */
+  .kb{margin-top:18px; background:#fff; border:1px solid #d7e9ff; border-radius:14px; overflow:hidden;}
+  .kb h2{margin:0; font-size:17px; padding:14px 18px; background:#f0f7ff; border-bottom:1px solid #e0ecff;}
+  .kb .body{padding:6px 18px 16px;}
+  .kb .item{padding:12px 0; border-bottom:1px dashed #e6eefb;}
+  .kb .item:last-child{border-bottom:0;}
+  .kb .item h3{margin:0 0 6px; font-size:15px; color:var(--accent); display:flex; align-items:center; gap:8px;}
+  .kb .item h3 .n{background:var(--accent); color:#fff; width:22px; height:22px; border-radius:50%;
+    display:inline-flex; align-items:center; justify-content:center; font-size:12px;}
+  .kb .item p{margin:4px 0; font-size:14px; line-height:1.8; color:#33424f;}
+  .kb .item .tag{display:inline-block; background:#fff3ec; color:#e0552b; border-radius:6px;
+    padding:1px 8px; font-size:12px; margin:2px 4px 2px 0;}
+  .formula{font-family:"Cambria Math",Georgia,serif; background:#f5faff; border:1px solid #e0ecff;
+    border-radius:8px; padding:4px 9px; display:inline-block; margin:2px 3px;}
+  .kb ul{margin:6px 0; padding-left:20px;} .kb li{font-size:14px; line-height:1.8; color:#33424f;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>连通器原理 · 物理仿真</h1>
+  <p class="lead">
+    上端开口、下端连通的容器叫<b>连通器</b>。装入<b>同种液体</b>，静止后各容器<b>液面保持相平</b>，与容器外形、粗细、是否倾斜无关。
+    下面选择不同外形的实验装置，点击「加水」观察液面如何最终稳定在同一水平高度。
+  </p>
+
+  <div class="stage">
+    <div class="hint" id="hint">点击「加水」试试 ↑</div>
+    <canvas id="cv" width="960" height="560"></canvas>
+    <div class="controls">
+      <div class="seg" id="models">
+        <button data-m="u" class="on">U 形管</button>
+        <button data-m="incline">竖直 + 斜管</button>
+        <button data-m="bulb">蛇形 / 球形膨大</button>
+        <button data-m="multi">多管组合</button>
+      </div>
+      <button class="btn-primary" id="add">＋ 加水</button>
+      <button class="btn-ghost" id="remove">－ 排水</button>
+      <button class="btn-warn" id="reset">↺ 重置</button>
+      <label class="tg"><input type="checkbox" id="tgLine" checked> 水平参考线</label>
+      <label class="tg"><input type="checkbox" id="tgH" checked> 高度标注 h</label>
+      <label class="tg"><input type="checkbox" id="tgDerive"> 受力推导</label>
+    </div>
+    <div class="readout">
+      <div><span class="k">当前液面高度 h：</span><span class="v" id="hVal">0.0 cm</span></div>
+      <div><span class="k">液量占比：</span><span class="v" id="volVal">0%</span></div>
+      <div><span class="k">状态：</span><span class="v" id="state">空</span></div>
+    </div>
+  </div>
+
+  <!-- 知识点讲解 -->
+  <div class="kb">
+    <h2>📘 知识点讲解</h2>
+    <div class="body">
+      <div class="item">
+        <h3><span class="n">1</span>什么是连通器（定义）</h3>
+        <p><b>上端开口、下端连通</b>的容器，叫做连通器。常见的连通器有：茶壶（壶身与壶嘴）、锅炉水位计、船闸、洗手池下方的 U 形存水弯等。</p>
+        <p>关键特征：<span class="tag">上端开口</span><span class="tag">底部/侧面相互连通</span><span class="tag">内部只有一种液体</span></p>
+      </div>
+      <div class="item">
+        <h3><span class="n">2</span>连通器的原理（实验结论）</h3>
+        <p>当连通器中装入<b>同种液体</b>，且液体<b>静止不流动</b>时，各容器中的<b>液面总是相平的</b>——即各液面处在<b>同一条水平线上</b>。这一结论与容器的形状、粗细、是否倾斜都<b>无关</b>。</p>
+        <p>👉 本仿真中无论怎么加水，橙色参考线始终水平，各管标注的 h 数值始终相等，正是这一结论的直观体现。</p>
+      </div>
+      <div class="item">
+        <h3><span class="n">3</span>理论推导（液片二力平衡）</h3>
+        <p>在底部连通处假想取一竖直的<b>薄液片</b>，液片静止时受力平衡：</p>
+        <p>
+          两侧压强：<span class="formula">p₁ = ρgh₁</span>，<span class="formula">p₂ = ρgh₂</span><br>
+          液片面积均为 S，二力平衡 <span class="formula">F₁ = F₂</span> ⇒ <span class="formula">p₁S = p₂S</span><br>
+          即 <span class="formula">ρgh₁S = ρgh₂S</span> ⇒ 约去 ρ、g、S，得 <span class="formula">h₁ = h₂</span>
+        </p>
+        <p>因为同种液体密度 ρ 相同，所以两侧液面竖直高度必然相等——这就是“液面相平”的本质原因。</p>
+      </div>
+      <div class="item">
+        <h3><span class="n">4</span>成立条件（缺一不可）</h3>
+        <ul>
+          <li>各容器<b>上端开口</b>（与大气相通，压强为大气压）；</li>
+          <li>容器底部或下部<b>相互连通</b>；</li>
+          <li>连通器中是<b>同一种液体</b>（密度相同）；</li>
+          <li>液体处于<b>静止</b>状态（不流动）。</li>
+        </ul>
+        <p>⚠️ 若装入<b>不同密度</b>的液体（如油和水），或两端液面上方气压不同，则液面不再相平。</p>
+      </div>
+      <div class="item">
+        <h3><span class="n">5</span>生活中的应用</h3>
+        <ul>
+          <li><b>茶壶</b>：壶嘴与壶身构成连通器，壶嘴液面与壶内液面相平，保证倒水顺畅；</li>
+          <li><b>锅炉水位计</b>：透明管与锅炉连通，外部可直接读出锅炉内水位；</li>
+          <li><b>船闸</b>：利用连通器原理，通过充、泄水使闸室液面与上下游相平，让船只逐级通行；</li>
+          <li><b>地漏 / 洗手池 U 形存水弯</b>：弯管中长期存水，水面相平形成“水封”，阻隔下水道臭气；</li>
+          <li><b>自来水与工业管道</b>：通过连通器原理测量或平衡液位。</li>
+        </ul>
+      </div>
+      <div class="item">
+        <h3><span class="n">6</span>常见误区</h3>
+        <ul>
+          <li>❌ “粗的管子液面应该低一些” —— 错！与粗细无关，只与是否同种液体、是否静止有关；</li>
+          <li>❌ “倾斜的管子液面会更高” —— 错！倾斜只改变管子的形状，液面竖直高度仍相等；</li>
+          <li>❌ “不同液体也能相平” —— 错！必须同种液体（密度相同）。</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+const W = cv.width, H = cv.height;
+const PX_PER_CM = 12;
+
+// ---------- 各连通器装置（内腔路径 + 关键参数），外形接近真实玻璃器材 ----------
+function buildModel(name){
+  const p = new Path2D();
+  let bottomY, arms=[], tube=null;
+  if(name==='u'){
+    bottomY=502;
+    // 真实 U 形玻璃管：等径双臂 + 半圆底弯
+    // 中心线（用于沿其粗描边生成玻璃管壁）
+    tube=new Path2D();
+    tube.moveTo(230,120); tube.lineTo(230,410);
+    tube.arc(300,410,70,Math.PI,0,true);   // 中心线底弯（向下鼓出）
+    tube.lineTo(370,120);
+    // 液体通道（bore）闭合轮廓：外弧 + 内弧，二者均向下鼓出
+    p.moveTo(208,120); p.lineTo(208,410);
+    p.arc(300,410,92,Math.PI,0,true);       // 外弧（向下）
+    p.lineTo(392,120); p.lineTo(348,120); p.lineTo(348,410);
+    p.arc(300,410,48,0,Math.PI,false);      // 内弧（向下）
+    p.lineTo(252,120); p.closePath();
+    arms=[{x:230,top:120,w:44},{x:370,top:120,w:44}];
+  } else if(name==='incline'){
+    bottomY=480;
+    p.rect(120,440,400,40);                 // 底部连通座
+    p.rect(152,120,36,360);                 // 左：竖直细管
+    p.moveTo(410,480); p.lineTo(450,480); p.lineTo(590,200); p.lineTo(550,200); p.closePath(); // 右：倾斜管
+    arms=[{x:170,top:120,w:36},{x:520,top:210,w:40}];
+  } else if(name==='bulb'){
+    bottomY=480;
+    p.rect(120,440,440,40);                 // 连通座
+    p.rect(164,140,32,340);                 // 细直管
+    p.rect(358,140,44,340);                 // 竖直管
+    p.arc(380,320,55,0,Math.PI*2);          // 球形膨大
+    p.rect(504,160,32,320);                 // 另一细管
+    arms=[{x:180,top:140,w:32},{x:380,top:140,w:44},{x:520,top:160,w:32}];
+  } else { // multi
+    bottomY=490;
+    p.rect(80,460,800,30);
+    const list=[[140,10],[300,40],[480,18],[660,28],[820,12]];
+    list.forEach(([cx,hw])=>{ p.rect(cx-hw,120,hw*2,370); });
+    arms=list.map(([cx,hw])=>({x:cx,top:120,w:hw*2}));
+  }
+  return {path:p, bottomY, arms, name, tube};
+}
+
+// ---------- 离屏蒙版：扫描每行像素宽度，建立 体积 ↔ 液面高度 映射 ----------
+function computeMask(model){
+  const oc=document.createElement('canvas'); oc.width=W; oc.height=H;
+  const o=oc.getContext('2d'); o.fillStyle='#fff'; o.fill(model.path);
+  const d=o.getImageData(0,0,W,H).data;
+  const rows=new Float32Array(H);
+  for(let y=0;y<H;y++){ let c=0; for(let x=0;x<W;x++){ if(d[(y*W+x)*4+3]>0) c++; } rows[y]=c; }
+  const cum=new Float64Array(H); let acc=0;
+  for(let y=H-1;y>=0;y--){ acc+=rows[y]; cum[y]=acc; }
+  return {cum, capacity:acc};
+}
+function levelFromVol(mask, V){
+  V=Math.max(0,Math.min(mask.capacity, V));
+  let lo=0, hi=H-1;
+  while(lo<hi){ const m=(lo+hi)>>1; if(mask.cum[m]>V) lo=m+1; else hi=m; }
+  return lo;
+}
+
+const models={};
+['u','incline','bulb','multi'].forEach(n=>{ const m=buildModel(n); models[n]={...m, mask:computeMask(m)}; });
+
+let cur='u';
+let targetVol=models[cur].mask.capacity*0.18;
+let dispVol=targetVol;
+let lastChange=-10;
+let bubbles=[];
+
+function setModel(n){
+  cur=n; const mk=models[n];
+  targetVol=mk.mask.capacity*0.18; dispVol=targetVol; bubbles=[];
+  document.querySelectorAll('#models button').forEach(b=>b.classList.toggle('on',b.dataset.m===n));
+}
+
+// ---------- 绘制：实验支架（底座 + 背杆），增强真实感 ----------
+function drawStand(model){
+  // 背杆
+  ctx.save();
+  const g=ctx.createLinearGradient(80,0,96,0);
+  g.addColorStop(0,'#9aa6b2'); g.addColorStop(.5,'#cfd8e0'); g.addColorStop(1,'#7d8893');
+  ctx.fillStyle=g; ctx.fillRect(84,90,12,model.bottomY+40-90);
+  // 底座
+  const by=model.bottomY+8;
+  const bg=ctx.createLinearGradient(0,by,0,by+30);
+  bg.addColorStop(0,'#3a434d'); bg.addColorStop(1,'#20262d');
+  ctx.fillStyle=bg;
+  ctx.beginPath(); ctx.roundRect(70,by,820,30,8); ctx.fill();
+  ctx.fillStyle='rgba(255,255,255,.12)'; ctx.fillRect(70,by,820,4);
+  ctx.restore();
+}
+
+// ---------- 绘制：玻璃器材 ----------
+function drawGlass(model){
+  ctx.save();
+  ctx.lineJoin='round'; ctx.lineCap='round';
+  if(model.tube){
+    // 玻璃管体：沿中心线粗描边形成管壁（真实弯管质感）
+    ctx.lineWidth=70; ctx.strokeStyle='rgba(60,110,170,.18)'; ctx.stroke(model.tube); // 外壁暗边
+    ctx.lineWidth=68; ctx.strokeStyle='rgba(130,190,235,.40)'; ctx.stroke(model.tube); // 玻璃体
+    ctx.lineWidth=4;  ctx.strokeStyle='rgba(255,255,255,.30)'; ctx.stroke(model.tube); // 中央反光
+    ctx.lineWidth=2.5;ctx.strokeStyle='rgba(255,255,255,.9)';  ctx.stroke(model.path); // 内腔亮边
+  } else {
+    // 玻璃管壁（粗描边形成壁厚 + 圆角）
+    ctx.lineWidth=16; ctx.strokeStyle='rgba(120,180,230,.55)'; ctx.stroke(model.path);
+    ctx.fillStyle='rgba(200,230,255,.16)'; ctx.fill(model.path);
+    ctx.lineWidth=3; ctx.strokeStyle='rgba(255,255,255,.7)'; ctx.stroke(model.path);
+  }
+  ctx.restore();
+  // 管口椭圆（开口）
+  ctx.save();
+  model.arms.forEach(a=>{
+    ctx.lineWidth=4; ctx.strokeStyle='rgba(120,180,230,.7)';
+    ctx.fillStyle='rgba(255,255,255,.5)';
+    ctx.beginPath(); ctx.ellipse(a.x,a.top,a.w/2+2,7,0,0,Math.PI*2); ctx.fill(); ctx.stroke();
+  });
+  ctx.restore();
+}
+
+// ---------- 绘制：红色液体（含弯月面）----------
+function drawWater(model, levelY){
+  ctx.save();
+  ctx.clip(model.path);
+  const g=ctx.createLinearGradient(0,levelY,0,model.bottomY);
+  g.addColorStop(0,'rgba(255,96,72,.92)');
+  g.addColorStop(1,'rgba(198,38,28,.96)');
+  ctx.fillStyle=g;
+  ctx.fillRect(0,levelY,W,model.bottomY-levelY+8);
+  // 各管液面弯月面
+  ctx.strokeStyle='rgba(255,180,170,.85)'; ctx.lineWidth=2;
+  model.arms.forEach(a=>{
+    ctx.beginPath(); ctx.ellipse(a.x,levelY,a.w/2,5,0,0,Math.PI*2); ctx.stroke();
+  });
+  // 气泡
+  ctx.fillStyle='rgba(255,255,255,.7)';
+  bubbles.forEach(b=>{ ctx.beginPath(); ctx.arc(b.x,b.y,b.r,0,Math.PI*2); ctx.fill(); });
+  ctx.restore();
+}
+
+function drawRefLine(model, levelY){
+  if(!document.getElementById('tgLine').checked) return;
+  ctx.save();
+  ctx.setLineDash([10,7]); ctx.lineWidth=2.5; ctx.strokeStyle='#ff7a18';
+  ctx.beginPath(); ctx.moveTo(60,levelY); ctx.lineTo(W-40,levelY); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle='#ff7a18'; ctx.font='bold 14px sans-serif';
+  ctx.fillText('同一水平面', W-118, levelY-8);
+  ctx.restore();
+}
+function drawHeights(model, levelY){
+  if(!document.getElementById('tgH').checked) return;
+  ctx.save();
+  model.arms.forEach((a,i)=>{
+    const hcm=(model.bottomY-levelY)/PX_PER_CM;
+    ctx.strokeStyle='#16a34a'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(a.x-a.w/2-14,model.bottomY); ctx.lineTo(a.x-a.w/2-14,levelY); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(a.x-a.w/2-18,model.bottomY-6); ctx.lineTo(a.x-a.w/2-14,model.bottomY); ctx.lineTo(a.x-a.w/2-10,model.bottomY-6); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(a.x-a.w/2-18,levelY+6); ctx.lineTo(a.x-a.w/2-14,levelY); ctx.lineTo(a.x-a.w/2-10,levelY+6); ctx.stroke();
+    ctx.fillStyle='#16a34a'; ctx.font='bold 13px sans-serif';
+    ctx.fillText('h'+(i+1)+'='+hcm.toFixed(1)+'cm', a.x-a.w/2-70, (model.bottomY+levelY)/2);
+  });
+  ctx.restore();
+}
+function drawDerive(model, levelY){
+  if(!document.getElementById('tgDerive').checked) return;
+  ctx.save();
+  const liY=model.bottomY-26;
+  ctx.fillStyle='rgba(255,122,24,.25)';
+  ctx.fillRect(150,liY-12,200,24);
+  ctx.fillStyle='#1f2d3d'; ctx.font='13px sans-serif';
+  ctx.fillText('薄液片', 222, liY+4);
+  ctx.strokeStyle='#e0552b'; ctx.lineWidth=2.5;
+  ctx.beginPath(); ctx.moveTo(150,liY); ctx.lineTo(112,liY); ctx.stroke();
+  ctx.fillText('F₁', 96, liY+4);
+  ctx.beginPath(); ctx.moveTo(350,liY); ctx.lineTo(388,liY); ctx.stroke();
+  ctx.fillText('F₂', 392, liY+4);
+  ctx.restore();
+}
+
+// ---------- 主循环 ----------
+function tick(t){
+  const mk=models[cur];
+  const dt=Math.min(0.05,(t-(window._lt||t))/1000||0); window._lt=t;
+  dispVol += (targetVol-dispVol)*Math.min(1,dt*4);
+  const since=(t-lastChange)/1000;
+  let wob=0; if(since<0.7 && Math.abs(targetVol-dispVol)<2){ wob=Math.sin(since*18)*Math.exp(-since*6)*4; }
+  const baseY=levelFromVol(mk.mask, dispVol);
+  const levelY=Math.max(0,Math.min(mk.bottomY, baseY+wob));
+
+  ctx.clearRect(0,0,W,H);
+  drawStand(mk);
+  drawWater(mk, levelY);
+  drawGlass(mk);
+  drawRefLine(mk, levelY);
+  drawHeights(mk, levelY);
+  drawDerive(mk, levelY);
+
+  bubbles.forEach(b=>{ b.y-=b.vy*dt; b.x+=Math.sin(b.y*0.05)*0.3; });
+  bubbles=bubbles.filter(b=>b.y>levelY+6);
+  if(bubbles.length>40) bubbles.splice(0,bubbles.length-40);
+
+  const hcm=(mk.bottomY-levelY)/PX_PER_CM;
+  document.getElementById('hVal').textContent=hcm.toFixed(1)+' cm';
+  document.getElementById('volVal').textContent=Math.round(dispVol/mk.mask.capacity*100)+'%';
+  const st=document.getElementById('state');
+  if(dispVol< mk.mask.capacity*0.02) st.textContent='空';
+  else if(Math.abs(targetVol-dispVol)>3) st.textContent='流动中…';
+  else st.textContent='已稳定（液面相平）';
+
+  requestAnimationFrame(tick);
+}
+requestAnimationFrame(tick);
+
+// ---------- 交互 ----------
+function spawnBubbles(n){
+  const mk=models[cur];
+  for(let i=0;i<n;i++){
+    const x=120+Math.random()*(W-240);
+    bubbles.push({x, y:mk.bottomY-10-Math.random()*40, r:1.5+Math.random()*2.5, vy:18+Math.random()*22});
+  }
+}
+document.getElementById('add').onclick=()=>{
+  const mk=models[cur]; targetVol=Math.min(mk.mask.capacity*0.96, targetVol+mk.mask.capacity*0.14);
+  lastChange=performance.now(); spawnBubbles(14);
+  document.getElementById('hint').style.opacity=0;
+};
+document.getElementById('remove').onclick=()=>{
+  const mk=models[cur]; targetVol=Math.max(mk.mask.capacity*0.02, targetVol-mk.mask.capacity*0.14);
+  lastChange=performance.now();
+};
+document.getElementById('reset').onclick=()=>{
+  const mk=models[cur]; targetVol=mk.mask.capacity*0.18; lastChange=performance.now();
+};
+document.querySelectorAll('#models button').forEach(b=>{ b.onclick=()=>setModel(b.dataset.m); });
+</script>
+</body>
+</html>

@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>11.2　导体的电阻 ｜ 人教版物理必修第三册</title>
+<style>
+  :root{
+    --blue:#1d4ed8; --blue-soft:#eff6ff; --blue-line:#bfdbfe;
+    --ink:#1e293b; --sub:#64748b; --line:#e2e8f0;
+    --amber-bg:#fffbeb; --amber-line:#fcd34d; --amber-ink:#92400e;
+    --green:#059669; --red:#dc2626;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:#f3f5f9; color:var(--ink);
+    font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif; padding:18px 12px 40px;}
+  .wrap{max-width:1060px; margin:0 auto;}
+  header{background:#fff; border:1px solid var(--line); border-left:6px solid var(--blue);
+    border-radius:12px; padding:16px 22px; box-shadow:0 1px 3px rgba(15,23,42,.06);}
+  header h1{font-size:22px; color:var(--ink);}
+  header .meta{margin-top:6px; font-size:12.5px; color:var(--sub); line-height:1.7;}
+  .mod{background:#fff; border:1px solid var(--line); border-radius:12px;
+    padding:16px 20px 18px; margin-top:16px; box-shadow:0 1px 3px rgba(15,23,42,.05);}
+  .mod-h{display:flex; align-items:center; gap:10px; margin-bottom:10px;}
+  .mod-h .no{background:var(--blue); color:#fff; font-size:12px; border-radius:6px;
+    padding:2px 8px; white-space:nowrap;}
+  .mod-h h2{font-size:16.5px;}
+  .mod-h .kp{margin-left:auto; font-size:12px; color:var(--sub); white-space:nowrap;}
+  .think{background:var(--blue-soft); border:1px solid var(--blue-line); border-radius:8px;
+    padding:8px 12px; font-size:12.5px; color:#1e40af; margin-bottom:10px; line-height:1.7;}
+  .think b{color:var(--blue);}
+  canvas.stage{display:block; width:100%; background:#fbfdff;
+    border:1px solid var(--line); border-radius:10px;}
+  .ctrl{display:flex; flex-wrap:wrap; gap:8px 18px; align-items:center; margin-top:10px;}
+  .row{display:flex; align-items:center; gap:8px; font-size:13px;}
+  .row label{color:var(--sub); white-space:nowrap;}
+  .row input[type=range]{width:150px; accent-color:var(--blue);}
+  .row .val{min-width:64px; font-variant-numeric:tabular-nums; color:var(--ink); font-weight:600;}
+  .btn{border:1px solid var(--blue); color:var(--blue); background:#fff; border-radius:7px;
+    padding:4px 12px; font-size:12.5px; cursor:pointer;}
+  .btn:hover{background:var(--blue-soft);}
+  .btn.on{background:var(--blue); color:#fff;}
+  .note{margin-top:10px; background:var(--amber-bg); border:1px solid var(--amber-line);
+    border-radius:8px; padding:8px 12px; font-size:12.5px; color:var(--amber-ink); line-height:1.8;}
+  .note b{color:#b45309;}
+  footer{margin-top:20px; text-align:center; font-size:12px; color:#94a3b8;}
+  .seg{display:inline-flex; border:1px solid var(--blue); border-radius:8px; overflow:hidden;}
+  .seg button{border:none; background:#fff; color:var(--blue); padding:4px 12px;
+    font-size:12.5px; cursor:pointer;}
+  .seg button.on{background:var(--blue); color:#fff;}
+  .read{display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-top:10px;}
+  .read div{background:#f8fafc; border:1px solid var(--line); border-radius:7px;
+    padding:5px 9px; font-size:11.5px; color:var(--sub);}
+  .read div b{display:block; color:var(--ink); font-size:14px; font-weight:700;
+    font-variant-numeric:tabular-nums;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>11.2　导体的电阻</h1>
+  <div class="meta">人教版《物理》必修第三册 · 第十一章 电路及其应用 · 教材 P57–P61 ｜
+    覆盖知识点：电阻的定义式 R＝U/I 与伏安特性曲线、电阻定律 R＝ρL/S、电阻率与温度的关系 ｜
+    难点：线性元件与非线性元件、ρ 随温度变化的两种相反趋势</div>
+</header>
+
+<div class="mod">
+  <div class="mod-h"><span class="no">模块 1</span><h2>R＝U/I 与伏安特性曲线</h2><span class="kp">数据图象</span></div>
+  <div class="think"><b>先想一想：</b>给一个定值电阻不断加大电压，它的电流会一直成正比增大吗？换成小灯泡呢？先画一画你脑中的图线，再看屏幕。</div>
+  <canvas class="stage" id="cv1" style="height:360px;"></canvas>
+  <div class="read">
+    <div>电压 U<b id="r1u">0.00 V</b></div>
+    <div>电流 I<b id="r1i">0.00 A</b></div>
+    <div>此刻电阻 R＝U/I<b id="r1r">—</b></div>
+    <div>元件类型<b id="r1k">定值电阻</b></div>
+  </div>
+  <div class="ctrl">
+    <div class="row"><label>元件</label>
+      <span class="seg" id="k1">
+        <button data-i="0" class="on">定值电阻</button><button data-i="1">小灯泡</button><button data-i="2">二极管</button><button data-i="3">三条对比</button>
+      </span>
+    </div>
+    <div class="row"><label>电压 U</label><input type="range" id="u1" min="0" max="12" step="0.1" value="6"><span class="val" id="u1v"></span></div>
+    <button class="btn" id="p1a">U = 3 V</button>
+    <button class="btn" id="p1b">U = 12 V（看清弯曲）</button>
+  </div>
+  <div class="note"><b>观察要点：</b>定值电阻的 U–I 图线是<b>过原点的直线</b>，斜率就是 R（不变）—— 叫<b>线性元件</b>；
+    小灯泡的图线<b>向上弯曲</b>：电压越大 → 电流越大 → 灯丝温度越高 → 电阻越大，所以同样电压下电流偏小 —— 叫<b>非线性元件</b>；
+    二极管更极端：正向电压不到约 0.5 V 时几乎不导通，一旦超过，电流就急剧增大（它的"电阻"随工作点变）。
+    注意 R＝U/I 是<b>测量式</b>：定值电阻的 R 不随 U、I 变，灯泡和二极管的 R 会变。</div>
+</div>
+
+<div class="mod">
+  <div class="mod-h"><span class="no">模块 2</span><h2>电阻定律 R＝ρL/S</h2><span class="kp">交互仿真</span></div>
+  <div class="think"><b>先想一想：</b>把一根电阻丝拉长到原来的 2 倍，电阻变几倍？换成粗一倍的导线呢？换成镍铬丝呢？先猜再验证。</div>
+  <canvas class="stage" id="cv2" style="height:380px;"></canvas>
+  <div class="read">
+    <div>材料电阻率 ρ<b id="r2p">—</b></div>
+    <div>长度 L<b id="r2l">—</b></div>
+    <div>横截面积 S<b id="r2s">—</b></div>
+    <div>电阻 R＝ρL/S<b id="r2r">—</b></div>
+  </div>
+  <div class="ctrl">
+    <div class="row"><label>材料</label>
+      <span class="seg" id="m2">
+        <button data-i="0" class="on">铜</button><button data-i="1">铁</button><button data-i="2">镍铬合金</button>
+      </span>
+    </div>
+    <div class="row"><label>长度 L</label><input type="range" id="l2" min="0.2" max="5" step="0.1" value="1"><span class="val" id="l2v"></span></div>
+    <div class="row"><label>横截面积 S</label><input type="range" id="s2" min="0.2" max="4" step="0.1" value="1"><span class="val" id="s2v"></span></div>
+    <button class="btn" id="p2a">L 加倍</button>
+    <button class="btn" id="p2b">S 加倍</button>
+    <button class="btn" id="p2c">换成镍铬</button>
+  </div>
+  <div class="note"><b>观察要点：</b>R 与 L 成<b>正比</b>（R–L 图线为过原点直线）、与 S 成<b>反比</b>（R–1/S 图线为过原点直线）、与材料的 ρ 成<b>正比</b>。
+    ρ 是材料的<b>固有属性</b>：铜 1.7×10⁻⁸ Ω·m、铁 1.0×10⁻⁷ Ω·m、镍铬 1.0×10⁻⁶ Ω·m —— 镍铬比铜大近 60 倍，所以做电炉丝。</div>
+</div>
+
+<div class="mod">
+  <div class="mod-h"><span class="no">模块 3</span><h2>电阻率与温度的关系</h2><span class="kp">数据图象 + 动画</span></div>
+  <div class="think"><b>先想一想：</b>把金属丝加热，它的电阻会变大还是变小？半导体（热敏电阻）呢？两种材料的变化方向一样吗？</div>
+  <canvas class="stage" id="cv3" style="height:340px;"></canvas>
+  <div class="read">
+    <div>温度 t<b id="r3t">20 °C</b></div>
+    <div>相对电阻率 ρ/ρ₀<b id="r3p">—</b></div>
+    <div>电阻丝电阻 R<b id="r3r">—</b></div>
+    <div>回路电流 I<b id="r3i">—</b></div>
+  </div>
+  <div class="ctrl">
+    <div class="row"><label>材料</label>
+      <span class="seg" id="m3">
+        <button data-i="0" class="on">金属（铜）</button><button data-i="1">半导体（热敏）</button>
+      </span>
+    </div>
+    <div class="row"><label>温度 t</label><input type="range" id="t3" min="0" max="100" step="1" value="20"><span class="val" id="t3v"></span></div>
+    <button class="btn" id="p3a">加热到 100 °C</button>
+    <button class="btn" id="p3b">回到 0 °C</button>
+    <button class="btn" id="p3c">自动升温</button>
+  </div>
+  <div class="note"><b>观察要点：</b>金属的 ρ 随温度升高<b>略微线性增大</b>（ρ＝ρ₀(1+αt)），因为晶格振动加剧、阻碍电子定向移动；
+    半导体的 ρ 随温度升高<b>急剧减小</b>，因为热激发使自由载流子数目猛增 —— 趋势完全<b>相反</b>。
+    所以：标准电阻用温度系数极小的锰铜/康铜，而热敏电阻正用半导体这一特性做温度传感器。</div>
+</div>
+
+<footer>人教版高中物理必修第三册 · 可视化交互课件 ｜ 单文件离线运行，双击即可使用</footer>
+</div>
+
+<script>
+(function(){
+'use strict';
+/* ========== 通用工具 ========== */
+function $(id){ return document.getElementById(id); }
+function fmt(x, d){
+  if (d === undefined) d = 2;
+  if (!isFinite(x)) return '—';
+  var a = Math.abs(x);
+  if (a >= 10000 || (a > 0 && a < 0.01)) return x.toExponential(2);
+  return (+x.toFixed(d)).toString();
+}
+function stage(id){
+  var cv = $(id);
+  var o = { cv:cv, ctx:cv.getContext('2d'), w:0, h:0 };
+  o.clear = function(){
+    var dpr = window.devicePixelRatio || 1;
+    var w = cv.clientWidth || 800, h = cv.clientHeight || 340;
+    if (cv.width !== Math.round(w*dpr) || cv.height !== Math.round(h*dpr)){
+      cv.width = Math.round(w*dpr); cv.height = Math.round(h*dpr);
+    }
+    o.ctx.setTransform(dpr,0,0,dpr,0,0);
+    o.w = w; o.h = h;
+    var c = o.ctx;
+    c.clearRect(0,0,w,h);
+    c.fillStyle = '#fbfdff'; c.fillRect(0,0,w,h);
+    return c;
+  };
+  return o;
+}
+function bind(id, fn, disp){
+  var el = $(id), v = $(id + 'v');
+  function go(){ var x = parseFloat(el.value); if (v) v.textContent = disp ? disp(x) : el.value; fn(x); }
+  el.addEventListener('input', go); go();
+  return el;
+}
+function setR(id, val){ var el = $(id); el.value = val; el.dispatchEvent(new Event('input')); }
+function arrow(ctx, x1, y1, x2, y2, color, w){
+  ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = w || 2;
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  var a = Math.atan2(y2 - y1, x2 - x1), s = 7;
+  ctx.beginPath(); ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - s * Math.cos(a - 0.42), y2 - s * Math.sin(a - 0.42));
+  ctx.lineTo(x2 - s * Math.cos(a + 0.42), y2 - s * Math.sin(a + 0.42));
+  ctx.closePath(); ctx.fill();
+}
+function T(c, s, x, y, col, f, al, bl){
+  c.font = f || '12px "Microsoft YaHei",sans-serif';
+  c.fillStyle = col || '#334155';
+  c.textAlign = al || 'left'; c.textBaseline = bl || 'alphabetic';
+  c.fillText(s, x, y);
+}
+function box(c, x, y, w, h, fill, stroke){
+  var r = 8;
+  c.beginPath();
+  c.moveTo(x+r, y); c.lineTo(x+w-r, y); c.quadraticCurveTo(x+w, y, x+w, y+r);
+  c.lineTo(x+w, y+h-r); c.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+  c.lineTo(x+r, y+h); c.quadraticCurveTo(x, y+h, x, y+h-r);
+  c.lineTo(x, y+r); c.quadraticCurveTo(x, y, x+r, y);
+  c.closePath();
+  if (fill){ c.fillStyle = fill; c.fill(); }
+  if (stroke){ c.strokeStyle = stroke; c.lineWidth = 1.2; c.stroke(); }
+}
+function axes(c, x0, y0, x1, y1, xmax, ymax, xlab, ylab, xt, yt){
+  var i, gx, gy;
+  c.strokeStyle = '#cbd5e1'; c.lineWidth = 1;
+  for (i = 0; i <= 5; i++){
+    gx = x0 + (x1-x0)*i/5;
+    c.beginPath(); c.moveTo(gx, y1); c.lineTo(gx, y0); c.stroke();
+    gy = y0 - (y0-y1)*i/5;
+    c.beginPath(); c.moveTo(x0, gy); c.lineTo(x1, gy); c.stroke();
+  }
+  c.strokeStyle = '#334155'; c.lineWidth = 1.6;
+  c.beginPath(); c.moveTo(x0, y1); c.lineTo(x0, y0); c.lineTo(x1, y0); c.stroke();
+  for (i = 0; i <= 5; i++){
+    gx = x0 + (x1-x0)*i/5;
+    T(c, (xmax*i/5).toFixed(xt === undefined ? 1 : xt), gx, y0+5, '#64748b', '10px Consolas,monospace', 'center', 'top');
+    gy = y0 - (y0-y1)*i/5;
+    T(c, (ymax*i/5).toFixed(yt === undefined ? 1 : yt), x0-5, gy, '#64748b', '10px Consolas,monospace', 'right', 'middle');
+  }
+  T(c, xlab, (x0+x1)/2, y0+20, '#334155', '11.5px "Microsoft YaHei",sans-serif', 'center', 'top');
+  c.save(); c.translate(x0-28, (y0+y1)/2); c.rotate(-Math.PI/2);
+  T(c, ylab, 0, 0, '#334155', '11.5px "Microsoft YaHei",sans-serif', 'center', 'top');
+  c.restore();
+}
+function segBind(wrapId, fn){
+  var bs = $(wrapId).getElementsByTagName('button'), i;
+  for (i = 0; i < bs.length; i++){
+    (function(k){
+      bs[k].addEventListener('click', function(){
+        var all = $(wrapId).getElementsByTagName('button'), j;
+        for (j = 0; j < all.length; j++) all[j].classList.toggle('on', j === k);
+        fn(k);
+      });
+    })(i);
+  }
+}
+function resistorSym(c, x, y, w, h, label){
+  c.save();
+  c.fillStyle = '#fff'; c.strokeStyle = '#0f172a'; c.lineWidth = 2.2;
+  c.beginPath(); c.rect(x-w/2, y-h/2, w, h); c.fill(); c.stroke();
+  c.restore();
+  T(c, label, x, y, '#0f172a', '11px Consolas,monospace', 'center', 'middle');
+}
+function lampSym(c, x, y, lit){
+  c.save();
+  if (lit > 0.01){
+    var g = c.createRadialGradient(x, y, 2, x, y, 30);
+    g.addColorStop(0, 'rgba(245,158,11,' + (0.8*lit).toFixed(3) + ')');
+    g.addColorStop(1, 'rgba(245,158,11,0)');
+    c.fillStyle = g; c.beginPath(); c.arc(x, y, 30, 0, 6.2832); c.fill();
+  }
+  c.beginPath(); c.arc(x, y, 13, 0, 6.2832);
+  c.fillStyle = lit > 0.01 ? '#fde68a' : '#fff'; c.fill();
+  c.strokeStyle = '#0f172a'; c.lineWidth = 2; c.stroke();
+  c.strokeStyle = '#0f172a'; c.lineWidth = 1.4;
+  c.beginPath(); c.moveTo(x-6, y+8); c.lineTo(x+6, y+8); c.stroke();
+  c.beginPath(); c.moveTo(x-5, y-5); c.lineTo(x-1.5, y+3); c.lineTo(x+1.5, y-3); c.lineTo(x+5, y-5); c.stroke();
+  c.restore();
+}
+function diodeSym(c, x, y, dir){
+  var s = 13, d = dir || 1;
+  c.save();
+  c.strokeStyle = '#0f172a'; c.lineWidth = 2;
+  c.beginPath();
+  c.moveTo(x - s*d, y - s); c.lineTo(x + s*d, y); c.lineTo(x - s*d, y + s); c.closePath();
+  c.fillStyle = '#1d4ed8'; c.fill(); c.stroke();
+  c.beginPath(); c.moveTo(x + s*d, y - s); c.lineTo(x + s*d, y + s); c.stroke();
+  c.restore();
+}
+function batteryV(c, x, y){
+  c.save();
+  c.strokeStyle = '#0f172a'; c.lineWidth = 3; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(x-20, y-5); c.lineTo(x+20, y-5); c.stroke();
+  c.beginPath(); c.moveTo(x-11, y+7); c.lineTo(x+11, y+7); c.stroke();
+  c.restore();
+  T(c, '+', x+27, y-3, '#dc2626', 'bold 12px Consolas,monospace', 'left', 'middle');
+}
+function meterSym(c, x, y, sym, txt){
+  c.save();
+  c.beginPath(); c.arc(x, y, 18, 0, 6.2832);
+  c.fillStyle = '#fff'; c.fill(); c.strokeStyle = '#0f172a'; c.lineWidth = 2; c.stroke();
+  c.restore();
+  T(c, sym, x, y, '#0f172a', 'bold 13px Consolas,monospace', 'center', 'middle');
+  T(c, txt, x, y+23, '#b45309', '11.5px Consolas,monospace', 'center', 'top');
+}
+
+/* ================= 模块 1：伏安特性 ================= */
+var S1 = stage('cv1');
+var R0 = 10;        // 定值电阻 / 灯泡冷态电阻 (Ω)
+var KLAMP = 27.8;   // 灯泡：U = R0*I + KLAMP*I^3
+var UD0 = 0.5, RD0 = 2;   // 二极管：正向死区约 0.5 V，导通后等效 2 Ω
+var kind = 0, U1 = 6;
+var IMAX = 1.3, UMAX = 12;
+function lampI(u){
+  if (u <= 0.001) return 0;
+  var lo = 0, hi = u/R0, mid, f;
+  if (hi <= 0) return 0;
+  for (var k = 0; k < 40; k++){
+    mid = (lo+hi)/2;
+    f = mid*(R0 + KLAMP*mid*mid) - u;
+    if (f > 0) hi = mid; else lo = mid;
+  }
+  return (lo+hi)/2;
+}
+function diodeI(u){
+  return u > UD0 ? (u - UD0)/RD0 : 0;
+}
+function curI(u, k){
+  if (k === 1) return lampI(u);
+  if (k === 2) return diodeI(u);
+  return u/R0;
+}
+function draw1(){
+  var c = S1.clear(), W = S1.w, H = S1.h;
+  var x0 = 62, y0 = H-46, x1 = W-120, y1 = 34;
+  axes(c, x0, y0, x1, y1, IMAX, UMAX, 'I / A', 'U / V', 1, 0);
+  var PX = function(i){ return x0 + (x1-x0)*Math.min(Math.max(i,0), IMAX)/IMAX; };
+  var PY = function(u){ return y0 - (y0-y1)*Math.min(Math.max(u,0), UMAX)/UMAX; };
+  var i, ii, uu;
+  /* 定值电阻：直线 */
+  if (kind === 0 || kind === 3){
+    c.strokeStyle = '#1d4ed8'; c.lineWidth = 2.6;
+    c.beginPath();
+    for (i = 0; i <= 60; i++){
+      ii = IMAX*R0/10*i/60;   // 0..1.2 A
+      uu = R0*ii;
+      if (i === 0) c.moveTo(PX(ii), PY(uu)); else c.lineTo(PX(ii), PY(uu));
+    }
+    c.stroke();
+    T(c, '定值电阻 R=10 Ω（斜率恒定）', PX(1.05), PY(10.5), '#1d4ed8', '12px "Microsoft YaHei",sans-serif', 'left', 'bottom');
+  }
+  /* 小灯泡：向上弯曲 */
+  if (kind === 1 || kind === 3){
+    c.strokeStyle = '#dc2626'; c.lineWidth = 2.6;
+    c.beginPath();
+    for (i = 0; i <= 80; i++){
+      ii = 0.6*i/80;
+      uu = ii*(R0 + KLAMP*ii*ii);
+      if (i === 0) c.moveTo(PX(ii), PY(uu)); else c.lineTo(PX(ii), PY(uu));
+    }
+    c.stroke();
+    T(c, '小灯泡（越往上越弯：R 变大）', PX(0.30), PY(7.5), '#dc2626', '12px "Microsoft YaHei",sans-serif', 'left', 'bottom');
+  }
+  /* 二极管：死区 0.5 V 后电流急剧上升 */
+  if (kind === 2 || kind === 3){
+    c.strokeStyle = '#059669'; c.lineWidth = 2.6;
+    c.beginPath();
+    for (i = 0; i <= 80; i++){
+      ii = IMAX*i/80;
+      uu = UD0 + RD0*ii;
+      if (i === 0) c.moveTo(PX(ii), PY(uu)); else c.lineTo(PX(ii), PY(uu));
+    }
+    c.stroke();
+    c.strokeStyle = '#059669'; c.lineWidth = 2.6;
+    c.beginPath(); c.moveTo(PX(0), PY(0)); c.lineTo(PX(0), PY(UD0)); c.stroke();
+    T(c, '二极管：U < 0.5 V 几乎不导通，之后电流急升', PX(0.06), PY(1.2), '#059669',
+      '12px "Microsoft YaHei",sans-serif', 'left', 'bottom');
+  }
+  /* 工作点 */
+  if (kind !== 3){
+    var Iu = curI(U1, kind);
+    c.save(); c.strokeStyle = 'rgba(100,116,139,.55)'; c.lineWidth = 1.2; c.setLineDash([4,3]);
+    c.beginPath(); c.moveTo(PX(0), PY(U1)); c.lineTo(PX(Iu), PY(U1)); c.lineTo(PX(Iu), PY(0)); c.stroke();
+    c.restore();
+    c.beginPath(); c.arc(PX(Iu), PY(U1), 6, 0, 6.2832);
+    c.fillStyle = kind === 1 ? '#dc2626' : '#1d4ed8'; c.fill();
+    c.strokeStyle = '#fff'; c.lineWidth = 1.8; c.stroke();
+    T(c, '(' + Iu.toFixed(2) + ' A, ' + U1.toFixed(1) + ' V)', PX(Iu)+10, PY(U1)-8,
+      kind === 1 ? '#dc2626' : '#1d4ed8', '11.5px Consolas,monospace', 'left', 'bottom');
+    /* 从原点连到工作点：连线的斜率 = R */
+    c.save(); c.strokeStyle = 'rgba(245,158,11,.9)'; c.lineWidth = 2;
+    c.beginPath(); c.moveTo(PX(0), PY(0)); c.lineTo(PX(Iu), PY(U1)); c.stroke(); c.restore();
+    T(c, '连线斜率 = R = U/I', PX(Iu)*0.5, PY(U1*0.5)+16, '#b45309', '11.5px "Microsoft YaHei",sans-serif', 'center', 'bottom');
+  } else {
+    var i1 = curI(U1, 0), i2 = curI(U1, 1), i3 = curI(U1, 2);
+    c.save(); c.strokeStyle = 'rgba(100,116,139,.5)'; c.lineWidth = 1.2; c.setLineDash([4,3]);
+    c.beginPath(); c.moveTo(PX(0), PY(U1)); c.lineTo(PX(IMAX), PY(U1)); c.stroke(); c.restore();
+    var pts = [[i1, '#1d4ed8', '定值'], [i2, '#dc2626', '灯泡'], [i3, '#059669', '二极管']], j;
+    for (j = 0; j < 3; j++){
+      var pj = Math.min(pts[j][0], IMAX);
+      c.beginPath(); c.arc(PX(pj), PY(U1), 6, 0, 6.2832);
+      c.fillStyle = pts[j][1]; c.fill(); c.strokeStyle = '#fff'; c.lineWidth = 1.8; c.stroke();
+      T(c, pts[j][2] + ' ' + pts[j][0].toFixed(2) + ' A', PX(pj) + (j === 0 ? 8 : -8), PY(U1) - 9 + j*14,
+        pts[j][1], 'bold 11.5px Consolas,monospace', j === 0 ? 'left' : 'right', 'bottom');
+    }
+    T(c, '同一电压下：灯泡电流更小 → 灯泡电阻更大；二极管一旦导通电流反而最大',
+      PX(0.02), PY(U1)+30, '#b45309', '12px "Microsoft YaHei",sans-serif', 'left', 'top');
+  }
+  /* 左上角小图：该元件的 R 随 U 怎样变（R = U/I） */
+  var ix = x0+8, iy = y1+10, iw = 226, ih = 130;
+  box(c, ix, iy, iw, ih, '#fff', '#e2e8f0');
+  var ix0 = ix+36, iy0 = iy+ih-24, ix1 = ix+iw-12, iy1 = iy+24;
+  var RMAX = 25;
+  c.strokeStyle = '#334155'; c.lineWidth = 1.4;
+  c.beginPath(); c.moveTo(ix0, iy1); c.lineTo(ix0, iy0); c.lineTo(ix1, iy0); c.stroke();
+  var kk = (kind === 3) ? 1 : kind, u2, i2c, r2, pxx, pyy;
+  c.strokeStyle = kind === 2 ? '#059669' : (kind === 1 ? '#dc2626' : '#1d4ed8');
+  c.lineWidth = 2.2;
+  c.beginPath();
+  for (i = 0; i <= 60; i++){
+    u2 = UMAX*i/60;
+    i2c = curI(u2, kk);
+    r2 = (u2 > 0.02 && i2c > 1e-9) ? Math.min(u2/i2c, RMAX) : RMAX;
+    pxx = ix0 + (ix1-ix0)*u2/UMAX;
+    pyy = iy0 - (iy0-iy1)*r2/RMAX;
+    if (i === 0) c.moveTo(pxx, pyy); else c.lineTo(pxx, pyy);
+  }
+  c.stroke();
+  c.strokeStyle = '#94a3b8'; c.lineWidth = 1; c.setLineDash([3,3]);
+  c.beginPath(); c.moveTo(ix0, iy0 - (iy0-iy1)*R0/RMAX); c.lineTo(ix1, iy0 - (iy0-iy1)*R0/RMAX); c.stroke();
+  c.setLineDash([]);
+  T(c, '小图：R = U/I 随 U 的变化', ix+8, iy+13, '#334155', '11px "Microsoft YaHei",sans-serif', 'left', 'middle');
+  T(c, '0→' + UMAX + ' V', ix1, iy0+16, '#64748b', '9.5px Consolas,monospace', 'right', 'top');
+  T(c, 'R/Ω', ix0-4, iy1+4, '#64748b', '9.5px Consolas,monospace', 'right', 'bottom');
+  /* 右上：元件图标 + 读数 */
+  var px0 = W-108, py0 = 34;
+  box(c, px0, py0, 96, 92, '#fff', '#e2e8f0');
+  if (kind === 1) lampSym(c, px0+48, py0+38, Math.min(1, curI(U1,1)/1.2));
+  else if (kind === 2) diodeSym(c, px0+48, py0+38, 1);
+  else resistorSym(c, px0+48, py0+38, 56, 22, '10 Ω');
+  T(c, kind === 1 ? '小灯泡' : (kind === 2 ? '二极管' : '定值电阻'), px0+48, py0+70, '#334155',
+    '12px "Microsoft YaHei",sans-serif', 'center', 'middle');
+
+  var Ir = curI(U1, kind === 3 ? 0 : kind);
+  var Rr = (U1 > 0.05 && Ir > 1e-9) ? U1/Ir : NaN;
+  $('r1u').textContent = U1.toFixed(2) + ' V';
+  $('r1i').textContent = Ir.toFixed(3) + ' A';
+  $('r1r').textContent = isFinite(Rr) ? fmt(Rr, 2) + ' Ω' : '—（未导通）';
+  $('r1k').textContent = kind === 0 ? '定值电阻（线性）'
+    : (kind === 1 ? '小灯泡（非线性）' : (kind === 2 ? '二极管（非线性）' : '三条对比'));
+  if (kind === 3){
+    var iL = curI(U1, 1);
+    T(c, '此刻 R = ' + (iL > 1e-9 ? (U1/iL).toFixed(1) : '10.0') + ' Ω', px0+48, py0+84, '#b45309',
+      '11px Consolas,monospace', 'center', 'middle');
+  }
+}
+
+/* ================= 模块 2：R = ρL/S ================= */
+var S2 = stage('cv2');
+var RHO = [1.7e-8, 1.0e-7, 1.0e-6];
+var MNAME = ['铜', '铁', '镍铬合金'];
+var MCOL = ['#b45309', '#64748b', '#1d4ed8'];
+var mi = 0, L2 = 1.0, SS2 = 1.0;
+function calcR(){ return RHO[mi]*L2/(SS2*1e-6); }
+function draw2(){
+  var c = S2.clear(), W = S2.w, H = S2.h;
+  var R = calcR();
+  /* 上部：电阻丝（长度、粗细随参量变化） */
+  var yc = 74;
+  var maxL = 5.0, minL = 0.2;
+  var x1 = 70, availW = W - 150;
+  var wpx = 90 + (availW-90)*(L2-minL)/(maxL-minL);
+  var th = 10 + 42*(Math.sqrt(SS2)-Math.sqrt(0.2))/(Math.sqrt(4)-Math.sqrt(0.2));
+  /* 接线柱 */
+  c.strokeStyle = '#334155'; c.lineWidth = 3; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(40, yc); c.lineTo(x1, yc); c.stroke();
+  c.beginPath(); c.moveTo(x1+wpx, yc); c.lineTo(x1+wpx+40, yc); c.stroke();
+  /* 丝体 */
+  var grad = c.createLinearGradient(0, yc-th/2, 0, yc+th/2);
+  grad.addColorStop(0, MCOL[mi]); grad.addColorStop(0.5, '#fff'); grad.addColorStop(1, MCOL[mi]);
+  c.fillStyle = grad;
+  c.fillRect(x1, yc-th/2, wpx, th);
+  c.strokeStyle = '#334155'; c.lineWidth = 1.6;
+  c.strokeRect(x1, yc-th/2, wpx, th);
+  /* 长度标注 */
+  c.save(); c.strokeStyle = '#1d4ed8'; c.lineWidth = 1.4; c.setLineDash([4,3]);
+  c.beginPath(); c.moveTo(x1, yc+52); c.lineTo(x1, yc+34); c.stroke();
+  c.beginPath(); c.moveTo(x1+wpx, yc+52); c.lineTo(x1+wpx, yc+34); c.stroke();
+  c.restore();
+  c.strokeStyle = '#1d4ed8'; c.lineWidth = 1.4;
+  c.beginPath(); c.moveTo(x1, yc+44); c.lineTo(x1+wpx, yc+44); c.stroke();
+  arrow(c, x1, yc+44, x1+14, yc+44, '#1d4ed8', 1.4);
+  arrow(c, x1+wpx, yc+44, x1+wpx-14, yc+44, '#1d4ed8', 1.4);
+  T(c, 'L = ' + L2.toFixed(1) + ' m', x1+wpx/2, yc+40, '#1d4ed8', 'bold 13px Consolas,monospace', 'center', 'bottom');
+  /* 截面圆（右侧示意） */
+  var cx = W-64, cy = 74, rr = 6 + 22*(Math.sqrt(SS2)-Math.sqrt(0.2))/(Math.sqrt(4)-Math.sqrt(0.2));
+  c.beginPath(); c.arc(cx, cy, rr, 0, 6.2832);
+  c.fillStyle = 'rgba(29,78,216,.15)'; c.fill();
+  c.strokeStyle = '#1d4ed8'; c.lineWidth = 1.8; c.stroke();
+  T(c, 'S = ' + SS2.toFixed(1) + ' mm²', cx, cy+rr+16, '#1d4ed8', '12px Consolas,monospace', 'center', 'top');
+  T(c, '材料：' + MNAME[mi] + '  ρ = ' + RHO[mi].toExponential(2) + ' Ω·m', 40, 22, '#334155',
+    '13px "Microsoft YaHei",sans-serif', 'left', 'middle');
+
+  /* 下部：R–L 与 R–1/S 两个小图 */
+  var gy = 150, gh = H-gy-86;
+  var cw = (W - 80 - 90 - 40)/2;
+  var a1x0 = 74, a1y0 = gy+gh, a1x1 = a1x0+cw, a1y1 = gy+8;
+  var rmax = RHO[mi]*5/(SS2*1e-6) || 1;
+  var d1 = rmax < 0.1 ? 3 : (rmax < 1 ? 2 : 1);
+  axes(c, a1x0, a1y0, a1x1, a1y1, 5, rmax, 'L / m', 'R / Ω', 1, d1);
+  c.strokeStyle = '#1d4ed8'; c.lineWidth = 2.2;
+  c.beginPath(); c.moveTo(a1x0, a1y0); c.lineTo(a1x1, a1y1); c.stroke();
+  var pxL = a1x0 + (a1x1-a1x0)*L2/5, pyR = a1y0 - (a1y0-a1y1)*Math.min(R/rmax, 1);
+  c.beginPath(); c.arc(pxL, pyR, 5, 0, 6.2832); c.fillStyle = '#dc2626'; c.fill();
+  c.strokeStyle = '#fff'; c.lineWidth = 1.6; c.stroke();
+  T(c, 'R ∝ L（正比，直线）', (a1x0+a1x1)/2, a1y1-6, '#1d4ed8', '12px "Microsoft YaHei",sans-serif', 'center', 'bottom');
+
+  var a2x0 = a1x1+90, a2y0 = gy+gh, a2x1 = a2x0+cw, a2y1 = gy+8;
+  var invMax = 1/0.2;
+  var rmax2 = RHO[mi]*L2*invMax || 1;
+  var d2 = rmax2 < 0.1 ? 3 : (rmax2 < 1 ? 2 : 1);
+  axes(c, a2x0, a2y0, a2x1, a2y1, invMax, rmax2, '(1/S) / mm⁻²', 'R / Ω', 1, d2);
+  c.strokeStyle = '#059669'; c.lineWidth = 2.2;
+  c.beginPath(); c.moveTo(a2x0, a2y0); c.lineTo(a2x1, a2y1); c.stroke();
+  var pxS = a2x0 + (a2x1-a2x0)*(1/SS2)/invMax, pyS = a2y0 - (a2y0-a2y1)*Math.min(R/rmax2, 1);
+  c.beginPath(); c.arc(pxS, pyS, 5, 0, 6.2832); c.fillStyle = '#dc2626'; c.fill();
+  c.strokeStyle = '#fff'; c.lineWidth = 1.6; c.stroke();
+  T(c, 'R ∝ 1/S（反比）', (a2x0+a2x1)/2, a2y1-6, '#059669', '12px "Microsoft YaHei",sans-serif', 'center', 'bottom');
+
+  /* 公式条 + 应用 */
+  var app = ['铜、铝 ρ 极小 → 做导线；', '铁 ρ 较大 → 可做电热丝但易氧化；', '镍铬 ρ 大且耐高温 → 电炉丝、电热毯'][mi];
+  box(c, 40, H-58, W-80, 50, '#fffbeb', '#fcd34d');
+  T(c, 'R = ρL/S = (' + RHO[mi].toExponential(2) + ' Ω·m × ' + L2.toFixed(1) + ' m) / (' + (SS2*1e-6).toExponential(2) + ' m²)',
+    56, H-42, '#92400e', '13px Consolas,monospace', 'left', 'middle');
+  T(c, '应用：' + app + '（改变 L、S、材料都能改变电阻，这就是滑动变阻器与电阻箱的原理）',
+    56, H-22, '#64748b', '11.5px "Microsoft YaHei",sans-serif', 'left', 'middle');
+  T(c, 'R = ' + fmt(R, 4) + ' Ω', W-56, H-32, '#b45309', 'bold 18px Consolas,monospace', 'right', 'middle');
+
+  $('r2p').textContent = RHO[mi].toExponential(2) + ' Ω·m';
+  $('r2l').textContent = L2.toFixed(1) + ' m';
+  $('r2s').textContent = SS2.toFixed(1) + ' mm²';
+  $('r2r').textContent = fmt(R, 4) + ' Ω';
+}
+
+/* ================= 模块 3：ρ–T ================= */
+var S3 = stage('cv3');
+var mat3 = 0, T3 = 20, heat3 = 0;
+function relRho(k, t){
+  if (k === 0) return 1 + 0.004*t;              // 金属：线性略增
+  return Math.exp(-0.016*t);                    // 半导体：指数下降
+}
+function draw3(){
+  var c = S3.clear(), W = S3.w, H = S3.h;
+  var GW = W*0.56;
+  var x0 = 66, y0 = H-44, x1 = GW-24, y1 = 34;
+  /* ρ–T 图 */
+  axes(c, x0, y0, x1, y1, 100, 1.5, 't / °C', 'ρ/ρ₀', 0, 1);
+  var PX = function(t){ return x0 + (x1-x0)*Math.min(Math.max(t,0),100)/100; };
+  var PY = function(r){ return y0 - (y0-y1)*Math.min(Math.max(r,0),1.5)/1.5; };
+  var i, t, r;
+  c.strokeStyle = '#dc2626'; c.lineWidth = 2.6;
+  c.beginPath();
+  for (i = 0; i <= 60; i++){
+    t = 100*i/60; r = relRho(0, t);
+    if (i === 0) c.moveTo(PX(t), PY(r)); else c.lineTo(PX(t), PY(r));
+  }
+  c.stroke();
+  T(c, '金属：ρ 随温度升高而增大', PX(46), PY(1.22), '#dc2626', '12px "Microsoft YaHei",sans-serif', 'left', 'bottom');
+  c.strokeStyle = '#1d4ed8'; c.lineWidth = 2.6;
+  c.beginPath();
+  for (i = 0; i <= 60; i++){
+    t = 100*i/60; r = relRho(1, t);
+    if (i === 0) c.moveTo(PX(t), PY(r)); else c.lineTo(PX(t), PY(r));
+  }
+  c.stroke();
+  T(c, '半导体：ρ 随温度升高而减小', PX(52), PY(0.42), '#1d4ed8', '12px "Microsoft YaHei",sans-serif', 'left', 'bottom');
+  /* 当前温度标记 */
+  var rr = relRho(mat3, T3);
+  c.save(); c.strokeStyle = 'rgba(100,116,139,.6)'; c.lineWidth = 1.2; c.setLineDash([4,3]);
+  c.beginPath(); c.moveTo(PX(T3), y0); c.lineTo(PX(T3), PY(rr)); c.lineTo(x0, PY(rr)); c.stroke(); c.restore();
+  c.beginPath(); c.arc(PX(T3), PY(rr), 6, 0, 6.2832);
+  c.fillStyle = mat3 === 0 ? '#dc2626' : '#1d4ed8'; c.fill();
+  c.strokeStyle = '#fff'; c.lineWidth = 1.8; c.stroke();
+  T(c, T3.toFixed(0) + '°C, ρ/ρ₀=' + rr.toFixed(2), PX(T3)+10, PY(rr)-8, mat3 === 0 ? '#dc2626' : '#1d4ed8',
+    '11.5px Consolas,monospace', 'left', 'bottom');
+
+  /* 右侧：加热动画 + 电路 */
+  var RX = GW + 20, RY = 40, RW = W - RX - 30, RH = H - 80;
+  box(c, RX, RY, RW, RH, '#f8fafc', '#e2e8f0');
+  T(c, '给电阻丝加热', RX+RW/2, RY+16, '#334155', '13px "Microsoft YaHei",sans-serif', 'center', 'middle');
+  var E3 = 6, R00 = 10, RLAMP = 10;
+  var Rw = R00*rr;
+  var I3 = E3/(Rw + RLAMP);
+  /* 以该材料 0~100 °C 内的最大电流为亮度基准，避免金属灯始终满亮度 */
+  var Imax = E3/(R00*relRho(mat3, mat3 === 0 ? 0 : 100) + RLAMP);
+  var glow = Math.min(1, (I3*I3)/(Imax*Imax + 1e-9));
+  /* 电路：电源 - 电阻丝 - 灯泡 */
+  var cy = RY+70, lx = RX+38, rx = RX+RW-38;
+  c.strokeStyle = '#334155'; c.lineWidth = 2.6; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(lx, cy); c.lineTo(lx, cy+54); c.stroke();
+  c.beginPath(); c.moveTo(lx, cy+54); c.lineTo(rx, cy+54); c.stroke();
+  c.beginPath(); c.moveTo(rx, cy+54); c.lineTo(rx, cy); c.stroke();
+  c.beginPath(); c.moveTo(rx, cy); c.lineTo(lx+70, cy); c.stroke();
+  batteryV(c, lx, cy+27);
+  /* 电阻丝（受热的螺旋） */
+  var sx1 = lx+70, sx2 = rx, sy = cy;
+  var i2;
+  c.strokeStyle = T3 > 45 ? '#ef4444' : '#64748b'; c.lineWidth = 2.4;
+  c.beginPath();
+  for (i2 = 0; i2 <= 40; i2++){
+    var xx = sx1 + (sx2-sx1)*i2/40;
+    var yy = sy + Math.sin(i2*0.9)*6;
+    if (i2 === 0) c.moveTo(xx, yy); else c.lineTo(xx, yy);
+  }
+  c.stroke();
+  T(c, 'R = ' + fmt(Rw, 2) + ' Ω', (sx1+sx2)/2, sy-16, '#334155', '12px Consolas,monospace', 'center', 'bottom');
+  lampSym(c, (lx+rx)/2, cy+54, glow);
+  /* 热源（酒精灯） */
+  var fy = cy+54;
+  var fh = 8 + 22*(T3/100);
+  if (T3 > 2){
+    c.save();
+    var fg = c.createLinearGradient(0, fy+60, 0, fy+60-fh);
+    fg.addColorStop(0, 'rgba(245,158,11,.95)');
+    fg.addColorStop(1, 'rgba(239,68,68,0)');
+    c.fillStyle = fg;
+    c.beginPath();
+    c.moveTo((lx+rx)/2-26, fy+62);
+    c.quadraticCurveTo((lx+rx)/2, fy+62-fh-8, (lx+rx)/2+26, fy+62);
+    c.closePath(); c.fill();
+    c.restore();
+  }
+  T(c, 't = ' + T3.toFixed(0) + ' °C', (lx+rx)/2, fy+80, '#b45309', '12.5px Consolas,monospace', 'center', 'middle');
+  meterSym(c, RX+RW-30, RY+34, 'A', I3.toFixed(3) + ' A');
+  T(c, mat3 === 0 ? '升温 → R 变大 → 电流变小（灯变暗）' : '升温 → R 变小 → 电流变大（灯变亮）',
+    RX+RW/2, RY+RH-12, '#92400e', '12px "Microsoft YaHei",sans-serif', 'center', 'middle');
+
+  $('r3t').textContent = T3.toFixed(0) + ' °C';
+  $('r3p').textContent = rr.toFixed(3);
+  $('r3r').textContent = fmt(Rw, 2) + ' Ω';
+  $('r3i').textContent = I3.toFixed(3) + ' A';
+}
+
+/* ================= 控件绑定 ================= */
+segBind('k1', function(k){ kind = Math.max(0, Math.min(k, 3)); draw1(); });
+bind('u1', function(x){ U1 = x; draw1(); }, function(x){ return x.toFixed(1) + ' V'; });
+$('p1a').addEventListener('click', function(){ setR('u1', 3); });
+$('p1b').addEventListener('click', function(){
+  var bs = $('k1').getElementsByTagName('button');
+  bs[3].click(); setR('u1', 12);
+});
+
+segBind('m2', function(k){ mi = Math.max(0, Math.min(k, RHO.length-1)); draw2(); });
+bind('l2', function(x){ L2 = x; draw2(); }, function(x){ return x.toFixed(1) + ' m'; });
+bind('s2', function(x){ SS2 = x; draw2(); }, function(x){ return x.toFixed(1) + ' mm²'; });
+$('p2a').addEventListener('click', function(){ setR('l2', Math.min(5, L2*2)); });
+$('p2b').addEventListener('click', function(){ setR('s2', Math.min(4, SS2*2)); });
+$('p2c').addEventListener('click', function(){
+  var bs = $('m2').getElementsByTagName('button'); bs[2].click();
+});
+
+segBind('m3', function(k){ mat3 = Math.max(0, Math.min(k, 1)); draw3(); });
+bind('t3', function(x){ T3 = x; draw3(); }, function(x){ return x.toFixed(0) + ' °C'; });
+var auto3 = false;
+$('p3a').addEventListener('click', function(){ auto3 = false; $('p3c').classList.remove('on'); setR('t3', 100); });
+$('p3b').addEventListener('click', function(){ auto3 = false; $('p3c').classList.remove('on'); setR('t3', 0); });
+$('p3c').addEventListener('click', function(){
+  auto3 = !auto3; this.classList.toggle('on', auto3);
+});
+
+/* ================= 动画 ================= */
+function loop(){
+  if (auto3){
+    T3 += 0.35;
+    if (T3 > 100) T3 = 0;
+    setR('t3', T3);
+  }
+  requestAnimationFrame(loop);
+}
+draw1(); draw2(); draw3();
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

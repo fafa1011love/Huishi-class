@@ -1,0 +1,722 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>探究平面镜成像特点 · 玻璃板等效替代实验</title>
+<style>
+:root{
+  --blue:#2563EB; --blue-d:#1D4ED8;
+  --green:#10B981; --red:#EF4444; --amber:#F59E0B; --purple:#7C3AED;
+  --ink:#16233A; --ink2:#3F5069; --sub:#6B7B94; --line:#E4EAF3;
+  --bg:#EFF3FA; --card:#FFFFFF;
+  --shadow:0 1px 2px rgba(22,35,58,.05), 0 10px 28px -16px rgba(22,35,58,.28);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:"Microsoft YaHei","PingFang SC","Hiragino Sans GB",system-ui,-apple-system,"Segoe UI",sans-serif;
+  background:var(--bg); color:var(--ink); line-height:1.7; -webkit-font-smoothing:antialiased;
+}
+svg{font-family:inherit; display:block}
+
+/* ---------- header ---------- */
+.site-header{background:linear-gradient(135deg,#1E3A8A 0%,#2563EB 55%,#3B82F6 100%); color:#fff; padding:24px 0 26px}
+.header-inner{max-width:1160px; margin:0 auto; padding:0 24px; display:flex; align-items:center; justify-content:space-between; gap:20px; flex-wrap:wrap}
+.header-text h1{margin:0 0 6px; font-size:26px; letter-spacing:.4px; font-weight:700}
+.header-text p{margin:0; font-size:13.5px; opacity:.9}
+.header-nav{display:flex; align-items:center; gap:10px; flex-wrap:wrap}
+.header-link{border:1px solid rgba(255,255,255,.45); border-radius:999px; padding:7px 16px; font-size:13px; color:#fff; text-decoration:none; background:rgba(255,255,255,.08); white-space:nowrap}
+.header-link:hover{background:rgba(255,255,255,.2)}
+.header-badge{border:1px solid rgba(255,255,255,.4); border-radius:999px; padding:7px 16px; font-size:13px; background:rgba(255,255,255,.12); white-space:nowrap}
+
+/* ---------- layout ---------- */
+.wrap{max-width:1160px; margin:0 auto; padding:30px 24px 60px}
+.card{background:var(--card); border-radius:18px; padding:26px 28px; margin-bottom:20px; box-shadow:var(--shadow); border:1px solid rgba(255,255,255,.9)}
+.chead{display:flex; gap:14px; align-items:flex-start; margin-bottom:18px}
+.idx{flex:0 0 auto; width:36px; height:36px; border-radius:12px; background:#E6EEFF; color:var(--blue); font-weight:800; font-size:14px; display:flex; align-items:center; justify-content:center; margin-top:2px}
+.chead h2{margin:0 0 4px; font-size:19.5px; letter-spacing:.2px}
+.chead p{margin:0; color:var(--sub); font-size:13.5px; line-height:1.6}
+
+.split{display:grid; grid-template-columns:minmax(0,1.12fr) minmax(300px,.88fr); gap:26px; align-items:start}
+@media(max-width:920px){ .split{grid-template-columns:1fr} }
+
+.stage svg{width:100%; height:auto; border-radius:14px; background:#FBFCFE; border:1px solid var(--line)}
+.stage svg.drag{cursor:grab; touch-action:none}
+.stage svg.drag:active{cursor:grabbing}
+
+/* ---------- 控件 ---------- */
+.panel{display:flex; flex-direction:column; gap:16px}
+.ctl label{display:flex; justify-content:space-between; align-items:baseline; font-size:13px; color:var(--sub); margin-bottom:7px}
+.ctl label b{color:var(--ink); font-size:14.5px; font-variant-numeric:tabular-nums; font-weight:700}
+input[type=range]{width:100%; height:24px; accent-color:var(--blue); cursor:pointer; background:transparent; margin:0}
+input[type=range]:focus-visible{outline:2px solid #93B4F8; outline-offset:3px; border-radius:6px}
+.tick{display:flex; justify-content:space-between; font-size:11px; color:#93A2B8; margin-top:1px}
+
+.btn-row{display:flex; gap:10px; flex-wrap:wrap}
+.btn{border:1px solid var(--blue); background:#fff; color:var(--blue); border-radius:9px; padding:8px 15px; font-size:13px; cursor:pointer; font-family:inherit; white-space:nowrap; transition:.16s}
+.btn:hover{background:var(--blue); color:#fff}
+.btn.primary{background:var(--blue); color:#fff}
+.btn.primary:hover{background:var(--blue-d)}
+.btn.ghost{border-color:var(--line); color:var(--ink2)}
+.btn.ghost:hover{border-color:var(--blue); background:#fff; color:var(--blue)}
+.seg{display:inline-flex; border:1px solid var(--line); border-radius:10px; overflow:hidden; align-self:flex-start}
+.seg button{border:0; background:#fff; padding:7px 14px; font-size:12.5px; cursor:pointer; color:var(--sub); font-family:inherit}
+.seg button+button{border-left:1px solid var(--line)}
+.seg button.on{background:var(--blue); color:#fff; font-weight:600}
+
+.rows{border:1px solid var(--line); border-radius:12px; overflow:hidden; background:#FCFDFF}
+.row{display:flex; justify-content:space-between; gap:12px; padding:9px 14px; font-size:13.2px; border-bottom:1px solid var(--line); align-items:center}
+.row:last-child{border-bottom:0}
+.row span{color:var(--sub)}
+.row b{font-variant-numeric:tabular-nums; color:var(--ink); font-weight:700}
+.row b.ok{color:#0E9F6E}
+.row b.bad{color:#DC2626}
+.row b.warn{color:#B45309}
+.tag{font-size:11px; font-weight:700; border-radius:999px; padding:2px 9px; letter-spacing:.3px; white-space:nowrap}
+.tag.ok{background:#E4F9F0; color:#0E9F6E}
+.tag.bad{background:#FEECEC; color:#DC2626}
+.tag.mid{background:#FFF6E5; color:#B45309}
+.note{margin:0; font-size:13.2px; color:var(--ink2); line-height:1.75; background:#F6F9FF; border-left:3px solid var(--blue); border-radius:0 10px 10px 0; padding:11px 14px}
+.note em{font-style:normal; font-weight:700; color:var(--blue-d)}
+.hint{font-size:12px; color:#93A2B8}
+footer{text-align:center; color:#93A2B8; font-size:12px; padding:6px 0 0}
+
+@keyframes flick{0%,100%{transform:scale(1,1)} 45%{transform:scale(.92,1.12)} 72%{transform:scale(1.05,.95)}}
+.flame{animation:flick .5s ease-in-out infinite; transform-box:fill-box; transform-origin:50% 100%}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-text">
+      <h1>探究平面镜成像特点</h1>
+      <p>用玻璃板替代平面镜，把「看不见的像」换成一支能挪动的蜡烛</p>
+    </div>
+    <div class="header-nav">
+      <a class="header-link" href="#">« 返回实验目录</a>
+      <span class="header-badge">八年级物理 · 光现象 · §4.3</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- ==================== 01 ==================== -->
+  <section class="card">
+    <div class="chead">
+      <div class="idx">01</div>
+      <div>
+        <h2>玻璃板替代平面镜：把像的位置「试」出来</h2>
+        <p>玻璃板既能成像、又能看见镜后的东西。挪动未点燃的蜡烛 B，直到它和 A 的像完全重合——此时 B 的位置就是像的位置（等效替代）。</p>
+      </div>
+    </div>
+    <div class="split">
+      <div class="stage"><svg id="m1svg" class="drag" viewBox="0 0 660 400" role="img" aria-label="玻璃板等效替代实验"></svg></div>
+      <div class="panel">
+        <div class="ctl">
+          <label>蜡烛 A 到玻璃板 <b id="m1Av">6.0</b> cm</label>
+          <input type="range" id="m1A" min="3" max="12" step="0.1" value="6">
+        </div>
+        <div class="ctl">
+          <label>蜡烛 B 到玻璃板 <b id="m1Bv">6.0</b> cm</label>
+          <input type="range" id="m1B" min="0" max="16" step="0.1" value="6">
+        </div>
+        <div class="ctl">
+          <label>玻璃板倾斜角 <b id="m1Tv">0</b>°　<span class="hint">0 = 竖直</span></label>
+          <input type="range" id="m1T" min="-15" max="15" step="1" value="0">
+          <div class="tick"><span>−15° 向 A 倾</span><span>0° 竖直</span><span>+15° 向后倾</span></div>
+        </div>
+        <div class="btn-row">
+          <button class="btn primary" id="m1auto">▶ 自动移动 B 找像</button>
+          <button class="btn ghost" id="m1vert">摆正玻璃板</button>
+        </div>
+        <div class="seg" id="m1seg">
+          <button class="on" data-k="glass">玻璃板</button>
+          <button data-k="mirror">不透明平面镜</button>
+        </div>
+        <div class="rows">
+          <div class="row"><span>物到镜面的距离 u</span><b id="m1u">6.0 cm</b></div>
+          <div class="row"><span>像到镜面的距离 v</span><b id="m1v">6.0 cm</b></div>
+          <div class="row"><span>蜡烛 B 到镜面</span><b id="m1b">6.0 cm</b></div>
+          <div class="row"><span>像高 ÷ 物高</span><b id="m1s">1.00</b></div>
+          <div class="row"><span>物像连线与镜面的夹角</span><b id="m1r">90°</b></div>
+          <div class="row"><span>B 与像的偏差 Δ</span><b id="m1d">0.00 cm</b><span class="tag ok" id="m1tag">完全重合</span></div>
+        </div>
+        <p class="note" id="m1note"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 02 ==================== -->
+  <section class="card">
+    <div class="chead">
+      <div class="idx">02</div>
+      <div>
+        <h2>光屏承接不到：像其实是「虚」的</h2>
+        <p>把光屏挪到像的位置，屏上什么也没有。看光路就知道原因：镜后只有反射光线的<em>反向延长线</em>相交，那里根本没有光会聚。</p>
+      </div>
+    </div>
+    <div class="split">
+      <div class="stage"><svg id="m2svg" class="drag" viewBox="0 0 660 380" role="img" aria-label="虚像不能被光屏承接"></svg></div>
+      <div class="panel">
+        <div class="ctl">
+          <label>蜡烛到镜面 <b id="m2Av">7.0</b> cm</label>
+          <input type="range" id="m2A" min="3" max="12" step="0.1" value="7">
+        </div>
+        <div class="ctl">
+          <label>光屏到镜面 <b id="m2Sv">7.0</b> cm</label>
+          <input type="range" id="m2S" min="1" max="22" step="0.1" value="7">
+        </div>
+        <div class="btn-row">
+          <button class="btn primary" id="m2go">把光屏移到像的位置</button>
+          <button class="btn ghost" id="m2off">光屏移开</button>
+        </div>
+        <div class="rows">
+          <div class="row"><span>物到镜面 u</span><b id="m2u">7.0 cm</b></div>
+          <div class="row"><span>像到镜面 v</span><b id="m2v">7.0 cm</b></div>
+          <div class="row"><span>光屏所在处</span><b id="m2p">7.0 cm</b></div>
+          <div class="row"><span>光屏上</span><b class="bad" id="m2s">没有像</b></div>
+          <div class="row"><span>眼睛里</span><b class="ok" id="m2e">能看到像</b></div>
+        </div>
+        <p class="note">拖动光屏（镜后那块白板）和眼睛，看光路怎么变。<em>实线</em>是真正到达眼睛的反射光，<em>虚线</em>是它们的反向延长线——两条虚线交于镜后一点，那就是虚像的位置，但那里没有光，所以光屏接不到。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ==================== 03 ==================== -->
+  <section class="card">
+    <div class="chead">
+      <div class="idx">03</div>
+      <div>
+        <h2>对称作图：物和像关于镜面轴对称</h2>
+        <p>过物点作镜面的垂线，在另一侧取等距，就是像点。物像连线被镜面<em>垂直平分</em>，所以像是「左右相反」的正立虚像。</p>
+      </div>
+    </div>
+    <div class="split">
+      <div class="stage"><svg id="m3svg" class="drag" viewBox="0 0 660 400" role="img" aria-label="平面镜成像对称作图"></svg></div>
+      <div class="panel">
+        <div class="ctl">
+          <label>镜面方向 <b id="m3Av">90</b>°　<span class="hint">90° 竖直 / 0° 水平</span></label>
+          <input type="range" id="m3A" min="0" max="180" step="1" value="90">
+        </div>
+        <div class="btn-row">
+          <button class="btn primary" id="m3demo">▶ 演示作图</button>
+        </div>
+        <div class="rows">
+          <div class="row"><span>物到镜面 u</span><b id="m3u">7.5 cm</b></div>
+          <div class="row"><span>像到镜面 v</span><b id="m3v">7.5 cm</b></div>
+          <div class="row"><span>物像连线与镜面</span><b id="m3r">90°</b></div>
+          <div class="row"><span>像与物</span><b id="m3s">大小相等 · 左右相反</b></div>
+        </div>
+        <p class="note">在图上<em>直接拖动字母 F</em>，或者转动镜面方向，像会跟着一起动——它永远是 F 关于镜面的对称图形。</p>
+      </div>
+    </div>
+  </section>
+
+  <footer>物理可视化模型 · 探究平面镜成像特点　|　单文件版，无需外部资源</footer>
+</div>
+
+<script>
+/* ============================================================
+   通用工具
+   ============================================================ */
+const F = 'Microsoft YaHei, PingFang SC, sans-serif';
+const clamp = (v,a,b) => Math.min(b, Math.max(a, v));
+const fmt = (v,d=1) => Number(v).toFixed(d);
+const f2 = (v,d=2) => Number(v).toFixed(d);
+const T = (x,y,s,o={}) => `<text x="${x.toFixed(1)}" y="${y.toFixed(1)}" font-size="${o.size||12}" fill="${o.fill||'#6B7B94'}" font-weight="${o.w||400}" text-anchor="${o.a||'start'}" font-family="${F}">${s}</text>`;
+const put = (id,v) => { const e=document.getElementById(id); if(e) e.innerHTML=v; };
+const num = (id,v) => { const e=document.getElementById(id); if(e) e.textContent=v; };
+const el  = id => document.getElementById(id);
+
+/* ---------- 镜面（直线）几何 ---------- */
+/* u = 镜面方向单位向量；deg=0 时 u=(0,-1) 竖直 */
+function mirror(P0, deg){
+  const t = deg*Math.PI/180;
+  return { P0, ux: Math.sin(t), uy: -Math.cos(t) };
+}
+/* 镜面方向按「与水平方向夹角」给（90°=竖直） */
+function mirrorH(P0, ang){
+  const t = ang*Math.PI/180;
+  return { P0, ux: Math.cos(t), uy: -Math.sin(t) };
+}
+/* 点关于镜面（直线）的对称点 */
+function refl(m, p){
+  const vx = p.x-m.P0.x, vy = p.y-m.P0.y;
+  const dot = vx*m.ux + vy*m.uy;
+  return { x: m.P0.x + 2*dot*m.ux - vx, y: m.P0.y + 2*dot*m.uy - vy };
+}
+/* 点相对镜面的「侧向」坐标：>0 与 <0 分居镜面两侧 */
+function side(m, p){ return (p.x-m.P0.x)*m.uy - (p.y-m.P0.y)*m.ux; }
+/* 点到镜面的垂直距离 */
+function distM(m, p){ return Math.abs(side(m,p)); }
+/* 反射对称的 SVG transform */
+function reflT(m){
+  const a = 2*m.ux*m.ux - 1, b = 2*m.ux*m.uy, d = 2*m.uy*m.uy - 1;
+  return `translate(${m.P0.x.toFixed(2)} ${m.P0.y.toFixed(2)}) matrix(${a.toFixed(5)} ${b.toFixed(5)} ${b.toFixed(5)} ${d.toFixed(5)} 0 0) translate(${(-m.P0.x).toFixed(2)} ${(-m.P0.y).toFixed(2)})`;
+}
+/* 物点 O 发出的光经镜面反射进入眼睛 E 的反射点 */
+function hit(m, O, E){
+  const Ep = refl(m, E);
+  const f0 = side(m, O), f1 = side(m, Ep);
+  const t = f0 / ((f0 - f1) || 1e-9);
+  return { x: O.x + t*(Ep.x-O.x), y: O.y + t*(Ep.y-O.y) };
+}
+/* 箭头 */
+function head(p, q, at, col, size){
+  const x = p.x + at*(q.x-p.x), y = p.y + at*(q.y-p.y);
+  const dx = q.x-p.x, dy = q.y-p.y, L = Math.hypot(dx,dy) || 1;
+  const ux = dx/L, uy = dy/L, bx = x-ux*size, by = y-uy*size, px = -uy, py = ux;
+  return `<path d="M${x.toFixed(1)} ${y.toFixed(1)} L${(bx+px*size*.55).toFixed(1)} ${(by+py*size*.55).toFixed(1)} L${(bx-px*size*.55).toFixed(1)} ${(by-py*size*.55).toFixed(1)} Z" fill="${col}"/>`;
+}
+/* 一条完整光路：O → 反射点 → 眼睛，外加反向延长线（虚线）到像点 */
+function rayTo(m, O, E, col){
+  const R = hit(m,O,E), Ai = refl(m,O);
+  let s = `<path d="M${O.x.toFixed(1)} ${O.y.toFixed(1)} L${R.x.toFixed(1)} ${R.y.toFixed(1)} L${E.x.toFixed(1)} ${E.y.toFixed(1)}" fill="none" stroke="${col}" stroke-width="1.6" stroke-opacity=".8"/>`;
+  s += head(O, R, .58, col, 6);
+  s += head(R, E, .62, col, 6);
+  const dx = Ai.x-R.x, dy = Ai.y-R.y, L = Math.hypot(dx,dy) || 1;
+  s += `<path d="M${R.x.toFixed(1)} ${R.y.toFixed(1)} L${Ai.x.toFixed(1)} ${Ai.y.toFixed(1)} L${(Ai.x+dx/L*30).toFixed(1)} ${(Ai.y+dy/L*30).toFixed(1)}" fill="none" stroke="${col}" stroke-width="1.3" stroke-dasharray="5 4" stroke-opacity=".5"/>`;
+  return { s, R, Ai };
+}
+/* 眼睛 */
+function eyeG(p){
+  let s = `<path d="M${p.x-16} ${p.y} Q ${p.x} ${p.y-14} ${p.x+16} ${p.y} Q ${p.x} ${p.y+14} ${p.x-16} ${p.y} Z" fill="#fff" stroke="#334155" stroke-width="1.8"/>`;
+  s += `<circle cx="${p.x}" cy="${p.y}" r="5.2" fill="#1F2937"/><circle cx="${p.x+2}" cy="${p.y-2.2}" r="1.7" fill="#fff"/>`;
+  s += T(p.x, p.y+27, '眼睛', {a:'middle', size:11, fill:'#334155', w:600});
+  return s;
+}
+/* 蜡烛：底部中心在 (0,0)，向上为 −y */
+function candleG(o){
+  const h = o.h ?? 78, w = o.w ?? 26, col = o.col || '#F59E0B';
+  const op = o.op ?? 1, dash = o.dash ? '5 3.5' : '', sw = o.dash ? 1.8 : 2;
+  let s = `<rect x="${-w/2}" y="${-h}" width="${w}" height="${h}" rx="4" fill="${col}" fill-opacity="${(.18*op).toFixed(2)}" stroke="${col}" stroke-width="${sw}" stroke-dasharray="${dash}"/>`;
+  s += `<ellipse cx="0" cy="${-h}" rx="${w/2}" ry="4.5" fill="${col}" fill-opacity="${(.28*op).toFixed(2)}" stroke="${col}" stroke-width="${(sw-0.2).toFixed(1)}" stroke-dasharray="${dash}"/>`;
+  s += `<line x1="0" y1="${-h}" x2="0" y2="${-h-6}" stroke="#475569" stroke-width="2" stroke-dasharray="${dash}"/>`;
+  if(o.lit){
+    s += `<g class="flame">`;
+    s += `<path d="M0 ${-h-27} C 6 ${-h-19} 8.5 ${-h-10} 0 ${-h-4} C -8.5 ${-h-10} -6 ${-h-19} 0 ${-h-27} Z" fill="#FB923C" fill-opacity="${(.95*op).toFixed(2)}"/>`;
+    s += `<path d="M0 ${-h-21} C 3.4 ${-h-15} 4.6 ${-h-9} 0 ${-h-5} C -4.6 ${-h-9} -3.4 ${-h-15} 0 ${-h-21} Z" fill="#FDE68A" fill-opacity="${(.98*op).toFixed(2)}"/>`;
+    s += `</g>`;
+  }
+  if(o.label) s += T(0, -h/2 + 4, o.label, {a:'middle', size:12, fill:col, w:700});
+  return s;
+}
+/* 桌面 */
+function deskG(x0, x1, y){
+  let s = `<line x1="${x0}" y1="${y}" x2="${x1}" y2="${y}" stroke="#94A3B8" stroke-width="2.5"/>`;
+  for(let x=x0+4; x<x1; x+=16) s += `<line x1="${x}" y1="${y}" x2="${x-10}" y2="${y+9}" stroke="#CBD5E1" stroke-width="1.4"/>`;
+  return s;
+}
+/* 尺寸标注条 */
+function barG(x1, x2, y, label, col, tx, ta){
+  if(Math.abs(x2-x1) < 4) return '';
+  let s = `<line x1="${x1.toFixed(1)}" y1="${y}" x2="${x2.toFixed(1)}" y2="${y}" stroke="${col}" stroke-width="1.6"/>`;
+  s += `<line x1="${x1.toFixed(1)}" y1="${y-5}" x2="${x1.toFixed(1)}" y2="${y+5}" stroke="${col}" stroke-width="1.6"/>`;
+  s += `<line x1="${x2.toFixed(1)}" y1="${y-5}" x2="${x2.toFixed(1)}" y2="${y+5}" stroke="${col}" stroke-width="1.6"/>`;
+  s += T(tx ?? (x1+x2)/2, y-8, label, {a:ta||'middle', size:11.5, fill:col, w:700});
+  return s;
+}
+/* 直角标记 */
+function rightAngle(Q, dirU, dirV, col, k){
+  const a = { x: Q.x + dirU.x*k, y: Q.y + dirU.y*k };
+  const b = { x: Q.x + dirU.x*k + dirV.x*k, y: Q.y + dirU.y*k + dirV.y*k };
+  const c = { x: Q.x + dirV.x*k, y: Q.y + dirV.y*k };
+  return `<path d="M${a.x.toFixed(1)} ${a.y.toFixed(1)} L${b.x.toFixed(1)} ${b.y.toFixed(1)} L${c.x.toFixed(1)} ${c.y.toFixed(1)}" fill="none" stroke="${col}" stroke-width="1.5"/>`;
+}
+
+/* ---------- 拖动 ---------- */
+function svgPt(svg, ev){
+  const p = svg.createSVGPoint();
+  p.x = ev.clientX; p.y = ev.clientY;
+  return p.matrixTransform(svg.getScreenCTM().inverse());
+}
+function bindDrag(svg, handlers){
+  let active = false;
+  svg.addEventListener('pointerdown', e => {
+    active = true;
+    try { svg.setPointerCapture(e.pointerId); } catch(_){}
+    if(handlers.start) handlers.start(svgPt(svg, e));
+    e.preventDefault();
+  });
+  svg.addEventListener('pointermove', e => {
+    if(!active) return;
+    if(handlers.move) handlers.move(svgPt(svg, e));
+    e.preventDefault();
+  });
+  const up = () => { if(!active) return; active = false; if(handlers.end) handlers.end(); };
+  svg.addEventListener('pointerup', up);
+  svg.addEventListener('pointercancel', up);
+  svg.addEventListener('pointerleave', up);
+  svg.style.touchAction = 'none';
+}
+
+/* ============================================================
+   01 玻璃板等效替代
+   ============================================================ */
+const M1 = { PPC:13, DESK:326, MX:330, MH:150, H:78, W:26, EYE:{x:76, y:192} };
+const s1 = { dA:6, dB:6, th:0, kind:'glass' };
+let a1 = null;
+
+function draw1(){
+  const P = { x:M1.MX, y:M1.DESK };
+  const m = mirror(P, s1.th);
+  const glass = s1.kind === 'glass';
+  const xA = M1.MX - s1.dA*M1.PPC, xB = M1.MX + s1.dB*M1.PPC;
+
+  const bA = { x:xA, y:M1.DESK }, tA = { x:xA, y:M1.DESK - M1.H };
+  const bI = refl(m, bA), tI = refl(m, tA);
+  const bB = { x:xB, y:M1.DESK }, tB = { x:xB, y:M1.DESK - M1.H };
+  const gap = Math.max(Math.hypot(bI.x-bB.x, bI.y-bB.y), Math.hypot(tI.x-tB.x, tI.y-tB.y)) / M1.PPC;
+  const fit = gap < 0.2;
+
+  let g = '';
+
+  /* 桌面 */
+  g += deskG(20, 640, M1.DESK);
+
+  /* 像（虚线，先画在最后面） */
+  g += `<g transform="${reflT(m)} translate(${xA.toFixed(1)} ${M1.DESK})">` +
+       candleG({ h:M1.H, w:M1.W, col:'#7C3AED', op:fit?.45:.8, dash:true, lit:true, label:fit?'':'A′' }) + `</g>`;
+
+  /* 蜡烛 B（未点燃）；玻璃板才看得见 */
+  if(glass){
+    g += `<g transform="translate(${xB.toFixed(1)} ${M1.DESK})">` +
+         candleG({ h:M1.H, w:M1.W, col:'#F59E0B', op:fit?.75:1, lit:fit, label:'B' }) + `</g>`;
+    if(fit) g += T(xB, M1.DESK - M1.H - 46, '看上去 B 也点燃了', {a:'middle', size:11.5, fill:'#0E9F6E', w:700});
+  }
+
+  /* 玻璃板 / 平面镜（本地坐标：+x 为镜后一侧） */
+  let slab = '';
+  for(let k=16; k<M1.MH; k+=15) slab += `<line x1="5" y1="${-k}" x2="14" y2="${-k-8}" stroke="${glass?'#94A3B8':'#64748B'}" stroke-width="1.3"/>`;
+  g += `<g transform="translate(${M1.MX} ${M1.DESK}) rotate(${s1.th})">
+      <rect x="-3.5" y="${-M1.MH}" width="7" height="${M1.MH}" rx="1.5"
+            fill="${glass?'#93C5FD':'#CBD5E1'}" fill-opacity="${glass?'.5':'1'}"
+            stroke="${glass?'#3B82F6':'#475569'}" stroke-width="1.6"/>${slab}</g>`;
+  const topY = M1.DESK + m.uy*M1.MH, topX = M1.MX + m.ux*M1.MH;
+  g += T(topX + (glass?10:10), topY - 8, glass?'玻璃板':'平面镜', {a:'middle', size:11.5, fill:glass?'#2563EB':'#475569', w:700});
+
+  /* 蜡烛 A（点燃） */
+  g += `<g transform="translate(${xA.toFixed(1)} ${M1.DESK})">` +
+       candleG({ h:M1.H, w:M1.W, col:'#F59E0B', lit:true, label:'A' }) + `</g>`;
+
+  /* 光路：烛焰 + 蜡烛底部各一条，都进眼睛 */
+  const flame = { x:xA, y:M1.DESK - M1.H - 14 };
+  const foot  = { x:xA, y:M1.DESK - 6 };
+  g += rayTo(m, flame, M1.EYE, '#F59E0B').s;
+  g += rayTo(m, foot,  M1.EYE, '#94A3B8').s;
+
+  /* 眼睛 */
+  g += eyeG(M1.EYE);
+
+  /* 像的位置标记 */
+  g += `<circle cx="${bI.x.toFixed(1)}" cy="${bI.y.toFixed(1)}" r="4" fill="#7C3AED" fill-opacity=".7"/>`;
+  g += `<line x1="${bI.x.toFixed(1)}" y1="${bI.y.toFixed(1)}" x2="${bI.x.toFixed(1)}" y2="${M1.DESK}" stroke="#7C3AED" stroke-width="1.2" stroke-dasharray="4 3" stroke-opacity=".55"/>`;
+
+  /* 标注条 */
+  g += barG(xA, M1.MX, M1.DESK + 34, '物距 ' + fmt(s1.dA,1) + ' cm', '#2563EB', M1.MX - 18, 'end');
+  if(glass) g += barG(M1.MX, xB, M1.DESK + 34, 'B 到镜面 ' + fmt(s1.dB,1) + ' cm', '#0E9F6E', M1.MX + 18, 'start');
+
+  /* 重合高亮 */
+  if(fit && glass){
+    g += `<rect x="${(xB-22).toFixed(1)}" y="${(M1.DESK - M1.H - 34).toFixed(1)}" width="44" height="${(M1.H+36).toFixed(1)}" rx="10"
+            fill="none" stroke="#10B981" stroke-width="2.2" stroke-dasharray="6 4"/>`;
+    g += T(xB, M1.DESK + 56, '完全重合', {a:'middle', size:12, fill:'#0E9F6E', w:700});
+  }
+  if(!glass){
+    g += T(400, M1.DESK + 58, '换成不透明平面镜：看不见镜后的 B，就没法判断像在哪', {a:'middle', size:12.5, fill:'#475569', w:700});
+  }
+
+  el('m1svg').innerHTML = g;
+
+  /* ---- 读数 ---- */
+  const u = distM(m, bA)/M1.PPC, v = distM(m, bI)/M1.PPC, ub = distM(m, bB)/M1.PPC;
+  const hRatio = Math.hypot(tI.x-bI.x, tI.y-bI.y) / Math.hypot(tA.x-bA.x, tA.y-bA.y);
+  const ang = Math.abs(90 - Math.abs(Math.atan2(tI.y-bI.y, tI.x-bI.x)*180/Math.PI - Math.atan2(m.uy, m.ux)*180/Math.PI));
+  const conn = Math.abs(Math.atan2(bI.y-bA.y, bI.x-bA.x)*180/Math.PI - Math.atan2(m.uy, m.ux)*180/Math.PI);
+  const deg = Math.round(Math.min(conn, 180-conn));
+
+  num('m1Av', fmt(s1.dA,1)); num('m1Bv', fmt(s1.dB,1)); num('m1Tv', s1.th);
+  num('m1u', fmt(u,1) + ' cm'); num('m1v', fmt(v,1) + ' cm');
+  num('m1b', fmt(ub,1) + ' cm'); num('m1s', f2(hRatio,2));
+  num('m1r', deg + '°'); num('m1d', (gap<0.005?'0.00':f2(gap,2)) + ' cm');
+
+  const tag = el('m1tag');
+  if(tag){
+    if(!glass){ tag.className = 'tag mid'; tag.textContent = '看不见 B'; }
+    else if(fit){ tag.className = 'tag ok'; tag.textContent = '完全重合'; }
+    else { tag.className = 'tag bad'; tag.textContent = '还没重合'; }
+  }
+  const dEl = el('m1d'); if(dEl) dEl.className = (!glass ? 'warn' : (fit ? 'ok' : 'bad'));
+
+  let note;
+  if(!glass){
+    note = '平面镜不透光：像看得见，镜后的 B 却看不见，<em>没法比出像在哪</em>——这就是实验非用玻璃板的原因。';
+  } else if(Math.abs(s1.th) > 0.5){
+    note = '玻璃板一斜，A 的像就' + (s1.th < 0 ? '浮到桌面上方' : '沉到桌面下方') + '并且歪掉，B 站在桌面上无论怎么挪，Δ 都降不到 0。所以<em>玻璃板必须竖直</em>。';
+  } else if(fit){
+    note = 'B 与 A 的像完全重合（Δ = 0），此时 B 的位置就是像的位置：<em>u = v</em>、像与物等大、连线垂直镜面。';
+  } else {
+    note = 'B 离镜面 ' + fmt(s1.dB,1) + ' cm，像在 ' + fmt(s1.dA,1) + ' cm 处，还差 <em>' + f2(gap,2) + ' cm</em>。继续挪 B，直到 Δ = 0。';
+  }
+  put('m1note', note);
+}
+
+function auto1(){
+  if(a1){ cancelAnimationFrame(a1); a1 = null; }
+  const from = s1.dB, to = s1.dA, t0 = performance.now(), TT = 1100;
+  const step = now => {
+    const p = Math.min(1, (now-t0)/TT);
+    const e = p<.5 ? 2*p*p : 1 - Math.pow(-2*p+2, 2)/2;
+    s1.dB = from + (to-from)*e;
+    el('m1B').value = s1.dB;
+    draw1();
+    a1 = p<1 ? requestAnimationFrame(step) : null;
+  };
+  a1 = requestAnimationFrame(step);
+}
+
+function init1(){
+  el('m1A').addEventListener('input', e => { s1.dA = +e.target.value; draw1(); });
+  el('m1B').addEventListener('input', e => { s1.dB = +e.target.value; draw1(); });
+  el('m1T').addEventListener('input', e => { s1.th = +e.target.value; draw1(); });
+  el('m1auto').addEventListener('click', auto1);
+  el('m1vert').addEventListener('click', () => { s1.th = 0; el('m1T').value = 0; draw1(); });
+  Array.prototype.forEach.call(el('m1seg').children, b => {
+    b.addEventListener('click', () => {
+      s1.kind = b.dataset.k;
+      Array.prototype.forEach.call(el('m1seg').children, x => x.classList.toggle('on', x === b));
+      draw1();
+    });
+  });
+  let tgt = null;
+  bindDrag(el('m1svg'), {
+    start: p => { tgt = (p.x < M1.MX) ? 'A' : 'B'; if(a1){ cancelAnimationFrame(a1); a1 = null; } },
+    move:  p => {
+      if(tgt === 'A'){ s1.dA = clamp((M1.MX - p.x)/M1.PPC, 3, 12); el('m1A').value = s1.dA; }
+      else if(s1.kind === 'glass'){ s1.dB = clamp((p.x - M1.MX)/M1.PPC, 0, 16); el('m1B').value = s1.dB; }
+      draw1();
+    }
+  });
+  draw1();
+}
+
+/* ============================================================
+   02 光屏承接不到（虚像）
+   ============================================================ */
+const M2 = { PPC:13, DESK:296, MX:340, MH:180, H:78 };
+const s2 = { dA:7, ds:7, eye:{x:130, y:190} };
+
+function draw2(){
+  const P = { x:M2.MX, y:M2.DESK }, m = mirror(P, 0);
+  const xA = M2.MX - s2.dA*M2.PPC, xS = M2.MX + s2.ds*M2.PPC;
+  const bA = { x:xA, y:M2.DESK }, tA = { x:xA, y:M2.DESK - M2.H };
+  const bI = refl(m, bA), tI = refl(m, tA);
+  const shot = { x:xA, y:M2.DESK - M2.H - 14 };
+  const foot = { x:xA, y:M2.DESK - 6 };
+  const xI = bI.x;
+  const onImage = Math.abs(xS - xI) < 7;
+
+  let g = '';
+  g += deskG(20, 640, M2.DESK);
+
+  /* 像 */
+  g += `<g transform="${reflT(m)} translate(${xA.toFixed(1)} ${M2.DESK})">` +
+       candleG({ h:M2.H, w:26, col:'#7C3AED', op:.75, dash:true, lit:true, label:'A′' }) + `</g>`;
+
+  /* 光屏 */
+  const sTop = M2.DESK - 132;
+  g += `<rect x="${(xS-5).toFixed(1)}" y="${sTop}" width="10" height="132" rx="3" fill="#F1F5F9" stroke="#64748B" stroke-width="1.8"/>`;
+  g += `<rect x="${(xS-16).toFixed(1)}" y="${M2.DESK-6}" width="32" height="8" rx="3" fill="#CBD5E1" stroke="#64748B" stroke-width="1.4"/>`;
+  g += T(xS, sTop - 8, '光屏', {a:'middle', size:11.5, fill:'#475569', w:700});
+  if(onImage){
+    g += `<circle cx="${xS.toFixed(1)}" cy="${(M2.DESK-M2.H-14).toFixed(1)}" r="19" fill="none" stroke="#EF4444" stroke-width="2.2"/>`;
+    g += `<path d="M${xS-12} ${M2.DESK-M2.H-26} L${xS+12} ${M2.DESK-M2.H-2} M${xS+12} ${M2.DESK-M2.H-26} L${xS-12} ${M2.DESK-M2.H-2}" stroke="#EF4444" stroke-width="3"/>`;
+    g += T(xS - 26, 130, '✗ 屏上什么也没有', {a:'end', size:13, fill:'#DC2626', w:700});
+  }
+
+  /* 平面镜 */
+  let slab = '';
+  for(let k=16; k<M2.MH; k+=15) slab += `<line x1="5" y1="${-k}" x2="14" y2="${-k-8}" stroke="#64748B" stroke-width="1.3"/>`;
+  g += `<g transform="translate(${M2.MX} ${M2.DESK})">
+      <rect x="-4" y="${-M2.MH}" width="8" height="${M2.MH}" rx="1.5" fill="#CBD5E1" stroke="#475569" stroke-width="1.8"/>${slab}</g>`;
+  g += T(M2.MX, M2.DESK - M2.MH - 10, '平面镜', {a:'middle', size:11.5, fill:'#475569', w:700});
+
+  /* 蜡烛 A */
+  g += `<g transform="translate(${xA.toFixed(1)} ${M2.DESK})">` +
+       candleG({ h:M2.H, w:26, col:'#F59E0B', lit:true, label:'A' }) + `</g>`;
+
+  /* 光路 */
+  const r1 = rayTo(m, shot, s2.eye, '#F59E0B');
+  const r2 = rayTo(m, foot, s2.eye, '#94A3B8');
+  g += r2.s + r1.s;
+
+  /* 虚像标记：两条反向延长线的交点即像 */
+  const iFlame = refl(m, shot);
+  g += `<circle cx="${iFlame.x.toFixed(1)}" cy="${iFlame.y.toFixed(1)}" r="7" fill="none" stroke="#7C3AED" stroke-width="1.8" stroke-dasharray="3 3"/>`;
+  if(onImage) g += T(xS - 30, iFlame.y - 12, '虚像', {a:'end', size:12, fill:'#7C3AED', w:700});
+  else        g += T(iFlame.x + 12, iFlame.y - 2, '虚像', {size:12, fill:'#7C3AED', w:700});
+
+  /* 眼睛 */
+  g += eyeG(s2.eye);
+
+  /* 标注条 */
+  g += barG(xA, M2.MX, M2.DESK + 30, 'u = ' + fmt(s2.dA,1) + ' cm', '#2563EB', M2.MX - 18, 'end');
+  g += barG(M2.MX, xI, M2.DESK + 30, 'v = ' + fmt(s2.dA,1) + ' cm', '#7C3AED', M2.MX + 18, 'start');
+
+  el('m2svg').innerHTML = g;
+
+  num('m2Av', fmt(s2.dA,1)); num('m2Sv', fmt(s2.ds,1));
+  num('m2u', fmt(s2.dA,1) + ' cm'); num('m2v', fmt(s2.dA,1) + ' cm');
+  num('m2p', fmt(s2.ds,1) + ' cm');
+  const se = el('m2s');
+  if(se){
+    se.textContent = '没有像';
+    se.className = 'bad';
+  }
+  const sp = el('m2p');
+  if(sp) sp.className = onImage ? 'warn' : '';
+}
+
+function init2(){
+  el('m2A').addEventListener('input', e => { s2.dA = +e.target.value; draw2(); });
+  el('m2S').addEventListener('input', e => { s2.ds = +e.target.value; draw2(); });
+  el('m2go').addEventListener('click', () => { s2.ds = s2.dA; el('m2S').value = s2.ds; draw2(); });
+  el('m2off').addEventListener('click', () => { s2.ds = clamp(s2.dA + 6, 1, 22); el('m2S').value = s2.ds; draw2(); });
+  let tgt = null;
+  bindDrag(el('m2svg'), {
+    start: p => { tgt = (p.x > M2.MX) ? 'screen' : 'eye'; },
+    move:  p => {
+      if(tgt === 'screen'){ s2.ds = clamp((p.x - M2.MX)/M2.PPC, 1, 22); el('m2S').value = s2.ds; }
+      else { s2.eye.x = clamp(p.x, 44, M2.MX - 40); s2.eye.y = clamp(p.y, 84, M2.DESK - 20); }
+      draw2();
+    }
+  });
+  draw2();
+}
+
+/* ============================================================
+   03 对称作图
+   ============================================================ */
+const M3 = { C:{x:320, y:196}, PPC:13 };
+const s3 = { ang:90, px:196, py:112, demo:1 };
+let a3 = null;
+const FPATH = 'M0 0 H52 V20 H18 V30 H44 V50 H18 V78 H0 Z';
+
+function draw3(){
+  const m = mirrorH(M3.C, s3.ang);
+  const P = { x: s3.px + 26, y: s3.py + 39 };
+  const v = { x: P.x - M3.C.x, y: P.y - M3.C.y };
+  const dot = v.x*m.ux + v.y*m.uy;
+  const Q = { x: M3.C.x + dot*m.ux, y: M3.C.y + dot*m.uy };
+  const Pi = { x: 2*Q.x - P.x, y: 2*Q.y - P.y };
+  const u = distM(m, P)/M3.PPC;
+
+  /* 镜后一侧方向 */
+  const n = { x: -m.uy, y: m.ux };
+  const hs = side(m, P) > 0 ? 1 : -1;
+  const hh = { x: n.x*hs, y: n.y*hs };
+
+  /* 作图进度 */
+  const f1 = clamp(s3.demo/0.34, 0, 1);
+  const f2v = clamp((s3.demo-0.34)/0.33, 0, 1);
+  const op = clamp((s3.demo-0.67)/0.33, 0, 1);
+
+  let g = '';
+  /* 方格 */
+  for(let x=0; x<=660; x+=20) g += `<line x1="${x}" y1="0" x2="${x}" y2="400" stroke="#EFF3F9" stroke-width="1"/>`;
+  for(let y=0; y<=400; y+=20) g += `<line x1="0" y1="${y}" x2="660" y2="${y}" stroke="#EFF3F9" stroke-width="1"/>`;
+
+  /* 镜面 */
+  const L = 520;
+  g += `<line x1="${(M3.C.x-m.ux*L).toFixed(1)}" y1="${(M3.C.y-m.uy*L).toFixed(1)}" x2="${(M3.C.x+m.ux*L).toFixed(1)}" y2="${(M3.C.y+m.uy*L).toFixed(1)}" stroke="#334155" stroke-width="3.2"/>`;
+  for(let k=-L+18; k<L; k+=26){
+    const bx = M3.C.x + m.ux*k, by = M3.C.y + m.uy*k;
+    g += `<line x1="${(bx+hh.x*6).toFixed(1)}" y1="${(by+hh.y*6).toFixed(1)}" x2="${(bx+hh.x*15).toFixed(1)}" y2="${(by+hh.y*15).toFixed(1)}" stroke="#64748B" stroke-width="1.5"/>`;
+  }
+
+  /* 物像连线（虚线） */
+  g += `<line x1="${P.x.toFixed(1)}" y1="${P.y.toFixed(1)}" x2="${Pi.x.toFixed(1)}" y2="${Pi.y.toFixed(1)}" stroke="#94A3B8" stroke-width="1.4" stroke-dasharray="6 4"/>`;
+
+  /* 作图：垂线 + 等距 */
+  if(f1 > 0){
+    const a = { x: P.x + (Q.x-P.x)*f1, y: P.y + (Q.y-P.y)*f1 };
+    g += `<line x1="${P.x.toFixed(1)}" y1="${P.y.toFixed(1)}" x2="${a.x.toFixed(1)}" y2="${a.y.toFixed(1)}" stroke="#7C3AED" stroke-width="2"/>`;
+    if(f1 > .98){
+      const lu = Math.hypot(Q.x-P.x, Q.y-P.y) || 1;
+      const du = { x: (Q.x-P.x)/lu, y: (Q.y-P.y)/lu };
+      const dv = { x: -du.y, y: du.x };
+      g += rightAngle(Q, du, dv, '#7C3AED', 11);
+      g += T((P.x+Q.x)/2, (P.y+Q.y)/2 - 6, 'u = ' + fmt(u,1) + ' cm', {a:'middle', size:11.5, fill:'#7C3AED', w:700});
+    }
+  }
+  if(f2v > 0){
+    const a = { x: Q.x + (Pi.x-Q.x)*f2v, y: Q.y + (Pi.y-Q.y)*f2v };
+    g += `<line x1="${Q.x.toFixed(1)}" y1="${Q.y.toFixed(1)}" x2="${a.x.toFixed(1)}" y2="${a.y.toFixed(1)}" stroke="#7C3AED" stroke-width="2" stroke-dasharray="5 3.5"/>`;
+    if(f2v > .98) g += T((Q.x+Pi.x)/2, (Q.y+Pi.y)/2 - 6, 'v = ' + fmt(u,1) + ' cm', {a:'middle', size:11.5, fill:'#7C3AED', w:700});
+  }
+  g += `<circle cx="${Q.x.toFixed(1)}" cy="${Q.y.toFixed(1)}" r="3.4" fill="#7C3AED"/>`;
+
+  /* 物 */
+  g += `<g transform="translate(${s3.px.toFixed(1)} ${s3.py.toFixed(1)})">
+      <path d="${FPATH}" fill="#2563EB" fill-opacity=".18" stroke="#2563EB" stroke-width="2.2"/></g>`;
+  g += `<circle cx="${P.x.toFixed(1)}" cy="${P.y.toFixed(1)}" r="3.6" fill="#2563EB"/>`;
+  g += T(P.x, P.y + 22, '物', {a:'middle', size:12, fill:'#2563EB', w:700});
+
+  /* 像 */
+  g += `<g transform="${reflT(m)} translate(${s3.px.toFixed(1)} ${s3.py.toFixed(1)})" opacity="${op.toFixed(2)}">
+      <path d="${FPATH}" fill="#7C3AED" fill-opacity=".14" stroke="#7C3AED" stroke-width="2.2" stroke-dasharray="6 4"/></g>`;
+  if(op > .5){
+    g += `<circle cx="${Pi.x.toFixed(1)}" cy="${Pi.y.toFixed(1)}" r="3.6" fill="#7C3AED"/>`;
+    g += T(Pi.x, Pi.y + 22, '像', {a:'middle', size:12, fill:'#7C3AED', w:700});
+    g += T(M3.C.x, 386, '物像连线被镜面垂直平分 → 像与物关于镜面对称', {a:'middle', size:12.5, fill:'#475569', w:700});
+  }
+
+  el('m3svg').innerHTML = g;
+
+  const deg = 90;
+  num('m3Av', s3.ang);
+  num('m3u', fmt(u,1) + ' cm');
+  num('m3v', fmt(u,1) + ' cm');
+  num('m3r', deg + '°');
+}
+
+function demo3(){
+  if(a3){ cancelAnimationFrame(a3); a3 = null; }
+  const t0 = performance.now(), TT = 2400;
+  s3.demo = 0; draw3();
+  const step = now => {
+    const p = Math.min(1, (now-t0)/TT);
+    s3.demo = p;
+    draw3();
+    a3 = p < 1 ? requestAnimationFrame(step) : null;
+  };
+  a3 = requestAnimationFrame(step);
+}
+
+function init3(){
+  el('m3A').addEventListener('input', e => { s3.ang = +e.target.value; draw3(); });
+  el('m3demo').addEventListener('click', demo3);
+  let off = null;
+  bindDrag(el('m3svg'), {
+    start: p => { off = { x: p.x - s3.px, y: p.y - s3.py }; },
+    move:  p => {
+      s3.px = clamp(p.x - off.x, 30, 560);
+      s3.py = clamp(p.y - off.y, 26, 300);
+      draw3();
+    }
+  });
+  draw3();
+}
+
+/* ============================================================ */
+document.addEventListener('DOMContentLoaded', () => {
+  try { init1(); } catch(e){ console.error(e); }
+  try { init2(); } catch(e){ console.error(e); }
+  try { init3(); } catch(e){ console.error(e); }
+});
+</script>
+</body>
+</html>

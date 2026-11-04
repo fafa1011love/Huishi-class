@@ -1,0 +1,705 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>9.2库仑定律 ｜ 人教版物理必修第三册</title>
+<style>
+  :root{
+    --blue:#1d4ed8; --blue-soft:#eff6ff; --blue-line:#bfdbfe;
+    --ink:#1e293b; --sub:#64748b; --line:#e2e8f0;
+    --amber-bg:#fffbeb; --amber-line:#fcd34d; --amber-ink:#92400e;
+    --green:#059669; --red:#dc2626;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:#f3f5f9; color:var(--ink);
+    font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif; padding:18px 12px 40px;}
+  .wrap{max-width:1060px; margin:0 auto;}
+  header{background:#fff; border:1px solid var(--line); border-left:6px solid var(--blue);
+    border-radius:12px; padding:16px 22px; box-shadow:0 1px 3px rgba(15,23,42,.06);}
+  header h1{font-size:22px; color:var(--ink);}
+  header .meta{margin-top:6px; font-size:12.5px; color:var(--sub); line-height:1.7;}
+  .mod{background:#fff; border:1px solid var(--line); border-radius:12px;
+    padding:16px 20px 18px; margin-top:16px; box-shadow:0 1px 3px rgba(15,23,42,.05);}
+  .mod-h{display:flex; align-items:center; gap:10px; margin-bottom:10px;}
+  .mod-h .no{background:var(--blue); color:#fff; font-size:12px; border-radius:6px;
+    padding:2px 8px; white-space:nowrap;}
+  .mod-h h2{font-size:16.5px;}
+  .mod-h .kp{margin-left:auto; font-size:12px; color:var(--sub); white-space:nowrap;}
+  .think{background:var(--blue-soft); border:1px solid var(--blue-line); border-radius:8px;
+    padding:8px 12px; font-size:12.5px; color:#1e40af; margin-bottom:10px; line-height:1.7;}
+  .think b{color:var(--blue);}
+  canvas.stage{display:block; width:100%; background:#fbfdff;
+    border:1px solid var(--line); border-radius:10px;}
+  .ctrl{display:flex; flex-wrap:wrap; gap:8px 18px; align-items:center; margin-top:10px;}
+  .row{display:flex; align-items:center; gap:8px; font-size:13px;}
+  .row label{color:var(--sub); white-space:nowrap;}
+  .row input[type=range]{width:150px; accent-color:var(--blue);}
+  .row .val{min-width:64px; font-variant-numeric:tabular-nums; color:var(--ink); font-weight:600;}
+  .btn{border:1px solid var(--blue); color:var(--blue); background:#fff; border-radius:7px;
+    padding:4px 12px; font-size:12.5px; cursor:pointer;}
+  .btn:hover{background:var(--blue-soft);}
+  .btn.on{background:var(--blue); color:#fff;}
+  .note{margin-top:10px; background:var(--amber-bg); border:1px solid var(--amber-line);
+    border-radius:8px; padding:8px 12px; font-size:12.5px; color:var(--amber-ink); line-height:1.8;}
+  .note b{color:#b45309;}
+  footer{margin-top:20px; text-align:center; font-size:12px; color:#94a3b8;}
+  .seg{display:inline-flex; border:1px solid var(--blue); border-radius:8px; overflow:hidden;}
+  .seg button{border:none; background:#fff; color:var(--blue); padding:4px 12px;
+    font-size:12.5px; cursor:pointer;}
+  .seg button.on{background:var(--blue); color:#fff;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>9.2　库仑定律</h1>
+  <div class="meta">人教版《物理》必修第三册 · 第九章 静电场及其应用 · 教材 P6–P10 ｜ 覆盖知识点：库仑定律 F＝kq₁q₂/r²（k＝9.0×10⁹ N·m²/C²）、平方反比关系、静电力叠加（平行四边形定则）、点电荷理想化模型</div>
+</header>
+
+<div class="mod">
+  <div class="mod-h"><span class="no">模块 1</span><h2>库仑定律：F＝kq₁q₂/r²</h2><span class="kp">交互仿真</span></div>
+  <div class="think"><b>先想一想：</b>两个电荷的电量都加倍、距离也加倍，它们之间的力会变成原来的几倍？拖动滑块（或直接拖动画布上的电荷）验证一下。</div>
+  <canvas class="stage" id="cv1" style="height:360px;"></canvas>
+  <div class="ctrl">
+    <div class="row"><label>q₁</label><input type="range" id="q1" min="-10" max="10" step="0.5" value="5"><span class="val" id="q1v"></span></div>
+    <div class="row"><label>q₂</label><input type="range" id="q2" min="-10" max="10" step="0.5" value="5"><span class="val" id="q2v"></span></div>
+    <div class="row"><label>距离 r</label><input type="range" id="rr" min="10" max="100" step="1" value="40"><span class="val" id="rrv"></span></div>
+    <button class="btn" id="p1">预设：等量同种</button>
+    <button class="btn" id="p2">预设：等量异种</button>
+    <button class="btn" id="p3">预设：一大一小</button>
+  </div>
+  <div class="note"><b>观察要点：</b>力的方向<b>沿两点电荷的连线</b>：同号相斥（箭头朝外）、异号相吸（箭头朝内）。下方色条是按真实比例画的 F 大小——把 r 从 0.20 m 拉到 0.40 m（加倍），条长立刻变成 <b>四分之一</b>；q₁ 或 q₂ 加倍，条长也加倍。这就是 F＝k·q₁q₂/r²。</div>
+</div>
+
+<div class="mod">
+  <div class="mod-h"><span class="no">模块 2</span><h2>平方反比关系（双对数坐标）</h2><span class="kp">数据图象</span></div>
+  <div class="think"><b>先想一想：</b>F 随 r 增大而减小，画出来是一条什么曲线？如果把它画在"横轴也是对数、纵轴也是对数"的坐标里，会变成什么形状？</div>
+  <canvas class="stage" id="cv2" style="height:390px;"></canvas>
+  <div class="ctrl">
+    <span style="font-size:12.5px;color:var(--sub)">工作点与模块 1 联动：拖动模块 1 的 r 滑块，这里的点会跟着走</span>
+    <button class="btn" id="p4">r 加倍对比</button>
+    <button class="btn" id="p5">回到 r＝0.40 m</button>
+  </div>
+  <div class="note"><b>观察要点：</b>左图 F–r 是一条<b>双曲线</b>，r 越大 F 掉得越快；右图把两个坐标轴都取对数后，数据点落在<b>一条直线</b>上，斜率恒为 <b>−2</b> —— 这正是"平方反比"的图象特征：log F＝log(kq₁q₂) − 2·log r。下表再算一笔账：把 F 乘上 r²，五个不同的 r 得到的都是同一个数 k·q₁q₂。</div>
+</div>
+
+<div class="mod">
+  <div class="mod-h"><span class="no">模块 3</span><h2>静电力的叠加（平行四边形定则）</h2><span class="kp">交互仿真</span></div>
+  <div class="think"><b>先想一想：</b>两个场源电荷同时作用在一个试探电荷上，合力是不是把两个力的大小直接相加？拖动试探电荷到两电荷之间试一试。</div>
+  <canvas class="stage" id="cv3" style="height:380px;"></canvas>
+  <div class="ctrl">
+    <div class="row"><label>Q₁</label><input type="range" id="Q1" min="-10" max="10" step="0.5" value="8"><span class="val" id="Q1v"></span></div>
+    <div class="row"><label>Q₂</label><input type="range" id="Q2" min="-10" max="10" step="0.5" value="-5"><span class="val" id="Q2v"></span></div>
+    <div class="row"><label>试探电荷 q₀</label><input type="range" id="q0" min="-8" max="8" step="0.5" value="2"><span class="val" id="q0v"></span></div>
+    <div class="row"><label>位置</label><input type="range" id="px" min="4" max="96" step="1" value="60"><span class="val" id="pxv"></span></div>
+    <button class="btn" id="p6">找合力为零的位置</button>
+    <button class="btn" id="p7">预设：等量同种</button>
+  </div>
+  <div class="note"><b>观察要点：</b>每个场源电荷对 q₀ 的力都是<b>独立</b>的（互不影响），先把 F₁、F₂ 分别画出来，再用<b>平行四边形</b>合成合力 F —— 力是矢量，只有同方向时才能直接把大小相加。点"找合力为零的位置"，会看到 F₁ 与 F₂ <b>等大反向</b>，合力为零。</div>
+</div>
+
+<div class="mod">
+  <div class="mod-h"><span class="no">模块 4</span><h2>点电荷：一个理想化模型</h2><span class="kp">示意交互</span></div>
+  <div class="think"><b>先想一想：</b>两个带电小球靠得很近时，还能把它们当成"电荷集中在一个点上"吗？球上的电荷会怎么重新排布？</div>
+  <canvas class="stage" id="cv4" style="height:360px;"></canvas>
+  <div class="ctrl">
+    <div class="row"><label>球半径 R</label><input type="range" id="RR" min="2" max="15" step="0.5" value="4"><span class="val" id="RRv"></span></div>
+    <div class="row"><label>球心距 r</label><input type="range" id="r4" min="10" max="120" step="1" value="80"><span class="val" id="r4v"></span></div>
+    <div class="seg" id="segE">
+      <button data-s="1" class="on">同种电荷</button>
+      <button data-s="-1">异种电荷</button>
+    </div>
+    <button class="btn" id="p8">预设：r≫R（可视为点电荷）</button>
+    <button class="btn" id="p9">预设：r≈2R（不能）</button>
+  </div>
+  <div class="note"><b>观察要点：</b>当 <b>r 远大于球的半径 R</b> 时，球的大小形状对力的影响可以忽略，两球可视为点电荷，偏差不到 1%。把球靠得很近时，同种电荷被推到<b>远离对方</b>的一侧、异种电荷被拉到<b>靠近对方</b>的一侧，等效电荷中心不再在球心，库仑公式就<b>不准了</b>——这就是"点电荷"模型的适用条件。</div>
+</div>
+
+<footer>人教版高中物理必修第三册 · 可视化交互课件 ｜ 单文件离线运行，双击即可使用</footer>
+</div>
+
+<script>
+(function(){
+'use strict';
+/* ================= 通用工具（与模板一致） ================= */
+var K = 9.0e9;                       // 静电力常量 N·m²/C²
+function $(id){ return document.getElementById(id); }
+function fmt(x, d){
+  if (d === undefined) d = 2;
+  if (!isFinite(x)) return '—';
+  var a = Math.abs(x);
+  if (a >= 10000 || (a > 0 && a < 0.01)) return x.toExponential(2);
+  return (+x.toFixed(d)).toString();
+}
+function fit(cv){
+  var dpr = window.devicePixelRatio || 1;
+  var w = cv.clientWidth, h = cv.clientHeight;
+  cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+  var ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return ctx;
+}
+function bindRange(id, fn){
+  var el = $(id), v = $(id + 'v');
+  function go(){ if (v) v.textContent = el.value; fn(parseFloat(el.value)); }
+  el.addEventListener('input', go); go();
+  return el;
+}
+function arrow(ctx, x1, y1, x2, y2, color, w){
+  ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = w || 2;
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  var a = Math.atan2(y2 - y1, x2 - x1), s = 7;
+  ctx.beginPath(); ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - s * Math.cos(a - 0.42), y2 - s * Math.sin(a - 0.42));
+  ctx.lineTo(x2 - s * Math.cos(a + 0.42), y2 - s * Math.sin(a + 0.42));
+  ctx.closePath(); ctx.fill();
+}
+function begin(id){
+  var cv = $(id); var ctx = fit(cv);
+  return {cv:cv, ctx:ctx, W:cv.clientWidth, H:cv.clientHeight};
+}
+function bg(ctx, W, H){ ctx.fillStyle = '#fbfdff'; ctx.fillRect(0, 0, W, H); }
+function rr(ctx, x, y, w, h, r){
+  r = Math.min(r, w/2, h/2);
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.lineTo(x+w-r, y); ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+  ctx.lineTo(x+w, y+h-r); ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+  ctx.lineTo(x+r, y+h); ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+  ctx.lineTo(x, y+r); ctx.quadraticCurveTo(x, y, x+r, y);
+  ctx.closePath();
+}
+function txt(ctx, s, x, y, color, size, align){
+  ctx.fillStyle = color || '#334155';
+  ctx.font = (size || 12) + 'px "Microsoft YaHei",system-ui,sans-serif';
+  ctx.textAlign = align || 'left'; ctx.textBaseline = 'middle';
+  ctx.fillText(s, x, y);
+}
+function mono(ctx, s, x, y, color, size, align){
+  ctx.fillStyle = color || '#334155';
+  ctx.font = (size || 12) + 'px Consolas,Menlo,monospace';
+  ctx.textAlign = align || 'left'; ctx.textBaseline = 'middle';
+  ctx.fillText(s, x, y);
+}
+function dot(ctx, x, y, r, color){
+  ctx.beginPath(); ctx.arc(x, y, r, 0, 6.2832); ctx.fillStyle = color; ctx.fill();
+}
+function chargeBall(ctx, x, y, r, q, label, sel){
+  var col = q > 0 ? '#dc2626' : (q < 0 ? '#2563eb' : '#94a3b8');
+  if (sel){
+    ctx.beginPath(); ctx.arc(x, y, r + 7, 0, 6.2832);
+    ctx.strokeStyle = '#f59e0b'; ctx.lineWidth = 2; ctx.setLineDash([4, 3]); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  var g = ctx.createRadialGradient(x - r*0.3, y - r*0.3, 1, x, y, r);
+  g.addColorStop(0, q > 0 ? '#fca5a5' : '#93c5fd'); g.addColorStop(1, col);
+  ctx.beginPath(); ctx.arc(x, y, r, 0, 6.2832); ctx.fillStyle = g; ctx.fill();
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.6; ctx.stroke();
+  ctx.fillStyle = '#fff'; ctx.font = 'bold ' + Math.max(11, r*0.95) + 'px system-ui';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.fillText(q > 0 ? '+' : (q < 0 ? '−' : '0'), x, y + 1);
+  if (label) mono(ctx, label, x, y + r + 14, '#475569', 11.5, 'center');
+}
+function segBind(id, cb, attr){
+  var box = $(id), bs = box.getElementsByTagName('button');
+  for (var i = 0; i < bs.length; i++){
+    (function(b){
+      b.addEventListener('click', function(){
+        for (var k = 0; k < bs.length; k++) bs[k].className = '';
+        b.className = 'on';
+        cb(b.getAttribute('data-' + attr));
+      });
+    })(bs[i]);
+  }
+}
+function axis(ctx, x0, y0, x1, y1){
+  ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 1.3;
+  ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y0); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x0, y1); ctx.stroke();
+}
+/* 力：q1,q2 单位 μC，r 单位 m，返回 N（带符号：正=斥力） */
+function force(q1, q2, r){
+  if (r <= 0) return 0;
+  return K * (q1 * 1e-6) * (q2 * 1e-6) / (r * r);
+}
+
+/* ================= 模块 1：库仑定律仿真 ================= */
+var M1 = {q1:5, q2:5, r:0.40};
+var PPM1 = 420;                       // 像素 / 米
+var drag1 = 0;
+function draw1(){
+  var s = begin('cv1'), ctx = s.ctx, W = s.W, H = s.H;
+  bg(ctx, W, H);
+  /* 与万有引力定律类比 */
+  var bx0 = W - 272, by0 = 12, bw0 = 260, bh0 = 48;
+  rr(ctx, bx0, by0, bw0, bh0, 8);
+  ctx.fillStyle = '#eff6ff'; ctx.fill();
+  ctx.strokeStyle = '#bfdbfe'; ctx.lineWidth = 1; ctx.stroke();
+  mono(ctx, '万有引力：F = G·m₁m₂/r²（总是吸引）', bx0 + 10, by0 + 15, '#1e40af', 11.5);
+  mono(ctx, '库仑力　：F = k·q₁q₂/r²（可引可斥）', bx0 + 10, by0 + 33, '#1e40af', 11.5);
+
+  var cx = W/2, cy = H*0.34;
+  var half = M1.r * PPM1 / 2;
+  var x1 = cx - half, x2 = cx + half;
+  var r1 = 11 + Math.min(9, Math.abs(M1.q1)*0.6);
+  var r2 = 11 + Math.min(9, Math.abs(M1.q2)*0.6);
+
+  ctx.setLineDash([4, 4]); ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.moveTo(x1, cy); ctx.lineTo(x2, cy); ctx.stroke();
+  ctx.setLineDash([]);
+  mono(ctx, 'r = ' + M1.r.toFixed(2) + ' m', cx, cy - 26, '#64748b', 12, 'center');
+
+  var F = force(M1.q1, M1.q2, M1.r);        // 带符号：>0 斥力
+  var mag = Math.abs(F);
+  var rep = F > 0;
+  var L = Math.max(10, Math.min(100, 30 * Math.log10(1 + Math.abs(F) * 9)));
+  var cA = M1.q1 > 0 ? '#dc2626' : (M1.q1 < 0 ? '#2563eb' : '#94a3b8');
+  var cB = M1.q2 > 0 ? '#dc2626' : (M1.q2 < 0 ? '#2563eb' : '#94a3b8');
+  if (mag > 1e-12){
+    if (rep){
+      arrow(ctx, x1 - r1 - 4, cy, x1 - r1 - 4 - L, cy, cA, 3);
+      arrow(ctx, x2 + r2 + 4, cy, x2 + r2 + 4 + L, cy, cB, 3);
+      txt(ctx, 'F', x1 - r1 - 12 - L, cy - 14, cA, 13, 'center');
+      txt(ctx, 'F', x2 + r2 + 12 + L, cy - 14, cB, 13, 'center');
+    } else {
+      arrow(ctx, x1 + r1 + 4, cy, x1 + r1 + 4 + L, cy, cA, 3);
+      arrow(ctx, x2 - r2 - 4, cy, x2 - r2 - 4 - L, cy, cB, 3);
+      txt(ctx, 'F', x1 + r1 + 12 + L, cy - 14, cA, 13, 'center');
+      txt(ctx, 'F', x2 - r2 - 12 - L, cy - 14, cB, 13, 'center');
+    }
+  }
+  chargeBall(ctx, x1, cy, r1, M1.q1, 'q₁=' + fmt(M1.q1,1) + ' μC', drag1 === 1);
+  chargeBall(ctx, x2, cy, r2, M1.q2, 'q₂=' + fmt(M1.q2,1) + ' μC', drag1 === 2);
+
+  /* 线性比例色条 */
+  var by = H - 96, bw = W - 60, bh = 26;
+  var Fref = Math.abs(force(10, 10, 0.10));        // 全程最大可能值
+  var frac = Math.max(0, Math.min(1, mag / (Fref || 1)));
+  rr(ctx, 30, by, bw, bh, 6);
+  ctx.fillStyle = '#f1f5f9'; ctx.fill();
+  ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1; ctx.stroke();
+  if (frac > 0){
+    rr(ctx, 30, by, Math.max(2, bw*frac), bh, 6);
+    ctx.fillStyle = rep ? 'rgba(220,38,38,.75)' : 'rgba(37,99,235,.75)'; ctx.fill();
+  }
+  txt(ctx, 'F（真实比例）', 30, by - 12, '#64748b', 11.5);
+  mono(ctx, fmt(mag, 3) + ' N', 30 + bw, by - 12, rep ? '#b91c1c' : '#1d4ed8', 12.5, 'right');
+
+  /* 读数板 */
+  var py = H - 52;
+  rr(ctx, 14, py, W - 28, 42, 8);
+  ctx.fillStyle = '#f8fafc'; ctx.fill();
+  ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1; ctx.stroke();
+  var dir = mag < 1e-12 ? '无力（有电荷为 0）' : (rep ? '同号 → 斥力（沿连线向外）' : '异号 → 引力（沿连线向内）');
+  mono(ctx, 'F = k·q₁q₂/r² = 9.0×10⁹ × (' + fmt(M1.q1,1) + '×10⁻⁶)×(' + fmt(M1.q2,1) +
+       '×10⁻⁶) / ' + M1.r.toFixed(2) + '² = ' + fmt(mag, 3) + ' N', 26, py + 14, '#334155', 12.5);
+  txt(ctx, dir, 26, py + 31, rep ? '#b91c1c' : '#1d4ed8', 12.5);
+  txt(ctx, '箭头长度按对数缩放只为看得清，大小请看色条与数值', W - 26, py + 31, '#94a3b8', 11.5, 'right');
+}
+function rFromX(mx, cx){
+  var v = Math.abs(mx - cx) * 2 / PPM1;
+  return Math.max(0.10, Math.min(1.00, v));
+}
+function setR(v){
+  M1.r = v;
+  $('rr').value = Math.round(v * 100);
+  $('rrv').textContent = v.toFixed(2) + ' m';
+}
+(function(){
+  var cv = $('cv1'), down = false;
+  function px(ev){ var b = cv.getBoundingClientRect(); return ev.clientX - b.left; }
+  cv.addEventListener('mousedown', function(ev){
+    var s = {W:cv.clientWidth, H:cv.clientHeight};
+    var half = M1.r * PPM1 / 2, cx = s.W/2, cy = s.H*0.34;
+    var mx = px(ev), my = ev.clientY - cv.getBoundingClientRect().top;
+    var d1 = Math.abs(mx - (cx - half)), d2 = Math.abs(mx - (cx + half));
+    if (Math.abs(my - cy) > 60) return;
+    drag1 = d1 < d2 ? 1 : 2; down = true; draw1();
+  });
+  cv.addEventListener('mousemove', function(ev){
+    if (!down) return;
+    setR(rFromX(px(ev), cv.clientWidth/2));
+    draw1(); draw2();
+  });
+  window.addEventListener('mouseup', function(){ down = false; drag1 = 0; draw1(); });
+})();
+
+/* ================= 模块 2：平方反比 ================= */
+function draw2(){
+  var s = begin('cv2'), ctx = s.ctx, W = s.W, H = s.H;
+  bg(ctx, W, H);
+  var padL = 74, padR = 26, padT = 34, padB = 112;
+  var halfW = (W - padL - padR) / 2;
+  var xA0 = padL, xA1 = padL + halfW - 30;   // 左图
+  var xB0 = padL + halfW + 30, xB1 = W - padR; // 右图
+
+  var prod = Math.abs(M1.q1 * M1.q2);
+  if (prod < 1e-6){
+    txt(ctx, 'q₁ 或 q₂ 为 0，力恒为 0 —— 请把模块 1 的电荷量调大', W/2, H/2, '#b45309', 13, 'center');
+    return;
+  }
+  var rmin = 0.10, rmax = 1.00;
+  var Fmax = force(Math.abs(M1.q1), Math.abs(M1.q2), rmin);
+  var Fmin = force(Math.abs(M1.q1), Math.abs(M1.q2), rmax);
+  var Fr = force(Math.abs(M1.q1), Math.abs(M1.q2), M1.r);
+
+  /* --- 左图：F–r --- */
+  var aY0 = H - padB, aY1 = padT;
+  axis(ctx, xA0, aY0, xA1, aY1);
+  txt(ctx, 'F / N', xA0 - 8, aY1 + 6, '#64748b', 11.5, 'right');
+  txt(ctx, 'r / m', xA1, aY0 + 16, '#64748b', 11.5, 'right');
+  txt(ctx, '① F–r 图：双曲线', (xA0+xA1)/2, padT - 14, '#1e40af', 12.5, 'center');
+  var i, rr0, FF;
+  ctx.strokeStyle = '#0d9488'; ctx.lineWidth = 2.2;
+  ctx.beginPath();
+  for (i = 0; i <= 200; i++){
+    rr0 = rmin + (rmax - rmin) * i / 200;
+    FF = force(Math.abs(M1.q1), Math.abs(M1.q2), rr0);
+    var px = xA0 + (xA1 - xA0) * (rr0 - rmin) / (rmax - rmin);
+    var py = aY0 - (aY0 - aY1) * (FF / Fmax);
+    if (i === 0) ctx.moveTo(px, py); else ctx.lineTo(px, py);
+  }
+  ctx.stroke();
+  for (i = 0; i <= 9; i++){
+    rr0 = rmin + (rmax - rmin) * i / 9;
+    var px2 = xA0 + (xA1 - xA0) * i / 9;
+    mono(ctx, rr0.toFixed(1), px2, aY0 + 16, '#94a3b8', 10.5, 'center');
+  }
+  mono(ctx, '0', xA0 - 8, aY0, '#94a3b8', 10.5, 'right');
+  mono(ctx, fmt(Fmax, 1), xA0 - 8, aY1 + 4, '#94a3b8', 10.5, 'right');
+  function aPX(r){ return xA0 + (xA1 - xA0) * (r - rmin) / (rmax - rmin); }
+  function aPY(F){ return aY0 - (aY0 - aY1) * (F / Fmax); }
+  var wx = aPX(M1.r), wy = aPY(Fr);
+  ctx.setLineDash([3, 3]); ctx.strokeStyle = '#ea580c'; ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.moveTo(wx, aY0); ctx.lineTo(wx, wy); ctx.lineTo(xA0, wy); ctx.stroke();
+  ctx.setLineDash([]);
+  dot(ctx, wx, wy, 6, '#ea580c');
+  mono(ctx, 'F=' + fmt(Fr, 2) + 'N', wx + 8, wy - 12, '#b45309', 11.5);
+  var r2x = M1.r * 2;
+  if (r2x <= rmax){
+    var F2 = Fr / 4;
+    dot(ctx, aPX(r2x), aPY(F2), 5, '#64748b');
+    ctx.setLineDash([3, 3]); ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(aPX(r2x), aY0); ctx.lineTo(aPX(r2x), aPY(F2)); ctx.stroke();
+    ctx.setLineDash([]);
+    txt(ctx, 'r 加倍 → F 变 1/4', aPX(r2x), aPY(F2) - 18, '#475569', 11, 'center');
+  }
+
+  /* --- 右图：双对数 --- */
+  var L0 = Math.log10(rmin), L1 = Math.log10(rmax);
+  var G0 = Math.log10(Fmin * 0.85), G1 = Math.log10(Fmax * 1.15);
+  function bPX(r){ return xB0 + (xB1 - xB0) * (Math.log10(r) - L0) / (L1 - L0); }
+  function bPY(F){ return aY0 - (aY0 - aY1) * (Math.log10(Math.max(F, 1e-12)) - G0) / (G1 - G0); }
+  axis(ctx, xB0, aY0, xB1, aY1);
+  txt(ctx, 'log F', xB0 - 8, aY1 + 6, '#64748b', 11.5, 'right');
+  txt(ctx, 'log r', xB1, aY0 + 16, '#64748b', 11.5, 'right');
+  txt(ctx, '② 双对数图：斜率恒为 −2 的直线', (xB0+xB1)/2, padT - 14, '#1e40af', 12.5, 'center');
+  ctx.strokeStyle = '#0d9488'; ctx.lineWidth = 2.2;
+  ctx.beginPath(); ctx.moveTo(bPX(rmin), bPY(Fmax)); ctx.lineTo(bPX(rmax), bPY(Fmin)); ctx.stroke();
+  for (i = -1; i <= 0; i++){
+    var px3 = xB0 + (xB1 - xB0) * (i - L0) / (L1 - L0);
+    mono(ctx, '10^' + i, px3, aY0 + 16, '#94a3b8', 10.5, 'center');
+  }
+  var wbx = bPX(M1.r), wby = bPY(Fr);
+  dot(ctx, wbx, wby, 6, '#ea580c');
+  /* 斜率三角形 */
+  var tx0 = bPX(M1.r), tx1 = bPX(Math.min(rmax, M1.r * 1.8));
+  var ty0 = bPY(Fr), ty1 = bPY(Fr / (1.8*1.8));
+  ctx.strokeStyle = 'rgba(234,88,12,.6)'; ctx.lineWidth = 1.4;
+  ctx.setLineDash([4, 3]);
+  ctx.beginPath(); ctx.moveTo(tx0, ty0); ctx.lineTo(tx1, ty0); ctx.lineTo(tx1, ty1); ctx.stroke();
+  ctx.setLineDash([]);
+  txt(ctx, '斜率 = ΔlogF / Δlogr = −2', (xB0 + xB1)/2, aY1 + 26, '#b45309', 12, 'center');
+  txt(ctx, '工作点（与模块 1 联动）', wbx, wby - 16, '#b45309', 11, 'center');
+
+  /* 底部数据表：验证 F·r² 恒定 */
+  var ty = H - 100;
+  txt(ctx, '③ 算一算：把 F 乘上 r²，结果还变吗？', 30, ty - 8, '#1e40af', 12.5);
+  txt(ctx, 'F·r² = k·q₁q₂（与 r 无关）', W - 30, ty - 8, '#0f766e', 12, 'right');
+  var nc = 5, cellW = (W - 60) / nc;
+  for (var c2 = 0; c2 < nc; c2++){
+    var rv = 0.20 + 0.20 * c2;
+    var fv = force(Math.abs(M1.q1), Math.abs(M1.q2), rv);
+    var prodv = fv * rv * rv;
+    var near = Math.abs(rv - M1.r) < 0.06;
+    rr(ctx, 30 + c2*cellW + 3, ty + 6, cellW - 6, 60, 6);
+    ctx.fillStyle = near ? '#fff7ed' : '#f8fafc'; ctx.fill();
+    ctx.strokeStyle = near ? '#fdba74' : '#e2e8f0'; ctx.lineWidth = near ? 1.8 : 1; ctx.stroke();
+    var ccx = 30 + c2*cellW + cellW/2;
+    mono(ctx, 'r = ' + rv.toFixed(2) + ' m', ccx, ty + 19, '#64748b', 11, 'center');
+    mono(ctx, 'F = ' + fmt(fv, 3) + ' N', ccx, ty + 34, near ? '#b45309' : '#334155', 11, 'center');
+    mono(ctx, 'F·r² = ' + fmt(prodv, 3), ccx, ty + 49, '#0f766e', 11, 'center');
+  }
+}
+
+/* ================= 模块 3：静电力叠加 ================= */
+var M3 = {Q1:8, Q2:-5, q0:2, px:60};
+var PPM3 = 360;
+var x1p = 0.20, x2p = 0.72;         // 两个场源在画布上的横向比例
+var drag3 = false;
+function pos3(W){ return W * M3.px / 100; }
+function srcPx(W, p){ return W * p; }
+function fOnTest(W, H){
+  var xs = srcPx(W, x1p), xt = srcPx(W, x2p), xp = pos3(W);
+  var yl = H * 0.30;
+  var r1 = Math.max(0.02, Math.abs(xp - xs) / PPM3);
+  var r2 = Math.max(0.02, Math.abs(xp - xt) / PPM3);
+  var f1 = force(M3.Q1, M3.q0, r1);      // >0 表示 q0 被 Q1 推开
+  var f2 = force(M3.Q2, M3.q0, r2);
+  var d1 = (xp - xs) >= 0 ? 1 : -1;      // 斥力方向（背离 Q1）
+  var d2 = (xp - xt) >= 0 ? 1 : -1;
+  return {xs:xs, xt:xt, xp:xp, yl:yl, r1:r1, r2:r2,
+          f1x: f1 * d1, f2x: f2 * d2, fx: f1*d1 + f2*d2};
+}
+function draw3(){
+  var s = begin('cv3'), ctx = s.ctx, W = s.W, H = s.H;
+  bg(ctx, W, H);
+  var f = fOnTest(W, H);
+  var yl = f.yl;
+  ctx.setLineDash([4, 4]); ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.moveTo(20, yl); ctx.lineTo(W - 20, yl); ctx.stroke();
+  ctx.setLineDash([]);
+
+  chargeBall(ctx, f.xs, yl, 18, M3.Q1, 'Q₁=' + fmt(M3.Q1,1) + ' μC');
+  chargeBall(ctx, f.xt, yl, 18, M3.Q2, 'Q₂=' + fmt(M3.Q2,1) + ' μC');
+
+  /* 试探电荷 */
+  var q0c = M3.q0 > 0 ? '#ea580c' : '#0ea5e9';
+  dot(ctx, f.xp, yl, 10, q0c);
+  ctx.strokeStyle = '#fff'; ctx.lineWidth = 1.6;
+  ctx.beginPath(); ctx.arc(f.xp, yl, 10, 0, 6.2832); ctx.stroke();
+  mono(ctx, 'q₀=' + fmt(M3.q0,1) + ' μC', f.xp, yl - 26, '#b45309', 11.5, 'center');
+  mono(ctx, 'r₁=' + f.r1.toFixed(2) + ' m', (f.xs + f.xp)/2, yl + 34, '#64748b', 11, 'center');
+  mono(ctx, 'r₂=' + f.r2.toFixed(2) + ' m', (f.xt + f.xp)/2, yl + 34, '#64748b', 11, 'center');
+
+  /* 力的矢量 */
+  var m1 = Math.abs(f.f1x), m2 = Math.abs(f.f2x), mr = Math.abs(f.fx);
+  var mx = Math.max(m1, m2, mr);
+  if (mx > 1e-9){
+    var sc = 118 / mx;
+    var L1 = m1 * sc, L2 = m2 * sc;
+    var u1 = f.f1x >= 0 ? 1 : -1, u2 = f.f2x >= 0 ? 1 : -1;
+    var yv = yl + 66;
+    ctx.strokeStyle = 'rgba(100,116,139,.35)'; ctx.lineWidth = 1;
+    ctx.setLineDash([3, 3]);
+    ctx.beginPath(); ctx.moveTo(f.xp, yl); ctx.lineTo(f.xp, yv); ctx.stroke();
+    ctx.setLineDash([]);
+    /* 平行四边形 */
+    var p1x = f.xp + u1*L1, p2x = f.xp + u2*L2, prx = f.xp + u1*L1 + u2*L2;
+    ctx.strokeStyle = 'rgba(13,148,136,.55)'; ctx.lineWidth = 1.4;
+    ctx.setLineDash([5, 4]);
+    ctx.beginPath(); ctx.moveTo(p1x, yv); ctx.lineTo(prx, yv);
+    ctx.moveTo(p2x, yv); ctx.lineTo(prx, yv); ctx.stroke();
+    ctx.setLineDash([]);
+    arrow(ctx, f.xp, yv, p1x, yv, '#2563eb', 2.4);
+    arrow(ctx, f.xp, yv, p2x, yv, '#7c3aed', 2.4);
+    arrow(ctx, f.xp, yv, prx, yv, '#dc2626', 3.2);
+    txt(ctx, 'F₁', (f.xp + p1x)/2, yv - 14, '#2563eb', 12, 'center');
+    txt(ctx, 'F₂', (f.xp + p2x)/2, yv - 14, '#7c3aed', 12, 'center');
+    txt(ctx, 'F合', (f.xp + prx)/2, yv + 16, '#dc2626', 12.5, 'center');
+  }
+
+  /* 读数板 */
+  var py = H - 58;
+  rr(ctx, 14, py, W - 28, 46, 8);
+  ctx.fillStyle = '#f8fafc'; ctx.fill();
+  ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1; ctx.stroke();
+  mono(ctx, 'F₁ = k·Q₁q₀/r₁² = ' + fmt(m1, 3) + ' N（' + (u1 > 0 ? '向右' : '向左') + '）    ｜    ' +
+       'F₂ = k·Q₂q₀/r₂² = ' + fmt(m2, 3) + ' N（' + (u2 > 0 ? '向右' : '向左') + '）',
+       26, py + 15, '#334155', 12.5);
+  var zero = mr < Math.max(m1, m2) * 0.02;
+  var msg = (m1 < 1e-12 && m2 < 1e-12) ? '场源或试探电荷为 0，两个力都为 0'
+                 : zero ? 'F₁ 与 F₂ 等大反向 → 合力 ≈ 0（此处场强为零）'
+                 : '合力 F = F₁ + F₂（矢量和）= ' + fmt(mr, 3) + ' N，方向' + (f.fx > 0 ? '向右' : '向左');
+  txt(ctx, msg, 26, py + 33, zero ? '#059669' : '#b45309', 12.5);
+  txt(ctx, '提示：直接在画布上左右拖动橙色试探电荷', W - 26, py + 33, '#94a3b8', 11.5, 'right');
+}
+function findZero(){
+  var W = 600, H = 380;
+  var xs = srcPx(W, x1p), xt = srcPx(W, x2p);
+  function ex(x){
+    var r1 = Math.max(0.02, Math.abs(x - xs)/PPM3), r2 = Math.max(0.02, Math.abs(x - xt)/PPM3);
+    var e1 = K * (M3.Q1*1e-6) / (r1*r1) * ((x - xs) >= 0 ? 1 : -1);
+    var e2 = K * (M3.Q2*1e-6) / (r2*r2) * ((x - xt) >= 0 ? 1 : -1);
+    return e1 + e2;
+  }
+  var lo = 20, hi = W - 20, best = null, prev = ex(lo), prevx = lo;
+  for (var x = lo; x <= hi; x += 1){
+    var cur = ex(x);
+    if (prev * cur < 0){
+      best = prevx + (x - prevx) * Math.abs(prev) / (Math.abs(prev) + Math.abs(cur));
+      break;
+    }
+    prev = cur; prevx = x;
+  }
+  if (best === null){
+    var bm = Infinity;
+    for (var t = 30; t < W - 30; t += 2){
+      var v = Math.abs(ex(t));
+      if (v < bm){ bm = v; best = t; }
+    }
+  }
+  M3.px = Math.max(4, Math.min(96, best / W * 100));
+  $('px').value = Math.round(M3.px);
+  $('pxv').textContent = Math.round(M3.px) + '%';
+  draw3();
+}
+(function(){
+  var cv = $('cv3'), down = false;
+  cv.addEventListener('mousedown', function(ev){
+    var b = cv.getBoundingClientRect();
+    var mx = ev.clientX - b.left;
+    var xs = srcPx(cv.clientWidth, x1p), xt = srcPx(cv.clientWidth, x2p);
+    if (Math.abs(mx - xs) < 24 || Math.abs(mx - xt) < 24) return;
+    down = true;
+    M3.px = Math.max(4, Math.min(96, mx / cv.clientWidth * 100));
+    $('px').value = Math.round(M3.px); $('pxv').textContent = Math.round(M3.px) + '%';
+    draw3();
+  });
+  cv.addEventListener('mousemove', function(ev){
+    if (!down) return;
+    var b = cv.getBoundingClientRect();
+    M3.px = Math.max(4, Math.min(96, (ev.clientX - b.left) / cv.clientWidth * 100));
+    $('px').value = Math.round(M3.px); $('pxv').textContent = Math.round(M3.px) + '%';
+    draw3();
+  });
+  window.addEventListener('mouseup', function(){ down = false; });
+})();
+
+/* ================= 模块 4：点电荷模型 ================= */
+var M4 = {R:0.04, r:0.80, same:1};
+var PPM4 = 380;
+function draw4(){
+  var s = begin('cv4'), ctx = s.ctx, W = s.W, H = s.H;
+  bg(ctx, W, H);
+  var rMin = 2*M4.R + 0.03;
+  var rEff = Math.max(M4.r, rMin);
+  var cx = W/2, cy = H*0.40;
+  var Rp = M4.R * PPM4;
+  var half = rEff * PPM4 / 2;
+  var x1 = cx - half, x2 = cx + half;
+
+  /* 两球（左球恒为正；右球同号为正、异号为负） */
+  var g1 = ctx.createRadialGradient(x1 - Rp*0.3, cy - Rp*0.3, 2, x1, cy, Rp);
+  g1.addColorStop(0, '#f8fafc'); g1.addColorStop(1, '#e2e8f0');
+  ctx.beginPath(); ctx.arc(x1, cy, Rp, 0, 6.2832); ctx.fillStyle = g1; ctx.fill();
+  ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 1.8; ctx.stroke();
+  var g2 = ctx.createRadialGradient(x2 - Rp*0.3, cy - Rp*0.3, 2, x2, cy, Rp);
+  g2.addColorStop(0, '#f8fafc'); g2.addColorStop(1, '#e2e8f0');
+  ctx.beginPath(); ctx.arc(x2, cy, Rp, 0, 6.2832); ctx.fillStyle = g2; ctx.fill();
+  ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 1.8; ctx.stroke();
+  surfaceDots(ctx, x1, cy, Rp, -1);
+  surfaceDots(ctx, x2, cy, Rp, 1);
+
+  /* 力：点电荷公式 vs 实际 */
+  var q = 5;
+  var Fp = force(q, q * M4.same, rEff);
+  var dev = 3 * Math.pow(M4.R / rEff, 3);         // 相对偏差（绝对值）
+  var Fact = Math.abs(Fp) * (1 - M4.same * dev);
+  var devPct = dev * 100;
+  var ok = devPct < 5;
+
+  var yv = cy + Rp + 46;
+  ctx.setLineDash([4, 4]); ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.moveTo(x1, cy - Rp - 8); ctx.lineTo(x2, cy - Rp - 8); ctx.stroke();
+  ctx.setLineDash([]);
+  mono(ctx, '球心距 r = ' + rEff.toFixed(2) + ' m    半径 R = ' + M4.R.toFixed(2) + ' m    r/R = ' +
+       (rEff / M4.R).toFixed(1), cx, cy - Rp - 24, '#64748b', 12, 'center');
+
+  var Lp = Math.max(12, Math.min(92, 30 * Math.log10(1 + Math.abs(Fp) * 9)));
+  var La = Lp * (Fact / Math.abs(Fp));
+  var cF = M4.same > 0 ? '#dc2626' : '#2563eb';
+  if (M4.same > 0){
+    arrow(ctx, x1 - Rp - 4, yv, x1 - Rp - 4 - Lp, yv, 'rgba(148,163,184,.9)', 2.2);
+    arrow(ctx, x1 - Rp - 4, yv + 22, x1 - Rp - 4 - La, yv + 22, cF, 2.6);
+    txt(ctx, '按点电荷公式', x1 - Rp - 10 - Lp, yv - 14, '#94a3b8', 11, 'center');
+    txt(ctx, '真实值', x1 - Rp - 10 - La, yv + 36, cF, 11, 'center');
+  } else {
+    arrow(ctx, x1 + Rp + 4, yv, x1 + Rp + 4 + Lp, yv, 'rgba(148,163,184,.9)', 2.2);
+    arrow(ctx, x1 + Rp + 4, yv + 22, x1 + Rp + 4 + La, yv + 22, cF, 2.6);
+    txt(ctx, '按点电荷公式', x1 + Rp + 10 + Lp, yv - 14, '#94a3b8', 11, 'center');
+    txt(ctx, '真实值', x1 + Rp + 10 + La, yv + 36, cF, 11, 'center');
+  }
+
+  /* 读数板 */
+  var py = H - 52;
+  rr(ctx, 14, py, W - 28, 42, 8);
+  ctx.fillStyle = '#f8fafc'; ctx.fill();
+  ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1; ctx.stroke();
+  mono(ctx, '点电荷公式 F = kq₁q₂/r² = ' + fmt(Math.abs(Fp), 3) +
+       ' N     实际（考虑电荷分布偏移）≈ ' + fmt(Fact, 3) + ' N', 26, py + 14, '#334155', 12.5);
+  txt(ctx, '偏差 ' + devPct.toFixed(1) + '%　→　' +
+      (ok ? 'r ≫ R，两球可以视为点电荷 ✔' : 'r 与 R 差不多大，不能当成点电荷 ✘'),
+      26, py + 33, ok ? '#059669' : '#b45309', 12.5);
+  txt(ctx, M4.same > 0 ? '同种电荷被推到远离对方的一侧 → 实际力偏小'
+                       : '异种电荷被拉到靠近对方的一侧 → 实际力偏大',
+      W - 26, py + 33, '#64748b', 11.5, 'right');
+}
+function surfaceDots(ctx, x0, cy, Rp, dirx){
+  // dirx = +1 表示该球在右边（对方在左边，靠对方一侧朝 -x）
+  for (var i = 0; i < 30; i++){
+    var ang = -Math.PI/2 + Math.PI * i / 29;
+    var facing = -dirx;                        // 指向对方的单位方向（x 分量）
+    var toward = (Math.cos(ang) * facing);     // >0 表示朝向对方
+    var dens = M4.same > 0 ? (0.15 + 0.85 * (1 - toward) / 2)
+                           : (0.15 + 0.85 * (1 + toward) / 2);
+    if (dens < 0.25) continue;
+    var px = x0 + (Rp + 5) * Math.cos(ang);
+    var py = cy + (Rp + 5) * Math.sin(ang);
+    var col = (dirx > 0) ? (M4.same > 0 ? '#dc2626' : '#2563eb') : '#dc2626';
+    dot(ctx, px, py, 1.8 + 2.0 * dens, col);
+  }
+}
+
+/* ================= 事件绑定 ================= */
+bindRange('q1', function(v){ M1.q1 = v; $('q1v').textContent = fmt(v,1) + ' μC'; draw1(); draw2(); });
+bindRange('q2', function(v){ M1.q2 = v; $('q2v').textContent = fmt(v,1) + ' μC'; draw1(); draw2(); });
+bindRange('rr', function(v){ M1.r = v/100; $('rrv').textContent = (v/100).toFixed(2) + ' m'; draw1(); draw2(); });
+
+function preset1(a, b, r){
+  $('q1').value = a; $('q2').value = b; $('rr').value = Math.round(r*100);
+  M1.q1 = a; M1.q2 = b; M1.r = r;
+  $('q1v').textContent = fmt(a,1) + ' μC';
+  $('q2v').textContent = fmt(b,1) + ' μC';
+  $('rrv').textContent = r.toFixed(2) + ' m';
+  draw1(); draw2();
+}
+$('p1').addEventListener('click', function(){ preset1(5, 5, 0.40); });
+$('p2').addEventListener('click', function(){ preset1(5, -5, 0.40); });
+$('p3').addEventListener('click', function(){ preset1(9, -2, 0.50); });
+$('p4').addEventListener('click', function(){ setR(Math.min(1.00, M1.r * 2)); draw1(); draw2(); });
+$('p5').addEventListener('click', function(){ setR(0.40); draw1(); draw2(); });
+
+bindRange('Q1', function(v){ M3.Q1 = v; $('Q1v').textContent = fmt(v,1) + ' μC'; draw3(); });
+bindRange('Q2', function(v){ M3.Q2 = v; $('Q2v').textContent = fmt(v,1) + ' μC'; draw3(); });
+bindRange('q0', function(v){ M3.q0 = v; $('q0v').textContent = fmt(v,1) + ' μC'; draw3(); });
+bindRange('px', function(v){ M3.px = v; $('pxv').textContent = Math.round(v) + '%'; draw3(); });
+$('p6').addEventListener('click', findZero);
+$('p7').addEventListener('click', function(){
+  $('Q1').value = 6; $('Q2').value = 6;
+  M3.Q1 = 6; M3.Q2 = 6;
+  $('Q1v').textContent = '6.0 μC'; $('Q2v').textContent = '6.0 μC';
+  draw3();
+});
+
+segBind('segE', function(v){ M4.same = parseInt(v, 10); draw4(); }, 's');
+bindRange('RR', function(v){ M4.R = v/100; $('RRv').textContent = (v/100).toFixed(2) + ' m'; draw4(); });
+bindRange('r4', function(v){ M4.r = v/100; $('r4v').textContent = (v/100).toFixed(2) + ' m'; draw4(); });
+$('p8').addEventListener('click', function(){
+  $('RR').value = 3; $('r4').value = 110;
+  M4.R = 0.03; M4.r = 1.10;
+  $('RRv').textContent = '0.03 m'; $('r4v').textContent = '1.10 m'; draw4();
+});
+$('p9').addEventListener('click', function(){
+  $('RR').value = 12; $('r4').value = 27;
+  M4.R = 0.12; M4.r = 0.27;
+  $('RRv').textContent = '0.12 m'; $('r4v').textContent = '0.27 m'; draw4();
+});
+
+window.addEventListener('resize', function(){ draw1(); draw2(); draw3(); draw4(); });
+draw1(); draw2(); draw3(); draw4();
+})();
+</script>
+</body>
+</html>

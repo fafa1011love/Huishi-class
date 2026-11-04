@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<title>19.2–19.3 二次根式的乘除与加减 · 课堂演示</title>
+<style>
+  *{margin:0;padding:0;box-sizing:border-box}
+  body{font-family:"Microsoft YaHei","PingFang SC",sans-serif;background:#f4f7fb;color:#1e293b;padding:14px 22px 34px}
+  h1{font-size:27px;text-align:center}
+  .subtitle{text-align:center;color:#64748b;font-size:15px;margin:2px 0 12px}
+
+  /* ================= 数学排版组件（根号完整覆盖 / 分式横杠） ================= */
+  .sqrt{
+    display:inline-flex; align-items:stretch; vertical-align:-0.08em;
+    margin:0 .06em; white-space:nowrap;
+  }
+  .sqrt>.surd{
+    width:.6em; flex:none; height:auto; display:block;
+    margin-right:-2px; color:currentColor;
+  }
+  .sqrt>.rad{
+    border-top:2.2px solid currentColor;
+    padding:0 .16em 0 .12em; line-height:1.22; display:inline-block;
+  }
+  .frac{
+    display:inline-flex; flex-direction:column; align-items:center;
+    vertical-align:middle; font-size:.88em; line-height:1.1; margin:0 .16em;
+  }
+  .frac>.num{border-bottom:2.2px solid currentColor;padding:0 .3em .05em;display:block}
+  .frac>.den{padding:.05em .3em 0;display:block}
+  .i{font-family:"Cambria Math","Times New Roman",serif;font-style:italic}
+
+  /* ================= 知识点卡片 ================= */
+  .formulas{display:flex;gap:12px;justify-content:center;flex-wrap:wrap;margin-bottom:14px}
+  .fcard{background:#fff;border-radius:12px;padding:9px 18px;box-shadow:0 2px 8px rgba(15,23,42,.08);
+         border-top:4px solid #3b82f6;text-align:center;min-width:215px}
+  .fcard:nth-child(2){border-top-color:#10b981}
+  .fcard:nth-child(3){border-top-color:#f59e0b}
+  .fcard:nth-child(4){border-top-color:#8b5cf6}
+  .fcard .t{font-size:14px;color:#64748b}
+  .fcard .f{font-size:21px;font-weight:bold;margin-top:3px}
+
+  /* ================= 选项卡 ================= */
+  .tabs{display:flex;gap:8px;justify-content:center;margin-bottom:14px;flex-wrap:wrap}
+  .tab{padding:9px 20px;border-radius:10px 10px 0 0;background:#e2e8f0;color:#475569;
+       font-size:16.5px;font-weight:bold;cursor:pointer;border:none;font-family:inherit;transition:.2s}
+  .tab.on{background:#3b82f6;color:#fff}
+
+  .panel{background:#fff;border-radius:0 14px 14px 14px;box-shadow:0 2px 10px rgba(15,23,42,.08);
+         padding:18px 26px 22px;max-width:1000px;margin:0 auto 14px;display:none}
+  .panel.on{display:block}
+  .panel h2{font-size:20px;color:#334155;margin-bottom:6px}
+  .panel h2 span{color:#3b82f6}
+
+  /* ================= 控制条 ================= */
+  .controls{display:flex;gap:10px;justify-content:center;margin:10px 0 8px;flex-wrap:wrap}
+  button.btn{font-size:16.5px;padding:8px 18px;border:none;border-radius:9px;background:#3b82f6;
+             color:#fff;cursor:pointer;transition:.2s;font-family:inherit}
+  button.btn:hover{filter:brightness(1.08);transform:translateY(-1px)}
+  button.btn:disabled{background:#cbd5e1;cursor:not-allowed;transform:none}
+  button.btn.ghost{background:#fff;color:#3b82f6;border:2px solid #3b82f6}
+  button.btn.play{background:#10b981}
+  button.btn.play.playing{background:#f59e0b}
+  button.btn.all{background:#7c3aed}
+  .stepbar{text-align:center;font-size:15.5px;color:#475569;margin-bottom:9px}
+  .stepbar b{color:#ef4444;font-size:18px}
+  .dots{display:flex;gap:8px;justify-content:center;margin-bottom:7px}
+  .dot{width:12px;height:12px;border-radius:50%;background:#cbd5e1;transition:.3s}
+  .dot.on{background:#3b82f6;transform:scale(1.25)}
+
+  /* ================= 分步推导（保留做题痕迹） ================= */
+  .alg{font-size:27px;line-height:2.2;font-family:"Cambria Math","Times New Roman","Microsoft YaHei",serif;
+       padding:6px 8px;background:#fcfdff;border-radius:10px}
+  .alg .ln{display:flex;align-items:center;gap:14px;padding:3px 12px;border-radius:8px;
+           opacity:.28;transition:opacity .55s,background .55s,transform .55s}
+  .alg .ln.done{opacity:1}
+  .alg .ln.cur{background:#fef9c3;transform:translateX(4px);box-shadow:inset 3px 0 0 #f59e0b}
+  .alg .ln .why{font-size:14px;color:#94a3b8;font-family:"Microsoft YaHei",sans-serif;white-space:nowrap}
+  .alg .ln.done .why{color:#64748b}
+
+  .hl-b{color:#2563eb;font-weight:bold}
+  .hl-g{color:#059669;font-weight:bold}
+  .hl-o{color:#d97706;font-weight:bold}
+  .hl-p{color:#7c3aed;font-weight:bold}
+  .hl-r{color:#16a34a;font-weight:bold}
+
+  .stepdesc{min-height:50px;background:#f1f5f9;border-left:5px solid #3b82f6;border-radius:8px;
+            padding:9px 14px;font-size:16.5px;line-height:1.6;margin:6px 0 10px}
+  .answer{margin-top:10px;text-align:center;font-size:27px;font-weight:bold;color:#fff;
+          background:linear-gradient(90deg,#15803d,#22c55e);border-radius:12px;padding:9px 16px;
+          opacity:0;transform:scale(.92);transition:.7s;
+          font-family:"Cambria Math","Times New Roman","Microsoft YaHei",serif}
+  .answer.show{opacity:1;transform:scale(1);animation:pulse 1.6s ease-in-out .7s infinite}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,.45)}50%{box-shadow:0 0 0 14px rgba(34,197,94,0)}}
+
+  /* ================= 例题 / 变式留痕 ================= */
+  .trace{background:#f8fafc;border:1px dashed #cbd5e1;border-radius:10px;padding:12px 16px;margin-top:14px}
+  .trace h3{font-size:16.5px;color:#475569;margin-bottom:6px}
+  .trace h3 b{color:#7c3aed}
+  .trace .line{font-size:23px;line-height:2.1;font-family:"Cambria Math","Times New Roman",serif;color:#334155}
+  .trace .line em{font-size:14px;color:#94a3b8;font-style:normal;font-family:"Microsoft YaHei",sans-serif;margin-left:10px}
+
+  .note{background:#eff6ff;border-left:4px solid #3b82f6;border-radius:8px;padding:10px 14px;
+        font-size:15.5px;line-height:1.8;margin-top:12px;color:#334155}
+
+  /* ================= 实验区 ================= */
+  .expwrap{display:flex;gap:20px;align-items:flex-start;flex-wrap:wrap;justify-content:center}
+  .expbox{background:#f8fafc;border:1px solid #e2e8f0;border-radius:12px;padding:10px}
+  .expinfo{max-width:330px;font-size:16px;line-height:1.9;color:#334155}
+  .expinfo .big{font-size:25px;font-family:"Cambria Math","Times New Roman",serif;
+                color:#16a34a;font-weight:bold;margin-top:6px;display:block}
+  .pick{font-size:16px;padding:6px 16px}
+  .pick.on{background:#3b82f6;color:#fff;box-shadow:0 0 0 3px #bfdbfe}
+
+  /* 单位条实验 */
+  .barrow{display:flex;align-items:center;gap:6px;margin:10px 0;min-height:38px}
+  .barrow .cap{font-size:16px;color:#475569;width:150px;text-align:right;flex:none}
+  .bar{width:74px;height:30px;border-radius:6px;display:flex;align-items:center;justify-content:center;
+       color:#fff;font-size:14px;font-family:"Cambria Math","Times New Roman",serif;
+       transition:opacity .6s,transform .6s}
+  .bar.g{background:#10b981}
+  .bar.o{background:#f59e0b}
+  .fade0{opacity:0;transform:translateX(-12px)}
+  #g1,#g2{display:inline-flex;gap:6px;white-space:nowrap}
+  .grow{width:0;overflow:hidden;transition:width .9s ease}
+  .grow.full{width:auto}
+  .tip{text-align:center;color:#94a3b8;font-size:14px;margin-top:10px}
+</style>
+</head>
+<body>
+
+<h1>19.2–19.3 二次根式的乘除与加减</h1>
+<div class="subtitle">乘除法则 · 最简二次根式 · 分母有理化 · 合并同类二次根式</div>
+
+<div class="formulas">
+  <div class="fcard"><div class="t">乘除法则</div>
+    <div class="f"><span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">a</span></span>·
+      <span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">b</span></span>=
+      <span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">ab</span></span></div></div>
+  <div class="fcard"><div class="t">最简二次根式</div>
+    <div class="f" style="font-size:17px;line-height:1.6">被开方数<b style="color:#10b981">不含分母</b><br>且<b style="color:#ef4444">不含能开尽方的因数</b></div></div>
+  <div class="fcard"><div class="t">分母有理化</div>
+    <div class="f"><span class="frac"><span class="num">1</span><span class="den"><span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">2</span></span></span></span>
+      =<span class="frac"><span class="num"><span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">2</span></span></span><span class="den">2</span></span></div></div>
+  <div class="fcard"><div class="t">合并同类二次根式</div>
+    <div class="f">2<span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">2</span></span>+3<span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">2</span></span>=5<span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">2</span></span></div></div>
+</div>
+
+<div class="tabs">
+  <button class="tab on" data-p="p1">① 分母有理化</button>
+  <button class="tab" data-p="p2">② 化简与合并</button>
+  <button class="tab" data-p="p3">③ 实验·拼方块</button>
+  <button class="tab" data-p="p4">④ 实验·单位条</button>
+</div>
+
+<!-- ==================== 面板 1 ==================== -->
+<section class="panel on" id="p1">
+  <h2>① 分母有理化：把 <span><span class="frac"><span class="num">1</span><span class="den"><span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">2</span></span></span></span></span> 化成最简二次根式</h2>
+  <div class="controls">
+    <button class="btn ghost" id="p1Prev">◀ 上一步</button>
+    <button class="btn" id="p1Next">下一步 ▶</button>
+    <button class="btn play" id="p1Play">▶ 自动播放</button>
+    <button class="btn all" id="p1All">⏩ 一步到位</button>
+    <button class="btn ghost" id="p1Reset">↺ 重置</button>
+  </div>
+  <div class="dots" id="p1Dots"></div>
+  <div class="stepbar">当前步骤：<b id="p1Num">0</b> / 3　<span id="p1Name">初始状态</span></div>
+  <div class="stepdesc" id="p1Desc">分母里含有根号，就不是最简二次根式。点击「下一步」，看清每一步的依据。</div>
+
+  <div class="alg">
+    <span class="ln" id="p1l1">
+      <span>原式 =<span class="frac"><span class="num">1</span><span class="den"><span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">2</span></span></span></span></span>
+      <span class="why">分母含根号 ✗</span>
+    </span>
+    <span class="ln" id="p1l2">
+      <span>=<span class="frac"><span class="num">1 × <span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">2</span></span></span>
+        <span class="den"><span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">2</span></span> × <span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">2</span></span></span></span></span>
+      <span class="why">分子、分母同乘 <span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">2</span></span>（分式基本性质）</span>
+    </span>
+    <span class="ln" id="p1l3">
+      <span>=<span class="frac"><span class="num"><span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">2</span></span></span><span class="den">2</span></span></span>
+      <span class="why"><span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">2</span></span> × <span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">2</span></span> = 2，分母无根号 ✓</span>
+    </span>
+  </div>
+
+  <div class="answer" id="p1Ans">
+    <span class="frac" style="font-size:.82em"><span class="num">1</span><span class="den"><span class="sqrt" style="color:#fff"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad" style="border-top-color:#fff">2</span></span></span></span>
+    =<span class="frac" style="font-size:.82em"><span class="num"><span class="sqrt" style="color:#fff"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad" style="border-top-color:#fff">2</span></span></span><span class="den">2</span></span> ✔
+  </div>
+
+  <div class="trace">
+    <h3><b>变式（完整留下做题痕迹）</b>：把 4/√8 分母有理化</h3>
+    <div class="line">4/<span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">8</span></span>
+      =<span class="frac"><span class="num">4</span><span class="den">2<span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">2</span></span></span></span><em>① 先化简分母：<span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">8</span></span> = 2<span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">2</span></span></em></div>
+    <div class="line">=<span class="frac"><span class="num">2</span><span class="den"><span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">2</span></span></span></span><em>② 约分：4 ÷ 2 = 2</em></div>
+    <div class="line">=<span class="frac"><span class="num">2 × <span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">2</span></span></span>
+      <span class="den"><span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">2</span></span> × <span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">2</span></span></span></span><em>③ 分子、分母同乘 <span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">2</span></span></em></div>
+    <div class="line">=<span class="frac"><span class="num">2<span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">2</span></span></span><span class="den">2</span></span>
+      =<span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">2</span></span><em>④ <span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">2</span></span> × <span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">2</span></span> = 2，约分得结果</em></div>
+  </div>
+
+  <div class="note">
+    <b>规范化要点：</b>① 分母有理化必须写出「分子、分母同乘 □」，说明依据是<b>分式的基本性质</b>；
+    ② 结果必须检查是否为<b>最简二次根式</b>；③ 若分母本身还能化简（如
+    <span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">8</span></span> = 2<span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">2</span></span>），<b>先化简再有理化</b>，计算更简单。
+  </div>
+</section>
+
+<!-- ==================== 面板 2 ==================== -->
+<section class="panel" id="p2">
+  <h2>② 二次根式的加减（先化简，再合并）</h2>
+  <div class="controls">
+    <button class="btn ghost" id="p2Prev">◀ 上一步</button>
+    <button class="btn" id="p2Next">下一步 ▶</button>
+    <button class="btn play" id="p2Play">▶ 自动播放</button>
+    <button class="btn all" id="p2All">⏩ 一步到位</button>
+    <button class="btn ghost" id="p2Reset">↺ 重置</button>
+  </div>
+  <div class="dots" id="p2Dots"></div>
+  <div class="stepbar">当前步骤：<b id="p2Num">0</b> / 5　<span id="p2Name">初始状态</span></div>
+  <div class="stepdesc" id="p2Desc">加减口诀：<b>一化简、二认同类、三并系数</b>。类比合并同类项 2a + 3a = 5a。</div>
+
+  <div class="alg">
+    <span class="ln" id="p2l1">
+      <span>原式 =<span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">8</span></span>
+        +<span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">18</span></span>
+        −<span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">2</span></span></span>
+      <span class="why">被开方数都含平方因数，先化简</span>
+    </span>
+    <span class="ln" id="p2l2">
+      <span>=<span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">4 × 2</span></span>
+        +<span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">9 × 2</span></span>
+        −<span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">2</span></span></span>
+      <span class="why">8 = 4×2，18 = 9×2（分解出完全平方因数）</span>
+    </span>
+    <span class="ln" id="p2l3">
+      <span>=<span class="hl-b">2</span><span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">2</span></span>
+        +<span class="hl-b">3</span><span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">2</span></span>
+        −<span class="hl-g">1</span><span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">2</span></span></span>
+      <span class="why">把平方因数开出来（乘法法则）</span>
+    </span>
+    <span class="ln" id="p2l4">
+      <span>= (2 + 3 − 1)<span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">2</span></span></span>
+      <span class="why">被开方数都是 2 → 同类二次根式，逆用分配律</span>
+    </span>
+    <span class="ln" id="p2l5">
+      <span>= <span class="hl-r">4</span><span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">2</span></span></span>
+      <span class="why">合并系数 2+3−1 = 4</span>
+    </span>
+  </div>
+
+  <div class="answer" id="p2Ans">
+    <span style="white-space:nowrap"><span class="sqrt" style="color:#fff"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad" style="border-top-color:#fff">8</span></span>
+    +<span class="sqrt" style="color:#fff"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad" style="border-top-color:#fff">18</span></span>
+    −<span class="sqrt" style="color:#fff"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad" style="border-top-color:#fff">2</span></span>
+    = 4<span class="sqrt" style="color:#fff"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad" style="border-top-color:#fff">2</span></span> ✔</span>
+  </div>
+
+  <div class="trace">
+    <h3><b>乘除法则的规范写法</b>（每一步都写清依据）</h3>
+    <div class="line"><span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">2</span></span> ×
+      <span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">8</span></span> =
+      <span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">2 × 8</span></span> =
+      <span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">16</span></span> = 4<em><span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">a</span></span>·<span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">b</span></span> = <span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">ab</span></span></em></div>
+    <div class="line"><span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">24</span></span> ÷
+      <span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">3</span></span> =
+      <span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad"><span class="frac"><span class="num">24</span><span class="den">3</span></span></span></span> =
+      <span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">8</span></span> =
+      2<span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">2</span></span><em><span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">a</span></span> ÷ <span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">b</span></span> = <span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad"><span class="frac"><span class="num">a</span><span class="den">b</span></span></span></span></em></div>
+    <div class="line">3<span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">2</span></span> ×
+      2<span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">5</span></span> =
+      (3×2)<span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">2 × 5</span></span> =
+      6<span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">10</span></span><em>系数乘系数，根式乘根式</em></div>
+  </div>
+
+  <div class="note">
+    <b>易错提醒：</b><span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">a</span></span> +
+    <span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">b</span></span> ≠
+    <span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">a + b</span></span>。如
+    <span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">9</span></span> +
+    <span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">16</span></span> = 3 + 4 = 7，而
+    <span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">25</span></span> = 5。
+    加减只能合并<b>同类二次根式</b>（化简后被开方数相同），合并时只加系数、根号不变。
+  </div>
+</section>
+
+<!-- ==================== 面板 3：拼方块实验 ==================== -->
+<section class="panel" id="p3">
+  <h2>③ 实验一：拼方块 —— 为什么 <span id="expTitle"></span></h2>
+  <div class="controls" id="expPick">
+    <button class="btn ghost pick" data-n="8">8</button>
+    <button class="btn ghost pick on" data-n="12">12</button>
+    <button class="btn ghost pick" data-n="18">18</button>
+    <button class="btn ghost pick" data-n="20">20</button>
+    <button class="btn ghost pick" data-n="32">32</button>
+    <button class="btn ghost pick" data-n="50">50</button>
+    <button class="btn ghost pick" data-n="75">75</button>
+  </div>
+  <div class="controls">
+    <button class="btn ghost" id="p3Prev">◀ 上一步</button>
+    <button class="btn" id="p3Next">下一步 ▶</button>
+    <button class="btn play" id="p3Play">▶ 自动播放</button>
+    <button class="btn ghost" id="p3Reset">↺ 重置</button>
+  </div>
+  <div class="stepbar">当前步骤：<b id="p3Num">0</b> / 3　<span id="p3Name">初始状态</span></div>
+  <div class="stepdesc" id="p3Desc"></div>
+
+  <div class="expwrap">
+    <div class="expbox"><svg id="expSvg" width="640" height="360" viewBox="0 0 640 360"></svg></div>
+    <div class="expinfo" id="expInfo"></div>
+  </div>
+
+  <div class="note">
+    <b>实验原理（不超纲）：</b>面积相等的正方形，边长一定相同——这正是<b>算术平方根</b>的意义。
+    把 n 个小正方形正好拼成 m 个边长为 k 的正方形，就说明 n = m·k²，
+    于是由<b>乘法法则</b>得 √n = k√m，即：完全平方因数被"开"了出来。
+  </div>
+</section>
+
+<!-- ==================== 面板 4：单位条实验 ==================== -->
+<section class="panel" id="p4">
+  <h2>④ 实验二：单位条 —— 为什么 <span>2<span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">2</span></span> + 3<span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">2</span></span> = 5<span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">2</span></span></span></h2>
+  <div class="controls">
+    <button class="btn ghost" id="p4Prev">◀ 上一步</button>
+    <button class="btn" id="p4Next">下一步 ▶</button>
+    <button class="btn play" id="p4Play">▶ 自动播放</button>
+    <button class="btn ghost" id="p4Reset">↺ 重置</button>
+  </div>
+  <div class="stepbar">当前步骤：<b id="p4Num">0</b> / 4　<span id="p4Name">初始状态</span></div>
+  <div class="stepdesc" id="p4Desc"></div>
+
+  <div class="expbox" style="padding:16px 22px">
+    <div class="barrow">
+      <span class="cap" id="cap1"></span>
+      <span id="g1">
+        <span class="bar g fade0"></span><span class="bar g fade0"></span>
+      </span>
+    </div>
+    <div class="barrow">
+      <span class="cap" id="cap2"></span>
+      <span id="g2">
+        <span class="bar o fade0"></span><span class="bar o fade0"></span><span class="bar o fade0"></span>
+      </span>
+    </div>
+    <div class="barrow" style="border-top:2px dashed #cbd5e1;padding-top:10px;margin-top:14px">
+      <span class="cap">合起来</span>
+      <span class="grow" id="g3"><span style="display:flex;gap:6px">
+        <span class="bar g"></span><span class="bar g"></span>
+        <span class="bar o"></span><span class="bar o"></span><span class="bar o"></span>
+      </span></span>
+      <span id="g3lab" style="font-size:21px;font-weight:bold;color:#16a34a;opacity:0;transition:.6s;font-family:'Cambria Math','Times New Roman',serif;white-space:nowrap"></span>
+    </div>
+    <div style="font-size:15px;color:#94a3b8;margin-top:12px" id="barTip"></div>
+  </div>
+
+  <div class="note">
+    <b>关键：必须是同类二次根式（根号部分完全相同）。</b>
+    <span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">2</span></span> 与
+    <span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">3</span></span> 的单位条长度不同，<b>不能</b>合并成
+    <span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">5</span></span>；
+    就像 2 支铅笔 + 3 块橡皮，不能数成 5 支铅笔。
+  </div>
+</section>
+
+<div class="tip">操作提示：← / → 翻步，空格键播放/暂停，可直接点「一步到位」一次展开全部做题痕迹</div>
+
+<script>
+/* ============ 根号/分式排版工具（保证根号完整覆盖被开方数） ============ */
+function S(x){ return '<span class="sqrt"><svg class="surd" viewBox="0 0 10 10" preserveAspectRatio="none" aria-hidden="true"><path d="M0.6 5.4 L2.3 9.5 L9.5 0.3" fill="none" stroke="currentColor" stroke-width="2" vector-effect="non-scaling-stroke" stroke-linejoin="round" stroke-linecap="round"/></svg><span class="rad">' + x + '</span></span>'; }
+function F(a, b){ return '<span class="frac"><span class="num">' + a + '</span><span class="den">' + b + '</span></span>'; }
+
+/* ==================== 选项卡 ==================== */
+function openTab(pid){
+  document.querySelectorAll(".tab").forEach(function(x){
+    x.classList.toggle("on", x.dataset.p === pid);
+  });
+  document.querySelectorAll(".panel").forEach(function(x){
+    x.classList.toggle("on", x.id === pid);
+  });
+  stopAll();
+  if (timerE) stopExp();
+  if (timerB) stopB();
+}
+document.querySelectorAll(".tab").forEach(function(t){
+  t.onclick = function(){ openTab(t.dataset.p); };
+});
+
+/* ==================== 通用分步播放器 ==================== */
+var players = [];
+
+function makePlayer(prefix, steps){
+  var cur = 0, timer = null, N = steps.length - 1;
+  var dotsBox = document.getElementById(prefix + "Dots");
+  for (var i = 1; i <= N; i++){
+    var d = document.createElement("div");
+    d.className = "dot";
+    dotsBox.appendChild(d);
+  }
+  function render(){
+    for (var i = 1; i <= N; i++){
+      var ln = document.getElementById(prefix + "l" + i);
+      if (!ln) continue;
+      ln.classList.toggle("done", cur >= i);
+      ln.classList.toggle("cur", cur === i);
+      dotsBox.children[i - 1].classList.toggle("on", cur >= i);
+    }
+    document.getElementById(prefix + "Num").textContent = cur;
+    document.getElementById(prefix + "Name").textContent = steps[cur].name;
+    document.getElementById(prefix + "Desc").innerHTML = steps[cur].desc;
+    var ans = document.getElementById(prefix + "Ans");
+    if (ans) ans.classList.toggle("show", cur >= N);
+    var prevB = document.getElementById(prefix + "Prev");
+    var nextB = document.getElementById(prefix + "Next");
+    if (prevB) prevB.disabled = (cur === 0);
+    if (nextB) nextB.disabled = (cur === N);
+  }
+  function go(n){ cur = Math.max(0, Math.min(N, n)); render(); }
+  function stop(){
+    if (timer) { clearInterval(timer); timer = null; }
+    var b = document.getElementById(prefix + "Play");
+    if (b){ b.textContent = "▶ 自动播放"; b.classList.remove("playing"); }
+  }
+  function play(){
+    stop();
+    if (cur >= N) go(0);
+    timer = setInterval(function(){
+      if (cur < N) { go(cur + 1); } else { stop(); }
+    }, 2100);
+    var b = document.getElementById(prefix + "Play");
+    b.textContent = "⏸ 暂停播放"; b.classList.add("playing");
+  }
+  var o = {
+    go: go, stop: stop, play: play,
+    isPlaying: function(){ return timer !== null; },
+    getCur: function(){ return cur; },
+    next: function(){ stop(); go(cur + 1); },
+    prev: function(){ stop(); go(cur - 1); },
+    all: function(){ stop(); go(N); },
+    reset: function(){ stop(); go(0); }
+  };
+  document.getElementById(prefix + "Next").onclick = o.next;
+  document.getElementById(prefix + "Prev").onclick = o.prev;
+  document.getElementById(prefix + "Reset").onclick = o.reset;
+  document.getElementById(prefix + "Play").onclick = function(){ timer ? stop() : play(); };
+  var allB = document.getElementById(prefix + "All");
+  if (allB) allB.onclick = o.all;
+  players.push(o);
+  render();
+  return o;
+}
+
+function stopAll(){ if (players && players.length) players.forEach(function(p){ p.stop(); }); }
+
+/* ==================== 面板1 ==================== */
+makePlayer("p1", [
+  {name:"初始状态", desc:"分母里含有根号，就不是最简二次根式。点击「下一步」，看清每一步的依据。"},
+  {name:"① 找出问题", desc:F("1", S("2")) + " 的分母含根号 ✗。要变成最简二次根式，关键是让<b>分母不含根号</b>。"},
+  {name:"② 分子分母同乘 √2", desc:"依据是<b>分式的基本性质</b>：分子、分母同乘一个不为 0 的数，分式的值不变。这里同乘 " + S("2") + "。"},
+  {name:"③ 分母变成 2", desc:"分母 " + S("2") + " × " + S("2") + " = <b class='hl-g'>2</b>，根号消失了；分子得 " + S("2") + "。结果 " + F(S("2"), "2") + " 就是最简二次根式。"}
+]);
+
+/* ==================== 面板2 ==================== */
+makePlayer("p2", [
+  {name:"初始状态", desc:"加减口诀：<b>一化简、二认同类、三并系数</b>。类比合并同类项 2a + 3a = 5a。"},
+  {name:"① 观察被开方数", desc:"8 和 18 都不是完全平方数，但都含有<b>平方因数</b>（4 和 9），所以它们都能继续化简。"},
+  {name:"② 分解出平方因数", desc:"8 = 4×2，18 = 9×2。写成 " + S("4 × 2") + "、" + S("9 × 2") + "，为把平方因数开出来做准备。"},
+  {name:"③ 开方，化成最简", desc:"由乘法法则：√(k²m) = k√m，所以 " + S("8") + " = 2" + S("2") + "，" + S("18") + " = 3" + S("2") + "。三项的被开方数<b>都是 2</b>，是同类二次根式。"},
+  {name:"④ 逆用分配律", desc:"把 " + S("2") + " 当作单位，2" + S("2") + " + 3" + S("2") + " − 1" + S("2") + " = (2+3−1)" + S("2") + "，与 2a + 3a − a 完全一样。"},
+  {name:"⑤ 得出结果", desc:"2 + 3 − 1 = 4，所以结果是 <b class='hl-r'>4" + S("2") + "</b>。加减只并系数，根号照写。"}
+]);
+
+/* ==================== 面板3：拼方块实验 ==================== */
+var EXP = {8:[2,2], 12:[2,3], 18:[3,2], 20:[2,5], 32:[4,2], 50:[5,2], 75:[5,3]};
+var COLORS = ["#bfdbfe", "#bbf7d0", "#fed7aa", "#ddd6fe", "#a5f3fc", "#fecdd3"];
+var curN = 12, curE = 0, timerE = null;
+
+function buildExp(n){
+  var k = EXP[n][0], m = EXP[n][1];
+  var cols = k * m, rows = k;
+  var u = Math.min(42, 540 / cols, 250 / rows);
+  var W = cols * u, H = rows * u;
+  var x0 = 320 - W / 2, y0 = 55;
+  var svg = document.getElementById("expSvg");
+  var html = "";
+  for (var b = 0; b < m; b++){
+    for (var j = 0; j < rows; j++){
+      for (var i = 0; i < k; i++){
+        var cx = x0 + (b * k + i) * u, cy = y0 + j * u;
+        html += '<rect class="u" data-b="' + b + '" x="' + (cx + 1).toFixed(1) + '" y="' + (cy + 1).toFixed(1) +
+                '" width="' + (u - 2).toFixed(1) + '" height="' + (u - 2).toFixed(1) + '" rx="2" ' +
+                'style="fill:#e2e8f0;stroke:#cbd5e1;stroke-width:1;transition:fill .6s,stroke .6s"/>';
+      }
+    }
+  }
+  for (var b2 = 0; b2 < m; b2++){
+    var bx = x0 + b2 * k * u, by = y0;
+    html += '<rect class="blk" x="' + (bx + 0.5).toFixed(1) + '" y="' + (by + 0.5).toFixed(1) + '" width="' + (k * u - 1).toFixed(1) +
+            '" height="' + (k * u - 1).toFixed(1) + '" rx="4" fill="none" stroke="#0f172a" stroke-width="2.5" ' +
+            'opacity="0" style="transition:opacity .7s"/>';
+    html += '<text class="blklab" x="' + (bx + k * u / 2).toFixed(1) + '" y="' + (by + k * u / 2 + 7).toFixed(1) +
+            '" text-anchor="middle" font-size="' + Math.min(20, k * u * 0.34).toFixed(0) + '" font-weight="bold" ' +
+            'fill="#0f172a" opacity="0" style="transition:opacity .7s">' + k + '×' + k + '</text>';
+  }
+  html += '<text x="320" y="' + (y0 + H + 36).toFixed(0) + '" text-anchor="middle" font-size="17" fill="#475569" ' +
+          'font-family="Microsoft YaHei">一共 ' + n + ' 个小正方形，总面积 = ' + n + '</text>';
+  svg.innerHTML = html;
+
+  document.getElementById("expTitle").innerHTML = S(n) + " = " + k + S(m);
+  document.getElementById("expInfo").innerHTML =
+    '<div>当前 <b>n = ' + n + '</b></div>' +
+    '<div>平方因数：<b style="color:#2563eb">' + (k * k) + ' = ' + k + '²</b></div>' +
+    '<div>剩余因数：<b style="color:#d97706">' + m + '</b>，即 ' + n + ' = ' + k + '² × ' + m + '</div>' +
+    '<span class="big" id="expBig">' + S(n) + ' = ' + (k === 1 ? '' : k) + S(m) + '</span>';
+  var big = document.getElementById("expBig");
+  big.style.opacity = 0;
+  big.style.transition = "opacity .7s";
+}
+
+function expDesc(){
+  var n = curN, k = EXP[curN][0], m = EXP[curN][1];
+  if (curE === 0) return "用面积相等的正方形说话：先摆出 " + n + " 个面积为 1 的小正方形，再想办法把它们拼成若干个更大的正方形。";
+  if (curE === 1) return "每个小正方形面积都是 1，一共 " + n + " 个，总面积就是 <b>" + n + "</b>。它整体是一个面积为 " + n + " 的图形。";
+  if (curE === 2) return "把 " + n + " 个小正方形，每 <b>" + (k * k) + "</b> 个拼成一个边长为 <b>" + k + "</b> 的正方形（面积 " + (k * k) + "），正好拼成 <b>" + m + "</b> 块，不多不少。";
+  return n + " = " + m + " × " + k + "²。由乘法法则：" + S(n) + " = " + S((k * k) + " × " + m) + " = " + S(k * k) + " × " + S(m) +
+         " = <b class='hl-r'>" + k + S(m) + "</b> —— 每块 " + k + "×" + k + " 的边长，就是被开出来的部分，拼图与计算完全一致！";
+}
+
+function renderExp(){
+  document.querySelectorAll("#expSvg .u").forEach(function(r){
+    var b = +r.getAttribute("data-b");
+    if (curE >= 1){
+      r.style.fill = COLORS[b % COLORS.length];
+      r.style.stroke = "#ffffff";
+    } else {
+      r.style.fill = "#e2e8f0";
+      r.style.stroke = "#cbd5e1";
+    }
+  });
+  document.querySelectorAll("#expSvg .blk").forEach(function(e){
+    e.style.opacity = (curE >= 1) ? 1 : 0;
+  });
+  document.querySelectorAll("#expSvg .blklab").forEach(function(e){
+    e.style.opacity = (curE >= 2) ? 1 : 0;
+  });
+  var big = document.getElementById("expBig");
+  if (big) big.style.opacity = (curE >= 3) ? 1 : 0;
+
+  document.getElementById("p3Num").textContent = curE;
+  document.getElementById("p3Name").textContent = ["初始状态", "① 摆出单位正方形", "② 拼成 k×k 方块", "③ 面积相等 ⇒ 边长相等"][curE];
+  document.getElementById("p3Desc").innerHTML = expDesc();
+  document.getElementById("p3Prev").disabled = (curE === 0);
+  document.getElementById("p3Next").disabled = (curE === 3);
+}
+function goExp(n){ curE = Math.max(0, Math.min(3, n)); renderExp(); }
+function stopExp(){
+  if (timerE){ clearInterval(timerE); timerE = null; }
+  var b = document.getElementById("p3Play");
+  b.textContent = "▶ 自动播放"; b.classList.remove("playing");
+}
+document.getElementById("p3Next").onclick = function(){ stopExp(); goExp(curE + 1); };
+document.getElementById("p3Prev").onclick = function(){ stopExp(); goExp(curE - 1); };
+document.getElementById("p3Reset").onclick = function(){ stopExp(); goExp(0); };
+document.getElementById("p3Play").onclick = function(){
+  if (timerE){ stopExp(); return; }
+  if (curE >= 3) goExp(0);
+  timerE = setInterval(function(){ curE < 3 ? goExp(curE + 1) : stopExp(); }, 2200);
+  var b = document.getElementById("p3Play");
+  b.textContent = "⏸ 暂停播放"; b.classList.add("playing");
+};
+document.querySelectorAll("#expPick .pick").forEach(function(btn){
+  btn.onclick = function(){
+    document.querySelectorAll("#expPick .pick").forEach(function(x){ x.classList.remove("on"); });
+    btn.classList.add("on");
+    curN = +btn.getAttribute("data-n");
+    stopExp();
+    buildExp(curN);
+    goExp(0);
+  };
+});
+buildExp(curN);
+goExp(0);
+
+/* ==================== 面板4：单位条实验 ==================== */
+var curB = 0, timerB = null;
+document.getElementById("cap1").innerHTML = "2" + S("2") + "（2 条）";
+document.getElementById("cap2").innerHTML = "3" + S("2") + "（3 条）";
+document.getElementById("g3lab").innerHTML = "= 5" + S("2");
+document.getElementById("barTip").innerHTML = "每根彩条的长度都是 " + S("2") + "，只是条数在变化 —— 这就是「系数相加、根号不变」。";
+document.querySelectorAll("#g1 .bar, #g2 .bar, #g3 .bar").forEach(function(b){ b.innerHTML = S("2"); });
+
+var BTXT = [
+  {name:"初始状态", desc:"把 " + S("2") + " 看成一根长度单位条：2" + S("2") + " 就是 2 根，3" + S("2") + " 就是 3 根。数条数，就是合并系数。"},
+  {name:"① 先摆 2 根", desc:"每根长 " + S("2") + "，2 根接起来就是 <b>2" + S("2") + "</b>（相当于 " + S("8") + " = 2" + S("2") + "）。"},
+  {name:"② 再摆 3 根", desc:"每根同样长 " + S("2") + "，3 根就是 <b>3" + S("2") + "</b>（相当于 " + S("18") + " = 3" + S("2") + "）。"},
+  {name:"③ 首尾相接", desc:"条子一样长，可以直接接起来：<b>2 根 + 3 根 = 5 根</b>，总长度就是 5" + S("2") + "。"},
+  {name:"④ 数一数就是答案", desc:"2" + S("2") + " + 3" + S("2") + " = (2+3)" + S("2") + " = <b class='hl-r'>5" + S("2") + "</b>。所以 " + S("8") + " + " + S("18") + " = 5" + S("2") + "，与合并同类项完全一致。"}
+];
+function renderBars(){
+  document.querySelectorAll("#g1 .bar").forEach(function(b){ b.classList.toggle("fade0", curB < 1); });
+  document.querySelectorAll("#g2 .bar").forEach(function(b){ b.classList.toggle("fade0", curB < 2); });
+  document.getElementById("g3").classList.toggle("full", curB >= 3);
+  document.getElementById("g3lab").style.opacity = (curB >= 3) ? 1 : 0;
+  document.getElementById("p4Num").textContent = curB;
+  document.getElementById("p4Name").textContent = BTXT[curB].name;
+  document.getElementById("p4Desc").innerHTML = BTXT[curB].desc;
+  document.getElementById("p4Prev").disabled = (curB === 0);
+  document.getElementById("p4Next").disabled = (curB === 4);
+}
+function goB(n){ curB = Math.max(0, Math.min(4, n)); renderBars(); }
+function stopB(){
+  if (timerB){ clearInterval(timerB); timerB = null; }
+  var b = document.getElementById("p4Play");
+  b.textContent = "▶ 自动播放"; b.classList.remove("playing");
+}
+document.getElementById("p4Next").onclick = function(){ stopB(); goB(curB + 1); };
+document.getElementById("p4Prev").onclick = function(){ stopB(); goB(curB - 1); };
+document.getElementById("p4Reset").onclick = function(){ stopB(); goB(0); };
+document.getElementById("p4Play").onclick = function(){
+  if (timerB){ stopB(); return; }
+  if (curB >= 4) goB(0);
+  timerB = setInterval(function(){ curB < 4 ? goB(curB + 1) : stopB(); }, 2200);
+  var b = document.getElementById("p4Play");
+  b.textContent = "⏸ 暂停播放"; b.classList.add("playing");
+};
+goB(0);
+
+/* ==================== 键盘 ==================== */
+document.addEventListener("keydown", function(e){
+  var id = document.querySelector(".panel.on").id;
+  var p = (id === "p1") ? players[0] : (id === "p2") ? players[1] : null;
+  if (!p) return;
+  if (e.key === "ArrowRight"){ e.preventDefault(); p.next(); }
+  if (e.key === "ArrowLeft"){ e.preventDefault(); p.prev(); }
+  if (e.key === " "){ e.preventDefault(); p.isPlaying() ? p.stop() : p.play(); }
+});
+
+/* ==================== URL 直达：#p3-3 表示打开实验一并跳到第 3 步 ==================== */
+if (location.hash && location.hash.indexOf("-") > 0){
+  var hv = location.hash.slice(1).split("-");
+  if (document.getElementById(hv[0])) openTab(hv[0]);
+  if (hv[1] !== undefined){
+    if (hv[0] === "p1" && players[0]) players[0].go(+hv[1]);
+    if (hv[0] === "p2" && players[1]) players[1].go(+hv[1]);
+    if (hv[0] === "p3") goExp(Math.max(0, Math.min(3, +hv[1])));
+    if (hv[0] === "p4") goB(Math.max(0, Math.min(4, +hv[1])));
+  }
+} else if (location.hash && document.getElementById(location.hash.slice(1))){
+  openTab(location.hash.slice(1));
+}
+</script>
+</body>
+</html>

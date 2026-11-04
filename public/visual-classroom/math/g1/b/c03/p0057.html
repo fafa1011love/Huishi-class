@@ -1,0 +1,741 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>基本立体图形模型</title>
+<style>
+  :root{
+    --blue:#4f9ec4; --blue-dark:#3d87ad; --coral:#dd7358; --green:#7aa571; --amber:#d9a24a;
+    --ink:#3a4a54; --muted:#8a9a92; --card:#ffffff; --bg:#eef1ea; --line:#dde4d8;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:"Microsoft YaHei","PingFang SC",sans-serif; background:var(--bg); color:var(--ink); padding-bottom:50px;}
+  header{background:linear-gradient(120deg,#417f9e,#5fa8c7 55%,#8fc7dd); color:#fff; padding:26px 20px 20px; text-align:center;}
+  header h1{font-size:26px; letter-spacing:2px;}
+  header p{opacity:.92; margin-top:8px; font-size:14px;}
+  main{max-width:1080px; margin:24px auto 0; padding:0 16px;}
+  .zone{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:20px 22px; margin-bottom:20px; box-shadow:0 4px 16px rgba(30,60,80,.06);}
+  .zone-head{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px;}
+  .badge{background:var(--blue); color:#fff; border-radius:8px; padding:4px 12px; font-size:14px; font-weight:bold;}
+  .badge.pink{background:var(--coral);}
+  .zone-head h2{font-size:19px;}
+  button.act{padding:8px 16px; border:none; border-radius:8px; background:var(--blue); color:#fff; font-size:14px; cursor:pointer; transition:.15s;}
+  button.act:hover{filter:brightness(1.08);}
+  button.act.sm{padding:7px 14px; font-size:13px; border-radius:7px;}
+  button.act.ghost{background:#eef2f5; color:#4c6472; border:1px solid #d5dee4;}
+  button.act.ghost:hover{background:#e3eaef;}
+  button.act.on{box-shadow:0 0 0 3px rgba(79,158,196,.3); filter:brightness(1.1);}
+  button.act.b-base{background:var(--coral);}
+  button.act.b-side{background:var(--green);}
+  button.act.b-edge{background:var(--amber);}
+  .shapes{display:flex; flex-wrap:wrap; gap:10px;}
+  .stage-wrap{position:relative; height:520px; border:1px solid var(--line); border-radius:14px; overflow:hidden;
+    background:
+      linear-gradient(rgba(120,145,125,.09) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(120,145,125,.09) 1px, transparent 1px),
+      radial-gradient(ellipse at 50% 38%, #f9fbf5 0%, #eff3ec 60%, #e5ebe2 100%);
+    background-size:26px 26px, 26px 26px, 100% 100%;}
+  .stage-wrap canvas{display:block;}
+  .hint{position:absolute; left:14px; bottom:10px; font-size:12.5px; color:#8aa0ae; pointer-events:none;}
+  .tag3d{position:absolute; display:none; transform:translate(-50%,-50%); padding:3px 12px; border-radius:14px;
+    color:#fff; font-size:13px; font-weight:bold; white-space:nowrap; pointer-events:none; box-shadow:0 2px 8px rgba(0,0,0,.18);}
+  #lblBase{background:var(--coral);}
+  #lblSide{background:var(--green);}
+  #lblEdge{background:var(--amber);}
+  #lblJoint{background:#c8a95e;}
+  .stepbar{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:16px; padding-top:16px; border-top:1px dashed var(--line);}
+  .bar{border-radius:12px; padding:12px 14px; background:#f8fbfc; border:1px solid #e2ecf0; margin-top:14px;}
+  .bar h3{font-size:15px; margin-bottom:6px; color:var(--blue-dark);}
+  .expl{font-size:14.5px; line-height:2; color:#3d5262;}
+  .expl b{color:var(--coral);}
+  .status{font-size:14px; color:var(--amber); font-weight:bold; min-height:20px; margin-top:10px; line-height:1.7;}
+  .combo-row{display:flex; align-items:center; gap:10px; flex-wrap:wrap; font-size:14.5px; color:#3d5262;}
+  .combo-row .combo-tip{font-size:12.5px; color:#9aa89e;}
+  .combo-preset{font-size:13px;}
+  select:hover{border-color:var(--blue);}
+  footer{max-width:1080px; margin:0 auto; padding:0 16px; color:var(--muted); font-size:13px; line-height:2;}
+  footer b{color:var(--ink);}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>基本立体图形模型</h1>
+  <p>棱柱 · 棱锥 · 棱台 · 圆柱 · 圆锥 · 圆台 · 球 · 简单组合体 —— 旋转展示，逐面高亮底面、侧面、侧棱</p>
+</header>
+
+<main>
+
+  <!-- ① 选择图形 -->
+  <section class="zone">
+    <div class="zone-head">
+      <span class="badge">① 选择图形</span>
+      <h2>点一个按钮，切换展示的立体图形</h2>
+    </div>
+    <div class="shapes" id="shapeBar"></div>
+  </section>
+
+  <!-- ② 旋转与高亮 -->
+  <section class="zone">
+    <div class="zone-head">
+      <span class="badge pink">② 旋转与高亮</span>
+      <h2>观察底面、侧面与侧棱（母线）</h2>
+    </div>
+    <div class="stage-wrap" id="stage">
+      <div class="tag3d" id="lblBase">底面</div>
+      <div class="tag3d" id="lblSide">侧面</div>
+      <div class="tag3d" id="lblEdge">侧棱</div>
+      <div class="tag3d" id="lblJoint">贴合面</div>
+      <div class="hint">拖动旋转 · 滚轮缩放 · 右键平移</div>
+    </div>
+    <div class="stepbar">
+      <button class="act sm b-base" id="bBase">底面</button>
+      <button class="act sm b-side" id="bSide">侧面</button>
+      <button class="act sm b-edge" id="bEdge">侧棱 / 母线</button>
+      <button class="act sm" id="bAll">全部高亮</button>
+      <button class="act sm ghost" id="bNone">清除高亮</button>
+      <span style="width:14px"></span>
+      <button class="act sm ghost on" id="bSpin">自动旋转：开</button>
+      <button class="act sm ghost" id="bView">重置视角</button>
+    </div>
+    <div class="bar" id="comboPanel" style="display:none">
+      <h3>常见组合体</h3>
+      <div class="combo-row" id="comboBtns"></div>
+    </div>
+    <div class="status" id="hlStatus"></div>
+    <div class="bar">
+      <h3 id="shapeTitle">——</h3>
+      <div class="expl" id="shapeInfo"></div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <b>使用建议</b>：先自动旋转整体观察，再依次点击「底面 → 侧面 → 侧棱」，配合拖动从不同角度确认它们的位置关系。柱、锥、台可两两对照：棱柱⇄圆柱、棱锥⇄圆锥、棱台⇄圆台。
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+(function(){
+  'use strict';
+
+  /* ---------- 基础场景 ---------- */
+  const container = document.getElementById('stage');
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(32, 1, 0.1, 100);
+  const CAM0 = new THREE.Vector3(5.0, 3.6, 6.4);
+  camera.position.copy(CAM0);
+
+  const renderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  container.appendChild(renderer.domElement);
+
+  const controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  controls.autoRotate = true;
+  controls.autoRotateSpeed = 1.6;
+
+  scene.add(new THREE.AmbientLight(0xffffff, 0.62));
+  const dir = new THREE.DirectionalLight(0xffffff, 0.75);
+  dir.position.set(4, 6, 5);
+  scene.add(dir);
+  const dir2 = new THREE.DirectionalLight(0xdfefff, 0.3);
+  dir2.position.set(-5, -3, -4);
+  scene.add(dir2);
+
+  /* ---------- 三维参考平面与坐标轴 ---------- */
+  const grid = new THREE.GridHelper(9, 18, 0xa9b8a2, 0xd7dfcf);
+  scene.add(grid);
+  function makeTextSprite(text, color){
+    const c = document.createElement('canvas'); c.width = 128; c.height = 128;
+    const ctx = c.getContext('2d');
+    ctx.font = 'italic 78px "Times New Roman", serif';
+    ctx.fillStyle = color; ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+    ctx.fillText(text, 64, 68);
+    const sp = new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c), transparent:true}));
+    sp.scale.set(0.42, 0.42, 1);
+    return sp;
+  }
+  function makeAxis(dir, len, color, label){
+    scene.add(new THREE.ArrowHelper(dir, new THREE.Vector3(0, 0.01, 0), len, color, 0.16, 0.07));
+    const s = makeTextSprite(label, color);
+    s.position.copy(dir.clone().multiplyScalar(len + 0.32));
+    scene.add(s);
+  }
+  makeAxis(new THREE.Vector3(1,0,0), 3.6, 0xc98a74, 'x');
+  makeAxis(new THREE.Vector3(0,1,0), 2.8, 0x86a98e, 'y');
+  makeAxis(new THREE.Vector3(0,0,1), 3.6, 0x7aa3c2, 'z');
+
+  /* ---------- 材质 ---------- */
+  const M = {
+    face:   new THREE.MeshPhongMaterial({color:0x9ecfdd, transparent:true, opacity:0.5, side:THREE.DoubleSide, shininess:40, depthWrite:false}),
+    baseHi: new THREE.MeshPhongMaterial({color:0xdd7358, transparent:true, opacity:0.82, side:THREE.DoubleSide, shininess:25}),
+    sideHi: new THREE.MeshPhongMaterial({color:0x7aa571, transparent:true, opacity:0.78, side:THREE.DoubleSide, shininess:25}),
+    edge:   new THREE.MeshBasicMaterial({color:0x39515e}),
+    edgeHi: new THREE.MeshBasicMaterial({color:0xd9a24a}),
+    rim:    new THREE.MeshBasicMaterial({color:0x7fb3cc}),
+    joint:  new THREE.MeshPhongMaterial({color:0xd8c69a, transparent:true, opacity:0.92, side:THREE.DoubleSide, shininess:10}),
+    vert:   new THREE.MeshBasicMaterial({color:0x2f4450})
+  };
+
+  /* ---------- 小工具 ---------- */
+  function ngon(n, r, y, rot){
+    rot = rot || Math.PI/2;
+    const pts = [];
+    for(let i=0;i<n;i++){
+      const a = rot + i*2*Math.PI/n;
+      pts.push(new THREE.Vector3(r*Math.cos(a), y, r*Math.sin(a)));
+    }
+    return pts;
+  }
+  function rectPts(w, d, y){
+    const x = w/2, z = d/2;
+    return [new THREE.Vector3(-x,y,-z), new THREE.Vector3(x,y,-z), new THREE.Vector3(x,y,z), new THREE.Vector3(-x,y,z)];
+  }
+  function frontZ(pts){
+    let m = -1e9;
+    pts.forEach(p=>{ if(p.z > m) m = p.z; });
+    return m;
+  }
+  function fanTris(pts){
+    const t = [];
+    for(let i=1;i<pts.length-1;i++) t.push([pts[0], pts[i], pts[i+1]]);
+    return t;
+  }
+  function trisToMesh(tris, mat){
+    const pos = [];
+    tris.forEach(t => t.forEach(p => pos.push(p.x, p.y, p.z)));
+    const g = new THREE.BufferGeometry();
+    g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+    g.computeVertexNormals();
+    return new THREE.Mesh(g, mat);
+  }
+  function edgeMesh(a, b, r, mat){
+    const d = new THREE.Vector3().subVectors(b, a);
+    const len = d.length();
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(r, r, len, 6), mat);
+    m.position.copy(a).addScaledVector(d, 0.5);
+    m.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), d.clone().normalize());
+    return m;
+  }
+  function dot(p, r){
+    const m = new THREE.Mesh(new THREE.SphereGeometry(r||0.032, 10, 10), M.vert);
+    m.position.copy(p);
+    return m;
+  }
+  function disk(r, y){
+    const m = new THREE.Mesh(new THREE.CircleGeometry(r, 56), M.face);
+    m.rotation.x = Math.PI/2;
+    m.position.y = y;
+    if(y < 0) m.userData.bottom = true;   // 底面（供组合体识别贴合面）
+    if(y > 0) m.userData.top = true;      // 顶面（组合体中属于贴合面，不参与底面高亮）
+    return m;
+  }
+  // 圆形侧面上的一条母线
+  function genLine(rBot, rTop, yBot, yTop, a, r){
+    const m = edgeMesh(
+      new THREE.Vector3(rBot*Math.cos(a), yBot, rBot*Math.sin(a)),
+      new THREE.Vector3(rTop*Math.cos(a), yTop, rTop*Math.sin(a)),
+      r, M.edge);
+    m.userData.gen = true;   // 母线：默认隐藏，高亮时显示
+    return m;
+  }
+
+  function newGroup(){
+    const g = new THREE.Group();
+    g.userData = {baseFaces:[], sideFaces:[], sideEdges:[], baseEdges:[], labels:{}};
+    return g;
+  }
+
+  /* ---------- 多面体构造 ---------- */
+  // 棱柱：上、下两组多边形
+  function buildPrismPts(botPts, topPts){
+    const g = newTree();
+    const n = botPts.length;
+    fanTris(botPts).forEach(t => { const m = trisToMesh([t], M.face); m.userData.bottom = true; g.userData.baseFaces.push(m); });
+    fanTris(topPts).forEach(t => { const m = trisToMesh([t], M.face); m.userData.top = true; g.userData.baseFaces.push(m); });
+    for(let i=0;i<n;i++){
+      const j = (i+1)%n;
+      const be = edgeMesh(botPts[i], botPts[j], 0.014, M.edge);
+      be.userData.bottom = true;
+      g.userData.baseEdges.push(be);
+      const te = edgeMesh(topPts[i], topPts[j], 0.014, M.edge);
+      te.userData.top = true;
+      g.userData.baseEdges.push(te);
+      g.userData.sideEdges.push(edgeMesh(botPts[i], topPts[i], 0.014, M.edge));
+      // 侧面（两个三角形拼成的四边形）
+      g.userData.sideFaces.push(trisToMesh([[botPts[i], botPts[j], topPts[j]]], M.face));
+      g.userData.sideFaces.push(trisToMesh([[botPts[i], topPts[j], topPts[i]]], M.face));
+      // 顶点
+      g.add(dot(botPts[i]), dot(topPts[i]));
+    }
+    const bc = botPts.reduce((s,p)=>s.add(p.clone()), new THREE.Vector3()).multiplyScalar(1/n);
+    const yMid = topPts[0].y;
+    g.userData.labels.base  = new THREE.Vector3(0, bc.y+0.18, frontZ(botPts)+0.6);
+    g.userData.labels.side  = bc.clone().setY((bc.y+yMid)/2).multiplyScalar(1.55);
+    g.userData.labels.edge  = botPts[0].clone().lerp(topPts[0], 0.5).multiplyScalar(1.28);
+    return g;
+  }
+  function newTree(){ return newGroup(); }
+  function buildPrism(n, r, h){
+    return buildPrismPts(ngon(n, r, -h/2), ngon(n, r, h/2));
+  }
+  // 棱锥
+  function buildPyr(n, r, h){
+    const g = newGroup();
+    const bot = ngon(n, r, -h/2);
+    const apex = new THREE.Vector3(0, h/2, 0);
+    fanTris(bot).forEach(t => { const m = trisToMesh([t], M.face); m.userData.bottom = true; g.userData.baseFaces.push(m); });
+    for(let i=0;i<n;i++){
+      const j = (i+1)%n;
+      const be = edgeMesh(bot[i], bot[j], 0.014, M.edge);
+      be.userData.bottom = true;
+      g.userData.baseEdges.push(be);
+      g.userData.sideEdges.push(edgeMesh(bot[i], apex, 0.014, M.edge));
+      g.userData.sideFaces.push(trisToMesh([[bot[i], bot[j], apex]], M.face));
+      g.add(dot(bot[i]));
+    }
+    g.add(dot(apex, 0.04));
+    const bc = new THREE.Vector3(0, -h/2, 0);
+    g.userData.labels.base = new THREE.Vector3(0, -h/2+0.18, frontZ(bot)+0.6);
+    g.userData.labels.side = bot[0].clone().lerp(bot[1], 0.5).lerp(apex, 0.5).multiplyScalar(1.5);
+    g.userData.labels.edge = bot[0].clone().lerp(apex, 0.5).multiplyScalar(1.45);
+    return g;
+  }
+  // 棱台
+  function buildFrustumPoly(n, rBot, rTop, h){
+    const g = newGroup();
+    const bot = ngon(n, rBot, -h/2), top = ngon(n, rTop, h/2);
+    fanTris(bot).forEach(t => { const m = trisToMesh([t], M.face); m.userData.bottom = true; g.userData.baseFaces.push(m); });
+    fanTris(top).forEach(t => { const m = trisToMesh([t], M.face); m.userData.top = true; g.userData.baseFaces.push(m); });
+    for(let i=0;i<n;i++){
+      const j = (i+1)%n;
+      const be = edgeMesh(bot[i], bot[j], 0.014, M.edge);
+      be.userData.bottom = true;
+      g.userData.baseEdges.push(be);
+      const te = edgeMesh(top[i], top[j], 0.014, M.edge);
+      te.userData.top = true;
+      g.userData.baseEdges.push(te);
+      g.userData.sideEdges.push(edgeMesh(bot[i], top[i], 0.014, M.edge));
+      g.userData.sideFaces.push(trisToMesh([[bot[i], bot[j], top[j]]], M.face));
+      g.userData.sideFaces.push(trisToMesh([[bot[i], top[j], top[i]]], M.face));
+      g.add(dot(bot[i]), dot(top[i]));
+    }
+    g.userData.labels.base = new THREE.Vector3(0, -h/2+0.18, frontZ(bot)+0.6);
+    g.userData.labels.side = bot[0].clone().lerp(bot[1],0.5).lerp(top[0].clone().lerp(top[1],0.5),0.5).multiplyScalar(1.5);
+    g.userData.labels.edge = bot[0].clone().lerp(top[0], 0.5).multiplyScalar(1.3);
+    return g;
+  }
+
+  /* ---------- 旋转体构造 ---------- */
+  function circleLabels(g, r, h){
+    g.userData.labels.base = new THREE.Vector3(0, -h/2+0.18, r+0.6);
+    g.userData.labels.side = new THREE.Vector3(r*1.5, 0, 0);
+    g.userData.labels.edge = new THREE.Vector3(r*1.35, h/4, 0);
+  }
+  function buildCylinder(r, h){
+    const g = newGroup();
+    g.userData.baseFaces.push(disk(r, -h/2), disk(r, h/2));
+    const side = new THREE.Mesh(new THREE.CylinderGeometry(r, r, h, 56, 1, true), M.face);
+    side.material.side = THREE.DoubleSide;
+    g.userData.sideFaces.push(side);
+    for(let i=0;i<10;i++){
+      g.userData.sideEdges.push(genLine(r, r, -h/2, h/2, i*2*Math.PI/10 + 0.3, 0.010));
+    }
+    // 上下底面圆周：浅色细环（不再是黑线圈）
+    [[-h/2],[h/2]].forEach(function(yy){
+      const t = new THREE.Mesh(new THREE.TorusGeometry(r, 0.009, 8, 80), M.rim);
+      t.rotation.x = Math.PI/2; t.position.y = yy[0];
+      t.userData.rim = true;
+      if(yy[0] < 0) t.userData.bottom = true;
+      if(yy[0] > 0) t.userData.top = true;
+      g.userData.baseEdges.push(t);
+    });
+    circleLabels(g, r, h);
+    return g;
+  }
+  function buildCone(r, h){
+    const g = newGroup();
+    g.userData.baseFaces.push(disk(r, -h/2));
+    const side = new THREE.Mesh(new THREE.ConeGeometry(r, h, 56, 1, true), M.face);
+    side.material.side = THREE.DoubleSide;
+    g.userData.sideFaces.push(side);
+    const apex = new THREE.Vector3(0, h/2, 0);
+    for(let i=0;i<8;i++){
+      const a = i*2*Math.PI/8 + 0.3;
+      const ge = edgeMesh(new THREE.Vector3(r*Math.cos(a),-h/2,r*Math.sin(a)), apex, 0.010, M.edge);
+      ge.userData.gen = true;   // 圆锥的母线，默认隐藏
+      g.userData.sideEdges.push(ge);
+    }
+    const rimC = new THREE.Mesh(new THREE.TorusGeometry(r, 0.009, 8, 80), M.rim);
+    rimC.rotation.x = Math.PI/2; rimC.position.y = -h/2;
+    rimC.userData.rim = true; rimC.userData.bottom = true;
+    g.userData.baseEdges.push(rimC);
+    g.userData.labels.base = new THREE.Vector3(0, -h/2+0.18, r+0.6);
+    g.userData.labels.side = new THREE.Vector3(r*0.5, -h/8, r*1.45);
+    g.userData.labels.edge = new THREE.Vector3(r*1.05, -h/16, r*1.15);
+    return g;
+  }
+  function buildConeFrustum(rBot, rTop, h){
+    const g = newGroup();
+    g.userData.baseFaces.push(disk(rBot, -h/2), disk(rTop, h/2));
+    const side = new THREE.Mesh(new THREE.CylinderGeometry(rTop, rBot, h, 56, 1, true), M.face);
+    side.material.side = THREE.DoubleSide;
+    g.userData.sideFaces.push(side);
+    for(let i=0;i<10;i++){
+      g.userData.sideEdges.push(genLine(rBot, rTop, -h/2, h/2, i*2*Math.PI/10 + 0.3, 0.010));
+    }
+    [[rBot,-h/2],[rTop,h/2]].forEach(function(rr){
+      const t = new THREE.Mesh(new THREE.TorusGeometry(rr[0], 0.009, 8, 80), M.rim);
+      t.rotation.x = Math.PI/2; t.position.y = rr[1];
+      t.userData.rim = true;
+      if(rr[1] < 0) t.userData.bottom = true;
+      if(rr[1] > 0) t.userData.top = true;
+      g.userData.baseEdges.push(t);
+    });
+    circleLabels(g, rBot, h);
+    return g;
+  }
+  function buildSphere(R){
+    const g = newGroup();
+    const s = new THREE.Mesh(new THREE.SphereGeometry(R, 56, 36), M.face);
+    s.material.side = THREE.DoubleSide;
+    s.userData.kind = 'sphere';
+    g.userData.sideFaces.push(s);
+    // 赤道大圆 + 一条经线大圆（浅色细环）
+    const eq = new THREE.Mesh(new THREE.TorusGeometry(R, 0.008, 8, 90), M.rim);
+    eq.rotation.x = Math.PI/2; eq.userData.rim = true;
+    g.userData.baseEdges.push(eq);
+    const mer = new THREE.Mesh(new THREE.TorusGeometry(R, 0.008, 8, 90), M.rim);
+    mer.userData.rim = true;
+    g.userData.baseEdges.push(mer);
+    g.add(dot(new THREE.Vector3(0,R,0), 0.032), dot(new THREE.Vector3(0,-R,0), 0.032));
+    g.userData.labels.side = new THREE.Vector3(R*1.35, R*0.35, 0);
+    return g;
+  }
+  /* ---------- 自由组合体 ---------- */
+  // 把某个 build 产物的面 / 棱挂载到它自己的组上
+  function mountGroup(g){
+    const d = g.userData;
+    d.baseFaces.concat(d.sideFaces, d.sideEdges, d.baseEdges)
+      .forEach(m => { if(!m.parent) g.add(m); });
+  }
+  // 下部图形 li 与上部图形 ui 拼接：两图形底面贴合，轴对齐
+  function buildComboFrom(li, ui){
+    const g = newGroup();
+    const lower = SHAPES[li].build(), upper = SHAPES[ui].build();
+    mountGroup(lower); mountGroup(upper);
+    const hL = SHAPES[li].hh;
+    // 拼接面对齐：上部底面半径缩放至与下部顶面半径相同（课本组合体均如此）
+    const rTopLower = SHAPES[li].rT || 0, rBotUpper = SHAPES[ui].rB || 0;
+    const s = (SHAPES[ui].sphere || rTopLower < 0.01 || rBotUpper < 0.01) ? 1 : (rTopLower / rBotUpper);
+    const hU = SHAPES[ui].hh * s;
+    upper.scale.setScalar(s);
+    lower.position.y = hL;            // 下部底面落在 y=0（下部顶面在 2*hL）
+    upper.position.y = 2 * hL + hU;   // 上部底面贴合在下部顶面
+    g.add(lower, upper);
+    const d = g.userData;
+    // 贴合面 = 上部的底面 = 下部的顶面（同一个面，课本中涂米黄色）
+    const jointFaces = upper.userData.baseFaces.filter(m => m.userData.bottom);
+    jointFaces.forEach(m => { m.material = M.joint; });
+    const jointEdges = upper.userData.baseEdges.filter(m => m.userData.bottom);
+    // 下部的顶面与贴合面重合：隐藏，避免两个面重叠闪烁、颜色冲突
+    lower.userData.baseFaces.filter(m => m.userData.top).forEach(m => { m.visible = false; });
+    lower.userData.baseEdges.filter(m => m.userData.top).forEach(m => { m.visible = false; });
+    // 高亮分组：底面只取下部的下底面；侧面 / 侧棱取两图形之并
+    d.baseFaces = lower.userData.baseFaces.filter(m => !m.userData.top);
+    d.sideFaces = lower.userData.sideFaces.concat(upper.userData.sideFaces);
+    d.sideEdges = lower.userData.sideEdges.concat(upper.userData.sideEdges);
+    d.baseEdges = lower.userData.baseEdges.filter(m => !m.userData.top);
+    // 标签锚点：上部已做 s 倍缩放，锚点随之上移
+    const lift = new THREE.Vector3(0, 2 * hL + hU, 0);
+    const maxR = Math.max(SHAPES[li].rT || 0, s * (SHAPES[ui].rB || 0));
+    d.labels = {
+      base: lower.userData.labels.base ? lower.userData.labels.base.clone().add(new THREE.Vector3(0, hL, 0)) : null,
+      side: upper.userData.labels.side ? upper.userData.labels.side.clone().multiplyScalar(s).add(lift) : null,
+      edge: upper.userData.labels.edge ? upper.userData.labels.edge.clone().multiplyScalar(s).add(lift) : null,
+      joint: jointFaces.length ? new THREE.Vector3(0, 2 * hL + 0.02, maxR * 1.4 + 0.3) : null
+    };
+    d.hh = 2 * hL + 2 * hU;   // 组合体总高（供参考）
+    return g;
+  }
+
+  /* ---------- 图形库 ---------- */
+  const SHAPES = [
+    {name:'三棱柱', hh:0.8, rB:1.15, rT:1.15, build:()=>buildPrism(3, 1.15, 1.6),
+     info:'有两个面互相平行（<b>底面</b>），其余各面都是四边形（<b>侧面</b>），且每相邻两个侧面的公共边（<b>侧棱</b>）都互相平行。',
+     base:'底面：上、下两个全等的三角形，互相平行。',
+     side:'侧面：三个平行四边形（此直棱柱中为矩形）。',
+     edge:'侧棱：三条侧棱互相平行且相等，垂直于底面。'},
+    {name:'长方体（四棱柱）', hh:0.8, rB:1.30, rT:1.30, build:()=>buildPrismPts(rectPts(2.2,1.4,-0.8), rectPts(2.2,1.4,0.8)),
+     info:'底面是矩形的直四棱柱，是最常见的四棱柱。',
+     base:'底面：上、下两个全等的矩形，互相平行。',
+     side:'侧面：四个矩形。',
+     edge:'侧棱：互相平行且相等，与底面垂直。'},
+    {name:'六棱柱', hh:0.75, rB:1.25, rT:1.25, build:()=>buildPrism(6, 1.25, 1.5),
+     info:'底面是六边形的棱柱，有 6 条侧棱、6 个侧面。',
+     base:'底面：上、下两个全等的正六边形，互相平行。',
+     side:'侧面：六个平行四边形（此直棱柱中为矩形）。',
+     edge:'侧棱：六条侧棱互相平行且相等。'},
+    {name:'三棱锥', hh:0.95, rB:1.25, rT:0, build:()=>buildPyr(3, 1.25, 1.9),
+     info:'有一个面（底面）是三角形，其余各面是有一个公共顶点的三角形。三棱锥的四个面都是三角形。',
+     base:'底面：一个三角形。',
+     side:'侧面：三个三角形，汇于同一个顶点。',
+     edge:'侧棱：三条侧棱相交于锥体的顶点。'},
+    {name:'四棱锥', hh:0.9, rB:1.35, rT:0, build:()=>buildPyr(4, 1.35, 1.8),
+     info:'底面是四边形、侧面是有一个公共顶点的三角形的锥体。',
+     base:'底面：一个四边形。',
+     side:'侧面：四个三角形，汇于同一个顶点。',
+     edge:'侧棱：四条侧棱相交于顶点。'},
+    {name:'四棱台', hh:0.65, rB:1.35, rT:0.75, build:()=>buildFrustumPoly(4, 1.35, 0.75, 1.3),
+     info:'用平行于棱锥底面的平面去截棱锥，截面与底面之间的部分叫做棱台。',
+     base:'底面：上、下两个相似的四边形，互相平行。',
+     side:'侧面：四个梯形。',
+     edge:'侧棱：四条侧棱延长后相交于同一点（原棱锥的顶点）。'},
+    {name:'圆柱', circle:true, hh:0.9, rB:1, rT:1, build:()=>buildCylinder(1, 1.8),
+     info:'以矩形的一边所在直线为旋转轴，其余三边旋转形成的面所围成的旋转体。',
+     base:'底面：两个完全相同、互相平行的圆面。',
+     side:'侧面：一个曲面（沿母线剪开展开后是矩形）。圆柱没有侧棱，与侧棱地位相当的是母线。',
+     edge:'母线：垂直于底面、绕轴旋转形成侧面的线段，各条母线互相平行且相等。'},
+    {name:'圆锥', circle:true, hh:0.95, rB:1.1, rT:0, build:()=>buildCone(1.1, 1.9),
+     info:'以直角三角形的一条直角边所在直线为旋转轴，其余两边旋转形成的面所围成的旋转体。',
+     base:'底面：一个圆面。',
+     side:'侧面：一个曲面（展开后是扇形）。圆锥没有侧棱，对应概念是母线。',
+     edge:'母线：连接顶点与底面圆上一点的线段，各条母线长度相等。'},
+    {name:'圆台', circle:true, hh:0.7, rB:1.2, rT:0.6, build:()=>buildConeFrustum(1.2, 0.6, 1.4),
+     info:'用平行于圆锥底面的平面去截圆锥，截面与底面之间的部分叫做圆台。',
+     base:'底面：两个大小不同、互相平行的圆面。',
+     side:'侧面：一个曲面（展开后是扇环）。',
+     edge:'母线：侧面上连接上、下底面圆周的线段，延长后交于轴上同一点。'},
+    {name:'球', sphere:true, hh:1.3, rB:1.3, rT:0, build:()=>buildSphere(1.3),
+     info:'以半圆的直径所在直线为旋转轴，半圆面旋转一周形成的旋转体。球没有底面、侧面和侧棱。',
+     base:'球没有底面——球面上任意两点都可有大圆通过。',
+     side:'球面：到定点（球心）的距离等于定长（半径）的所有点的集合。',
+     edge:'球没有侧棱；过球心的截面圆是大圆（图中画出两个大圆）。'},
+    {name:'简单组合体', combo:true, hh:2.15,
+     build:()=>buildComboFrom(comboSel.lower, comboSel.upper),
+     info:'两个图形沿完全贴合的一个面拼接而成（图中米黄色面即为贴合面）。可在画布下方的「常见组合体」面板中切换几种典型组合。',
+     base:'底面：下部图形的下底面。',
+     side:'侧面：上、下两个图形的侧面拼接而成。',
+     edge:'侧棱 / 母线：上、下两个图形各自的侧棱或母线。',
+     joint:'贴合面：上、下两个图形公共的那个面，它们在此面处完全重合。'}
+  ];
+
+  /* ---------- 状态与高亮 ---------- */
+  let current = null, currentShape = null, currentHH = 0;
+  const view0 = new THREE.Vector3(), viewT = new THREE.Vector3();  // 自适应取景的机位与注视点
+  let comboSel = {lower: 6, upper: 7};   // 默认：下圆柱 + 上圆锥（后续由 COMBOS 重设）
+  const mode = {base:false, side:false, edge:false};
+  const lbl = {base:document.getElementById('lblBase'),
+               side:document.getElementById('lblSide'),
+               edge:document.getElementById('lblEdge'),
+               joint:document.getElementById('lblJoint')};
+  const btns = {base:document.getElementById('bBase'),
+                side:document.getElementById('bSide'),
+                edge:document.getElementById('bEdge')};
+  const hlStatus = document.getElementById('hlStatus');
+
+  function disposeGroup(g){
+    g.traverse(o=>{
+      if(o.geometry) o.geometry.dispose();
+    });
+    scene.remove(g);
+  }
+  function clearHighlight(){
+    mode.base = mode.side = mode.edge = false;
+    Object.keys(btns).forEach(k=>btns[k].classList.remove('on'));
+  }
+  function applyHighlight(){
+    if(!current) return;
+    const d = current.userData;
+    d.baseFaces.forEach(m=>m.material = mode.base ? M.baseHi : M.face);
+    d.sideFaces.forEach(m=>m.material = mode.side ? M.sideHi : M.face);
+    d.sideEdges.forEach(m=>{
+      if(m.userData.gen){ m.visible = !!mode.edge; }
+      else{ m.material = mode.edge ? M.edgeHi : M.edge; }
+    });
+    d.baseEdges.forEach(m=>m.material = mode.base ? M.baseHi : (m.userData.rim ? M.rim : M.edge));
+    Object.keys(btns).forEach(k=>btns[k].classList.toggle('on', mode[k]));
+    // 高亮说明
+    if(!currentShape) return;
+    const on = Object.keys(mode).filter(k=>mode[k]);
+    if(on.length === 0){ hlStatus.textContent = ''; return; }
+    hlStatus.textContent = on.map(k=>currentShape[k]).join('　');
+  }
+  function toggle(key){
+    mode[key] = !mode[key];
+    applyHighlight();
+  }
+
+  /* ---------- 切换图形 ---------- */
+  function selectShape(idx){
+    if(current) disposeGroup(current);
+    clearHighlight();
+    hlStatus.textContent = '';
+    currentShape = SHAPES[idx];
+    current = currentShape.build();
+    // 组合体高度 = 下部高度 + 上部缩放后的高度；其余用各自 hh
+    currentHH = currentShape.combo
+      ? (current.userData.hh || 0)
+      : (currentShape.hh || 0);
+    // 将所有面 / 棱网格真正挂载到 3D 组上（组合体内部已挂载的跳过）
+    const d = current.userData;
+    d.baseFaces.concat(d.sideFaces, d.sideEdges, d.baseEdges)
+      .forEach(m => { if(!m.parent) current.add(m); });
+    // 标准摆放：单图形以中心为原点，需抬高 hh 让底面贴地；
+    // 组合体内部坐标已把底面放在 y=0，直接贴地即可
+    current.position.y = currentShape.combo ? 0.01 : (currentHH + 0.01);
+    controls.target.set(0, currentHH, 0);
+    // 母线默认隐藏，点击高亮时才显示（多面体的侧棱无 gen 标记，不受影响）
+    d.sideEdges.forEach(m => { if(m.userData.gen) m.visible = false; });
+    scene.add(current);
+    // 自适应取景：按包围盒调整相机距离与注视点，保证图形完整入画
+    const box = new THREE.Box3().setFromObject(current);
+    const center = box.getCenter(new THREE.Vector3());
+    const size = box.getSize(new THREE.Vector3());
+    const maxDim = Math.max(size.x, size.y, size.z);
+    const dist = Math.max(8.9, maxDim * 3.6);
+    viewT.copy(center);
+    view0.copy(CAM0).normalize().multiplyScalar(dist).add(center);
+    controls.target.copy(viewT);
+    camera.position.copy(view0);
+    document.getElementById('shapeTitle').textContent = currentShape.name;
+    // 组合体：说明文字随所选部件变化
+    document.getElementById('shapeInfo').innerHTML = currentShape.combo
+      ? ('由 <b>' + SHAPES[comboSel.lower].name + '</b>（下部）与 <b>' + SHAPES[comboSel.upper].name +
+         '</b>（上部）沿贴合面拼接而成的简单组合体。' +
+         (currentShape.info || ''))
+      : currentShape.info;
+    // 拼装面板只在组合体模式下显示
+    document.getElementById('comboPanel').style.display = currentShape.combo ? 'block' : 'none';
+    // 母线 / 侧棱标签
+    const bothCircle = currentShape.combo
+      ? (SHAPES[comboSel.lower].circle && SHAPES[comboSel.upper].circle)
+      : !!currentShape.circle;
+    lbl.edge.textContent = bothCircle ? '母线' : '侧棱';
+    document.getElementById('bEdge').textContent = bothCircle ? '侧棱 / 母线' : '侧棱';
+    // 球：底面按钮无效
+    document.getElementById('bBase').disabled = !!currentShape.sphere;
+  }
+
+  /* ---------- 标签跟随 ---------- */
+  const w2 = new THREE.Vector3();
+  function updateLabels(){
+    ['base','side','edge','joint'].forEach(k=>{
+      const el = lbl[k];
+      const anchor = current && current.userData.labels[k];
+      const show = (k === 'joint') ? !!anchor : (mode[k] && anchor);
+      if(show){
+        w2.copy(anchor).project(camera);
+        if(w2.z < 1){
+          el.style.display = 'block';
+          el.style.left = ((w2.x*0.5+0.5) * container.clientWidth) + 'px';
+          el.style.top  = ((-w2.y*0.5+0.5) * container.clientHeight) + 'px';
+          return;
+        }
+      }
+      el.style.display = 'none';
+    });
+  }
+
+  /* ---------- UI ---------- */
+  const bar = document.getElementById('shapeBar');
+  SHAPES.forEach((s,i)=>{
+    const b = document.createElement('button');
+    b.className = 'act sm' + (i===0 ? '' : ' ghost');
+    b.textContent = s.name;
+    b.onclick = ()=>{
+      bar.querySelectorAll('button').forEach(x=>{x.classList.add('ghost'); x.classList.remove('on');});
+      b.classList.remove('ghost'); b.classList.add('on');
+      selectShape(i);
+    };
+    bar.appendChild(b);
+  });
+  bar.firstChild.classList.add('on');
+  bar.firstChild.classList.remove('ghost');
+
+  btns.base.onclick  = ()=>toggle('base');
+  btns.side.onclick  = ()=>toggle('side');
+  btns.edge.onclick  = ()=>toggle('edge');
+  document.getElementById('bAll').onclick = ()=>{
+    mode.base = mode.side = mode.edge = true;
+    if(currentShape && currentShape.sphere) mode.base = false;
+    applyHighlight();
+  };
+  document.getElementById('bNone').onclick = ()=>{
+    clearHighlight(); hlStatus.textContent = '';
+    applyHighlight();
+  };
+  const bSpin = document.getElementById('bSpin');
+  bSpin.onclick = ()=>{
+    controls.autoRotate = !controls.autoRotate;
+    bSpin.textContent = '自动旋转：' + (controls.autoRotate ? '开' : '关');
+    bSpin.classList.toggle('on', controls.autoRotate);
+  };
+  document.getElementById('bView').onclick = ()=>{
+    camera.position.copy(view0);
+    controls.target.copy(viewT);
+  };
+
+  /* ---------- 常见组合体 ---------- */
+  const comboPanel = document.getElementById('comboPanel');
+  const comboBtns = document.getElementById('comboBtns');
+  // 精选拼接面能严丝合缝对齐的常见组合（下部件索引, 上部件索引, 名称）
+  const COMBOS = [
+    {lo:6, up:7, name:'圆柱 + 圆锥（笔尖形）'},
+    {lo:8, up:7, name:'圆台 + 圆锥（课本第5题(1)）'},
+    {lo:8, up:6, name:'圆台 + 圆柱（水杯形）'},
+    {lo:6, up:8, name:'圆柱 + 圆台（灯罩形）'},
+    {lo:5, up:4, name:'四棱台 + 四棱锥（金字塔形）'},
+    {lo:0, up:3, name:'三棱柱 + 三棱锥'}
+  ];
+  comboSel = {lower: COMBOS[0].lo, upper: COMBOS[0].up};   // 默认：下圆柱 + 上圆锥
+  COMBOS.forEach((c, i)=>{
+    const b = document.createElement('button');
+    b.className = 'act sm ghost combo-preset';
+    b.textContent = c.name;
+    b.onclick = ()=>{
+      comboSel.lower = c.lo;
+      comboSel.upper = c.up;
+      comboBtns.querySelectorAll('.combo-preset').forEach(x=>x.classList.remove('on'));
+      b.classList.add('on');
+      selectShape(SHAPES.length - 1);   // 组合体是最后一个
+    };
+    comboBtns.appendChild(b);
+  });
+  comboBtns.firstChild.classList.add('on');   // 默认选中第一个
+
+  /* ---------- 自适应与主循环 ---------- */
+  function resize(){
+    const w = container.clientWidth, h = container.clientHeight;
+    renderer.setSize(w, h);
+    camera.aspect = w/h;
+    camera.updateProjectionMatrix();
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  selectShape(0);
+
+  // 调试/分享直达入口：#combo 直接显示组合体并停用自动旋转
+  if(/combo/.test(location.hash)){
+    selectShape(SHAPES.length - 1);
+    controls.autoRotate = false;
+    bSpin.textContent = '自动旋转：关';
+    bSpin.classList.remove('on');
+  }
+
+  (function loop(){
+    requestAnimationFrame(loop);
+    controls.update();
+    renderer.render(scene, camera);
+    updateLabels();
+  })();
+})();
+</script>
+</body>
+</html>

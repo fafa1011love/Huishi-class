@@ -1,0 +1,698 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>10.3　电势差与电场强度的关系 ｜ 人教版物理必修第三册</title>
+<style>
+  :root{
+    --blue:#1d4ed8; --blue-soft:#eff6ff; --blue-line:#bfdbfe;
+    --ink:#1e293b; --sub:#64748b; --line:#e2e8f0;
+    --amber-bg:#fffbeb; --amber-line:#fcd34d; --amber-ink:#92400e;
+    --green:#059669; --red:#dc2626;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:#f3f5f9; color:var(--ink);
+    font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif; padding:18px 12px 40px;}
+  .wrap{max-width:1060px; margin:0 auto;}
+  header{background:#fff; border:1px solid var(--line); border-left:6px solid var(--blue);
+    border-radius:12px; padding:16px 22px; box-shadow:0 1px 3px rgba(15,23,42,.06);}
+  header h1{font-size:22px; color:var(--ink);}
+  header .meta{margin-top:6px; font-size:12.5px; color:var(--sub); line-height:1.7;}
+  .mod{background:#fff; border:1px solid var(--line); border-radius:12px;
+    padding:16px 20px 18px; margin-top:16px; box-shadow:0 1px 3px rgba(15,23,42,.05);}
+  .mod-h{display:flex; align-items:center; gap:10px; margin-bottom:10px;}
+  .mod-h .no{background:var(--blue); color:#fff; font-size:12px; border-radius:6px;
+    padding:2px 8px; white-space:nowrap;}
+  .mod-h h2{font-size:16.5px;}
+  .mod-h .kp{margin-left:auto; font-size:12px; color:var(--sub); white-space:nowrap;}
+  .think{background:var(--blue-soft); border:1px solid var(--blue-line); border-radius:8px;
+    padding:8px 12px; font-size:12.5px; color:#1e40af; margin-bottom:10px; line-height:1.7;}
+  .think b{color:var(--blue);}
+  canvas.stage{display:block; width:100%; background:#fbfdff;
+    border:1px solid var(--line); border-radius:10px; touch-action:none;}
+  .ctrl{display:flex; flex-wrap:wrap; gap:8px 18px; align-items:center; margin-top:10px;}
+  .row{display:flex; align-items:center; gap:8px; font-size:13px;}
+  .row label{color:var(--sub); white-space:nowrap;}
+  .row input[type=range]{width:150px; accent-color:var(--blue);}
+  .row .val{min-width:64px; font-variant-numeric:tabular-nums; color:var(--ink); font-weight:600;}
+  .btn{border:1px solid var(--blue); color:var(--blue); background:#fff; border-radius:7px;
+    padding:4px 12px; font-size:12.5px; cursor:pointer;}
+  .btn:hover{background:var(--blue-soft);}
+  .btn.on{background:var(--blue); color:#fff;}
+  .note{margin-top:10px; background:var(--amber-bg); border:1px solid var(--amber-line);
+    border-radius:8px; padding:8px 12px; font-size:12.5px; color:var(--amber-ink); line-height:1.8;}
+  .note b{color:#b45309;}
+  footer{margin-top:20px; text-align:center; font-size:12px; color:#94a3b8;}
+  .seg{display:inline-flex; border:1px solid var(--blue); border-radius:8px; overflow:hidden;}
+  .seg button{border:none; background:#fff; color:var(--blue); padding:4px 12px;
+    font-size:12.5px; cursor:pointer;}
+  .seg button.on{background:var(--blue); color:#fff;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>10.3　电势差与电场强度的关系</h1>
+  <div class="meta">人教版《物理》必修第三册 · 第十章 静电场中的能量 · 教材 P35–P37 ｜ 覆盖知识点：匀强电场 U＝Ed、E＝U/d、d 为沿场强方向的距离</div>
+</header>
+
+<div class="mod">
+  <div class="mod-h">
+    <span class="no">模块 1</span>
+    <h2>匀强电场中的 U＝Ed</h2>
+    <span class="kp">平行板交互</span>
+  </div>
+  <div class="think"><b>先想一想：</b>两板间电压 U 不变，把板间距 d 拉大，板间电场会变强还是变弱？拖动试试。</div>
+  <canvas class="stage" id="cv1" style="height:420px;"></canvas>
+  <div class="ctrl">
+    <div class="row"><label>板间电压 U</label><input type="range" id="u1" min="10" max="120" step="5" value="60"><span class="val" id="u1v"></span></div>
+    <div class="row"><label>板间距 d</label><input type="range" id="d1" min="2" max="20" step="0.5" value="8"><span class="val" id="d1v"></span></div>
+    <button class="btn" id="preset1">经典：100 V / 10 cm</button>
+    <button class="btn" id="probe1">探针归中</button>
+    <button class="btn on" id="eq1">等势面叠加</button>
+  </div>
+  <div class="note"><b>观察要点：</b>E＝U/d —— d 变小则电场线变密、E 变大；探针从左板移到右板，电势 φ 均匀（线性）下降，φ–x 图是一条直线，其斜率绝对值就是 E。相邻等势面 Δφ 相同，画得越密说明 E＝Δφ/Δx 越大。此式只对匀强电场成立。</div>
+</div>
+
+<div class="mod">
+  <div class="mod-h">
+    <span class="no">模块 2</span>
+    <h2>U＝Ed 中 d 的含义</h2>
+    <span class="kp">投影动画对比</span>
+  </div>
+  <div class="think"><b>先想一想：</b>A、B 两点相距 L，但连线斜着放。这时 U<sub>AB</sub> 该用 E·L 还是 E·（L 沿电场方向的投影）？</div>
+  <canvas class="stage" id="cv2" style="height:360px;"></canvas>
+  <div class="ctrl">
+    <div class="row"><label>场强 E</label><input type="range" id="e2" min="10" max="60" step="5" value="40"><span class="val" id="e2v"></span></div>
+    <div class="row"><label>AB 距离 L</label><input type="range" id="l2" min="40" max="260" step="10" value="170"><span class="val" id="l2v"></span></div>
+    <div class="row"><label>夹角 θ</label><input type="range" id="t2" min="0" max="180" step="5" value="40"><span class="val" id="t2v"></span></div>
+    <button class="btn" id="preset2a">θ＝0°（沿电场）</button>
+    <button class="btn" id="preset2b">θ＝90°（沿等势线）</button>
+    <button class="btn" id="scan2">自动扫描 θ</button>
+  </div>
+  <div class="note"><b>观察要点：</b>只有沿场强方向的分位移才贡献电势差：d＝L·cosθ，U<sub>AB</sub>＝E·L·cosθ。θ＝90° 时 d＝0、U＝0 —— A、B 在同一等势线上，此时用 E·L 算是错的。</div>
+</div>
+
+<footer>人教版高中物理必修第三册 · 可视化交互课件 ｜ 单文件离线运行，双击即可使用</footer>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* ========== 通用工具（所有文件统一使用） ========== */
+function $(id){
+  return document.getElementById(id);
+}
+
+function fmt(x, d){
+  if (d === undefined) d = 2;
+  if (!isFinite(x)) return '—';
+  var a = Math.abs(x);
+  if (a >= 10000 || (a > 0 && a < 0.01)) return x.toExponential(2);
+  return (+x.toFixed(d)).toString();
+}
+
+function fit(cv){
+  var dpr = window.devicePixelRatio || 1;
+  var w = cv.clientWidth;
+  var h = cv.clientHeight;
+  cv.width = Math.round(w * dpr);
+  cv.height = Math.round(h * dpr);
+  var ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return ctx;
+}
+
+function bindRange(id, fn){
+  var el = $(id);
+  var v = $(id + 'v');
+  function go(){
+    if (v) v.textContent = el.value;
+    fn(parseFloat(el.value));
+  }
+  el.addEventListener('input', go);
+  go();
+  return el;
+}
+
+function arrow(ctx, x1, y1, x2, y2, color, w){
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = w || 2;
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.stroke();
+  var a = Math.atan2(y2 - y1, x2 - x1);
+  var s = 7;
+  ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - s * Math.cos(a - 0.42), y2 - s * Math.sin(a - 0.42));
+  ctx.lineTo(x2 - s * Math.cos(a + 0.42), y2 - s * Math.sin(a + 0.42));
+  ctx.closePath();
+  ctx.fill();
+}
+
+function clamp(x, a, b){
+  return Math.max(a, Math.min(b, x));
+}
+
+function pointer(cv, ev){
+  var r = cv.getBoundingClientRect();
+  return {
+    x: (ev.clientX - r.left) * cv.clientWidth / Math.max(r.width, 1),
+    y: (ev.clientY - r.top) * cv.clientHeight / Math.max(r.height, 1)
+  };
+}
+
+function roundBox(ctx, x, y, w, h, fill, stroke){
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, 7);
+  if (fill){
+    ctx.fillStyle = fill;
+    ctx.fill();
+  }
+  if (stroke){
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+}
+
+function label(ctx, text, x, y, color, align, size){
+  ctx.fillStyle = color || '#334155';
+  ctx.font = (size || 12) + 'px "Microsoft YaHei",sans-serif';
+  ctx.textAlign = align || 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, x, y);
+}
+
+/* ========== 模块 1：平行板 U=Ed ========== */
+var cv1 = $('cv1');
+var state1 = {
+  U:60,
+  dcm:8,
+  probe:0.5,
+  showEq:true,
+  drag:false
+};
+
+function plateGeom1(W, H){
+  var gap = clamp(state1.dcm * 7, 16, H * 0.62);
+  var cy = H * 0.40;
+  var left = W * 0.20;
+  var right = W * 0.80;
+  return {
+    left:left,
+    right:right,
+    top:cy - gap/2,
+    bottom:cy + gap/2,
+    gap:gap,
+    cy:cy
+  };
+}
+
+function fieldStrength1(){
+  var dm = Math.max(0.001, state1.dcm / 100);
+  return state1.U / dm;
+}
+
+function drawPlates1(ctx, g){
+  ctx.fillStyle = '#dc2626';
+  ctx.fillRect(g.left - 12, g.top, 12, g.gap);
+  ctx.fillStyle = '#2563eb';
+  ctx.fillRect(g.right, g.top, 12, g.gap);
+  label(ctx, '+', g.left - 6, g.cy, '#fff', 'center', 13);
+  label(ctx, '−', g.right + 6, g.cy, '#fff', 'center', 13);
+  label(ctx, 'U', (g.left + g.right)/2, g.top - 20, '#334155', 'center', 13);
+}
+
+function drawFieldLines1(ctx, g){
+  var E = fieldStrength1();
+  var n = clamp(Math.round(E / 45), 5, 26);
+  var step = g.gap / (n + 1);
+  for (var i=1; i<=n; i++){
+    var y = g.top + step * i;
+    arrow(ctx, g.left + 6, y, g.right - 6, y, 'rgba(29,78,216,.55)', 1.3);
+  }
+  label(ctx, '电场线密度 ∝ E', g.left + 8, g.bottom + 18, '#1d4ed8', 'left', 11);
+}
+
+function drawEquiPlanes1(ctx, g){
+  var N = 6;
+  var width = g.right - g.left;
+  ctx.setLineDash([5, 5]);
+  for (var k=1; k<N; k++){
+    var frac = 1 - k / N;
+    var x = g.left + width * frac;
+    ctx.strokeStyle = 'rgba(217,119,6,.85)';
+    ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(x, g.top - 8);
+    ctx.lineTo(x, g.bottom + 8);
+    ctx.stroke();
+    label(ctx, fmt(state1.U * k / N, 0) + ' V', x, g.bottom + 26, '#d97706', 'center', 10);
+  }
+  ctx.setLineDash([]);
+  var gapCm = state1.dcm / N;
+  label(ctx, '相邻等势面 Δφ＝U/' + N + '，实际间距 ' + fmt(gapCm, 2) + ' cm', g.left + 8, g.bottom + 44, '#d97706', 'left', 11);
+}
+
+function drawProbe1(ctx, g){
+  var x = g.left + (g.right - g.left) * state1.probe;
+  var y = g.cy;
+  var phi = state1.U * (1 - state1.probe);
+  ctx.strokeStyle = '#d97706';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  ctx.moveTo(x, y);
+  ctx.lineTo(x, g.bottom + 34);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(x, y, 7, 0, Math.PI*2);
+  ctx.fillStyle = '#d97706';
+  ctx.fill();
+  roundBox(ctx, x-52, y-34, 104, 26, 'rgba(255,255,255,.95)', '#fed7aa');
+  label(ctx, 'φ＝' + fmt(phi, 1) + ' V', x, y-21, '#c2410c', 'center', 12);
+  return phi;
+}
+
+function drawPhiGraph1(ctx, W, H, g){
+  var gx = W * 0.22;
+  var gy = H * 0.60;
+  var gw = W * 0.56;
+  var gh = 66;
+  roundBox(ctx, gx, gy, gw, gh, '#f8fafc', '#cbd5e1');
+  ctx.strokeStyle = '#1d4ed8';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(gx + 10, gy + 12);
+  ctx.lineTo(gx + gw - 10, gy + gh - 12);
+  ctx.stroke();
+  label(ctx, 'φ', gx + 6, gy + 14, '#1d4ed8', 'left', 11);
+  label(ctx, 'x →', gx + gw - 16, gy + gh - 12, '#64748b', 'right', 11);
+  label(ctx, 'φ–x 直线，斜率绝对值＝E＝' + fmt(fieldStrength1(), 0) + ' V/m', gx + 10, gy + gh + 15, '#475569', 'left', 11);
+  var px = gx + 10 + (gw - 20) * state1.probe;
+  var py = gy + 12 + (gh - 24) * state1.probe;
+  ctx.beginPath();
+  ctx.arc(px, py, 4.5, 0, Math.PI*2);
+  ctx.fillStyle = '#d97706';
+  ctx.fill();
+}
+
+function drawNonUniform1(ctx, W, H){
+  var gx = W * 0.22;
+  var gy = H * 0.82;
+  var gw = W * 0.74;
+  var gh = 52;
+  roundBox(ctx, gx, gy, gw, gh, '#fffbeb', '#fcd34d');
+  label(ctx, '对比：非匀强电场（点电荷）—— 同样取 Δd，靠近电荷处 Δφ 更大，不能直接用 U＝Ed',
+    gx + 12, gy + 13, '#92400e', 'left', 11);
+
+  var q = 6;
+  var dr = 0.25;
+  var r1 = 0.50;
+  var r2 = 1.50;
+  var scale = Math.min(150, (gw - 90) / 1.9);
+  var x0 = gx + 34;
+  var y0 = gy + 36;
+  ctx.strokeStyle = '#94a3b8';
+  ctx.lineWidth = 1.2;
+  ctx.beginPath();
+  ctx.moveTo(x0, y0);
+  ctx.lineTo(x0 + 1.9 * scale, y0);
+  ctx.stroke();
+  ctx.beginPath();
+  ctx.arc(x0, y0, 6, 0, Math.PI*2);
+  ctx.fillStyle = '#dc2626';
+  ctx.fill();
+
+  var pairs = [[r1, '#b91c1c'], [r2, '#1d4ed8']];
+  for (var i=0; i<pairs.length; i++){
+    var r = pairs[i][0];
+    var xa = x0 + r * scale;
+    var xb = x0 + (r + dr) * scale;
+    ctx.strokeStyle = pairs[i][1];
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(xa, y0 - 7);
+    ctx.lineTo(xb, y0 - 7);
+    ctx.stroke();
+    var dphi = 9 * q / r - 9 * q / (r + dr);
+    label(ctx, 'Δφ＝' + fmt(dphi, 1) + ' V', (xa + xb)/2, y0 - 18, pairs[i][1], 'center', 10);
+    label(ctx, 'Δd', (xa + xb)/2, y0 + 11, '#64748b', 'center', 10);
+  }
+}
+
+function draw1(){
+  var ctx = fit(cv1);
+  var W = cv1.clientWidth;
+  var H = cv1.clientHeight;
+  ctx.clearRect(0, 0, W, H);
+  var g = plateGeom1(W, H);
+  var E = fieldStrength1();
+
+  ctx.fillStyle = 'rgba(29,78,216,.05)';
+  ctx.fillRect(g.left, g.top, g.right - g.left, g.gap);
+
+  drawFieldLines1(ctx, g);
+  if (state1.showEq) drawEquiPlanes1(ctx, g);
+  drawPlates1(ctx, g);
+  var phi = drawProbe1(ctx, g);
+  drawPhiGraph1(ctx, W, H, g);
+  drawNonUniform1(ctx, W, H);
+
+  roundBox(ctx, 16, 15, 250, 100, 'rgba(255,255,255,.95)', '#cbd5e1');
+  label(ctx, 'U＝' + fmt(state1.U, 0) + ' V　d＝' + fmt(state1.dcm/100, 3) + ' m', 30, 38, '#334155', 'left', 12);
+  label(ctx, 'E＝U/d＝' + fmt(E, 0) + ' V/m ＝ ' + fmt(E, 0) + ' N/C', 30, 63, '#1d4ed8', 'left', 13);
+  label(ctx, '探针 φ＝' + fmt(phi, 1) + ' V', 30, 88, '#c2410c', 'left', 12);
+  label(ctx, '（拖动橙色探针改变位置）', 30, 107, '#64748b', 'left', 10);
+}
+
+bindRange('u1', function(v){
+  state1.U = v;
+  $('u1v').textContent = fmt(v, 0) + ' V';
+  draw1();
+});
+
+bindRange('d1', function(v){
+  state1.dcm = v;
+  $('d1v').textContent = fmt(v/100, 3) + ' m';
+  draw1();
+});
+
+$('preset1').addEventListener('click', function(){
+  $('u1').value = 100;
+  $('d1').value = 10;
+  $('u1').dispatchEvent(new Event('input'));
+  $('d1').dispatchEvent(new Event('input'));
+});
+
+$('probe1').addEventListener('click', function(){
+  state1.probe = 0.5;
+  draw1();
+});
+
+$('eq1').addEventListener('click', function(){
+  state1.showEq = !state1.showEq;
+  this.classList.toggle('on', state1.showEq);
+  draw1();
+});
+
+cv1.addEventListener('pointerdown', function(ev){
+  var p = pointer(cv1, ev);
+  var g = plateGeom1(cv1.clientWidth, cv1.clientHeight);
+  if (p.x > g.left - 20 && p.x < g.right + 20 && p.y > g.top - 30 && p.y < g.bottom + 40){
+    state1.drag = true;
+    cv1.setPointerCapture(ev.pointerId);
+    state1.probe = clamp((p.x - g.left) / Math.max(g.right - g.left, 1), 0, 1);
+    draw1();
+  }
+});
+
+cv1.addEventListener('pointermove', function(ev){
+  if (!state1.drag) return;
+  var p = pointer(cv1, ev);
+  var g = plateGeom1(cv1.clientWidth, cv1.clientHeight);
+  state1.probe = clamp((p.x - g.left) / Math.max(g.right - g.left, 1), 0, 1);
+  draw1();
+});
+
+cv1.addEventListener('pointerup', function(){
+  state1.drag = false;
+});
+
+cv1.addEventListener('pointercancel', function(){
+  state1.drag = false;
+});
+
+/* ========== 模块 2：d＝L·cosθ ========== */
+var cv2 = $('cv2');
+var state2 = {
+  E:40,
+  L:170,
+  theta:40,
+  A:{x:200, y:200},
+  dragA:false,
+  scanning:false,
+  scanDir:1
+};
+var PPM2 = 100;             // 100 px = 1 m
+
+function bPoint2(){
+  var rad = state2.theta * Math.PI / 180;
+  return {
+    x:state2.A.x + state2.L * Math.cos(rad),
+    y:state2.A.y - state2.L * Math.sin(rad)
+  };
+}
+
+function drawFieldRows2(ctx, W, H){
+  for (var y=36; y<H-20; y+=38){
+    arrow(ctx, 26, y, W-26, y, 'rgba(29,78,216,.22)', 1.2);
+  }
+  label(ctx, '匀强电场 E →', 32, 22, '#1d4ed8', 'left', 12);
+}
+
+function drawSegment2(ctx, A, B){
+  ctx.strokeStyle = '#0f766e';
+  ctx.lineWidth = 3.5;
+  ctx.beginPath();
+  ctx.moveTo(A.x, A.y);
+  ctx.lineTo(B.x, B.y);
+  ctx.stroke();
+  roundBox(ctx, A.x-24, A.y-24, 24, 24, '#0f766e', '#fff');
+  label(ctx, 'A', A.x-12, A.y-12, '#fff', 'center', 12);
+  roundBox(ctx, B.x, B.y-24, 24, 24, '#7c3aed', '#fff');
+  label(ctx, 'B', B.x+12, B.y-12, '#fff', 'center', 12);
+}
+
+function drawProjection2(ctx, A, B){
+  var rad = state2.theta * Math.PI / 180;
+  var dpx = state2.L * Math.cos(rad);
+  var proj = {x:A.x + dpx, y:A.y};
+  ctx.strokeStyle = '#d97706';
+  ctx.lineWidth = 2.4;
+  ctx.setLineDash([7, 5]);
+  ctx.beginPath();
+  ctx.moveTo(B.x, B.y);
+  ctx.lineTo(proj.x, proj.y);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.strokeStyle = '#d97706';
+  ctx.lineWidth = 4;
+  ctx.beginPath();
+  ctx.moveTo(A.x, A.y);
+  ctx.lineTo(proj.x, proj.y);
+  ctx.stroke();
+  if (Math.abs(dpx) > 12){
+    var sx = Math.sign(dpx);
+    ctx.strokeStyle = '#94a3b8';
+    ctx.lineWidth = 1.3;
+    ctx.beginPath();
+    ctx.moveTo(proj.x, proj.y + sx*0);
+    ctx.lineTo(proj.x, proj.y - 14);
+    ctx.lineTo(proj.x - sx*14, proj.y - 14);
+    ctx.stroke();
+  }
+  label(ctx, 'd＝L·cosθ', (A.x + proj.x)/2, A.y - 16, '#d97706', 'center', 12);
+  var vertPx = Math.abs(A.y - B.y);
+  if (vertPx > 24){
+    label(ctx, 'L·sinθ（不做功）', B.x + 14, (A.y + B.y)/2, '#7c3aed', 'left', 11);
+  }
+  return proj;
+}
+
+function drawAngleArc2(ctx, A){
+  var rad = state2.theta * Math.PI / 180;
+  ctx.strokeStyle = '#64748b';
+  ctx.lineWidth = 1.5;
+  ctx.beginPath();
+  ctx.arc(A.x, A.y, 42, -rad, 0, rad < 0);
+  ctx.stroke();
+  label(ctx, 'θ＝' + fmt(state2.theta, 0) + '°', A.x + 52, A.y - 26, '#475569', 'left', 12);
+}
+
+function drawCosCurve2(ctx, W, H, uRight){
+  var gx = W - 250;
+  var gy = H - 150;
+  var gw = 230;
+  var gh = 120;
+  roundBox(ctx, gx, gy, gw, gh, '#f8fafc', '#cbd5e1');
+  label(ctx, 'U–θ 关系（余弦曲线）', gx + gw/2, gy + 14, '#475569', 'center', 11);
+  var maxU = state2.E * (state2.L / 100);
+  var px = function(t){ return gx + 16 + (gw - 32) * t / 180; };
+  var py = function(u){ return gy + gh/2 + 14 - (gh/2 - 26) * (u / Math.max(maxU, 1e-6)); };
+  ctx.strokeStyle = '#e2e8f0';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(gx + 12, py(0));
+  ctx.lineTo(gx + gw - 12, py(0));
+  ctx.stroke();
+  ctx.strokeStyle = '#1d4ed8';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  for (var t=0; t<=180; t+=5){
+    var u = maxU * Math.cos(t * Math.PI / 180);
+    if (t === 0) ctx.moveTo(px(t), py(u));
+    else ctx.lineTo(px(t), py(u));
+  }
+  ctx.stroke();
+  var cx = px(state2.theta);
+  var cy = py(uRight);
+  ctx.beginPath();
+  ctx.arc(cx, cy, 5, 0, Math.PI*2);
+  ctx.fillStyle = '#dc2626';
+  ctx.fill();
+  label(ctx, '0°', gx + 16, gy + gh - 10, '#94a3b8', 'center', 10);
+  label(ctx, '180°', gx + gw - 16, gy + gh - 10, '#94a3b8', 'center', 10);
+  label(ctx, '＋U', gx + 12, py(maxU), '#94a3b8', 'left', 10);
+}
+
+function draw2(){
+  var ctx = fit(cv2);
+  var W = cv2.clientWidth;
+  var H = cv2.clientHeight;
+  ctx.clearRect(0, 0, W, H);
+  drawFieldRows2(ctx, W, H);
+
+  var A = state2.A;
+  var B = bPoint2();
+  drawSegment2(ctx, A, B);
+  drawAngleArc2(ctx, A);
+  var proj = drawProjection2(ctx, A, B);
+
+  var Lm = state2.L / PPM2;
+  var rad = state2.theta * Math.PI / 180;
+  var dm = Lm * Math.cos(rad);
+  var uRight = state2.E * dm;
+  var uWrong = state2.E * Lm;
+
+  ctx.strokeStyle = 'rgba(124,58,237,.35)';
+  ctx.setLineDash([5, 5]);
+  ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  ctx.moveTo(A.x, A.y);
+  ctx.lineTo(A.x, B.y);
+  ctx.stroke();
+  ctx.setLineDash([]);
+
+  roundBox(ctx, 16, 15, 282, 148, 'rgba(255,255,255,.95)', '#cbd5e1');
+  label(ctx, 'L＝' + fmt(Lm, 2) + ' m　θ＝' + fmt(state2.theta, 0) + '°', 30, 38, '#334155', 'left', 12);
+  label(ctx, 'd＝L·cosθ＝' + fmt(dm, 3) + ' m', 30, 63, '#d97706', 'left', 13);
+  label(ctx, '正确：U＝E·d＝' + fmt(uRight, 1) + ' V', 30, 88, '#059669', 'left', 13);
+  label(ctx, '错误：U＝E·L＝' + fmt(uWrong, 1) + ' V', 30, 113, '#dc2626', 'left', 13);
+  label(ctx, '（只有沿电场方向的位移才算数）', 30, 132, '#64748b', 'left', 10);
+  label(ctx, '取 φA＝0，则 φB＝' + fmt(-uRight, 1) + ' V', 30, 152, '#475569', 'left', 11);
+
+  if (Math.abs(dm) < 0.02){
+    roundBox(ctx, W-232, 15, 216, 46, 'rgba(236,253,245,.96)', '#6ee7b7');
+    label(ctx, 'A、B 在同一等势线上：U＝0', W-124, 30, '#047857', 'center', 12);
+    label(ctx, '沿等势线移动，电场力不做功', W-124, 50, '#047857', 'center', 11);
+  }
+  drawCosCurve2(ctx, W, H, uRight);
+  label(ctx, '拖动 A 点可整体平移', 16, H-18, '#64748b', 'left', 11);
+}
+
+bindRange('e2', function(v){
+  state2.E = v;
+  $('e2v').textContent = fmt(v, 0) + ' V/m';
+  draw2();
+});
+
+bindRange('l2', function(v){
+  state2.L = v;
+  $('l2v').textContent = fmt(v/100, 2) + ' m';
+  draw2();
+});
+
+bindRange('t2', function(v){
+  state2.theta = v;
+  $('t2v').textContent = fmt(v, 0) + '°';
+  draw2();
+});
+
+$('preset2a').addEventListener('click', function(){
+  $('t2').value = 0;
+  $('t2').dispatchEvent(new Event('input'));
+});
+
+$('preset2b').addEventListener('click', function(){
+  $('t2').value = 90;
+  $('t2').dispatchEvent(new Event('input'));
+});
+
+$('scan2').addEventListener('click', function(){
+  state2.scanning = !state2.scanning;
+  this.classList.toggle('on', state2.scanning);
+  if (state2.scanning) requestAnimationFrame(tickScan2);
+});
+
+var scanLast2 = 0;
+
+function tickScan2(now){
+  if (!state2.scanning) return;
+  if (!scanLast2) scanLast2 = now;
+  var dt = Math.min(50, now - scanLast2);
+  scanLast2 = now;
+  state2.theta += state2.scanDir * dt * 0.036;
+  if (state2.theta >= 180){
+    state2.theta = 180;
+    state2.scanDir = -1;
+  }
+  if (state2.theta <= 0){
+    state2.theta = 0;
+    state2.scanDir = 1;
+  }
+  $('t2').value = Math.round(state2.theta);
+  $('t2v').textContent = fmt(state2.theta, 0) + '°';
+  draw2();
+  requestAnimationFrame(tickScan2);
+}
+
+cv2.addEventListener('pointerdown', function(ev){
+  var p = pointer(cv2, ev);
+  if (Math.hypot(p.x-state2.A.x, p.y-state2.A.y) < 30){
+    state2.dragA = true;
+    cv2.setPointerCapture(ev.pointerId);
+  }
+});
+
+cv2.addEventListener('pointermove', function(ev){
+  if (!state2.dragA) return;
+  var p = pointer(cv2, ev);
+  state2.A.x = clamp(p.x, 70, cv2.clientWidth - 300);
+  state2.A.y = clamp(p.y, 90, cv2.clientHeight - 70);
+  draw2();
+});
+
+cv2.addEventListener('pointerup', function(){
+  state2.dragA = false;
+});
+
+cv2.addEventListener('pointercancel', function(){
+  state2.dragA = false;
+});
+
+/* ========== 生命周期 ========== */
+document.addEventListener('visibilitychange', function(){
+  if (document.hidden){
+    state2.scanning = false;
+    scanLast2 = 0;
+    $('scan2').classList.remove('on');
+  }
+});
+
+window.addEventListener('resize', function(){
+  draw1();
+  draw2();
+});
+
+draw1();
+draw2();
+})();
+</script>
+</body>
+</html>

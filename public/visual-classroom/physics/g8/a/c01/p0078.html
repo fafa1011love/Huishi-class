@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>噪声的控制与隔音房间模型（单文件版）</title>
+<style>
+/* 噪声的控制与隔音房间模型 */
+:root{
+  --blue:#2563EB;
+  --green:#10B981;
+  --red:#EF4444;
+  --amber:#F59E0B;
+}
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif;
+  background:#eef2f7;color:#1e293b;padding:28px 16px 48px;
+}
+.page{max-width:980px;margin:0 auto}
+.page-head{margin-bottom:20px}
+h1{font-size:26px;color:#0f172a}
+.sub{color:#64748b;margin-top:6px;font-size:14px}
+
+.card{
+  background:#fff;border-radius:14px;
+  box-shadow:0 1px 3px rgba(15,23,42,.08);
+  padding:20px 22px;margin-bottom:22px;
+}
+.card-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;margin-bottom:12px}
+.tag{background:var(--blue);color:#fff;font-size:12px;padding:2px 10px;border-radius:20px;flex-shrink:0}
+.card-head h2{font-size:17px}
+.hint{color:#94a3b8;font-size:13px;margin-left:auto}
+
+.stage-wrap{border:1px solid #e2e8f0;border-radius:10px;overflow:hidden;background:#fff}
+.stage-wrap svg{display:block;width:100%;height:auto;touch-action:none}
+.stage-wrap svg text{font-family:"PingFang SC","Microsoft YaHei",sans-serif}
+
+/* ---------- 控制区 ---------- */
+.ctrl-row{display:grid;grid-template-columns:repeat(4,1fr);gap:14px;margin-top:16px}
+@media(max-width:880px){.ctrl-row{grid-template-columns:1fr 1fr}}
+@media(max-width:560px){.ctrl-row{grid-template-columns:1fr}}
+.ctrl{background:#f8fafc;border:1px solid #e8edf3;border-radius:10px;padding:12px}
+.ctrl-title{font-size:13px;color:#475569;margin-bottom:10px;font-weight:600}
+
+.switch{
+  width:100%;padding:9px 0;border:1.5px solid var(--blue);background:#fff;
+  color:var(--blue);border-radius:8px;font-size:14px;cursor:pointer;transition:.15s;
+}
+.switch.on{background:var(--blue);color:#fff}
+
+.mat-btns{display:flex;flex-wrap:wrap;gap:6px}
+.mat-btns button{
+  padding:6px 10px;border:1.5px solid #cbd5e1;background:#fff;border-radius:20px;
+  font-size:13px;cursor:pointer;color:#475569;transition:.15s;
+}
+.mat-btns button.on{border-color:var(--blue);background:var(--blue);color:#fff}
+
+/* ---------- 分贝表 ---------- */
+.meter-val{display:flex;align-items:baseline;gap:8px;margin-bottom:10px;flex-wrap:wrap}
+.meter-val b{font-size:30px;line-height:1;color:#0f172a}
+.meter-val small{color:#94a3b8}
+.zone-chip{color:#fff;font-size:12px;padding:2px 10px;border-radius:12px;background:var(--red);transition:background .2s}
+.meter-bar{position:relative;height:14px;display:flex;border-radius:7px}
+.meter-bar .zg{width:40%;background:var(--green);border-radius:7px 0 0 7px}
+.meter-bar .zy{width:30%;background:var(--amber)}
+.meter-bar .zr{width:30%;background:var(--red);border-radius:0 7px 7px 0}
+.needle{
+  position:absolute;top:-4px;width:3px;height:22px;background:#0f172a;
+  border-radius:2px;left:90%;transition:left .25s;
+}
+.meter-ticks{position:relative;height:16px;margin-top:4px;font-size:11px;color:#94a3b8}
+.meter-ticks span{position:absolute;transform:translateX(-50%)}
+.meter-note{margin-top:4px;font-size:12px;color:#94a3b8;line-height:1.5}
+
+.foot{text-align:center;color:#94a3b8;font-size:12px;margin-top:8px}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header class="page-head">
+    <h1>噪声的控制与隔音房间模型</h1>
+    <p class="sub">声源 → 传播 → 人耳，三级控制逐级衰减；声波会动、分贝表实时联动，降噪效果看得见</p>
+  </header>
+
+  <!-- ============ 模块① 三级控制 ============ -->
+  <section class="card">
+    <div class="card-head">
+      <span class="tag">模块①</span>
+      <h2>三级控制：在哪里治噪声</h2>
+      <span class="hint">装上消声器、换传播材料、戴上耳罩，看声波和分贝表怎么变</span>
+    </div>
+
+    <div class="stage-wrap">
+      <svg id="stage1" viewBox="0 0 760 330"></svg>
+    </div>
+
+    <div class="ctrl-row">
+      <div class="ctrl">
+        <div class="ctrl-title">① 声源处 · 防止噪声产生</div>
+        <button id="btnMuffler" class="switch" type="button">消声器：未安装</button>
+      </div>
+      <div class="ctrl">
+        <div class="ctrl-title">② 传播过程中 · 阻断噪声</div>
+        <div class="mat-btns" id="matBtns"></div>
+      </div>
+      <div class="ctrl">
+        <div class="ctrl-title">③ 人耳处 · 防止噪声入耳</div>
+        <button id="btnEarmuff" class="switch" type="button">耳罩：未戴</button>
+      </div>
+      <div class="ctrl meter-col">
+        <div class="ctrl-title">人耳处 · 分贝表</div>
+        <div class="meter">
+          <div class="meter-val"><b id="dbVal">90</b><small>dB</small><span class="zone-chip" id="dbZone">吵，干扰谈话</span></div>
+          <div class="meter-bar">
+            <div class="zg"></div><div class="zy"></div><div class="zr"></div>
+            <div class="needle" id="needle"></div>
+          </div>
+          <div class="meter-ticks">
+            <span style="left:0%">0</span><span style="left:30%">30</span><span style="left:40%">40</span><span style="left:70%">70</span><span style="left:90%">90</span>
+          </div>
+          <div class="meter-note">0 听觉下限 · 30–40 理想安静 · 70 干扰谈话 · 90+ 损伤听力</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 模块② 隔音房间剖面 ============ -->
+  <section class="card">
+    <div class="card-head">
+      <span class="tag">模块②</span>
+      <h2>隔音房间剖面：每层吸声结构降了多少</h2>
+      <span class="hint">拖动橙色探针，逐层读出衰减后的分贝值</span>
+    </div>
+
+    <div class="stage-wrap">
+      <svg id="stage2" viewBox="0 0 760 350"></svg>
+    </div>
+  </section>
+
+  <footer class="foot">对照教材：§2.4 / §2.5（P49–53）噪声的控制与隔音</footer>
+</div>
+
+<script>
+"use strict";
+/* 「噪声的控制与隔音房间模型」交互演示
+   模块① 三级控制：声源处 / 传播过程 / 人耳处，声波振幅逐级衰减 + 分贝表联动
+   模块② 隔音房间剖面：可拖探针，逐层读出 dB 衰减                        */
+(function(){
+
+const SVGNS = "http://www.w3.org/2000/svg";
+const $ = id => document.getElementById(id);
+const zoneColor = d => d >= 70 ? "#EF4444" : d >= 40 ? "#F59E0B" : "#10B981";
+const zoneName  = d => d >= 70 ? "吵，干扰谈话" : d >= 40 ? "较吵" : "安静";
+/* 视觉振幅：dB 每降 40 振幅减半（压缩动态范围，肉眼可读） */
+function ampOf(dB, max){ return Math.max(1.2, Math.min(max, max * Math.pow(10, (dB - 90) / 40))); }
+function mk(tag, attrs, parent){
+  const n = document.createElementNS(SVGNS, tag);
+  for (const k in attrs) n.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(n);
+  return n;
+}
+function txt(parent, x, y, str, attrs){
+  const n = mk("text", Object.assign({ x: x, y: y }, attrs || {}), parent);
+  n.textContent = str;
+  return n;
+}
+function wavePath(x1, x2, mid, A, phase, k){
+  let d = "";
+  for (let x = x1; x <= x2; x += 5){
+    const y = mid - A * Math.sin(k * x - phase);
+    d += (d ? "L" : "M") + x.toFixed(1) + " " + y.toFixed(1);
+  }
+  return d;
+}
+function localXY(svg, e){
+  const pt = svg.createSVGPoint();
+  pt.x = e.clientX; pt.y = e.clientY;
+  return pt.matrixTransform(svg.getScreenCTM().inverse());
+}
+
+/* ==================== 模块① 三级控制 ==================== */
+
+const MATERIALS = [
+  { id: "none",   name: "无措施",   drop: 0,  w: 0  },
+  { id: "cotton", name: "棉帘",     drop: 8,  w: 20 },
+  { id: "wood",   name: "木板",     drop: 18, w: 14 },
+  { id: "glass",  name: "双层玻璃", drop: 25, w: 10 },
+  { id: "brick",  name: "砖墙",     drop: 35, w: 26 }
+];
+const DROP_MUFFLER = 15, DROP_EAR = 25;
+const M1 = { base: 90, muffler: false, mat: MATERIALS[0], earmuff: false, t: 0 };
+
+const s1 = $("stage1");
+
+/* 环节标题 */
+txt(s1, 106, 26, "① 声源处",     { "text-anchor": "middle", "font-size": 13, fill: "#94a3b8" });
+txt(s1, 374, 26, "② 传播过程",   { "text-anchor": "middle", "font-size": 13, fill: "#94a3b8" });
+txt(s1, 648, 26, "③ 人耳处",     { "text-anchor": "middle", "font-size": 13, fill: "#94a3b8" });
+
+/* 地面 */
+mk("rect", { x: 0, y: 280, width: 760, height: 50, fill: "#e8edf3" }, s1);
+mk("line", { x1: 0, y1: 280, x2: 760, y2: 280, stroke: "#cbd5e1", "stroke-width": 2 }, s1);
+
+/* 声源（含消声器、抖动） */
+const gMachine = mk("g", {}, s1);
+mk("rect",   { x: 62, y: 182, width: 88, height: 98, rx: 8, fill: "#475569" }, gMachine);
+mk("rect",   { x: 74, y: 190, width: 30, height: 10, rx: 3, fill: "#94a3b8" }, gMachine);
+mk("circle", { cx: 106, cy: 224, r: 24, fill: "#1e293b" }, gMachine);
+mk("circle", { cx: 106, cy: 224, r: 11, fill: "#64748b" }, gMachine);
+txt(gMachine, 106, 305, "声源（音响 90 dB）", { "text-anchor": "middle", "font-size": 13, fill: "#475569" });
+
+/* 消声器（挂在声源上，随抖动一起动） */
+const gMuffler = mk("g", { opacity: 0 }, gMachine);
+mk("rect", { x: 50, y: 136, width: 112, height: 36, rx: 18, fill: "#0ea5e9" }, gMuffler);
+txt(gMuffler, 106, 159, "消声器 −15 dB", { "text-anchor": "middle", "font-size": 13, fill: "#fff" });
+
+/* 无材料时的检查点虚线 */
+const gCkpt = mk("g", {}, s1);
+mk("line", { x1: 374, y1: 150, x2: 374, y2: 280, stroke: "#cbd5e1", "stroke-width": 2, "stroke-dasharray": "6 6" }, gCkpt);
+
+/* 传播材料（砖墙/木板/玻璃/棉帘） */
+const gWall = mk("g", {}, s1);
+function buildWall(){
+  gWall.innerHTML = "";
+  const m = M1.mat;
+  if (m.id === "none"){ gCkpt.style.display = ""; return; }
+  gCkpt.style.display = "none";
+  const top = 150, h = 130;
+  if (m.id === "brick"){
+    mk("rect", { x: 361, y: top, width: 26, height: h, fill: "#b08968" }, gWall);
+    for (let y = top + 25; y < top + h; y += 25)
+      mk("line", { x1: 361, y1: y, x2: 387, y2: y, stroke: "#8a6d51", "stroke-width": 1.5 }, gWall);
+  } else if (m.id === "wood"){
+    mk("rect", { x: 367, y: top, width: 14, height: h, fill: "#b45309" }, gWall);
+    mk("line", { x1: 374, y1: top, x2: 374, y2: top + h, stroke: "#8a4a06", "stroke-width": 1 }, gWall);
+  } else if (m.id === "glass"){
+    mk("rect", { x: 367, y: top, width: 4, height: h, fill: "#7dd3fc", opacity: .85 }, gWall);
+    mk("rect", { x: 377, y: top, width: 4, height: h, fill: "#7dd3fc", opacity: .85 }, gWall);
+  } else if (m.id === "cotton"){
+    mk("rect", { x: 364, y: top, width: 20, height: h, fill: "#fcd34d" }, gWall);
+    for (let i = 0; i < 3; i++)
+      mk("line", { x1: 368 + i * 6, y1: top, x2: 368 + i * 6, y2: top + h,
+                   stroke: "#d97706", "stroke-width": 1, "stroke-dasharray": "3 4", opacity: .6 }, gWall);
+  }
+  txt(gWall, 374, 305, m.name + " −" + m.drop + " dB",
+      { "text-anchor": "middle", "font-size": 13, fill: "#475569" });
+}
+
+/* 人 + 耳罩 */
+const gPerson = mk("g", {}, s1);
+mk("path",   { d: "M624 280 Q626 250 648 248 Q670 250 672 280 Z", fill: "#2563EB" }, gPerson);
+mk("circle", { cx: 648, cy: 226, r: 17, fill: "#fde2c4", stroke: "#94a3b8", "stroke-width": 1.5 }, gPerson);
+const gMuff2 = mk("g", { opacity: 0 }, s1);
+mk("circle", { cx: 631, cy: 226, r: 9, fill: "#334155" }, gMuff2);
+mk("path",   { d: "M631 222 Q648 198 665 222", stroke: "#334155", "stroke-width": 5, fill: "none" }, gMuff2);
+txt(gMuff2, 648, 305, "耳罩 −25 dB", { "text-anchor": "middle", "font-size": 13, fill: "#475569" });
+
+/* 声波（两段：墙前 / 墙后） */
+const waveA = mk("path", { fill: "none", "stroke-width": 2.5, "stroke-linecap": "round" }, s1);
+const waveB = mk("path", { fill: "none", "stroke-width": 2.5, "stroke-linecap": "round" }, s1);
+
+/* 浮动读数 */
+const lab1 = txt(s1, 250, 150, "", { "text-anchor": "middle", "font-size": 15, "font-weight": "bold",
+                                    stroke: "#fff", "stroke-width": 4, "paint-order": "stroke" });
+const lab2 = txt(s1, 500, 150, "", { "text-anchor": "middle", "font-size": 15, "font-weight": "bold",
+                                    stroke: "#fff", "stroke-width": 4, "paint-order": "stroke" });
+
+function dBs1(){
+  const d1 = M1.base - (M1.muffler ? DROP_MUFFLER : 0);
+  const d2 = d1 - M1.mat.drop;
+  const d3 = d2 - (M1.earmuff ? DROP_EAR : 0);
+  return [d1, d2, d3];
+}
+
+function update1(){
+  const [d1, d2, d3] = dBs1();
+  const wallL = 374 - M1.mat.w / 2, wallR = 374 + M1.mat.w / 2;
+  const ph = M1.t * 4;
+  waveA.setAttribute("d", wavePath(150, Math.max(152, wallL), 224, ampOf(d1, 30), ph, 0.09));
+  waveA.setAttribute("stroke", zoneColor(d1));
+  waveB.setAttribute("d", wavePath(wallR, 626, 224, ampOf(d2, 30), ph, 0.09));
+  waveB.setAttribute("stroke", zoneColor(d2));
+  lab1.textContent = d1 + " dB"; lab1.setAttribute("fill", zoneColor(d1));
+  lab2.textContent = d2 + " dB"; lab2.setAttribute("fill", zoneColor(d2));
+  gMuffler.setAttribute("opacity", M1.muffler ? 1 : 0);
+  gMuff2.setAttribute("opacity", M1.earmuff ? 1 : 0);
+  gMachine.setAttribute("transform", "translate(0," + (Math.sin(M1.t * 30) * 1.5).toFixed(2) + ")");
+  /* 分贝表 */
+  $("dbVal").textContent = d3;
+  $("dbZone").textContent = zoneName(d3);
+  $("dbZone").style.background = zoneColor(d3);
+  $("needle").style.left = Math.max(0, d3) + "%";
+}
+
+/* 控件 */
+const bm = $("btnMuffler"), be = $("btnEarmuff");
+bm.onclick = () => { M1.muffler = !M1.muffler; sync1(); };
+be.onclick = () => { M1.earmuff = !M1.earmuff; sync1(); };
+const matBtns = [];
+MATERIALS.forEach(m => {
+  const b = document.createElement("button");
+  b.type = "button"; b.textContent = m.name;
+  b.onclick = () => { M1.mat = m; sync1(); };
+  $("matBtns").appendChild(b);
+  matBtns.push(b);
+});
+function sync1(){
+  bm.textContent = "消声器：" + (M1.muffler ? "已安装" : "未安装");
+  bm.classList.toggle("on", M1.muffler);
+  be.textContent = "耳罩：" + (M1.earmuff ? "已戴上" : "未戴");
+  be.classList.toggle("on", M1.earmuff);
+  matBtns.forEach((b, i) => b.classList.toggle("on", MATERIALS[i] === M1.mat));
+  buildWall();
+}
+
+/* ==================== 模块② 隔音房间剖面 ==================== */
+
+const LAYERS = [
+  { name: "砖墙",   x: 270, w: 26, drop: 32, fill: "#b08968" },
+  { name: "空气层", x: 296, w: 86, drop: 4,  fill: "#f1f5f9" },
+  { name: "吸声棉", x: 382, w: 76, drop: 18, fill: "#fcd34d" },
+  { name: "石膏板", x: 458, w: 12, drop: 8,  fill: "#cbd5e1" }
+];
+/* 每个水平区间的 dB（已穿过的层累计扣减） */
+const REG2 = [
+  [40, 270, 85], [270, 296, 85], [296, 382, 53],
+  [382, 458, 49], [458, 470, 31], [470, 740, 23]
+];
+const M2 = { t: 0, probe: 140 };
+
+const s2 = $("stage2");
+
+/* 内外背景 */
+mk("rect", { x: 0,   y: 0, width: 270, height: 350, fill: "#fff7ed" }, s2);
+mk("rect", { x: 470, y: 0, width: 290, height: 350, fill: "#f0fdf4" }, s2);
+
+/* 地面 + 屋顶 */
+mk("rect", { x: 0, y: 290, width: 760, height: 60, fill: "#e2e8f0" }, s2);
+mk("line", { x1: 0, y1: 290, x2: 760, y2: 290, stroke: "#cbd5e1", "stroke-width": 2 }, s2);
+mk("rect", { x: 266, y: 56, width: 494, height: 14, fill: "#94a3b8" }, s2);
+
+/* 墙体各层 */
+LAYERS.forEach(L => {
+  mk("rect", { x: L.x, y: 70, width: L.w, height: 220, fill: L.fill }, s2);
+});
+/* 砖缝 */
+for (let y = 95; y < 290; y += 25)
+  mk("line", { x1: 271, y1: y, x2: 295, y2: y, stroke: "#8a6d51", "stroke-width": 1.5 }, s2);
+/* 吸声棉斜纹 */
+for (let i = 0; i < 5; i++)
+  mk("line", { x1: 386 + i * 15, y1: 290, x2: 406 + i * 15, y2: 70,
+               stroke: "#d97706", "stroke-width": 1, opacity: .45 }, s2);
+/* 空气层小点 */
+[[316, 120], [344, 160], [326, 210], [356, 250], [310, 265], [366, 105]].forEach(p =>
+  mk("circle", { cx: p[0], cy: p[1], r: 2.5, fill: "#cbd5e1" }, s2));
+
+/* 层标签 */
+LAYERS.forEach(L => {
+  txt(s2, L.x + L.w / 2, 313, L.name,
+      { "text-anchor": "middle", "font-size": 13, fill: "#475569", "font-weight": "bold" });
+  txt(s2, L.x + L.w / 2 + (L.name === "石膏板" ? 14 : 0), 331, "−" + L.drop + " dB",
+      { "text-anchor": "middle", "font-size": 12, fill: "#94a3b8" });
+});
+
+/* 声源 */
+mk("rect", { x: 88,  y: 210, width: 26, height: 46, rx: 3, fill: "#475569" }, s2);
+mk("path", { d: "M114 224 L136 212 L136 254 L114 242 Z", fill: "#475569" }, s2);
+txt(s2, 112, 313, "工地噪声 85 dB", { "text-anchor": "middle", "font-size": 13, fill: "#475569" });
+
+/* 屋内的人 */
+mk("path",   { d: "M582 290 Q584 262 600 260 Q616 262 618 290 Z", fill: "#2563EB" }, s2);
+mk("circle", { cx: 600, cy: 240, r: 14, fill: "#fde2c4", stroke: "#94a3b8", "stroke-width": 1.5 }, s2);
+txt(s2, 600, 313, "屋内的人", { "text-anchor": "middle", "font-size": 13, fill: "#475569" });
+
+/* 声波（分区间不同振幅与颜色） */
+const waves2 = REG2.map(r =>
+  mk("path", { fill: "none", "stroke-width": 2.5, "stroke-linecap": "round" }, s2));
+
+/* 探针（最上层） */
+const gProbe = mk("g", {}, s2);
+const prLine   = mk("line", { y1: 64, y2: 290, stroke: "#F59E0B", "stroke-width": 2.5 }, gProbe);
+const prTri    = mk("path", { fill: "#F59E0B" }, gProbe);
+const prHandle = mk("circle", { cy: 52, r: 10, fill: "#F59E0B", stroke: "#fff", "stroke-width": 2 }, gProbe);
+const prBubble = mk("rect",  { y: 12, width: 62, height: 26, rx: 7 }, gProbe);
+const prText   = txt(gProbe, 0, 30, "", { "text-anchor": "middle", "font-size": 14, "font-weight": "bold", fill: "#fff" });
+
+function probeDB(){
+  let d = 85;
+  for (const L of LAYERS) if (M2.probe >= L.x + L.w) d -= L.drop;
+  return d;
+}
+
+function update2(){
+  const ph = M2.t * 4;
+  REG2.forEach((r, i) => {
+    waves2[i].setAttribute("d", wavePath(r[0], r[1], 180, ampOf(r[2], 22), ph, 0.09));
+    waves2[i].setAttribute("stroke", zoneColor(r[2]));
+  });
+  const d = probeDB(), c = zoneColor(d);
+  prLine.setAttribute("x1", M2.probe); prLine.setAttribute("x2", M2.probe);
+  prHandle.setAttribute("cx", M2.probe);
+  prBubble.setAttribute("x", M2.probe - 31); prBubble.setAttribute("fill", c);
+  prText.setAttribute("x", M2.probe); prText.textContent = d + " dB";
+  prTri.setAttribute("d", "M" + (M2.probe - 6) + " 38 L" + (M2.probe + 6) + " 38 L" + M2.probe + " 46 Z");
+  prTri.setAttribute("fill", c);
+}
+
+/* 探针拖动 */
+let drag2 = false;
+s2.style.cursor = "default";
+s2.addEventListener("pointerdown", e => {
+  const p = localXY(s2, e);
+  if (Math.abs(p.x - M2.probe) < 30 && p.y < 310){
+    drag2 = true;
+    s2.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  }
+});
+s2.addEventListener("pointermove", e => {
+  if (!drag2) return;
+  const p = localXY(s2, e);
+  M2.probe = Math.max(50, Math.min(730, p.x));
+  update2();
+});
+s2.addEventListener("pointerup",     () => { drag2 = false; });
+s2.addEventListener("pointercancel", () => { drag2 = false; });
+
+/* ==================== 动画主循环 ==================== */
+buildWall();
+sync1();
+update2();
+
+let last = performance.now();
+function loop(now){
+  const dt = Math.min(0.05, (now - last) / 1000);
+  last = now;
+  M1.t += dt; M2.t += dt;
+  update1(); update2();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,634 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>向量的加法法则 · 点选构建演示器</title>
+<style>
+  :root{
+    --bg:#eef1f7; --card:#ffffff; --ink:#1b2432; --ink2:#5c6879; --ink3:#8d99aa;
+    --line:#e3e8f0; --blue:#2563eb; --blue-d:#1a49b8; --blue-soft:#eef4ff;
+    --amber:#d97706; --green:#15803d; --green-soft:#ecfdf3;
+    --violet:#7c3aed; --violet-soft:#f3efff;
+    --serif:"Times New Roman","Songti SC","SimSun",Times,serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; padding:24px 20px 40px;
+    background:
+      radial-gradient(1100px 520px at 18% -12%, #ffffff 0%, rgba(255,255,255,0) 62%),
+      radial-gradient(900px 480px at 92% -4%, #e9f1ff 0%, rgba(233,241,255,0) 58%),
+      var(--bg);
+    color:var(--ink);
+    font-family:"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1250px;margin:0 auto;}
+  .head{margin-bottom:16px;}
+  .badge{display:inline-block;font-size:11.5px;letter-spacing:.16em;color:var(--blue);
+    background:var(--blue-soft);border:1px solid #d6e3ff;padding:5px 11px;border-radius:999px;font-weight:700;}
+  h1{font-family:var(--serif);font-size:31px;margin:11px 0 7px;font-weight:700;}
+  .sub{margin:0;color:var(--ink2);font-size:14px;line-height:1.7;max-width:880px;}
+  em{font-family:var(--serif);font-style:italic;}
+
+  .layout{display:grid;grid-template-columns:minmax(0,1fr) 430px;gap:18px;align-items:start;}
+  @media (max-width:1060px){.layout{grid-template-columns:1fr;}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;
+    box-shadow:0 1px 2px rgba(20,30,50,.04),0 16px 34px -22px rgba(20,30,50,.35);}
+
+  .stage-card{padding:14px 14px 6px;}
+  .stage-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:2px 4px 10px;flex-wrap:wrap;}
+  .tag{font-size:12px;font-weight:700;color:var(--ink2);background:#f4f6fa;border:1px solid var(--line);border-radius:8px;padding:4px 9px;}
+  .stage{position:relative;border:1px solid var(--line);border-radius:12px;overflow:hidden;
+    background:linear-gradient(180deg,#fdfeff,#f7fafd);max-width:620px;margin:0 auto;}
+  svg#board{display:block;width:100%;height:auto;max-height:72vh;touch-action:none;user-select:none;}
+
+  .controls{display:flex;align-items:center;gap:10px;padding:14px 6px 10px;flex-wrap:wrap;}
+  .btn{font:inherit;font-size:13.5px;font-weight:700;color:var(--blue-d);background:var(--blue-soft);
+    border:1px solid #d6e3ff;border-radius:10px;padding:9px 14px;cursor:pointer;transition:.15s;white-space:nowrap;}
+  .btn:hover{background:#e2ecff;}
+  .btn.active{background:var(--blue);color:#fff;border-color:var(--blue);}
+  .btn.active:hover{background:#1d4ed8;}
+  .btn.play{color:var(--green);background:var(--green-soft);border-color:#cdebd6;}
+  .btn.play:hover{background:#ddf5e6;}
+  .btn.play:disabled{color:#8d99aa;background:#f6f8fb;border-color:var(--line);cursor:default;}
+  .btn.ghost{color:var(--ink2);background:#f6f8fb;border-color:var(--line);}
+  .btn.ghost:hover{background:#eef1f6;}
+  .is-hidden{display:none !important;}
+
+  .status{display:flex;align-items:flex-start;gap:9px;margin:2px 6px 14px;padding:10px 14px;
+    border-radius:10px;background:#f7f9fc;border:1px solid #eef2f8;font-size:14px;color:var(--ink2);line-height:1.7;}
+  .status .dot{width:9px;height:9px;border-radius:50%;background:var(--blue);flex:none;margin-top:6px;}
+  .status.ok{background:var(--green-soft);border-color:#cdebd6;color:var(--green);}
+  .status.ok .dot{background:var(--green);}
+  .status b{color:inherit;}
+
+  .slider-wrap{display:none;align-items:center;gap:10px;padding:0 6px 12px;flex-wrap:wrap;}
+  .slider-wrap.show{display:flex;}
+  .slider-wrap label{font-size:13.5px;font-weight:700;color:var(--violet);}
+  .slider-wrap input[type=range]{flex:1;min-width:160px;accent-color:var(--violet);}
+  .lam-val{font-family:var(--serif);font-size:20px;font-weight:700;color:var(--violet);
+    min-width:60px;text-align:center;font-variant-numeric:tabular-nums;}
+
+  .panel{padding:18px 18px 20px;}
+  .panel-head{display:flex;align-items:baseline;gap:10px;margin-bottom:4px;}
+  .panel-head h2{font-family:var(--serif);font-size:21px;margin:0;font-weight:700;}
+  .panel-head .en{font-family:var(--serif);font-size:12.5px;color:var(--ink3);letter-spacing:.06em;}
+
+  .chain{display:flex;align-items:center;justify-content:center;gap:9px;flex-wrap:wrap;
+    padding:16px 10px;margin:12px 0 14px;background:linear-gradient(180deg,#f9fbff,#f1f6ff);
+    border:1px solid #deeaff;border-radius:12px;min-height:64px;}
+  .eq{font-family:var(--serif);font-size:18px;color:#7b8798;}
+  .bigval{font-family:var(--serif);font-size:24px;font-weight:700;color:var(--blue-d);font-variant-numeric:tabular-nums;}
+  .vecname{font-family:var(--serif);font-style:italic;font-weight:700;font-size:22px;}
+  .vn-a{color:var(--blue);} .vn-b{color:var(--amber);} .vn-r{color:var(--green);} .vn-l{color:var(--violet);}
+  .question{font-family:var(--serif);font-size:22px;color:#b7c2d4;font-weight:700;}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px 10px;margin-top:6px;}
+  .item{display:flex;justify-content:space-between;align-items:center;font-size:13.5px;
+    padding:8px 11px;background:#f7f9fc;border:1px solid #eef2f8;border-radius:8px;}
+  .item .k{font-family:var(--serif);font-style:italic;font-size:15.5px;color:#12386f;}
+  .item .v{font-family:var(--serif);font-variant-numeric:tabular-nums;color:var(--ink);font-size:15.5px;}
+  .item.hl{background:var(--green-soft);border-color:#cdebd6;}
+  .item.hl .k{color:var(--green);}
+  .item.hl .v{font-weight:700;font-size:16.5px;}
+  .item.vl{background:var(--violet-soft);border-color:#e4dbfa;}
+  .item.vl .k{color:var(--violet);}
+
+  .rule-box{margin-top:12px;border:1px solid var(--line);border-radius:12px;padding:12px 14px;background:#fbfcfe;}
+  .rule-box h3{margin:0 0 6px;font-size:13px;letter-spacing:.08em;color:var(--ink3);}
+  .rule-box p{margin:0;font-size:13.5px;line-height:1.9;color:var(--ink2);}
+  .rule-box p b{color:var(--ink);}
+  .rule-box .m{font-family:var(--serif);font-style:italic;color:#12386f;}
+
+  /* SVG */
+  .vec-line{stroke-width:3.6;stroke-linecap:round;fill:none;}
+  .vec-line.a{stroke:var(--blue);} .vec-line.b{stroke:var(--amber);}
+  .vec-line.r{stroke:var(--green);} .vec-line.l{stroke:#d97706;}
+  .ghost-line{stroke-width:4.4;stroke-linecap:round;fill:none;stroke-dasharray:12 8;}
+  .ghost-line.ag{stroke:#2563eb;} .ghost-line.bg{stroke:#d97706;} .ghost-line.bn{stroke:#d97706;}
+  .ghost-line.og{stroke:#2563eb;stroke-width:3.4;}
+  .ghost-line.og2{stroke:#d97706;stroke-width:3.4;}
+  .ghost-head{stroke:none;}
+  .help{stroke:#dbe3ee;stroke-width:1.6;stroke-dasharray:5 5;fill:none;}
+  .hitbody{stroke:transparent;stroke-width:36;fill:none;cursor:grab;}
+  .hittip{fill:transparent;cursor:pointer;}
+  .hitq{fill:transparent;cursor:pointer;}
+  .olabel{font-family:var(--serif);font-style:italic;font-size:18px;fill:#5c6879;}
+  .hlabel{font-family:var(--serif);font-style:italic;font-weight:700;font-size:20px;}
+  .glabel{font-family:var(--serif);font-style:italic;font-weight:700;font-size:18px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="head">
+    <span class="badge">第六章 · 平面向量 · 点选构建</span>
+    <h1>向量的加法法则 · 演示器</h1>
+    <p class="sub">
+      画布上是以同一点 <em>O</em> 为起点的两个向量 <em style="color:var(--blue)">a</em> 与 <em style="color:var(--amber)">b</em>，
+      <b>按住向量拖动</b>即可改变它的方向与长短。
+      「平行四边形法则」：<b>点一个向量</b>，直接画出它<b>平行且相等的同色虚线影子</b>；两个影子画出后，<b>点共起点与对角顶点</b>连出 <em>a+b</em>。
+      「三角形法则」：<b>点一个向量</b>，它自动平移到另一个向量的终点（虚线影子，原向量不变），再<b>点共起点与影子终点</b>连出 <em>a+b</em>。
+      「减法」全程<b>只平移 a 一个向量</b>：点「下一步」逐步完成 ①作 −b → ②平移 a → ③连出 <em>a−b</em>。
+      也可点「<b>▶ 演示全过程</b>」观看逐步动画。
+    </p>
+  </header>
+
+  <div class="layout">
+
+    <!-- ============ 左：画布 ============ -->
+    <div class="card stage-card">
+      <div class="stage-head">
+        <span class="tag">点选构建 · 按住拖动可改变向量</span>
+        <span class="hint">a（蓝）· b（橙）· 影子（虚线）· 结果（绿）</span>
+      </div>
+      <div class="stage">
+        <svg id="board" viewBox="0 0 680 560" xmlns="http://www.w3.org/2000/svg"></svg>
+      </div>
+      <div class="controls">
+        <button class="btn active" data-mode="para">平行四边形法则</button>
+        <button class="btn" data-mode="tri">三角形法则</button>
+        <button class="btn" data-mode="sub">减法 a − b</button>
+        <button class="btn" data-mode="scale">数乘 λa</button>
+        <button class="btn play" id="playBtn">▶ 演示全过程</button>
+        <button class="btn play" id="nextBtn" style="display:none">下一步 ▸</button>
+        <button class="btn ghost" id="resetBtn">↺ 重做</button>
+      </div>
+      <div class="slider-wrap" id="lamWrap">
+        <label for="lam">λ =</label>
+        <input type="range" id="lam" min="-3" max="3" step="0.1" value="1.5">
+        <span class="lam-val" id="lamVal">1.5</span>
+        <button class="btn play" id="autoBtn" style="padding:7px 12px;">▶ 自动变化 λ</button>
+      </div>
+      <div class="status" id="status"><span class="dot"></span><span id="statusText"></span></div>
+    </div>
+
+    <!-- ============ 右：数据面板 ============ -->
+    <div class="card panel">
+      <div class="panel-head">
+        <h2 id="panelTitle">平行四边形法则</h2>
+        <span class="en" id="panelEn">parallelogram rule</span>
+      </div>
+
+      <div class="chain" id="chain"></div>
+
+      <div class="grid2">
+        <div class="item"><span class="k">|a|</span><span class="v" id="vLa">—</span></div>
+        <div class="item" id="itB"><span class="k" id="kB">|b|</span><span class="v" id="vLb">—</span></div>
+        <div class="item hl" id="itRes"><span class="k" id="kRes">|a+b|</span><span class="v" id="vRes">—</span></div>
+        <div class="item vl is-hidden" id="itDir"><span class="k" id="kDir">方向</span><span class="v" id="vDir">—</span></div>
+      </div>
+
+      <div class="rule-box">
+        <h3>法则要点</h3>
+        <p id="ruleText"></p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ================= 基本设置 ================= */
+const svg = document.getElementById("board");
+const NS = "http://www.w3.org/2000/svg";
+const O = {x:300, y:390};
+const S = 42;
+const LIM = {x0:36, x1:644, y0:36, y1:536};
+const fmt = n => (Math.abs(n)<1e-9?0:n).toFixed(2);
+const len = v => Math.hypot(v.x, v.y);
+const lerp=(p,q,t)=>({x:p.x+(q.x-p.x)*t, y:p.y+(q.y-p.y)*t});
+const easeIO=t=>t<.5?2*t*t:1-Math.pow(-2*t+2,2)/2;
+
+const state = {
+  A: {x:O.x+185, y:O.y-135},
+  B: {x:O.x-140, y:O.y-95},
+  mode: "para", lam: 1.5,
+  sel: null,
+  gA:false, gB:false,          // 平四/三角：a、b 的虚线影子
+  subStep:0,                   // 减法：下一步进度（0→作−b，1→平移a，2→连结果，3=完成）
+  awaitO:false, oHit:false, cornerHit:false,
+  done:false, playing:false
+};
+
+const el=(n,at,p)=>{const e=document.createElementNS(NS,n);for(const k in at)e.setAttribute(k,at[k]);(p||svg).appendChild(e);return e;};
+const colorOf={a:"#2563eb",b:"#d97706",ag:"#2563eb",bg:"#d97706",bn:"#d97706",og:"#2563eb",og2:"#d97706",r:"#15803d",l:"#d97706"};
+
+function arrow(cls, from, to, parent, ghost){
+  const ang=Math.atan2(to.y-from.y,to.x-from.x), hl=14, hw=5.6;
+  const bx=to.x-hl*Math.cos(ang), by=to.y-hl*Math.sin(ang);
+  const g=parent||svg;
+  el("line",{class:(ghost?"ghost-line ":"vec-line ")+cls,x1:from.x,y1:from.y,x2:bx,y2:by},g);
+  el("path",{class:"ghost-head",d:
+    `M ${to.x} ${to.y} L ${bx+hw*Math.sin(ang)} ${by-hw*Math.cos(ang)} L ${bx-hw*Math.sin(ang)} ${by+hw*Math.cos(ang)} Z`,
+    fill:colorOf[cls]},g);
+}
+
+/* ================= 图层 ================= */
+const gMain=el("g",{}), gAnim=el("g",{}), gHit=el("g",{});
+
+function drawO(){
+  el("circle",{cx:O.x,cy:O.y,r:5,fill:"#5c6879"},gMain);
+  const t=el("text",{class:"olabel",x:O.x-28,y:O.y+24},gMain); t.textContent="O";
+}
+function drawVec(key,tip,{ghost=false,label=null,lblColor=null}={}){
+  const cls=ghost? (key==="a"?"ag":key==="b"?"bg":key) : key;
+  arrow(cls,O,tip,gMain,ghost);
+  if(label){const t=el("text",{class:ghost?"glabel":"hlabel",x:tip.x+10,y:tip.y-10,fill:lblColor||colorOf[cls]},gMain);t.textContent=label;}
+}
+
+/* ================= 交互（拖=改向量，点=构建） =================
+   关键：渲染会整体重建命中元素，因此拖动监听不能挂在命中元素上，
+   统一用事件委托——pointerdown 记下目标，move/up 挂在 window，永不失效。 */
+function svgPoint(e){
+  const pt=svg.createSVGPoint(); pt.x=e.clientX; pt.y=e.clientY;
+  return pt.matrixTransform(svg.getScreenCTM().inverse());
+}
+let dragCtx=null;   // {key, onClick, sx, sy, moved}
+
+svg.addEventListener("pointerdown",e=>{
+  if(state.playing)return;
+  const t=e.target;
+  const key=t.getAttribute&&t.getAttribute("data-key");
+  if(!key)return;
+  dragCtx={key, onClick:t._onClick||null, sx:e.clientX, sy:e.clientY, moved:false};
+  e.preventDefault();
+});
+window.addEventListener("pointermove",e=>{
+  if(!dragCtx)return;
+  // 是否算拖动：与「按下位置」比较，而不是与向量终点比较
+  if(!dragCtx.moved&&Math.hypot(e.clientX-dragCtx.sx,e.clientY-dragCtx.sy)>6)dragCtx.moved=true;
+  if(dragCtx.moved){
+    const p=svgPoint(e);
+    const t={x:Math.min(LIM.x1,Math.max(LIM.x0,p.x)),
+             y:Math.min(LIM.y1,Math.max(LIM.y0,p.y))};
+    if(dragCtx.key==="a")state.A=t; else state.B=t;
+    resetConstruction(); render();
+  }
+});
+window.addEventListener("pointerup",()=>{
+  if(!dragCtx)return;
+  if(!dragCtx.moved&&dragCtx.onClick)dragCtx.onClick();
+  dragCtx=null;
+});
+const hitBody=(key,onClick)=>{
+  const h=el("line",{class:"hitbody","data-key":key,x1:O.x,y1:O.y,x2:(key==="a"?state.A:state.B).x,y2:(key==="a"?state.A:state.B).y},gHit);
+  h._onClick=onClick; return h;
+};
+const hitTip=(key,tip,onClick)=>{
+  const h=el("circle",{class:"hittip","data-key":key,cx:tip.x,cy:tip.y,r:20},gHit);
+  h._onClick=onClick; return h;
+};
+
+/* ================= 构建流程 ================= */
+function resetConstruction(){
+  state.sel=null; state.gA=false; state.gB=false;
+  state.subStep=0;
+  state.awaitO=false; state.oHit=false; state.cornerHit=false; state.done=false;
+}
+function onOClick(){ if(!state.awaitO||state.oHit||state.playing)return; state.oHit=true; checkDone(); render(); }
+function onCornerClick(){ if(!state.awaitO||state.cornerHit||state.playing)return; state.cornerHit=true; checkDone(); render(); }
+function checkDone(){ if(state.oHit&&state.cornerHit){state.done=true;state.awaitO=false;} }
+
+function selectVec(key){
+  if(state.playing)return;
+  if(state.mode==="para"){
+    if((key==="a"&&state.gA)||(key==="b"&&state.gB))return;
+    playParaOnce(key);          // 点一下：动画画出同色虚线影子
+  }else if(state.mode==="tri"){
+    if(state.gA||state.gB)return;
+    playTriOnce(key);           // 点一下：动画平移到另一个向量的终点
+  }
+}
+
+/* 手动点选时的单步动画（与演示全过程同一套动画原语） */
+function runSteps(steps){
+  const playBtn=document.getElementById("playBtn");
+  state.playing=true; playBtn.disabled=true;
+  let i=0;
+  (function next(){
+    if(i>=steps.length){state.playing=false;playBtn.disabled=false;render();return;}
+    runStep(steps[i++],next);
+  })();
+}
+function playParaOnce(key){
+  const corner=cornerP();
+  runSteps([
+    halo(key,.55),
+    grow(key==="a"?"ag":"bg", key==="a"?state.B:state.A, corner, .8),
+    call(()=>{
+      if(key==="a")state.gA=true; else state.gB=true;
+      if(state.gA&&state.gB)state.awaitO=true;
+    })
+  ]);
+}
+function playTriOnce(key){
+  const to=key==="a"?state.B:state.A;   // 平移到另一个向量的终点
+  const off=key==="a"?{x:state.A.x-O.x,y:state.A.y-O.y}:{x:state.B.x-O.x,y:state.B.y-O.y};
+  runSteps([
+    halo(key,.55),
+    translate(key==="a"?"ag":"bg",O,to,off,1.0),
+    call(()=>{
+      if(key==="a")state.gA=true; else state.gB=true;
+      state.awaitO=true;
+    })
+  ]);
+}
+
+/* ================= 各模式渲染 ================= */
+function cornerP(){
+  const ax=state.A.x-O.x, ay=O.y-state.A.y, bx=state.B.x-O.x, by=O.y-state.B.y;
+  return {x:O.x+ax+bx, y:O.y-ay-by};
+}
+function subCornerP(){ // a + (−b)：先 a 再接 −b → 终点 = O + offA − offB
+  const ax=state.A.x-O.x, ay=O.y-state.A.y, bx=state.B.x-O.x, by=O.y-state.B.y;
+  return {x:O.x+ax-bx, y:O.y-ay+by};
+}
+function nbTip(){ return {x:2*O.x-state.B.x, y:2*O.y-state.B.y}; }  // −b：O 关于 B 的中心对称点
+
+function renderParaTri(){
+  drawVec("a",state.A,{label:"a"});
+  drawVec("b",state.B,{label:"b",lblColor:"#d97706"});
+  const corner=cornerP();
+  if(state.gA) arrow("ag",state.B,corner,gMain,true);
+  if(state.gB) arrow("bg",state.A,corner,gMain,true);
+  // 三角形法则：平移后另一条对应边用同系虚线呈现，连接出 a+b 后即消失
+  if(state.mode==="tri"&&!state.done){
+    if(!state.gA) arrow("og",state.B,corner,gMain,true);
+    if(!state.gB) arrow("og2",state.A,corner,gMain,true);
+  }
+  if(state.gA&&state.gB&&!state.done){
+    el("line",{class:"help",x1:state.A.x,y1:state.A.y,x2:corner.x,y2:corner.y},gMain);
+    el("line",{class:"help",x1:state.B.x,y1:state.B.y,x2:corner.x,y2:corner.y},gMain);
+  }
+  if(state.done){
+    arrow("r",O,corner,gMain);
+    const t=el("text",{class:"hlabel",x:corner.x+12,y:corner.y-6,fill:"#15803d"},gMain); t.textContent="a+b";
+  }
+  drawO();
+  hitBody("a",()=>selectVec("a")); hitTip("a",state.A,null);
+  hitBody("b",()=>selectVec("b")); hitTip("b",state.B,null);
+  if(state.awaitO){
+    const ho=el("circle",{class:"hitq",cx:O.x,cy:O.y,r:20},gHit); ho.addEventListener("pointerup",onOClick);
+    const hc=el("circle",{class:"hitq",cx:corner.x,cy:corner.y,r:24},gHit); hc.addEventListener("pointerup",onCornerClick);
+  }
+}
+
+function renderSub(){
+  drawVec("a",state.A,{label:"a"});
+  drawVec("b",state.B,{label:"b",lblColor:"#d97706"});
+  const nb=nbTip(), sc=subCornerP();
+  if(state.subStep>=1){
+    arrow("bn",O,nb,gMain,true);
+    const t=el("text",{class:"glabel",x:nb.x+10,y:nb.y+20,fill:"#b45309"},gMain); t.textContent="−b";
+  }
+  if(state.subStep>=2){
+    arrow("ag",nb,sc,gMain,true);
+  }
+  if(state.subStep>=3){
+    arrow("r",O,sc,gMain);
+    const t=el("text",{class:"hlabel",x:sc.x+12,y:sc.y-6,fill:"#15803d"},gMain); t.textContent="a−b";
+  }
+  drawO();
+  hitBody("a",null); hitTip("a",state.A,null);   // 减法模式：向量只可拖动，不参与点选
+  hitBody("b",null); hitTip("b",state.B,null);
+}
+
+function renderScale(){
+  drawVec("a",state.A,{label:"a"});
+  const la={x:O.x+state.lam*(state.A.x-O.x), y:O.y+state.lam*(state.A.y-O.y)};  // 允许超出页面
+  if(len({x:la.x-O.x,y:la.y-O.y})<7){
+    el("circle",{cx:O.x,cy:O.y,r:5.5,fill:"#d97706"},gMain);
+    const t=el("text",{class:"hlabel",x:O.x+12,y:O.y-10,fill:"#d97706"},gMain); t.textContent="0";
+  }else{
+    arrow("l",O,la,gMain);
+    const t=el("text",{class:"hlabel",x:la.x+10,y:la.y+(state.lam<0?22:-10),fill:"#d97706"},gMain); t.textContent="λa";
+  }
+  drawO();
+  hitBody("a",null); hitTip("a",state.A,null);
+}
+
+function render(){
+  gMain.innerHTML=""; gAnim.innerHTML=""; gHit.innerHTML="";
+  if(state.mode==="sub")renderSub();
+  else if(state.mode==="scale")renderScale();
+  else renderParaTri();
+  renderStatus(); renderPanel();
+}
+
+/* ================= 演示动画 ================= */
+function halo(key,dur){return{type:"halo",key,dur};}
+function grow(cls,from,to,dur){return{type:"grow",cls,from,to,dur};}
+function translate(cls,from,to,offset,dur){return{type:"translate",cls,from,to,offset,dur};}
+function call(fn){return{type:"call",fn};}
+function wait(dur){return{type:"wait",dur};}
+
+function runSeq(steps){
+  state.playing=true; resetConstruction(); render();
+  document.getElementById("playBtn").disabled=true;
+  let i=0;
+  (function next(){
+    if(i>=steps.length){state.playing=false;document.getElementById("playBtn").disabled=false;render();return;}
+    runStep(steps[i++],next);
+  })();
+}
+function runStep(s,done){
+  if(s.type==="call"){s.fn();render();done();return;}
+  if(s.type==="wait"){setTimeout(done,s.dur*1000);return;}
+  const t0=performance.now();
+  (function frame(now){
+    const p=Math.min(1,(now-t0)/(s.dur*1000)), e=easeIO(p);
+    gAnim.innerHTML="";
+    if(s.type==="halo"){
+      const tip=s.key==="a"?state.A:state.B;
+      el("line",{x1:O.x,y1:O.y,x2:tip.x,y2:tip.y,stroke:colorOf[s.key],
+        "stroke-width":13,"stroke-linecap":"round",opacity:(0.55*(1-p)).toFixed(3)},gAnim);
+    }else if(s.type==="grow"){
+      arrow(s.cls,s.from,lerp(s.from,s.to,e),gAnim,s.cls!=="r"&&s.cls!=="l");
+    }else if(s.type==="translate"){
+      const st=lerp(s.from,s.to,e);
+      el("line",{class:"ghost-line "+s.cls,x1:st.x,y1:st.y,
+        x2:st.x+s.offset.x,y2:st.y+s.offset.y,opacity:(0.35+0.65*e).toFixed(3)},gAnim);
+      const tip={x:st.x+s.offset.x,y:st.y+s.offset.y}, ang=Math.atan2(tip.y-st.y,tip.x-st.x);
+      const hl=14,hw=5.6,bx=tip.x-hl*Math.cos(ang),by=tip.y-hl*Math.sin(ang);
+      el("path",{d:`M ${tip.x} ${tip.y} L ${bx+hw*Math.sin(ang)} ${by-hw*Math.cos(ang)} L ${bx-hw*Math.sin(ang)} ${by+hw*Math.cos(ang)} Z`,
+        fill:colorOf[s.cls],opacity:(0.35+0.65*e).toFixed(3)},gAnim);
+    }
+    if(p<1)requestAnimationFrame(frame); else {gAnim.innerHTML="";done();}
+  })(t0);
+}
+
+function playDemo(){
+  if(state.playing)return;
+  const corner=cornerP(), sc=subCornerP(), nb=nbTip();
+  if(state.mode==="para"){
+    runSeq([
+      halo("a",.7),
+      grow("ag",state.B,corner,.9),
+      call(()=>{state.gA=true;render();}),
+      halo("b",.7),
+      grow("bg",state.A,corner,.9),
+      call(()=>{state.gB=true;render();}),
+      wait(.35),
+      grow("r",O,corner,1.0),
+      call(()=>{state.awaitO=false;state.oHit=true;state.cornerHit=true;state.done=true;})
+    ]);
+  }else if(state.mode==="tri"){
+    runSeq([
+      halo("a",.7),
+      translate("ag",O,state.B,{x:state.A.x-O.x,y:state.A.y-O.y},1.1),
+      call(()=>{state.gA=true;render();}),
+      wait(.3),
+      grow("r",O,corner,1.0),
+      call(()=>{state.oHit=true;state.cornerHit=true;state.done=true;})
+    ]);
+  }
+}
+
+/* 减法：「下一步」逐步演示 —— ①作 −b → ②只平移 a 到 −b 终点 → ③连出 a−b */
+function nextSub(){
+  if(state.playing||state.subStep>=3)return;
+  const nb=nbTip(), sc=subCornerP();
+  let steps;
+  if(state.subStep===0){
+    steps=[halo("b",.6), grow("bn",O,nb,.8), call(()=>{state.subStep=1;})];
+  }else if(state.subStep===1){
+    steps=[halo("a",.6), translate("ag",O,nb,{x:state.A.x-O.x,y:state.A.y-O.y},1.0), call(()=>{state.subStep=2;})];
+  }else{
+    steps=[grow("r",O,sc,1.0), call(()=>{state.subStep=3;state.done=true;})];
+  }
+  const nextBtn=document.getElementById("nextBtn");
+  state.playing=true; nextBtn.disabled=true;
+  let i=0;
+  (function next(){
+    if(i>=steps.length){state.playing=false;nextBtn.disabled=false;render();return;}
+    runStep(steps[i++],next);
+  })();
+}
+
+/* ================= 状态与面板 ================= */
+const MODES={
+  para:{t:"平行四边形法则",en:"parallelogram rule",
+    steps:()=> state.done? "✔ 连出了 <b>a+b</b> —— 共起点指向对角顶点的对角线。拖动向量可重新观察。"
+      : state.awaitO? "③ 两个虚线影子都画好了：<b>点共起点 O</b> 和<b>对角顶点</b>（先后不限），连出 a+b"
+      : (state.gA||state.gB)? `② 已画出 <b>${state.gA?"a":"b"}</b> 的同色虚线影子（平行且相等）：再<b>点另一个向量</b>，画出它的影子`
+      : "① <b>点一个向量</b>（a 或 b），直接画出它平行且相等的同色虚线影子；也可点「▶ 演示全过程」",
+    rule:"<b>平行四边形法则（共起点）</b>：以 <span class='m'>a</span>、<span class='m'>b</span> 为邻边作平行四边形，从共起点出发的<b>对角线</b>就是 <span class='m'>a+b</span>。虚线影子与原向量<b>平行且相等</b>、颜色相同。"},
+  tri:{t:"三角形法则",en:"triangle rule",
+    steps:()=> state.done? "✔ 连出了 <b>a+b</b> —— 从共起点指向影子终点。拖动向量可重新观察。"
+      : state.awaitO? "② 影子已平移到另一个向量的终点：<b>点共起点 O</b> 和<b>影子终点</b>（先后不限），连出 a+b"
+      : "① <b>点一个向量</b>（a 或 b），它将平移到另一个向量的终点；也可点「▶ 演示全过程」",
+    rule:"<b>三角形法则（首尾相接）</b>：把 <span class='m'>a</span> 平移到 <span class='m'>b</span> 的终点（平移不改变向量），从起点指向影子终点的向量就是 <span class='m'>a+b</span>。口诀：<b>首尾相接，起点指向终点</b>。"},
+  sub:{t:"减法：a − b",en:"subtraction",
+    steps:()=> state.done? "✔ <b>a−b = a+(−b)</b>：从 O 指向影子终点。对照绿向量，它也等于「b 的终点指向 a 的终点」。拖动向量后点「↺ 重做」再来一次。"
+      : state.subStep>=2? "③ <b>a</b> 已平移到 −b 的终点：点「下一步」连出 a−b"
+      : state.subStep>=1? "② 已作出 <b>−b</b>（与 b 反向等长）：点「下一步」，把 a 平移到 −b 的终点"
+      : "① 点「下一步」：先作出 b 的相反向量 <b>−b</b>（减去 b = 加上 −b）",
+    rule:"<b>减法 = 加上相反向量</b>：<span class='m'>a−b = a+(−b)</span>。三步：① 作 −b；② 把 a 首尾相接到 −b（全程只平移 a 这一个向量）；③ 从 O 连向影子终点。口诀：<b>终点指向被减数</b>（共起点时从 b 的终点指向 a 的终点）。"},
+  scale:{t:"数乘 λa",en:"scalar multiplication",
+    steps:()=>"拖动滑块改变 λ，或点「<b>▶ 自动变化 λ</b>」观看连续变化：<b>|λ|＞1 拉长、|λ|＜1 缩短；λ＞0 同向，λ＜0 反向</b>，λ＝0 得零向量。",
+    rule:"<b>数乘 λa</b>：λ 只改变模的大小，λ 的符号决定方向——<b>λ＞0 同向，λ＜0 反向</b>。λa 与 a 总是共线向量。"}
+};
+const P={
+  title:document.getElementById("panelTitle"), en:document.getElementById("panelEn"),
+  chain:document.getElementById("chain"),
+  vLa:document.getElementById("vLa"), vLb:document.getElementById("vLb"),
+  kRes:document.getElementById("kRes"), vRes:document.getElementById("vRes"),
+  itB:document.getElementById("itB"),
+  itDir:document.getElementById("itDir"), kDir:document.getElementById("kDir"), vDir:document.getElementById("vDir"),
+  rule:document.getElementById("ruleText"),
+  status:document.getElementById("status"), statusText:document.getElementById("statusText"),
+};
+const vn=(t,c)=>`<span class="vecname ${c}">${t}</span>`;
+
+function renderStatus(){
+  P.statusText.innerHTML=MODES[state.mode].steps();
+  P.status.classList.toggle("ok",state.done&&state.mode!=="scale");
+  if(state.mode==="sub"){
+    const nb=document.getElementById("nextBtn");
+    nb.textContent=state.subStep===0?"下一步 ▸ 第①步：作 −b"
+      :state.subStep===1?"下一步 ▸ 第②步：平移 a"
+      :state.subStep===2?"下一步 ▸ 第③步：连出 a−b"
+      :"✔ 已完成";
+    nb.disabled=state.subStep>=3;
+  }
+}
+function renderPanel(){
+  const m=MODES[state.mode];
+  P.title.textContent=m.t; P.en.textContent=m.en; P.rule.innerHTML=m.rule;
+  const la=len({x:state.A.x-O.x,y:O.y-state.A.y}), lb=len({x:state.B.x-O.x,y:O.y-state.B.y});
+  P.vLa.textContent=fmt(la/S); P.vLb.textContent=fmt(lb/S);
+  P.itB.classList.toggle("is-hidden",false);
+  document.getElementById("kB").textContent=state.mode==="scale"?"|λ|":"|b|";
+  P.itB.classList.toggle("hl",state.mode==="scale");   // 数乘模式：|a| 栏高亮
+  P.itDir.classList.toggle("is-hidden",state.mode!=="scale");
+  if(state.mode==="para"||state.mode==="tri"){
+    P.kRes.textContent="|a+b|";
+    const L=len({x:cornerP().x-O.x,y:cornerP().y-O.y})/S;
+    P.vRes.textContent=state.done?fmt(L):"待连接";
+    P.chain.innerHTML=vn("a","vn-a")+`<span class="eq">+</span>`+vn("b","vn-b")+
+      (state.done?`<span class="eq">=</span><span class="bigval">|a+b| = ${fmt(L)}</span>`
+                 :`<span class="eq">=</span><span class="question">?</span><span style="font-size:12.5px;color:#8d99aa">（完成点选后揭晓）</span>`);
+  }else if(state.mode==="sub"){
+    const L=len({x:subCornerP().x-O.x,y:subCornerP().y-O.y})/S;
+    P.kRes.textContent="|a−b|"; P.vRes.textContent=state.done?fmt(L):"待连接";
+    P.chain.innerHTML=vn("a","vn-a")+`<span class="eq">−</span>`+vn("b","vn-b")+
+      (state.done?`<span class="eq">=</span><span class="bigval">|a−b| = ${fmt(L)}</span>`
+                 :`<span class="eq">=</span><span class="question">?</span><span style="font-size:12.5px;color:#8d99aa">（完成点选后揭晓）</span>`);
+  }else{
+    P.vLb.textContent=fmt(Math.abs(state.lam));   // 数乘模式：第二栏显示 |λ|
+    P.kRes.textContent="|λa|"; P.vRes.textContent=fmt(Math.abs(state.lam*la/S));
+    const dir=Math.abs(state.lam)<1e-9?"零向量":state.lam>0?"与 a 同向":"与 a 反向";
+    P.kDir.textContent="方向"; P.vDir.textContent=dir;
+    P.chain.innerHTML=`<span class="bigval">|λa| = |λ|·|a| = ${fmt(Math.abs(state.lam*la/S))}</span><span class="eq">·</span>`+
+      `<span style="font-size:14px;color:#d97706;font-weight:700">${dir}</span>`;
+  }
+}
+
+/* ================= 交互 ================= */
+document.querySelectorAll(".btn[data-mode]").forEach(btn=>{
+  btn.addEventListener("click",()=>{
+    document.querySelectorAll(".btn[data-mode]").forEach(b=>b.classList.remove("active"));
+    btn.classList.add("active");
+    state.mode=btn.dataset.mode;
+    stopAuto(); resetConstruction();
+    document.getElementById("lamWrap").classList.toggle("show",state.mode==="scale");
+    const isSub=state.mode==="sub";
+    document.getElementById("playBtn").classList.toggle("is-hidden",state.mode==="scale"||isSub);
+    document.getElementById("nextBtn").style.display=isSub?"":"none";
+    render();
+  });
+});
+document.getElementById("lam").addEventListener("input",e=>{
+  stopAuto();
+  state.lam=parseFloat(e.target.value);
+  document.getElementById("lamVal").textContent=state.lam.toFixed(1);
+  render();
+});
+document.getElementById("resetBtn").addEventListener("click",()=>{stopAuto();resetConstruction();render();});
+document.getElementById("playBtn").addEventListener("click",playDemo);
+document.getElementById("nextBtn").addEventListener("click",nextSub);
+
+/* λ 自动变化 */
+let autoRAF=null, autoT0=null;
+const autoBtn=document.getElementById("autoBtn");
+function stopAuto(){ if(autoRAF){cancelAnimationFrame(autoRAF);autoRAF=null;autoBtn.textContent="▶ 自动变化 λ";} }
+autoBtn.addEventListener("click",()=>{
+  if(autoRAF){stopAuto();return;}
+  autoBtn.textContent="⏸ 停止自动";
+  autoT0=performance.now();
+  (function loop(now){
+    const t=(now-autoT0)/1000;
+    state.lam=+(3*Math.sin(t*0.45)).toFixed(1);   // 慢速往返 ±3，允许箭头超出页面
+    document.getElementById("lam").value=state.lam;
+    document.getElementById("lamVal").textContent=state.lam.toFixed(1);
+    render();
+    autoRAF=requestAnimationFrame(loop);
+  })(autoT0);
+});
+
+render();
+</script>
+</body>
+</html>

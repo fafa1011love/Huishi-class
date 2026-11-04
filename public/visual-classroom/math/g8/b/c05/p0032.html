@@ -1,0 +1,686 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>23.4 实际问题与一次函数 · 分段函数与方案选择</title>
+<style>
+  :root{
+    --blue:#2563eb; --orange:#ea580c; --purple:#7c3aed; --green:#15803d;
+    --ink:#1e293b; --sub:#64748b; --line:#e2e8f0;
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{font-family:"Microsoft YaHei","PingFang SC",sans-serif;background:#f1f5f9;color:var(--ink);
+       padding:14px 18px;max-width:1500px;margin:0 auto}
+  h1{font-size:26px;text-align:center;margin-bottom:6px}
+  h1 .hl{color:var(--blue)}
+  .cards{display:flex;gap:10px;justify-content:center;margin-bottom:12px;flex-wrap:wrap}
+  .card{background:#fff;border:2px solid var(--line);border-radius:10px;padding:8px 14px;font-size:15px;
+        box-shadow:0 1px 3px rgba(0,0,0,.06)}
+  .card b{font-size:16px}
+  .card.t1{border-color:#93c5fd}.card.t1 b{color:var(--blue)}
+  .card.t2{border-color:#fdba74}.card.t2 b{color:var(--orange)}
+  .card.t3{border-color:#c4b5fd}.card.t3 b{color:var(--purple)}
+  .card.t4{border-color:#6ee7b7}.card.t4 b{color:var(--green)}
+
+  .main{display:grid;grid-template-columns:1fr 410px;gap:14px;align-items:start}
+  @media (max-width:1100px){.main{grid-template-columns:1fr}}
+
+  .panel{background:#fff;border-radius:14px;border:1px solid var(--line);box-shadow:0 2px 8px rgba(0,0,0,.05);padding:12px 14px}
+  .panel h3{font-size:17px;margin-bottom:8px;display:flex;align-items:center;gap:8px}
+  .dot{width:12px;height:12px;border-radius:50%;display:inline-block}
+
+  /* 场景选项卡 */
+  .tabs{display:flex;gap:8px;margin-bottom:12px;flex-wrap:wrap}
+  .tab{padding:9px 18px;font-size:16px;font-weight:bold;border-radius:10px;border:2px solid var(--line);
+       background:#fff;cursor:pointer;transition:.25s;color:var(--sub)}
+  .tab.on{background:var(--blue);border-color:var(--blue);color:#fff;box-shadow:0 3px 10px rgba(37,99,235,.35)}
+  .tab.on.music{background:var(--purple);border-color:var(--purple);box-shadow:0 3px 10px rgba(124,58,237,.35)}
+
+  /* 画布区 */
+  #stage{position:relative}
+  svg{display:block;width:100%;height:auto;user-select:none;touch-action:none}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:14px;color:var(--sub);margin-top:6px;justify-content:center}
+  .legend i{display:inline-block;width:22px;height:4px;border-radius:2px;vertical-align:middle;margin-right:5px}
+  .toast{position:absolute;left:50%;top:34%;transform:translate(-50%,-50%) scale(.9);opacity:0;
+         background:#dc2626;color:#fff;font-size:19px;font-weight:bold;padding:12px 22px;border-radius:12px;
+         pointer-events:none;transition:.3s;z-index:5;box-shadow:0 6px 20px rgba(220,38,38,.4)}
+  .toast.show{opacity:1;transform:translate(-50%,-50%) scale(1)}
+
+  /* 读数条 */
+  .readout{margin-top:10px;background:#f8fafc;border:2px dashed #cbd5e1;border-radius:12px;
+           padding:10px 14px;font-size:18px;display:flex;align-items:center;gap:14px;flex-wrap:wrap}
+  .readout .big{font-size:21px;font-weight:bold}
+  .verdict{font-size:19px;font-weight:bold;padding:5px 14px;border-radius:9px}
+  .verdict.a{background:#dbeafe;color:var(--blue)}
+  .verdict.b{background:#ffedd5;color:var(--orange)}
+  .verdict.tie{background:#dcfce7;color:var(--green)}
+
+  /* 右侧面板 */
+  .sec{margin-bottom:12px}
+  .sec h4{font-size:15px;color:var(--sub);margin-bottom:6px;border-left:4px solid var(--blue);padding-left:8px}
+  .story{font-size:15px;line-height:1.65;background:#eff6ff;border-radius:10px;padding:9px 12px}
+  .story b{color:var(--blue)}
+  .slider{margin-bottom:9px}
+  .slider label{display:flex;justify-content:space-between;font-size:14px;margin-bottom:3px;color:#334155}
+  .slider label b{color:var(--blue)}
+  input[type=range]{width:100%;accent-color:var(--blue);cursor:pointer}
+  .expr{font-size:15.5px;line-height:1.8;background:#fefce8;border:1px solid #fde047;border-radius:10px;padding:8px 12px;
+        font-family:"Cambria Math","Times New Roman","Microsoft YaHei",serif}
+  .expr .ca{color:var(--blue);font-weight:bold}
+  .expr .cb{color:var(--orange);font-weight:bold}
+
+  table{width:100%;border-collapse:collapse;font-size:14.5px}
+  th,td{border:1px solid var(--line);padding:5px 6px;text-align:center}
+  th{background:#f1f5f9;font-size:14px}
+  tr.rec-a td:last-child{color:var(--blue);font-weight:bold}
+  tr.rec-b td:last-child{color:var(--orange);font-weight:bold}
+  tr.crit td{background:#f5f3ff;color:var(--purple);font-weight:bold}
+
+  .opts{display:flex;flex-wrap:wrap;gap:6px 14px;font-size:14.5px}
+  .opts label{cursor:pointer;display:flex;align-items:center;gap:5px}
+  .opts input{accent-color:var(--blue);cursor:pointer}
+
+  .musicbtn{width:100%;padding:11px;font-size:18px;font-weight:bold;border:none;border-radius:11px;cursor:pointer;
+            background:var(--purple);color:#fff;margin-bottom:10px;transition:.2s}
+  .musicbtn:hover{filter:brightness(1.1)}
+  .musicbtn.stop{background:#64748b}
+  .notes{display:flex;flex-wrap:wrap;gap:7px;font-size:14px}
+  .notes span{background:#f5f3ff;border:1px solid #ddd6fe;border-radius:8px;padding:4px 9px}
+  .notes b{color:var(--purple)}
+
+  /* 警示与口诀 */
+  .warns{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+  @media (max-width:900px){.warns{grid-template-columns:1fr}}
+  .warn{background:#fef2f2;border:2px solid #fca5a5;border-left:6px solid #dc2626;border-radius:10px;
+        padding:9px 13px;font-size:14.5px;line-height:1.6}
+  .warn b{color:#dc2626}
+  .motto{margin-top:12px;text-align:center;font-size:21px;font-weight:bold;color:#fff;
+         background:linear-gradient(90deg,#15803d,#22c55e);border-radius:12px;padding:11px 16px;letter-spacing:2px;
+         animation:mpulse 2.4s ease-in-out infinite}
+  @keyframes mpulse{0%,100%{box-shadow:0 0 0 0 rgba(34,197,94,.4)}50%{box-shadow:0 0 0 12px rgba(34,197,94,0)}}
+  .tip{ text-align:center;color:#94a3b8;font-size:13.5px;margin-top:8px}
+</style>
+</head>
+<body>
+<h1><span class="hl">23.4</span> 实际问题与一次函数 · 分段函数与方案选择</h1>
+<div class="cards">
+  <div class="card t1"><b>分段函数</b>：自变量不同取值范围，对应不同解析式</div>
+  <div class="card t2"><b>方案选择</b>：比较费用，找临界点分区间决策</div>
+  <div class="card t3"><b>定义域限制</b>：x≥0 才有实际意义，端点分实心/空心</div>
+  <div class="card t4"><b>综合与实践</b>：音乐节奏中的分段一次函数</div>
+</div>
+
+<div class="main">
+  <!-- ============ 左：动态画布 ============ -->
+  <div>
+    <div class="tabs" id="tabs"></div>
+    <div class="panel" id="stage">
+      <h3><span class="dot" id="sceneDot" style="background:var(--blue)"></span><span id="sceneTitle">出租车计费模型</span></h3>
+      <svg id="cv" viewBox="0 0 780 600"></svg>
+      <div class="toast" id="toast">⚠ x＜0 无实际意义：里程 / 数量不能为负！</div>
+      <div class="legend" id="legend"></div>
+      <div class="readout" id="readout"></div>
+      <div class="tip">🖐 在画布上按住拖动（或在 x 轴附近点按）可移动动点 · 拖到 x＜0 会触发“无实际意义”警示</div>
+    </div>
+
+    <div class="warns">
+      <div class="warn"><b>易错 ①</b> 方案优劣必须<b>分段比较</b>：临界点前后结论会互换，不能用某一段的结论代替全程，也不要漏掉“费用相同”的临界情形。</div>
+      <div class="warn"><b>易错 ②</b> 实际问题中自变量有<b>实际意义限制</b>：里程、消费金额 x≥0（且通常有上限），求出自变量取值后要检验是否在定义域内，超出者必须舍去。</div>
+    </div>
+    <div class="motto">分段画图找临界点，定义域里选最优；交点左右方案换，实际意义不能偏。</div>
+  </div>
+
+  <!-- ============ 右：控制面板 ============ -->
+  <div class="panel">
+    <div class="sec">
+      <h4>📖 题目情境</h4>
+      <div class="story" id="story"></div>
+    </div>
+    <div class="sec">
+      <h4>🎚 方案参数（拖动实时重绘）</h4>
+      <div id="sliders"></div>
+    </div>
+    <div class="sec">
+      <h4>✍️ 函数解析式（做题痕迹）</h4>
+      <div class="expr" id="expr"></div>
+    </div>
+    <div class="sec" id="tableSec">
+      <h4>📊 最优方案比较表（随参数更新）</h4>
+      <div id="tableBox"></div>
+    </div>
+    <div class="sec" id="musicSec" style="display:none">
+      <h4>🎵 音乐与数学 · 节奏播放</h4>
+      <button class="musicbtn" id="playBtn">▶ 播放节奏（同步绘制时间-拍数图象）</button>
+      <div class="notes">
+        <span><b>全音符</b> = 4 拍</span><span><b>二分音符</b> = 2 拍</span>
+        <span><b>四分音符</b> = 1 拍</span><span><b>八分音符</b> = ½ 拍</span>
+        <span><b>四分休止符</b> = 0 拍（占时值）</span>
+      </div>
+    </div>
+    <div class="sec">
+      <h4>👁 显示选项</h4>
+      <div class="opts" id="opts"></div>
+    </div>
+  </div>
+</div>
+
+<script>
+/* ==================== 基础工具 ==================== */
+function $(id){ return document.getElementById(id); }
+function fmt(n){ var r=Math.round(n*10)/10; return (Object.is(r,-0)?0:r).toString(); }
+function esc(s){ return s.replace(/</g,'&lt;'); }
+var C={ blue:'#2563eb', orange:'#ea580c', purple:'#7c3aed', green:'#15803d',
+        grid:'#e2e8f0', axis:'#334155', sub:'#64748b' };
+/* 一次式 kx + b 的规范字符串 */
+function lin(k,b){
+  var ks = (k===1?'x':(k===-1?'−x':fmt(k)+'x'));
+  if (b===0) return ks;
+  return ks + (b>0?' + ':' − ') + fmt(Math.abs(b));
+}
+
+/* ==================== 场景定义 ==================== */
+/* 每个方案 segs: [{x0,x1,c0(左端实心),c1(右端实心),f(x)}] */
+var SCENES = {
+  taxi:{
+    tab:'🚕 出租车计费', music:false, dot:C.blue,
+    title:'出租车计费模型（两段折线）',
+    xName:'里程 x / km', yName:'费用 y / 元',
+    params:[
+      {id:'a0',name:'方案A 起步价（元）',min:6,max:14,step:.5,val:8},
+      {id:'pA',name:'方案A 超程单价（元/km）',min:1.2,max:2.8,step:.1,val:1.8},
+      {id:'b0',name:'方案B 起步价（元）',min:6,max:16,step:.5,val:10},
+      {id:'pB',name:'方案B 超程单价（元/km）',min:1,max:2.6,step:.1,val:1.4},
+      {id:'xm',name:'最大里程（km）',min:8,max:24,step:1,val:15}
+    ],
+    story:function(P){ return '从学校到博物馆 <b>'+P.xm+' km</b> 内有两种出租车：<b>方案A</b> 起步价 '+P.a0+' 元（含 3 公里），超出部分每公里 '+P.pA+' 元；<b>方案B</b> 起步价 '+P.b0+' 元（含 2 公里），超出部分每公里 '+P.pB+' 元。行驶里程不同，选哪种更省钱？'; },
+    build:function(P){
+      var xm=P.xm;
+      return {
+        A:{segs:[{x0:0,x1:3,c0:1,c1:1,f:function(x){return P.a0;}},
+                 {x0:3,x1:xm,c0:1,c1:1,f:function(x){return P.a0+P.pA*(x-3);}}],
+           expr:'<span class="ca">yA</span> = '+P.a0+'（0 ≤ x ≤ 3）；<span class="ca">yA</span> = '+lin(P.pA,P.a0-3*P.pA)+'（x ＞ 3）'},
+        B:{segs:[{x0:0,x1:2,c0:1,c1:1,f:function(x){return P.b0;}},
+                 {x0:2,x1:xm,c0:1,c1:1,f:function(x){return P.b0+P.pB*(x-2);}}],
+           expr:'<span class="cb">yB</span> = '+P.b0+'（0 ≤ x ≤ 2）；<span class="cb">yB</span> = '+lin(P.pB,P.b0-2*P.pB)+'（x ＞ 2）'}
+      };
+    },
+    bp:function(P){ return [2,3]; }
+  },
+  market:{
+    tab:'🛒 超市优惠', music:false, dot:C.orange,
+    title:'超市优惠模型（满减 vs 折扣，有跳跃）',
+    xName:'消费金额 x / 元', yName:'实付金额 y / 元',
+    params:[
+      {id:'tA',name:'方案A 满减门槛（元）',min:100,max:300,step:10,val:200},
+      {id:'dA',name:'方案A 满减金额（元）',min:20,max:100,step:10,val:50},
+      {id:'tB',name:'方案B 折扣门槛（元）',min:50,max:300,step:10,val:100},
+      {id:'rB',name:'方案B 折扣（r 折）',min:7,max:9.5,step:.5,val:9},
+      {id:'xm',name:'最大消费金额（元）',min:100,max:400,step:10,val:300}
+    ],
+    story:function(P){ return '某超市两种优惠券：<b>方案A（满减）</b>消费满 '+P.tA+' 元立减 '+P.dA+' 元；<b>方案B（折扣）</b>消费满 '+P.tB+' 元全部按 '+P.rB+' 折结算。注意：优惠门槛处图象发生<b>跳跃</b>，右端点实心、左端点空心。消费多少元时选哪种优惠？'; },
+    build:function(P){
+      var xm=P.xm, k=P.rB/10;
+      return {
+        A:{segs:[{x0:0,x1:P.tA,c0:1,c1:0,f:function(x){return x;}},
+                 {x0:P.tA,x1:xm,c0:1,c1:1,f:function(x){return x-P.dA;}}],
+           expr:'<span class="ca">yA</span> = x（0 ≤ x ＜ '+P.tA+'）；<span class="ca">yA</span> = x − '+P.dA+'（x ≥ '+P.tA+'）'},
+        B:{segs:[{x0:0,x1:P.tB,c0:1,c1:0,f:function(x){return x;}},
+                 {x0:P.tB,x1:xm,c0:1,c1:1,f:function(x){return k*x;}}],
+           expr:'<span class="cb">yB</span> = x（0 ≤ x ＜ '+P.tB+'）；<span class="cb">yB</span> = '+fmt(k)+'x（x ≥ '+P.tB+'，即 '+P.rB+' 折）'}
+      };
+    },
+    bp:function(P){ return [Math.min(P.tA,P.tB),Math.max(P.tA,P.tB)]; }
+  },
+  rent:{
+    tab:'🚐 租车方案', music:false, dot:C.green,
+    title:'租车方案模型（分段 vs 一次）',
+    xName:'行驶里程 x / km', yName:'总费用 y / 元',
+    params:[
+      {id:'cA',name:'方案A 日租金（元，含 100 km）',min:80,max:200,step:5,val:120},
+      {id:'pA',name:'方案A 超程单价（元/km）',min:1,max:4,step:.2,val:2},
+      {id:'cB',name:'方案B 基础费（元）',min:50,max:180,step:5,val:100},
+      {id:'pB',name:'方案B 里程单价（元/km）',min:1,max:5,step:.2,val:3},
+      {id:'xm',name:'最大里程（km）',min:100,max:300,step:10,val:200}
+    ],
+    story:function(P){ return '租车一日游（里程不超过 '+P.xm+' km）：<b>方案A</b> 日租金 '+P.cA+' 元（含 100 km，超出部分每公里 '+P.pA+' 元）；<b>方案B</b> 无起步，基础费 '+P.cB+' 元，每公里 '+P.pB+' 元。预计行驶多少公里时选哪种方案？'; },
+    build:function(P){
+      var xm=P.xm;
+      return {
+        A:{segs:[{x0:0,x1:100,c0:1,c1:1,f:function(x){return P.cA;}},
+                 {x0:100,x1:xm,c0:1,c1:1,f:function(x){return P.cA+P.pA*(x-100);}}],
+           expr:'<span class="ca">yA</span> = '+P.cA+'（0 ≤ x ≤ 100）；<span class="ca">yA</span> = '+lin(P.pA,P.cA-100*P.pA)+'（x ＞ 100）'},
+        B:{segs:[{x0:0,x1:xm,c0:1,c1:1,f:function(x){return P.cB+P.pB*x;}}],
+           expr:'<span class="cb">yB</span> = '+lin(P.pB,P.cB)+'（0 ≤ x ≤ '+xm+'）'}
+      };
+    },
+    bp:function(P){ return [100]; }
+  },
+  music:{
+    tab:'🎵 音乐节奏', music:true, dot:C.purple,
+    title:'综合与实践：音乐节奏中的分段一次函数',
+    xName:'时间 t / s', yName:'累计拍数 y / 拍',
+    params:[
+      {id:'bA',name:'A段 速度（拍/分，慢板）',min:40,max:90,step:5,val:60},
+      {id:'bB',name:'B段 速度（拍/分，快板）',min:90,max:180,step:5,val:120}
+    ],
+    story:function(P){ return '乐曲分两段，每段 <b>8 拍</b>（8 个四分音符）：<b>A段慢板</b> '+P.bA+' 拍/分，<b>B段快板</b> '+P.bB+' 拍/分。以时间 t 为自变量、累计拍数 y 为因变量，y 关于 t 的图象是<b>两段折线</b>——斜率就是节奏的快慢！点击右侧按钮播放，观察拍点沿折线“跳动”。'; },
+    build:function(P){
+      var t1=480/P.bA, t2=480/P.bB, kA=P.bA/60, kB=P.bB/60;
+      return {
+        t1:t1, tEnd:t1+t2,
+        A:{segs:[{x0:0,x1:t1,c0:1,c1:1,f:function(t){return kA*t;}}],
+           expr:'A段：<span class="ca">y</span> = '+(kA===1?'t':fmt(kA)+'t')+'（0 ≤ t ≤ '+fmt(t1)+' s），斜率 = '+fmt(kA)+' 拍/s'},
+        B:{segs:[{x0:t1,x1:t1+t2,c0:1,c1:1,f:function(t){return 8+kB*(t-t1);}}],
+           expr:'B段：<span class="cb">y</span> = 8 + '+(kB===1?'(t − ':fmt(kB)+'(t − ')+fmt(t1)+')（'+fmt(t1)+' ＜ t ≤ '+fmt(t1+t2)+' s），斜率 = '+fmt(kB)+' 拍/s'}
+      };
+    },
+    bp:function(P){ return [480/P.bA]; }
+  }
+};
+
+/* ==================== 全局状态 ==================== */
+var scene='taxi', P={}, D=null, cx=0;
+var opt={grid:true, seg:true, inter:true, shade:true, table:true, beat:true};
+var mPlaying=false, mCurT=0, mTimer=null, mT0=0, mBeatIdx=0, actx=null;
+
+function getScheme(id){ return SCENES[id]; }
+
+/* ==================== 场景切换 ==================== */
+function buildTabs(){
+  var h='';
+  for (var id in SCENES) h+='<button class="tab'+(id===scene?' on'+(SCENES[id].music?' music':''):'')+'" data-s="'+id+'">'+SCENES[id].tab+'</button>';
+  $('tabs').innerHTML=h;
+  Array.prototype.forEach.call($('tabs').children,function(t){
+    t.onclick=function(){ switchScene(t.dataset.s); };
+  });
+}
+function switchScene(id){
+  stopMusic();
+  scene=id;
+  Array.prototype.forEach.call($('tabs').children,function(t){
+    t.classList.toggle('on',t.dataset.s===id);
+    t.classList.toggle('music',t.dataset.s===id&&SCENES[id].music);
+  });
+  P={};
+  SCENES[id].params.forEach(function(p){ P[p.id]=p.val; });
+  D=SCENES[id].build(P);
+  cx = SCENES[id].music ? D.tEnd*0.55 : P.xm*0.6;
+  $('sceneTitle').textContent=SCENES[id].title;
+  $('sceneDot').style.background=SCENES[id].dot;
+  $('musicSec').style.display=SCENES[id].music?'block':'none';
+  $('tableSec').style.display=SCENES[id].music?'none':'block';
+  buildSliders(); buildLegend(); renderAll();
+}
+function buildSliders(){
+  var h='';
+  SCENES[scene].params.forEach(function(p){
+    h+='<div class="slider"><label>'+p.name+' <b id="v_'+p.id+'">'+fmt(P[p.id])+'</b></label>'+
+       '<input type="range" id="s_'+p.id+'" min="'+p.min+'" max="'+p.max+'" step="'+p.step+'" value="'+P[p.id]+'"></div>';
+  });
+  $('sliders').innerHTML=h;
+  SCENES[scene].params.forEach(function(p){
+    $('s_'+p.id).oninput=function(){
+      P[p.id]=+this.value; $('v_'+p.id).textContent=fmt(P[p.id]);
+      D=SCENES[scene].build(P);
+      if (scene==='music' && mPlaying) stopMusic();
+      if (cx>P.xmMax||false){}
+      cx=Math.min(cx, scene==='music'?D.tEnd:P.xm);
+      renderAll();
+    };
+  });
+}
+function buildLegend(){
+  var h='';
+  if (SCENES[scene].music){
+    h='<span><i style="background:#7c3aed"></i>A段 慢板折线</span><span><i style="background:#db2777"></i>B段 快板折线</span>'+
+      '<span><i style="background:#94a3b8;height:2px"></i>节拍线（每拍一条）</span><span>● 当前拍点</span>';
+  } else {
+    h='<span><i style="background:'+C.blue+'"></i>方案A</span><span><i style="background:'+C.orange+'"></i>方案B</span>'+
+      '<span><i style="background:'+C.purple+';width:10px;height:10px;border-radius:2px;transform:rotate(45deg)"></i>临界点（费用相同）</span>'+
+      '<span style="background:#dbeafe;padding:1px 8px;border-radius:6px">蓝底 = A 更省</span>'+
+      '<span style="background:#ffedd5;padding:1px 8px;border-radius:6px">橙底 = B 更省</span>';
+  }
+  $('legend').innerHTML=h;
+}
+
+/* ==================== 显示选项 ==================== */
+function buildOpts(){
+  var items=[['grid','网格'],['seg','分段点（实心/空心）'],['inter','临界点'],['shade','最优区间底色'],['table','最优方案表'],['beat','节拍线（音乐）']];
+  var h='';
+  items.forEach(function(it){
+    h+='<label><input type="checkbox" id="o_'+it[0]+'"'+(opt[it[0]]?' checked':'')+'>'+it[1]+'</label>';
+  });
+  $('opts').innerHTML=h;
+  items.forEach(function(it){
+    $('o_'+it[0]).onchange=function(){ opt[it[0]]=this.checked;
+      if (it[0]==='table') $('tableSec').style.display=(opt.table&&scene!=='music')?'block':'none';
+      renderAll(); };
+  });
+}
+
+/* ==================== 坐标系 ==================== */
+var W=780,H=600,ML=64,MR=20,MT=30,MB=52;
+var PW=W-ML-MR, PH=H-MT-MB;
+var xm=15, ymax=30;
+function X(x){ return ML + x/xm*PW; }
+function Y(y){ return H-MB - y/ymax*PH; }
+function niceAxis(maxV,nWanted){
+  var raw=maxV/nWanted, pow=Math.pow(10,Math.floor(Math.log(raw)/Math.LN10)), step=pow;
+  var ms=[1,2,2.5,5,10];
+  for (var i=0;i<ms.length;i++){ if (ms[i]*pow>=raw){ step=ms[i]*pow; break; } }
+  return { step:step, max:Math.ceil(maxV/step)*step };
+}
+function F(scheme,x){  /* 求分段函数值（含端点归属） */
+  for (var i=0;i<scheme.segs.length;i++){ var s=scheme.segs[i];
+    if (x>=s.x0 && x<=s.x1) return s.f(x); }
+  return null;
+}
+function curX(){ return scene==='music' ? mCurT : cx; }
+
+/* ==================== 画布渲染 ==================== */
+function renderAll(){
+  var S=SCENES[scene];
+  if (S.music){ xm=D.tEnd; } else { xm=P.xm; }
+  /* ymax */
+  var mv=0;
+  if (S.music){ mv=16; } else {
+    for (var x=0;x<=xm+1e-9;x+=xm/400){ var a=F(D.A,x),b=F(D.B,x); if(a!==null)mv=Math.max(mv,a); if(b!==null)mv=Math.max(mv,b); }
+  }
+  var ax = S.music ? niceAxis(16,8) : niceAxis(mv*1.06,7);
+  ymax=ax.max;
+  var xs = niceAxis(xm,8);
+
+  var s='';
+  /* 最优区间底色 */
+  if (opt.shade && !S.music){
+    var run=null, px0=ML;
+    for (var px=ML;px<=W-MR;px+=2){
+      var xx=(px-ML)/PW*xm, a=F(D.A,xx), b=F(D.B,xx), w=null;
+      if (a!==null&&b!==null){ if (a<b-1e-9)w='A'; else if (b<a-1e-9)w='B'; }
+      if (w!==run){
+        if (run) s+='<rect x="'+px0+'" y="'+MT+'" width="'+(px-px0)+'" height="'+PH+'" fill="'+(run==='A'?'rgba(37,99,235,.07)':'rgba(234,88,12,.07)')+'"/>';
+        run=w; px0=px;
+      }
+    }
+    if (run) s+='<rect x="'+px0+'" y="'+MT+'" width="'+(W-MR-px0)+'" height="'+PH+'" fill="'+(run==='A'?'rgba(37,99,235,.07)':'rgba(234,88,12,.07)')+'"/>';
+  }
+  if (S.music && opt.shade){
+    s+='<rect x="'+X(0)+'" y="'+MT+'" width="'+(X(D.t1)-X(0))+'" height="'+PH+'" fill="rgba(124,58,237,.07)"/>';
+    s+='<rect x="'+X(D.t1)+'" y="'+MT+'" width="'+(X(D.tEnd)-X(D.t1))+'" height="'+PH+'" fill="rgba(219,39,119,.07)"/>';
+  }
+  /* 网格与刻度 */
+  if (opt.grid){
+    for (var gx=0;gx<=xm+1e-9;gx+=xs.step){ var gxp=Math.round(X(gx)*10)/10;
+      s+='<line x1="'+gxp+'" y1="'+MT+'" x2="'+gxp+'" y2="'+(H-MB)+'" stroke="'+C.grid+'" stroke-width="1"/>'; }
+    for (var gy=0;gy<=ymax+1e-9;gy+=ax.step){ var gyp=Math.round(Y(gy)*10)/10;
+      s+='<line x1="'+ML+'" y1="'+gyp+'" x2="'+(W-MR)+'" y2="'+gyp+'" stroke="'+C.grid+'" stroke-width="1"/>'; }
+  }
+  /* 轴 */
+  s+='<line x1="'+ML+'" y1="'+(H-MB)+'" x2="'+(W-MR+6)+'" y2="'+(H-MB)+'" stroke="'+C.axis+'" stroke-width="2"/>';
+  s+='<line x1="'+ML+'" y1="'+(H-MB)+'" x2="'+ML+'" y2="'+(MT-8)+'" stroke="'+C.axis+'" stroke-width="2"/>';
+  s+='<polygon points="'+(W-MR+6)+','+(H-MB)+' '+(W-MR-2)+','+(H-MB-4)+' '+(W-MR-2)+','+(H-MB+4)+'" fill="'+C.axis+'"/>';
+  s+='<polygon points="'+ML+','+(MT-8)+' '+(ML-4)+','+(MT+2)+' '+(ML+4)+','+(MT+2)+'" fill="'+C.axis+'"/>';
+  for (var tx=0;tx<=xm+1e-9;tx+=xs.step){
+    s+='<line x1="'+X(tx)+'" y1="'+(H-MB)+'" x2="'+X(tx)+'" y2="'+(H-MB+5)+'" stroke="'+C.axis+'"/>';
+    s+='<text x="'+X(tx)+'" y="'+(H-MB+20)+'" font-size="13" fill="'+C.axis+'" text-anchor="middle">'+fmt(tx)+'</text>';
+  }
+  for (var ty=0;ty<=ymax+1e-9;ty+=ax.step){
+    s+='<line x1="'+(ML-5)+'" y1="'+Y(ty)+'" x2="'+ML+'" y2="'+Y(ty)+'" stroke="'+C.axis+'"/>';
+    s+='<text x="'+(ML-9)+'" y="'+(Y(ty)+4)+'" font-size="13" fill="'+C.axis+'" text-anchor="end">'+fmt(ty)+'</text>';
+  }
+  s+='<text x="'+(W-MR)+'" y="'+(H-MB+38)+'" font-size="15" fill="'+C.sub+'" text-anchor="end" font-weight="bold">'+S.xName+'</text>';
+  s+='<text x="'+(ML-8)+'" y="'+(MT-12)+'" font-size="15" fill="'+C.sub+'" font-weight="bold">'+S.yName+'</text>';
+  s+='<text x="'+(X(0)-8)+'" y="'+(Y(0)+18)+'" font-size="14" fill="'+C.axis+'" font-weight="bold">O</text>';
+
+  if (S.music){
+    /* 节拍线 */
+    if (opt.beat){
+      var beats=getBeats();
+      beats.forEach(function(bt){
+        s+='<line x1="'+X(bt.t)+'" y1="'+MT+'" x2="'+X(bt.t)+'" y2="'+(H-MB)+'" stroke="#cbd5e1" stroke-width="1.5" stroke-dasharray="3 4"/>';
+        s+='<circle cx="'+X(bt.t)+'" cy="'+Y(bt.y)+'" r="4" fill="#7c3aed" opacity=".55"/>';
+      });
+    }
+    /* 段落标签 */
+    s+='<text x="'+X(D.t1/2)+'" y="'+(MT+22)+'" font-size="14" fill="'+C.purple+'" text-anchor="middle" font-weight="bold">A段 慢板 '+P.bA+'拍/分</text>';
+    s+='<text x="'+X((D.t1+D.tEnd)/2)+'" y="'+(MT+22)+'" font-size="14" fill="#db2777" text-anchor="middle" font-weight="bold">B段 快板 '+P.bB+'拍/分</text>';
+    /* 折线（已播放部分加粗） */
+    s+=pathOf(D.A.segs,C.purple,3,'none');
+    s+=pathOf(D.B.segs,'#db2777',3,'none');
+    if (opt.seg){
+      s+='<circle cx="'+X(D.t1)+'" cy="'+Y(8)+'" r="6" fill="#fff" stroke="#7c3aed" stroke-width="2.5"/>';
+    }
+    /* 播放进度与拍点 */
+    if (mCurT>0){
+      s+='<line x1="'+X(Math.min(mCurT,D.tEnd))+'" y1="'+MT+'" x2="'+X(Math.min(mCurT,D.tEnd))+'" y2="'+(H-MB)+'" stroke="#db2777" stroke-width="1.5" stroke-dasharray="5 4"/>';
+      var cy2=F(D.B,Math.min(mCurT,D.tEnd));
+      if (cy2!==null) s+='<circle cx="'+X(Math.min(mCurT,D.tEnd))+'" cy="'+Y(cy2)+'" r="8" fill="#db2777" stroke="#fff" stroke-width="2.5"/>';
+    }
+    s+='<text x="'+(ML+PW/2)+'" y="'+(MT-14)+'" font-size="14" fill="'+C.sub+'" text-anchor="middle">斜率 = 速度：折线越陡，节奏越快</text>';
+  } else {
+    /* 两方案曲线 */
+    s+=pathOf(D.A.segs,C.blue,3.5,'none');
+    s+=pathOf(D.B.segs,C.orange,3.5,'none');
+    /* 图象重合段标注（两方案费用恒相同） */
+    if (opt.inter){
+      findOverlap().forEach(function(r){
+        var m=(r[0]+r[1])/2;
+        s+='<text x="'+X(m)+'" y="'+(MT+44)+'" font-size="14" fill="'+C.purple+'" text-anchor="middle" font-weight="bold">两线重合：'+fmt(r[0])+' ≤ x ＜ '+fmt(r[1])+' 两方案费用相同</text>';
+      });
+    }
+    /* 分段点（实心/空心） */
+    if (opt.seg){
+      [D.A,D.B].forEach(function(sc){
+        sc.segs.forEach(function(sg){
+          var x0=sg.x0,x1=sg.x1;
+          if (x0>0.01){ s+=ptCircle(x0,sg.f(x0),sg.c0,sc===D.A?C.blue:C.orange); }
+          if (x1<xm-0.01 || !sg.c1){ s+=ptCircle(x1,sg.f(x1),sg.c1,sc===D.A?C.blue:C.orange); }
+        });
+      });
+    }
+    /* 临界点 */
+    var ints=opt.inter?findInter():[];
+    ints.forEach(function(ix){
+      var iy=F(D.A,ix);
+      s+='<line x1="'+X(ix)+'" y1="'+Y(iy)+'" x2="'+X(ix)+'" y2="'+(H-MB)+'" stroke="'+C.purple+'" stroke-width="1.5" stroke-dasharray="5 4"/>';
+      s+='<rect x="'+(X(ix)-6)+'" y="'+(Y(iy)-6)+'" width="12" height="12" fill="'+C.purple+'" stroke="#fff" stroke-width="2" transform="rotate(45 '+X(ix)+' '+Y(iy)+')"/>';
+      var anch = X(ix)<ML+110 ? 'start' : (X(ix)>W-MR-110 ? 'end' : 'middle');
+      s+='<text x="'+(anch==='start'?X(ix)+10:(anch==='end'?X(ix)-10:X(ix)))+'" y="'+(Y(iy)-14)+'" font-size="14.5" fill="'+C.purple+'" text-anchor="'+anch+'" font-weight="bold">临界点 x='+fmt(ix)+'，y='+fmt(iy)+' 元（费用相同）</text>';
+    });
+    /* 动点 */
+    var cxr=cx, ya=F(D.A,cxr), yb=F(D.B,cxr);
+    s+='<line x1="'+X(cxr)+'" y1="'+MT+'" x2="'+X(cxr)+'" y2="'+(H-MB)+'" stroke="#475569" stroke-width="1.5" stroke-dasharray="6 4"/>';
+    if (ya!==null) s+='<circle cx="'+X(cxr)+'" cy="'+Y(ya)+'" r="8" fill="'+C.blue+'" stroke="#fff" stroke-width="2.5"/>';
+    if (yb!==null) s+='<circle cx="'+X(cxr)+'" cy="'+Y(yb)+'" r="8" fill="'+C.orange+'" stroke="#fff" stroke-width="2.5"/>';
+    if (ya!==null) s+='<text x="'+(X(cxr)+12)+'" y="'+(Y(ya)-6)+'" font-size="15" fill="'+C.blue+'" font-weight="bold">A: '+fmt(ya)+'</text>';
+    if (yb!==null) s+='<text x="'+(X(cxr)+12)+'" y="'+(Y(yb)+16)+'" font-size="15" fill="'+C.orange+'" font-weight="bold">B: '+fmt(yb)+'</text>';
+  }
+  $('cv').innerHTML=s;
+  renderReadout(); renderExpr(); renderStory();
+  if (scene!=='music') renderTable(ints||[]);
+}
+function ptCircle(x,y,closed,color){
+  if (y===null||y===undefined) return '';
+  return '<circle cx="'+X(x)+'" cy="'+Y(y)+'" r="6" fill="'+(closed?color:'#fff')+'" stroke="'+color+'" stroke-width="2.5"/>';
+}
+function pathOf(segs,color,w,extra){
+  var d='';
+  segs.forEach(function(sg){
+    d+='M'+X(sg.x0).toFixed(1)+' '+Y(sg.f(sg.x0)).toFixed(1)+' L'+X(sg.x1).toFixed(1)+' '+Y(sg.f(sg.x1)).toFixed(1)+' ';
+  });
+  return '<path d="'+d+'" fill="none" stroke="'+color+'" stroke-width="'+w+'" stroke-linecap="round" '+(extra||'')+'/>';
+}
+
+/* ==================== 临界点（交点） ==================== */
+function findInter(){
+  var res=[], n=1000, lastNZ=null, lastNZx=null;
+  for (var i=0;i<=n;i++){
+    var x=xm*i/n, a=F(D.A,x), b=F(D.B,x);
+    if (a===null||b===null){ lastNZ=null; lastNZx=null; continue; }
+    var d=a-b;
+    if (d!==0){
+      if (lastNZ!==null && lastNZ*d<0){
+        /* 二分法精确化临界点 */
+        var lo=lastNZx, hi=x;
+        for (var k=0;k<40;k++){
+          var m=(lo+hi)/2, aa=F(D.A,m), bb=F(D.B,m);
+          if (aa===null||bb===null) break;
+          if ((aa-bb)*lastNZ>0) lo=m; else hi=m;
+        }
+        var xi=(lo+hi)/2, aa2=F(D.A,xi), bb2=F(D.B,xi);
+        if (aa2!==null&&bb2!==null&&Math.abs(aa2-bb2)<0.1) res.push(xi);
+      }
+      lastNZ=d; lastNZx=x;
+    }
+  }
+  var out=[];
+  res.forEach(function(v){ if (!out.length||Math.abs(v-out[out.length-1])>0.2) out.push(v); });
+  return out;
+}
+/* 图象重合段（两方案费用恒相同的区间） */
+function findOverlap(){
+  var runs=[], start=null, n=600;
+  for (var i=0;i<=n;i++){
+    var x=xm*i/n, a=F(D.A,x), b=F(D.B,x);
+    var same=(a!==null&&b!==null&&Math.abs(a-b)<0.02);
+    if (same&&start===null) start=x;
+    if ((!same||i===n)&&start!==null){
+      if (x-start>0.8) runs.push([start,x]);
+      start=null;
+    }
+  }
+  return runs;
+}
+
+/* ==================== 读数条 ==================== */
+function renderReadout(){
+  var S=SCENES[scene], h='';
+  if (S.music){
+    var beat=curBeat();
+    h='<span class="big">t = '+fmt(mCurT)+' s</span>'+
+      '<span class="big" style="color:'+C.purple+'">累计 y = '+fmt(F(D.A,Math.min(mCurT,D.tEnd))||0)+' 拍</span>'+
+      '<span class="verdict tie">'+(beat?beat+' 当前节拍 · 斜率即速度':'拖动动点可“手动播放”节奏')+'</span>';
+  } else {
+    var ya=F(D.A,cx), yb=F(D.B,cx), v='',cls='';
+    if (ya!==null&&yb!==null){
+      if (Math.abs(ya-yb)<0.05){ v='⚖ 两方案费用相同（临界状态）'; cls='tie'; }
+      else if (ya<yb){ v='✅ 选方案A，省 '+fmt(yb-ya)+' 元'; cls='a'; }
+      else { v='✅ 选方案B，省 '+fmt(ya-yb)+' 元'; cls='b'; }
+    }
+    h='<span class="big">'+S.xName.split(' ')[0].replace('/','')+' <span style="color:'+C.blue+'">x = '+fmt(cx)+'</span></span>'+
+      '<span class="big" style="color:'+C.blue+'">A：'+(ya===null?'—':fmt(ya)+' 元')+'</span>'+
+      '<span class="big" style="color:'+C.orange+'">B：'+(yb===null?'—':fmt(yb)+' 元')+'</span>'+
+      '<span class="verdict '+cls+'">'+v+'</span>';
+  }
+  $('readout').innerHTML=h;
+}
+
+/* ==================== 解析式 / 题面 ==================== */
+function renderExpr(){
+  var h='<div><b>方案A：</b>'+D.A.expr+'</div><div style="margin-top:5px"><b>方案B：</b>'+D.B.expr+'</div>';
+  if (SCENES[scene].music) h='<div>'+D.A.expr+'</div><div style="margin-top:5px">'+D.B.expr+'</div><div style="margin-top:5px;color:'+C.sub+'">斜率 k = 速度（拍/s）：A段 '+fmt(P.bA/60)+'，B段 '+fmt(P.bB/60)+'</div>';
+  $('expr').innerHTML=h;
+}
+function renderStory(){ $('story').innerHTML=SCENES[scene].story(P); }
+
+/* ==================== 最优方案比较表 ==================== */
+function renderTable(ints){
+  if (SCENES[scene].music) return;
+  var bps=[];
+  SCENES[scene].bp(P).forEach(function(b){ if (b>0.5&&b<xm-0.01) bps.push(b); });
+  ints.forEach(function(b){ if (b>0.5&&b<xm-0.01) bps.push(b); });
+  bps.sort(function(a,b){return a-b;});
+  var cuts=[0]; bps.forEach(function(b){ if (Math.abs(b-cuts[cuts.length-1])>0.15) cuts.push(b); });
+  if (cuts[cuts.length-1]<xm-0.15) cuts.push(xm);
+  var unit = scene==='market'?'元':'元';
+  var xlab = scene==='market'?'消费金额':'里程';
+  var h='<table><tr><th>'+xlab+'区间</th><th>方案A 费用</th><th>方案B 费用</th><th>推荐</th></tr>';
+  for (var i=0;i<cuts.length-1;i++){
+    var a=cuts[i], b=cuts[i+1], mid=(a+b)/2;
+    var ya=F(D.A,mid), yb=F(D.B,mid), rec, cls='crit';
+    if (Math.abs(ya-yb)<0.05){ rec='⚖ 相同（临界）'; }
+    else if (ya<yb){ rec='方案A ▸'; cls='rec-a'; } else { rec='方案B ▸'; cls='rec-b'; }
+    var lab = (i===0?'0 ≤ ':fmt(a)+' ＜ ')+'x'+(b===xm?' ≤ ':' ＜ ')+fmt(b);
+    h+='<tr class="'+cls+'"><td>'+lab+'</td><td>'+fmt(ya)+' '+unit+'</td><td>'+fmt(yb)+' '+unit+'</td><td>'+rec+'</td></tr>';
+  }
+  h+='</table><div style="font-size:13px;color:'+C.sub+';margin-top:5px">※ 表中费用取区间中点计算；紫色行为临界点附近，两方案费用几乎相同。</div>';
+  $('tableBox').innerHTML=h;
+}
+
+/* ==================== 音乐播放 ==================== */
+function getBeats(){
+  var arr=[], k;
+  for (k=0;k<=8;k++) arr.push({t:k*60/P.bA, y:k});
+  for (k=1;k<=8;k++) arr.push({t:D.t1+k*60/P.bB, y:8+k});
+  return arr;
+}
+function curBeat(){
+  var beats=getBeats();
+  for (var i=0;i<beats.length;i++){ if (Math.abs(beats[i].t-mCurT)<(beats[i+1]?beats[i+1].t-beats[i].t:0.2)/2) return '♪'; }
+  return null;
+}
+function beep(f){
+  try{
+    actx=actx||new (window.AudioContext||window.webkitAudioContext)();
+    var o=actx.createOscillator(), g=actx.createGain();
+    o.type='triangle'; o.frequency.value=f||880;
+    g.gain.setValueAtTime(.22,actx.currentTime);
+    g.gain.exponentialRampToValueAtTime(.001,actx.currentTime+.15);
+    o.connect(g); g.connect(actx.destination);
+    o.start(); o.stop(actx.currentTime+.16);
+  }catch(e){}
+}
+function playMusic(){
+  if (mPlaying) return;
+  mPlaying=true; mCurT=0; mBeatIdx=0; mT0=performance.now();
+  $('playBtn').textContent='⏸ 停止播放'; $('playBtn').classList.add('stop');
+  var beats=getBeats();
+  mTimer=setInterval(function(){
+    mCurT=(performance.now()-mT0)/1000;
+    while (mBeatIdx<beats.length && mCurT>=beats[mBeatIdx].t){ beep(mBeatIdx<9?880:1175); mBeatIdx++; }
+    if (mCurT>=D.tEnd+0.4){ stopMusic(); mCurT=D.tEnd; }
+    renderAll();
+  },40);
+}
+function stopMusic(){
+  if (mTimer){ clearInterval(mTimer); mTimer=null; }
+  mPlaying=false;
+  var b=$('playBtn'); if (b){ b.textContent='▶ 播放节奏（同步绘制时间-拍数图象）'; b.classList.remove('stop'); }
+}
+
+/* ==================== 拖拽动点 ==================== */
+var dragging=false;
+function px2x(e){
+  var r=$('cv').getBoundingClientRect();
+  var px=(e.clientX-r.left)*(W/r.width);
+  return (px-ML)/PW*xm;
+}
+$('cv').addEventListener('pointerdown',function(e){
+  dragging=true; $('cv').setPointerCapture(e.pointerId); onDrag(e);
+});
+$('cv').addEventListener('pointermove',function(e){ if (dragging) onDrag(e); });
+$('cv').addEventListener('pointerup',function(){ dragging=false; });
+function onDrag(e){
+  var x=px2x(e);
+  if (x<0){
+    var t=$('toast'); t.classList.add('show');
+    clearTimeout(t._h); t._h=setTimeout(function(){ t.classList.remove('show'); },1600);
+    x=0;
+  }
+  var lim = scene==='music'?D.tEnd:P.xm;
+  x=Math.min(x,lim);
+  if (scene==='music'){ if (mPlaying) stopMusic(); mCurT=x; }
+  else cx=x;
+  renderAll();
+}
+
+/* ==================== 播放按钮 ==================== */
+$('playBtn').onclick=function(){ if (mPlaying) stopMusic(); else playMusic(); };
+
+/* ==================== 初始化 ==================== */
+buildTabs(); buildOpts(); switchScene('taxi');
+var h=location.hash.replace("#",""); if (SCENES[h]) switchScene(h);
+</script>
+</body>
+</html>

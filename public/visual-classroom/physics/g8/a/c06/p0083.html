@@ -1,0 +1,716 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>探究密度概念与 m–V 图像 · 交互式可视化（人教版八年级上册 §6.2）</title>
+<style>
+:root{
+  --blue:#2563EB; --blue-d:#1D4ED8; --blue-l:#EFF4FF;
+  --green:#10B981; --red:#EF4444; --amber:#F59E0B; --cyan:#06B6D4;
+  --ink:#1F2937; --ink-2:#4B5563; --ink-3:#6B7280;
+  --line:#E5E7EB; --bg:#F5F7FB; --card:#FFFFFF;
+  --radius:14px;
+  --shadow:0 1px 2px rgba(16,24,40,.04), 0 10px 28px -14px rgba(16,24,40,.26);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:"Microsoft YaHei","PingFang SC","Hiragino Sans GB",system-ui,-apple-system,"Segoe UI",sans-serif;
+  background:var(--bg);color:var(--ink);line-height:1.68;-webkit-font-smoothing:antialiased;
+}
+svg{display:block;font-family:inherit;}
+svg text{font-family:inherit;}
+
+.site-header{background:linear-gradient(120deg,#1D4ED8,#2563EB 55%,#3B82F6);color:#fff;padding:22px 0 24px;}
+.header-inner{max-width:1120px;margin:0 auto;padding:0 22px;display:flex;justify-content:space-between;align-items:flex-end;gap:18px;flex-wrap:wrap;}
+.header-text h1{margin:0;font-size:24px;font-weight:700;letter-spacing:.5px;}
+.header-text p{margin:6px 0 0;font-size:13.5px;color:rgba(255,255,255,.88);}
+.header-nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.header-link{border:1px solid rgba(255,255,255,.45);border-radius:999px;padding:7px 16px;font-size:13px;color:#fff;text-decoration:none;background:rgba(255,255,255,.08);white-space:nowrap;}
+.header-link:hover{background:rgba(255,255,255,.2);}
+.header-badge{border:1px solid rgba(255,255,255,.4);border-radius:999px;padding:7px 16px;font-size:13px;background:rgba(255,255,255,.12);white-space:nowrap;}
+
+.wrap{max-width:1120px;margin:0 auto;padding:24px 22px 40px;}
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:24px 26px;margin-bottom:20px;border:1px solid rgba(229,231,235,.7);}
+.chead{display:flex;gap:14px;align-items:flex-start;margin-bottom:18px;}
+.idx{flex:0 0 auto;width:34px;height:34px;border-radius:11px;background:var(--blue-l);color:var(--blue);font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;margin-top:2px;}
+.chead h2{margin:0 0 3px;font-size:19px;font-weight:700;letter-spacing:.2px;}
+.chead p{margin:0;color:var(--ink-3);font-size:13.3px;}
+
+.split{display:grid;grid-template-columns:minmax(0,1.06fr) minmax(288px,.94fr);gap:26px;align-items:start;}
+@media(max-width:900px){.split{grid-template-columns:1fr;}}
+.stage{border:1px solid var(--line);border-radius:12px;background:#FBFcFE;padding:6px;overflow:hidden;}
+.stage svg{width:100%;height:auto;border-radius:8px;touch-action:none;}
+.stage .sub{margin-top:6px;}
+
+.panel{display:flex;flex-direction:column;gap:15px;}
+.ctl label{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--ink-3);margin-bottom:6px;}
+.ctl label b{color:var(--ink);font-size:14.5px;font-variant-numeric:tabular-nums;font-weight:700;}
+input[type=range]{width:100%;height:24px;accent-color:var(--blue);cursor:pointer;margin:0;background:transparent;}
+.tick{display:flex;justify-content:space-between;font-size:11px;color:var(--ink-3);margin-top:1px;}
+.seg{display:flex;gap:8px;flex-wrap:wrap;}
+.seg button{border:1px solid var(--line);background:#fff;color:var(--ink-2);border-radius:9px;padding:6px 13px;font-size:12.5px;cursor:pointer;font-family:inherit;transition:.15s;display:flex;align-items:center;gap:6px;}
+.seg button:hover{border-color:#BFDBFE;background:#F8FAFF;}
+.seg button.on{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600;}
+.seg button .dot{width:9px;height:9px;border-radius:50%;flex:none;}
+.btn{border:1px solid var(--blue);background:#fff;color:var(--blue);border-radius:9px;padding:7px 15px;font-size:13px;cursor:pointer;font-family:inherit;transition:.15s;white-space:nowrap;}
+.btn:hover{background:var(--blue-l);}
+.btn.primary{background:var(--blue);color:#fff;}
+.btn.primary:hover{background:var(--blue-d);}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;}
+
+.rows{border:1px solid var(--line);border-radius:11px;overflow:hidden;background:#FCFDFF;}
+.row{display:flex;justify-content:space-between;gap:10px;padding:8px 13px;font-size:13px;border-bottom:1px solid var(--line);}
+.row:last-child{border-bottom:0;}
+.row span{color:var(--ink-3);}
+.row b{font-variant-numeric:tabular-nums;font-weight:700;}
+
+.dtab{border:1px solid var(--line);border-radius:11px;overflow:hidden;background:#FCFDFF;font-size:12.6px;}
+.dtab .dh,.dtab .dr{display:grid;grid-template-columns:38px 1fr 1fr 1.1fr;gap:6px;padding:6px 11px;border-bottom:1px solid var(--line);}
+.dtab .dh{background:#F6F9FF;color:var(--ink-3);font-weight:600;}
+.dtab .dr:last-child{border-bottom:0;}
+.dtab .dr i{font-style:normal;color:var(--ink-3);}
+.dtab .dr span{text-align:right;font-variant-numeric:tabular-nums;}
+.dtab .dr b{text-align:right;font-variant-numeric:tabular-nums;}
+.dtab .empty{padding:10px 12px;color:var(--ink-3);}
+
+
+.tag{font-size:11.5px;font-weight:700;border-radius:999px;padding:2px 10px;letter-spacing:.3px;white-space:nowrap;}
+.tag.b{background:#E4F9F0;color:#0E9F6E;}
+.tag.r{background:#FEECEC;color:#DC2626;}
+.tag.a{background:#FFF6E5;color:#B45309;}
+.tag.g{background:#EFF4FF;color:#1D4ED8;}
+
+.note{margin:0;font-size:13.2px;color:var(--ink-2);line-height:1.72;background:#F6F9FF;border-left:3px solid var(--blue);border-radius:0 10px 10px 0;padding:11px 14px;}
+.note em{font-style:normal;font-weight:700;color:var(--blue-d);}
+footer{text-align:center;color:#93A2B8;font-size:12.3px;padding:6px 0 0;}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-text">
+      <h1>探究密度概念与 m–V 图像</h1>
+      <p>体积变成 2 倍，质量也变成 2 倍吗？把一组组数据描到图上，看直线怎么长出来</p>
+    </div>
+    <div class="header-nav">
+      <a class="header-link" href="#">« 返回实验目录</a>
+      <span class="header-badge">八年级物理 · 质量与密度 · §6.2</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- ============ 01 测数据 ============ -->
+  <section class="card">
+    <div class="chead">
+      <div class="idx">01</div>
+      <div>
+        <h2>先测几组：不同体积的水，质量是多少</h2>
+        <p>拖动水的体积，用量筒读体积、用天平称质量，把每组数据记进表</p>
+      </div>
+    </div>
+    <div class="split">
+      <div class="stage">
+        <svg id="s1" viewBox="0 0 660 386" role="img" aria-label="量筒测体积，托盘天平测质量"></svg>
+      </div>
+      <div class="panel">
+        <div class="ctl">
+          <label>水的体积 V <b id="v1V">30 mL</b></label>
+          <input id="r1V" type="range" min="5" max="60" step="1" value="30">
+          <div class="tick"><span>5</span><span>30</span><span>60 mL</span></div>
+        </div>
+        <div class="btn-row">
+          <button class="btn primary" id="b1add">记录这组数据</button>
+          <button class="btn" id="b1auto">▶ 自动测 6 组</button>
+          <button class="btn" id="b1clear">清空</button>
+        </div>
+        <div class="rows">
+          <div class="row"><span>空烧杯质量</span><b>25.0 g</b></div>
+          <div class="row"><span>烧杯 + 水总质量</span><b id="o1tot">—</b></div>
+          <div class="row"><span>水的质量 m</span><b id="o1m">—</b></div>
+          <div class="row"><span>m / V</span><b id="o1r">—</b></div>
+        </div>
+        <div class="dtab" id="t1"></div>
+        <p class="note" id="n1"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 02 m-V 图像 ============ -->
+  <section class="card">
+    <div class="chead">
+      <div class="idx">02</div>
+      <div>
+        <h2>把数据描成图：过原点的直线</h2>
+        <p>横轴体积 V、纵轴质量 m。同种物质的点落在同一条过原点的直线上，不同物质的直线倾斜程度不同</p>
+      </div>
+    </div>
+    <div class="split">
+      <div class="stage">
+        <svg id="s2" viewBox="0 0 660 410" role="img" aria-label="质量体积关系图像"></svg>
+      </div>
+      <div class="panel">
+        <div class="seg" id="seg2"></div>
+        <div class="ctl">
+          <label>图上的读数位置 V <b id="v2x">30 cm³</b></label>
+          <input id="r2x" type="range" min="0" max="60" step="1" value="30">
+          <div class="tick"><span>0</span><span>30</span><span>60 cm³</span></div>
+        </div>
+        <div class="btn-row">
+          <button class="btn" id="b2tri">显示斜率三角形</button>
+          <button class="btn" id="b2pts">隐藏 01 的数据点</button>
+        </div>
+        <div class="rows" id="ro2"></div>
+        <p class="note" id="n2"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 03 密度定义 ============ -->
+  <section class="card">
+    <div class="chead">
+      <div class="idx">03</div>
+      <div>
+        <h2>密度：单位体积的质量</h2>
+        <p>大铁块和小铁块相比，质量、体积都不同，但「1 cm³ 的质量」始终是那个数</p>
+      </div>
+    </div>
+    <div class="split">
+      <div class="stage">
+        <svg id="s3a" viewBox="0 0 660 330" role="img" aria-label="不同体积的同种物质块与天平"></svg>
+        <svg id="s3b" class="sub" viewBox="0 0 660 176" role="img" aria-label="密度单位的换算"></svg>
+      </div>
+      <div class="panel">
+        <div class="seg" id="seg3"></div>
+        <div class="ctl">
+          <label>大块的边长 a <b id="v3a">3.0 cm</b></label>
+          <input id="r3a" type="range" min="10" max="50" step="5" value="30">
+          <div class="tick"><span>1.0</span><span>3.0</span><span>5.0 cm</span></div>
+        </div>
+        <div class="rows">
+          <div class="row"><span>大块体积 V = a³</span><b id="o3V">—</b></div>
+          <div class="row"><span>大块质量 m</span><b id="o3m">—</b></div>
+          <div class="row"><span>小块体积</span><b>1.0 cm³</b></div>
+          <div class="row"><span>小块质量</span><b id="o3m1">—</b></div>
+          <div class="row"><span>ρ = m / V</span><b id="o3r">—</b></div>
+        </div>
+        <p class="note" id="n3"></p>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<footer>物理可视化模型 · 密度概念与 m–V 图像　|　单文件版，无外部依赖，可直接转发</footer>
+
+<script>
+/* =========================================================
+   通用工具
+   ========================================================= */
+const $  = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const F  = (n, d = 2) => Number(n).toFixed(d);
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const setTxt  = (sel, v) => { const e = $(sel); if (e) e.textContent = v; };
+const setHTML = (sel, v) => { const e = $(sel); if (e) e.innerHTML = v; };
+
+function T(x, y, s, o = {}) {
+  return '<text x="' + F(x, 1) + '" y="' + F(y, 1) + '" font-size="' + (o.s || 13) +
+    '" fill="' + (o.f || '#334155') + '" font-weight="' + (o.w || 400) +
+    '" text-anchor="' + (o.a || 'start') + '" opacity="' + (o.o == null ? 1 : o.o) + '">' + s + '</text>';
+}
+function svgSet(id, markup) {
+  const el = $(id);
+  if (el) el.innerHTML = markup;
+}
+
+/* =========================================================
+   物质库（八年级常用值）
+   ========================================================= */
+const MATS = {
+  water:{ n:'水',   rho:1.00, c:'#2563EB', cf:'#93C5FD' },
+  ice:  { n:'冰',   rho:0.90, c:'#06B6D4', cf:'#67E8F9' },
+  alc:  { n:'酒精', rho:0.80, c:'#A78BFA', cf:'#C4B5FD' },
+  alu:  { n:'铝',   rho:2.70, c:'#10B981', cf:'#6EE7B7' },
+  iron: { n:'铁',   rho:7.90, c:'#EF4444', cf:'#FCA5A5' },
+  cu:   { n:'铜',   rho:8.90, c:'#F59E0B', cf:'#FCD34D' },
+  pb:   { n:'铅',   rho:11.30,c:'#64748B', cf:'#CBD5E1' }
+};
+const PLOT_LIST = ['water', 'ice', 'alu', 'iron', 'cu'];
+
+/* =========================================================
+   绘图零件：量筒 / 天平 / 砝码 / 烧杯 / 方块
+   ========================================================= */
+function cylinderG(o) {
+  const cx = o.cx, top = o.top, w = o.w || 66, h = o.h || 186;
+  const rx = w / 2, ry = w * 0.14, bot = top + h;
+  const Vmax = o.Vmax || 100, V = clamp(o.V || 0, 0, Vmax), col = o.col || '#3B82F6';
+  let s = '';
+  s += '<path d="M' + (cx - rx) + ' ' + top + ' L' + (cx - rx) + ' ' + bot +
+       ' A' + rx + ' ' + F(ry, 2) + ' 0 0 0 ' + (cx + rx) + ' ' + bot +
+       ' L' + (cx + rx) + ' ' + top + '" fill="#F7FAFF" stroke="#94A3B8" stroke-width="1.6"/>';
+  const wh = h * V / Vmax;
+  if (wh > 1) {
+    const wy = bot - wh;
+    s += '<path d="M' + (cx - rx + 1) + ' ' + F(wy, 1) + ' L' + (cx - rx + 1) + ' ' + bot +
+         ' A' + (rx - 1) + ' ' + F(ry, 2) + ' 0 0 0 ' + (cx + rx - 1) + ' ' + bot +
+         ' L' + (cx + rx - 1) + ' ' + F(wy, 1) + ' Z" fill="' + col + '" opacity=".38"/>';
+    s += '<ellipse cx="' + cx + '" cy="' + F(wy, 1) + '" rx="' + (rx - 1) + '" ry="' + F(ry, 2) +
+         '" fill="' + col + '" opacity=".6"/>';
+  }
+  for (let v = 0; v <= Vmax; v += 5) {
+    const yy = bot - h * v / Vmax, major = v % 20 === 0, mid = v % 10 === 0;
+    const len = major ? 15 : (mid ? 10 : 6);
+    s += '<line x1="' + (cx + rx - len) + '" y1="' + F(yy, 1) + '" x2="' + (cx + rx) + '" y2="' + F(yy, 1) +
+         '" stroke="' + (major ? '#334155' : '#94A3B8') + '" stroke-width="' + (major ? 1.4 : 1) + '"/>';
+    if (major) s += T(cx - rx - 7, yy + 4, String(v), { s: 10.5, a: 'end', f: '#475569' });
+  }
+  s += '<ellipse cx="' + cx + '" cy="' + top + '" rx="' + rx + '" ry="' + F(ry, 2) +
+       '" fill="none" stroke="#94A3B8" stroke-width="1.6"/>';
+  return s;
+}
+
+/* 托盘天平：只画架子，盘中物品由调用者提供 */
+function balanceFrame(o) {
+  const cx = o.cx, baseY = o.baseY, hw = o.hw || 134, panW = o.panW || 120;
+  const beamY = baseY - 150, panY = baseY - 64, lx = cx - hw + 14, rx = cx + hw - 14;
+  let s = '';
+  s += '<path d="M' + (cx - 54) + ' ' + baseY + ' L' + (cx + 54) + ' ' + baseY +
+       ' L' + (cx + 42) + ' ' + (baseY + 16) + ' L' + (cx - 42) + ' ' + (baseY + 16) +
+       ' Z" fill="#E2E8F0" stroke="#94A3B8" stroke-width="1.4"/>';
+  s += '<rect x="' + (cx - 5) + '" y="' + (beamY + 8) + '" width="10" height="' + (baseY - beamY - 8) +
+       '" fill="#CBD5E1" stroke="#94A3B8" stroke-width="1.2"/>';
+  [lx, rx].forEach(function (px) {
+    const hx = panW / 2 - 4;                       // 竖直吊杆，避免与盘中物品穿插
+    s += '<line x1="' + (px - hx) + '" y1="' + (beamY + 8) + '" x2="' + (px - hx) + '" y2="' + panY + '" stroke="#94A3B8" stroke-width="1.1"/>';
+    s += '<line x1="' + (px + hx) + '" y1="' + (beamY + 8) + '" x2="' + (px + hx) + '" y2="' + panY + '" stroke="#94A3B8" stroke-width="1.1"/>';
+    s += '<path d="M' + (px - panW / 2) + ' ' + panY + ' l10 15 h' + (panW - 20) + ' l10 -15 z" fill="#E2E8F0" stroke="#94A3B8" stroke-width="1.3"/>';
+    s += '<line x1="' + (px - panW / 2) + '" y1="' + panY + '" x2="' + (px + panW / 2) + '" y2="' + panY +
+         '" stroke="#94A3B8" stroke-width="1.6"/>';
+  });
+  s += '<rect x="' + (cx - hw) + '" y="' + beamY + '" width="' + (hw * 2) + '" height="8" rx="2" fill="#CBD5E1" stroke="#64748B" stroke-width="1.3"/>';
+  s += '<path d="M' + cx + ' ' + (beamY + 8) + ' l -9 14 h 18 z" fill="#94A3B8"/>';
+  const pdY = beamY + 52;
+  s += '<rect x="' + (cx - 32) + '" y="' + pdY + '" width="64" height="17" rx="3" fill="#F8FAFC" stroke="#CBD5E1"/>';
+  [-20, -10, 0, 10, 20].forEach(function (d) {
+    s += '<line x1="' + (cx + d) + '" y1="' + (pdY + 3) + '" x2="' + (cx + d) + '" y2="' + (pdY + (d === 0 ? 14 : 9)) +
+         '" stroke="' + (d === 0 ? '#64748B' : '#CBD5E1') + '" stroke-width="' + (d === 0 ? 1.4 : 1) + '"/>';
+  });
+  s += '<line x1="' + cx + '" y1="' + (beamY + 8) + '" x2="' + cx + '" y2="' + (pdY - 6) + '" stroke="#EF4444" stroke-width="2"/>';
+  s += '<path d="M' + cx + ' ' + (pdY - 6) + ' l -5 -9 h 10 z" fill="#EF4444"/>';
+  return { markup: s, lx: lx, rx: rx, panY: panY, baseY: baseY, beamY: beamY };
+}
+
+/* 砝码：按面值堆叠，超过 4 个时分两摞 */
+function weightsG(cx, panY, m) {
+  const DEN = [500, 200, 200, 100, 50, 20, 20, 10, 5, 2, 2, 1];
+  let rest = Math.round(m), parts = [];
+  for (let i = 0; i < DEN.length; i++) {
+    if (rest >= DEN[i]) { parts.push(DEN[i]); rest -= DEN[i]; }
+  }
+  const bh = 11, gap = 1.5;
+  const two = parts.length > 4;
+  const cols = two ? [[], []] : [parts];
+  if (two) parts.forEach(function (p, i) { cols[i % 2].push(p); });
+  let s = '', topMost = panY;
+  cols.forEach(function (col, ci) {
+    let y = panY;
+    col.forEach(function (p) {
+      const bw = clamp(16 + p * 0.12, 18, 40);
+      y -= (bh + gap);
+      const off = two ? (ci === 0 ? -bw / 2 - 3 : bw / 2 + 3) : 0;
+      s += '<rect x="' + F(cx + off - bw / 2, 1) + '" y="' + F(y, 1) + '" width="' + F(bw, 1) + '" height="' + bh +
+           '" rx="2" fill="#DCEDFB" stroke="#475569" stroke-width="1"/>';
+      s += T(cx + off, y + bh - 2.6, String(p), { s: 8.5, a: 'middle', f: '#334155', w: 600 });
+      if (y < topMost) topMost = y;
+    });
+  });
+  return { markup: s, top: topMost, list: parts };
+}
+
+/* 烧杯（盛液体） */
+function beakerG(cx, baseY, V, col, Vmax) {
+  Vmax = Vmax || 100;
+  const bh = 58, top = baseY - bh;
+  const wTop = 38, wBot = 31;
+  const hwAt = function (y) { return wBot + (wTop - wBot) * (baseY - y) / bh; };
+  let s = '';
+  const wy = baseY - (bh - 4) * clamp(V, 0, Vmax) / Vmax;
+  if (baseY - wy > 1) {
+    s += '<path d="M' + F(cx - hwAt(wy), 1) + ' ' + F(wy, 1) + ' L' + (cx - wBot) + ' ' + baseY +
+         ' L' + (cx + wBot) + ' ' + baseY + ' L' + F(cx + hwAt(wy), 1) + ' ' + F(wy, 1) +
+         ' Z" fill="' + col + '" opacity=".4"/>';
+    s += '<line x1="' + F(cx - hwAt(wy), 1) + '" y1="' + F(wy, 1) + '" x2="' + F(cx + hwAt(wy), 1) + '" y2="' + F(wy, 1) +
+         '" stroke="' + col + '" stroke-width="2"/>';
+  }
+  s += '<path d="M' + (cx - wTop) + ' ' + top + ' L' + (cx - wBot) + ' ' + baseY +
+       ' L' + (cx + wBot) + ' ' + baseY + ' L' + (cx + wTop) + ' ' + top +
+       '" fill="none" stroke="#64748B" stroke-width="1.6"/>';
+  s += '<line x1="' + (cx - wTop - 5) + '" y1="' + top + '" x2="' + (cx + wTop + 5) + '" y2="' + top +
+       '" stroke="#475569" stroke-width="2.6" stroke-linecap="round"/>';
+  return s;
+}
+
+/* 方块（斜二测）：o={cx,cy,w,h,d,col,name}; w=正面宽 h=高 d=进深投影长 */
+function boxG(o) {
+  const w = o.w, h = o.h, d = o.d, cx = o.cx, cy = o.cy;
+  const dx = d * 0.80, dy = -d * 0.50;
+  const x0 = cx - w / 2, x1 = cx + w / 2, y0 = cy - h / 2, y1 = cy + h / 2;
+  const col = o.col || '#10B981', op = o.op == null ? 0.34 : o.op;
+  let s = '';
+  const front = x0 + ',' + y0 + ' ' + x1 + ',' + y0 + ' ' + x1 + ',' + y1 + ' ' + x0 + ',' + y1;
+  const topF = x0 + ',' + y0 + ' ' + (x1) + ',' + y0 + ' ' + F(x1 + dx, 1) + ',' + F(y0 + dy, 1) + ' ' + F(x0 + dx, 1) + ',' + F(y0 + dy, 1);
+  const rightF = x1 + ',' + y0 + ' ' + F(x1 + dx, 1) + ',' + F(y0 + dy, 1) + ' ' + F(x1 + dx, 1) + ',' + F(y1 + dy, 1) + ' ' + x1 + ',' + y1;
+  s += '<polygon points="' + front + '" fill="' + col + '" opacity="' + op + '" stroke="' + col + '" stroke-width="1.8"/>';
+  s += '<polygon points="' + topF + '" fill="' + col + '" opacity="' + (op + 0.16) + '" stroke="' + col + '" stroke-width="1.6"/>';
+  s += '<polygon points="' + rightF + '" fill="' + col + '" opacity="' + (op + 0.04) + '" stroke="' + col + '" stroke-width="1.6"/>';
+  return s;
+}
+
+/* 尺寸线（水平） */
+function dimH(x1, x2, y, label, col) {
+  col = col || '#6B7280';
+  let s = '<line x1="' + x1 + '" y1="' + y + '" x2="' + x2 + '" y2="' + y + '" stroke="' + col + '" stroke-width="1.2"/>';
+  s += '<path d="M' + x1 + ' ' + y + ' l 6 -4 v 8 z" fill="' + col + '"/>';
+  s += '<path d="M' + x2 + ' ' + y + ' l -6 -4 v 8 z" fill="' + col + '"/>';
+  s += T((x1 + x2) / 2, y - 6, label, { s: 11.5, a: 'middle', f: col, w: 600 });
+  return s;
+}
+
+/* =========================================================
+   01 量筒 + 天平
+   ========================================================= */
+const st1 = { V: 30, rows: [], timer: null, autoing: false };
+const CUP = 25.0;
+
+function draw1() {
+  try {
+    const V = st1.V, mW = V * MATS.water.rho, tot = CUP + mW;
+    let s = '';
+    s += cylinderG({ cx: 112, top: 118, w: 66, h: 186, V: V, Vmax: 100, col: '#3B82F6' });
+    s += T(112, 322, '量筒', { s: 12.5, a: 'middle', f: '#475569', w: 600 });
+    const wy = 118 + 186 * (1 - V / 100);
+    s += '<line x1="145" y1="' + F(wy, 1) + '" x2="200" y2="' + F(wy, 1) + '" stroke="#94A3B8" stroke-width="1" stroke-dasharray="4 4"/>';
+    s += T(204, wy + 4, 'V = ' + V + ' mL', { s: 12.5, f: '#2563EB', w: 700 });
+    s += '<line x1="152" y1="200" x2="262" y2="200" stroke="#10B981" stroke-width="1.6" stroke-dasharray="6 4"/>';
+    s += '<path d="M262 200 l -11 -5 v 10 z" fill="#10B981"/>';
+    s += T(158, 192, '倒入烧杯', { s: 11.5, f: '#0E9F6E', w: 600 });
+    const b = balanceFrame({ cx: 440, baseY: 330 });
+    s += b.markup;
+    s += beakerG(b.lx, b.panY, V, '#3B82F6', 100);
+    s += T(b.lx, b.panY + 32, '烧杯 + 水', { s: 11.5, a: 'middle', f: '#1D4ED8', w: 600 });
+    const wt = weightsG(b.rx, b.panY, Math.round(tot));
+    s += wt.markup;
+    s += T(b.rx, Math.min(wt.top - 8, b.panY - 100), '砝码 ' + F(tot, 1) + ' g', { s: 11.5, a: 'middle', f: '#334155', w: 600 });
+    s += T(440, 356, '托盘天平', { s: 12.5, a: 'middle', f: '#475569', w: 600 });
+    svgSet('#s1', s);
+    setTxt('#v1V', V + ' mL');
+    setTxt('#o1tot', F(tot, 1) + ' g');
+    setTxt('#o1m', F(mW, 1) + ' g');
+    setTxt('#o1r', F(mW / V, 2) + ' g/cm³');
+    renderTable1();
+    note1();
+  } catch (e) { console.warn('draw1', e); }
+}
+
+function renderTable1() {
+  let h = '<div class="dh"><i>序号</i><span>V/cm³</span><span>m/g</span><span>(m/V)/(g·cm⁻³)</span></div>';
+  if (!st1.rows.length) h += '<div class="empty">还没有数据，拖动滑块并记录。</div>';
+  st1.rows.forEach(function (r, i) {
+    h += '<div class="dr"><i>' + (i + 1) + '</i><span>' + F(r.V, 0) + '</span><span>' + F(r.m, 1) +
+         '</span><b>' + F(r.rho, 2) + '</b></div>';
+  });
+  setHTML('#t1', h);
+}
+
+function note1() {
+  const n = st1.rows.length;
+  let t;
+  if (n < 2) t = '把 V 拖到不同大小、多记几组。注意最后一列 <em>m/V</em> 有什么规律。';
+  else {
+    const rs = st1.rows.map(function (r) { return r.rho; });
+    const spread = Math.max.apply(null, rs) - Math.min.apply(null, rs);
+    t = spread < 0.005
+      ? '已经记了 <em>' + n + '</em> 组：每次的 <em>m/V</em> 都是 <em>' + F(rs[0], 2) + ' g/cm³</em> —— 说明对水来说，质量与体积成正比。'
+      : '已经记了 <em>' + n + '</em> 组，最后一列并不一致，检查是不是读数或记录有误。';
+  }
+  setHTML('#n1', t);
+}
+
+function addRow(V) {
+  V = Math.round(V);
+  const m = V * MATS.water.rho;
+  const i = st1.rows.findIndex(function (r) { return Math.round(r.V) === V; });
+  const row = { V: V, m: m, rho: m / V };
+  if (i >= 0) st1.rows[i] = row; else st1.rows.push(row);
+  st1.rows.sort(function (a, b) { return a.V - b.V; });
+  draw1(); draw2();
+}
+
+function stopAuto() {
+  if (st1.timer) { clearInterval(st1.timer); st1.timer = null; }
+  st1.autoing = false;
+  setTxt('#b1auto', '▶ 自动测 6 组');
+}
+
+/* =========================================================
+   02 m–V 图像
+   ========================================================= */
+const st2 = { sel: ['water', 'alu'], x: 30, tri: false, showPts: true };
+const P = { ox: 96, oy: 350, xe: 606, ye: 44, Vmax: 60 };
+
+function niceStep(range) {
+  const cands = [1, 2, 5, 10, 20, 25, 50, 100, 150, 200, 250, 500, 1000];
+  const t = range / 5;
+  for (let i = 0; i < cands.length; i++) if (cands[i] >= t) return cands[i];
+  return 1000;
+}
+
+function draw2() {
+  try {
+    const sel = st2.sel.length ? st2.sel : ['water'];
+    const Vmax = P.Vmax;
+    const maxM = Math.max.apply(null, sel.map(function (k) { return MATS[k].rho; })) * Vmax;
+    const step = niceStep(maxM);
+    const mmax = Math.max(step, Math.ceil(maxM / step) * step);
+    const X = function (v) { return P.ox + (P.xe - P.ox) * v / Vmax; };
+    const Y = function (m) { return P.oy - (P.oy - P.ye) * m / mmax; };
+    let s = '';
+    s += '<rect x="' + P.ox + '" y="' + P.ye + '" width="' + (P.xe - P.ox) + '" height="' + (P.oy - P.ye) +
+         '" fill="#FCFDFF" stroke="#E5E7EB"/>';
+    for (let v = 0; v <= Vmax; v += 10) {
+      s += '<line x1="' + F(X(v), 1) + '" y1="' + P.ye + '" x2="' + F(X(v), 1) + '" y2="' + P.oy +
+           '" stroke="#EEF2F7" stroke-width="1"/>';
+      s += T(X(v), P.oy + 19, String(v), { s: 11.5, a: 'middle', f: '#6B7280' });
+    }
+    for (let m = 0; m <= mmax + 1e-6; m += step) {
+      s += '<line x1="' + P.ox + '" y1="' + F(Y(m), 1) + '" x2="' + P.xe + '" y2="' + F(Y(m), 1) +
+           '" stroke="#EEF2F7" stroke-width="1"/>';
+      s += T(P.ox - 8, Y(m) + 4, String(Math.round(m)), { s: 11.5, a: 'end', f: '#6B7280' });
+    }
+    s += '<line x1="' + P.ox + '" y1="' + P.oy + '" x2="' + P.xe + '" y2="' + P.oy + '" stroke="#334155" stroke-width="1.8"/>';
+    s += '<line x1="' + P.ox + '" y1="' + P.oy + '" x2="' + P.ox + '" y2="' + P.ye + '" stroke="#334155" stroke-width="1.8"/>';
+    s += T(P.xe + 6, P.oy + 5, 'V/cm³', { s: 12.5, f: '#334155', w: 600 });
+    s += T(P.ox - 4, P.ye - 10, 'm/g', { s: 12.5, a: 'end', f: '#334155', w: 600 });
+    s += T(P.ox - 4, P.oy + 17, 'O', { s: 12, a: 'end', f: '#334155', w: 600 });
+
+    /* 直线 */
+    sel.forEach(function (k, i) {
+      const M = MATS[k], rho = M.rho;
+      const x2 = X(Vmax), y2 = Y(rho * Vmax);
+      s += '<line x1="' + P.ox + '" y1="' + P.oy + '" x2="' + F(x2, 1) + '" y2="' + F(y2, 1) +
+           '" stroke="' + M.c + '" stroke-width="2.4"/>';
+      const ly = clamp(y2 - 9, P.ye + 16, P.oy - 8) + i * 0;
+      s += T(x2 - 8, ly, 'ρ=' + F(rho, 2) + ' ' + M.n, { s: 12, a: 'end', f: M.c, w: 700 });
+    });
+
+    /* 斜率三角形 */
+    if (st2.tri) {
+      const k = sel[0], rho = MATS[k].rho, v0 = 20, v1 = 40;
+      const ax = X(v0), bx = X(v1), ay = Y(rho * v0), by = Y(rho * v1);
+      s += '<path d="M' + F(ax, 1) + ' ' + F(ay, 1) + ' L' + F(bx, 1) + ' ' + F(ay, 1) + ' L' + F(bx, 1) + ' ' + F(by, 1) +
+           '" fill="none" stroke="' + MATS[k].c + '" stroke-width="1.6" stroke-dasharray="5 3"/>';
+      s += '<rect x="' + F(ax, 1) + '" y="' + F(ay, 1) + '" width="' + F(bx - ax, 1) + '" height="' + F(ay - by, 1) +
+           '" fill="' + MATS[k].c + '" opacity=".08"/>';
+      s += T((ax + bx) / 2, ay + 16, 'ΔV = 20 cm³', { s: 11.5, a: 'middle', f: MATS[k].c, w: 600 });
+      s += T(bx + 8, (ay + by) / 2 + 4, 'Δm = ' + F(rho * 20, 1) + ' g', { s: 11.5, f: MATS[k].c, w: 600 });
+      s += T(bx + 8, (ay + by) / 2 + 20, 'Δm/ΔV = ' + F(rho, 2) + ' g/cm³', { s: 11.5, f: MATS[k].c, w: 700 });
+    }
+
+    /* 01 的数据点 */
+    if (st2.showPts && st1.rows.length) {
+      st1.rows.forEach(function (r) {
+        const mY = Y(Math.min(r.m, mmax));
+        s += '<circle cx="' + F(X(r.V), 1) + '" cy="' + F(mY, 1) + '" r="4.6" fill="#fff" stroke="#2563EB" stroke-width="2"/>';
+      });
+      const last = st1.rows[st1.rows.length - 1];
+      const lxr = X(last.V), anchor = lxr > P.xe - 110 ? 'end' : 'start', off = lxr > P.xe - 110 ? -8 : 8;
+      s += T(lxr + off, Y(last.m) - 9, '实验数据点', { s: 11.5, a: anchor, f: '#1D4ED8', w: 600 });
+    }
+
+    /* 读数游标 */
+    const cxr = X(st2.x);
+    s += '<line x1="' + F(cxr, 1) + '" y1="' + P.oy + '" x2="' + F(cxr, 1) + '" y2="' + P.ye +
+         '" stroke="#7C3AED" stroke-width="1.4" stroke-dasharray="5 4"/>';
+    sel.forEach(function (k) {
+      const rho = MATS[k].rho, yy = Y(rho * st2.x);
+      s += '<circle cx="' + F(cxr, 1) + '" cy="' + F(yy, 1) + '" r="5" fill="' + MATS[k].c + '" stroke="#fff" stroke-width="1.6"/>';
+    });
+    if (sel.length === 1) {
+      const kxr = cxr > P.xe - 120 ? 'end' : 'start', xoff = cxr > P.xe - 120 ? -9 : 8;
+      s += T(cxr + xoff, Y(MATS[sel[0]].rho * st2.x) - 10, 'm = ' + F(MATS[sel[0]].rho * st2.x, 1) + ' g',
+        { s: 12, a: kxr, f: MATS[sel[0]].c, w: 700 });
+    }
+    svgSet('#s2', s);
+
+    /* 读数面板 */
+    let h = '';
+    sel.forEach(function (k) {
+      const M = MATS[k];
+      h += '<div class="row"><span style="color:' + M.c + '">■ ' + M.n + '（ρ = ' + F(M.rho, 2) + ' g/cm³）</span><b>' +
+           F(M.rho * st2.x, 1) + ' g</b></div>';
+    });
+    h += '<div class="row"><span>V = 0 时</span><b>m = 0</b></div>';
+    setHTML('#ro2', h);
+    setTxt('#v2x', st2.x + ' cm³');
+
+    let note;
+    if (sel.length === 1) {
+      note = MATS[sel[0]].n + '的图像是一条<em>过原点</em>的直线：体积变为几倍，质量就变为几倍 —— 质量与体积<em>成正比</em>。';
+    } else {
+      const names = sel.map(function (k) { return MATS[k].n; }).join('、');
+      note = '体积 V 相同时，' + names + '的质量不同 —— 直线越<em>陡</em>，单位体积的质量越大，也就是密度越大。';
+    }
+    setHTML('#n2', note);
+  } catch (e) { console.warn('draw2', e); }
+}
+
+/* =========================================================
+   03 密度定义 + 单位换算
+   ========================================================= */
+const st3 = { k: 'alu', a: 30 };   // a 单位 0.1 cm
+
+function draw3() {
+  try {
+    const M = MATS[st3.k], a = st3.a / 10, V = a * a * a, m = M.rho * V;
+    /* ---- 上半：方块 + 天平 ---- */
+    let s = '';
+    const Lref = 42;                                  // 1 cm³ 参考小块
+    const Lbig = clamp(34 + 24 * (a - 1), 34, 130);   // 大块边长（px）
+    const cyBig = 126;
+    s += boxG({ cx: 150, cy: cyBig, w: Lbig, h: Lbig, d: Lbig * 0.42, col: M.c });
+    s += T(150 - Lbig / 2 - 9, cyBig - Lbig / 2 + 6, M.n + '块', { s: 12.5, a: 'end', f: M.c, w: 700 });
+    s += T(150 + Lbig / 2 + Lbig * 0.34 + 10, cyBig + 5, 'V = ' + F(V, V < 10 ? 2 : 1) + ' cm³',
+      { s: 12.5, f: M.c, w: 700 });
+    s += dimH(150 - Lbig / 2, 150 + Lbig / 2, cyBig + Lbig / 2 + 22, 'a = ' + F(a, 1) + ' cm', '#6B7280');
+    s += boxG({ cx: 98, cy: 268, w: Lref, h: Lref, d: Lref * 0.42, col: M.c });
+    s += T(168, 264, 'V = 1 cm³　m = ' + F(M.rho, 2) + ' g', { s: 12, f: M.c, w: 700 });
+    s += T(168, 282, 'ρ = m / V = ' + F(M.rho, 2) + ' g/cm³', { s: 12, f: '#1D4ED8', w: 700 });
+    const b = balanceFrame({ cx: 470, baseY: 290, hw: 116, panW: 104 });
+    s += b.markup;
+    const boxL = 46;
+    s += boxG({ cx: b.lx, cy: b.panY - boxL / 2 - 2, w: boxL, h: boxL, d: boxL * 0.42, col: M.c });
+    const wt = weightsG(b.rx, b.panY, Math.round(m));
+    s += wt.markup;
+    s += T(b.rx, Math.min(wt.top - 8, b.panY - 96), 'm = ' + F(m, 1) + ' g', { s: 12, a: 'middle', f: '#1D4ED8', w: 700 });
+    s += T(470, 316, '称出大块的质量', { s: 12.5, a: 'middle', f: '#475569', w: 600 });
+    svgSet('#s3a', s);
+
+    /* ---- 下半：单位换算 ---- */
+    let u = '';
+    const small = 46, big = 96;
+    u += boxG({ cx: 92, cy: 92, w: small, h: small, d: small * 0.42, col: M.c });
+    u += '<rect x="40" y="134" width="104" height="0" fill="none"/>';
+    u += T(92, 146, 'V = 1 cm³', { s: 12, a: 'middle', f: '#334155', w: 600 });
+    u += T(92, 162, 'm = ' + F(M.rho, 2) + ' g', { s: 12.5, a: 'middle', f: M.c, w: 700 });
+    u += '<line x1="176" y1="92" x2="270" y2="92" stroke="#7C3AED" stroke-width="1.6" stroke-dasharray="6 4"/>';
+    u += '<path d="M270 92 l -11 -5 v 10 z" fill="#7C3AED"/>';
+    u += T(223, 80, '边长 ×100，体积 ×10⁶', { s: 12, a: 'middle', f: '#6D28D9', w: 700 });
+    u += boxG({ cx: 400, cy: 96, w: big, h: big, d: big * 0.42, col: M.c });
+    u += T(400, 100, '1 m³', { s: 13, a: 'middle', f: '#1F2937', w: 700 });
+    u += T(400, 152, 'V = 1 m³　m = ' + F(M.rho * 1000, 0) + ' kg', { s: 12.5, a: 'middle', f: M.c, w: 700 });
+    u += '<rect x="560" y="46" width="92" height="72" rx="10" fill="#F8FAFF" stroke="#C7D7FE"/>';
+    u += T(606, 70, F(M.rho, 2) + ' g/cm³', { s: 13, a: 'middle', f: '#1D4ED8', w: 700 });
+    u += T(606, 88, '=', { s: 13, a: 'middle', f: '#7C3AED', w: 700 });
+    u += T(606, 106, F(M.rho * 1000, 0) + ' kg/m³', { s: 13, a: 'middle', f: '#1D4ED8', w: 700 });
+    svgSet('#s3b', u);
+
+    setTxt('#v3a', F(a, 1) + ' cm');
+    setTxt('#o3V', F(V, V < 10 ? 2 : 1) + ' cm³');
+    setTxt('#o3m', F(m, 1) + ' g');
+    setTxt('#o3m1', F(M.rho, 2) + ' g');
+    setTxt('#o3r', F(M.rho, 2) + ' g/cm³ = ' + F(M.rho * 1000, 0) + ' kg/m³');
+    setHTML('#n3', '把边长从 1 cm 增到 <em>' + F(a, 1) + ' cm</em>，体积和质量都变大了 <em>' +
+      F(V, 0) + '</em> 倍，可 <em>m/V</em> 始终是 ' + F(M.rho, 2) + ' g/cm³：密度是物质本身的一种性质，跟质量、体积的大小<em>无关</em>。');
+  } catch (e) { console.warn('draw3', e); }
+}
+
+/* =========================================================
+   初始化
+   ========================================================= */
+function buildSegs() {
+  setHTML('#seg2', PLOT_LIST.map(function (k) {
+    const M = MATS[k];
+    return '<button data-k="' + k + '" class="' + (st2.sel.indexOf(k) >= 0 ? 'on' : '') +
+      '"><i class="dot" style="background:' + M.c + '"></i>' + M.n + '</button>';
+  }).join(''));
+  $$('#seg2 button').forEach(function (btn) {
+    btn.onclick = function () {
+      const k = btn.dataset.k, i = st2.sel.indexOf(k);
+      if (i >= 0) { if (st2.sel.length > 1) st2.sel.splice(i, 1); } else st2.sel.push(k);
+      btn.classList.toggle('on', st2.sel.indexOf(k) >= 0);
+      if (!st2.sel.length) { st2.sel = ['water']; $$('#seg2 button').forEach(function (b) {
+        b.classList.toggle('on', b.dataset.k === 'water'); }); }
+      draw2();
+    };
+  });
+
+  setHTML('#seg3', ['water', 'ice', 'alu', 'iron', 'cu'].map(function (k) {
+    const M = MATS[k];
+    return '<button data-k="' + k + '" class="' + (st3.k === k ? 'on' : '') +
+      '"><i class="dot" style="background:' + M.c + '"></i>' + M.n + '</button>';
+  }).join(''));
+  $$('#seg3 button').forEach(function (btn) {
+    btn.onclick = function () {
+      st3.k = btn.dataset.k;
+      $$('#seg3 button').forEach(function (b) { b.classList.toggle('on', b === btn); });
+      draw3();
+    };
+  });
+}
+
+document.addEventListener('DOMContentLoaded', function () {
+  buildSegs();
+
+  const r1 = $('#r1V');
+  if (r1) r1.oninput = function () { stopAuto(); st1.V = +r1.value; draw1(); };
+  $('#b1add') && ($('#b1add').onclick = function () { stopAuto(); addRow(st1.V); });
+  $('#b1clear') && ($('#b1clear').onclick = function () {
+    stopAuto(); st1.rows = []; draw1(); draw2();
+  });
+  const bAuto = $('#b1auto');
+  if (bAuto) bAuto.onclick = function () {
+    if (st1.autoing) { stopAuto(); return; }
+    st1.rows = [];
+    const list = [10, 20, 30, 40, 50, 60];
+    let i = 0;
+    st1.autoing = true;
+    bAuto.textContent = '⏸ 暂停';
+    const tick = function () {
+      if (i >= list.length) { stopAuto(); return; }
+      st1.V = list[i]; r1.value = list[i]; draw1();
+      addRow(list[i]);
+      i++;
+      st1.timer = setTimeout(tick, 420);
+    };
+    tick();
+  };
+
+  const r2 = $('#r2x');
+  if (r2) r2.oninput = function () { st2.x = +r2.value; draw2(); };
+  const bTri = $('#b2tri');
+  if (bTri) bTri.onclick = function () {
+    st2.tri = !st2.tri;
+    bTri.textContent = st2.tri ? '隐藏斜率三角形' : '显示斜率三角形';
+    draw2();
+  };
+  const bPts = $('#b2pts');
+  if (bPts) bPts.onclick = function () {
+    st2.showPts = !st2.showPts;
+    bPts.textContent = st2.showPts ? '隐藏 01 的数据点' : '显示 01 的数据点';
+    draw2();
+  };
+
+  const r3 = $('#r3a');
+  if (r3) r3.oninput = function () { st3.a = +r3.value; draw3(); };
+
+  draw1(); draw2(); draw3();
+});
+</script>
+
+</body>
+</html>
