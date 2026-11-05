@@ -252,7 +252,7 @@ const sleep = (ms: number, signal?: AbortSignal) => new Promise<void>((resolve, 
 });
 
 const INTRO_INSTRUCTION =
-  '单手模式优先 · Single Hand First\n旋转：食指中指伸直贴合控制旋转，其余手指握拳\n缩放：拇食指靠近缩小 | 张开放大，其余手指握拳\n拆解：拇食指抓取部位，其余手指伸直\n双手模式：右手旋转 / 左手缩放 / 双手均可拆解';
+  '单手模式\n旋转：食指中指伸直贴合控制旋转，其余手指握拳\n缩放：拇食指靠近缩小 | 张开放大，其余手指握拳\n拆解：拇食指抓取部位，其余手指伸直\n双手模式\n左手旋转 / 右手缩放 / 双手均可拆解';
 
 interface DashboardProps {
   playIntro?: boolean;
