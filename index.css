@@ -1077,24 +1077,25 @@ html, body {
 }
 
 .lab-stream {
-  min-height: 7.4rem;
-  margin-top: 18px;
+  min-height: 10em;
+  margin-top: 14px;
   color: rgba(255, 255, 255, 0.88);
-  font-size: clamp(14px, 1.35vw, 18px);
-  line-height: 1.62;
-  font-weight: 800;
+  font-size: clamp(12px, 1.02vw, 15px);
+  line-height: 1.5;
+  font-weight: 700;
   text-align: center;
 }
 
 .lab-stream b {
   display: block;
-  margin-bottom: 8px;
+  margin-bottom: 6px;
   color: rgba(255, 255, 255, 0.95);
-  font-size: 0.98em;
+  font-size: 1em;
 }
 
+/* 6 行文案 × 1.5 行高，预留高度避免打字机逐行撑开时页面跳动 */
 .lab-stream p {
-  min-height: 4.1rem;
+  min-height: 9em;
   margin: 0;
   white-space: pre-line;
 }
@@ -1437,9 +1438,9 @@ html, body {
   }
 
   .lab-stream {
-    min-height: 8rem;
-    font-size: 13px;
-    line-height: 1.56;
+    min-height: 10em;
+    font-size: 12px;
+    line-height: 1.5;
   }
 }
 

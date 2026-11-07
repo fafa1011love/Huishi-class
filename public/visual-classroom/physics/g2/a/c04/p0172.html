@@ -1,0 +1,683 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>12.4　能源与可持续发展 ｜ 人教版物理必修第三册</title>
+<style>
+  :root{
+    --blue:#1d4ed8; --blue-soft:#eff6ff; --blue-line:#bfdbfe;
+    --ink:#1e293b; --sub:#64748b; --line:#e2e8f0;
+    --amber-bg:#fffbeb; --amber-line:#fcd34d; --amber-ink:#92400e;
+    --green:#059669; --red:#dc2626;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:#f3f5f9; color:var(--ink);
+    font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif; padding:18px 12px 40px;}
+  .wrap{max-width:1060px; margin:0 auto;}
+  header{background:#fff; border:1px solid var(--line); border-left:6px solid var(--blue);
+    border-radius:12px; padding:16px 22px; box-shadow:0 1px 3px rgba(15,23,42,.06);}
+  header h1{font-size:22px; color:var(--ink);}
+  header .meta{margin-top:6px; font-size:12.5px; color:var(--sub); line-height:1.7;}
+  .mod{background:#fff; border:1px solid var(--line); border-radius:12px;
+    padding:16px 20px 18px; margin-top:16px; box-shadow:0 1px 3px rgba(15,23,42,.05);}
+  .mod-h{display:flex; align-items:center; gap:10px; margin-bottom:10px;}
+  .mod-h .no{background:var(--blue); color:#fff; font-size:12px; border-radius:6px;
+    padding:2px 8px; white-space:nowrap;}
+  .mod-h h2{font-size:16.5px;}
+  .mod-h .kp{margin-left:auto; font-size:12px; color:var(--sub); white-space:nowrap;}
+  .think{background:var(--blue-soft); border:1px solid var(--blue-line); border-radius:8px;
+    padding:8px 12px; font-size:12.5px; color:#1e40af; margin-bottom:10px; line-height:1.7;}
+  .think b{color:var(--blue);}
+  canvas.stage{display:block; width:100%; background:#fbfdff;
+    border:1px solid var(--line); border-radius:10px;}
+  .ctrl{display:flex; flex-wrap:wrap; gap:8px 18px; align-items:center; margin-top:10px;}
+  .row{display:flex; align-items:center; gap:8px; font-size:13px;}
+  .row label{color:var(--sub); white-space:nowrap;}
+  .row input[type=range]{width:150px; accent-color:var(--blue);}
+  .row .val{min-width:64px; font-variant-numeric:tabular-nums; color:var(--ink); font-weight:600;}
+  .btn{border:1px solid var(--blue); color:var(--blue); background:#fff; border-radius:7px;
+    padding:4px 12px; font-size:12.5px; cursor:pointer;}
+  .btn:hover{background:var(--blue-soft);}
+  .btn.on{background:var(--blue); color:#fff;}
+  .note{margin-top:10px; background:var(--amber-bg); border:1px solid var(--amber-line);
+    border-radius:8px; padding:8px 12px; font-size:12.5px; color:var(--amber-ink); line-height:1.8;}
+  .note b{color:#b45309;}
+  .warn{margin-top:10px; background:#fef2f2; border:1px solid #fecaca; border-radius:8px;
+    padding:8px 12px; font-size:12.5px; color:#b91c1c; line-height:1.8;}
+  .verdict{margin-top:10px; background:#ecfdf5; border:1px solid #a7f3d0; border-radius:8px;
+    padding:8px 12px; font-size:12.5px; color:#065f46; line-height:1.8;}
+  .verdict b{color:#047857;}
+  footer{margin-top:20px; text-align:center; font-size:12px; color:#94a3b8;}
+  .seg{display:inline-flex; border:1px solid var(--blue); border-radius:8px; overflow:hidden;}
+  .seg button{border:none; background:#fff; color:var(--blue); padding:4px 12px;
+    font-size:12.5px; cursor:pointer;}
+  .seg button.on{background:var(--blue); color:#fff;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>12.4　能源与可持续发展</h1>
+  <div class="meta">人教版《物理》必修第三册 · 第十二章 电能 能量守恒定律 · 教材 P93–P102 ｜ 覆盖知识点：能量守恒定律与能量耗散（能量品质下降）、能源分类（一次/二次、可再生/不可再生）、我国能源消费构成与变化趋势、节能减排与可持续发展</div>
+</header>
+
+<div class="mod">
+  <div class="mod-h"><span class="no">模块 1</span><h2>能量守恒与能量耗散：电厂到用电器</h2><span class="kp">能量流向图 · 动画</span></div>
+  <div class="think"><b>先想一想：</b>火力发电效率只有 40% 左右，那"少掉的 60% 能量"是不是消失了？换成 LED 灯、电动机之后，用掉的电能最后又去了哪里？</div>
+  <canvas class="stage" id="cv1" style="height:420px;"></canvas>
+  <div class="ctrl">
+    <div class="row"><label>电厂效率</label><input type="range" id="ef1" min="30" max="48" step="1" value="40"><span class="val" id="ef1v"></span></div>
+    <div class="row"><label>用电时间</label><input type="range" id="hr1" min="2" max="40" step="1" value="10"><span class="val" id="hr1v"></span></div>
+    <div class="row"><label>用电器</label>
+      <span class="seg" id="seg1">
+        <button data-a="bulb">白炽灯</button>
+        <button data-a="led" class="on">LED 灯</button>
+        <button data-a="motor">电动机</button>
+      </span>
+    </div>
+    <button class="btn" id="p1a">老式小机组 32%</button>
+    <button class="btn" id="p1b">超超临界机组 45%</button>
+    <button class="btn" id="p1c">暂停 / 继续</button>
+  </div>
+  <div class="note"><b>观察要点：</b>每一段支流都是"耗散掉的能量"，但<b>把它们全部加起来仍然等于 100%</b> —— 能量守恒。关键在于：这些能量变成了分散在环境中的<b>内能</b>，没法再集中起来做功，这就是<b>能量耗散、能量品质下降</b>。所以"节约能源"节约的不是能量本身，而是<b>可被利用的那部分</b>。</div>
+  <div class="verdict" id="vd1"></div>
+</div>
+
+<div class="mod">
+  <div class="mod-h"><span class="no">模块 2</span><h2>我国能源消费构成与变化</h2><span class="kp">互动数据图表</span></div>
+  <div class="think"><b>先想一想：</b>从 2015 到 2024 年，煤炭占比是升还是降？风电、太阳能这些可再生能源占比变化有多大？拖动年份滑块看看。</div>
+  <canvas class="stage" id="cv2" style="height:420px;"></canvas>
+  <div class="ctrl">
+    <div class="row"><label>年份</label><input type="range" id="yr2" min="0" max="2" step="1" value="2"><span class="val" id="yr2v"></span></div>
+    <button class="btn" id="p2a">2015</button>
+    <button class="btn" id="p2b">2020</button>
+    <button class="btn" id="p2c">2024</button>
+  </div>
+  <div class="note"><b>观察要点：</b>煤炭占比持续<b>下降</b>，天然气、风电、太阳能明显<b>上升</b> —— 能源结构在向低碳转型。但可再生（水电＋风电＋太阳能）仍只是少数，<b>煤炭依然是主体</b>，节能减排仍是长期任务。</div>
+  <div class="verdict" id="vd2"></div>
+</div>
+
+<footer>人教版高中物理必修第三册 · 可视化交互课件 ｜ 单文件离线运行，双击即可使用</footer>
+</div>
+
+<script>
+(function(){
+'use strict';
+/* ========== 通用工具（与同系列课件统一） ========== */
+function $(id){ return document.getElementById(id); }
+function fmt(x, d){
+  if (d === undefined) d = 2;
+  if (!isFinite(x)) return '—';
+  var a = Math.abs(x);
+  if (a >= 10000 || (a > 0 && a < 0.01)) return x.toExponential(2);
+  return (+x.toFixed(d)).toString();
+}
+function fit(cv){
+  var dpr = window.devicePixelRatio || 1;
+  var w = cv.clientWidth, h = cv.clientHeight;
+  var W = Math.round(w * dpr), H = Math.round(h * dpr);
+  if (cv.width !== W || cv.height !== H){ cv.width = W; cv.height = H; }
+  var ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return ctx;
+}
+function bindRange(id, fn, fmtf){
+  var el = $(id), out = $(id + 'v');
+  function go(){
+    var x = parseFloat(el.value);
+    if (!isFinite(x)) x = 0;
+    if (out) out.textContent = fmtf ? fmtf(x) : x;
+    fn(x);
+  }
+  el.addEventListener('input', go); go();
+  return el;
+}
+function arrow(ctx, x1, y1, x2, y2, color, w){
+  ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = w || 2;
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  var a = Math.atan2(y2 - y1, x2 - x1), s = 7;
+  ctx.beginPath(); ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - s * Math.cos(a - 0.42), y2 - s * Math.sin(a - 0.42));
+  ctx.lineTo(x2 - s * Math.cos(a + 0.42), y2 - s * Math.sin(a + 0.42));
+  ctx.closePath(); ctx.fill();
+}
+function rrect(c, x, y, w, h, r){
+  c.beginPath(); c.moveTo(x + r, y);
+  c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r);
+  c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
+}
+function label(c, x, y, txt, color, size, align){
+  c.font = (size || 12.5) + 'px "Microsoft YaHei", sans-serif';
+  c.fillStyle = color || '#1e293b'; c.textAlign = align || 'left';
+  c.textBaseline = 'alphabetic'; c.fillText(txt, x, y);
+}
+function mono(c, x, y, txt, color, size, align){
+  c.font = (size || 12) + 'px Consolas, monospace';
+  c.fillStyle = color || '#1e293b'; c.textAlign = align || 'left';
+  c.textBaseline = 'alphabetic'; c.fillText(txt, x, y);
+}
+/* 能量流带（桑基式）：从 (x1, y1a~y1b) 平滑连到 (x2, y2a~y2b) */
+function ribbon(c, x1, y1a, y1b, x2, y2a, y2b, colA, colB){
+  var dx = (x2 - x1) * 0.45;
+  var g = c.createLinearGradient(x1, 0, x2, 0);
+  g.addColorStop(0, colA); g.addColorStop(1, colB);
+  c.fillStyle = g;
+  c.beginPath();
+  c.moveTo(x1, y1a);
+  c.bezierCurveTo(x1 + dx, y1a, x2 - dx, y2a, x2, y2a);
+  c.lineTo(x2, y2b);
+  c.bezierCurveTo(x2 - dx, y2b, x1 + dx, y1b, x1, y1b);
+  c.closePath(); c.fill();
+}
+/* 发电链条各环节的小图标（煤堆 / 锅炉 / 汽轮机 / 发电机 / 用电器） */
+function plantIcon(c, cx, cy, kind){
+  c.save();
+  c.lineWidth = 1.8; c.strokeStyle = '#475569';
+  if (kind === 'fuel'){                       /* 煤堆 */
+    c.fillStyle = '#334155';
+    c.beginPath(); c.moveTo(cx - 16, cy + 10); c.lineTo(cx - 8, cy - 7);
+    c.lineTo(cx - 1, cy + 2); c.lineTo(cx + 8, cy - 9); c.lineTo(cx + 16, cy + 10);
+    c.closePath(); c.fill();
+  } else if (kind === 'boiler'){              /* 锅炉 + 炉火 */
+    c.fillStyle = '#e2e8f0'; c.strokeStyle = '#475569';
+    rrect(c, cx - 13, cy - 12, 26, 24, 5); c.fill(); c.stroke();
+    c.fillStyle = 'rgba(220,38,38,.8)'; c.strokeStyle = '#dc2626';
+    c.beginPath(); c.moveTo(cx - 6, cy + 5);
+    c.quadraticCurveTo(cx, cy - 6, cx + 6, cy + 5);
+    c.quadraticCurveTo(cx, cy + 11, cx - 6, cy + 5);
+    c.closePath(); c.fill();
+  } else if (kind === 'turbine'){             /* 汽轮机叶轮 */
+    c.strokeStyle = '#0f172a';
+    c.beginPath(); c.arc(cx, cy, 12, 0, 6.2832); c.stroke();
+    for (var i = 0; i < 3; i++){
+      var a = i * 2.0944;
+      c.beginPath(); c.moveTo(cx, cy);
+      c.lineTo(cx + Math.cos(a) * 11, cy + Math.sin(a) * 11); c.stroke();
+    }
+    c.fillStyle = '#0f172a';
+    c.beginPath(); c.arc(cx, cy, 2.4, 0, 6.2832); c.fill();
+  } else if (kind === 'gen'){                 /* 发电机 */
+    c.fillStyle = '#eff6ff'; c.strokeStyle = '#1d4ed8';
+    c.beginPath(); c.arc(cx, cy, 12, 0, 6.2832); c.fill(); c.stroke();
+    c.fillStyle = '#1d4ed8'; c.font = 'bold 12px Consolas, monospace';
+    c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText('G', cx, cy);
+    c.textBaseline = 'alphabetic';
+  } else {                                    /* 用电器：灯泡 */
+    c.fillStyle = '#fef3c7'; c.strokeStyle = '#b45309';
+    c.beginPath(); c.arc(cx, cy - 2, 9, 0, 6.2832); c.fill(); c.stroke();
+    c.strokeStyle = '#b45309'; c.lineWidth = 1.6;
+    c.beginPath(); c.moveTo(cx - 4, cy + 9); c.lineTo(cx + 4, cy + 9); c.stroke();
+    c.beginPath(); c.moveTo(cx - 3, cy + 13); c.lineTo(cx + 3, cy + 13); c.stroke();
+  }
+  c.restore();
+}
+/* 沿一条水平带流动的能量粒子 */
+function flow(c, x1, x2, yTop, yBot, phase, color, n){
+  var cnt = n || 5;
+  c.fillStyle = color;
+  for (var i = 0; i < cnt; i++){
+    var f = ((phase + i / cnt) % 1);
+    var x = x1 + (x2 - x1) * f;
+    var y = yTop + (yBot - yTop) * ((i * 0.37) % 1);
+    c.beginPath(); c.arc(x, y, 2.6, 0, 6.2832); c.fill();
+  }
+}
+
+/* ================= 模块 1：能量守恒与能量耗散 ================= */
+var cv1 = $('cv1');
+var m1 = { eff: 40, hours: 1000, app: 'led', run: true, ph: 0 };
+var APPS = {
+  bulb:  { name: '白炽灯', eff: 0.05, useful: '光能' },
+  led:   { name: 'LED 灯', eff: 0.40, useful: '光能' },
+  motor: { name: '电动机', eff: 0.85, useful: '机械能' }
+};
+/* 链条各环节的中间量（以燃料化学能 100 为基准） */
+function chain(){
+  var eta = m1.eff / 100;
+  var chem = 100;
+  var boilerLoss = 10;                 /* 锅炉散热、烟气带走 */
+  var heat = chem - boilerLoss;        /* 高温蒸汽的内能 */
+  var genLoss = 3;                     /* 发电机与厂用电损耗 */
+  var gridLoss = 2;                    /* 输配电损耗 */
+  var mech = chem * eta + genLoss;              /* 汽轮机输出的机械能 */
+  var condLoss = Math.max(0, heat - mech);      /* 冷凝器带走（最大头） */
+  var elec = chem * eta;                        /* 发出的电能（电厂效率＝电能/燃料化学能） */
+  var user = elec - gridLoss;                   /* 用户得到的电能 */
+  return { chem: chem, boilerLoss: boilerLoss, heat: heat, mech: mech,
+    condLoss: condLoss, genLoss: genLoss, elec: elec, gridLoss: gridLoss, user: user };
+}
+
+function drawM1(){
+  var c = fit(cv1), W = cv1.clientWidth, H = cv1.clientHeight;
+  c.clearRect(0, 0, W, H);
+  var ch = chain();
+  var app = APPS[m1.app];
+
+  /* ---- 上：火力发电链条 ---- */
+  label(c, 16, 26, '火力发电的能量流向（以燃料化学能 100 份为基准）', '#1e293b', 14);
+  var top = 92, sc = 1.35;            /* 1 份 = 1.35 px */
+  var names = ['燃料化学能', '锅炉：蒸汽内能', '汽轮机：机械能', '发电机：电能', '到达用户'];
+  var vals = [ch.chem, ch.heat, ch.mech, ch.elec, ch.user];
+  var losses = [ch.boilerLoss, ch.condLoss, ch.genLoss, ch.gridLoss];
+  var lossName = ['烟气散热', '冷凝器带走', '发电机损耗', '输配电线损'];
+  var xs = [], i;
+  for (i = 0; i < 5; i++) xs.push(W * (0.075 + 0.155 * i));
+  var bw = 14;
+  /* 各环节的小图标 */
+  var icons = ['fuel', 'boiler', 'turbine', 'gen', 'user'];
+  for (i = 0; i < 5; i++) plantIcon(c, xs[i] + bw / 2, 52, icons[i]);
+  /* 主干带 */
+  for (i = 0; i < 4; i++){
+    var hOut = vals[i + 1] * sc;
+    ribbon(c, xs[i] + bw, top, top + hOut, xs[i + 1], top, top + hOut, '#fde68a', '#f59e0b');
+    if (m1.run) flow(c, xs[i] + bw, xs[i + 1], top + 3, top + hOut - 3, m1.ph * 0.5 + i * 0.13, 'rgba(180,83,9,.75)', 6);
+    /* 损失支流 */
+    if (losses[i] > 0.05){
+      var ly = top + hOut, lh = losses[i] * sc;
+      var lx = xs[i] + (xs[i + 1] - xs[i]) * 0.40;
+      ribbon(c, xs[i] + bw, ly, ly + lh, lx + 26, ly + 24, ly + 24 + lh, '#fca5a5', '#94a3b8');
+      if (m1.run) flow(c, xs[i] + bw, lx + 26, ly + 26, ly + 20 + lh, m1.ph * 0.4 + i * 0.2, 'rgba(120,53,15,.5)', 3);
+      label(c, lx + 32, ly + 24 + lh / 2 + 4, lossName[i] + ' ' + fmt(losses[i], 0) + '%', '#b45309', 11.5);
+    }
+  }
+  /* 立柱与名称 */
+  for (i = 0; i < 5; i++){
+    var hv = vals[i] * sc;
+    var grd = c.createLinearGradient(0, top, 0, top + hv);
+    grd.addColorStop(0, '#fbbf24'); grd.addColorStop(1, '#dc2626');
+    c.fillStyle = grd;
+    c.fillRect(xs[i], top, bw, hv);
+    c.strokeStyle = '#b45309'; c.lineWidth = 1; c.strokeRect(xs[i], top, bw, hv);
+    mono(c, xs[i] + bw / 2, top + hv + 16, fmt(vals[i], 0) + '%', '#7c2d12', 12, 'center');
+    label(c, xs[i] + bw / 2, top - 8, names[i], '#1e293b', 11.5, 'center');
+  }
+  var chainBottom = top + ch.chem * sc + 30;
+
+  /* ---- 下：用电器端的品质下降 ---- */
+  var ty = chainBottom + 34;
+  label(c, 16, ty - 10, '用电器端：' + app.name + '（有效利用率约 ' + fmt(app.eff * 100, 0) + '%）', '#1e293b', 14);
+  var t2 = ty + 6;
+  var uVal = ch.user, uUseful = uVal * app.eff, uHeat = uVal - uUseful;
+  var x1 = W * 0.09, x2 = W * 0.32, x3 = W * 0.52;
+  /* 用户柱 */
+  c.fillStyle = '#f59e0b'; c.fillRect(x1, t2, bw, uVal * sc);
+  c.strokeStyle = '#b45309'; c.lineWidth = 1; c.strokeRect(x1, t2, bw, uVal * sc);
+  mono(c, x1 + bw / 2, t2 + uVal * sc + 16, fmt(uVal, 0) + '%', '#7c2d12', 12, 'center');
+  label(c, x1 + bw / 2, t2 - 8, '用户得到的电能', '#1e293b', 11.5, 'center');
+  /* 分流：有效利用 + 直接发热 */
+  ribbon(c, x1 + bw, t2, t2 + uUseful * sc, x2, t2, t2 + uUseful * sc, '#a7f3d0', '#059669');
+  ribbon(c, x1 + bw, t2 + uUseful * sc, t2 + uVal * sc, x2, t2 + uUseful * sc + 30, t2 + uVal * sc + 30, '#fcd34d', '#dc2626');
+  if (m1.run){
+    flow(c, x1 + bw, x2, t2 + 3, t2 + uUseful * sc - 3, m1.ph * 0.5, 'rgba(4,120,87,.7)', 5);
+    flow(c, x1 + bw, x2, t2 + uUseful * sc + 33, t2 + uVal * sc + 27, m1.ph * 0.45, 'rgba(153,27,27,.55)', 4);
+  }
+  c.fillStyle = '#059669'; c.fillRect(x2, t2, bw, uUseful * sc);
+  c.strokeStyle = '#047857'; c.lineWidth = 1; c.strokeRect(x2, t2, bw, uUseful * sc);
+  mono(c, x2 + bw / 2, t2 + uUseful * sc + 16, fmt(uUseful, 1) + '%', '#065f46', 12, 'center');
+  label(c, x2 + bw / 2, t2 - 8, '有效利用：' + app.useful, '#065f46', 11.5, 'center');
+  c.fillStyle = '#dc2626'; c.fillRect(x2, t2 + uUseful * sc + 30, bw, uHeat * sc);
+  c.strokeStyle = '#991b1b'; c.lineWidth = 1; c.strokeRect(x2, t2 + uUseful * sc + 30, bw, uHeat * sc);
+  mono(c, x2 + bw / 2, t2 + uVal * sc + 46, fmt(uHeat, 1) + '%', '#991b1b', 12, 'center');
+  label(c, x2 + bw + 8, t2 + uUseful * sc + 30 + uHeat * sc / 2, '直接发热（内能耗散）', '#b91c1c', 11.5);
+  /* 最终：全部变成环境内能 */
+  ribbon(c, x2 + bw, t2, t2 + uUseful * sc, x3, t2 + 10, t2 + 10 + uUseful * sc * 0.8, '#a7f3d0', '#cbd5e1');
+  ribbon(c, x2 + bw, t2 + uUseful * sc + 30, t2 + uVal * sc + 30, x3, t2 + 10 + uUseful * sc * 0.8, t2 + 10 + uVal * sc * 0.8, '#fcd34d', '#cbd5e1');
+  c.fillStyle = '#94a3b8'; c.fillRect(x3, t2 + 10, bw, uVal * sc * 0.8);
+  c.strokeStyle = '#64748b'; c.lineWidth = 1; c.strokeRect(x3, t2 + 10, bw, uVal * sc * 0.8);
+  label(c, x3 + bw / 2, t2 - 2, '最终归宿', '#475569', 11.5, 'center');
+  mono(c, x3 + bw / 2, t2 + 10 + uVal * sc * 0.8 + 18, fmt(uVal, 0) + '%', '#475569', 12, 'center');
+  /* 环境示意：向上飘散的热 */
+  for (var k = 0; k < 4; k++){
+    var fx = x3 - 6 + k * 12, fy = t2 + 2 - k * 2;
+    c.strokeStyle = 'rgba(148,163,184,.75)'; c.lineWidth = 1.6;
+    c.beginPath();
+    for (var xx = 0; xx <= 20; xx += 3){
+      var yv = fy - 6 - 3 * k + 2.4 * Math.sin(xx / 4 + m1.ph * 0.05 + k);
+      if (xx === 0) c.moveTo(fx + xx, yv); else c.lineTo(fx + xx, yv);
+    }
+    c.stroke();
+  }
+  label(c, x3 + bw / 2, t2 + 10 + uVal * sc * 0.8 + 34, '这些能量最终都变成环境的内能', '#64748b', 12, 'center');
+  label(c, x3 + bw / 2, t2 + 10 + uVal * sc * 0.8 + 52, '（分散开来，无法再集中做功）', '#94a3b8', 11.5, 'center');
+
+  /* ---- 右侧：能量品质标尺 ---- */
+  var qx = W * 0.76;
+  label(c, qx, 30, '能量品质（可利用程度）', '#1e293b', 13.5);
+  var qTop = 46, qBot = 372;
+  var gq = c.createLinearGradient(0, qTop, 0, qBot);
+  gq.addColorStop(0, '#059669'); gq.addColorStop(0.45, '#f59e0b'); gq.addColorStop(1, '#cbd5e1');
+  c.fillStyle = gq; rrect(c, qx + 4, qTop, 18, qBot - qTop, 8); c.fill();
+  c.strokeStyle = '#e2e8f0'; c.lineWidth = 1; c.stroke();
+  var marks = [
+    { q: 100, t: '电能 / 机械能', s: '几乎可全部用来做功' },
+    { q: 55,  t: '高温高压蒸汽', s: '只有一部分可用' },
+    { q: 18,  t: '温水、烟气',   s: '很难再利用' },
+    { q: 3,   t: '环境中的内能', s: '无法再集中起来' }
+  ];
+  for (var mi = 0; mi < marks.length; mi++){
+    var my2 = qBot - (qBot - qTop) * marks[mi].q / 100;
+    c.strokeStyle = '#0f172a'; c.lineWidth = 1.2;
+    c.beginPath(); c.moveTo(qx + 22, my2); c.lineTo(qx + 32, my2); c.stroke();
+    c.fillStyle = '#0f172a';
+    c.beginPath(); c.arc(qx + 22, my2, 3, 0, 6.2832); c.fill();
+    label(c, qx + 36, my2 - 2, marks[mi].t, '#1e293b', 12);
+    label(c, qx + 36, my2 + 14, marks[mi].s, '#64748b', 11);
+  }
+  label(c, qx, 392, '自发方向：高品质 → 低品质，不可逆', '#b45309', 12);
+  label(c, qx, 410, '能量总量守恒，可利用的品质在下降', '#b45309', 12);
+
+  /* 结论文字 */
+  var vd = $('vd1');
+  var sum = ch.boilerLoss + ch.condLoss + ch.genLoss + ch.gridLoss + ch.user;
+  vd.innerHTML = '<b>算一算总账：</b>10%（烟气散热）＋' + fmt(ch.condLoss, 0)
+    + '%（冷凝器）＋' + fmt(ch.genLoss, 0) + '%（发电机厂用电）＋' + fmt(ch.gridLoss, 0)
+    + '%（线损）＋' + fmt(ch.user, 0) + '%（用户）＝ <b>' + fmt(sum, 0)
+    + '%</b> —— 能量一步也没少，守恒成立。<br>'
+    + '但到用户手里的 ' + fmt(ch.user, 0) + '% 电能，经' + app.name + '使用后只有 '
+    + fmt(uUseful, 1) + '% 真正变成' + app.useful + '，剩下的 ' + fmt(uHeat, 1)
+    + '% 直接发热；而那部分' + app.useful + '最终也全部变成环境的内能。'
+    + '<b>能量守恒，可利用的能源却在减少 —— 所以要节约能源、提高效率。</b><br>'
+    + '<b>节能算一算：</b>一只 60 W 的白炽灯换成亮度相当的 10 W LED 灯，同样点亮 '
+    + m1.hours + ' 小时：白炽灯用 ' + fmt(60 * m1.hours / 1000, 1) + ' 度电，LED 只用 '
+    + fmt(10 * m1.hours / 1000, 1) + ' 度电，<b>少用 ' + fmt(50 * m1.hours / 1000, 1) + ' 度</b>；'
+    + '按火电厂效率 ' + m1.eff + '% 估算，相当于少烧约 '
+    + fmt(50 * m1.hours / 1000 * 3.6e6 / (2.93e7 * (m1.eff / 100)), 1)
+    + ' kg 标准煤（标准煤热值取 2.93×10⁷ J/kg）—— 提高效率就是最直接的减排。';
+}
+
+/* ================= 模块 2：能源结构 ================= */
+var cv2 = $('cv2');
+var m2 = { year: 2, item: 0 };
+var YEARS = [2015, 2020, 2024];
+var GEO = { cx: 0, cy: 0, rr: 0, lx0: 16, ly0: 412, lw: 120, bars: [] };
+/* 数据为公开资料的大致比例（%），仅用于教学演示 */
+var ITEMS = [
+  { key: 'coal', name: '煤炭',   color: '#475569', v: [64.0, 56.8, 53.2], ren: false,
+    cls: '一次能源 · 不可再生 · 常规能源', feat: '我国的主体能源，但碳排放高' },
+  { key: 'oil',  name: '石油',   color: '#b45309', v: [18.0, 18.9, 17.7], ren: false,
+    cls: '一次能源 · 不可再生 · 常规能源', feat: '主要用于交通燃料与化工原料' },
+  { key: 'gas',  name: '天然气', color: '#f59e0b', v: [6.0, 8.4, 9.4],    ren: false,
+    cls: '一次能源 · 不可再生 · 常规能源', feat: '化石能源中较清洁的一种' },
+  { key: 'nuke', name: '核电',   color: '#8b5cf6', v: [2.0, 2.3, 2.1],    ren: false,
+    cls: '一次能源 · 不可再生 · 新能源',   feat: '能量密度极高、低碳，核燃料不可再生' },
+  { key: 'hydro',name: '水电',   color: '#0ea5e9', v: [8.0, 8.1, 8.3],    ren: true,
+    cls: '一次能源 · 可再生 · 常规能源',   feat: '出力较稳定可调节，受地理条件限制' },
+  { key: 'wind', name: '风电',   color: '#22c55e', v: [1.5, 3.5, 4.9],    ren: true,
+    cls: '一次能源 · 可再生 · 新能源',     feat: '随机波动大，需要储能与调峰配合' },
+  { key: 'solar',name: '太阳能', color: '#facc15', v: [0.5, 2.0, 4.4],    ren: true,
+    cls: '一次能源 · 可再生 · 新能源',     feat: '分布最广，受昼夜与天气影响' }
+];
+function renShare(i){
+  var s = 0, k;
+  for (k = 0; k < ITEMS.length; k++) if (ITEMS[k].ren) s += ITEMS[k].v[i];
+  return s;
+}
+
+function drawM2(){
+  var c = fit(cv2), W = cv2.clientWidth, H = cv2.clientHeight;
+  c.clearRect(0, 0, W, H);
+  var sel = m2.year;
+  var i, k;
+
+  /* ---- 左：三年堆叠柱 ---- */
+  label(c, 16, 26, '我国一次能源消费构成（%，数据为约值）', '#1e293b', 14);
+  var base = 326, hh = 236, bw = 74;
+  var gap = (W * 0.60 - 40) / 3;
+  GEO.bars = [];
+  for (i = 0; i < 3; i++){
+    var bx = 34 + i * gap + (gap - bw) / 2;
+    GEO.bars.push({ x: bx - 6, w: bw + 12, top: base - hh, base: base });
+    var y = base, it;
+    for (k = 0; k < ITEMS.length; k++){
+      it = ITEMS[k];
+      var seg = it.v[i] / 100 * hh;
+      c.fillStyle = it.color;
+      c.fillRect(bx, y - seg, bw, seg);
+      c.strokeStyle = 'rgba(255,255,255,.7)'; c.lineWidth = 1;
+      c.strokeRect(bx, y - seg, bw, seg);
+      if (it.v[i] >= 3.2){
+        c.fillStyle = (it.key === 'coal' || it.key === 'oil') ? '#fff' : '#0f172a';
+        c.font = '11px Consolas, monospace'; c.textAlign = 'center'; c.textBaseline = 'middle';
+        c.fillText(it.v[i].toFixed(1), bx + bw / 2, y - seg / 2);
+        c.textBaseline = 'alphabetic';
+      }
+      y -= seg;
+    }
+    /* 可再生占比高亮框（可再生部分堆在柱顶） */
+    var renH = renShare(i) / 100 * hh;
+    c.save();
+    c.strokeStyle = '#059669'; c.lineWidth = (i === sel) ? 2.8 : 1.3;
+    if (i !== sel) c.setLineDash([4, 3]);
+    c.strokeRect(bx - 4, base - hh, bw + 8, renH);
+    c.restore();
+    if (i === sel){
+      c.strokeStyle = '#059669'; c.lineWidth = 1.2;
+      c.beginPath(); c.moveTo(bx - 4, base - hh + renH); c.lineTo(bx - 16, base - hh + renH); c.stroke();
+      label(c, bx - 20, base - hh + renH + 4, '可再生', '#059669', 11.5, 'right');
+    }
+    /* 年份与占比 */
+    c.font = (i === sel ? 'bold 13.5px' : '13px') + ' "Microsoft YaHei", sans-serif';
+    c.fillStyle = (i === sel) ? '#1d4ed8' : '#64748b';
+    c.textAlign = 'center'; c.fillText(YEARS[i] + ' 年', bx + bw / 2, base + 20);
+    c.font = '11.5px Consolas, monospace'; c.fillStyle = '#059669';
+    c.fillText('可再生 ' + renShare(i).toFixed(1) + '%', bx + bw / 2, base + 38);
+    /* 选中标记 */
+    if (i === sel){
+      c.fillStyle = '#1d4ed8';
+      c.beginPath(); c.moveTo(bx + bw / 2, base + 44); c.lineTo(bx + bw / 2 - 6, base + 54);
+      c.lineTo(bx + bw / 2 + 6, base + 54); c.closePath(); c.fill();
+    }
+  }
+  /* 坐标轴 */
+  c.strokeStyle = '#cbd5e1'; c.lineWidth = 1;
+  c.beginPath(); c.moveTo(24, base); c.lineTo(W * 0.60, base); c.stroke();
+  c.font = '11px Consolas, monospace'; c.fillStyle = '#94a3b8'; c.textAlign = 'right';
+  for (k = 0; k <= 4; k++){
+    var yy = base - hh * k / 4;
+    c.beginPath(); c.moveTo(20, yy); c.lineTo(24, yy); c.stroke();
+    c.fillText((25 * k) + '%', 18, yy + 4);
+  }
+
+  /* ---- 右：选中年份的饼图（点击饼块或图例可看分类） ---- */
+  var cx = W * 0.78, cy = 146, rr = 76;
+  GEO.cx = cx; GEO.cy = cy; GEO.rr = rr;
+  label(c, cx - rr, 44, YEARS[sel] + ' 年构成（点饼块或图例看分类）', '#1e293b', 13.5);
+  label(c, 16, 44, '点柱子也能切换年份', '#94a3b8', 11.5);
+  label(c, 16, 64, '读图：每根柱子总高都是 100%，色段越高说明占比越大。', '#64748b', 11.5);
+  label(c, 16, 80, '绿色框住的是水电＋风电＋太阳能，即可再生能源部分。', '#059669', 11.5);
+  var a0 = -Math.PI / 2;
+  for (k = 0; k < ITEMS.length; k++){
+    var frac = ITEMS[k].v[sel] / 100;
+    var a1 = a0 + frac * Math.PI * 2;
+    var am = (a0 + a1) / 2;
+    var on = (k === m2.item);
+    var ox = cx + Math.cos(am) * (on ? 7 : 0), oy = cy + Math.sin(am) * (on ? 7 : 0);
+    c.beginPath(); c.moveTo(ox, oy); c.arc(ox, oy, rr + (on ? 5 : 0), a0, a1); c.closePath();
+    c.fillStyle = ITEMS[k].color; c.fill();
+    c.strokeStyle = on ? '#1d4ed8' : '#fff'; c.lineWidth = on ? 2.4 : 1.5; c.stroke();
+    if (frac > 0.028){
+      var lx = ox + Math.cos(am) * rr * 0.66, ly = oy + Math.sin(am) * rr * 0.66;
+      c.font = '11.5px "Microsoft YaHei", sans-serif';
+      c.fillStyle = (ITEMS[k].key === 'coal' || ITEMS[k].key === 'oil') ? '#fff' : '#0f172a';
+      c.textAlign = 'center'; c.textBaseline = 'middle';
+      c.fillText(ITEMS[k].v[sel].toFixed(1), lx, ly);
+      c.textBaseline = 'alphabetic';
+    }
+    a0 = a1;
+  }
+  /* 中心：可再生占比 */
+  c.beginPath(); c.arc(cx, cy, 40, 0, 6.2832);
+  c.fillStyle = '#fff'; c.fill(); c.strokeStyle = '#059669'; c.lineWidth = 2; c.stroke();
+  c.textAlign = 'center';
+  mono(c, cx, cy - 4, renShare(sel).toFixed(1) + '%', '#059669', 16, 'center');
+  label(c, cx, cy + 13, '可再生', '#059669', 11.5, 'center');
+
+  /* ---- 选中能源的分类卡片 ---- */
+  var it0 = ITEMS[m2.item];
+  var ix = W * 0.62, iw = W - ix - 18;
+  c.fillStyle = '#f8fafc'; c.strokeStyle = '#e2e8f0'; c.lineWidth = 1;
+  rrect(c, ix, 234, iw, 62, 8); c.fill(); c.stroke();
+  c.fillStyle = it0.color; c.fillRect(ix + 10, 242, 13, 13);
+  c.strokeStyle = '#e2e8f0'; c.lineWidth = 1; c.strokeRect(ix + 10, 242, 13, 13);
+  label(c, ix + 29, 254, it0.name + '　' + ITEMS[m2.item].v[sel].toFixed(1) + '%', '#1e293b', 13);
+  label(c, ix + 10, 272, it0.cls, '#1d4ed8', 12);
+  label(c, ix + 10, 289, it0.feat, '#64748b', 11.5);
+  var dItem = it0.v[2] - it0.v[0];
+  label(c, ix + iw - 8, 254, '十年变化 ' + (dItem >= 0 ? '+' : '') + fmt(dItem, 1) + ' 个百分点',
+    dItem >= 0 ? '#059669' : '#475569', 11.5, 'right');
+
+  /* ---- 趋势折线：煤炭 vs 可再生 ---- */
+  var tX = W * 0.63, tY = 324, tW2 = W - tX - 18, tH2 = 68;
+  label(c, tX, tY - 10, '十年趋势：煤炭↓、可再生↑（%）', '#1e293b', 13);
+  c.fillStyle = '#fbfdff'; c.strokeStyle = '#e2e8f0'; c.lineWidth = 1;
+  rrect(c, tX, tY, tW2, tH2, 6); c.fill(); c.stroke();
+  var yMax = 70;
+  var gxx = function(ix){ return tX + 28 + (tW2 - 46) * ix / 2; };
+  var gyy = function(vv){ return tY + tH2 - 18 - (tH2 - 30) * Math.max(0, Math.min(1, vv / yMax)); };
+  c.strokeStyle = '#eef2f7'; c.lineWidth = 1;
+  for (k = 0; k <= 2; k++){
+    var gyv = gyy(yMax * k / 2);
+    c.beginPath(); c.moveTo(tX + 22, gyv); c.lineTo(tX + tW2 - 10, gyv); c.stroke();
+  }
+  c.font = '10.5px Consolas, monospace'; c.fillStyle = '#94a3b8';
+  c.textAlign = 'right'; c.textBaseline = 'middle';
+  for (k = 0; k <= 2; k++) c.fillText(String(yMax * k / 2), tX + 18, gyy(yMax * k / 2));
+  c.textBaseline = 'alphabetic'; c.textAlign = 'center';
+  var series = [
+    { name: '煤炭', col: '#475569', vals: ITEMS[0].v },
+    { name: '可再生', col: '#059669', vals: [renShare(0), renShare(1), renShare(2)] }
+  ];
+  for (var si = 0; si < series.length; si++){
+    var sv = series[si];
+    c.strokeStyle = sv.col; c.lineWidth = (si === 1 ? 2.6 : 2.2);
+    c.beginPath();
+    for (k = 0; k < 3; k++){
+      if (k === 0) c.moveTo(gxx(k), gyy(sv.vals[k])); else c.lineTo(gxx(k), gyy(sv.vals[k]));
+    }
+    c.stroke();
+    for (k = 0; k < 3; k++){
+      c.fillStyle = (k === sel) ? '#1d4ed8' : sv.col;
+      c.beginPath(); c.arc(gxx(k), gyy(sv.vals[k]), (k === sel) ? 5 : 3.6, 0, 6.2832); c.fill();
+      c.strokeStyle = '#fff'; c.lineWidth = 1.4; c.stroke();
+    }
+    mono(c, gxx(sel) + 10, gyy(sv.vals[sel]) + (si === 0 ? -8 : 14), sv.name + ' ' + sv.vals[sel].toFixed(1) + '%', sv.col, 11.5);
+  }
+  /* 参考线：可再生能源占比 25% 的位置（示意一条"未来目标"） */
+  c.save(); c.setLineDash([5, 3]); c.strokeStyle = 'rgba(5,150,105,.55)'; c.lineWidth = 1.2;
+  c.beginPath(); c.moveTo(tX + 22, gyy(25)); c.lineTo(tX + tW2 - 10, gyy(25)); c.stroke(); c.restore();
+  label(c, tX + tW2 - 12, gyy(25) - 4, '25%', '#059669', 10.5, 'right');
+  c.font = '10.5px "Microsoft YaHei", sans-serif'; c.fillStyle = '#94a3b8';
+  for (k = 0; k < 3; k++) c.fillText(String(YEARS[k]), gxx(k), tY + tH2 - 4);
+
+  /* 图例（可点击） */
+  var lx0 = GEO.lx0, ly0 = GEO.ly0;
+  for (k = 0; k < ITEMS.length; k++){
+    var px = lx0 + k * 122;
+    c.fillStyle = ITEMS[k].color; c.fillRect(px, ly0 - 10, 14, 12);
+    c.strokeStyle = (k === m2.item) ? '#1d4ed8' : '#e2e8f0';
+    c.lineWidth = (k === m2.item) ? 2 : 1;
+    c.strokeRect(px, ly0 - 10, 14, 12);
+    label(c, px + 18, ly0, ITEMS[k].name + (ITEMS[k].ren ? '（可再生）' : ''),
+      (k === m2.item) ? '#1d4ed8' : '#475569', 11.5);
+  }
+  var vd = $('vd2');
+  var y = YEARS[sel];
+  var dCoal = ITEMS[0].v[2] - ITEMS[0].v[0];
+  var dRen = renShare(2) - renShare(0);
+  vd.innerHTML = '<b>' + y + ' 年：</b>煤炭 ' + ITEMS[0].v[sel].toFixed(1) + '% 仍是主体，'
+    + '非化石（水电＋风电＋太阳能＋核电）合计 '
+    + (renShare(sel) + ITEMS[3].v[sel]).toFixed(1) + '%，其中可再生能源 '
+    + renShare(sel).toFixed(1) + '%。<br>'
+    + ' <b>十年变化：</b>煤炭 ' + ITEMS[0].v[0].toFixed(1) + '% → ' + ITEMS[0].v[2].toFixed(1)
+    + '%（' + fmt(dCoal, 1) + ' 个百分点），'
+    + '可再生能源 ' + renShare(0).toFixed(1) + '% → ' + renShare(2).toFixed(1)
+    + '%（+' + fmt(dRen, 1) + ' 个百分点），风电与太阳能增长最快（2.0% → 9.3%）。<br>'
+    + '<b>能源分类：</b>煤炭、石油、天然气属不可再生的化石能源（一次能源）；电能是由一次能源转化来的二次能源；'
+    + '水能、风能、太阳能可循环再生；核燃料（铀）不可再生，但核电低碳，常归入新能源。';
+}
+
+/* ================= 绑定 ================= */
+bindRange('ef1', function(v){ m1.eff = v; drawM1(); }, function(v){ return v.toFixed(0) + ' %'; });
+bindRange('hr1', function(v){ m1.hours = v * 100; drawM1(); }, function(v){ return (v * 100) + ' h'; });
+$('seg1').addEventListener('click', function(e){
+  var b = e.target;
+  if (b.tagName !== 'BUTTON') return;
+  var bs = this.getElementsByTagName('button');
+  for (var i = 0; i < bs.length; i++) bs[i].className = '';
+  b.className = 'on';
+  m1.app = b.getAttribute('data-a');
+  drawM1();
+});
+function setEff(v){
+  m1.eff = v; $('ef1').value = v; $('ef1v').textContent = v.toFixed(0) + ' %'; drawM1();
+}
+$('p1a').addEventListener('click', function(){ setEff(32); });
+$('p1b').addEventListener('click', function(){ setEff(45); });
+$('p1c').addEventListener('click', function(){
+  m1.run = !m1.run;
+  this.className = m1.run ? 'btn' : 'btn on';
+});
+
+bindRange('yr2', function(v){ m2.year = Math.round(v); drawM2(); },
+  function(v){ return YEARS[Math.round(v)] + ' 年'; });
+function setYear(i){
+  m2.year = i; $('yr2').value = i; $('yr2v').textContent = YEARS[i] + ' 年'; drawM2();
+}
+$('p2a').addEventListener('click', function(){ setYear(0); });
+$('p2b').addEventListener('click', function(){ setYear(1); });
+$('p2c').addEventListener('click', function(){ setYear(2); });
+
+/* 点击饼图色块或图例 → 切换要看分类的能源 */
+cv2.style.cursor = 'pointer';
+cv2.addEventListener('click', function(ev){
+  var rect = cv2.getBoundingClientRect();
+  var x = ev.clientX - rect.left, y = ev.clientY - rect.top;
+  var dx = x - GEO.cx, dy = y - GEO.cy;
+  var d = Math.sqrt(dx * dx + dy * dy);
+  var k;
+  /* 先判断是否点在某根柱子上 → 切换年份 */
+  for (k = 0; k < GEO.bars.length; k++){
+    var b = GEO.bars[k];
+    if (x >= b.x && x <= b.x + b.w && y >= b.top && y <= b.base){
+      if (m2.year !== k){ setYear(k); } else { drawM2(); }
+      return;
+    }
+  }
+  if (d <= GEO.rr + 6){
+    var a = Math.atan2(dy, dx) + Math.PI / 2;   /* 以 12 点方向为 0 */
+    while (a < 0) a += Math.PI * 2;
+    while (a >= Math.PI * 2) a -= Math.PI * 2;
+    var acc = 0;
+    for (k = 0; k < ITEMS.length; k++){
+      acc += ITEMS[k].v[m2.year] / 100;
+      if (a <= acc * Math.PI * 2){ m2.item = k; drawM2(); return; }
+    }
+    return;
+  }
+  for (k = 0; k < ITEMS.length; k++){
+    var px = GEO.lx0 + k * 122;
+    if (x >= px && x <= px + GEO.lw && y >= GEO.ly0 - 14 && y <= GEO.ly0 + 6){
+      m2.item = k; drawM2(); return;
+    }
+  }
+});
+
+/* ================= 动画 ================= */
+var last = 0;
+function loop(ts){
+  var dt = last ? Math.min((ts - last) / 1000, 0.05) : 0;
+  last = ts;
+  if (!document.hidden && m1.run){
+    m1.ph += dt * 0.6;
+    drawM1();
+  }
+  requestAnimationFrame(loop);
+}
+window.addEventListener('resize', function(){ drawM1(); drawM2(); });
+drawM1(); drawM2();
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

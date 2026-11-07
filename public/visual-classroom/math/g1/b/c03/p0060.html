@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>空间中的角 · 三种角对照</title>
+<style>
+  :root{
+    --blue:#4f9ec4; --blue-dark:#3d87ad; --coral:#dd7358; --green:#7aa571;
+    --amber:#d9a24a; --violet:#6f68c8; --ink:#3a4a54; --muted:#8a9a92;
+    --card:#ffffff; --bg:#eef1ea; --line:#dde4d8; --teal:#417f9e;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:"Microsoft YaHei","PingFang SC",sans-serif;
+    background:var(--bg); color:var(--ink);
+    height:100vh; height:100dvh;
+    display:flex; flex-direction:column; overflow:hidden;
+  }
+
+  /* ---------------- 顶栏 ---------------- */
+  .top{
+    flex:none; display:flex; align-items:center; justify-content:space-between; gap:20px;
+    padding:17px 26px;
+    background:linear-gradient(115deg,#35708c,#4a90b0 55%,#5698b6);
+    color:#fff; box-shadow:0 2px 14px rgba(30,60,80,.18); z-index:6;
+  }
+  .brand{display:flex; align-items:center; gap:14px; min-width:0;}
+  .mark{
+    width:44px; height:44px; flex:none; border-radius:12px;
+    background:rgba(255,255,255,.96); color:var(--teal);
+    display:grid; place-items:center;
+    font-family:"Microsoft YaHei","PingFang SC",sans-serif;
+    font-size:24px; font-weight:bold; line-height:1; padding-top:3px;
+    box-shadow:0 3px 10px rgba(20,50,60,.22);
+  }
+  .brand h1{font-size:21px; letter-spacing:3px; line-height:1.3; text-shadow:0 1px 2px rgba(20,50,60,.18);}
+  .brand p{font-size:13px; opacity:.96; margin-top:4px; letter-spacing:.4px;}
+  .keys{font-size:12.8px; color:#f2fbff; white-space:nowrap; letter-spacing:.5px;
+    display:flex; align-items:center; gap:3px; text-shadow:0 1px 3px rgba(20,50,60,.35);}
+  .keys kbd{
+    display:inline-block; padding:2px 7px; margin:0 1px; border-radius:5px;
+    background:rgba(255,255,255,.3); border:1px solid rgba(255,255,255,.6);
+    font-family:inherit; font-size:12.5px; color:#fff; font-weight:bold;
+  }
+  .opennew{
+    flex:none; margin-left:14px; padding:6px 13px; border-radius:8px;
+    background:rgba(255,255,255,.16); border:1px solid rgba(255,255,255,.55);
+    color:#fff; font-size:12.8px; text-decoration:none; letter-spacing:.5px;
+    white-space:nowrap; transition:.16s;
+  }
+  .opennew:hover{background:rgba(255,255,255,.3);}
+
+  /* ---------------- 关系链（同时是导航） ---------------- */
+  .chain{
+    flex:none; display:flex; align-items:stretch; gap:8px;
+    padding:13px 26px 11px; background:#e9ede5; border-bottom:1px solid #d9e1d4;
+  }
+  .node{
+    flex:1 1 0; min-width:0; display:flex; align-items:center; gap:11px;
+    padding:9px 14px; border-radius:12px; cursor:pointer; text-align:left;
+    background:#f7faf5; border:1.5px solid #dbe4d7; color:#5a6d76;
+    font-family:inherit; transition:.16s; position:relative;
+  }
+  .node:hover{background:#fff; border-color:#bfd3c4; transform:translateY(-1px);}
+  .node .no{
+    width:26px; height:26px; flex:none; border-radius:8px;
+    display:grid; place-items:center; font-size:13px; font-weight:bold;
+    background:#e3eadf; color:#7d8f86; transition:.16s;
+  }
+  .node .txt{min-width:0;}
+  .node .nm{display:block; font-size:15px; font-weight:bold; letter-spacing:.3px; color:#3a5060;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-decoration:none;}
+  .node .sb{display:block; font-size:12.5px; color:#7d8e86; margin-top:3px;
+    white-space:nowrap; overflow:hidden; text-overflow:ellipsis; text-decoration:none;}
+  .node.on{
+    background:#fff; border-color:var(--violet);
+    box-shadow:0 4px 16px rgba(111,104,200,.2);
+  }
+  .node.on::before{
+    content:""; position:absolute; left:14px; right:14px; top:-2px; height:3px;
+    border-radius:0 0 3px 3px; background:var(--violet);
+  }
+  .node.on .no{background:var(--violet); color:#fff;}
+  .node.on .nm{color:#38326e;}
+  .node.on .sb{color:#7f78c2;}
+  .arrow{
+    flex:none; display:grid; place-items:center; width:20px;
+    color:#b3c2b6; font-size:16px; user-select:none;
+  }
+
+  .strip{
+    flex:none; padding:8px 26px 10px; background:#e9ede5; border-bottom:1px solid #d9e1d4;
+    font-size:13px; color:#5e7269; line-height:1.7; margin-top:-1px;
+    display:flex; align-items:center; gap:8px;
+  }
+  .strip .tag{
+    flex:none; font-size:11.5px; padding:2px 8px; border-radius:5px;
+    background:#dbe5d6; color:#5f7a68; letter-spacing:.5px;
+  }
+  .strip b{color:var(--coral);}
+  .strip .hl{color:var(--violet); font-weight:bold;}
+
+  /* ---------------- 内容区 ---------------- */
+  .panes{flex:1; position:relative; min-height:0; background:var(--bg);}
+  .pane{position:absolute; inset:0; display:none;}
+  .pane.on{display:block;}
+  .pane iframe{width:100%; height:100%; border:0; display:block; background:var(--bg);}
+  .load{
+    position:absolute; inset:0; display:none; place-items:center;
+    background:var(--bg); color:#8aa096; font-size:14px; letter-spacing:1px;
+  }
+  .load.show{display:grid;}
+  .load span::after{content:""; animation:dots 1.2s infinite;}
+  @keyframes dots{0%{content:"";}33%{content:"·";}66%{content:"··";}100%{content:"···";}}
+
+  /* ---------------- 窄屏 ---------------- */
+  @media (max-width:900px){
+    .top{padding:12px 16px;}
+    .brand h1{font-size:17px; letter-spacing:2px;}
+    .brand p{display:none;}
+    .keys{display:none;}
+    .chain{padding:10px 14px; gap:6px;}
+    .node{padding:8px 10px; gap:8px;}
+    .node .no{width:22px; height:22px; font-size:12px;}
+    .node .nm{font-size:13px;}
+    .node .sb{display:none;}
+    .arrow{width:12px;}
+    .strip{padding:7px 16px 9px; font-size:12.2px;}
+    .strip .tag{display:none;}
+  }
+  @media (max-width:620px){
+    .node .nm{font-size:12px; letter-spacing:0;}
+    .node .no{display:none;}
+    .chain{gap:4px;}
+    .arrow{width:8px; font-size:13px;}
+  }
+</style>
+</head>
+<body>
+
+<header class="top">
+  <div class="brand">
+    <div class="mark">角</div>
+    <div>
+      <h1>空间中的角</h1>
+      <p>异面直线所成的角 · 直线与平面所成的角 · 二面角 —— 三种空间角，一个共同的办法</p>
+    </div>
+  </div>
+  <div class="keys"><kbd>←</kbd><kbd>→</kbd> 切换　·　图形可拖动旋转、滚轮缩放
+    <a class="opennew" id="openNew" href="#" target="_blank" rel="noopener">单独打开 ↗</a>
+  </div>
+</header>
+
+<nav class="chain" id="chain">
+  <button class="node" data-k="skew" type="button">
+    <span class="no">①</span>
+    <span class="txt">
+      <span class="nm">异面直线所成的角</span>
+      <span class="sb">把一条平移过去，化成相交直线</span>
+    </span>
+  </button>
+  <span class="arrow">→</span>
+  <button class="node" data-k="lp" type="button">
+    <span class="no">②</span>
+    <span class="txt">
+      <span class="nm">直线与平面所成的角</span>
+      <span class="sb">斜线与它在平面内的射影</span>
+    </span>
+  </button>
+  <span class="arrow">→</span>
+  <button class="node" data-k="di" type="button">
+    <span class="no">③</span>
+    <span class="txt">
+      <span class="nm">二面角</span>
+      <span class="sb">在棱上取点，作两条垂直于棱的射线</span>
+    </span>
+  </button>
+</nav>
+
+<div class="strip">
+  <span class="tag">共同点</span>
+  <span>三种空间角最终都化成<span class="hl">两条相交直线的夹角</span>来度量：异面直线靠<b>平移</b>，线面角靠<b>射影</b>，二面角靠<b>垂直于棱的射线</b>。</span>
+</div>
+
+<main class="panes" id="panes">
+  <section class="pane" data-k="skew">
+    <iframe data-src="/visual-classroom/missing.html#embed" title="异面直线所成的角三维模型"></iframe>
+    <div class="load"><span>正在载入模型</span></div>
+  </section>
+  <section class="pane" data-k="lp">
+    <iframe data-src="/visual-classroom/missing.html#embed" title="直线与平面所成的角三维模型"></iframe>
+    <div class="load"><span>正在载入模型</span></div>
+  </section>
+  <section class="pane" data-k="di">
+    <iframe data-src="/visual-classroom/missing.html#embed" title="二面角三维模型"></iframe>
+    <div class="load"><span>正在载入模型</span></div>
+  </section>
+</main>
+
+<script>
+(function(){
+  'use strict';
+
+  var KEYS = ['skew', 'lp', 'di'];
+  var FILES = {
+    skew: '/visual-classroom/missing.html',
+    lp:   '/visual-classroom/missing.html',
+    di:   '/visual-classroom/missing.html'
+  };
+  var nodes = Array.prototype.slice.call(document.querySelectorAll('.node'));
+  var panes = Array.prototype.slice.call(document.querySelectorAll('.pane'));
+  var openNew = document.getElementById('openNew');
+  var cur = null;
+
+  function show(k, silent){
+    if (KEYS.indexOf(k) < 0) k = KEYS[0];
+    if (k === cur) return;
+
+    nodes.forEach(function(n){ n.classList.toggle('on', n.dataset.k === k); });
+    panes.forEach(function(p){
+      var on = (p.dataset.k === k);
+      p.classList.toggle('on', on);
+      if (!on) return;
+
+      var f = p.querySelector('iframe');
+      if (!f.getAttribute('src')) {
+        var ld = p.querySelector('.load');
+        if (ld) ld.classList.add('show');
+        f.addEventListener('load', function(){
+          if (ld) ld.classList.remove('show');
+        }, { once: true });
+        f.src = f.dataset.src;
+      }
+    });
+
+    if (openNew) openNew.href = FILES[k] || '#';
+    cur = k;
+    if (!silent) {
+      try { history.replaceState(null, '', '#' + k); } catch (e) {}
+      try { localStorage.setItem('angles.tab', k); } catch (e) {}
+    }
+  }
+
+  nodes.forEach(function(n){
+    n.addEventListener('click', function(){ show(n.dataset.k); });
+  });
+
+  document.addEventListener('keydown', function(e){
+    if (e.altKey || e.ctrlKey || e.metaKey) return;
+    var t = e.target;
+    if (t && /^(INPUT|TEXTAREA|SELECT)$/.test(t.tagName)) return;
+    if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') {
+      var i = KEYS.indexOf(cur);
+      var d = (e.key === 'ArrowRight') ? 1 : -1;
+      var next = (i + d + KEYS.length) % KEYS.length;
+      show(KEYS[next]);
+      e.preventDefault();
+    }
+  });
+
+  /* 初始标签：优先地址栏 hash，其次上次选择 */
+  var init = (location.hash || '').replace('#', '');
+  if (KEYS.indexOf(init) < 0) {
+    try { init = localStorage.getItem('angles.tab') || KEYS[0]; } catch (e) { init = KEYS[0]; }
+  }
+  show(init, true);
+})();
+</script>
+</body>
+</html>

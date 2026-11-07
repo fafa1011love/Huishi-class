@@ -1,0 +1,296 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>14.1 全等三角形及其性质 · 叠合操作实验</title>
+<style>
+  :root{
+    --bg:#f5f7fa; --panel:#ffffff; --line:#dfe6ee; --ink:#2c3e50; --sub:#7f8c8d;
+    --red:#e74c3c; --blue:#2980b9; --green:#27ae60; --accent:#8e44ad;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:"Microsoft YaHei","PingFang SC",sans-serif; background:var(--bg); color:var(--ink); padding:16px;}
+  header{text-align:center; margin-bottom:12px;}
+  header h1{font-size:22px;}
+  header p{color:var(--sub); font-size:13px; margin-top:4px;}
+  .wrap{display:flex; gap:14px; max-width:1280px; margin:0 auto; align-items:stretch;}
+  .stage{flex:1; background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:10px; position:relative;}
+  svg{display:block; width:100%; height:auto; border-radius:6px; background:#fbfcfe;}
+  .badge{position:absolute; top:18px; left:24px; padding:6px 14px; border-radius:20px; font-size:14px; font-weight:bold;
+         background:#fff3cd; color:#856404; border:1px solid #f1c40f; transition:.3s;}
+  .badge.ok{background:#d4edda; color:#155724; border-color:#28a745;}
+  .side{width:340px; display:flex; flex-direction:column; gap:10px;}
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:12px 14px;}
+  .card h3{font-size:14px; margin-bottom:8px; color:var(--accent); border-left:4px solid var(--accent); padding-left:8px;}
+  .btnrow{display:flex; gap:8px; flex-wrap:wrap;}
+  button{flex:1; padding:8px 6px; border:1px solid var(--line); border-radius:8px; background:#fff; cursor:pointer; font-size:13px; transition:.15s;}
+  button:hover{border-color:var(--accent); color:var(--accent);}
+  button.active{background:var(--accent); color:#fff; border-color:var(--accent);}
+  button.primary{background:var(--accent); color:#fff; border-color:var(--accent);}
+  button.primary:hover{opacity:.9; color:#fff;}
+  .slider{margin:8px 0;}
+  .slider label{display:flex; justify-content:space-between; font-size:13px; margin-bottom:2px;}
+  .slider label b{color:var(--accent); font-variant-numeric:tabular-nums;}
+  input[type=range]{width:100%; accent-color:var(--accent);}
+  select{padding:4px 8px; border:1px solid var(--line); border-radius:6px; font-size:13px;}
+  .loop{display:flex; align-items:center; gap:6px; font-size:13px; color:var(--sub); margin-top:6px;}
+  table{width:100%; border-collapse:collapse; font-size:13px;}
+  td{padding:4px 2px; border-bottom:1px dashed var(--line);}
+  td:last-child{text-align:right; font-variant-numeric:tabular-nums; font-weight:bold;}
+  .chip{display:inline-block; padding:2px 10px; margin:2px; border-radius:12px; font-size:12px; color:#fff;}
+  .hint{font-size:12px; color:var(--sub); line-height:1.6;}
+  .flash{animation:flash 1s ease infinite;}
+  @keyframes flash{50%{opacity:.35;}}
+</style>
+</head>
+<body>
+<header>
+  <h1>14.1 全等三角形及其性质 —— 叠合操作实验</h1>
+  <p>平移 / 旋转 / 翻折，把 △A′B′C′ 叠合到 △ABC 上，验证：能够完全重合的两个图形是<b>全等形</b></p>
+</header>
+
+<div class="wrap">
+  <div class="stage">
+    <div class="badge" id="badge">尚未重合 —— 试试操作右侧滑块</div>
+    <svg id="svg" viewBox="0 0 900 540"></svg>
+  </div>
+
+  <div class="side">
+    <div class="card">
+      <h3>① 选择叠合场景</h3>
+      <div class="btnrow">
+        <button id="sc-tr" class="active">平移叠合</button>
+        <button id="sc-ro">旋转叠合</button>
+        <button id="sc-fl">翻折叠合</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h3>② 手动操作</h3>
+      <div class="slider"><label>平移（左右）<b><span id="v-tx">0</span> px</b></label>
+        <input type="range" id="s-tx" min="-350" max="350" value="0" step="1"></div>
+      <div class="slider"><label>平移（上下）<b><span id="v-ty">0</span> px</b></label>
+        <input type="range" id="s-ty" min="-260" max="260" value="0" step="1"></div>
+      <div class="slider"><label>旋转<b><span id="v-rot">0</span>°</b></label>
+        <input type="range" id="s-rot" min="-180" max="180" value="0" step="1"></div>
+      <div class="slider"><label>翻折（1 → -1 镜像）<b><span id="v-sx">1.00</span></b></label>
+        <input type="range" id="s-sx" min="-1" max="1" value="1" step="0.01"></div>
+    </div>
+
+    <div class="card">
+      <h3>③ 自动播放</h3>
+      <div class="btnrow">
+        <button id="btn-play" class="primary">▶ 自动播放叠合</button>
+        <button id="btn-reset">↺ 重置</button>
+      </div>
+      <div class="btnrow" style="margin-top:8px;">
+        <span style="font-size:13px;">速度</span>
+        <select id="speed"><option value="2">0.5×</option><option value="1" selected>1×</option><option value="0.5">2×</option></select>
+        <label class="loop"><input type="checkbox" id="loop"> 循环演示</label>
+      </div>
+      <p class="hint" style="margin-top:8px;">自动播放会把 △A′B′C′ 沿最优路径叠合到 △ABC；拖动滑块则随时切换为手动模式。</p>
+    </div>
+
+    <div class="card">
+      <h3>对应关系与性质</h3>
+      <div>
+        <span class="chip" style="background:var(--red)">A ↔ A′</span>
+        <span class="chip" style="background:var(--blue)">B ↔ B′</span>
+        <span class="chip" style="background:var(--green)">C ↔ C′</span>
+      </div>
+      <table style="margin-top:8px;">
+        <tr><td>对应边 AB = A′B′</td><td id="len-ab"></td></tr>
+        <tr><td>对应边 BC = B′C′</td><td id="len-bc"></td></tr>
+        <tr><td>对应边 CA = C′A′</td><td id="len-ca"></td></tr>
+        <tr><td>对应角 ∠A = ∠A′</td><td id="ang-a"></td></tr>
+        <tr><td>对应角 ∠B = ∠B′</td><td id="ang-b"></td></tr>
+        <tr><td>对应角 ∠C = ∠C′</td><td id="ang-c"></td></tr>
+      </table>
+      <p class="hint" style="margin-top:6px;">结论：全等三角形的<b>对应边相等</b>、<b>对应角相等</b>（记作 △ABC ≌ △A′B′C′）。</p>
+    </div>
+  </div>
+</div>
+
+<script>
+// ---------- 基本几何 ----------
+const A=[180,380], B=[420,380], C=[260,180];           // 原三角形顶点
+const CX=(A[0]+B[0]+C[0])/3, CY=(A[1]+B[1]+C[1])/3;    // 形心
+const rel=[A,B,C].map(p=>[p[0]-CX, p[1]-CY]);          // 相对形心坐标
+
+// 当前位姿：tx,ty 平移；rot 旋转角；sx 翻折系数（1 正常，-1 镜像）
+let pose={tx:240, ty:-120, rot:0, sx:1};
+const SCENES={
+  tr:{tx:240, ty:-120, rot:0,   sx:1 },
+  ro:{tx:170, ty:-130, rot:135, sx:1 },
+  fl:{tx:340, ty:0,    rot:0,   sx:-1}
+};
+let anim=null;   // 动画状态
+let loop=false;
+
+// ---------- 工具 ----------
+const $=id=>document.getElementById(id);
+const dist=(p,q)=>Math.hypot(p[0]-q[0],p[1]-q[1]);
+function transform(p){
+  let x=p[0]*pose.sx, y=p[1];
+  const r=pose.rot*Math.PI/180, c=Math.cos(r), s=Math.sin(r);
+  return [CX+pose.tx + x*c - y*s,  CY+pose.ty + x*s + y*c];
+}
+function verts(){ return rel.map(transform); }
+function easeInOut(t){ return t<.5 ? 4*t*t*t : 1-Math.pow(-2*t+2,3)/2; }
+
+// ---------- 渲染 ----------
+const svg=$('svg'); const NS='http://www.w3.org/2000/svg';
+function el(name,attrs,parent){
+  const e=document.createElementNS(NS,name);
+  for(const k in attrs) e.setAttribute(k,attrs[k]);
+  (parent||svg).appendChild(e); return e;
+}
+// 网格
+const defs=el('defs',{});
+const pat=el('pattern',{id:'grid',width:30,height:30,patternUnits:'userSpaceOnUse'},defs);
+el('path',{d:'M30 0H0V30','fill':'none',stroke:'#e8eef4','stroke-width':1},pat);
+
+const gGrid=el('g',{}), gOrig=el('g',{}), gMov=el('g',{}), gTop=el('g',{});
+
+function angleArc(v,p,q,color,parent){
+  const r=26, a1=Math.atan2(p[1]-v[1],p[0]-v[0]), a2=Math.atan2(q[1]-v[1],q[0]-v[0]);
+  let d=a2-a1; while(d>Math.PI)d-=2*Math.PI; while(d<-Math.PI)d+=2*Math.PI;
+  const s=[v[0]+r*Math.cos(a1), v[1]+r*Math.sin(a1)];
+  const e=[v[0]+r*Math.cos(a2), v[1]+r*Math.sin(a2)];
+  el('path',{d:`M${s[0]} ${s[1]} A${r} ${r} 0 0 ${d>0?1:0} ${e[0]} ${e[1]}`,
+     fill:'none',stroke:color,'stroke-width':2},parent);
+}
+function label(v,txt,color,parent,dy=-14){
+  const t=el('text',{x:v[0],y:v[1]+dy,'text-anchor':'middle','font-size':17,
+    'font-weight':'bold',fill:color},parent); t.textContent=txt;
+}
+function drawTri(parent,pts,fill,stroke,dash,labels){
+  el('polygon',{points:pts.map(p=>p.join(',')).join(' '),fill:fill,stroke:stroke,
+     'stroke-width':2.5,'stroke-dasharray':dash||'none'},parent);
+  const names=['A','B','C'], colors=['var(--red)','var(--blue)','var(--green)'];
+  pts.forEach((p,i)=>{
+    angleArc(p, pts[(i+2)%3], pts[(i+1)%3], colors[i], parent);
+    el('circle',{cx:p[0],cy:p[1],r:4.5,fill:colors[i],stroke:'#fff','stroke-width':1.5},parent);
+    if(labels){
+      const out=[(p[0]-CX)*0.16,(p[1]-CY)*0.16];
+      const t=el('text',{x:p[0]+out[0],y:p[1]+out[1],'text-anchor':'middle','font-size':17,
+        'font-weight':'bold',fill:colors[i]},parent);
+      t.textContent = labels===1?names[i]:names[i]+'′';
+    }
+  });
+}
+
+function render(){
+  gGrid.innerHTML=''; el('rect',{x:0,y:0,width:900,height:540,fill:'url(#grid)'},gGrid);
+  gOrig.innerHTML=''; gMov.innerHTML=''; gTop.innerHTML='';
+  const P=verts();
+  drawTri(gOrig,[A,B,C],'#eef2f6','#95a5a6',null,1);
+  const ok=checkOK();
+  drawTri(gMov,P, ok?'rgba(39,174,96,.28)':'rgba(142,68,173,.28)', ok?'#27ae60':'#8e44ad', '6 4', 2);
+  // 重合提示
+  if(ok){
+    const t=el('text',{x:450,y:60,'text-anchor':'middle','font-size':20,'font-weight':'bold',
+      fill:'#27ae60',class:'flash'},gTop);
+    t.textContent='✓ 完全重合 —— △ABC ≌ △A′B′C′';
+  }
+  syncUI();
+}
+
+// ---------- 状态 ----------
+function checkOK(){
+  return Math.abs(pose.tx)<2 && Math.abs(pose.ty)<2 &&
+         Math.abs(pose.rot)<1.5 && Math.abs(pose.sx-1)<0.03;
+}
+function updateBadge(){
+  const b=$('badge');
+  if(checkOK()){ b.textContent='✓ 已完全重合：对应边相等、对应角相等'; b.classList.add('ok'); }
+  else{ b.textContent='尚未重合 —— 继续操作或点击自动播放'; b.classList.remove('ok'); }
+}
+function syncUI(){
+  $('v-tx').textContent=Math.round(pose.tx);
+  $('v-ty').textContent=Math.round(pose.ty);
+  $('v-rot').textContent=Math.round(pose.rot);
+  $('v-sx').textContent=pose.sx.toFixed(2);
+  $('s-tx').value=pose.tx; $('s-ty').value=pose.ty; $('s-rot').value=pose.rot; $('s-sx').value=pose.sx;
+  updateBadge();
+}
+// 性质面板
+const ab=dist(A,B), bc=dist(B,C), ca=dist(C,A);
+function angleAt(p,q,r){ // 顶点 p
+  const v1=[q[0]-p[0],q[1]-p[1]], v2=[r[0]-p[0],r[1]-p[1]];
+  const d=(v1[0]*v2[0]+v1[1]*v2[1])/(Math.hypot(...v1)*Math.hypot(...v2));
+  return Math.acos(Math.min(1,Math.max(-1,d)))*180/Math.PI;
+}
+$('len-ab').textContent=ab.toFixed(1)+' px';
+$('len-bc').textContent=bc.toFixed(1)+' px';
+$('len-ca').textContent=ca.toFixed(1)+' px';
+$('ang-a').textContent=angleAt(A,B,C).toFixed(1)+'°';
+$('ang-b').textContent=angleAt(B,A,C).toFixed(1)+'°';
+$('ang-c').textContent=angleAt(C,A,B).toFixed(1)+'°';
+
+// ---------- 手动操作 ----------
+['tx','ty','rot','sx'].forEach(k=>{
+  $('s-'+k).addEventListener('input',e=>{
+    stopAnim();
+    pose[k]= k==='sx'? parseFloat(e.target.value) : parseFloat(e.target.value);
+    render();
+  });
+});
+
+// ---------- 场景 ----------
+function loadScene(key){
+  stopAnim();
+  pose={...SCENES[key]};
+  ['tr','ro','fl'].forEach(k=>$('sc-'+k).classList.toggle('active',k===key));
+  render();
+}
+$('sc-tr').onclick=()=>loadScene('tr');
+$('sc-ro').onclick=()=>loadScene('ro');
+$('sc-fl').onclick=()=>loadScene('fl');
+
+// ---------- 自动播放 ----------
+function stopAnim(){ anim=null; $('btn-play').textContent='▶ 自动播放叠合'; }
+function startAnim(){
+  const from={...pose};
+  if(checkOK()) return;              // 已重合则不播
+  anim={from, t0:performance.now(),
+        dur: 3000*parseFloat($('speed').value)};
+  $('btn-play').textContent='⏸ 播放中…';
+}
+$('btn-play').onclick=()=>{ anim ? stopAnim() : startAnim(); render(); };
+$('btn-reset').onclick=()=>{
+  stopAnim();
+  const cur=$('sc-tr').classList.contains('active')?'tr':
+            $('sc-ro').classList.contains('active')?'ro':'fl';
+  pose={...SCENES[cur]}; render();
+};
+$('loop').onchange=e=>{ loop=e.target.checked; if(loop&&!anim) startAnim(); };
+
+function tick(now){
+  if(anim){
+    let t=(now-anim.t0)/anim.dur;
+    if(t>=1){
+      pose={tx:0,ty:0,rot:0,sx:1};
+      anim=null;
+      $('btn-play').textContent='▶ 自动播放叠合';
+      if(loop) setTimeout(()=>{ if(loop){ pose={...SCENES[curScene()]}; startAnim(); render(); } },900);
+    }else{
+      const k=easeInOut(t);
+      pose.tx = anim.from.tx*(1-k);
+      pose.ty = anim.from.ty*(1-k);
+      pose.rot= anim.from.rot*(1-k);
+      pose.sx = anim.from.sx + (1-anim.from.sx)*k;   // -1 → 1，呈现“翻折”过程
+    }
+    render();
+  }
+  requestAnimationFrame(tick);
+}
+function curScene(){
+  return $('sc-tr').classList.contains('active')?'tr':
+         $('sc-ro').classList.contains('active')?'ro':'fl';
+}
+loadScene('tr');
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>

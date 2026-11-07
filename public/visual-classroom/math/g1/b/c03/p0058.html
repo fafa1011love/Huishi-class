@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>斜二测画法 · 直观图生成模型</title>
+<style>
+  :root{
+    --teal:#2aa198; --teal-light:#8fe0d6; --pink:#f06292; --amber:#e59a1a;
+    --violet:#6f68c8; --ink:#2c3e50; --muted:#7a8a99; --card:#ffffff;
+    --bg:#f2f6f8; --line:#dde6ec;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:"Microsoft YaHei","PingFang SC",sans-serif; background:var(--bg); color:var(--ink); padding-bottom:60px;}
+  header{background:linear-gradient(120deg,#1f8a80,#2aa198 55%,#3cb8ae); color:#fff; padding:26px 20px 20px; text-align:center;}
+  header h1{font-size:26px; letter-spacing:2px;}
+  header p{opacity:.94; margin-top:9px; font-size:14px; line-height:1.8;}
+  main{max-width:1080px; margin:24px auto 0; padding:0 16px;}
+  .zone{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:20px 22px; margin-bottom:20px; box-shadow:0 4px 16px rgba(30,60,80,.06);}
+  .zone-head{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:8px;}
+  .badge{background:var(--teal); color:#fff; border-radius:8px; padding:4px 12px; font-size:14px; font-weight:bold;}
+  .badge.pink{background:var(--pink);}
+  .badge.violet{background:var(--violet);}
+  .zone-head h2{font-size:20px;}
+  .status{font-size:14px; color:var(--teal); font-weight:bold; min-height:20px; margin:8px 0 10px; line-height:1.8;}
+  .status b{color:#e91e63;}
+  .tabs{display:flex; gap:6px; margin:2px 0 16px; border-bottom:1px solid var(--line);}
+  .tabbtn{padding:10px 18px; border:none; background:none; font-family:inherit; font-size:14.5px; color:#78909c;
+    cursor:pointer; border-bottom:3px solid transparent; margin-bottom:-1px; transition:.15s;}
+  .tabbtn:hover{color:var(--teal);}
+  .tabbtn.on{color:var(--teal); border-bottom-color:var(--teal); font-weight:bold;}
+  .pane[hidden]{display:none;}
+  svg.stage{width:100%; height:auto; display:block; user-select:none; margin-top:6px;}
+  .stepbar{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:14px;}
+  button.act{padding:8px 18px; border:none; border-radius:8px; background:var(--teal); color:#fff; font-size:14px; cursor:pointer; transition:.15s;}
+  button.act:hover{filter:brightness(1.08);}
+  button.act.pink{background:var(--pink);}
+  button.act.violet{background:var(--violet);}
+  button.act.sm{padding:7px 14px; font-size:13px; border-radius:7px;}
+  button.act.ghost{background:#eef2f5; color:#4c6472; border:1px solid #d5dee4;}
+  button.act.ghost:hover{background:#e3eaef;}
+  button.act:disabled{background:#c7d3db; color:#fff; cursor:not-allowed; filter:none;}
+  button.act.ghost:disabled{background:#f1f4f6; color:#a9b6bf; border-color:#e3e9ed;}
+  .stepnum{font-size:13px; color:var(--muted); margin-left:4px;}
+  .draghint{margin-left:auto; font-size:12.5px; color:#8a84d4; background:#f2f1fc;
+    border:1px solid #dcd9f5; border-radius:20px; padding:5px 12px;}
+  .draghint::before{content:"☝ ";}
+  #svg1{draggable:false;}
+  .expl{font-size:14.5px; line-height:2; color:#3d5262; margin-top:14px;}
+  .expl b{color:#e91e63;}
+  .expl .hl{color:var(--violet); font-weight:bold;}
+  .expl .hl2{color:var(--teal); font-weight:bold;}
+  .ctrl{display:flex; gap:26px; flex-wrap:wrap; margin:14px 0 2px;}
+  .ctrl label{flex:1 1 240px; font-size:14px; color:#3d5262;}
+  .ctrl input[type=range]{-webkit-appearance:none; appearance:none; width:100%; height:6px; margin-top:12px;
+    border-radius:4px; background:#dbe6eb; outline:none; cursor:pointer;}
+  .ctrl input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:18px; height:18px; border-radius:50%;
+    background:#2aa198; border:2.5px solid #fff; box-shadow:0 1px 5px rgba(20,60,70,.35); cursor:pointer;}
+  .ctrl input[type=range]::-moz-range-track{height:6px; border-radius:4px; background:#dbe6eb;}
+  .ctrl input[type=range]::-moz-range-thumb{width:15px; height:15px; border-radius:50%; background:#2aa198;
+    border:2.5px solid #fff; box-shadow:0 1px 5px rgba(20,60,70,.35); cursor:pointer;}
+  .mi{font-family:"Times New Roman",serif; font-style:italic; font-size:16.5px;}
+  .ctrl b{color:#e91e63; font-family:"Times New Roman",serif; font-size:17px;}
+  .chips{display:flex; gap:9px; flex-wrap:wrap; margin:14px 0 2px; align-items:center;}
+  .chips .lab{font-size:13.5px; color:var(--muted); margin-right:2px;}
+  .chip{padding:7px 17px; border-radius:999px; border:1.5px solid #d7e2e8; background:#f8fbfc;
+    color:#4c6472; font-size:13.5px; cursor:pointer; transition:.15s; font-family:inherit;}
+  .chip:hover{border-color:#9fd8d2; background:#f0fbf9;}
+  .chip.on{background:var(--violet); border-color:var(--violet); color:#fff; font-weight:bold; box-shadow:0 2px 8px rgba(111,104,200,.3);}
+  .tblwrap{overflow-x:auto; margin-top:16px;}
+  table.tbl{width:100%; border-collapse:collapse; font-size:13.5px; min-width:620px;}
+  table.tbl th{background:#eef4f7; color:#3d5262; font-weight:600; padding:8px 6px; border:1px solid var(--line);}
+  table.tbl td{padding:7px 6px; border:1px solid var(--line); text-align:center; transition:.35s; font-family:"Times New Roman","Microsoft YaHei",serif;}
+  table.tbl td.vx{font-family:"Microsoft YaHei",sans-serif;}
+  table.tbl tr.off td{color:#c3ced6; background:#fcfdfe;}
+  table.tbl tr.on td{color:#33475a; background:#fff;}
+  table.tbl tr.on td.res{color:var(--violet); font-weight:bold; background:#f6f5fe;}
+  .bar{border-radius:12px; padding:12px 16px; background:#f8fbfc; border:1px solid #e2ecf0; margin-top:14px; font-size:14px; line-height:1.9; color:#3d5262;}
+  .bar b{color:#e91e63;}
+  ul.tips{margin:12px 0 0 4px; list-style:none; font-size:14px; line-height:2.05; color:#3d5262;}
+  ul.tips li{padding-left:24px; position:relative;}
+  ul.tips li::before{content:"✕"; position:absolute; left:2px; top:0; color:var(--pink); font-weight:bold;}
+  ul.tips li.ok::before{content:"✓"; color:var(--teal);}
+  ul.tips li span.w{color:#8d99aa;}
+  /* ---- ③ 复原（反向还原） ---- */
+  .restore{margin-top:24px; padding-top:18px; border-top:1px dashed #d5e0e6;}
+  .restore .zone-head{margin-bottom:8px;}
+  .restore .zone-head h2{font-size:17px; font-weight:normal; color:#456173;}
+  .rread{display:flex; gap:12px; flex-wrap:wrap; margin-top:12px;}
+  .rread span{font-size:14px; color:#3d5262; background:#f8fbfc; border:1px solid #e2ecf0;
+    border-radius:10px; padding:7px 14px; line-height:1.6;}
+  .rread b{color:#e91e63; font-family:"Times New Roman",serif; font-size:16px;}
+  .rread span.hit{background:#f2faf8; border-color:#bfe6e0;}
+  footer{max-width:1080px; margin:0 auto; padding:0 16px; color:#5b6b78; font-size:13.5px; line-height:2.05;}
+  footer b{color:var(--ink);}
+  footer .t{color:var(--teal); font-weight:bold;}
+</style>
+</head>
+<body>
+
+<!-- 箭头标记统一在这里定义一次：页签切换时被隐藏的 svg 里的 marker 会失效，所以不能放在各自 svg 内部 -->
+<svg id="gdefs" width="0" height="0" aria-hidden="true" style="position:absolute;width:0;height:0;overflow:hidden">
+  <defs>
+    <marker id="arT" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#2aa198"></path>
+    </marker>
+    <marker id="arP" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#f06292"></path>
+    </marker>
+    <marker id="arV" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#6f68c8"></path>
+    </marker>
+    <marker id="arO" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+      <path d="M0,0 L10,5 L0,10 z" fill="#e59a1a"></path>
+    </marker>
+  </defs>
+</svg>
+
+<header>
+  <h1>斜二测画法 · 直观图生成模型</h1>
+  <p>∠x′O′y′ = 45°　·　平行 <i>x</i> 轴的线段长度不变　·　平行 <i>y</i> 轴的线段长度减半</p>
+</header>
+
+<main>
+
+  <!-- ================= ①② 分步作图（两个页签） ================= -->
+  <section class="zone">
+    <div class="tabs">
+      <button class="tabbtn on" data-p="pane1">① 一个点：横不变、纵减半</button>
+      <button class="tabbtn" data-p="pane2">② 一个图形：完整作图</button>
+    </div>
+
+    <div class="pane" id="pane1">
+      <div class="zone-head">
+        <span class="badge">① 分步作图 · 一个点</span>
+        <h2>先把规则落到一个点上：横坐标不动，纵坐标减半</h2>
+      </div>
+      <div class="status" id="status1"></div>
+      <svg class="stage" id="svg1" viewBox="0 0 880 400"></svg>
+      <div class="stepbar">
+        <button class="act sm" id="bNext1">下一步 →</button>
+        <button class="act sm ghost" id="bBack1">← 上一步</button>
+        <button class="act sm pink" id="bAuto1">自动演示</button>
+        <span class="stepnum" id="stepNum1">第 0 / 4 步</span>
+        <span class="draghint">左图里直接点一下 / 拖一下，就能换点</span>
+      </div>
+      <div class="ctrl">
+        <label>也可以拖滑块：横坐标 <span class="mi">x</span> = <b id="vx">2</b>
+          <input type="range" id="rx" min="-4" max="4" step="0.5" value="2"></label>
+        <label>纵坐标 <span class="mi">y</span> = <b id="vy">3</b>
+          <input type="range" id="ry" min="-4" max="4" step="0.5" value="3"></label>
+      </div>
+      <div class="expl">
+        <p>四步走完，点 <span class="mi">P</span>′ 就位。这时<b>直接拖动左图里的 P</b>（或拖下面的滑块），右图的 M、P′ 会同步跟着走 —— <span class="hl2">换任何一个点，规则都一模一样</span>：先沿 <span class="mi">x</span>′ 轴量横坐标（原长），再沿 45° 的 <span class="mi">y</span>′ 轴量纵坐标的<b>一半</b>。</p>
+      </div>
+    </div>
+
+    <div class="pane" id="pane2" hidden>
+      <div class="zone-head">
+        <span class="badge violet">② 分步作图 · 整个图形</span>
+        <h2>选一个图形，点一步、长一笔</h2>
+      </div>
+      <div class="chips" id="shapeChips"><span class="lab">画哪个图形：</span></div>
+    <div class="status" id="status2"></div>
+    <svg class="stage" id="svg2" viewBox="0 0 880 400"></svg>
+    <div class="stepbar">
+      <button class="act sm" id="bNext2">下一步 →</button>
+      <button class="act sm ghost" id="bBack2">← 上一步</button>
+      <button class="act sm pink" id="bAuto2">自动演示</button>
+      <button class="act sm ghost" id="bReset2">重置</button>
+      <span class="stepnum" id="stepNum2">第 0 / 5 步</span>
+    </div>
+    <div class="tblwrap">
+      <table class="tbl" id="tbl2">
+        <thead>
+          <tr>
+            <th>顶点</th>
+            <th>原图坐标 (<i>x</i>, <i>y</i>)</th>
+            <th><i>x</i>′（保持不变）</th>
+            <th><i>y</i>′ = <i>y</i> ÷ 2</th>
+            <th>直观图中的顶点</th>
+          </tr>
+        </thead>
+        <tbody></tbody>
+      </table>
+    </div>
+      <div class="bar" id="res2" style="display:none"></div>
+
+      <!-- ---- ③ 复原：把直观图还原回原图（只针对图形） ---- -->
+      <div class="restore">
+        <div class="zone-head">
+          <span class="badge">③ 复原 · 从直观图回到原图</span>
+          <h2>把变形倒过来做一遍：先把 45° 掰正成 90°，再把减半的长度补回来</h2>
+        </div>
+        <div class="status" id="status3"></div>
+        <svg class="stage" id="svg3" viewBox="0 0 880 400"></svg>
+        <div class="stepbar">
+          <button class="act sm" id="bPlay3">自动还原 ▶</button>
+          <button class="act sm ghost" id="bReset3">回到起点</button>
+          <span class="stepnum" id="phase3">还没开始：拖滑块或点「自动还原」</span>
+        </div>
+        <div class="ctrl">
+          <label>复原进度 = <b id="rt3">0</b>%
+            <input type="range" id="rt" min="0" max="100" step="1" value="0"></label>
+        </div>
+        <div class="rread">
+          <span id="wTheta">两轴夹角 θ = <b id="rTheta">45°</b></span>
+          <span id="wK">纵向系数 k = <b id="rK">0.5</b></span>
+          <span>当前面积 = <b id="rArea">0.35 S</b></span>
+        </div>
+        <div class="expl">
+          <p>右边这张图会跟着滑杆<b>变形回去</b>：前一半行程只动角度（<span class="hl">45° → 90°</span>），后一半行程只动长度（<span class="hl">k：1/2 → 1</span>）。走到头时它与左边虚线画的原图<b>完全重合</b> —— 反过来印证了斜二测画法改掉的只是长度和角度，<span class="hl2">平行性一点没变</span>（面积按 <i>k</i>·sin θ 变化，从 (√2/4)<i>S</i> 回到 <i>S</i>）。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>
+    <b>小结（教材 8.2 原文）：</b><br>
+    ① 取互相垂直的 <i>x</i>、<i>y</i> 轴，画直观图时画成对应的 <i>x</i>′、<i>y</i>′ 轴，交角为 <span class="t">45°</span>（也可取 135°），它们确定的平面表示水平平面。<br>
+    ② 原图中<b>平行于 <i>x</i> 轴或 <i>y</i> 轴</b>的线段，在直观图中分别画成<b>平行于 <i>x</i>′ 轴或 <i>y</i>′ 轴</b>的线段（平行性不变）。<br>
+    ③ 平行于 <i>x</i> 轴的线段<b>长度不变</b>；平行于 <i>y</i> 轴的线段<b>长度减半</b>。<br>
+    ④ 由此得到：直观图面积 = (√2/4) × 原图面积；反过来，原图面积 = 2√2 × 直观图面积。
+    <ul class="tips">
+      <li><span class="w">把 <i>y</i>′ 轴画成竖直的（忘了 45°）</span></li>
+      <li><span class="w">只减半了长度，却把线仍画成竖直方向（少了 45° 的斜）</span></li>
+      <li><span class="w">把"平行于 <i>x</i> 轴的线段不变、平行于 <i>y</i> 轴的减半"记反，做成了"全都减半"</span></li>
+      <li class="ok">正确顺序：先定 45° 的轴 → 平行 <i>x</i> 的照抄长度 → 平行 <i>y</i> 的长度减半 → 最后连线</li>
+    </ul>
+  </footer>
+
+</main>
+
+<script>
+(function(){
+"use strict";
+var NS = "http://www.w3.org/2000/svg";
+var D2R = Math.PI / 180, C45 = Math.SQRT1_2, SQ3 = Math.sqrt(3), TH45 = 45*D2R;
+var i;   // 各 build 函数里的循环变量
+
+function el(tag, attrs, parent){
+  var n = document.createElementNS(NS, tag);
+  if(attrs) for(var k in attrs) n.setAttribute(k, attrs[k]);
+  if(parent) parent.appendChild(n);
+  return n;
+}
+function $(id){ return document.getElementById(id); }
+function T(id, s){ $(id).innerHTML = s; }
+function n2(v){ return Math.round(v*100)/100; }
+function n1(v){ return Math.round(v*10)/10; }
+function n0(v){ return Math.round(v); }
+function P(a){ return n2(a[0]) + "," + n2(a[1]); }
+function clearSvg(s){ while(s.firstChild) s.removeChild(s.firstChild); }
+
+/* 数字排版：√3、√3/2、−1.5 */
+function fmt(v){
+  var a = Math.abs(v);
+  if(a < 1e-9) return "0";
+  if(Math.abs(a - SQ3) < 1e-6) return "√3";
+  if(Math.abs(a - SQ3/2) < 1e-6) return "√3/2";
+  var s = (Math.round(a*100)/100).toString();
+  return (v < 0 ? "−" : "") + s;
+}
+function txt(parent, x, y, s, o){
+  o = o || {};
+  var t = el("text", {
+    x:x, y:y,
+    "font-size": o.size || 13,
+    "font-family": o.math === false ? "Microsoft YaHei,sans-serif" : '"Times New Roman",serif',
+    "font-style": o.math === false ? "normal" : "italic",
+    "font-weight": o.bold ? "bold" : "normal",
+    fill: o.fill || "#33475a",
+    "text-anchor": o.anchor || "middle"
+  }, parent);
+  if(o.halo){
+    t.setAttribute("stroke", "#fff");
+    t.setAttribute("stroke-width", o.halo);
+    t.setAttribute("stroke-linejoin", "round");
+    t.setAttribute("paint-order", "stroke");
+  }
+  t.textContent = s;
+  return t;
+}
+/* 箭头 marker 定义在页面顶部的 #gdefs 里（全局唯一），
+   这样页签隐藏某个 svg 时，其余图里的箭头也不会丢 */
+function makeDefs(){ /* no-op，保留调用以免大改结构 */ }
+function panel(g, x, y, w, h){
+  return el("rect", {x:x, y:y, width:w, height:h, rx:14, fill:"#fbfdfe",
+    stroke:"#dde6ec", "stroke-width":1}, g);
+}
+/* 斜二测映射：k = 纵向系数，th = 两轴夹角 */
+function tp(p, x, y, k, th){
+  return [p.cx + p.s*(x + k*y*Math.cos(th)), p.cy - p.s*(k*y*Math.sin(th))];
+}
+
+/* ============================================================
+   形状库（顶点按多边形顺序排列：[名字, x, y]）
+   ============================================================ */
+var SHAPES = [
+  {k:"tri",   n:"正三角形",   v:[["A", 2, 0], ["B", -1, SQ3], ["C", -1, -SQ3]]},
+  {k:"rtri",  n:"直角三角形", v:[["A", -1.5, 0], ["B", 1, 0], ["C", -1.5, 1.5]]},
+  {k:"sq",    n:"正方形",     v:[["A", 2, 0], ["B", 0, 2],   ["C", -2, 0], ["D", 0, -2]]},
+  {k:"rect",  n:"长方形",     v:[["A", -1.5, 0], ["B", 1.5, 0], ["C", 1.5, 2], ["D", -1.5, 2]]},
+  {k:"para",  n:"平行四边形", v:[["A", -1.5, 0], ["B", 1.5, 0], ["C", 2.5, 1.5], ["D", -0.5, 1.5]]},
+  {k:"trap",  n:"等腰梯形",   v:[["A", -2, 0], ["B", 2, 0], ["C", 1, 1.5], ["D", -1, 1.5]]},
+  {k:"rho",   n:"菱形",       v:[["A", 0, 2], ["B", 1.6, 0], ["C", 0, -2], ["D", -1.6, 0]]},
+  {k:"hex",   n:"正六边形",   v:[["A", -2, 0], ["B", -1, SQ3], ["C", 1, SQ3], ["D", 2, 0], ["E", 1, -SQ3], ["F", -1, -SQ3]]},
+  {k:"pent",  n:"正五边形",   v:(function(){
+      var out = [];
+      for(var k = 0; k < 5; k++){
+        var a = Math.PI/2 + k*2*Math.PI/5;
+        out.push([String.fromCharCode(65 + k), n2(2*Math.cos(a)), n2(2*Math.sin(a))]);
+      }
+      return out;
+    })()}
+];
+function shapeByKey(k){
+  for(var i = 0; i < SHAPES.length; i++) if(SHAPES[i].k === k) return SHAPES[i];
+  return SHAPES[3];
+}
+var curShape = shapeByKey("hex");
+
+function centroid(vs){
+  var x = 0, y = 0;
+  vs.forEach(function(p){ x += p[1]; y += p[2]; });
+  return [x/vs.length, y/vs.length];
+}
+/* 顶点标签向外偏移（按原图方向算，两个面板共用，保证观感一致） */
+function labelPlan(vs, r){
+  var c = centroid(vs), out = [];
+  vs.forEach(function(p){
+    var dx = p[1] - c[0], dy = p[2] - c[1], L = Math.sqrt(dx*dx + dy*dy) || 1;
+    var ox = dx/L*r, oy = -dy/L*r;
+    var anch = ox > 4 ? "start" : (ox < -4 ? "end" : "middle");
+    if(Math.abs(oy) <= 5){ oy = -11; }                            // 水平方向：抬到轴线上方，避让坐标轴
+    if(Math.abs(ox) <= 4 && oy < 0){ ox = 13; anch = "start"; }   // 正上方：让开 y 轴
+    if(Math.abs(ox) <= 4 && oy > 0){ oy = 16; }
+    if(Math.abs(p[2]) < 1e-9){ oy = 30; }                         // 落在 x 轴上的顶点：标签压到刻度数字下面一行
+    out.push({ox:ox, oy:oy, anch:anch});
+  });
+  return out;
+}
+function polyArea(vs){
+  var s = 0;
+  for(var i = 0; i < vs.length; i++){
+    var a = vs[i], b = vs[(i+1) % vs.length];
+    s += a[1]*b[2] - b[1]*a[2];
+  }
+  return Math.abs(s) / 2;
+}
+
+
+/* ============================================================
+   ① 分步作图：一个点
+   ============================================================ */
+var S1 = $("svg1");
+var Z1 = {L:{cx:216, cy:210, s:32}, R:{cx:660, cy:210, s:32}};
+var L1 = Z1.L, R1 = Z1.R;
+
+panel(S1, 16, 16, 410, 368);
+panel(S1, 454, 16, 410, 368);
+txt(S1, 36, 46, "原图：xOy 直角坐标系", {math:false, size:14, bold:true, fill:"#2aa198", anchor:"start"});
+txt(S1, 474, 46, "直观图：∠x′O′y′ = 45°", {math:false, size:14, bold:true, fill:"#6f68c8", anchor:"start"});
+
+for(i = -4; i <= 4; i++){
+  el("line", {x1:L1.cx + i*L1.s, y1:L1.cy - 132, x2:L1.cx + i*L1.s, y2:L1.cy + 132, stroke:"#f0f6f9"}, S1);
+  el("line", {x1:L1.cx - 132, y1:L1.cy - i*L1.s, x2:L1.cx + 132, y2:L1.cy - i*L1.s, stroke:"#f0f6f9"}, S1);
+}
+el("line", {x1:L1.cx - 142, y1:L1.cy, x2:L1.cx + 140, y2:L1.cy, stroke:"#2aa198", "stroke-width":1.5, "marker-end":"url(#arT)"}, S1);
+el("line", {x1:L1.cx, y1:L1.cy + 142, x2:L1.cx, y2:L1.cy - 140, stroke:"#f06292", "stroke-width":1.5, "marker-end":"url(#arP)"}, S1);
+txt(S1, L1.cx + 152, L1.cy + 20, "x", {size:17, fill:"#2aa198"});
+txt(S1, L1.cx - 16, L1.cy - 148, "y", {size:17, fill:"#f06292"});
+txt(S1, L1.cx - 15, L1.cy + 19, "O", {size:16, fill:"#7a8a99"});
+for(i = -4; i <= 4; i++){ if(i === 0) continue;
+  txt(S1, L1.cx + i*L1.s, L1.cy + 17, String(i), {size:11, math:false, fill:"#a9b6bf"});
+  txt(S1, L1.cx - 9, L1.cy - i*L1.s + 4, String(i), {size:11, math:false, fill:"#a9b6bf", anchor:"end"});
+}
+
+/* 右：被"压斜"的格网 */
+for(i = -4; i <= 4; i++){
+  var qa = tp(R1, i, -4, 0.5, TH45), qb = tp(R1, i, 4, 0.5, TH45);
+  el("line", {x1:qa[0], y1:qa[1], x2:qb[0], y2:qb[1], stroke:"#f0f6f9"}, S1);
+  var qc = tp(R1, -4, i, 0.5, TH45), qd = tp(R1, 4, i, 0.5, TH45);
+  el("line", {x1:qc[0], y1:qc[1], x2:qd[0], y2:qd[1], stroke:"#f0f6f9"}, S1);
+}
+
+/* 右侧坐标系整体（第 2 步出现） */
+var gAx1 = el("g", {opacity:0}, S1);
+gAx1.style.transition = "opacity .4s ease";
+el("line", {x1:R1.cx - 150, y1:R1.cy, x2:R1.cx + 162, y2:R1.cy, stroke:"#2aa198", "stroke-width":1.5, "marker-end":"url(#arT)"}, gAx1);
+var yE1 = tp(R1, 0, 4.2, 1, TH45);
+el("line", {x1:R1.cx, y1:R1.cy, x2:yE1[0], y2:yE1[1], stroke:"#f06292", "stroke-width":1.5, "marker-end":"url(#arP)"}, gAx1);
+txt(gAx1, R1.cx + 172, R1.cy + 20, "x′", {size:17, fill:"#2aa198"});
+txt(gAx1, yE1[0] + 12, yE1[1] - 4, "y′", {size:17, fill:"#f06292"});
+txt(gAx1, R1.cx - 16, R1.cy + 19, "O′", {size:16, fill:"#7a8a99"});
+el("path", {d:"M" + (R1.cx + 34) + "," + R1.cy + " A34,34 0 0 0 " +
+  (R1.cx + 34*C45) + "," + (R1.cy - 34*C45), fill:"none", stroke:"#e59a1a", "stroke-width":1.4}, gAx1);
+txt(gAx1, R1.cx + 48, R1.cy - 10, "45°", {size:12.5, math:false, fill:"#e59a1a", halo:3});
+[1, 2].forEach(function(n){
+  var p = [R1.cx + n*R1.s*C45, R1.cy - n*R1.s*C45];
+  el("line", {x1:p[0] - 4, y1:p[1] + 4, x2:p[0] + 4, y2:p[1] - 4, stroke:"#f06292", "stroke-width":1.3}, gAx1);
+});
+
+/* 动态元素 */
+var gP1 = el("g", {opacity:0}, S1);      // 第 1 步：原图中的点
+var gM1 = el("g", {opacity:0}, S1);      // 第 3 步：x′ 轴上的落点 M
+var gQ1 = el("g", {opacity:0}, S1);      // 第 4 步：P′
+[gP1, gM1, gQ1, gAx1].forEach(function(g){ g.style.transition = "opacity .4s ease"; });
+
+var dPx = el("line", {stroke:"#2aa198", "stroke-width":1.2, "stroke-dasharray":"4 4", opacity:.8}, gP1);
+var dPy = el("line", {stroke:"#f06292", "stroke-width":1.2, "stroke-dasharray":"4 4", opacity:.8}, gP1);
+var dotP = el("circle", {r:5.5, fill:"#2aa198", stroke:"#fff", "stroke-width":2}, gP1);
+var labP = txt(gP1, 0, 0, "", {size:14, fill:"#2aa198", bold:true, anchor:"start", halo:3});
+var labPx = txt(gP1, 0, 0, "", {size:12.5, fill:"#2aa198", math:false, halo:3});
+var labPy = txt(gP1, 0, 0, "", {size:12.5, fill:"#f06292", math:false, anchor:"start", halo:3});
+
+var barM = el("line", {stroke:"#e59a1a", "stroke-width":4.5, "stroke-linecap":"round", opacity:.9}, gM1);
+var dotM = el("circle", {r:5, fill:"#e59a1a", stroke:"#fff", "stroke-width":2}, gM1);
+var labM = txt(gM1, 0, 0, "", {size:12.5, fill:"#c47a00", math:false, halo:3});
+
+var dMP = el("line", {stroke:"#6f68c8", "stroke-width":1.6, "stroke-dasharray":"5 4"}, gQ1);
+var dotQ = el("circle", {r:5.5, fill:"#6f68c8", stroke:"#fff", "stroke-width":2}, gQ1);
+var labQ = txt(gQ1, 0, 0, "P′", {size:14, fill:"#534ab7", bold:true, anchor:"start", halo:3});
+var read1 = txt(S1, 474, 366, "", {size:13, fill:"#534ab7", math:false, anchor:"start"});
+
+var step1 = 0, timer1 = null;
+var STEPS1 = [
+  "点「下一步」开始：先看原图里这个点的坐标是怎么读出来的。",
+  "第 1 步：在直角坐标系中取一点 P，过 P 作两条坐标轴的垂线，两个垂足就给出横坐标 x 与纵坐标 y。",
+  "第 2 步：画 x′ 轴、y′ 轴，两轴交于 O′，使 <b>∠x′O′y′ = 45°</b> —— 这一步只是把“坐标系”换成斜的。",
+  "第 3 步：<b>平行于 x 轴的线段长度不变</b>，所以在 x′ 轴上从 O′ 直接量出 x 格，得到点 M。",
+  "第 4 步：<b>平行于 y 轴的线段长度减半</b>，过 M 沿 45° 的 y′ 方向量 y/2 格，落点就是 P′。"
+];
+
+function upd1(){
+  var x = parseFloat($("rx").value), y = parseFloat($("ry").value);
+  $("vx").textContent = x; $("vy").textContent = y;
+  var yk = y / 2;
+
+  var pl = [L1.cx + L1.s*x, L1.cy - L1.s*y];
+  dotP.setAttribute("cx", pl[0]); dotP.setAttribute("cy", pl[1]);
+  dPx.setAttribute("x1", pl[0]); dPx.setAttribute("y1", pl[1]);
+  dPx.setAttribute("x2", pl[0]); dPx.setAttribute("y2", L1.cy);
+  dPy.setAttribute("x1", pl[0]); dPy.setAttribute("y1", pl[1]);
+  dPy.setAttribute("x2", L1.cx); dPy.setAttribute("y2", pl[1]);
+  var side = x >= 0 ? 1 : -1;                     // 标签放在 P 的哪一侧，避开 y 轴和刻度数字
+  var onAxisX = Math.abs(y) < 0.01, onAxisY = Math.abs(x) < 0.01;
+  labP.setAttribute("x", pl[0] + side*12);
+  labP.setAttribute("y", pl[1] - (onAxisX ? 15 : 10));
+  labP.setAttribute("text-anchor", side > 0 ? "start" : "end");
+  labP.textContent = "P(" + x + ", " + y + ")";
+  labPx.setAttribute("x", pl[0]); labPx.setAttribute("y", L1.cy + 38);
+  labPx.textContent = onAxisY ? "" : "横 " + x + " 格";
+  labPy.setAttribute("x", pl[0] + side*10);
+  labPy.setAttribute("y", pl[1] + 5);
+  labPy.setAttribute("text-anchor", side > 0 ? "start" : "end");
+  labPy.textContent = onAxisX ? "" : "纵 " + y + " 格";
+
+  var m = [R1.cx + R1.s*x, R1.cy];
+  barM.setAttribute("x1", R1.cx); barM.setAttribute("y1", R1.cy);
+  barM.setAttribute("x2", m[0]); barM.setAttribute("y2", m[1]);
+  dotM.setAttribute("cx", m[0]); dotM.setAttribute("cy", m[1]);
+  labM.setAttribute("x", m[0]);
+  labM.setAttribute("y", R1.cy + 32);
+  labM.textContent = "横 " + x + " 格";
+
+  var q = tp(R1, x, y, 0.5, TH45);
+  dMP.setAttribute("x1", m[0]); dMP.setAttribute("y1", m[1]);
+  dMP.setAttribute("x2", q[0]); dMP.setAttribute("y2", q[1]);
+  dotQ.setAttribute("cx", q[0]); dotQ.setAttribute("cy", q[1]);
+  labQ.setAttribute("x", q[0] + (y >= 0 ? 13 : -12));
+  labQ.setAttribute("y", q[1] + (y >= 0 ? -8 : 18));
+  labQ.setAttribute("text-anchor", y >= 0 ? "start" : "end");
+  read1.textContent = "P′ 的坐标：横 " + x + " 格，沿 y′ 方向 " + fmt(yk) + " 格";
+}
+function setStep1(n){
+  step1 = Math.max(0, Math.min(4, n));
+  gP1.setAttribute("opacity", step1 >= 1 ? 1 : 0);
+  gAx1.setAttribute("opacity", step1 >= 2 ? 1 : 0);
+  gM1.setAttribute("opacity", step1 >= 3 ? 1 : 0);
+  gQ1.setAttribute("opacity", step1 >= 4 ? 1 : 0);
+  read1.setAttribute("opacity", step1 >= 4 ? 1 : 0);
+  T("status1", STEPS1[step1]);
+  $("stepNum1").textContent = "第 " + step1 + " / 4 步";
+  $("bNext1").disabled = (step1 >= 4);
+  $("bBack1").disabled = (step1 <= 0);
+}
+function stopAuto1(){
+  if(timer1){ clearInterval(timer1); timer1 = null; $("bAuto1").textContent = "自动演示"; }
+}
+$("bNext1").addEventListener("click", function(){ stopAuto1(); setStep1(step1 + 1); });
+$("bBack1").addEventListener("click", function(){ stopAuto1(); setStep1(step1 - 1); });
+
+/* ---- 左图里直接用鼠标拖动 P（点哪去哪，吸附到 0.5 格） ---- */
+var dragRect = el("rect", {x:16, y:16, width:410, height:368, fill:"transparent", style:"cursor:crosshair"}, S1);
+var dragging1 = false;
+function svgXY(e){
+  var pt = S1.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+  var q = pt.matrixTransform(S1.getScreenCTM().inverse());
+  return [q.x, q.y];
+}
+function snapP(e){
+  var u = svgXY(e);
+  var x = Math.round((u[0] - L1.cx) / L1.s * 2) / 2;
+  var y = Math.round((L1.cy - u[1]) / L1.s * 2) / 2;
+  x = Math.max(-4, Math.min(4, x));
+  y = Math.max(-4, Math.min(4, y));
+  $("rx").value = x; $("ry").value = y;
+  upd1();
+}
+dragRect.addEventListener("pointerdown", function(e){
+  stopAuto1();
+  if(step1 < 1) setStep1(1);          // 还没开始分步时拖一下，直接进到"取点"这一步
+  dragging1 = true;
+  if(S1.setPointerCapture){ try{ S1.setPointerCapture(e.pointerId); }catch(err){} }
+  dragRect.setAttribute("style", "cursor:grabbing");
+  snapP(e);
+  e.preventDefault();
+});
+S1.addEventListener("pointermove", function(e){ if(dragging1){ snapP(e); e.preventDefault(); } });
+function endDrag1(){ if(!dragging1) return; dragging1 = false; dragRect.setAttribute("style", "cursor:crosshair"); }
+S1.addEventListener("pointerup", endDrag1);
+S1.addEventListener("pointercancel", endDrag1);
+S1.addEventListener("pointerleave", endDrag1);
+$("bAuto1").addEventListener("click", function(){
+  if(timer1){ stopAuto1(); return; }
+  if(step1 >= 4) setStep1(0);
+  $("bAuto1").textContent = "暂停";
+  timer1 = setInterval(function(){
+    if(step1 >= 4){ stopAuto1(); return; }
+    setStep1(step1 + 1);
+  }, 1400);
+});
+$("rx").addEventListener("input", upd1);
+$("ry").addEventListener("input", upd1);
+upd1();
+setStep1(0);
+
+/* ============================================================
+   ② 分步作图：整个图形（可自选）
+   ============================================================ */
+var S2 = $("svg2");
+var Z2 = {L:{cx:216, cy:205, s:58}, R:{cx:660, cy:190, s:58}};
+var step2 = 0, timer2 = null;
+var GS2 = [], builds2 = [], ROWSTEP = {};
+
+function buildShape(key){
+  curShape = shapeByKey(key);
+  step2 = 0; stopAuto2();
+  clearSvg(S2); makeDefs(S2);
+  GS2 = []; builds2 = []; ROWSTEP = {};
+
+  var vs = curShape.v, L = Z2.L, R = Z2.R;
+  var LP = {}, RP = {};
+  vs.forEach(function(p){
+    LP[p[0]] = tp(L, p[1], p[2], 1, Math.PI/2);
+    RP[p[0]] = tp(R, p[1], p[2], 0.5, TH45);
+  });
+
+  /* --- 底板 --- */
+  var gb = el("g", null, S2);
+  panel(gb, 16, 16, 410, 368);
+  panel(gb, 454, 16, 410, 368);
+  txt(gb, 36, 46, "原图：" + curShape.n, {math:false, size:14, bold:true, fill:"#2aa198", anchor:"start"});
+  txt(gb, 474, 46, "直观图：斜二测画法", {math:false, size:14, bold:true, fill:"#6f68c8", anchor:"start"});
+
+  for(i = -2; i <= 2; i++){
+    el("line", {x1:L.cx + i*L.s, y1:L.cy - 155, x2:L.cx + i*L.s, y2:L.cy + 155, stroke:"#f0f6f9"}, gb);
+    el("line", {x1:L.cx - 162, y1:L.cy - i*L.s, x2:L.cx + 152, y2:L.cy - i*L.s, stroke:"#f0f6f9"}, gb);
+  }
+  /* --- 原图 --- */
+  var dOrig = "M" + P(LP[vs[0][0]]);
+  for(i = 1; i < vs.length; i++) dOrig += " L" + P(LP[vs[i][0]]);
+  dOrig += " Z";
+  el("path", {d:dOrig, fill:"#d9f2ee", stroke:"#2aa198", "stroke-width":2.2, "stroke-linejoin":"round"}, gb);
+  var plan = labelPlan(vs, 15);
+  vs.forEach(function(p, idx){
+    var s = LP[p[0]], o = plan[idx];
+    var lx = s[0] + o.ox, ly = s[1] + o.oy, anch = o.anch;
+    if(Math.abs(p[1]) < 0.2 && p[2] > 0){ lx = s[0] - 15; ly = s[1] + 5; anch = "end"; }   // 顶点在 y 轴上：标签让到左侧
+    else if(Math.abs(p[1]) < 0.2 && p[2] < 0){ lx = s[0] - 15; ly = s[1] + 10; anch = "end"; }
+    txt(gb, lx, ly, p[0], {size:15, fill:"#1f7a72", bold:true, anchor:anch});
+  });
+
+  /* --- 坐标轴最后画：压在图形之上，图形再大也不会把轴盖住 --- */
+  el("line", {x1:L.cx - 172, y1:L.cy, x2:L.cx + 156, y2:L.cy, stroke:"#2aa198", "stroke-width":1.6, "marker-end":"url(#arT)"}, gb);
+  el("line", {x1:L.cx, y1:L.cy + 128, x2:L.cx, y2:L.cy - 130, stroke:"#f06292", "stroke-width":1.6, "marker-end":"url(#arP)"}, gb);
+  txt(gb, L.cx + 166, L.cy + 19, "x", {size:17, fill:"#2aa198", halo:3});
+  txt(gb, L.cx + 14, L.cy - 138, "y", {size:16, fill:"#f06292", anchor:"start", halo:3});
+  txt(gb, L.cx - 15, L.cy + 18, "O", {size:15, fill:"#7a8a99", halo:3});
+  for(i = -2; i <= 2; i++){ if(i === 0) continue;
+    txt(gb, L.cx + i*L.s, L.cy + 16, String(i), {size:11, math:false, fill:"#9fb0bb", halo:2.6});
+    txt(gb, L.cx - 9, L.cy - i*L.s + 4, String(i), {size:11, math:false, fill:"#9fb0bb", anchor:"end", halo:2.6});
+  }
+
+  /* --- 分组 --- */
+  function grp(){ var g = el("g", {opacity:0}, S2); g.style.transition = "opacity .45s ease"; return g; }
+  var hint = el("g", {opacity:1}, S2);
+  hint.style.transition = "opacity .45s ease";
+  txt(hint, R.cx, R.cy - 12, "点「下一步」，一步一步把直观图画出来", {size:15, math:false, fill:"#aab8c2"});
+  txt(hint, R.cx, R.cy + 16, "先定 45° 的两条轴，再逐点定位、最后连线", {size:12.5, math:false, fill:"#c6d1d8"});
+
+  var G1 = grp(), G2 = grp(), G3 = grp(), G4 = grp(), G5 = grp();
+  GS2 = [G1, G2, G3, G4, G5];
+
+  /* 画布内的分步提示（每步一句，随步骤切换） */
+  var cap2 = txt(S2, R.cx, 366, "", {size:12.5, math:false, fill:"#8a84d4"});
+
+  /* 步 1：两条轴 */
+  el("line", {x1:R.cx - 150, y1:R.cy, x2:R.cx + 162, y2:R.cy, stroke:"#2aa198", "stroke-width":1.8, "marker-end":"url(#arT)"}, G1);
+  var yE = [R.cx + 132*C45, R.cy - 132*C45];
+  el("line", {x1:R.cx, y1:R.cy, x2:yE[0], y2:yE[1], stroke:"#f06292", "stroke-width":1.8, "marker-end":"url(#arP)"}, G1);
+  el("path", {d:"M" + (R.cx + 56) + "," + R.cy + " A56,56 0 0 0 " + (R.cx + 56*C45) + "," + (R.cy - 56*C45),
+    fill:"none", stroke:"#e59a1a", "stroke-width":1.4}, G1);
+  txt(G1, R.cx + 26, R.cy - 6, "45°", {size:11.5, math:false, fill:"#e59a1a", halo:3});
+  txt(G1, R.cx + 174, R.cy + 19, "x′", {size:17, fill:"#2aa198"});
+  txt(G1, yE[0] + 14, yE[1] - 4, "y′", {size:17, fill:"#f06292"});
+  txt(G1, R.cx - 16, R.cy + 18, "O′", {size:15, fill:"#7a8a99"});
+  [1, 2].forEach(function(n){
+    var p = [R.cx + n*R.s*C45, R.cy - n*R.s*C45];
+    el("line", {x1:p[0] - 4, y1:p[1] + 4, x2:p[0] + 4, y2:p[1] - 4, stroke:"#f06292", "stroke-width":1.3}, G1);
+  });
+
+  /* 顶点分组 */
+  var v0 = vs.filter(function(p){ return Math.abs(p[2]) < 1e-9; });
+  var vp = vs.filter(function(p){ return p[2] > 1e-9; });
+  var vn = vs.filter(function(p){ return p[2] < -1e-9; });
+  v0.forEach(function(p){ ROWSTEP[p[0]] = 2; });
+  vp.forEach(function(p){ ROWSTEP[p[0]] = 3; });
+  vn.forEach(function(p){ ROWSTEP[p[0]] = 4; });
+
+  function ring(g, name){
+    var s = LP[name];
+    el("circle", {cx:s[0], cy:s[1], r:9, fill:"none", stroke:"#e59a1a", "stroke-width":2.4}, g);
+  }
+  function putVertex(g, p, idx, lab){
+    var s = RP[p[0]], o = plan[idx];
+    var lx = s[0] + o.ox*0.85, ly = s[1] + o.oy*0.85, anch = o.anch;
+    if(Math.abs(p[2]) < 0.05 && Math.abs(p[1]) > 0.2){ lx = s[0]; ly = s[1] + 21; anch = "middle"; }   // 顶点在 x′ 轴上：标签落到轴下
+    else if(Math.abs(p[1]) < 0.2){ lx = s[0] - 15; ly = p[2] > 0 ? s[1] - 2 : s[1] + 9; anch = "end"; } // 顶点在 y′ 轴上：标签让到左侧
+    el("circle", {cx:s[0], cy:s[1], r:5, fill:"#6f68c8", stroke:"#fff", "stroke-width":2}, g);
+    txt(g, lx, ly, lab, {size:15, fill:"#534ab7", bold:true, anchor:anch});
+  }
+  function helper(g, p){   // 垂足 → 顶点的虚线（沿 y′ 方向）
+    var s = RP[p[0]], f = [R.cx + R.s*p[1], R.cy];
+    var ln = el("line", {x1:f[0], y1:f[1], x2:s[0], y2:s[1], stroke:"#c9c5f0", "stroke-width":1.4, "stroke-dasharray":"5 4"}, g);
+    var t = txt(g, (f[0] + s[0])/2 - 9, (f[1] + s[1])/2 - 9, fmt(p[2]/2),
+      {size:12.5, fill:"#8a84d4", anchor:"end"});
+    ln.style.transition = t.style.transition = "opacity .4s ease";
+    builds2.push(ln, t);
+  }
+  function leftHeight(g, p, side){  // 原图里顶点到底边的虚线
+    var s = LP[p[0]], f = [L.cx + L.s*p[1], L.cy];
+    var ln = el("line", {x1:s[0], y1:s[1], x2:f[0], y2:f[1], stroke:"#b9c9d2", "stroke-width":1.3, "stroke-dasharray":"5 4"}, g);
+    var tl = txt(g, f[0] + (side > 0 ? 8 : -8), (s[1] + f[1])/2 + 4, fmt(Math.abs(p[2])),
+      {size:12.5, fill:"#8d99aa", anchor: side > 0 ? "start" : "end"});
+    ln.style.transition = tl.style.transition = "opacity .4s ease";
+    builds2.push(ln, tl);   // 成形后随辅助线一起淡出，画面只留图形本身
+  }
+
+  /* 步 2：落在 x 轴上的顶点，长度照抄 */
+  if(v0.length >= 2){
+    var xs = v0.map(function(p){ return p[1]; });
+    var xMin = Math.min.apply(null, xs), xMax = Math.max.apply(null, xs);
+    var bar = el("line", {x1:R.cx + R.s*xMin, y1:R.cy, x2:R.cx + R.s*xMax, y2:R.cy,
+      stroke:"#e59a1a", "stroke-width":4.5, "stroke-linecap":"round", opacity:.85}, G2);
+    bar.style.transition = "opacity .4s ease";
+    builds2.push(bar);
+  }
+  v0.forEach(function(p){
+    putVertex(G2, p, vs.indexOf(p), p[0] + "′");
+    ring(G2, p[0]);
+  });
+
+  /* 步 3：x 轴上方顶点，长度减半 */
+  vp.forEach(function(p){
+    helper(G3, p);
+    putVertex(G3, p, vs.indexOf(p), p[0] + "′");
+    ring(G3, p[0]);
+    leftHeight(G3, p, p[1] >= 0 ? 1 : -1);
+  });
+
+  /* 步 4：x 轴下方顶点（对称） */
+  vn.forEach(function(p){
+    helper(G4, p);
+    putVertex(G4, p, vs.indexOf(p), p[0] + "′");
+    ring(G4, p[0]);
+    leftHeight(G4, p, p[1] >= 0 ? 1 : -1);
+  });
+  if(vn.length === 0){
+    var n1t = txt(G4, R.cx, R.cy + 84, "本图形的顶点都在 x 轴上方（y ≥ 0）", {size:12.5, math:false, fill:"#8a84d4"});
+    var n2t = txt(G4, R.cx, R.cy + 104, "没有需要对称处理的点，直接连线即可", {size:12.5, math:false, fill:"#8a84d4"});
+    builds2.push(n1t, n2t);
+  } else {
+    var n3t = txt(G4, R.cx, R.cy + 84, "关于 x′ 轴对称", {size:12.5, math:false, fill:"#8a84d4"});
+    builds2.push(n3t);
+  }
+
+  /* 步 5：连线成形 */
+  var dImg = "M" + P(RP[vs[0][0]]);
+  for(i = 1; i < vs.length; i++) dImg += " L" + P(RP[vs[i][0]]);
+  dImg += " Z";
+  el("path", {d:dImg, fill:"#6f68c8", "fill-opacity":.16, stroke:"#6f68c8", "stroke-width":2.4, "stroke-linejoin":"round"}, G5);
+  vs.forEach(function(p){
+    var s = RP[p[0]];
+    el("circle", {cx:s[0], cy:s[1], r:3.6, fill:"#534ab7"}, G5);
+  });
+  txt(G5, R.cx, R.cy + 120, "看起来“扁”了 —— 因为 y′ 方向只有一半，还被压成了 45°", {size:12.5, math:false, fill:"#8a84d4"});
+
+  /* --- 步骤文案 --- */
+  function names(arr){ return arr.map(function(p){ return p[0]; }).join("、"); }
+  function halfList(arr){   // 逐个顶点给出「原高度 → 减半后」
+    return arr.map(function(p){ return p[0] + " " + fmt(Math.abs(p[2])) + " → <b>" + fmt(Math.abs(p[2])/2) + "</b>"; }).join("，");
+  }
+  var stepTexts = [
+    "看原图：" + curShape.n + "，坐标轴取在图形的对称位置。下面按教材四步画它的直观图。",
+    "第 1 步：画 <i>x</i>′ 轴、<i>y</i>′ 轴，两轴交于 O′，使 <b>∠x′O′y′ = 45°</b> —— 它们确定的平面表示水平平面。",
+    "第 2 步：<b>平行于 x 轴的线段长度不变</b>。原本落在 x 轴上的 " + names(v0) +
+      " 直接搬到 x′ 轴上，横坐标照抄，位置还是原长。",
+    "第 3 步：<b>平行于 y 轴的线段长度减半</b>。" + names(vp) + " 沿 45° 的 <i>y</i>′ 方向量取：" + halfList(vp) + "。",
+    vn.length
+      ? "第 4 步：" + names(vn) + " 在 x 轴下方，由<b>对称性</b>在 x′ 轴下方同样减半作出：" + halfList(vn) + "。"
+      : "第 4 步：本图形的顶点都在 x 轴上方（y ≥ 0），不需要再作对称点 —— 直接进入连线。",
+    "第 5 步：顺次连接 " + names(vs) + "（回到 " + vs[0][0] + "′），得到 " + curShape.n + " 的直观图。<b>平行性没变，长度和角度变了。</b>"
+  ];
+
+  /* 画布内的一句话提示：跟状态栏的长文案互补，图上看一眼就知道这一步在做什么 */
+  var capTexts = [
+    "",
+    "① 只画坐标系：x′ 轴水平，y′ 轴与它成 45°",
+    "② 落在 x′ 轴上的点：横坐标照抄，长度不变",
+    "③ x 轴上方的点：沿 45° 量纵坐标的一半" + (vp.length > 1 ? "（" + names(vp) + "）" : ""),
+    vn.length ? "④ x 轴下方的点：由对称性同样减半" + (vn.length > 1 ? "（" + names(vn) + "）" : "")
+              : "④ 顶点都在 x 轴上方，没有对称点，直接连线",
+    "⑤ 顺次连线：平行性不变，长度和角度都变了"
+  ];
+
+  var api = {
+    setStep: function(n){
+      step2 = Math.max(0, Math.min(5, n));
+      GS2.forEach(function(g, idx){ g.setAttribute("opacity", idx < step2 ? 1 : 0); });
+      hint.setAttribute("opacity", step2 === 0 ? 1 : 0);
+      builds2.forEach(function(e){ e.setAttribute("opacity", step2 >= 5 ? 0 : 1); });
+      cap2.textContent = capTexts[step2];
+      cap2.setAttribute("opacity", step2 === 0 ? 0 : 1);
+      T("status2", stepTexts[step2]);
+      $("stepNum2").textContent = "第 " + step2 + " / 5 步";
+      $("bNext2").disabled = (step2 >= 5);
+      $("bBack2").disabled = (step2 <= 0);
+      $("res2").style.display = (step2 >= 5) ? "block" : "none";
+      var rows = $("tbl2").querySelectorAll("tbody tr");
+      for(var r = 0; r < rows.length; r++){
+        var need = ROWSTEP[rows[r].getAttribute("data-v")];
+        rows[r].className = (step2 >= need) ? "on" : "off";
+      }
+    },
+    getStep: function(){ return step2; },
+    texts: stepTexts
+  };
+  window.__z2 = api;
+
+  /* --- 表格 --- */
+  var tb = $("tbl2").querySelector("tbody");
+  tb.innerHTML = "";
+  vs.forEach(function(p){
+    var tr = document.createElement("tr");
+    tr.className = "off";
+    tr.setAttribute("data-v", p[0]);
+    tr.innerHTML = '<td class="vx">' + p[0] + '</td>' +
+      '<td>(' + fmt(p[1]) + ', ' + fmt(p[2]) + ')</td>' +
+      '<td>' + fmt(p[1]) + '</td>' +
+      '<td>' + fmt(p[2]/2) + '</td>' +
+      '<td class="res">' + p[0] + '′(' + fmt(p[1]) + ', ' + fmt(p[2]/2) + ')</td>';
+    tb.appendChild(tr);
+  });
+
+  /* --- 面积结论 --- */
+  var S = polyArea(vs);
+  var Sp = S * Math.SQRT2 / 4;
+  $("res2").innerHTML = "<b>面积对照：</b>原图 <i>S</i> ≈ " + n2(S) + "；直观图 <i>S</i>′ ≈ " + n2(Sp) +
+    " = (√2/4)·<i>S</i> ≈ 0.354 <i>S</i>。" +
+    "注意：相邻两边的长度已经不再相等、夹角也不再是原来的角 —— <b>直观图只保持“平行性”，不保证长度与角度</b>，所以“正多边形的直观图”其实已经不是正多边形了。";
+
+  api.setStep(0);
+  buildRestore();          // 换图形时，下面的「复原」也跟着换
+}
+
+/* 页签：一个点 / 一个图形 */
+(function(){
+  var btns = document.querySelectorAll(".tabbtn");
+  var panes = document.querySelectorAll(".pane");
+  for(var i = 0; i < btns.length; i++){
+    btns[i].addEventListener("click", function(){
+      for(var j = 0; j < btns.length; j++) btns[j].className = "tabbtn" + (btns[j] === this ? " on" : "");
+      var want = this.getAttribute("data-p");
+      for(var k = 0; k < panes.length; k++) panes[k].hidden = (panes[k].id !== want);
+    });
+  }
+})();
+
+/* 图形选择器 */
+(function(){
+  var box = $("shapeChips");
+  SHAPES.forEach(function(s, idx){
+    var b = document.createElement("button");
+    b.className = "chip" + (s.k === curShape.k ? " on" : "");
+    b.textContent = s.n;
+    b.setAttribute("data-k", s.k);
+    b.addEventListener("click", function(){
+      var all = box.querySelectorAll(".chip");
+      for(var i = 0; i < all.length; i++) all[i].className = "chip";
+      b.className = "chip on";
+      buildShape(s.k);
+    });
+    box.appendChild(b);
+  });
+})();
+
+function stopAuto2(){
+  if(timer2){ clearInterval(timer2); timer2 = null; $("bAuto2").textContent = "自动演示"; }
+}
+$("bNext2").addEventListener("click", function(){ stopAuto2(); window.__z2.setStep(window.__z2.getStep() + 1); });
+$("bBack2").addEventListener("click", function(){ stopAuto2(); window.__z2.setStep(window.__z2.getStep() - 1); });
+$("bReset2").addEventListener("click", function(){ stopAuto2(); window.__z2.setStep(0); });
+$("bAuto2").addEventListener("click", function(){
+  if(timer2){ stopAuto2(); return; }
+  if(window.__z2.getStep() >= 5) window.__z2.setStep(0);
+  $("bAuto2").textContent = "暂停";
+  timer2 = setInterval(function(){
+    if(window.__z2.getStep() >= 5){ stopAuto2(); return; }
+    window.__z2.setStep(window.__z2.getStep() + 1);
+  }, 1500);
+});
+
+
+/* ============================================================
+   ③ 复原：把直观图还原回原图（只做「图形」，不做点）
+      前一半行程：θ 45° → 90°（长度不动）
+      后一半行程：k 1/2 → 1（角度不动）
+   ============================================================ */
+var S3 = $("svg3");
+var Z3 = {A:{cx:216, cy:198, s:52}, B:{cx:660, cy:198, s:52}};
+var R3 = {};
+var timer3 = null;
+
+function lerpRGB(a, b, t){
+  function h(v){ var s = Math.round(v).toString(16); return s.length < 2 ? "0" + s : s; }
+  return "#" + h(a[0] + (b[0]-a[0])*t) + h(a[1] + (b[1]-a[1])*t) + h(a[2] + (b[2]-a[2])*t);
+}
+var CV = [0x6f, 0x68, 0xc8], CT = [0x2a, 0xa1, 0x98];      // 直观图紫 → 原图青
+var CVL = [0x53, 0x4a, 0xb7], CTL = [0x1f, 0x7a, 0x72];
+
+function poly3(c, vs, k, th){
+  var d = "";
+  vs.forEach(function(p, n){
+    d += (n ? " L" : "M") + P(tp(c, p[1], p[2], k, th));
+  });
+  return d + " Z";
+}
+
+function buildRestore(){
+  clearSvg(S3);
+  var vs = curShape.v, A = Z3.A, B = Z3.B;
+  var plan = labelPlan(vs, 15);
+
+  panel(S3, 16, 16, 410, 368);
+  panel(S3, 454, 16, 410, 368);
+  txt(S3, 36, 46, "直观图：起点 θ = 45°，k = 1/2", {math:false, size:14, bold:true, fill:"#2aa198", anchor:"start"});
+  R3 = {};
+  R3.title = txt(S3, 474, 46, "复原中：θ = 45°，k = 0.50", {math:false, size:14, bold:true, fill:"#6f68c8", anchor:"start"});
+
+  /* ---- 左：固定不动的直观图 ---- */
+  var gA = el("g", null, S3);
+  el("line", {x1:A.cx - 168, y1:A.cy, x2:A.cx + 162, y2:A.cy, stroke:"#2aa198",
+    "stroke-width":1.5, "marker-end":"url(#arT)"}, gA);
+  var yA = tp(A, 0, 2.4, 0.5, TH45);
+  el("line", {x1:A.cx, y1:A.cy, x2:yA[0], y2:yA[1], stroke:"#f06292",
+    "stroke-width":1.5, "marker-end":"url(#arP)"}, gA);
+  txt(gA, A.cx + 172, A.cy + 19, "x′", {size:16, fill:"#2aa198", halo:3});
+  txt(gA, yA[0] - 20, yA[1] - 6, "y′", {size:16, fill:"#f06292", halo:3, anchor:"end"});
+  txt(gA, A.cx - 16, A.cy + 18, "O′", {size:15, fill:"#7a8a99", halo:3});
+  el("path", {d:poly3(A, vs, 0.5, TH45), fill:"#6f68c8", "fill-opacity":.16,
+    stroke:"#6f68c8", "stroke-width":2.2, "stroke-linejoin":"round"}, gA);
+  vs.forEach(function(p, n){
+    var q = tp(A, p[1], p[2], 0.5, TH45), o = plan[n];
+    el("circle", {cx:q[0], cy:q[1], r:4.6, fill:"#6f68c8", stroke:"#fff", "stroke-width":1.8}, gA);
+    txt(gA, q[0] + o.ox*0.8, q[1] + o.oy*0.8, p[0] + "′",
+      {size:13.5, fill:"#534ab7", bold:true, anchor:o.anch, halo:3});
+  });
+  txt(gA, A.cx, 366, "起点：就是 ② 里画出来的直观图", {size:12.5, math:false, fill:"#9aa7b2"});
+
+  /* ---- 右：目标原图虚影 + 会变形的图形 ---- */
+  var gB = el("g", null, S3);
+  el("path", {d:poly3(B, vs, 1, Math.PI/2), fill:"none", stroke:"#2aa198",
+    "stroke-width":1.6, "stroke-dasharray":"6 5", opacity:.7}, gB);
+  el("line", {x1:B.cx, y1:B.cy, x2:B.cx, y2:B.cy - 2.4*B.s, stroke:"#f06292",
+    "stroke-width":1.2, "stroke-dasharray":"5 5", opacity:.5}, gB);
+  el("line", {x1:B.cx - 168, y1:B.cy, x2:B.cx + 162, y2:B.cy, stroke:"#2aa198",
+    "stroke-width":1.5, "marker-end":"url(#arT)"}, gB);
+  txt(gB, B.cx + 172, B.cy + 19, "x′", {size:16, fill:"#2aa198", halo:3});
+  txt(gB, B.cx - 16, B.cy + 18, "O′", {size:15, fill:"#7a8a99", halo:3});
+  txt(gB, B.cx, 366, "虚线 = 原图，红色虚线 = 恢复后的 y′ 轴", {size:12.5, math:false, fill:"#9aa7b2"});
+
+  var gD = el("g", null, S3);
+  R3.vs = vs; R3.plan = plan; R3.B = B; R3.dots = []; R3.labs = [];
+  R3.yAxis = el("line", {x1:B.cx, y1:B.cy, x2:B.cx, y2:B.cy, stroke:"#f06292",
+    "stroke-width":1.8, "marker-end":"url(#arP)"}, gD);
+  R3.yLab = txt(gD, 0, 0, "y′", {size:16, fill:"#f06292", halo:3, anchor:"end"});
+  R3.path = el("path", {fill:"#6f68c8", "fill-opacity":.16, stroke:"#6f68c8",
+    "stroke-width":2.4, "stroke-linejoin":"round"}, gD);
+  vs.forEach(function(p, n){
+    R3.dots.push(el("circle", {r:4.8, fill:"#fff", stroke:"#6f68c8", "stroke-width":2}, gD));
+    R3.labs.push(txt(gD, 0, 0, p[0] + "′", {size:13.5, fill:"#534ab7", bold:true,
+      anchor:plan[n].anch, halo:3}));
+  });
+  upd3();
+}
+
+function upd3(){
+  if(!R3.vs) return;
+  var t = parseFloat($("rt").value) / 100;
+  var th, k;
+  if(t < 0.5){ th = TH45 + (Math.PI/2 - TH45) * (t/0.5); k = 0.5; }
+  else { th = Math.PI/2; k = 0.5 + 0.5*((t - 0.5)/0.5); }
+
+  var vs = R3.vs, B = R3.B, plan = R3.plan;
+  var col = lerpRGB(CV, CT, t), colL = lerpRGB(CVL, CTL, t);
+  var d = "";
+  vs.forEach(function(p, n){
+    var q = tp(B, p[1], p[2], k, th), o = plan[n];
+    d += (n ? " L" : "M") + P(q);
+    R3.dots[n].setAttribute("cx", q[0]);
+    R3.dots[n].setAttribute("cy", q[1]);
+    R3.dots[n].setAttribute("stroke", col);
+    R3.labs[n].setAttribute("x", q[0] + o.ox*0.8);
+    R3.labs[n].setAttribute("y", q[1] + o.oy*0.8);
+    R3.labs[n].setAttribute("fill", colL);
+  });
+  R3.path.setAttribute("d", d + " Z");
+  R3.path.setAttribute("stroke", col);
+  R3.path.setAttribute("fill", col);
+
+  var ye = tp(B, 0, 2.4, k, th);
+  R3.yAxis.setAttribute("x2", ye[0]);
+  R3.yAxis.setAttribute("y2", ye[1]);
+  R3.yLab.setAttribute("x", ye[0] - 20);
+  R3.yLab.setAttribute("y", ye[1] - 6);
+
+  var deg = n0(th/D2R);
+  R3.title.textContent = "复原中：θ = " + deg + "°，k = " + k.toFixed(2);
+
+  $("rt3").textContent = Math.round(t*100);
+  $("rTheta").textContent = deg + "°";
+  $("rK").textContent = n2(k);
+  $("rArea").textContent = n2(k*Math.sin(th)) + " S";
+  $("wTheta").className = (t < 0.5 ? "hit" : "");
+  $("wK").className = (t > 0.5 ? "hit" : "");
+
+  if(t <= 0){
+    T("status3", "起点：这就是刚才画出来的直观图 —— 两轴夹角 <b>45°</b>，纵向长度只有<b>一半</b>（k = 0.5）。拖滑块开始复原。");
+    $("phase3").textContent = "还没开始：拖滑块或点「自动还原」";
+  }else if(t < 0.5){
+    T("status3", "第 1 阶段：先把 <i>y</i>′ 轴<b>掰正</b> —— 夹角已到 <b>" + deg + "°</b>（目标 90°）；这一步长度还没动，仍是半长。");
+    $("phase3").textContent = "第 1 阶段：掰正角度 45° → 90°";
+  }else if(t < 1){
+    T("status3", "第 2 阶段：角度已是 90°，再把<b>减半的纵向长度补回来</b> —— k 已到 <b>" + n2(k) + "</b>（目标 1）。");
+    $("phase3").textContent = "第 2 阶段：补回长度 1/2 → 1";
+  }else{
+    T("status3", "<b>复原完成：</b>θ = 90°、k = 1，图形与原图<b>完全重合</b>；面积也从 (√2/4)<i>S</i> 回到 <i>S</i>。");
+    $("phase3").textContent = "完成：已与原图重合";
+  }
+}
+function stopPlay3(){
+  if(timer3){ clearInterval(timer3); timer3 = null; $("bPlay3").textContent = "自动还原 ▶"; }
+}
+$("bPlay3").addEventListener("click", function(){
+  if(timer3){ stopPlay3(); return; }
+  if(parseFloat($("rt").value) >= 100) $("rt").value = 0;
+  $("bPlay3").textContent = "暂停";
+  timer3 = setInterval(function(){
+    var v = parseFloat($("rt").value);
+    if(v >= 100){ stopPlay3(); return; }
+    $("rt").value = v + 1;
+    upd3();
+  }, 35);
+});
+$("bReset3").addEventListener("click", function(){ stopPlay3(); $("rt").value = 0; upd3(); });
+$("rt").addEventListener("input", function(){ stopPlay3(); upd3(); });
+
+
+/* 启动 */
+buildShape("hex");
+
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>线面垂直与面面垂直 · 三维模型</title>
+<script>if(location.hash.indexOf('embed')>-1||/[?&]embed=1/.test(location.search)){document.documentElement.classList.add('embed');}</script>
+<style>
+  :root{
+    --blue:#4f9ec4; --blue-dark:#3d87ad; --coral:#dd7358; --green:#7aa571;
+    --amber:#d9a24a; --violet:#6f68c8; --ink:#3a4a54; --muted:#8a9a92;
+    --card:#ffffff; --bg:#eef1ea; --line:#dde4d8;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:"Microsoft YaHei","PingFang SC",sans-serif; background:var(--bg); color:var(--ink); padding-bottom:50px;}
+  header{background:linear-gradient(120deg,#417f9e,#5fa8c7 55%,#8fc7dd); color:#fff; padding:26px 20px 20px; text-align:center;}
+  header h1{font-size:26px; letter-spacing:2px;}
+  header p{opacity:.94; margin-top:9px; font-size:14px; line-height:1.8;}
+  main{max-width:1080px; margin:24px auto 0; padding:0 16px;}
+  .zone{background:var(--card); border:1px solid var(--line); border-radius:16px; padding:20px 22px; margin-bottom:20px; box-shadow:0 4px 16px rgba(30,60,80,.06);}
+  .zone-head{display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px;}
+  .badge{background:var(--blue); color:#fff; border-radius:8px; padding:4px 12px; font-size:14px; font-weight:bold;}
+  .badge.pink{background:var(--coral);}
+  .badge.violet{background:var(--violet);}
+  .zone-head h2{font-size:19px;}
+  .zone-head h2 b{color:var(--coral);}
+  .stage-wrap{position:relative; height:620px; border:1px solid var(--line); border-radius:14px; overflow:hidden;
+    background:
+      linear-gradient(rgba(120,145,125,.08) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(120,145,125,.08) 1px, transparent 1px),
+      radial-gradient(ellipse at 50% 40%, #f9fbf5 0%, #eff3ec 60%, #e5ebe2 100%);
+    background-size:28px 28px, 28px 28px, 100% 100%;}
+  .stage-wrap canvas{display:block; width:100%; height:100%;}
+  .hint{position:absolute; left:14px; bottom:10px; font-size:12.5px; color:#8aa0ae; pointer-events:none;}
+  .stepbar{display:flex; gap:10px; flex-wrap:wrap; align-items:center; margin-top:16px; padding-top:14px; border-top:1px dashed var(--line);}
+  button.act{padding:8px 18px; border:none; border-radius:8px; background:var(--blue); color:#fff; font-size:14px; cursor:pointer; transition:.15s; font-family:inherit;}
+  button.act:hover{filter:brightness(1.08);}
+  button.act.sm{padding:7px 14px; font-size:13px; border-radius:7px;}
+  button.act.ghost{background:#eef2f5; color:#4c6472; border:1px solid #d5dee4;}
+  button.act.ghost:hover{background:#e3eaef;}
+  button.act.coral{background:var(--coral);}
+  button.act:disabled{background:#c7d3db; cursor:not-allowed; filter:none;}
+  button.act.ghost:disabled{background:#f1f4f6; color:#a9b6bf; border-color:#e3e9ed;}
+  .stepnum{font-size:13px; color:var(--muted); margin-left:4px;}
+  .status{font-size:14.5px; color:#3d5262; min-height:22px; margin-top:12px; line-height:1.9; background:#f6f9fa;
+    border-left:3px solid var(--blue); border-radius:0 8px 8px 0; padding:9px 14px;}
+  .status b{color:var(--coral);}
+  .status .hl{color:var(--violet); font-weight:bold;}
+  .status .hl2{color:var(--blue-dark); font-weight:bold;}
+  .ctrl{display:flex; gap:30px; flex-wrap:wrap; margin:6px 0 4px;}
+  .ctrl label{flex:1 1 240px; font-size:14px; color:#3d5262;}
+  .ctrl label.off{opacity:.45;}
+  .ctrl b{color:#e91e63; font-family:"Times New Roman",serif; font-size:17px;}
+  .ctrl input[type=range]{-webkit-appearance:none; appearance:none; width:100%; height:6px; margin-top:14px;
+    border-radius:4px; background:#dbe6eb; outline:none; cursor:pointer;}
+  .ctrl input[type=range]:disabled{background:#eceff1; cursor:not-allowed;}
+  .ctrl input[type=range]::-webkit-slider-thumb{-webkit-appearance:none; width:18px; height:18px; border-radius:50%;
+    background:var(--blue); border:2.5px solid #fff; box-shadow:0 1px 5px rgba(20,60,70,.35); cursor:pointer;}
+  .ctrl input[type=range]:disabled::-webkit-slider-thumb{background:#c3ced4; box-shadow:none;}
+  .ctrl input[type=range]::-moz-range-track{height:6px; border-radius:4px; background:#dbe6eb;}
+  .ctrl input[type=range]::-moz-range-thumb{width:15px; height:15px; border-radius:50%; background:var(--blue);
+    border:2.5px solid #fff; box-shadow:0 1px 5px rgba(20,60,70,.35); cursor:pointer;}
+  .chips{display:flex; gap:8px; flex-wrap:wrap; margin:12px 0 2px; align-items:center;}
+  .chips .lab{font-size:13.5px; color:var(--muted); margin-right:2px;}
+  .chip{padding:6px 14px; border-radius:999px; border:1.5px solid #d7e2e8; background:#f8fbfc;
+    color:#4c6472; font-size:13.5px; cursor:pointer; transition:.15s; font-family:inherit;}
+  .chip:hover{border-color:#9fd0e0; background:#f0f9fc;}
+  .chip.on{background:var(--violet); border-color:var(--violet); color:#fff; font-weight:bold; box-shadow:0 2px 8px rgba(111,104,200,.3);}
+  .chip.on.warn{background:var(--coral); border-color:var(--coral); box-shadow:0 2px 8px rgba(221,115,88,.3);}
+  .cards{display:flex; gap:12px; flex-wrap:wrap; margin-top:16px;}
+  .card2{flex:1 1 150px; background:#f7fafb; border:1px solid #e3ece8; border-radius:12px; padding:12px 16px;}
+  .card2 .k{font-size:12.5px; color:var(--muted);}
+  .card2 .v{font-size:21px; font-weight:bold; color:var(--blue-dark); margin-top:4px; letter-spacing:.3px;}
+  .card2 .v.vio{color:var(--violet);}
+  .card2 .v.ok{color:var(--green);}
+  .card2 .v.no{color:var(--coral);}
+  .bar{border-radius:12px; padding:12px 16px; background:#f8fbfc; border:1px solid #e2ecf0; margin-top:14px;
+    font-size:14px; line-height:1.95; color:#3d5262;}
+  .bar b{color:var(--coral);}
+  .bar .hl2{color:var(--amber); font-weight:bold;}
+  .bar .hl3{color:var(--violet); font-weight:bold;}
+  footer{max-width:1080px; margin:0 auto; padding:0 16px; color:var(--muted); font-size:13.5px; line-height:2;}
+  footer b{color:var(--ink);}
+  .fx{font-family:"Times New Roman","Microsoft YaHei",serif; font-style:italic; font-size:15.5px;}
+  /* ---- 嵌入合集页时的紧凑模式 ---- */
+  html.embed header{display:none;}
+  html.embed body{padding-bottom:30px;}
+  html.embed main{margin-top:16px;}
+  html.embed .stage-wrap{height:clamp(380px, calc(100vh - 220px), 620px);}
+  html.embed ::-webkit-scrollbar{width:10px;}
+  html.embed ::-webkit-scrollbar-thumb{background:#c3d1c8; border-radius:6px;}
+  html.embed ::-webkit-scrollbar-thumb:hover{background:#aebfb4;}
+  html.embed ::-webkit-scrollbar-track{background:transparent;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>直线与平面垂直 · 平面与平面垂直</h1>
+  <p>定义 → 判定定理 → 反例辨析 → 面面垂直，一条逻辑链走到底</p>
+</header>
+
+<main>
+
+  <!-- ① 定义 -->
+  <section class="zone">
+    <div class="zone-head">
+      <span class="badge">① 定义</span>
+      <h2>与 α 内<b>任意一条</b>直线都垂直，才叫 <span class="fx">l ⊥ α</span></h2>
+    </div>
+    <div class="stage-wrap" id="stage1">
+      <div class="hint">拖动旋转 · 滚轮缩放 · 右键平移</div>
+    </div>
+    <div class="ctrl">
+      <label>平面 α 内直线 m 的方位角 <b id="vTh">110°</b>
+        <input type="range" id="sTh" min="0" max="180" step="0.5" value="110"></label>
+      <label>让 m 自己在平面内转一圈
+        <div style="margin-top:12px"><button class="act sm ghost" id="bSpin">暂停旋转</button></div></label>
+    </div>
+    <div class="cards">
+      <div class="card2"><div class="k">∠(l, m)</div><div class="v vio" id="cAng1">90.0°</div></div>
+      <div class="card2"><div class="k">m 的方位角</div><div class="v" id="cTh">110°</div></div>
+      <div class="card2"><div class="k">l 与平面 α</div><div class="v ok" id="cRel1" style="font-size:19px">l ⊥ α</div></div>
+    </div>
+    <div class="bar" id="note1"></div>
+  </section>
+
+  <!-- ② 判定定理 + 反例 -->
+  <section class="zone">
+    <div class="zone-head">
+      <span class="badge pink">② 判定定理</span>
+      <h2>两条<b>相交</b>直线都垂直 l，则 <span class="fx">l ⊥ α</span> —— 两个条件缺一不可</h2>
+    </div>
+    <div class="stage-wrap" id="stage2">
+      <div class="hint">拖动旋转 · 滚轮缩放 · 右键平移</div>
+    </div>
+    <div class="chips" id="modeChips"><span class="lab">情形：</span></div>
+    <div class="ctrl">
+      <label id="labOm">a、b 两条相交直线的夹角 ω <b id="vOm">60°</b>
+        <input type="range" id="sOm" min="20" max="160" step="1" value="60"></label>
+      <label id="labPsi">l 绕 a 倾斜的角度 ψ <b id="vPsi">22°</b>
+        <input type="range" id="sPsi" min="0" max="60" step="1" value="22"></label>
+    </div>
+    <div class="cards">
+      <div class="card2"><div class="k">∠(l, a)</div><div class="v" id="c2a">90.0°</div></div>
+      <div class="card2"><div class="k">∠(l, b)</div><div class="v" id="c2b">90.0°</div></div>
+      <div class="card2"><div class="k">α 内直线与 l 的最小夹角</div><div class="v" id="c2min">90.0°</div></div>
+      <div class="card2"><div class="k">l ⊥ α ？</div><div class="v ok" id="c2res" style="font-size:19px">成立</div></div>
+    </div>
+    <div class="bar" id="note2"></div>
+  </section>
+
+  <!-- ③ 面面垂直 -->
+  <section class="zone">
+    <div class="zone-head">
+      <span class="badge violet">③ 面面垂直</span>
+      <h2>一个平面过另一个平面的垂线，则这两个平面垂直</h2>
+    </div>
+    <div class="stage-wrap" id="stage3">
+      <div class="hint">拖动旋转 · 滚轮缩放 · 右键平移</div>
+    </div>
+    <div class="stepbar">
+      <button class="act sm" id="bNext3">下一步 →</button>
+      <button class="act sm ghost" id="bBack3">← 上一步</button>
+      <button class="act sm ghost" id="bReset3">重来</button>
+      <span class="stepnum" id="stepNum3">第 1 / 4 步</span>
+    </div>
+    <div class="status" id="status3"></div>
+    <div class="ctrl">
+      <label>平面 β 绕 l 旋转的方位角 φ <b id="vPhi">30°</b>
+        <input type="range" id="sPhi" min="0" max="180" step="1" value="30"></label>
+      <label>自动旋转 β
+        <div style="margin-top:12px"><button class="act sm ghost" id="bAuto3">开始自动旋转</button></div></label>
+    </div>
+    <div class="cards">
+      <div class="card2"><div class="k">二面角 α—m—β</div><div class="v vio" id="c3ang">90.0°</div></div>
+      <div class="card2"><div class="k">l 与平面 α</div><div class="v ok" style="font-size:19px">l ⊥ α</div></div>
+      <div class="card2"><div class="k">l 与平面 β</div><div class="v ok" style="font-size:19px">l ⊂ β</div></div>
+      <div class="card2"><div class="k">结论</div><div class="v ok" id="c3res" style="font-size:19px">α ⊥ β</div></div>
+    </div>
+  </section>
+
+</main>
+
+<footer>
+  <b>使用建议</b>：先在①里让 m 在平面 α 内转几圈，看清"任意一条都垂直"这个含义；再到②里依次切三种情形 —— 「两条相交」成立、「只有一条」不成立、「两条平行」也不成立，反例中 l 并没有变，只是少了"相交"这一个条件，结论就垮了；最后到③按顺序走四步，把面面垂直归到线面垂直：<b>l ⊥ α ⟹ l ⊥ m（交线）⟹ 二面角为直二面角 ⟹ α ⊥ β</b>。
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/build/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+/* 主 CDN 失败时改用备用源，避免整页空白 */
+if(typeof THREE === 'undefined'){
+  document.write('<script src="https://unpkg.com/three@0.128.0/build/three.min.js"><\/script>');
+  document.write('<script src="https://unpkg.com/three@0.128.0/examples/js/controls/OrbitControls.js"><\/script>');
+}
+</script>
+<script>
+(function(){
+'use strict';
+
+const $ = function(id){ return document.getElementById(id); };
+
+if(typeof THREE === 'undefined'){
+  ['stage1','stage2','stage3'].forEach(function(id){
+    const el = $(id);
+    if(el) el.innerHTML = '<div style="position:absolute;inset:0;display:flex;align-items:center;justify-content:center;color:#8a9a92;font-size:15px;text-align:center;line-height:2">三维引擎未能加载<br>请检查网络连接后刷新页面</div>';
+  });
+  return;
+}
+
+/* ==================== 公共工具 ==================== */
+const views = [];
+const UP = new THREE.Vector3(0, 1, 0);
+const V = function(x, y, z){ return new THREE.Vector3(x, y, z); };
+const clamp = function(v, a, b){ return Math.max(a, Math.min(b, v)); };
+
+function makeSeg(r, color, opacity){
+  const mat = new THREE.MeshBasicMaterial({color: color});
+  if(opacity !== undefined){ mat.transparent = true; mat.opacity = opacity; }
+  return new THREE.Mesh(new THREE.CylinderGeometry(r, r, 1, 12), mat);
+}
+function setSeg(m, a, b){
+  const d = new THREE.Vector3().subVectors(b, a);
+  const len = d.length();
+  if(len < 1e-6){ m.visible = false; return; }
+  m.visible = true;
+  m.position.copy(a).addScaledVector(d, 0.5);
+  m.quaternion.setFromUnitVectors(UP, d.clone().normalize());
+  m.scale.set(1, len, 1);
+}
+function dotAt(p, r, color){
+  const m = new THREE.Mesh(new THREE.SphereGeometry(r || 0.05, 14, 14),
+            new THREE.MeshBasicMaterial({color: color || 0x2f4450}));
+  m.position.copy(p);
+  return m;
+}
+function makeLabel(text, color, h, bg){
+  h = h || 0.42;
+  const fs = 96, pad = 26;
+  const meas = document.createElement('canvas').getContext('2d');
+  meas.font = 'italic bold ' + fs + 'px "Times New Roman","Microsoft YaHei",serif';
+  const w = Math.ceil(meas.measureText(text).width) + pad * 2;
+  const c = document.createElement('canvas');
+  c.width = w; c.height = fs + pad;
+  const g = c.getContext('2d');
+  if(bg){
+    g.fillStyle = 'rgba(255,255,255,.82)';
+    g.beginPath();
+    const r = 26, x0 = 3, y0 = 3, x1 = c.width - 3, y1 = c.height - 3;
+    g.moveTo(x0 + r, y0);
+    g.lineTo(x1 - r, y0); g.quadraticCurveTo(x1, y0, x1, y0 + r);
+    g.lineTo(x1, y1 - r); g.quadraticCurveTo(x1, y1, x1 - r, y1);
+    g.lineTo(x0 + r, y1); g.quadraticCurveTo(x0, y1, x0, y1 - r);
+    g.lineTo(x0, y0 + r); g.quadraticCurveTo(x0, y0, x0 + r, y0);
+    g.closePath(); g.fill();
+  }
+  g.font = 'italic bold ' + fs + 'px "Times New Roman","Microsoft YaHei",serif';
+  g.textAlign = 'center'; g.textBaseline = 'middle';
+  g.lineWidth = 12; g.lineJoin = 'round'; g.strokeStyle = 'rgba(255,255,255,.94)';
+  g.strokeText(text, c.width / 2, c.height / 2 + 4);
+  g.fillStyle = color;
+  g.fillText(text, c.width / 2, c.height / 2 + 4);
+  const tex = new THREE.CanvasTexture(c);
+  tex.minFilter = THREE.LinearFilter;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({map: tex, transparent: true, depthTest: false, depthWrite: false}));
+  sp.scale.set(h * c.width / c.height, h, 1);
+  sp.renderOrder = 30;
+  return sp;
+}
+function makeNumLabel(color, h){
+  const c = document.createElement('canvas');
+  c.width = 512; c.height = 150;
+  const g = c.getContext('2d');
+  const tex = new THREE.CanvasTexture(c);
+  tex.minFilter = THREE.LinearFilter;
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({map: tex, transparent: true, depthTest: false, depthWrite: false}));
+  sp.scale.set(h * c.width / c.height, h, 1);
+  sp.renderOrder = 32;
+  let last = null;
+  return {
+    sprite: sp,
+    set: function(text){
+      if(text === last) return;
+      last = text;
+      g.clearRect(0, 0, c.width, c.height);
+      let fs = 86;
+      g.font = 'italic bold ' + fs + 'px "Times New Roman","Microsoft YaHei",serif';
+      const tw = g.measureText(text).width;
+      if(tw > 470){
+        fs = Math.floor(fs * 470 / tw);
+        g.font = 'italic bold ' + fs + 'px "Times New Roman","Microsoft YaHei",serif';
+      }
+      g.textAlign = 'center'; g.textBaseline = 'middle';
+      g.lineWidth = 14; g.lineJoin = 'round'; g.strokeStyle = 'rgba(255,255,255,.94)';
+      g.strokeText(text, c.width / 2, c.height / 2 + 5);
+      g.fillStyle = color;
+      g.fillText(text, c.width / 2, c.height / 2 + 5);
+      tex.needsUpdate = true;
+    }
+  };
+}
+function makeQuad(fillColor, opacity){
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(new Float32Array(12), 3));
+  g.setIndex([0, 1, 2, 0, 2, 3]);
+  return new THREE.Mesh(g, new THREE.MeshBasicMaterial({
+    color: fillColor, transparent: true, opacity: opacity, side: THREE.DoubleSide, depthWrite: false}));
+}
+function setQuad(mesh, p0, p1, p2, p3){
+  const arr = mesh.geometry.attributes.position.array;
+  const pts = [p0, p1, p2, p3];
+  for(let i = 0; i < 4; i++){
+    arr[i * 3] = pts[i].x; arr[i * 3 + 1] = pts[i].y; arr[i * 3 + 2] = pts[i].z;
+  }
+  mesh.geometry.attributes.position.needsUpdate = true;
+  mesh.geometry.computeBoundingSphere();
+}
+/* 直角标记：在 p 处用两个方向 u、v 围出一个小方框（三段线） */
+function setRA(arr, p, u, v, s){
+  const b1 = p.clone().addScaledVector(u, s);
+  const c1 = b1.clone().addScaledVector(v, s);
+  const d1 = p.clone().addScaledVector(v, s);
+  setSeg(arr[0], p, b1);
+  setSeg(arr[1], b1, c1);
+  setSeg(arr[2], c1, d1);
+}
+function makeArcSet(color, n){
+  const segs = [];
+  for(let i = 0; i < n; i++){ segs.push(makeSeg(0.011, color)); }
+  return {
+    segs: segs,
+    set: function(p, u, v, r){
+      const axis = new THREE.Vector3().crossVectors(u, v);
+      const ang = Math.acos(clamp(u.dot(v), -1, 1));
+      if(axis.length() < 1e-7) return;
+      axis.normalize();
+      const q = new THREE.Quaternion(), pts = [];
+      for(let i = 0; i <= n; i++){
+        q.setFromAxisAngle(axis, ang * i / n);
+        pts.push(u.clone().applyQuaternion(q).multiplyScalar(r).add(p));
+      }
+      for(let i = 0; i < n; i++) setSeg(segs[i], pts[i], pts[i + 1]);
+    }
+  };
+}
+/* 水平平面 α：填充 + 网格 + 边框（可分别为宽、深两个方向指定半长） */
+function addPlaneAlpha(S, hw, hd, fill, fillOp, lineColor){
+  hd = hd || hw;
+  const plane = new THREE.Mesh(new THREE.PlaneGeometry(hw * 2, hd * 2),
+    new THREE.MeshBasicMaterial({color: fill, transparent: true, opacity: fillOp,
+      side: THREE.DoubleSide, depthWrite: false}));
+  plane.rotation.x = -Math.PI / 2;
+  plane.renderOrder = 0;
+  S.add(plane);
+  const nx = Math.round(hw * 2 / 0.66), nz = Math.round(hd * 2 / 0.66);
+  const gpts = [];
+  for(let i = 0; i <= nx; i++){
+    const x = -hw + 2 * hw * i / nx;
+    gpts.push(V(x, 0.002, -hd), V(x, 0.002, hd));
+  }
+  for(let j = 0; j <= nz; j++){
+    const z = -hd + 2 * hd * j / nz;
+    gpts.push(V(-hw, 0.002, z), V(hw, 0.002, z));
+  }
+  const grid = new THREE.LineSegments(new THREE.BufferGeometry().setFromPoints(gpts),
+    new THREE.LineBasicMaterial({color: lineColor, transparent: true, opacity: 0.3}));
+  grid.renderOrder = 1;
+  S.add(grid);
+  const pts = [V(-hw, 0, -hd), V(hw, 0, -hd), V(hw, 0, hd), V(-hw, 0, hd), V(-hw, 0, -hd)];
+  const border = new THREE.Line(new THREE.BufferGeometry().setFromPoints(pts),
+    new THREE.LineBasicMaterial({color: lineColor, transparent: true, opacity: 0.5}));
+  border.renderOrder = 1;
+  S.add(border);
+  return {plane: plane, grid: grid, border: border};
+}
+/* 竖直平面内的网格 */
+function makeVertGrid(n, color){
+  const total = (n + 1) * 2 + n * 2;
+  const arr = new Float32Array(total * 3);
+  const geo = new THREE.BufferGeometry();
+  geo.setAttribute('position', new THREE.BufferAttribute(arr, 3));
+  const mat = new THREE.LineBasicMaterial({color: color, transparent: true, opacity: 0.2});
+  const mesh = new THREE.LineSegments(geo, mat);
+  mesh.renderOrder = 1;
+  return {
+    mesh: mesh, mat: mat,
+    update: function(d, h, hw){
+      let k = 0;
+      for(let i = 0; i <= n; i++){
+        const o = -hw + 2 * hw * i / n;
+        arr[k++] = o * d.x; arr[k++] = 0; arr[k++] = o * d.z;
+        arr[k++] = o * d.x; arr[k++] = h; arr[k++] = o * d.z;
+      }
+      for(let j = 1; j <= n; j++){
+        const y = h * j / (n + 1);
+        arr[k++] = -hw * d.x; arr[k++] = y; arr[k++] = -hw * d.z;
+        arr[k++] =  hw * d.x; arr[k++] = y; arr[k++] =  hw * d.z;
+      }
+      geo.attributes.position.needsUpdate = true;
+      geo.computeBoundingSphere();
+    }
+  };
+}
+function createView(el, camPos, target, fov){
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(fov || 36, 1, 0.1, 240);
+  camera.position.copy(camPos);
+  const renderer = new THREE.WebGLRenderer({antialias: true, alpha: true});
+  renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+  el.appendChild(renderer.domElement);
+  const controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true;
+  controls.dampingFactor = 0.08;
+  controls.target.copy(target);
+  controls.minDistance = 3.5;
+  controls.maxDistance = 22;
+  controls.update();
+  scene.add(new THREE.AmbientLight(0xffffff, 0.9));
+  const dl = new THREE.DirectionalLight(0xffffff, 0.4);
+  dl.position.set(5, 9, 6);
+  scene.add(dl);
+
+  const view = {scene: scene, camera: camera, renderer: renderer, controls: controls, visible: true, update: null, dirty: true};
+  function resize(){
+    const w = el.clientWidth, h = el.clientHeight;
+    if(!w || !h) return;
+    if(renderer.domElement.width !== Math.floor(w * renderer.getPixelRatio()) ||
+       renderer.domElement.height !== Math.floor(h * renderer.getPixelRatio())) view.dirty = true;
+    renderer.setSize(w, h);
+    camera.aspect = w / h;
+    camera.updateProjectionMatrix();
+  }
+  if(window.ResizeObserver){ new ResizeObserver(resize).observe(el); }
+  window.addEventListener('resize', resize);
+  resize();
+  views.push(view);
+  return view;
+}
+
+/* ==================== ① 线面垂直的定义 ==================== */
+(function initDef(){
+  const el = $('stage1');
+  if(!el) return;
+  const view = createView(el, V(5.1, 8.55, 7.2), V(0, 0.7, 0));
+  const S = view.scene;
+  const PFW = 4.4;   // 平面横向半宽
+  const PFD = 3.6;   // 平面纵深半宽
+  const LH = 3.2;    // l 的长度
+  const ML = 3.0;    // 平面内直线半长
+
+  addPlaneAlpha(S, PFW, PFD, 0xdcefd6, 0.44, 0x8fb08a);
+
+  /* 平面内 8 条参考方向线 */
+  const rays = [];
+  for(let i = 0; i < 8; i++){
+    const a = i * Math.PI / 8;
+    const d = V(Math.cos(a), 0, Math.sin(a));
+    const m = makeSeg(0.008, 0xa9c0b5, 0.45);
+    setSeg(m, d.clone().multiplyScalar(-ML), d.clone().multiplyScalar(ML));
+    m.renderOrder = 2;
+    S.add(m);
+    rays.push(m);
+  }
+
+  /* 垂线 l */
+  const lMesh = makeSeg(0.033, 0x445d70);
+  setSeg(lMesh, V(0, -0.04, 0), V(0, LH, 0));
+  lMesh.renderOrder = 3;
+  S.add(lMesh);
+  const arrow = new THREE.Mesh(new THREE.ConeGeometry(0.078, 0.23, 14),
+    new THREE.MeshBasicMaterial({color: 0x445d70}));
+  arrow.position.set(0, LH + 0.11, 0);
+  S.add(arrow);
+
+  /* 平面内可动的直线 m */
+  const mMesh = makeSeg(0.029, 0xdd7358);
+  mMesh.renderOrder = 4;
+  S.add(mMesh);
+  const md1 = dotAt(V(0, 0, 0), 0.062, 0xdd7358);
+  const md2 = dotAt(V(0, 0, 0), 0.062, 0xdd7358);
+  S.add(md1); S.add(md2);
+
+  const ra = [makeSeg(0.016, 0x6f68c8), makeSeg(0.016, 0x6f68c8), makeSeg(0.016, 0x6f68c8)];
+  ra.forEach(function(m){ m.renderOrder = 5; S.add(m); });
+
+  const labL  = makeLabel('l', '#445d70', 0.42);
+  const labAl = makeLabel('α', '#7d9c77', 0.5, true);
+  const labM  = makeLabel('m', '#dd7358', 0.4);
+  const labO  = makeLabel('O', '#2f4450', 0.36);
+  [labL, labAl, labM, labO].forEach(function(s){ S.add(s); });
+  labL.position.set(0.38, LH * 0.82, 0.06);
+  labAl.position.set(-3.15, 0.34, 2.15);
+  labO.position.set(-0.82, 0.3, -0.78);
+
+  const num90 = makeNumLabel('#6f68c8', 0.34);
+  num90.set('90°');
+  S.add(num90.sprite);
+
+  const st = {th: 110, auto: true};
+  let hiIdx = -1;
+
+  function highlight(idx){
+    if(idx === hiIdx) return;
+    rays.forEach(function(m, i){
+      if(i === idx){ m.material.color.setHex(0x5f9a8b); m.material.opacity = 0.95; }
+      else { m.material.color.setHex(0xa9c0b5); m.material.opacity = 0.5; }
+    });
+    hiIdx = idx;
+  }
+
+  function update(dt){
+    if(st.auto){
+      st.th += dt * 19;
+      if(st.th >= 180) st.th -= 180;
+      $('sTh').value = st.th.toFixed(1);
+      $('vTh').textContent = st.th.toFixed(1) + '°';
+      $('cTh').textContent = st.th.toFixed(1) + '°';
+    }
+    const th = st.th * Math.PI / 180;
+    const d = V(Math.cos(th), 0, Math.sin(th));
+
+    setSeg(mMesh, d.clone().multiplyScalar(-ML), d.clone().multiplyScalar(ML));
+    md1.position.copy(d).multiplyScalar(ML);
+    md2.position.copy(d).multiplyScalar(-ML);
+
+    setRA(ra, V(0, 0, 0), d, UP, 0.4);
+    labM.position.copy(d).multiplyScalar(ML * 1.18).add(V(0, 0.32, 0));
+    num90.sprite.position.copy(d).multiplyScalar(0.8).add(V(0, 0.72, 0));
+
+    const idx = Math.round((st.th % 180) / 22.5) % 8;
+    highlight(idx);
+  }
+
+  view.update = update;
+
+  $('sTh').addEventListener('input', function(){
+    st.th = parseFloat(this.value);
+    st.auto = false;
+    $('bSpin').textContent = '继续旋转';
+    $('vTh').textContent = st.th.toFixed(1) + '°';
+    $('cTh').textContent = st.th.toFixed(1) + '°';
+    update(0);
+  });
+  $('bSpin').addEventListener('click', function(){
+    st.auto = !st.auto;
+    this.textContent = st.auto ? '暂停旋转' : '继续旋转';
+  });
+
+  $('note1').innerHTML = '<b>定义</b>：如果直线 <span class="fx">l</span> 与平面 α 内的<span class="hl3">任意一条</span>直线都垂直，就说直线 l 与平面 α 互相垂直，记作 <span class="fx">l ⊥ α</span>。l 叫平面 α 的垂线，α 叫 l 的垂面，交点 O 叫垂足。<br>' +
+    '拖动滑块或让它自己转：不论 m 转到什么方位，紫色的直角标记都稳稳立着 —— 这正是"任意一条"的意思。注意它也包括那些<span class="hl2">不过垂足 O</span> 的直线（异面垂直），平面 α 内任何一条直线，都与 l 垂直。';
+  update(0);
+})();
+
+/* ==================== ② 判定定理 + 反例 ==================== */
+(function initJudge(){
+  const el = $('stage2');
+  if(!el) return;
+  const view = createView(el, V(6.95, 7.35, 4.05), V(0, 0.62, 0.1));
+  const S = view.scene;
+  const PFW = 4.4;
+  const PFD = 3.6;
+  const LH = 3.4;
+  const LL = 3.0;
+
+  addPlaneAlpha(S, PFW, PFD, 0xdcefd6, 0.44, 0x8fb08a);
+
+  /* 直线 a、b、l */
+  const aSeg = makeSeg(0.028, 0xdd7358); aSeg.renderOrder = 4; S.add(aSeg);
+  const bSeg = makeSeg(0.028, 0x4f9ec4); bSeg.renderOrder = 4; S.add(bSeg);
+  const lSeg = makeSeg(0.036, 0x5a5794); lSeg.renderOrder = 5; S.add(lSeg);
+  const lDown = makeSeg(0.02, 0x8f8cc0, 0.55); lDown.renderOrder = 3; S.add(lDown);
+  const lArrow = new THREE.Mesh(new THREE.ConeGeometry(0.075, 0.22, 14),
+    new THREE.MeshBasicMaterial({color: 0x5a5794}));
+  S.add(lArrow);
+
+  /* 反例辅助：平行于 l 的短线 l′，以及平面内的辅助线 w */
+  const lpSeg = makeSeg(0.016, 0x9a97c8, 0.9); lpSeg.renderOrder = 4; S.add(lpSeg);
+  const wSeg  = makeSeg(0.022, 0xd9a24a, 0.95); wSeg.renderOrder = 4; S.add(wSeg);
+
+  const raA = [makeSeg(0.017, 0x6f68c8), makeSeg(0.017, 0x6f68c8), makeSeg(0.017, 0x6f68c8)];
+  const raB = [makeSeg(0.017, 0x6f68c8), makeSeg(0.017, 0x6f68c8), makeSeg(0.017, 0x6f68c8)];
+  [raA, raB].forEach(function(g){ g.forEach(function(m){ m.renderOrder = 6; S.add(m); }); });
+
+  const arcB = makeArcSet(0xd9a24a, 26);
+  arcB.segs.forEach(function(m){ m.renderOrder = 6; S.add(m); });
+
+  const labA = makeLabel('a', '#dd7358', 0.4);
+  const labB = makeLabel('b', '#3d87ad', 0.4);
+  const labL = makeLabel('l', '#5a5794', 0.42);
+  const labAl = makeLabel('α', '#7d9c77', 0.5, true);
+  const labO = makeLabel('O', '#2f4450', 0.36);
+  const labW = makeLabel('w', '#d9a24a', 0.38);
+  const labLP = makeLabel("l′", '#9a97c8', 0.36);
+  [labA, labB, labL, labAl, labO, labW, labLP].forEach(function(s){ S.add(s); });
+  labAl.position.set(3.02, 0.34, -2.72);
+  labO.position.set(0.6, 0.05, -0.6);
+
+  const numA = makeNumLabel('#dd7358', 0.34);
+  const numB = makeNumLabel('#3d87ad', 0.34);
+  S.add(numA.sprite); S.add(numB.sprite);
+
+  const st = {mode: 'correct', omega: 60, psi: 22};
+
+  function update(){
+    const om = st.omega * Math.PI / 180;
+    const psi = st.psi * Math.PI / 180;
+    let u, aD, bD, bO;
+
+    if(st.mode === 'correct'){
+      u = V(0, 1, 0);
+      aD = V(1, 0, 0);
+      bD = V(Math.cos(om), 0, Math.sin(om));
+      bO = V(0, 0, 0);
+    } else if(st.mode === 'one'){
+      u = V(0, Math.cos(psi), Math.sin(psi));
+      aD = V(1, 0, 0);
+      bD = V(0, 0, 1);
+      bO = V(0, 0, 0);
+    } else {
+      u = V(0, Math.cos(psi), Math.sin(psi));
+      aD = V(1, 0, 0);
+      bD = V(1, 0, 0);
+      bO = V(-0.9, 0, 1.62);
+    }
+
+    /* a、b 线 */
+    setSeg(aSeg, aD.clone().multiplyScalar(-LL), aD.clone().multiplyScalar(LL));
+    setSeg(bSeg, bO.clone().addScaledVector(bD, -3.0), bO.clone().addScaledVector(bD, 3.0));
+
+    /* l 线 */
+    const top = V(0, 0, 0).addScaledVector(u, LH);
+    setSeg(lSeg, V(0, 0, 0), top);
+    setSeg(lDown, V(0, 0, 0), u.clone().multiplyScalar(-0.45));
+    lArrow.position.copy(top).addScaledVector(u, 0.1);
+    lArrow.quaternion.setFromUnitVectors(UP, u);
+
+    /* a 处的直角（三种情形都成立） */
+    setRA(raA, V(0, 0, 0), aD, u, 0.34);
+    raA.forEach(function(m){ m.visible = true; });
+
+    /* 标签 */
+    labA.position.copy(aD).multiplyScalar(LL * 1.06).add(V(0, 0.36, 0));
+    labB.position.copy(bO).addScaledVector(bD, 3.05).add(V(0, 0.36, 0));
+    if(u.y > 0.98){
+      labL.position.copy(u).multiplyScalar(LH * 0.82).add(V(0.6, 0, 0.2));
+    } else {
+      labL.position.copy(u).multiplyScalar(LH * 0.55).add(V(0.52, 0.16, -0.05));
+    }
+
+    /* 角度读数 */
+    const angA = Math.acos(clamp(Math.abs(u.dot(aD)), -1, 1)) * 180 / Math.PI;
+    const angB = Math.acos(clamp(Math.abs(u.dot(bD)), -1, 1)) * 180 / Math.PI;
+    const angMin = 90 - Math.acos(clamp(Math.abs(u.dot(UP)), -1, 1)) * 180 / Math.PI;
+
+    const okB = Math.abs(angB - 90) < 0.05;
+
+    /* b 处直角 / 反例弧 */
+    if(st.mode === 'correct'){
+      setRA(raB, V(0, 0, 0), bD, u, 0.34);
+      raB.forEach(function(m){ m.visible = true; });
+      labW.visible = false;
+      lpSeg.visible = false;
+      labLP.visible = false;
+      wSeg.visible = false;
+      arcB.segs.forEach(function(m){ m.visible = false; });
+      numA.sprite.position.copy(aD).add(u).normalize().multiplyScalar(1.58);
+      numA.set('90°');
+      numB.sprite.position.copy(bD).add(u).normalize().multiplyScalar(1.58);
+      numB.set('90°');
+    } else if(st.mode === 'one'){
+      raB.forEach(function(m){ m.visible = false; });
+      labW.visible = false;
+      wSeg.visible = false;
+      lpSeg.visible = false;
+      labLP.visible = false;
+      arcB.segs.forEach(function(m){ m.visible = true; });
+      arcB.set(V(0, 0, 0), bD, u, 0.88);
+      numA.sprite.position.copy(aD).multiplyScalar(1.4).add(V(0, 0.95, 0));
+      numA.set('90°');
+      const bis = bD.clone().add(u).normalize().multiplyScalar(1.62);
+      numB.sprite.position.copy(bis);
+      numB.set(angB.toFixed(1) + '°');
+    } else {
+      /* 两条平行：b 与 l 异面，用平移后的 l′ 作直角标记 */
+      raB.forEach(function(m){ m.visible = false; });
+      const q = bO.clone();
+      setSeg(lpSeg, q, q.clone().addScaledVector(u, 1.15));
+      labLP.position.copy(q).addScaledVector(u, 1.15).add(V(0.42, -0.46, 0.1));
+      lpSeg.visible = true;
+      labLP.visible = true;
+
+      /* 在 q 处画直角：b 方向与 u 方向 */
+      const qb = q.clone().addScaledVector(bD, 0.34);
+      const qc = qb.clone().addScaledVector(u, 0.34);
+      const qd = q.clone().addScaledVector(u, 0.34);
+      raB[0].visible = true; raB[1].visible = true; raB[2].visible = true;
+      setSeg(raB[0], q, qb); setSeg(raB[1], qb, qc); setSeg(raB[2], qc, qd);
+
+      /* 平面内与 l 最"斜"的直线 w */
+      const wD = V(0, 0, 1);
+      setSeg(wSeg, wD.clone().multiplyScalar(-2.6), wD.clone().multiplyScalar(2.6));
+      wSeg.visible = true;
+      labW.visible = true;
+      labW.position.copy(wD).multiplyScalar(-2.55).add(V(0, 0.32, 0));
+
+      arcB.segs.forEach(function(m){ m.visible = true; });
+      arcB.set(V(0, 0, 0), wD, u, 0.88);
+
+      numA.sprite.position.copy(aD).multiplyScalar(1.4).add(V(0, 0.95, 0));
+      numA.set('90°');
+      const bis = wD.clone().add(u).normalize().multiplyScalar(1.62);
+      numB.sprite.position.copy(bis);
+      numB.set(angMin.toFixed(1) + '°');
+    }
+
+    /* 卡片 */
+    $('c2a').textContent = angA.toFixed(1) + '°';
+    $('c2b').textContent = angB.toFixed(1) + '°';
+    $('c2min').textContent = angMin.toFixed(1) + '°';
+    const res = $('c2res');
+    const allRight = Math.abs(angMin - 90) < 0.05;
+    res.textContent = allRight ? '成立' : '不成立';
+    res.className = 'v ' + (allRight ? 'ok' : 'no');
+
+    /* 说明文字 */
+    if(st.mode === 'correct'){
+      $('note2').innerHTML = '<b>判定定理</b>：如果一条直线与一个平面内的<span class="hl3">两条相交直线</span>都垂直，则该直线与此平面垂直。<br>' +
+        '转动 ω 让 b 在平面内摆动：a、b 始终相交于 O，也始终都在 α 内 —— 它们张成的平面<b>始终是 α</b>，所以只要 l 垂直于这两条线，就垂直于整个平面。' +
+        '这正是"两条相交直线确定一个平面"在起作用。';
+    } else if(st.mode === 'one'){
+      $('note2').innerHTML = '<b>反例一：只垂直一条</b>。l ⊥ a 仍然成立，但把 l 绕 a 转到倾斜角 ψ 后，它与 α 内另一条直线 b 的夹角只剩下 <span class="hl2">' + angB.toFixed(1) + '°</span>，不再是直角，所以 l <b>不垂直</b> 于 α。<br>' +
+        '平面内有无数个方向，l 只"管住"了其中一个（a 的方向），其余方向全都失守 —— 只要与 a 不平行的直线不与 l 垂直，l 就不垂直这个平面。';
+    } else {
+      $('note2').innerHTML = '<b>反例二：两条，但平行</b>。a ∥ b，l 同时垂直于它们（异面垂直也算），"两条"这个条件满足了，可是 a、b 只确定了<span class="hl3">一个方向</span>，过这个方向可以作无数个平面。<br>' +
+        'l 仍能绕这个方向转动，转到 ψ 后与平面内 w 方向的直线夹角只剩 <span class="hl2">' + angMin.toFixed(1) + '°</span>。所以"两条"必须<span class="hl3">相交</span>，才能把平面"钉死"。';
+    }
+  }
+
+  view.update = update;
+
+  /* 情形切换 */
+  const modes = [['correct', '① 两条相交，都 ⊥ l', ''], ['one', '② 只有一条 a ⊥ l', 'warn'], ['par', '③ 两条平行，都 ⊥ l', 'warn']];
+  modes.forEach(function(m){
+    const b = document.createElement('button');
+    b.className = 'chip' + (m[0] === 'correct' ? ' on' : '') + (m[0] === 'correct' ? '' : ' ' + m[2]);
+    b.textContent = m[1];
+    b.dataset.mode = m[0];
+    b.addEventListener('click', function(){
+      document.querySelectorAll('#modeChips .chip').forEach(function(x){ x.classList.remove('on'); });
+      b.classList.add('on');
+      st.mode = m[0];
+      const isC = (st.mode === 'correct');
+      $('sOm').disabled = !isC;
+      $('sPsi').disabled = isC;
+      $('labOm').classList.toggle('off', !isC);
+      $('labPsi').classList.toggle('off', isC);
+      update();
+    });
+    $('modeChips').appendChild(b);
+  });
+  /* 初始状态：correct 情形下 ψ 滑块无效 */
+  $('sPsi').disabled = true;
+  $('labPsi').classList.add('off');
+
+  $('sOm').addEventListener('input', function(){
+    st.omega = parseFloat(this.value);
+    $('vOm').textContent = st.omega + '°';
+    update();
+  });
+  $('sPsi').addEventListener('input', function(){
+    st.psi = parseFloat(this.value);
+    $('vPsi').textContent = st.psi + '°';
+    update();
+  });
+
+  update();
+})();
+
+/* ==================== ③ 面面垂直的判定 ==================== */
+(function initPerp(){
+  const el = $('stage3');
+  if(!el) return;
+  const view = createView(el, V(6.0, 5.75, 7.7), V(-0.1, 0.95, 0.1));
+  const S = view.scene;
+  const PFW = 4.7;
+  const PFD = 3.8;
+  const BH = 2.85;   // β 的高度
+  const BW = 3.5;    // β 的横向半宽
+
+  addPlaneAlpha(S, PFW, PFD, 0xdcefd6, 0.44, 0x8fb08a);
+
+  /* 平面 β */
+  const betaQuad = makeQuad(0xb6d9ec, 0.26);
+  betaQuad.renderOrder = 0;
+  S.add(betaQuad);
+  const betaGrid = makeVertGrid(6, 0x4f9ec4);
+  S.add(betaGrid.mesh);
+  const betaEdges = [makeSeg(0.008, 0x4f9ec4, 0.75), makeSeg(0.008, 0x4f9ec4, 0.75),
+                     makeSeg(0.008, 0x4f9ec4, 0.75), makeSeg(0.008, 0x4f9ec4, 0.75)];
+  betaEdges.forEach(function(m){ m.renderOrder = 2; S.add(m); });
+
+  /* 交线 m */
+  const mSeg = makeSeg(0.024, 0xdd7358); mSeg.renderOrder = 4; S.add(mSeg);
+
+  /* 垂线 l（高亮 + 光晕） */
+  const glow = makeSeg(0.105, 0x6f68c8, 0.13); glow.renderOrder = 3; S.add(glow);
+  const lSeg = makeSeg(0.042, 0x6f68c8); lSeg.renderOrder = 5; S.add(lSeg);
+  const arrow = new THREE.Mesh(new THREE.ConeGeometry(0.085, 0.24, 14),
+    new THREE.MeshBasicMaterial({color: 0x6f68c8}));
+  arrow.position.set(0, 3.16, 0);
+  S.add(arrow);
+
+  /* α 内垂直于交线的线段 OA */
+  const oaSeg = makeSeg(0.022, 0xdd7358); oaSeg.renderOrder = 4; S.add(oaSeg);
+
+  const raM  = [makeSeg(0.016, 0x6f68c8), makeSeg(0.016, 0x6f68c8), makeSeg(0.016, 0x6f68c8)];
+  const raA0 = [makeSeg(0.016, 0xdd7358), makeSeg(0.016, 0xdd7358), makeSeg(0.016, 0xdd7358)];
+  [raM, raA0].forEach(function(g){ g.forEach(function(m){ m.renderOrder = 6; S.add(m); }); });
+
+  const arc = makeArcSet(0x6f68c8, 26);
+  arc.segs.forEach(function(m){ m.renderOrder = 6; S.add(m); });
+
+  const labAl = makeLabel('α', '#7d9c77', 0.5, true);
+  const labBe = makeLabel('β', '#3d87ad', 0.5, true);
+  const labL  = makeLabel('l', '#6f68c8', 0.42);
+  const labM  = makeLabel('m', '#dd7358', 0.4);
+  const labO  = makeLabel('O', '#2f4450', 0.36, true);
+  const labA  = makeLabel('A', '#dd7358', 0.36);
+  const labB  = makeLabel('B', '#6f68c8', 0.36);
+  [labAl, labBe, labL, labM, labO, labA, labB].forEach(function(s){ S.add(s); });
+  labAl.position.set(-3.55, 0.34, 2.95);
+  labO.position.set(-0.55, 0.3, -0.2);
+
+  const num90 = makeNumLabel('#6f68c8', 0.25);
+  S.add(num90.sprite);
+
+  const st = {phi: 30, step: 1, auto: false, betaO: 0, t: 0};
+
+  function setStep(n){
+    st.step = Math.max(1, Math.min(4, n));
+    $('stepNum3').textContent = '第 ' + st.step + ' / 4 步';
+    $('bNext3').disabled = (st.step >= 4);
+    $('bBack3').disabled = (st.step <= 1);
+    const txt = {
+      1: '第 1 步：平面 α 与它的一条垂线 <span class="hl">l</span>，垂足为 O。l ⊥ α 的含义已在①里说清：<b>l 垂直于 α 内的每一条直线</b>。',
+      2: '第 2 步：过 l 作一个平面 β。β 里含有一条竖直的垂线，它就只能"竖着"立起来 —— 拖动滑块让 β 绕 l 转一圈，无论转到哪儿，β 始终过 l。',
+      3: '第 3 步：β 与 α 相交于直线 <b>m</b>。因为 l ⊥ α 而 m ⊂ α，所以 <span class="hl2">l ⊥ m</span>，即 l 垂直于两个平面的交线（图中小方块）。',
+      4: '第 4 步：在 α 内作 <b>OA ⊥ m</b>，在 β 内 OB 即 l 的方向也垂直于 m，于是 <span class="hl">∠AOB = 90°</span>，二面角 α—m—β 是直二面角，所以 <b>α ⊥ β</b>。'
+    };
+    $('status3').innerHTML = txt[st.step];
+  }
+  setStep(1);
+
+  function update(dt){
+    st.t += dt;
+    const phi = st.phi * Math.PI / 180;
+    const d = V(Math.cos(phi), 0, Math.sin(phi));   // 交线 m 的方向
+    const w = V(-Math.sin(phi), 0, Math.cos(phi));  // α 内垂直于 m 的方向
+
+    /* β 出现动画 */
+    const target = st.step >= 2 ? 1 : 0;
+    st.betaO += (target - st.betaO) * Math.min(1, dt * 7);
+    if(Math.abs(target - st.betaO) < 0.004) st.betaO = target;
+    const bo = st.betaO;
+
+    betaQuad.material.opacity = 0.26 * bo;
+    betaGrid.mat.opacity = 0.3 * bo;
+    betaQuad.visible = bo > 0.01;
+    betaGrid.mesh.visible = bo > 0.01;
+    betaEdges.forEach(function(m){ m.material.opacity = 0.75 * bo; m.visible = bo > 0.01; });
+
+    if(bo > 0.01){
+      setQuad(betaQuad,
+        V(-BW * d.x, 0, -BW * d.z), V(BW * d.x, 0, BW * d.z),
+        V(BW * d.x, BH, BW * d.z), V(-BW * d.x, BH, -BW * d.z));
+      betaGrid.update(d, BH, BW);
+      setSeg(betaEdges[0], V(-BW * d.x, 0, -BW * d.z), V(BW * d.x, 0, BW * d.z));
+      setSeg(betaEdges[1], V(BW * d.x, 0, BW * d.z), V(BW * d.x, BH, BW * d.z));
+      setSeg(betaEdges[2], V(BW * d.x, BH, BW * d.z), V(-BW * d.x, BH, -BW * d.z));
+      setSeg(betaEdges[3], V(-BW * d.x, BH, -BW * d.z), V(-BW * d.x, 0, -BW * d.z));
+    }
+
+    /* l：高亮 + 呼吸光晕 */
+    setSeg(lSeg, V(0, -0.04, 0), V(0, 3.05, 0));
+    setSeg(glow, V(0, -0.04, 0), V(0, 3.03, 0));
+    glow.material.opacity = 0.1 + 0.055 * Math.sin(st.t * 2.1);
+    lSeg.visible = true; glow.visible = true;
+
+    /* 交线 m */
+    const showM = st.step >= 3;
+    mSeg.visible = showM;
+    labM.visible = showM;
+    if(showM){
+      setSeg(mSeg, d.clone().multiplyScalar(-3.1), d.clone().multiplyScalar(3.1));
+      labM.position.copy(d).multiplyScalar(3.2).add(V(0, 0.2, 0));
+    }
+
+    /* l ⊥ m 的直角（在 β 内、O 处） */
+    const showRA = st.step >= 3;
+    raM.forEach(function(m){ m.visible = showRA; });
+    if(showRA) setRA(raM, V(0, 0, 0), d, UP, 0.3);
+
+    /* OA、角弧、90° */
+    const showA = st.step >= 4;
+    oaSeg.visible = showA;
+    labA.visible = showA;
+    labB.visible = showA;
+    raA0.forEach(function(m){ m.visible = showA; });
+    arc.segs.forEach(function(m){ m.visible = showA; });
+    num90.sprite.visible = showA;
+
+    if(showA){
+      const A = w.clone().multiplyScalar(2.05);
+      setSeg(oaSeg, V(0, 0, 0), A);
+      labA.position.copy(A).add(V(0.12, 0.2, 0.12));
+      labB.position.set(0.5, 1.95, 0.04);
+      setRA(raA0, V(0, 0, 0), d, w, 0.3);
+      arc.set(V(0, 0, 0), w, UP, 1.22);
+      const bis = w.clone().add(UP).normalize();
+      num90.sprite.position.copy(bis).multiplyScalar(1.58).add(V(0, 0.16, 0));
+      num90.set('90.0°');
+    }
+
+    /* 标签 */
+    labL.position.set(0.34, 2.5, 0.1);
+    labO.position.copy(w).multiplyScalar(-0.78).add(V(0, 0.3, 0));
+    labBe.position.copy(d).multiplyScalar(2.85).add(V(0, 2.3, 0));
+    labBe.visible = bo > 0.3;
+
+    $('c3ang').textContent = '90.0°';
+  }
+
+  view.update = update;
+
+  $('bNext3').addEventListener('click', function(){ setStep(st.step + 1); });
+  $('bBack3').addEventListener('click', function(){ setStep(st.step - 1); });
+  $('bReset3').addEventListener('click', function(){
+    st.auto = false;
+    $('bAuto3').textContent = '开始自动旋转';
+    setStep(1);
+  });
+  $('sPhi').addEventListener('input', function(){
+    st.phi = parseFloat(this.value);
+    st.auto = false;
+    $('vPhi').textContent = st.phi + '°';
+    $('bAuto3').textContent = '开始自动旋转';
+  });
+  $('bAuto3').addEventListener('click', function(){
+    st.auto = !st.auto;
+    this.textContent = st.auto ? '停止自动旋转' : '开始自动旋转';
+  });
+
+  /* 自动旋转：φ 在 10°~170° 之间往返 */
+  let dir = 1;
+  const baseUpdate = update;
+  view.update = function(dt){
+    if(st.auto){
+      st.phi += dt * 22 * dir;
+      if(st.phi > 170){ st.phi = 170; dir = -1; }
+      if(st.phi < 10){ st.phi = 10; dir = 1; }
+      $('sPhi').value = st.phi.toFixed(0);
+      $('vPhi').textContent = st.phi.toFixed(0) + '°';
+    }
+    baseUpdate(dt);
+  };
+})();
+
+/* ==================== 渲染循环 ==================== */
+let last = 0;
+function tick(now){
+  requestAnimationFrame(tick);
+  const dt = last ? Math.min((now - last) / 1000, 0.06) : 0.016;
+  last = now;
+  for(let i = 0; i < views.length; i++){
+    const v = views[i];
+    if(v.update) v.update(dt);
+    v.controls.update();
+    v.renderer.render(v.scene, v.camera);
+  }
+}
+requestAnimationFrame(tick);
+
+})();
+</script>
+</body>
+</html>

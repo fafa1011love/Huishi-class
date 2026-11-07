@@ -1,0 +1,594 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>误差分析 · 刻度尺使用中的三种典型错误（单文件版）</title>
+<style>
+:root{
+  --blue:#2563EB;
+  --blue-d:#1D4ED8;
+  --blue-l:#EFF4FF;
+  --green:#10B981;
+  --green-l:#EAFBF4;
+  --red:#EF4444;
+  --purple:#7C3AED;
+  --amber:#F59E0B;
+  --ink:#1F2937;
+  --ink-2:#4B5563;
+  --ink-3:#6B7280;
+  --line:#E5E7EB;
+  --bg:#F5F7FB;
+  --card:#FFFFFF;
+  --radius:14px;
+  --shadow:0 1px 2px rgba(16,24,40,.04), 0 8px 24px rgba(16,24,40,.06);
+}
+
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:"Microsoft YaHei","PingFang SC","Hiragino Sans GB",system-ui,-apple-system,"Segoe UI",sans-serif;
+  background:var(--bg);
+  color:var(--ink);
+  line-height:1.65;
+  -webkit-font-smoothing:antialiased;
+}
+
+/* ---------- header ---------- */
+.site-header{
+  background:linear-gradient(135deg,#1E40AF 0%,#2563EB 55%,#3B82F6 100%);
+  color:#fff;padding:26px 0 28px;
+}
+.header-inner{
+  max-width:1080px;margin:0 auto;padding:0 24px;
+  display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;
+}
+.header-text h1{margin:0;font-size:25px;letter-spacing:.4px;font-weight:700;}
+.header-text p{margin:6px 0 0;font-size:14px;opacity:.9;}
+.header-badge{
+  border:1px solid rgba(255,255,255,.4);border-radius:999px;
+  padding:7px 16px;font-size:13px;background:rgba(255,255,255,.12);white-space:nowrap;
+}
+
+/* ---------- layout ---------- */
+.wrap{max-width:1080px;margin:0 auto;padding:26px 24px 40px;}
+.card{
+  background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);
+  padding:24px;border:1px solid rgba(229,231,235,.7);
+}
+.card h2{margin:0 0 6px;font-size:19px;font-weight:700;}
+.lead{margin:0 0 18px;color:var(--ink-2);font-size:14px;}
+
+/* ---------- clinic grid ---------- */
+.clinic{display:grid;grid-template-columns:repeat(auto-fit,minmax(460px,1fr));gap:16px;}
+.case{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:#fff;}
+.case-head{
+  padding:14px 16px;display:flex;justify-content:space-between;align-items:center;gap:10px;
+  background:#FAFBFD;border-bottom:1px solid var(--line);
+}
+.case-head h3{margin:0;font-size:15px;}
+.case-fig{padding:12px;background:#F8FAFC;display:flex;justify-content:center;overflow-x:auto;}
+.case-fig svg{display:block;}
+.case-body{padding:14px 16px;display:none;border-top:1px solid var(--line);}
+.case.open .case-body{display:block;}
+.case-body p{margin:0 0 8px;font-size:13.5px;color:var(--ink-2);}
+.case-body .bad{color:var(--red);font-weight:600;}
+.case-body .good{color:var(--green);font-weight:600;}
+.btn-sm{
+  border:1px solid var(--blue);background:#fff;color:var(--blue);border-radius:8px;
+  padding:6px 14px;font-size:12.5px;cursor:pointer;font-family:inherit;white-space:nowrap;transition:.16s;
+}
+.btn-sm:hover{background:var(--blue);color:#fff;}
+.btn-sm.primary{background:var(--blue);color:#fff;box-shadow:0 1px 2px rgba(37,99,235,.25);}
+.btn-sm.primary:hover{background:var(--blue-d);}
+
+/* ---------- sliders ---------- */
+.slider-row{margin-top:12px;}
+.slider-row label{display:block;font-size:13px;color:var(--ink-2);margin-bottom:6px;}
+.slider-row label b{color:var(--blue);font-variant-numeric:tabular-nums;}
+.slider-row input[type=range]{width:100%;accent-color:var(--blue);cursor:pointer;}
+.hint{color:var(--ink-3);font-size:12px;}
+.play-state{color:var(--purple);font-size:12px;font-weight:700;}
+.tick{display:flex;justify-content:space-between;font-size:11px;color:var(--ink-3);margin-top:1px;}
+.quick{display:flex;gap:8px;margin-top:12px;flex-wrap:wrap;}
+
+/* ---------- readout ---------- */
+.ro-wrap{border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-top:12px;}
+.ro{display:flex;justify-content:space-between;padding:8px 14px;font-size:13.5px;border-bottom:1px solid var(--line);}
+.ro:last-child{border-bottom:none;}
+.ro span{color:var(--ink-3);}
+.ro b{font-variant-numeric:tabular-nums;color:var(--ink);}
+.ro b.ok{color:var(--green);}
+.ro b.warn{color:var(--amber);}
+.ro b.bad{color:var(--red);}
+
+/* ---------- tips ---------- */
+.calc-res{margin-top:10px;font-size:13.5px;color:var(--ink-2);}
+.tag-ok{color:var(--green);font-weight:700;}
+.tag-no{color:var(--red);font-weight:700;}
+.formula{
+  margin-top:10px;padding:9px 12px;background:#F8FAFC;border:1px dashed var(--line);
+  border-radius:8px;font-size:13px;color:var(--ink-2);
+}
+.formula b{color:var(--purple);}
+
+/* ---------- footer ---------- */
+.site-footer{text-align:center;padding:22px 0 34px;color:var(--ink-3);font-size:12.5px;}
+
+@media(max-width:980px){
+  .clinic{grid-template-columns:1fr;}
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-text">
+      <h1>误差分析 · 刻度尺使用中的三种典型错误</h1>
+      <p>初中物理 · 长度的测量　|　先想一想错在哪，再点开诊断、动手拖一拖</p>
+    </div>
+    <div class="header-badge">可交互探究 · 拖动看误差</div>
+  </div>
+</header>
+
+<main class="wrap">
+  <div class="card">
+    <h2>三种典型错误</h2>
+    <p class="lead">每张卡片都藏着一个常见的测量错误。点击右侧「诊断」展开，看清问题与正确做法；带滑块的案例可以拖动，直观看到误差是怎么产生的。</p>
+    <div class="clinic" id="clinic"></div>
+  </div>
+</main>
+
+<footer class="site-footer">物理可视化模型 · 长度的测量与刻度尺读数　|　单文件版，无需外部资源</footer>
+
+<script>
+/* ============================================================
+   以下依次为 core.js → clinic.js → main.js，全部内嵌，无任何外部依赖
+   ============================================================ */
+
+/* ---------- core.js ---------- */
+/* ============================================================
+   core.js —— 通用工具 + 刻度尺绘制引擎
+   坐标约定：x 方向以「厘米」为单位乘以 pxPerCm；y 方向直接用 px。
+   尺身占 y ∈ [0, H]，刻度线自底边（y = H）向上画，物体紧贴尺的下边沿。
+   本引擎与具体实验无关，后续做游标卡尺 / 螺旋测微器可直接复用。
+   ============================================================ */
+
+const FONT = "Microsoft YaHei, PingFang SC, sans-serif";
+
+/* ---------- 小工具 ---------- */
+const $ = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const fmt = (n, d = 2) => Number(n).toFixed(d);
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const round = (v, d = 2) => Math.round(v * 10 ** d) / 10 ** d;
+
+/* ============================================================
+   尺身（刻度线 + 数字 + 零刻度线）
+   o = { start, end, px, div, H, numStep, showNum, zeroLine, zeroText }
+   ============================================================ */
+function rulerG(o) {
+  const start = o.start ?? 0;
+  const end = o.end ?? 20;
+  const px = o.px ?? 60;
+  const div = o.div ?? 0.1;          // 分度值，单位 cm
+  const H = o.H ?? 80;               // 尺身高度
+  const W = (end - start) * px;
+
+  let s = "";
+  s += `<rect x="0" y="0" width="${W}" height="${H}" rx="4" fill="#F4F8FF" stroke="#94A3B8" stroke-width="1"/>`;
+  s += `<rect x="0" y="0" width="${W}" height="6" fill="#E8EFFA"/>`;
+
+  const n = Math.round((end - start) / div);
+  for (let i = 0; i <= n; i++) {
+    const cmv = start + i * div;
+    const x = round(i * div * px, 3);
+    const isInt = Math.abs(cmv - Math.round(cmv)) < 1e-6;
+    const isHalf = !isInt && Math.abs(cmv * 2 - Math.round(cmv * 2)) < 1e-6;
+    let len = 9, col = "#475569", sw = 1;
+    if (isInt) { len = 25; col = "#111827"; sw = 1.5; }
+    else if (isHalf) { len = 16; col = "#334155"; }
+    s += `<line x1="${x}" y1="${H}" x2="${x}" y2="${H - len}" stroke="${col}" stroke-width="${sw}" stroke-linecap="square"/>`;
+    const nStep = o.numStep ?? 1;
+    if (isInt && o.showNum !== false && Math.round(cmv) % nStep === 0) {
+      s += `<text x="${x}" y="${H - len - 7}" font-size="13" font-weight="600" fill="#111827" text-anchor="middle" font-family="${FONT}">${Math.round(cmv)}</text>`;
+    }
+  }
+
+  // 零刻度线（红色强调）
+  if (o.zeroLine !== false) {
+    const zx = (0 - start) * px;
+    if (zx >= 0 && zx <= W) {
+      s += `<line x1="${zx}" y1="${H}" x2="${zx}" y2="-2" stroke="#EF4444" stroke-width="2.4"/>`;
+      if (o.zeroText !== false) s += `<circle cx="${zx}" cy="${H + 9}" r="3" fill="#EF4444"/>`;
+    }
+  }
+  return { markup: s, W, H };
+}
+
+/* ============================================================
+   被测物体（紧贴尺下边沿）
+   o = { from, to, px, top, h, color, label, dashed }
+   ============================================================ */
+function objectG(o) {
+  const px = o.px ?? 60;
+  const top = o.top ?? 80;           // 物体上边沿 y（= 尺身底边）
+  const h = o.h ?? 56;
+  const from = o.from ?? 0, to = o.to ?? 5;
+  const x0 = from * px, x1 = to * px;
+  const color = o.color || "#F59E0B";
+  let s = "";
+  if (o.dashed !== false) {          // 端面指示虚线，方便对齐读数
+    s += `<line x1="${x0}" y1="${top}" x2="${x0}" y2="${top - 96}" stroke="#94A3B8" stroke-width="1" stroke-dasharray="4 4"/>`;
+    s += `<line x1="${x1}" y1="${top}" x2="${x1}" y2="${top - 96}" stroke="#2563EB" stroke-width="1.2" stroke-dasharray="4 4"/>`;
+  }
+  s += `<rect x="${x0}" y="${top}" width="${x1 - x0}" height="${h}" rx="3"
+          fill="${color}" fill-opacity=".22" stroke="${color}" stroke-width="2"/>`;
+  s += `<line x1="${x0}" y1="${top}" x2="${x0}" y2="${top + h}" stroke="${color}" stroke-width="3"/>`;
+  s += `<line x1="${x1}" y1="${top}" x2="${x1}" y2="${top + h}" stroke="${color}" stroke-width="3"/>`;
+  if (o.label) {
+    s += `<text x="${(x0 + x1) / 2}" y="${top + h / 2 + 5}" font-size="13" font-weight="700"
+          fill="${color}" text-anchor="middle" font-family="${FONT}">${o.label}</text>`;
+  }
+  return s;
+}
+
+/* ============================================================
+   组装 SVG（支持用 viewBox 裁剪实现放大镜）
+   opt = { content, w, h, vb:{x,y,w,h}, pad, padTop, padBottom, maxW }
+   ============================================================ */
+function svgWrap(opt) {
+  const pad = opt.pad ?? 14;
+  const cw = opt.w, ch = opt.h;
+  let width, height, viewBox;
+  if (opt.vb) {
+    viewBox = `${opt.vb.x} ${opt.vb.y} ${opt.vb.w} ${opt.vb.h}`;
+    const scale = (opt.maxW ?? 460) / opt.vb.w;
+    width = opt.maxW ?? 460;
+    height = opt.vb.h * scale;
+  } else {
+    const pT = opt.padTop ?? pad, pB = opt.padBottom ?? pad;
+    viewBox = `${-pad} ${-pT} ${cw + pad * 2} ${ch + pT + pB}`;
+    const scale = Math.min(1, (opt.maxW ?? 1000) / (cw + pad * 2));
+    width = (cw + pad * 2) * scale;
+    height = (ch + pT + pB) * scale;
+  }
+  return `<svg viewBox="${viewBox}" width="${round(width, 1)}" height="${round(height, 1)}"
+            xmlns="http://www.w3.org/2000/svg" role="img">${opt.content}</svg>`;
+}
+
+/* 完整尺 + 物体的场景图 */
+function sceneSVG(opt) {
+  const px = opt.px ?? 60, H = opt.H ?? 80;
+  const r = rulerG({
+    start: opt.start ?? 0, end: opt.end ?? 20, px, div: opt.div ?? 0.1, H,
+    numStep: opt.numStep, showNum: opt.showNum, zeroLine: opt.zeroLine, zeroText: opt.zeroText
+  });
+  let content = `<g transform="translate(0,0)">${r.markup}</g>`;
+  if (opt.objects) opt.objects.forEach(ob => { content += objectG({ ...ob, px, top: H }); });
+  return svgWrap({
+    content, w: Math.max(r.W, opt.extraW || 0), h: H + (opt.objH ?? 60) + 16,
+    pad: 16, maxW: opt.maxW ?? 980, vb: opt.vb
+  });
+}
+
+/* 便捷：带样式的文字 */
+function txt(x, y, s, o = {}) {
+  return `<text x="${x}" y="${y}" font-size="${o.size ?? 13}" fill="${o.fill ?? "#1F2937"}"
+    font-weight="${o.w ?? 400}" text-anchor="${o.a ?? "start"}" font-family="${FONT}">${s}</text>`;
+}
+
+/* ---------- clinic.js ---------- */
+/* ============================================================
+   clinic.js —— 误差诊所：刻度尺使用中的三种典型错误
+
+   案例 ②、③ 共用同一套「侧视剖面图」几何：
+     刻度线所在平面高于被测物体顶面 h（h = 0 即紧贴），
+     视线偏离竖直方向 α，则读数偏差  Δ = h · tan α
+   所以消除视差有两条路：h → 0（刻度线贴紧）或 α → 0（视线正对）。
+   案例 ③ 的核心教学点：把 h 拖到 0，无论 α 多大，Δ 恒为 0。
+   ============================================================ */
+
+/* 收起卡片时调用的清理函数（按案例 id 登记），用于停掉自动播放 */
+const STOPPERS = {};
+
+/* ============================================================
+   侧视剖面图（案例 ②、③ 共用）
+   o = { h, alpha }
+   ============================================================ */
+function sideViewSVG(o) {
+  const px = 46;                     // 水平、竖直同为 46 px/cm，保证几何真实
+  const endCm = 9;
+  const L = 5.00, objH = 1.0;
+  const deskY = 300, yTop = deskY - objH * px;      // 物体顶面
+  const h = o.h, a = o.alpha * Math.PI / 180;
+  const yScale = yTop - h * px;                    // 刻度线所在平面
+  const th = Math.max(h * px, 3);                   // 尺的截面厚度
+  const Px = L * px;                                // 物体右端
+  const R = 190;
+  const Ex = Px + R * Math.sin(a), Ey = yTop - R * Math.cos(a);   // 眼睛
+  const dx = h * px * Math.tan(a);                  // 读数偏移（px）
+  const xRead = Px + dx;
+  const ry = 338;                                   // 下方读数尺
+
+  let g = "";
+
+  /* 桌面 */
+  g += `<line x1="0" y1="${deskY}" x2="${endCm * px}" y2="${deskY}" stroke="#94A3B8" stroke-width="2.5"/>`;
+  g += `<line x1="0" y1="${deskY}" x2="${endCm * px}" y2="${deskY + 6}" stroke="#CBD5E1" stroke-width="6"/>`;
+
+  /* 被测物体 */
+  g += `<rect x="0" y="${yTop}" width="${L * px}" height="${objH * px}" fill="#F59E0B" fill-opacity=".22" stroke="#F59E0B" stroke-width="2"/>`;
+  g += txt(L * px / 2, yTop + objH * px / 2 + 5, "被测物体  L = 5.00 cm", { fill: "#B45309", w: 700, a: "middle", size: 12 });
+
+  /* 刻度尺截面（刻度线在其下表面，即 yScale） */
+  g += `<rect x="0" y="${yScale}" width="${endCm * px}" height="${th}" fill="#DBEAFE" stroke="#60A5FA" stroke-width="1.2"/>`;
+  g += `<line x1="0" y1="${yScale}" x2="${endCm * px}" y2="${yScale}" stroke="#EF4444" stroke-width="2.6"/>`;
+  for (let c = 0; c <= endCm; c++) {
+    const len = Math.min(9, th);
+    g += `<line x1="${c * px}" y1="${yScale}" x2="${c * px}" y2="${yScale + len}" stroke="#1F2937" stroke-width="1.2"/>`;
+  }
+  g += txt(endCm * px, yScale - 9, "刻度线所在平面", { size: 11, a: "end", fill: "#EF4444", w: 700 });
+  if (th > 18) g += txt(4, yScale + th / 2 + 4, "刻度尺截面", { size: 11, fill: "#2563EB" });
+
+  /* 间隙 h */
+  g += `<line x1="${Px + 36}" y1="${yTop}" x2="${Px + 36}" y2="${yScale}" stroke="#7C3AED" stroke-width="1.6"/>`;
+  g += `<path d="M${Px + 36} ${yTop} l -4 8 h 8 z M${Px + 36} ${yScale} l -4 -8 h 8 z" fill="#7C3AED"/>`;
+  g += txt(Px + 44, (yTop + yScale) / 2 + 4,
+    h < 0.02 ? "h = 0（紧贴）" : "h = " + fmt(h, 2) + " cm",
+    { size: 12, fill: "#7C3AED", w: 700 });
+
+  /* 眼睛与视线 */
+  g += `<line x1="${Px}" y1="${yTop}" x2="${Px}" y2="${Ey - 26}" stroke="#94A3B8" stroke-width="1" stroke-dasharray="3 4"/>`;
+  g += `<line x1="${Ex}" y1="${Ey}" x2="${xRead}" y2="${yScale}" stroke="#EF4444" stroke-width="1.6" stroke-dasharray="6 4"/>`;
+  g += `<circle cx="${Ex}" cy="${Ey}" r="12" fill="#fff" stroke="#EF4444" stroke-width="2"/>`;
+  g += `<circle cx="${Ex}" cy="${Ey}" r="4" fill="#EF4444"/>`;
+  g += txt(Ex, Ey - 19, "眼睛  α = " + o.alpha + "°", { fill: "#EF4444", w: 700, a: "middle", size: 12 });
+
+  /* 真实位置 / 读数位置 */
+  g += `<line x1="${Px}" y1="${yScale}" x2="${Px}" y2="${ry}" stroke="#10B981" stroke-width="1.6" stroke-dasharray="4 3"/>`;
+  g += `<path d="M${Px} ${ry + 3} l -6 -11 h 12 z" fill="#10B981"/>`;
+  if (Math.abs(dx) > 1.2) {          // 紧贴时两点重合，只画一个标记
+    g += `<line x1="${xRead}" y1="${yScale}" x2="${xRead}" y2="${ry}" stroke="#EF4444" stroke-width="1.6" stroke-dasharray="4 3"/>`;
+    g += `<path d="M${xRead} ${ry + 3} l -6 -11 h 12 z" fill="#EF4444"/>`;
+  }
+
+  /* 读数尺 */
+  g += `<rect x="0" y="${ry}" width="${endCm * px}" height="26" fill="#F8FAFC" stroke="#CBD5E1"/>`;
+  for (let i = 0; i <= endCm * 2; i++) {
+    const c = i / 2, major = i % 2 === 0;
+    g += `<line x1="${c * px}" y1="${ry}" x2="${c * px}" y2="${ry + (major ? 11 : 6)}" stroke="${major ? "#1F2937" : "#94A3B8"}" stroke-width="${major ? 1.4 : 1}"/>`;
+    if (major) g += txt(c * px, ry + 22, String(c), { size: 11, a: "middle", fill: "#1F2937" });
+  }
+  g += txt(endCm * px + 4, ry + 18, "cm", { size: 11, fill: "#6B7280" });
+
+  /* 偏差 Δ */
+  if (Math.abs(dx) > 1.2) {
+    g += `<line x1="${Px}" y1="${ry - 16}" x2="${xRead}" y2="${ry - 16}" stroke="#7C3AED" stroke-width="1.8"/>`;
+    g += `<path d="M${Px} ${ry - 16} l 7 -4 v 8 z M${xRead} ${ry - 16} l -7 -4 v 8 z" fill="#7C3AED"/>`;
+    g += txt((Px + xRead) / 2, ry - 22, "Δ = " + fmt(dx / px, 2) + " cm",
+      { size: 12, fill: "#7C3AED", w: 700, a: "middle" });
+  } else {
+    g += txt(Px, ry - 20, "两个位置重合，Δ = 0", { size: 12, fill: "#10B981", w: 700, a: "middle" });
+  }
+
+  return svgWrap({ content: g, w: endCm * px, h: ry + 34, pad: 18, maxW: 560 });
+}
+
+/* 读数结果面板 */
+function sideViewResult(h, alpha) {
+  const a = alpha * Math.PI / 180;
+  const d = h * Math.tan(a);
+  const read = 5.00 + d;
+  const cls = Math.abs(d) < 0.005 ? "ok" : (Math.abs(d) < 0.15 ? "warn" : "bad");
+  const color = cls === "ok" ? "#10B981" : (cls === "warn" ? "#F59E0B" : "#EF4444");
+  return `<div class="ro-wrap">
+    <div class="ro"><span>物体真实长度</span><b>5.00 cm</b></div>
+    <div class="ro"><span>视线偏斜 α</span><b>${alpha}°</b></div>
+    <div class="ro"><span>刻度线到物体的距离 h</span><b>${fmt(h, 2)} cm</b></div>
+    <div class="ro"><span>读出的数值</span><b>${fmt(read, 2)} cm</b></div>
+    <div class="ro"><span>误差 Δ = h·tan α</span><b class="${cls}" style="color:${color}">${Math.abs(d) < 0.005 ? "0.00" : (d > 0 ? "+" : "−") + fmt(Math.abs(d), 2)} cm</b></div>
+  </div>`;
+}
+
+/* ============================================================
+   三个案例
+   ============================================================ */
+const CLINIC = [
+
+  /* ---------- ① 尺子放歪了 ---------- */
+  {
+    id: "tilt",
+    title: "① 尺子放歪了",
+    problem: "刻度尺没有与被测长度平行，而是斜着压上去。",
+    fix: "把尺身<b>放正、与被测长度平行</b>。歪斜时沿尺量到的是斜边 l = L / cos θ，<b>结果偏大</b>。",
+    fig: () => `<div id="cfTilt"></div>`,
+    ctrl: () => `<div class="slider-row">
+        <label>尺子歪斜角度 θ：<b id="cfTv">15</b>°</label>
+        <input type="range" id="cfT" min="0" max="30" value="15" step="1">
+      </div>
+      <div class="calc-res" id="cfTm"></div>`,
+    bind: () => {
+      const draw = () => {
+        const t = +$("#cfT").value, L = 5.00, px = 54, H = 70, end = 8, r = rulerG({ start: 0, end, px, div: 0.1, H });
+        const rad = t * Math.PI / 180, read = L / Math.cos(rad);
+        const topY = H + 90;
+        let g = objectG({ from: 0, to: L, px, top: topY, h: 46, color: "#F59E0B", label: "木块" });
+        g += `<g transform="translate(0,${topY}) rotate(${-t}) translate(0,${-H})">${r.markup}</g>`;
+        const jy = topY - L * px * Math.tan(rad);
+        g += `<line x1="${L * px}" y1="${topY + 46}" x2="${L * px}" y2="${jy - 24}" stroke="#2563EB" stroke-width="1.2" stroke-dasharray="4 4"/>`;
+        g += `<circle cx="${L * px}" cy="${jy}" r="4.5" fill="#2563EB"/>`;
+        g += txt(L * px + 8, jy - 30, "读数 " + fmt(read, 2) + " cm", { fill: "#2563EB", w: 700 });
+        const topMost = Math.min(topY - end * px * Math.sin(rad), jy - 54);
+        $("#cfTilt").innerHTML = svgWrap({
+          content: g, w: end * px, h: topY + 66, pad: 14,
+          padTop: Math.max(28, -topMost + 18), maxW: 560
+        });
+        $("#cfTv").textContent = t;
+        $("#cfTm").innerHTML = `真实长度 <b>5.00 cm</b>，沿斜尺读到 <b style="color:#EF4444">${fmt(read, 2)} cm</b>，偏大 <b>${fmt(read - L, 2)} cm</b>。`;
+      };
+      $("#cfT").oninput = draw;
+      draw();
+    }
+  },
+
+  /* ---------- ② 斜着看刻度（视差）---------- */
+  {
+    id: "eye",
+    title: "② 斜着看刻度（视差）",
+    problem: "读数时视线没有正对刻度线，而是从侧面斜看过去。只要刻度线与被测物体之间还隔着距离 h，斜视就会带来 h·tan α 的误差。",
+    fix: "视线要<b>正对刻度线、与尺面垂直</b>（α → 0）。消除视差有两条路：<b>视线正对</b>或<b>刻度线紧贴物体</b>——见下一例。",
+    fig: () => `<div id="svEye"></div>`,
+    ctrl: () => `<div class="slider-row">
+        <label>视线偏斜角度 α：<b id="svEv">25</b>°（负=偏左，正=偏右）</label>
+        <input type="range" id="svE" min="-30" max="30" value="25" step="1">
+      </div>
+      <div class="calc-res">图中固定 <b>h = 1.00 cm</b>（相当于厚尺平放时刻度线离物体的距离）。</div>
+      <div id="svEres"></div>`,
+    bind: () => {
+      const H_FIX = 1.00;
+      const draw = () => {
+        const e = +$("#svE").value;
+        $("#svEye").innerHTML = sideViewSVG({ h: H_FIX, alpha: e });
+        $("#svEv").textContent = e;
+        $("#svEres").innerHTML = sideViewResult(H_FIX, e);
+      };
+      $("#svE").oninput = draw;
+      draw();
+    }
+  },
+
+  /* ---------- ③ 刻度线没贴紧物体（可拖动）---------- */
+  {
+    id: "thick",
+    title: "③ 刻度线没贴紧物体（可拖动）",
+    problem: "厚刻度尺平放着量，刻度线在尺的上表面，与被测物体隔着一层尺的厚度；或尺子悬空，根本没有贴住物体。",
+    fix: "厚刻度尺要<b>立起来</b>，让刻度线<b>紧贴</b>被测物体；薄刻度尺则要平贴。<br><b>把 h 拖到 0 你就会看到：无论视线怎么偏，误差都是 0 —— 这就是「必须紧贴」的真正原因。</b>",
+    fig: () => `<div id="svThick"></div>`,
+    ctrl: () => `<div class="slider-row">
+        <label>刻度线到物体的距离 h：<b id="svTv">0.80</b> cm　<span class="hint">0 = 紧贴</span><span class="play-state" id="svState"></span></label>
+        <input type="range" id="svT" min="0" max="40" value="16" step="1">
+        <div class="tick"><span>0 紧贴</span><span>1.0</span><span>2.0 悬空</span></div>
+      </div>
+      <div class="slider-row">
+        <label>视线偏斜角度 α：<b id="svTa">20</b>°</label>
+        <input type="range" id="svTaR" min="-30" max="30" value="20" step="1">
+      </div>
+      <div class="quick">
+        <button class="btn-sm" data-h="0">跳到「紧贴」h=0</button>
+        <button class="btn-sm" data-h="40">跳到「悬空」h=2.0</button>
+        <button class="btn-sm primary" id="svPlay">▶ 自动播放</button>
+      </div>
+      <div class="formula">误差 <b>Δ = h · tan α</b>：间隙 h 是视差的「力臂」，视线偏角 α 是「斜率」。两者任一为 0，误差就消失。</div>
+      <div id="svTres"></div>`,
+    bind: () => {
+      let raf = null;
+      const stopPlay = () => {
+        if (raf) { cancelAnimationFrame(raf); raf = null; }
+        const b = $("#svPlay");
+        if (b) b.textContent = "▶ 自动播放";
+        if ($("#svState")) $("#svState").textContent = "";
+      };
+
+      const draw = () => {
+        const h = +$("#svT").value / 20;         // 0 ~ 2.0 cm
+        const a = +$("#svTaR").value;
+        $("#svThick").innerHTML = sideViewSVG({ h, alpha: a });
+        $("#svTv").textContent = fmt(h, 2);
+        $("#svTa").textContent = a;
+
+        const res = $("#svTres");
+        res.innerHTML = sideViewResult(h, a);
+        const d = h * Math.tan(a * Math.PI / 180);
+        let tip;
+        if (h < 0.02) {
+          tip = `<span class="tag-ok">✔ 刻度线紧贴物体（h = 0）</span>：视差臂为 0，即使视线偏 ${a}°，读数仍然等于真实值 5.00 cm。这正是厚尺要立起来、薄尺要平贴的原因。`;
+        } else if (a === 0) {
+          tip = `此刻视线正好垂直（α = 0），误差为 0。但人眼不可能永远保持绝对垂直，间隙 h = ${fmt(h, 2)} cm 越大，一旦视线稍偏，误差就越大。`;
+        } else {
+          tip = `刻度线离物体 <b>${fmt(h, 2)} cm</b>，视线偏 ${a}°，误差 Δ = h·tan α = <b>${fmt(Math.abs(d), 2)} cm</b>，读数偏${a > 0 ? "大" : "小"}。把 h 拖到 0，误差立刻归零。`;
+        }
+        res.insertAdjacentHTML("beforeend", `<div class="calc-res" style="margin-top:10px">${tip}</div>`);
+      };
+
+      /* 自动播放：h 在 0 ↔ 2.0 cm 之间来回平滑过渡，方便投影演示 */
+      const play = () => {
+        if (raf) { stopPlay(); return; }
+        // α = 0 时全程 Δ ≡ 0，看不出误差——自动给一个偏角
+        if (+$("#svTaR").value === 0) $("#svTaR").value = 20;
+        $("#svPlay").textContent = "⏸ 暂停";
+        $("#svState").textContent = " 自动播放中…";
+        const T = 3600, t0 = performance.now();
+        let last = -1;
+        const step = now => {
+          const p = ((now - t0) % T) / T;          // 0→1 为一个来回
+          const tri = p < 0.5 ? p * 2 : 2 - p * 2; // 三角波 0→1→0
+          const e = tri * tri * (3 - 2 * tri);     // smoothstep 缓入缓出
+          const v = Math.round(e * 40);
+          if (v !== last) { last = v; $("#svT").value = v; draw(); }
+          raf = requestAnimationFrame(step);
+        };
+        raf = requestAnimationFrame(step);
+      };
+
+      $("#svT").oninput = () => { stopPlay(); draw(); };   // 手动拖动即接管
+      $("#svTaR").oninput = draw;
+      $$(".quick [data-h]").forEach(b => {
+        b.onclick = () => { stopPlay(); $("#svT").value = b.dataset.h; draw(); };
+      });
+      $("#svPlay").onclick = play;
+      STOPPERS.thick = stopPlay;
+      draw();
+    }
+  }
+];
+
+/* ============================================================
+   渲染
+   ============================================================ */
+function initError() {
+  $("#clinic").innerHTML = CLINIC.map((c, i) => `
+    <div class="case" data-i="${i}">
+      <div class="case-head"><h3>${c.title}</h3><button class="btn-sm">诊断</button></div>
+      <div class="case-fig">${c.fig()}</div>
+      <div class="case-body">
+        <p><span class="bad">问题：</span>${c.problem}</p>
+        <p><span class="good">正确做法：</span>${c.fix}</p>
+        <div class="case-ctrl-slot"></div>
+      </div>
+    </div>`).join("");
+
+  $$("#clinic .case").forEach(box => {
+    const i = +box.dataset.i, c = CLINIC[i];
+    const btn = $(".btn-sm", box);
+    btn.onclick = () => {
+      box.classList.toggle("open");
+      btn.textContent = box.classList.contains("open") ? "收起" : "诊断";
+      if (!box.classList.contains("open") && STOPPERS[c.id]) STOPPERS[c.id]();
+      const slot = $(".case-ctrl-slot", box);
+      if (box.classList.contains("open") && !slot.dataset.done) {
+        slot.dataset.done = "1";
+        slot.innerHTML = c.ctrl ? c.ctrl() : "";
+        if (c.bind) c.bind();
+      }
+    };
+  });
+}
+
+/* ---------- main.js ---------- */
+/* ============================================================
+   main.js —— 入口
+   ============================================================ */
+document.addEventListener("DOMContentLoaded", () => {
+  initError();
+
+  // 默认展开最后一个案例（刻度线没贴紧物体）—— 本页最值得动手拖一拖的部分
+  const boxes = $$("#clinic .case");
+  const target = boxes[boxes.length - 1];
+  if (target) $(".btn-sm", target).click();
+});
+</script>
+
+</body>
+</html>

@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>滑轮组工作特点 · 物理仿真演示</title>
+<style>
+  :root{
+    --bg:#f5f7fa; --card:#ffffff; --ink:#1f2933; --muted:#6b7785;
+    --line:#e3e8ef; --fixed:#1c7ed6; --move:#2f9e44; --hi:#f08c00;
+    --load:#ff922b; --accent:#e8590c;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;font-family:"Segoe UI","Microsoft YaHei",system-ui,sans-serif;
+    background:var(--bg);color:var(--ink);line-height:1.5;}
+  .wrap{max-width:960px;margin:0 auto;padding:18px 16px 28px;}
+  header h1{margin:0 0 2px;font-size:21px;}
+  header p{margin:0;color:var(--muted);font-size:13px;}
+  .sim-note{font-size:12px;color:var(--muted);background:#eef2f7;border-radius:8px;
+    padding:5px 10px;display:inline-block;margin-top:8px;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;
+    padding:16px;box-shadow:0 1px 3px rgba(0,0,0,.04);margin-top:14px;}
+
+  /* 绕线方式切换 */
+  .modes{display:flex;gap:10px;flex-wrap:wrap;}
+  .modes button{flex:1;min-width:150px;padding:10px 12px;border:1.5px solid var(--line);
+    background:#fff;border-radius:10px;cursor:pointer;font-size:13.5px;color:var(--ink);
+    transition:.15s;font-weight:600;}
+  .modes button .tag{display:block;font-size:11.5px;color:var(--muted);font-weight:400;margin-top:2px;}
+  .modes button.active{border-color:var(--accent);background:#fff4ec;color:var(--accent);}
+  .modes button.active .tag{color:var(--accent);}
+
+  /* 舞台 */
+  .stage{text-align:center;}
+  svg{width:100%;max-width:520px;height:auto;display:inline-block;border-radius:10px;background:#fbfcfe;}
+  .legend{display:flex;flex-wrap:wrap;gap:14px;margin-top:10px;font-size:12.5px;color:var(--muted);justify-content:center;}
+  .legend span{display:inline-flex;align-items:center;gap:6px;}
+  .dot{width:12px;height:12px;border-radius:50%;display:inline-block;}
+  .hint{font-size:12.5px;color:var(--muted);margin-top:8px;}
+
+  /* 自动演示按钮 */
+  .stage-actions{margin-top:12px;display:flex;align-items:center;justify-content:center;gap:12px;flex-wrap:wrap;}
+  .auto-btn{padding:8px 18px;border:1.5px solid var(--accent);background:#fff;color:var(--accent);
+    border-radius:22px;cursor:pointer;font-weight:700;font-size:13px;transition:.18s;}
+  .auto-btn:hover{background:#fff4ec;}
+  .auto-btn.on{background:var(--accent);color:#fff;}
+
+  /* 控制滑块 */
+  .controls{display:grid;grid-template-columns:repeat(3,1fr);gap:16px;}
+  @media(max-width:680px){.controls{grid-template-columns:1fr;}}
+  .ctrl label{display:flex;justify-content:space-between;font-size:13.5px;margin-bottom:4px;}
+  .ctrl label b{color:var(--accent);}
+  input[type=range]{width:100%;accent-color:var(--accent);}
+
+  /* 实时数据卡片 */
+  .stats{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;}
+  @media(max-width:680px){.stats{grid-template-columns:repeat(2,1fr);}}
+  .stat{background:#f8fafc;border:1px solid var(--line);border-radius:10px;padding:10px;text-align:center;}
+  .stat .k{font-size:12px;color:var(--muted);}
+  .stat .v{font-size:18px;font-weight:800;color:var(--accent);margin-top:2px;}
+  .stat .u{font-size:11px;color:var(--muted);}
+
+  /* 知识点 */
+  .kp{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  @media(max-width:680px){.kp{grid-template-columns:1fr;}}
+  .kp-item{background:#f8fafc;border:1px solid var(--line);border-radius:10px;padding:12px 14px;}
+  .kp-item h3{margin:0 0 8px;font-size:14px;}
+  .kp-item h3 .num{display:inline-block;width:20px;height:20px;line-height:20px;text-align:center;
+    background:var(--accent);color:#fff;border-radius:50%;font-size:12px;margin-right:6px;}
+  .kp-item ul{margin:0;padding-left:18px;font-size:12.8px;color:#334155;}
+  .kp-item li{margin:4px 0;}
+  .kp-item .fx{background:#e7eef6;color:#0b3b66;border-radius:5px;padding:1px 5px;font-size:12.5px;}
+  .kp-item li.warn{color:#c92a2a;}
+
+  /* 说明区 */
+  .notes{display:grid;grid-template-columns:1.1fr 1fr;gap:16px;}
+  @media(max-width:680px){.notes{grid-template-columns:1fr;}}
+  .formula{background:#f1f5f9;border-radius:10px;padding:10px 12px;font-size:13.5px;color:#334155;margin-bottom:10px;}
+  .formula code{background:#e7eef6;padding:1px 6px;border-radius:5px;color:#0b3b66;}
+  .concl{font-size:13px;color:#334155;padding-left:18px;margin:6px 0;}
+  .concl b{color:var(--ink);}
+  table{width:100%;border-collapse:collapse;font-size:12.5px;}
+  th,td{border:1px solid var(--line);padding:7px 8px;text-align:center;}
+  th{background:#f1f5f9;color:#334155;font-weight:700;}
+  td .badge{background:#fff4ec;color:var(--accent);border:1px solid #ffd8b5;
+    padding:1px 7px;border-radius:20px;font-weight:700;}
+  .sec-title{font-size:14px;font-weight:700;margin:0 0 8px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>滑轮组工作特点 · 物理仿真演示</h1>
+    <p>滑轮组能省力，绕线方式可改变力的方向；关键要数清承担物重的绳子段数 <b>n</b>。</p>
+    <span class="sim-note">说明：本演示为滑轮组原理<b>示意图（动画模拟）</b>，并非真实实验装置，数值用于演示规律。</span>
+  </header>
+
+  <!-- 绕线方式 -->
+  <div class="card">
+    <div class="modes" id="modes">
+      <button data-m="1" class="active">方式一 · n=2<span class="tag">1定1动 · 自由端向下拉</span></button>
+      <button data-m="2">方式二 · n=3<span class="tag">2定1动 · 自由端向下拉</span></button>
+    </div>
+  </div>
+
+  <!-- 仿真舞台 -->
+  <div class="card stage">
+    <svg id="svg" viewBox="0 0 760 560" aria-label="滑轮组仿真"></svg>
+    <div class="stage-actions">
+      <button id="autoBtn" class="auto-btn">▶ 自动往复演示</button>
+    </div>
+  </div>
+
+  <!-- 控制 -->
+  <div class="card">
+    <div class="controls">
+      <div class="ctrl">
+        <label>物重 G <b><span id="gV">200</span> N</b></label>
+        <input type="range" id="g" min="50" max="500" step="10" value="200">
+      </div>
+      <div class="ctrl">
+        <label>动滑轮总重 G<sub>动</sub> <b><span id="gdV">40</span> N</b></label>
+        <input type="range" id="gd" min="0" max="200" step="5" value="40">
+      </div>
+      <div class="ctrl">
+        <label>物体上升高度 h <b><span id="hV">0.0</span> cm</b></label>
+        <input type="range" id="h" min="0" max="8" step="0.1" value="0">
+      </div>
+    </div>
+  </div>
+
+  <!-- 实时数据 -->
+  <div class="card">
+    <div class="stats">
+      <div class="stat"><div class="k">绳子段数 n</div><div class="v" id="st_n">2</div><div class="u">承担物重</div></div>
+      <div class="stat"><div class="k">拉力 F</div><div class="v" id="st_F">120.0</div><div class="u">N</div></div>
+      <div class="stat"><div class="k">物体上升 h</div><div class="v" id="st_h">0.0</div><div class="u">cm</div></div>
+      <div class="stat"><div class="k">绳端移动 s</div><div class="v" id="st_s">0.0</div><div class="u">cm</div></div>
+      <div class="stat"><div class="k">机械效率 η</div><div class="v" id="st_eta">83.3</div><div class="u">%</div></div>
+    </div>
+  </div>
+
+  <!-- 知识点 -->
+  <div class="card">
+    <p class="sec-title">知识点</p>
+    <div class="kp">
+      <div class="kp-item">
+        <h3><span class="num">1</span>定滑轮与动滑轮</h3>
+        <ul>
+          <li><b>定滑轮</b>：轴固定不动；实质是<b>等臂杠杆</b> → 不省力，但能改变力的方向。</li>
+          <li><b>动滑轮</b>：轴随物体一起移动；实质是动力臂为阻力臂 <b>2 倍</b>的杠杆 → 省一半力，但不能改变力的方向。</li>
+          <li><b>滑轮组</b>＝定滑轮＋动滑轮组合，兼顾省力与改向。</li>
+        </ul>
+      </div>
+      <div class="kp-item">
+        <h3><span class="num">2</span>省力规律与公式</h3>
+        <ul>
+          <li>拉力：<span class="fx">F = (G + G动) / n</span>（忽略绳重与摩擦）</li>
+          <li>距离：<span class="fx">s = n × h</span>（绳端移动是物体上升的 n 倍）</li>
+          <li>效率：<span class="fx">η = G / (G + G动)</span></li>
+          <li>结论：n 越大越省力，但<b>省力必然费距离，使用任何机械都不省功</b>。</li>
+        </ul>
+      </div>
+      <div class="kp-item">
+        <h3><span class="num">3</span>如何正确数 n</h3>
+        <ul>
+          <li>只数<b>直接向上拉住动滑轮（或重物）</b>的绳段——图中橙色高亮的就是 n 段。</li>
+          <li>绕在<b>定滑轮</b>上的绳段<b>不算</b>，它只起改变方向的作用。</li>
+          <li>口诀<b>「奇动偶定」</b>：n 为奇数时绳的固定端系在动滑轮，n 为偶数时系在定滑轮（可反过来检查绕线画得对不对）。</li>
+          <li>技巧：把「动滑轮＋重物」当作整体隔离出来，数有几段绳向上拉它。</li>
+        </ul>
+      </div>
+      <div class="kp-item">
+        <h3><span class="num">4</span>方向规律与常见误区</h3>
+        <ul>
+          <li>能否改变力的方向<b>由绕线决定</b>：本演示两种绕法自由端都向下——向下拉、物体上升，即改变了方向（可借助体重，操作方便）。</li>
+          <li class="warn">误区一：把定滑轮上的绳段也数进 n → n 偏大、算出的拉力偏小。</li>
+          <li class="warn">误区二：认为「省力就省功」→ 实际 F 变小但 s 变大，功不变。</li>
+          <li class="warn">误区三：忽略动滑轮自重 → 实际 F=(G+G动)/n，比 G/n 大。</li>
+        </ul>
+      </div>
+    </div>
+
+    <p class="sec-title" style="margin-top:16px;">两种绕线对比（示意）</p>
+    <table>
+      <tr><th>方式</th><th>滑轮配置</th><th>n</th><th>拉力 F<br>(G=200N, G动=40N)</th><th>距离比 s:h</th><th>是否改变方向</th></tr>
+      <tr><td>方式一</td><td>1定1动</td><td><span class="badge">2</span></td><td>120 N</td><td>2 : 1</td><td>改变（下拉→上升）</td></tr>
+      <tr><td>方式二</td><td>2定1动</td><td><span class="badge">3</span></td><td>80 N</td><td>3 : 1</td><td>改变（下拉→上升）</td></tr>
+    </table>
+  </div>
+</div>
+
+<script>
+const SCALE = 5;
+const modes = {1:{n:2}, 2:{n:3}};
+let curMode = 1, G = 200, Gd = 40;
+let h = 0;                 // 当前显示高度（平滑插值后的值）
+let hTar = 0;              // 目标高度（滑块/拖动设定）
+let hShown = -1;           // 上一帧已渲染的高度，用于按需重绘
+let auto = false, autoT = 0, lastT = performance.now();
+
+const $ = id => document.getElementById(id);
+const svg = $('svg');
+
+function liftPx(){ return h * SCALE; }
+function sPx(){ return modes[curMode].n * liftPx(); }
+
+// 沿滑轮轮缘生成圆弧（保证绳子真正贴合轮子，衔接平顺）
+// 角度制：0=右，90°=下，180°=左，270°=上（SVG 中 y 向下）
+// 从左侧切点绕到右侧切点：π→0 经过底部（从轮下方绕过）；π→2π 经过顶部（从轮上方绕过）
+function arcPts(cx, cy, r, a0, a1, steps=48){
+  let d='';
+  for(let i=1;i<=steps;i++){
+    const a = a0 + (a1-a0)*i/steps;
+    d += ` L ${(cx+r*Math.cos(a)).toFixed(2)} ${(cy+r*Math.sin(a)).toFixed(2)}`;
+  }
+  return d;
+}
+
+function geom(){
+  const lift = liftPx(), s = sPx();
+  if(curMode === 1){
+    // 方式一 n=2：绳固定端在天花板 → 从动滑轮下方绕过 → 从定滑轮上方绕过 → 自由端向下
+    const Mx=400, My=360-lift, r=26;          // 动滑轮
+    const Fx=452, Fy=96, fr=26;               // 定滑轮（左切点正好在动滑轮右切点正上方）
+    const A={x:374,y:44};                     // 天花板下的固定端
+    const Lm={x:Mx-r,y:My}, Rm={x:Mx+r,y:My}; // 动滑轮左右切点
+    const Lf={x:Fx-fr,y:Fy}, Rf={x:Fx+fr,y:Fy};// 定滑轮左右切点
+    const E={x:Rf.x, y:380+s};
+    let d = `M ${A.x} ${A.y} L ${Lm.x} ${Lm.y}`;
+    d += arcPts(Mx, My, r, Math.PI, 0);            // 从动滑轮下方绕过
+    d += ` L ${Lf.x} ${Lf.y}`;
+    d += arcPts(Fx, Fy, fr, Math.PI, 2*Math.PI);   // 从定滑轮上方绕过
+    d += ` L ${E.x} ${E.y}`;
+    return {d, highlights:[[A,Lm],[Rm,Lf]], movable:{x:Mx,y:My,r},
+      load:{x:Mx,y:My+62}, E, fixed:[{x:Fx,y:Fy,r:fr}], anchor:A, frame:null};
+  } else {
+    // 方式二 n=3：绳固定端系在动滑轮组框架左端 → 绕过定滑轮1 → 从动滑轮下方绕过 → 绕过定滑轮2 → 自由端向下
+    const Mx=400, My=360-lift, r=24;
+    const F1={x:352,y:96,r:24}, F2={x:448,y:96,r:24};
+    const Lm={x:Mx-r,y:My}, Rm={x:Mx+r,y:My};
+    const A={x:F1.x-F1.r, y:My-34};                // 固定端（系在框架左端）
+    const f1l={x:F1.x-F1.r,y:96}, f1r={x:F1.x+F1.r,y:96};
+    const f2l={x:F2.x-F2.r,y:96}, f2r={x:F2.x+F2.r,y:96};
+    const E={x:f2r.x, y:380+s};
+    let d = `M ${A.x} ${A.y} L ${f1l.x} ${f1l.y}`;
+    d += arcPts(F1.x, F1.y, F1.r, Math.PI, 2*Math.PI);
+    d += ` L ${Lm.x} ${Lm.y}`;
+    d += arcPts(Mx, My, r, Math.PI, 0);
+    d += ` L ${f2l.x} ${f2l.y}`;
+    d += arcPts(F2.x, F2.y, F2.r, Math.PI, 2*Math.PI);
+    d += ` L ${E.x} ${E.y}`;
+    return {d, highlights:[[A,f1l],[f1r,Lm],[Rm,f2l]], movable:{x:Mx,y:My,r},
+      load:{x:Mx,y:My+62}, E, fixed:[F1,F2], anchor:A,
+      frame:{x1:A.x-8, x2:Rm.x+8, y:My-34}};
+  }
+}
+
+function render(){
+  const g = geom();
+  let s = '';
+
+  s += `<rect x="90" y="30" width="580" height="14" rx="4" fill="#cdd6e0"/>`;
+  g.fixed.forEach(f=>{
+    s += `<line x1="${f.x}" y1="44" x2="${f.x}" y2="${f.y-f.r}" stroke="#9aa7b4" stroke-width="3"/>`;
+  });
+
+  const L=g.load, m=g.movable;
+
+  // 动滑轮组框架：横梁 + 吊挂动滑轮的立柱（方式二的绳固定端系在横梁左端圆点处）
+  if(g.frame){
+    s += `<line x1="${g.frame.x1}" y1="${g.frame.y}" x2="${g.frame.x2}" y2="${g.frame.y}" stroke="#9aa7b4" stroke-width="4" stroke-linecap="round"/>`;
+    s += `<line x1="${m.x}" y1="${g.frame.y}" x2="${m.x}" y2="${m.y}" stroke="#9aa7b4" stroke-width="4"/>`;
+    s += `<circle cx="${g.anchor.x}" cy="${g.frame.y}" r="5" fill="#6b7785"/>`;
+  }
+
+  // 重物挂钩与重物
+  s += `<line x1="${m.x}" y1="${m.y}" x2="${m.x}" y2="${L.y-25}" stroke="var(--move)" stroke-width="3"/>`;
+  s += `<rect x="${L.x-46}" y="${L.y-25}" width="92" height="50" rx="8" fill="var(--load)" opacity=".92"/>`;
+
+  // 先画滑轮，再画绳子：绳子沿轮缘贴合，衔接处不生硬
+  g.fixed.forEach(f=>{
+    s += `<circle cx="${f.x}" cy="${f.y}" r="${f.r}" fill="#e7f1fb" stroke="var(--fixed)" stroke-width="3"/>`;
+    s += `<circle cx="${f.x}" cy="${f.y}" r="3" fill="var(--fixed)"/>`;
+  });
+  s += `<circle cx="${m.x}" cy="${m.y}" r="${m.r}" fill="#e7f7ec" stroke="var(--move)" stroke-width="3"/>`;
+  s += `<circle cx="${m.x}" cy="${m.y}" r="3" fill="var(--move)"/>`;
+
+  s += `<path d="${g.d}" fill="none" stroke="#7b8794" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"/>`;
+
+  // 上升参考虚线 + 箭头（起点固定在初始位置，直观显示升高了多少）
+  if(liftPx()>1){
+    const ax=L.x-62, yb=447, yt=yb-liftPx();
+    s += `<line x1="${ax}" y1="${yb}" x2="${ax}" y2="${yt}" stroke="var(--move)" stroke-width="2" stroke-dasharray="4 3"/>`;
+    s += `<path d="M ${ax-4} ${yt+8} L ${ax+4} ${yt+8} L ${ax} ${yt} Z" fill="var(--move)"/>`;
+  }
+
+  g.highlights.forEach(seg=>{
+    s += `<line x1="${seg[0].x}" y1="${seg[0].y}" x2="${seg[1].x}" y2="${seg[1].y}" stroke="var(--hi)" stroke-width="5" stroke-linecap="round"/>`;
+  });
+
+  const E=g.E;
+  // 绳端手柄：纯图形，下方小三角表示施力方向（不用文字）
+  s += `<line x1="${E.x}" y1="${E.y+11}" x2="${E.x}" y2="${E.y+22}" stroke="var(--accent)" stroke-width="3"/>`;
+  s += `<path d="M ${E.x-7} ${E.y+22} L ${E.x+7} ${E.y+22} L ${E.x} ${E.y+34} Z" fill="var(--accent)"/>`;
+  s += `<circle id="handle" cx="${E.x}" cy="${E.y}" r="11" fill="var(--accent)" stroke="#fff" stroke-width="2" style="cursor:grab"/>`;
+
+  svg.innerHTML = s;
+  bindHandle();
+  updateData();
+}
+
+function updateData(){
+  const n = modes[curMode].n;
+  const F = (G + Gd) / n;
+  const s = n * h;
+  const wy = G * (h/100);
+  const wz = F * (s/100);
+  const eta = G + Gd > 0 ? G / (G + Gd) * 100 : 0;
+  $('st_n').textContent = n;
+  $('st_F').textContent = F.toFixed(1);
+  $('st_h').textContent = h.toFixed(1);
+  $('hV').textContent = h.toFixed(1);
+  $('st_s').textContent = s.toFixed(1);
+  $('st_eta').textContent = eta.toFixed(1);
+}
+
+$('g').addEventListener('input', e=>{ G=+e.target.value; $('gV').textContent=G; updateData(); });
+$('gd').addEventListener('input', e=>{ Gd=+e.target.value; $('gdV').textContent=Gd; updateData(); });
+// 滑块只设定“目标”，由动画循环平滑跟随，避免生硬跳变
+$('h').addEventListener('input', e=>{ if(auto) setAuto(false); hTar = +e.target.value; });
+
+$('modes').addEventListener('click', e=>{
+  const b = e.target.closest('button'); if(!b) return;
+  curMode = +b.dataset.m;
+  document.querySelectorAll('#modes button').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');
+  hTar = 0; $('h').value = 0;      // 切换绕线时平滑回到静止
+  render();
+});
+
+let dragging=false, baseEy=380;
+function bindHandle(){
+  const handle = $('handle'); if(!handle) return;
+  handle.addEventListener('pointerdown', ev=>{
+    dragging=true; handle.setPointerCapture(ev.pointerId); handle.style.cursor='grabbing';
+  });
+  handle.addEventListener('pointermove', ev=>{
+    if(!dragging) return;
+    if(auto) setAuto(false);
+    const pt = svg.createSVGPoint();
+    pt.x=ev.clientX; pt.y=ev.clientY;
+    const loc = pt.matrixTransform(svg.getScreenCTM().inverse());
+    let sNow = Math.max(0, loc.y - baseEy);
+    let hNow = Math.min(8, Math.max(0, sNow / modes[curMode].n / SCALE));
+    hTar = +hNow.toFixed(2);        // 只更新目标，实际位移由动画循环插值
+    $('h').value = hTar;
+  });
+  handle.addEventListener('pointerup', ()=>{ dragging=false; handle.style.cursor='grab'; });
+  handle.addEventListener('pointercancel', ()=>{ dragging=false; });
+}
+
+// —— 平滑动画主循环 ——
+function setAuto(on){
+  auto = on;
+  $('autoBtn').classList.toggle('on', on);
+  $('autoBtn').textContent = on ? '⏸ 暂停演示' : '▶ 自动往复演示';
+  if(on){ autoT = 0; lastT = performance.now(); }   // 从头开始一个往复
+  else  { hTar = h; }                                // 暂停时停在当前位置继续平滑
+}
+$('autoBtn').addEventListener('click', ()=> setAuto(!auto));
+
+function tick(now){
+  const dt = Math.min(0.05, (now - lastT) / 1000);
+  lastT = now;
+
+  if(auto){
+    // 正弦曲线：起步慢、中间快、到位再慢，无突然加速/停顿
+    autoT += dt;
+    const period = 5.0;
+    h = 8 * 0.5 * (1 - Math.cos(2 * Math.PI * autoT / period));
+    $('h').value = h.toFixed(1);
+  } else {
+    // 指数缓动：跟手但不再硬跳，约 0.11s 时间常数
+    const k = 1 - Math.exp(-dt / 0.11);
+    h += (hTar - h) * k;
+    if(Math.abs(hTar - h) < 0.002) h = hTar;
+  }
+
+  if(Math.abs(h - hShown) > 0.001){ hShown = h; render(); }
+  requestAnimationFrame(tick);
+}
+
+render();
+requestAnimationFrame(tick);
+</script>
+</body>
+</html>

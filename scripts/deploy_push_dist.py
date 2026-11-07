@@ -1,10 +1,10 @@
 #!/usr/bin/env python3
 """把本地 dist 差异上传到服务器（不在服务器上构建，避免 CPU 打满）。
 
-用法：
-    SSH_PASS='xxx' python scripts/deploy_push_dist.py             # 只算差异，不上传（dry run）
-    SSH_PASS='xxx' python scripts/deploy_push_dist.py --apply     # 真正上传并切换
-    SSH_PASS='xxx' python scripts/deploy_push_dist.py --apply --no-server   # 只传前端，不动后端代码
+用法（默认用 ~/.ssh/id_ed25519 密钥登录；也可设置 SSH_PASS 用密码）：
+    python scripts/deploy_push_dist.py             # 连服务器只读比对，列出待上传内容（dry run）
+    python scripts/deploy_push_dist.py --apply     # 真正上传并切换
+    python scripts/deploy_push_dist.py --apply --no-server   # 只传前端，不动后端代码
 
 设计要点（服务器 2 核 / 1.9G，构建必炸）：
     1. 前端产物在本机构建，服务器只接收文件，完全不跑 npm/vite
@@ -12,8 +12,12 @@
     3. 传输限速（默认 6 MB/s），把 ssh 加密的 CPU 占用压在低位
     4. 先传静态资源，最后才覆盖 index.html —— 切换是原子的，中途访问不受影响
     5. 后端 server/*.js 一并按大小比对同步（有新逻辑改动时才会传）
-    6. 传完 chown www:www，nginx reload，全程无 CPU 密集操作
+    6. 备课 Python 服务 teacher-studio-service/backend/*.py 按 md5 比对同步，
+       覆盖前先备份服务器上的旧文件，传完重启 shuzhi-prep
+    7. 传完 chown www:www，nginx reload，全程无 CPU 密集操作
 """
+import datetime
+import hashlib
 import json
 import os
 import sys
@@ -31,10 +35,14 @@ USER = os.environ.get('SSH_USER', 'root')
 PASS = os.environ.get('SSH_PASS', '')
 RATE = int(os.environ.get('SSH_RATE_MBPS', '6')) * 1024 * 1024  # 限速，字节/秒
 
-if APPLY and not PASS:
-    sys.exit('请先设置环境变量 SSH_PASS（SSH_HOST / SSH_USER 有默认值）')
+KEY_FILE = os.environ.get('SSH_KEY', os.path.expanduser('~/.ssh/id_ed25519'))
+
+if not PASS and not os.path.isfile(KEY_FILE):
+    sys.exit(f'未找到密钥 {KEY_FILE}，请配置 SSH 密钥，或设置环境变量 SSH_PASS')
 
 APP_DIR = '/www/wwwroot/shuzhi'
+PREP_DIR = 'teacher-studio-service/backend'
+PREP_SERVICE = 'shuzhi-prep'
 LOCAL_DIST = r'C:\Users\yuyiling\Desktop\shuzhi\dist'
 LOCAL_SRC = r'C:\Users\yuyiling\Desktop\shuzhi'
 REMOTE_LIST = os.path.join(os.path.dirname(os.path.abspath(__file__)), '_tmp_remote_dist.json')
@@ -95,6 +103,36 @@ def fetch_remote_list(client):
     return result
 
 
+def connect():
+    client = paramiko.SSHClient()
+    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
+    auth = {'password': PASS} if PASS else {'key_filename': KEY_FILE, 'look_for_keys': False}
+    client.connect(HOST, username=USER, timeout=30, banner_timeout=60, auth_timeout=30, **auth)
+    return client
+
+
+def local_prep_files():
+    """备课服务运行所需的 .py（不含测试），{文件名: (绝对路径, md5)}。"""
+    root = os.path.join(LOCAL_SRC, *PREP_DIR.split('/'))
+    out = {}
+    for name in sorted(os.listdir(root)):
+        abs_p = os.path.join(root, name)
+        if os.path.isfile(abs_p) and name.endswith('.py') and not name.startswith('test_'):
+            with open(abs_p, 'rb') as fh:
+                out[name] = (abs_p, hashlib.md5(fh.read()).hexdigest())
+    return out
+
+
+def remote_prep_hashes(client):
+    _, out, _ = client.exec_command(f'cd {APP_DIR}/{PREP_DIR} 2>/dev/null && md5sum *.py', timeout=60)
+    result = {}
+    for line in out.read().decode('utf-8', 'replace').splitlines():
+        parts = line.split()
+        if len(parts) == 2:
+            result[parts[1]] = parts[0]
+    return result
+
+
 def diff(local, remote, prefix):
     """比对本地目录与服务器清单（服务器清单里的键形如 'dist/xxx'）。"""
     out = []
@@ -138,56 +176,52 @@ def main():
             if os.path.isfile(abs_p) and name.endswith('.js'):
                 local_server[name] = (abs_p, os.path.getsize(abs_p))
 
-    remote = {}
-    if APPLY or os.path.exists(REMOTE_LIST):
-        pass
-    if not APPLY and os.path.exists(REMOTE_LIST):
-        remote = json.load(open(REMOTE_LIST, encoding='utf-8'))
-        print('[dry-run] 使用上次缓存的服务器清单（可能过期）')
+    local_prep = local_prep_files() if SYNC_SERVER else {}
 
-    dist_items = diff(local_dist, remote, 'dist') if remote else [
-        (rel, abs_p, size) for rel, (abs_p, size) in sorted(local_dist.items())
-    ]
-    server_items = diff(local_server, remote, 'server') if remote else [
-        (rel, abs_p, size) for rel, (abs_p, size) in sorted(local_server.items())
-    ]
-
-    total = sum(s for _, _, s in dist_items) + sum(s for _, _, s in server_items)
-    print(f'本地 dist: {len(local_dist)} 个文件')
-    print(f'服务器 dist 清单: {len(remote)} 条')
-    print(f'待上传: dist {len(dist_items)} 个 + server {len(server_items)} 个，共 {total / 1024 / 1024:.2f} MB')
-
-    if not APPLY:
-        print('\n[dry-run] 未上传。加 --apply 执行。')
-        return
-
-    client = paramiko.SSHClient()
-    client.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-    client.connect(HOST, username=USER, password=PASS, timeout=30,
-                   banner_timeout=60, auth_timeout=30)
-
-    print('\n=== 抓取服务器现状 ===')
+    client = connect()
 
     def run(cmd, timeout=180):
         _, out, _ = client.exec_command(cmd, get_pty=True, timeout=timeout)
         return out.read().decode('utf-8', 'replace')
 
+    print('=== 抓取服务器现状（只读） ===')
     print(run('cat /proc/loadavg'))
     remote = fetch_remote_list(client)
     json.dump(remote, open(REMOTE_LIST, 'w', encoding='utf-8'))
-    print(f'已记录服务器清单 {len(remote)} 条')
+    remote_prep = remote_prep_hashes(client) if SYNC_SERVER else {}
+    print(f'已记录服务器清单 {len(remote)} 条，备课服务 .py {len(remote_prep)} 个')
 
-    # 重新按真实清单算差异
     dist_items = diff(local_dist, remote, 'dist')
     server_items = diff(local_server, remote, 'server')
-    total = sum(s for _, _, s in dist_items) + sum(s for _, _, s in server_items)
-    print(f'实际待上传: dist {len(dist_items)} 个 + server {len(server_items)} 个，'
+    prep_items = [(name, abs_p, os.path.getsize(abs_p)) for name, (abs_p, digest) in local_prep.items()
+                  if remote_prep.get(name) != digest]
+    total = sum(s for items in (dist_items, server_items, prep_items) for _, _, s in items)
+    print(f'本地 dist: {len(local_dist)} 个文件')
+    print(f'待上传: dist {len(dist_items)} 个 + server {len(server_items)} 个 + 备课服务 {len(prep_items)} 个，'
           f'共 {total / 1024 / 1024:.2f} MB')
+    for label, items in (('server', server_items), ('备课服务', prep_items)):
+        for rel, _, size in items:
+            state = '新增' if label == '备课服务' and rel not in remote_prep else '更新'
+            print(f'  [{label}] {state} {rel} ({size:,} B)')
+    only_remote = sorted(set(remote_prep) - set(local_prep) - {n for n in remote_prep if n.startswith('test_')})
+    if only_remote:
+        print('  [备课服务] 仅服务器上有（不会删除）：' + '、'.join(only_remote))
 
-    if not dist_items and not server_items:
+    if not APPLY:
+        client.close()
+        print('\n[dry-run] 未上传。加 --apply 执行。')
+        return
+
+    if not dist_items and not server_items and not prep_items:
         print('\n[完成] 服务器已是最新，无需上传')
         client.close()
         return
+
+    if prep_items:
+        backup = f'{APP_DIR}/{PREP_DIR}/.bak_{datetime.datetime.now():%Y%m%d_%H%M%S}'
+        names = ' '.join(name for name, _, _ in prep_items if name in remote_prep)
+        print(f'\n=== 备份将被覆盖的备课服务文件到 {backup} ===')
+        print(run(f'mkdir -p {backup} && cd {APP_DIR}/{PREP_DIR} && {"cp -p " + names + " " + backup if names else "true"} && ls {backup} | wc -l'))
 
     sftp = client.open_sftp()
 
@@ -197,10 +231,16 @@ def main():
     upload(sftp, ordered, f'{APP_DIR}/dist', '前端 dist')
     if SYNC_SERVER:
         upload(sftp, server_items, f'{APP_DIR}/server', '后端 server')
+        upload(sftp, prep_items, f'{APP_DIR}/{PREP_DIR}', '备课服务')
     sftp.close()
 
     print('\n=== 修正属主 + 校验 nginx ===')
-    print(run(f'cd {APP_DIR} && chown -R www:www dist server && nginx -t 2>&1'))
+    print(run(f'cd {APP_DIR} && chown -R www:www dist server {PREP_DIR} && nginx -t 2>&1'))
+
+    if prep_items:
+        print('\n=== 重启备课服务 ===')
+        print(run(f'systemctl restart {PREP_SERVICE} && sleep 3 && systemctl is-active {PREP_SERVICE} '
+                  f'&& curl -s -m 5 http://127.0.0.1:8765/api/lesson-ai/status'))
 
     print('\n=== 清理上一版残留的 index 资源 ===')
     keep = {os.path.basename(p) for p, _, _ in dist_items if p.startswith('assets/index-')}

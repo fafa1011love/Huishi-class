@@ -1,0 +1,877 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>弹簧弹力与伸长量的关系 · 弹簧测力计原理</title>
+<style>
+  :root{
+    --bg:#f4f6fa; --panel:#fff; --ink:#1c2333; --ink-2:#4a5568; --ink-3:#8a94a6;
+    --line:#e2e7f0; --accent:#2f6bff; --accent-soft:#e8efff;
+    --danger:#e5484d; --danger-soft:#fdecec; --gold:#c99100; --gold-soft:#fdf5e3;
+    --violet:#7c5cff; --violet-soft:#f0ecff;
+    --shadow:0 1px 2px rgba(20,30,60,.05),0 8px 24px rgba(20,30,60,.06);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--ink); padding:20px;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1260px;margin:0 auto}
+
+  header{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:16px;flex-wrap:wrap}
+  h1{font-size:21px;font-weight:700;letter-spacing:-.2px}
+  h1 span{color:var(--ink-3);font-weight:500;font-size:13.5px;margin-left:10px;letter-spacing:0}
+  .subtitle{font-size:12.5px;color:var(--ink-2);margin-top:6px}
+  .badge{font-size:12px;padding:6px 12px;border-radius:999px;background:var(--accent-soft);
+    color:var(--accent);font-weight:600;border:1px solid #d3e0ff;white-space:nowrap;transition:.2s}
+
+  .grid{display:grid;grid-template-columns:minmax(0,1.08fr) 436px;gap:16px;align-items:start}
+  @media(max-width:1040px){.grid{grid-template-columns:1fr}}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
+  .card-head{padding:14px 18px 0;display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .card-title{font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+  .hint{font-size:11.5px;color:var(--ink-3);transition:.2s}
+
+  .stage{padding:4px 8px 0}
+  svg.stage-svg{width:100%;height:auto;display:block;user-select:none;-webkit-user-select:none}
+
+  .readouts{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;padding:0 16px 16px}
+  .ro{background:#f8fafd;border:1px solid var(--line);border-radius:11px;padding:9px 11px;transition:.2s}
+  .ro .k{font-size:11px;color:var(--ink-3);margin-bottom:5px;white-space:nowrap}
+  .ro .v{font-size:19px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.4px}
+  .ro .v i{font-size:11.5px;font-weight:500;color:var(--ink-2);font-style:normal;margin-left:2px}
+  .ro.hl{border-color:#d3e0ff;background:linear-gradient(180deg,#f3f7ff,#fff)}
+  .ro.hl .v{color:var(--accent)}
+
+  .controls{padding:0 16px 16px}
+  .ctl-row{display:flex;align-items:baseline;justify-content:space-between;margin:14px 0 9px}
+  .ctl-label{font-size:12.5px;font-weight:600;color:var(--ink-2)}
+  .ctl-val{font-size:14px;font-weight:700;color:var(--accent);font-variant-numeric:tabular-nums}
+  .ctl-val.violet{color:var(--violet)}
+
+  input[type=range]{-webkit-appearance:none;appearance:none;width:100%;height:6px;border-radius:99px;
+    outline:none;background:linear-gradient(90deg,var(--c,var(--accent)) 0 var(--p,0%),#e6ebf5 var(--p,0%) 100%)}
+  input[type=range]::-webkit-slider-thumb{-webkit-appearance:none;width:20px;height:20px;border-radius:50%;
+    background:#fff;border:3px solid var(--c,var(--accent));box-shadow:0 2px 6px rgba(47,107,255,.35);cursor:pointer;transition:transform .12s}
+  input[type=range]::-webkit-slider-thumb:hover{transform:scale(1.12)}
+  input[type=range]::-moz-range-thumb{width:16px;height:16px;border-radius:50%;background:#fff;
+    border:3px solid var(--c,var(--accent));cursor:pointer}
+  input[type=range].violet{--c:#7c5cff;--c-thumb:#7c5cff}
+
+  .quick{display:grid;grid-template-columns:repeat(6,1fr);gap:5px;margin-top:11px}
+  .chip{font:inherit;font-size:11.5px;padding:7px 0;border-radius:8px;border:1px solid var(--line);
+    background:#fff;color:var(--ink-2);cursor:pointer;transition:.15s;font-variant-numeric:tabular-nums}
+  .chip:hover{border-color:#c3d4f8;background:#f6f9ff;color:var(--accent)}
+  .chip.on{background:var(--accent);border-color:var(--accent);color:#fff;font-weight:600}
+
+  /* ---- 自定义输入 ---- */
+  .custom{margin-top:12px;padding:11px 12px;border:1px dashed #d3dced;border-radius:11px;background:#fbfcfe}
+  .custom .ct{font-size:11.5px;color:var(--ink-3);margin-bottom:9px;display:flex;align-items:center;gap:6px}
+  .custom .ct b{color:var(--accent);font-weight:700}
+  .custom .row{display:grid;grid-template-columns:1fr 1fr;gap:9px}
+  .ig{display:flex;align-items:center;gap:5px;border:1px solid var(--line);border-radius:8px;
+    background:#fff;padding:0 8px;transition:.15s}
+  .ig:focus-within{border-color:var(--accent);box-shadow:0 0 0 3px rgba(47,107,255,.1)}
+  .ig input{flex:1;min-width:0;border:0;outline:none;background:transparent;font:inherit;
+    font-size:13px;font-weight:600;color:var(--ink);padding:8px 0;font-variant-numeric:tabular-nums}
+  .ig em{font-size:11px;color:var(--ink-3);font-style:normal;font-weight:600}
+  .ig .lbl2{font-size:10.5px;color:var(--ink-3);font-weight:600;margin-right:-1px;white-space:nowrap}
+
+  .divider{height:1px;background:var(--line);margin:16px 0 2px}
+  .sec-title{font-size:11.5px;font-weight:700;color:var(--ink-3);letter-spacing:.5px;margin-top:14px}
+
+  .danger-switch{display:flex;align-items:center;gap:11px;margin-top:12px;padding:10px 12px;
+    border:1px solid var(--line);border-radius:12px;background:#f8fafd;transition:.2s;cursor:pointer}
+  .danger-switch.on{border-color:#f6cfd0;background:var(--danger-soft)}
+  .sw{position:relative;width:42px;height:24px;flex:none}
+  .sw input{opacity:0;width:0;height:0;position:absolute}
+  .sw .track{position:absolute;inset:0;border-radius:99px;background:#d7dee9;transition:.22s}
+  .sw .track::after{content:"";position:absolute;left:3px;top:3px;width:18px;height:18px;border-radius:50%;
+    background:#fff;box-shadow:0 1px 3px rgba(0,0,0,.2);transition:.22s}
+  .sw input:checked + .track{background:var(--danger)}
+  .sw input:checked + .track::after{transform:translateX(18px)}
+  .danger-switch .txt{flex:1;min-width:0}
+  .danger-switch .txt b{display:block;font-size:12.5px;margin-bottom:2px}
+  .danger-switch.on .txt b{color:var(--danger)}
+  .danger-switch .txt small{font-size:11px;color:var(--ink-3);line-height:1.45;display:block}
+
+  .alert{margin-top:11px;padding:10px 12px;border-radius:10px;font-size:12px;line-height:1.65;
+    background:var(--danger-soft);border:1px solid #f6cfd0;color:#a3262a;display:none}
+  .alert.show{display:block}
+  .alert b{color:var(--danger)}
+
+  .btns{display:flex;gap:8px;margin-top:12px}
+  .btn{flex:1;font:inherit;font-size:12.5px;font-weight:600;padding:10px 0;border-radius:10px;
+    cursor:pointer;border:1px solid var(--line);background:#fff;color:var(--ink-2);transition:.15s}
+  .btn:hover{border-color:#c3d4f8;background:#f6f9ff;color:var(--accent)}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .btn.primary:hover{background:#1f57e0;color:#fff}
+
+  .chart-box{padding:8px 10px 0}
+  canvas#chart{width:100%;height:auto;display:block}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;padding:2px 18px 15px}
+  .lg{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--ink-2)}
+  .lg .bar{width:16px;height:3px;border-radius:2px}
+
+  .note{margin-top:16px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  @media(max-width:1040px){.note{grid-template-columns:1fr}}
+  .note .card{padding:13px 15px}
+  .note h3{font-size:12.5px;margin-bottom:6px;display:flex;align-items:center;gap:7px}
+  .note p{font-size:12px;line-height:1.7;color:var(--ink-2)}
+  .note b{color:var(--ink)}
+  .ico{width:19px;height:19px;border-radius:6px;display:grid;place-items:center;font-size:10.5px;
+    font-weight:800;flex:none}
+  .ico.blue{background:var(--accent-soft);color:var(--accent)}
+  .ico.gold{background:var(--gold-soft);color:var(--gold)}
+  .ico.red{background:var(--danger-soft);color:var(--danger)}
+  .ico.violet{background:var(--violet-soft);color:var(--violet)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <h1>弹簧弹力与伸长量的关系<span>弹簧测力计原理</span></h1>
+      <div class="subtitle">弹性限度内，弹簧的伸长量 ΔL 与所受拉力 F 成正比（胡克定律 F = k·ΔL）</div>
+    </div>
+    <div class="badge" id="statusBadge">弹性限度内 · 正常伸长</div>
+  </header>
+
+  <div class="grid">
+    <!-- 左：装置 -->
+    <div>
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title"><span class="dot"></span>实验装置</div>
+          <div class="hint">可拖动下方钩码</div>
+        </div>
+        <div class="stage">
+          <svg class="stage-svg" id="stage" viewBox="0 0 600 500">
+            <defs>
+              <linearGradient id="blockGrad" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#5b8cff"/><stop offset="100%" stop-color="#2b57d8"/>
+              </linearGradient>
+              <linearGradient id="blockGradD" x1="0" y1="0" x2="0" y2="1">
+                <stop offset="0%" stop-color="#ff8588"/><stop offset="100%" stop-color="#d0363b"/>
+              </linearGradient>
+              <filter id="soft" x="-40%" y="-40%" width="180%" height="180%">
+                <feDropShadow dx="0" dy="3" stdDeviation="3.5" flood-color="#1c2333" flood-opacity=".16"/>
+              </filter>
+            </defs>
+
+            <!-- 天花板 -->
+            <rect x="120" y="22" width="360" height="11" rx="4" fill="#dfe5ef"/>
+            <g stroke="#c6cedb" stroke-width="2" stroke-linecap="round">
+              <line x1="140" y1="22" x2="120" y2="9"/><line x1="180" y1="22" x2="160" y2="9"/>
+              <line x1="220" y1="22" x2="200" y2="9"/><line x1="260" y1="22" x2="240" y2="9"/>
+              <line x1="300" y1="22" x2="280" y2="9"/><line x1="340" y1="22" x2="320" y2="9"/>
+              <line x1="380" y1="22" x2="360" y2="9"/><line x1="420" y1="22" x2="400" y2="9"/>
+              <line x1="460" y1="22" x2="440" y2="9"/>
+            </g>
+            <text x="122" y="15" font-size="10" fill="#aab3c2" font-family="inherit">固定支架</text>
+
+            <g id="ruler"></g>
+
+            <!-- 原长参考线 -->
+            <line id="refSeg" stroke="#12a150" stroke-width="1.6" stroke-dasharray="5 4" opacity=".9"/>
+
+            <!-- 弹簧 -->
+            <path id="spring" fill="none" stroke="#93a0b4" stroke-width="3.2" stroke-linejoin="round" stroke-linecap="round"/>
+            <path id="springHL" fill="none" stroke="#ffffff" stroke-width="1" opacity=".55"/>
+
+            <!-- 指针 -->
+            <polygon id="pointer" fill="#2f6bff"/>
+
+            <!-- 钩码 -->
+            <g id="hookG" filter="url(#soft)" style="cursor:grab;touch-action:none">
+              <rect id="block" width="66" height="46" rx="7" fill="url(#blockGrad)"/>
+              <rect id="shine" width="58" height="11" rx="5" fill="#fff" opacity=".2"/>
+              <text id="blockTxt" text-anchor="middle" font-size="13" font-weight="700" fill="#fff" font-family="inherit">0.0 N</text>
+            </g>
+
+            <!-- ΔL 标注 -->
+            <g id="dlMark" opacity="0">
+              <line id="dlL1" stroke="#2f6bff" stroke-width="1" stroke-dasharray="3 3" opacity=".55"/>
+              <line id="dlL2" stroke="#2f6bff" stroke-width="1" stroke-dasharray="3 3" opacity=".55"/>
+              <line id="dlLine" stroke="#2f6bff" stroke-width="2"/>
+              <polygon id="dlHead" fill="#2f6bff"/>
+              <polygon id="dlHead2" fill="#2f6bff"/>
+            </g>
+
+            <!-- 文字标签（带底框） -->
+            <g id="lbRef">
+              <rect rx="5" fill="#ffffff" stroke="#b7e3c8" opacity=".96"/>
+              <text font-size="11.5" font-weight="700" font-family="inherit" fill="#12a150"></text>
+            </g>
+            <g id="lbDL" opacity="0">
+              <rect rx="5" fill="#ffffff" stroke="#c3d4f8" opacity=".96"/>
+              <text font-size="11.5" font-weight="700" font-family="inherit" fill="#2f6bff"></text>
+            </g>
+            <g id="lbL">
+              <rect rx="5" fill="#ffffff" stroke="#e2e7f0" opacity=".96"/>
+              <text font-size="11.5" font-weight="600" font-family="inherit" fill="#4a5568"></text>
+            </g>
+
+            <!-- 警示 -->
+            <g id="warnG" opacity="0">
+              <rect id="warnBg" rx="7" fill="#fdecec" stroke="#f6cfd0"/>
+              <text id="warnTxt" font-size="11.5" fill="#c9343a" font-weight="600" font-family="inherit"></text>
+            </g>
+          </svg>
+        </div>
+
+        <div class="readouts">
+          <div class="ro"><div class="k">弹簧原长 L₀</div><div class="v" id="roL0">15.0<i>cm</i></div></div>
+          <div class="ro"><div class="k">弹簧总长度 L</div><div class="v" id="roL">15.0<i>cm</i></div></div>
+          <div class="ro hl"><div class="k">伸长量 ΔL = L − L₀</div><div class="v" id="roDL">0.0<i>cm</i></div></div>
+          <div class="ro"><div class="k">拉力 F</div><div class="v" id="roF">0.0<i>N</i></div></div>
+        </div>
+      </div>
+
+      <div class="note">
+        <div class="card">
+          <h3><span class="ico blue">1</span>伸长量与拉力成正比</h3>
+          <p>弹性限度内 <b>F ∝ ΔL</b>，比值即劲度系数 k = <b id="noteK">20 N/m</b>。直线过原点——拉力为零时伸长量也为零。</p>
+        </div>
+        <div class="card">
+          <h3><span class="ico gold">2</span>L₀、L、ΔL 三者关系</h3>
+          <p><b>总长度 L</b> 是从弹簧顶端量到底端的<b>整根长度</b>；<b>ΔL = L − L₀</b> 只是变长的那一段。若画 F–L 图像，直线<b>不过原点</b>，横截距为 L₀。</p>
+        </div>
+        <div class="card">
+          <h3><span class="ico red">3</span>超过弹性限度</h3>
+          <p>比例关系<b>失效</b>，F–ΔL 图像从直线弯成曲线；弹簧发生<b>永久形变</b>，撤去拉力后回不到原长，不能复原。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 右：图像 + 控制 -->
+    <div>
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title"><span class="dot"></span>F–ΔL 关系图像</div>
+          <div class="hint" id="chartHint">直线过原点</div>
+        </div>
+        <div class="chart-box"><canvas id="chart"></canvas></div>
+        <div class="legend">
+          <div class="lg"><span class="bar" style="background:#2f6bff"></span>弹性区直线</div>
+          <div class="lg"><span class="bar" style="background:#ff8a3d"></span>超限后曲线</div>
+          <div class="lg"><span class="bar" style="background:#c99100"></span>弹性限度</div>
+          <div class="lg"><span class="bar" style="background:#e5484d"></span>当前状态点</div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:14px">
+        <div class="card-head">
+          <div class="card-title"><span class="dot"></span>调节参数</div>
+          <div class="hint" id="kHint">k = 20 N/m</div>
+        </div>
+        <div class="controls">
+          <div class="ctl-row">
+            <span class="ctl-label">拉力 F</span>
+            <span class="ctl-val" id="ctlF">0.0 N</span>
+          </div>
+          <input type="range" id="rangeF" min="0" max="4" step="0.05" value="0">
+
+          <div class="quick" id="quick">
+            <button class="chip" data-f="0">0</button>
+            <button class="chip" data-f="1">1 N</button>
+            <button class="chip" data-f="2">2 N</button>
+            <button class="chip" data-f="3">3 N</button>
+            <button class="chip" data-f="4">4 N</button>
+            <button class="chip" data-f="5">5 N</button>
+          </div>
+
+          <!-- 自定义输入 -->
+          <div class="custom">
+            <div class="ct">✎ 自行设定数值 <b>（可输入 5 N 以上）</b></div>
+            <div class="row">
+              <div class="ig">
+                <span class="lbl2">F</span>
+                <input id="inF" type="number" min="0" max="14" step="0.1" value="0">
+                <em>N</em>
+              </div>
+              <div class="ig">
+                <span class="lbl2">ΔL</span>
+                <input id="inDL" type="number" min="0" step="0.1" value="0">
+                <em>cm</em>
+              </div>
+            </div>
+          </div>
+
+          <div class="divider"></div>
+          <div class="sec-title">弹簧本身参数</div>
+          <div class="ctl-row" style="margin-top:10px">
+            <span class="ctl-label">劲度系数 k</span>
+            <span class="ctl-val violet" id="ctlK">20 N/m</span>
+          </div>
+          <input type="range" id="rangeK" class="violet" min="10" max="40" step="1" value="20">
+          <div class="quick" style="grid-template-columns:repeat(4,1fr);margin-top:9px" id="quickK">
+            <button class="chip" data-k="10">10</button>
+            <button class="chip" data-k="20">20</button>
+            <button class="chip" data-k="30">30</button>
+            <button class="chip" data-k="40">40</button>
+          </div>
+
+          <label class="danger-switch" id="dangerBox" for="dangerSw">
+            <span class="sw"><input type="checkbox" id="dangerSw"><span class="track"></span></span>
+            <span class="txt">
+              <b>允许超过弹性限度</b>
+              <small>打开后可把拉力拉到 4.0 N 以上，观察永久形变</small>
+            </span>
+          </label>
+
+          <div class="alert" id="alertBox">
+            <b>弹簧已发生永久形变！</b><br>
+            新原长 <b id="alertL0">—</b>，即使把拉力减到 0 也回不到原来的长度。<br>
+            此时再拉伸，曲线会沿着一条更缓的路径延伸——这正是"比例关系失效"的体现。
+          </div>
+
+          <div class="btns">
+            <button class="btn" id="btnReset">↺ 复位弹簧</button>
+            <button class="btn primary" id="btnRelease">↑ 撤去拉力看结果</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ================= 物理参数 ================= */
+  const L0_0   = 15;     // 初始原长 cm
+  const FMAX   = 4.0;    // 弹性限度 N
+  const MAXF   = 14;     // 可加载拉力上限 N
+  let   K_NM   = 20;     // 劲度系数 N/m（可变）
+  const KCM    = () => K_NM / 100;   // N/cm
+
+  /* 已发生永久形变使弹簧变软（残余应变） */
+  const soften = L0now => Math.min(1, Math.max(0,(L0now - L0_0) / 10)) * 0.30;
+
+  /* 给定拉力 F 与原长 L0now，求伸长量 ΔL */
+  function dLof(Fv, L0now){
+    const k = KCM() * (1 - soften(L0now));
+    if (Fv <= FMAX) return Fv / k;                          // 弹性区：严格正比
+    const o = Fv - FMAX;                                    // 超限：斜率递减 → 曲线下弯
+    const sat = 0.62 * (K_NM / 20);                         // 饱和项随 k 缩放
+    return FMAX / k + o / (k * 1.9) + sat * o * o / (o + 9);
+  }
+
+  /* 拉力超限造成的永久形变（新原长增量） */
+  function permanentSet(Fv){
+    if (Fv <= FMAX) return 0;
+    const o = Fv - FMAX;
+    return 11 * (1 - Math.exp(-o * 0.8));
+  }
+
+  /* 由目标伸长量反解所需拉力（二分法） */
+  function findFForDL(target){
+    const k = KCM() * (1 - soften(L0));
+    if (target <= FMAX / k) return Math.min(FMAX, target * k);
+    let lo = FMAX, hi = MAXF;
+    for (let i = 0; i < 60; i++){
+      const mid = (lo + hi) / 2;
+      const s = permanentSet(mid);
+      const L0t = Math.max(L0, L0_0 + s);
+      if (dLof(mid, L0t) < target) lo = mid; else hi = mid;
+    }
+    return (lo + hi) / 2;
+  }
+
+  /* ================= 状态 ================= */
+  let L0 = L0_0;      // 当前原长
+  let F  = 0;         // 当前拉力
+  let DL = 0;         // 当前伸长量
+  let maxDL = 0;      // 历史最大伸长量
+  let allowOverload = false;
+
+  /* ================= DOM ================= */
+  const $ = id => document.getElementById(id);
+  const SPRING_X = 300, TOP = 33, COILS = 13, AMP = 21;
+  const RULER_X = 162;
+  let PX = 6.2, RULER_MAX = 52, lastRulerKey = '';
+
+  const S = {
+    spring: $('spring'), hl: $('springHL'),
+    refSeg: $('refSeg'), pointer: $('pointer'),
+    block: $('block'), shine: $('shine'), blockTxt: $('blockTxt'),
+    dlMark: $('dlMark'), dlL1: $('dlL1'), dlL2: $('dlL2'), dlLine: $('dlLine'),
+    dlHead: $('dlHead'), dlHead2: $('dlHead2'),
+    warnG: $('warnG'), warnBg: $('warnBg'), warnTxt: $('warnTxt')
+  };
+
+  /* ---- 带底框的文字标签（lines 可为字符串或多行数组） ---- */
+  const SVGNS = 'http://www.w3.org/2000/svg';
+  function setLabel(gid, lines, x, y, anchor){
+    const g = $(gid);
+    const t = g.querySelector('text'), r = g.querySelector('rect');
+    if (Array.isArray(lines)){
+      t.textContent = '';
+      const lh = 14.5;
+      const startY = y - (lines.length - 1) * lh / 2;
+      lines.forEach((ln, i) => {
+        const sp = document.createElementNS(SVGNS, 'tspan');
+        sp.setAttribute('x', x);
+        sp.setAttribute('y', startY + i * lh);
+        sp.setAttribute('text-anchor', anchor);
+        sp.textContent = ln;
+        t.appendChild(sp);
+      });
+    } else {
+      t.textContent = lines;
+      t.setAttribute('x', x);
+      t.setAttribute('y', y);
+      t.setAttribute('text-anchor', anchor);
+    }
+    const bb = t.getBBox();
+    const px = 5.5, py = 2.5;
+    r.setAttribute('x', bb.x - px);
+    r.setAttribute('y', bb.y - py);
+    r.setAttribute('width', bb.width + px*2);
+    r.setAttribute('height', bb.height + py*2);
+  }
+
+  /* ---- 标尺（PX / 量程变化时重绘）---- */
+  function drawRuler(){
+    const key = PX.toFixed(2) + '|' + RULER_MAX;
+    if (key === lastRulerKey) return;
+    lastRulerKey = key;
+    let h = `<rect x="${RULER_X-20}" y="${TOP}" width="42" height="${RULER_MAX*PX}" rx="4" fill="#fff" stroke="#e6ebf3"/>`;
+    for (let cm = 0; cm <= RULER_MAX; cm++){
+      const y = TOP + cm*PX, big = cm % 5 === 0;
+      h += `<line x1="${RULER_X-20}" y1="${y}" x2="${RULER_X-20+(big?13:7)}" y2="${y}" stroke="${big?'#b9c2d1':'#dde3ec'}" stroke-width="1"/>`;
+      if (big) h += `<text x="${RULER_X-3}" y="${y+3.5}" font-size="9.5" fill="#aab3c2" font-family="inherit">${cm}</text>`;
+    }
+    h += `<text x="${RULER_X-20}" y="${TOP-7}" font-size="9.5" fill="#aab3c2" font-family="inherit">cm</text>`;
+    $('ruler').innerHTML = h;
+  }
+
+  /* ---- 弹簧线圈 ---- */
+  function springPath(len){
+    const bodyH = Math.max(6, len - 12);
+    const per = bodyH / COILS;
+    let d = `M ${SPRING_X} ${TOP} L ${SPRING_X} ${TOP+6}`;
+    for (let i = 0; i < COILS*2; i++){
+      const y = TOP + 6 + per*i/2;
+      const x = SPRING_X + (i%2 === 0 ? AMP : -AMP);
+      d += ` L ${x.toFixed(1)} ${y.toFixed(1)}`;
+    }
+    d += ` L ${SPRING_X} ${TOP+6+bodyH} L ${SPRING_X} ${TOP+len}`;
+    return d;
+  }
+
+  /* ================= 渲染装置 ================= */
+  function renderStage(){
+    const totalCm = L0 + DL;
+    // 自适应纵向缩放，保证最长状态也装得下
+    PX = Math.min(6.2, 330 / Math.max(totalCm, 20));
+    RULER_MAX = Math.max(30, Math.ceil((totalCm + 6) / 5) * 5);
+    drawRuler();
+
+    const lenPx = totalCm * PX;
+    const bottomY = TOP + lenPx;
+    const refY = TOP + L0 * PX;
+
+    const p = springPath(lenPx);
+    S.spring.setAttribute('d', p);
+    S.hl.setAttribute('d', p);
+
+    const over = F > FMAX;
+    S.spring.setAttribute('stroke', over ? '#e5873f' : '#93a0b4');
+    S.spring.setAttribute('stroke-width', over ? 3.6 : 3.2);
+
+    // 原长参考线
+    const refLeft = 214, refRight = 452;
+    S.refSeg.setAttribute('x1', refLeft); S.refSeg.setAttribute('x2', refRight);
+    S.refSeg.setAttribute('y1', refY);     S.refSeg.setAttribute('y2', refY);
+
+    // 指针
+    const pxEnd = SPRING_X + AMP + 3;
+    S.pointer.setAttribute('points',
+      `${pxEnd},${bottomY} ${pxEnd+20},${bottomY-5.5} ${pxEnd+20},${bottomY+5.5}`);
+    S.pointer.setAttribute('fill', over ? '#e5484d' : '#2f6bff');
+
+    // 钩码
+    const bw = 66, bh = 46, bx = SPRING_X - bw/2, by = bottomY + 3;
+    S.block.setAttribute('x', bx); S.block.setAttribute('y', by);
+    S.block.setAttribute('fill', over ? 'url(#blockGradD)' : 'url(#blockGrad)');
+    S.shine.setAttribute('x', bx+4); S.shine.setAttribute('y', by+4);
+    S.blockTxt.setAttribute('x', SPRING_X); S.blockTxt.setAttribute('y', by + 28);
+    S.blockTxt.textContent = F.toFixed(1) + ' N';
+
+    // ---------- 文字标签 ----------
+    // ① 弹簧原长（贴在原长线右端上方）
+    setLabel('lbRef', `弹簧原长 L₀ = ${L0.toFixed(1)} cm`, 452, refY - 13, 'end');
+
+    // ② 伸长量 ΔL（标在弹簧左侧的竖向量尺上，两行）
+    const showDL = DL > 0.8;
+    S.dlMark.setAttribute('opacity', showDL ? 1 : 0);
+    $('lbDL').setAttribute('opacity', showDL ? 1 : 0);
+    if (showDL){
+      const ax = 250;                     // 箭头 x
+      S.dlL1.setAttribute('x1', SPRING_X - AMP - 2);
+      S.dlL1.setAttribute('x2', ax + 14);
+      S.dlL1.setAttribute('y1', refY); S.dlL1.setAttribute('y2', refY);
+      S.dlL2.setAttribute('x1', SPRING_X - AMP - 2);
+      S.dlL2.setAttribute('x2', ax + 14);
+      S.dlL2.setAttribute('y1', bottomY); S.dlL2.setAttribute('y2', bottomY);
+      S.dlLine.setAttribute('x1', ax); S.dlLine.setAttribute('x2', ax);
+      S.dlLine.setAttribute('y1', refY); S.dlLine.setAttribute('y2', bottomY);
+      S.dlHead.setAttribute('points', `${ax},${bottomY-1} ${ax-5},${bottomY-9} ${ax+5},${bottomY-9}`);
+      S.dlHead2.setAttribute('points', `${ax},${refY+1} ${ax-5},${refY+9} ${ax+5},${refY+9}`);
+      // 两行文字放在箭头左侧
+      const midY = (refY + bottomY)/2;
+      setLabel('lbDL', ['伸长量', 'ΔL = ' + DL.toFixed(1) + ' cm'], 244, midY, 'end');
+    }
+
+    // ③ 弹簧总长度 L（钩码右侧）
+    setLabel('lbL', `弹簧总长度 L = ${totalCm.toFixed(1)} cm`, bx + bw + 12, by + bh/2 + 4, 'start');
+
+    // ④ 永久形变警示
+    const showWarn = L0 > L0_0 + 0.15;
+    S.warnG.setAttribute('opacity', showWarn ? 1 : 0);
+    if (showWarn){
+      S.warnTxt.textContent = '弹簧已永久伸长 ' + (L0 - L0_0).toFixed(1) + ' cm，不能复原';
+      S.warnBg.setAttribute('x', SPRING_X - 108);
+      S.warnBg.setAttribute('y', 450);
+      S.warnBg.setAttribute('width', 216);
+      S.warnBg.setAttribute('height', 26);
+      S.warnTxt.setAttribute('x', SPRING_X);
+      S.warnTxt.setAttribute('y', 467);
+      S.warnTxt.setAttribute('text-anchor', 'middle');
+    }
+  }
+
+  /* ================= 图像 ================= */
+  const cv = $('chart'), ctx = cv.getContext('2d');
+  const CW = 860, CH = 640;
+  const PAD = { l: 84, r: 96, t: 40, b: 76 };
+  const PW = CW - PAD.l - PAD.r, PH = CH - PAD.t - PAD.b;
+  const YMAX = 14;
+  let XMAX = 45;
+  const X = cm => PAD.l + (cm / XMAX) * PW;
+  const Y = n  => PAD.t + PH - (n / YMAX) * PH;
+  const FONT = '-apple-system,"PingFang SC","Microsoft YaHei",sans-serif';
+
+  function niceStep(range){
+    const raw = range / 9;
+    const pow = Math.pow(10, Math.floor(Math.log10(raw)));
+    const n = raw / pow;
+    const m = n <= 1 ? 1 : n <= 2 ? 2 : n <= 5 ? 5 : 10;
+    return Math.max(2, m * pow);
+  }
+
+  function drawChart(){
+    const dpr = window.devicePixelRatio || 1;
+    if (cv.width !== Math.round(CW*dpr)){
+      cv.width = Math.round(CW*dpr); cv.height = Math.round(CH*dpr);
+      cv.style.aspectRatio = CW + '/' + CH;
+    }
+    ctx.setTransform(dpr,0,0,dpr,0,0);
+    ctx.clearRect(0,0,CW,CH);
+    ctx.fillStyle = '#fff'; ctx.fillRect(0,0,CW,CH);
+
+    // ---- X 轴量程随数据自适应 ----
+    const peakF = Math.max(F, FMAX + 0.1);
+    const need = Math.max(dLof(peakF, L0), dLof(FMAX, L0) + 12, 24);
+    XMAX = Math.min(130, Math.max(45, Math.ceil((need + 4) / 5) * 5));
+    const stepX = niceStep(XMAX);
+    const baseCm = FMAX / (KCM() * (1 - soften(L0)));
+
+    // 网格
+    ctx.strokeStyle = '#eff2f8'; ctx.lineWidth = 1;
+    for (let g = 0; g <= XMAX; g += stepX){ ctx.beginPath(); ctx.moveTo(X(g),PAD.t); ctx.lineTo(X(g),PAD.t+PH); ctx.stroke(); }
+    for (let g = 0; g <= YMAX; g += 1){ ctx.beginPath(); ctx.moveTo(PAD.l,Y(g)); ctx.lineTo(PAD.l+PW,Y(g)); ctx.stroke(); }
+
+    // 轴
+    ctx.strokeStyle = '#c3ccda'; ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    ctx.moveTo(PAD.l, PAD.t); ctx.lineTo(PAD.l, PAD.t+PH); ctx.lineTo(PAD.l+PW, PAD.t+PH);
+    ctx.stroke();
+
+    // 刻度
+    ctx.fillStyle = '#8a94a6'; ctx.font = '500 15px ' + FONT;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    for (let g = 0; g <= XMAX; g += stepX) ctx.fillText(String(Math.round(g*10)/10), X(g), PAD.t+PH+11);
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    for (let g = 0; g <= YMAX; g += 2) ctx.fillText(String(g), PAD.l-13, Y(g));
+
+    // 轴标题
+    ctx.fillStyle = '#4a5568'; ctx.font = '600 17px ' + FONT;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText('伸长量 ΔL / cm', PAD.l+PW/2, PAD.t+PH+42);
+    ctx.save();
+    ctx.translate(28, PAD.t+PH/2); ctx.rotate(-Math.PI/2); ctx.textBaseline = 'middle';
+    ctx.fillText('拉力 F / N', 0, 0);
+    ctx.restore();
+
+    // 弹性限度竖线
+    ctx.save();
+    ctx.setLineDash([7,6]); ctx.strokeStyle = '#c99100'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(X(baseCm), PAD.t); ctx.lineTo(X(baseCm), PAD.t+PH); ctx.stroke();
+    ctx.restore();
+    ctx.fillStyle = '#c99100'; ctx.font = '600 14px ' + FONT;
+    ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    ctx.fillText('弹性限度 4.0 N', X(baseCm), PAD.t-11);
+
+    // ---- 弹性区直线 ----
+    ctx.strokeStyle = '#2f6bff'; ctx.lineWidth = 3.6; ctx.lineCap = 'round';
+    ctx.beginPath();
+    ctx.moveTo(X(0), Y(0));
+    ctx.lineTo(X(baseCm), Y(FMAX));
+    ctx.stroke();
+
+    // ---- 超限曲线 ----
+    const showCurve = maxDL > baseCm + 0.3 || F > FMAX || L0 > L0_0 + 0.15;
+    if (showCurve){
+      let limitF = Math.max(F, FMAX + 0.1);
+      if (maxDL > baseCm){
+        let lo = FMAX, hi = MAXF;
+        for (let i = 0; i < 40; i++){
+          const mid = (lo + hi) / 2;
+          if (dLof(mid, L0) > maxDL) hi = mid; else lo = mid;
+        }
+        limitF = Math.max(limitF, lo);
+      }
+      ctx.beginPath();
+      ctx.moveTo(X(baseCm), Y(FMAX));
+      for (let i = 1; i <= 220; i++){
+        const f = FMAX + (limitF - FMAX) * i/220;
+        ctx.lineTo(X(dLof(f, L0)), Y(f));
+      }
+      ctx.strokeStyle = '#ff8a3d'; ctx.lineWidth = 3.6;
+      ctx.stroke();
+
+      // 后续走向提示（虚线）
+      if (limitF < MAXF - 0.3){
+        ctx.save();
+        ctx.setLineDash([5,6]); ctx.strokeStyle = 'rgba(255,138,61,.35)'; ctx.lineWidth = 2.4;
+        ctx.beginPath();
+        ctx.moveTo(X(dLof(limitF, L0)), Y(limitF));
+        for (let i = 1; i <= 120; i++){
+          const f = limitF + (MAXF - limitF) * i/120;
+          ctx.lineTo(X(dLof(f, L0)), Y(f));
+        }
+        ctx.stroke(); ctx.restore();
+      }
+    }
+
+    // ---- 当前点 ----
+    if (DL > 0.05){
+      const px = X(DL), py = Y(F);
+      ctx.beginPath(); ctx.arc(px,py,10,0,Math.PI*2);
+      ctx.fillStyle = 'rgba(229,72,77,.15)'; ctx.fill();
+      ctx.beginPath(); ctx.arc(px,py,5.5,0,Math.PI*2);
+      ctx.fillStyle = '#e5484d'; ctx.fill();
+      ctx.lineWidth = 2; ctx.strokeStyle = '#fff'; ctx.stroke();
+    }
+
+    // 斜率标注
+    ctx.fillStyle = '#2f6bff'; ctx.font = '600 15px ' + FONT;
+    ctx.textAlign = 'left'; ctx.textBaseline = 'bottom';
+    const bx2 = Math.min(baseCm * 0.45, XMAX * 0.4);
+    ctx.fillText(`k = F/ΔL = ${K_NM} N/m`, X(bx2), Y(FMAX * 0.62));
+
+    // 原点
+    ctx.fillStyle = '#8a94a6'; ctx.font = '500 13px ' + FONT;
+    ctx.textAlign = 'right'; ctx.textBaseline = 'top';
+    ctx.fillText('O', PAD.l-8, PAD.t+PH+8);
+  }
+
+  /* ================= 状态同步 ================= */
+  function applyF(v){
+    const cap = allowOverload ? MAXF : FMAX;
+    F = Math.max(0, Math.min(cap, v));
+    const s = permanentSet(F);
+    if (L0_0 + s > L0) L0 = L0_0 + s;      // 永久形变只增不减
+    DL = dLof(F, L0);
+    const kNow = KCM() * (1 - soften(L0));
+    maxDL = Math.min(Math.max(maxDL, DL), FMAX/kNow + 40);
+    renderStage(); drawChart(); syncUI();
+  }
+
+  let syncing = false;
+  function syncUI(){
+    $('roL0').innerHTML = L0.toFixed(1) + '<i>cm</i>';
+    $('roL').innerHTML  = (L0 + DL).toFixed(1) + '<i>cm</i>';
+    $('roDL').innerHTML = DL.toFixed(1) + '<i>cm</i>';
+    $('roF').innerHTML  = F.toFixed(1) + '<i>N</i>';
+    $('ctlF').textContent = F.toFixed(1) + ' N';
+
+    // 状态徽章
+    const badge = $('statusBadge'), hint = $('chartHint');
+    const damaged = L0 > L0_0 + 0.15;
+    if (damaged){
+      badge.textContent = '已永久形变 · 不能复原';
+      badge.style.background = '#fdecec'; badge.style.color = '#e5484d';
+      badge.style.borderColor = '#f6cfd0';
+      hint.textContent = '曲线已偏离直线'; hint.style.color = '#e5484d';
+    } else if (F > FMAX){
+      badge.textContent = '超过弹性限度 · 比例失效';
+      badge.style.background = '#fdecec'; badge.style.color = '#e5484d';
+      badge.style.borderColor = '#f6cfd0';
+      hint.textContent = '曲线已偏离直线'; hint.style.color = '#e5484d';
+    } else {
+      badge.textContent = '弹性限度内 · 正常伸长';
+      badge.style.background = '#e8efff'; badge.style.color = '#2f6bff';
+      badge.style.borderColor = '#d3e0ff';
+      hint.textContent = '直线过原点'; hint.style.color = '';
+    }
+
+    $('dangerBox').classList.toggle('on', allowOverload);
+    $('alertBox').classList.toggle('show', damaged);
+    $('alertL0').textContent = L0.toFixed(1) + ' cm';
+
+    // 滑块 / 输入框
+    const r = $('rangeF');
+    r.max = allowOverload ? MAXF : FMAX;
+    r.value = F;
+    paintRange(r);
+
+    if (!syncing){
+      syncing = true;
+      $('inF').value = F.toFixed(1);
+      $('inDL').value = DL.toFixed(1);
+      syncing = false;
+    }
+
+    document.querySelectorAll('#quick .chip').forEach(c => {
+      const cf = parseFloat(c.dataset.f);
+      c.classList.toggle('on', Math.abs(cf - F) < 0.03 && !(cf > FMAX && !allowOverload));
+    });
+    document.querySelectorAll('#quickK .chip').forEach(c => {
+      c.classList.toggle('on', Math.abs(parseFloat(c.dataset.k) - K_NM) < 0.5);
+    });
+
+    $('ctlK').textContent = K_NM + ' N/m';
+    $('kHint').textContent = `k = ${K_NM} N/m  ·  ΔL_max = ${(FMAX/KCM()).toFixed(1)} cm`;
+    $('noteK').textContent = K_NM + ' N/m';
+  }
+
+  function paintRange(r){
+    const p = (parseFloat(r.value) - parseFloat(r.min)) / (parseFloat(r.max) - parseFloat(r.min)) * 100;
+    r.style.setProperty('--p', p + '%');
+  }
+
+  /* ================= 交互 ================= */
+  $('rangeF').addEventListener('input', e => applyF(parseFloat(e.target.value)));
+
+  $('quick').addEventListener('click', e => {
+    const b = e.target.closest('.chip'); if (!b) return;
+    const v = parseFloat(b.dataset.f);
+    if (v > FMAX && !allowOverload){
+      const box = $('dangerBox');
+      box.animate([{transform:'translateX(0)'},{transform:'translateX(-4px)'},
+                   {transform:'translateX(4px)'},{transform:'translateX(0)'}], {duration:260});
+      return;
+    }
+    applyF(v);
+  });
+
+  /* ---- 自定义输入 ---- */
+  function commitF(){
+    let v = parseFloat($('inF').value);
+    if (!isFinite(v)) { syncUI(); return; }
+    v = Math.max(0, Math.min(MAXF, v));
+    if (v > FMAX && !allowOverload){
+      allowOverload = true;
+      $('dangerSw').checked = true;
+    }
+    applyF(v);
+  }
+  function commitDL(){
+    let t = parseFloat($('inDL').value);
+    if (!isFinite(t) || t < 0) { syncUI(); return; }
+    const f = findFForDL(t);
+    if (f > FMAX && !allowOverload){
+      allowOverload = true;
+      $('dangerSw').checked = true;
+    }
+    applyF(f);
+  }
+  ['keydown','change'].forEach(ev => {
+    $('inF').addEventListener(ev, e => {
+      if (ev === 'keydown' && e.key !== 'Enter') return;
+      if (ev === 'keydown') e.target.blur();
+      commitF();
+    });
+    $('inDL').addEventListener(ev, e => {
+      if (ev === 'keydown' && e.key !== 'Enter') return;
+      if (ev === 'keydown') e.target.blur();
+      commitDL();
+    });
+  });
+
+  /* ---- 劲度系数 k ---- */
+  function setK(v){
+    const nk = Math.max(10, Math.min(40, Math.round(v)));
+    if (nk === K_NM) { syncUI(); return; }
+    // 换一根弹簧：永久形变清零，原长回到初始
+    K_NM = nk;
+    L0 = L0_0;
+    maxDL = 0;
+    if (F > FMAX && !allowOverload) F = FMAX;
+    applyF(F);
+    $('rangeK').value = K_NM;
+    paintRange($('rangeK'));
+  }
+  $('rangeK').addEventListener('input', e => setK(parseFloat(e.target.value)));
+  $('quickK').addEventListener('click', e => {
+    const b = e.target.closest('.chip'); if (!b) return;
+    setK(parseFloat(b.dataset.k));
+  });
+
+  /* ---- 弹性限度开关 ---- */
+  $('dangerSw').addEventListener('change', e => {
+    allowOverload = e.target.checked;
+    if (!allowOverload && F > FMAX) applyF(FMAX);
+    syncUI(); drawChart();
+  });
+
+  /* ---- 拖动钩码 ---- */
+  let drag = null;
+  $('hookG').addEventListener('pointerdown', e => {
+    drag = { y: e.clientY, f: F };
+    $('hookG').style.cursor = 'grabbing';
+    $('hookG').setPointerCapture(e.pointerId);
+    e.preventDefault();
+  });
+  $('hookG').addEventListener('pointermove', e => {
+    if (!drag) return;
+    applyF(drag.f + (e.clientY - drag.y) * 0.032);
+  });
+  const endDrag = () => { drag = null; $('hookG').style.cursor = 'grab'; };
+  $('hookG').addEventListener('pointerup', endDrag);
+  $('hookG').addEventListener('pointercancel', endDrag);
+
+  /* ---- 复位 ---- */
+  $('btnReset').addEventListener('click', () => {
+    L0 = L0_0; F = 0; DL = 0; maxDL = 0; allowOverload = false;
+    $('dangerSw').checked = false;
+    applyF(0);
+  });
+
+  /* ---- 撤去拉力 ---- */
+  $('btnRelease').addEventListener('click', () => applyF(0));
+
+  /* ================= 初始化 ================= */
+  // 支持 URL 参数调试/预设：?k=30&F=5&ov=1
+  try{
+    const q = new URLSearchParams(location.search);
+    if (q.get('k')) { K_NM = Math.max(10, Math.min(40, parseFloat(q.get('k')))); $('rangeK').value = K_NM; }
+    if (q.get('ov') === '1'){ allowOverload = true; $('dangerSw').checked = true; }
+    if (q.get('F')) F = Math.max(0, Math.min(MAXF, parseFloat(q.get('F'))));
+  }catch(err){}
+  applyF(F);
+  paintRange($('rangeK'));
+})();
+</script>
+</body>
+</html>

@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>12.3　电池电动势和内阻的测量 ｜ 人教版物理必修第三册</title>
+<style>
+  :root{
+    --blue:#1d4ed8; --blue-soft:#eff6ff; --blue-line:#bfdbfe;
+    --ink:#1e293b; --sub:#64748b; --line:#e2e8f0;
+    --amber-bg:#fffbeb; --amber-line:#fcd34d; --amber-ink:#92400e;
+    --green:#059669; --red:#dc2626;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:#f3f5f9; color:var(--ink);
+    font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif; padding:18px 12px 40px;}
+  .wrap{max-width:1060px; margin:0 auto;}
+  header{background:#fff; border:1px solid var(--line); border-left:6px solid var(--blue);
+    border-radius:12px; padding:16px 22px; box-shadow:0 1px 3px rgba(15,23,42,.06);}
+  header h1{font-size:22px; color:var(--ink);}
+  header .meta{margin-top:6px; font-size:12.5px; color:var(--sub); line-height:1.7;}
+  .mod{background:#fff; border:1px solid var(--line); border-radius:12px;
+    padding:16px 20px 18px; margin-top:16px; box-shadow:0 1px 3px rgba(15,23,42,.05);}
+  .mod-h{display:flex; align-items:center; gap:10px; margin-bottom:10px;}
+  .mod-h .no{background:var(--blue); color:#fff; font-size:12px; border-radius:6px;
+    padding:2px 8px; white-space:nowrap;}
+  .mod-h h2{font-size:16.5px;}
+  .mod-h .kp{margin-left:auto; font-size:12px; color:var(--sub); white-space:nowrap;}
+  .think{background:var(--blue-soft); border:1px solid var(--blue-line); border-radius:8px;
+    padding:8px 12px; font-size:12.5px; color:#1e40af; margin-bottom:10px; line-height:1.7;}
+  .think b{color:var(--blue);}
+  canvas.stage{display:block; width:100%; background:#fbfdff;
+    border:1px solid var(--line); border-radius:10px;}
+  .ctrl{display:flex; flex-wrap:wrap; gap:8px 18px; align-items:center; margin-top:10px;}
+  .row{display:flex; align-items:center; gap:8px; font-size:13px;}
+  .row label{color:var(--sub); white-space:nowrap;}
+  .row input[type=range]{width:150px; accent-color:var(--blue);}
+  .row .val{min-width:64px; font-variant-numeric:tabular-nums; color:var(--ink); font-weight:600;}
+  .btn{border:1px solid var(--blue); color:var(--blue); background:#fff; border-radius:7px;
+    padding:4px 12px; font-size:12.5px; cursor:pointer;}
+  .btn:hover{background:var(--blue-soft);}
+  .btn.on{background:var(--blue); color:#fff;}
+  .note{margin-top:10px; background:var(--amber-bg); border:1px solid var(--amber-line);
+    border-radius:8px; padding:8px 12px; font-size:12.5px; color:var(--amber-ink); line-height:1.8;}
+  .note b{color:#b45309;}
+  .warn{margin-top:10px; background:#fef2f2; border:1px solid #fecaca; border-radius:8px;
+    padding:8px 12px; font-size:12.5px; color:#b91c1c; line-height:1.8;}
+  .verdict{margin-top:10px; background:#ecfdf5; border:1px solid #a7f3d0; border-radius:8px;
+    padding:8px 12px; font-size:12.5px; color:#065f46; line-height:1.8;}
+  .verdict b{color:#047857;}
+  footer{margin-top:20px; text-align:center; font-size:12px; color:#94a3b8;}
+  .seg{display:inline-flex; border:1px solid var(--blue); border-radius:8px; overflow:hidden;}
+  .seg button{border:none; background:#fff; color:var(--blue); padding:4px 12px;
+    font-size:12.5px; cursor:pointer;}
+  .seg button.on{background:var(--blue); color:#fff;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>12.3　实验：电池电动势和内阻的测量</h1>
+  <div class="meta">人教版《物理》必修第三册 · 第十二章 电能 能量守恒定律 · 教材 P89–P92 ｜ 覆盖知识点：U–I 法测 E 和 r（纵截距＝E、斜率绝对值＝r）、描点作图与最小二乘拟合、电流表内接／外接带来的系统误差</div>
+</header>
+
+<div class="mod">
+  <div class="mod-h"><span class="no">模块 1</span><h2>U–I 法测 E 和 r（虚拟实验）</h2><span class="kp">虚拟实验 · 数据图象</span></div>
+  <div class="think"><b>先想一想：</b>只测一组 (I, U) 能求出 E 和 r 吗？为什么至少要测几组、还要画成 U–I 图象？</div>
+  <canvas class="stage" id="cv1" style="height:420px;"></canvas>
+  <div class="ctrl">
+    <div class="row"><label>滑动变阻器 R</label><input type="range" id="r1" min="0.5" max="20" step="0.5" value="5"><span class="val" id="r1v"></span></div>
+    <div class="row"><label>待测电池</label>
+      <span class="seg" id="seg1">
+        <button data-t="old" class="on">旧干电池（r 大）</button>
+        <button data-t="new">新干电池（r 小）</button>
+      </span>
+    </div>
+    <button class="btn" id="rec1">记录这一组</button>
+    <button class="btn" id="auto1">自动采 6 组</button>
+    <button class="btn" id="fit1">拟合直线</button>
+    <button class="btn" id="und1">撤销上一组</button>
+    <button class="btn" id="clr1">重来</button>
+    <button class="btn" id="tru1">真实线：显示</button>
+  </div>
+  <div class="note"><b>观察要点：</b>改变 R 取得多组 (I, U) → 在 U–I 图上描点 → 这些点几乎落在<b>一条直线</b>上（因为 U＝E−Ir）。把直线延长：<b>与 U 轴的交点就是 E</b>，<b>斜率的绝对值就是 r</b>。个别点偏离直线是读数误差，拟合直线能把它"平均掉"，比只测两组算方程更可靠。<br>
+  <b>实验提醒：</b>① 接线时开关断开，滑动变阻器先调到阻值最大；② 电流不要太大（干电池大电流放电时 E、r 会变），读完数立即断开；③ 换用<b>旧电池</b>时 r 大、U–I 线更陡，r 测得更准 —— 这也是教材实验常用旧电池的原因。</div>
+  <div class="verdict" id="vd1" style="display:none;"></div>
+</div>
+
+<div class="mod">
+  <div class="mod-h"><span class="no">模块 2</span><h2>系统误差分析：电流表内接还是外接</h2><span class="kp">交互仿真 · 误差对比</span></div>
+  <div class="think"><b>先想一想：</b>电压表不是理想的（会分走一点电流），电流表也不是理想的（会分掉一点电压）。这两种"不理想"分别会让测出的 E、r 偏大还是偏小？</div>
+  <canvas class="stage" id="cv2" style="height:400px;"></canvas>
+  <div class="ctrl">
+    <div class="row"><label>接法</label>
+      <span class="seg" id="seg2">
+        <button data-m="a" class="on">甲：V 并在电源两端</button>
+        <button data-m="b">乙：V 只并在 R 两端</button>
+      </span>
+    </div>
+    <div class="row"><label>电压表内阻 R<sub>V</sub></label><input type="range" id="rv2" min="5" max="500" step="5" value="50"><span class="val" id="rv2v"></span></div>
+    <div class="row"><label>电流表内阻 R<sub>A</sub></label><input type="range" id="ra2" min="0.1" max="5" step="0.1" value="1"><span class="val" id="ra2v"></span></div>
+    <div class="row"><label>电源 E</label><input type="range" id="e2" min="1.5" max="6" step="0.1" value="3"><span class="val" id="e2v"></span></div>
+    <div class="row"><label>真实内阻 r</label><input type="range" id="rr2" min="0.5" max="5" step="0.1" value="1"><span class="val" id="rr2v"></span></div>
+  </div>
+  <div class="note"><b>观察要点：</b>甲接法（V 并在电源两端）：电压表<b>分流</b>，电流表的读数偏小 ⇒ <b>E测、r测 都偏小</b>，相对误差约 r/R<sub>V</sub>。乙接法（A 串在干路、V 只测 R）：电流表<b>分压</b> ⇒ <b>E测 准确、r测 ＝ r＋R<sub>A</sub> 偏大</b>。电池内阻 r 很小而 R<sub>V</sub> 很大，所以本实验应选用<b>甲接法</b>。（为看清差别，滑块把 R<sub>V</sub> 调得比实际小很多，真实电压表内阻几千欧，误差还要小得多。）</div>
+  <div class="verdict" id="vd2"></div>
+</div>
+
+<footer>人教版高中物理必修第三册 · 可视化交互课件 ｜ 单文件离线运行，双击即可使用</footer>
+</div>
+
+<script>
+(function(){
+'use strict';
+/* ========== 通用工具（与同系列课件统一） ========== */
+function $(id){ return document.getElementById(id); }
+function fmt(x, d){
+  if (d === undefined) d = 2;
+  if (!isFinite(x)) return '—';
+  var a = Math.abs(x);
+  if (a >= 10000 || (a > 0 && a < 0.01)) return x.toExponential(2);
+  return (+x.toFixed(d)).toString();
+}
+function fit(cv){
+  var dpr = window.devicePixelRatio || 1;
+  var w = cv.clientWidth, h = cv.clientHeight;
+  var W = Math.round(w * dpr), H = Math.round(h * dpr);
+  if (cv.width !== W || cv.height !== H){ cv.width = W; cv.height = H; }
+  var ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return ctx;
+}
+function bindRange(id, fn, fmtf){
+  var el = $(id), out = $(id + 'v');
+  function go(){
+    var x = parseFloat(el.value);
+    if (!isFinite(x)) x = 0;
+    if (out) out.textContent = fmtf ? fmtf(x) : x;
+    fn(x);
+  }
+  el.addEventListener('input', go); go();
+  return el;
+}
+function arrow(ctx, x1, y1, x2, y2, color, w){
+  ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = w || 2;
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  var a = Math.atan2(y2 - y1, x2 - x1), s = 7;
+  ctx.beginPath(); ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - s * Math.cos(a - 0.42), y2 - s * Math.sin(a - 0.42));
+  ctx.lineTo(x2 - s * Math.cos(a + 0.42), y2 - s * Math.sin(a + 0.42));
+  ctx.closePath(); ctx.fill();
+}
+/* 0 起点坐标系 */
+function axes(c, W, H, pad, xmax, ymax, xlab, ylab, xt, yt){
+  c.fillStyle = '#fbfdff'; c.fillRect(0, 0, W, H);
+  var x0 = pad + 12, y0 = H - pad, x1 = W - pad * 0.5, y1 = pad * 0.6;
+  var i, gx, gy;
+  c.strokeStyle = '#eef2f7'; c.lineWidth = 1;
+  for (i = 0; i <= 5; i++){
+    gx = x0 + (x1 - x0) * i / 5;
+    c.beginPath(); c.moveTo(gx, y1); c.lineTo(gx, y0); c.stroke();
+  }
+  for (i = 0; i <= 5; i++){
+    gy = y0 - (y0 - y1) * i / 5;
+    c.beginPath(); c.moveTo(x0, gy); c.lineTo(x1, gy); c.stroke();
+  }
+  c.strokeStyle = '#334155'; c.lineWidth = 1.6;
+  c.beginPath(); c.moveTo(x0, y1); c.lineTo(x0, y0); c.lineTo(x1, y0); c.stroke();
+  c.font = '11px Consolas, monospace'; c.fillStyle = '#64748b';
+  c.textAlign = 'center'; c.textBaseline = 'top';
+  for (i = 0; i <= 5; i++){
+    gx = x0 + (x1 - x0) * i / 5;
+    c.fillText((xmax * i / 5).toFixed(xt === undefined ? 1 : xt), gx, y0 + 5);
+  }
+  c.textAlign = 'right'; c.textBaseline = 'middle';
+  for (i = 0; i <= 5; i++){
+    gy = y0 - (y0 - y1) * i / 5;
+    c.fillText((ymax * i / 5).toFixed(yt === undefined ? 1 : yt), x0 - 5, gy);
+  }
+  c.fillStyle = '#334155'; c.textAlign = 'center'; c.textBaseline = 'top';
+  c.fillText(xlab, (x0 + x1) / 2, H - 14);
+  c.save(); c.translate(14, (y0 + y1) / 2); c.rotate(-Math.PI / 2);
+  c.textAlign = 'center'; c.textBaseline = 'top'; c.fillText(ylab, 0, 0); c.restore();
+  return {
+    x0: x0, y0: y0, x1: x1, y1: y1,
+    px: function(v){ return x0 + (x1 - x0) * Math.max(0, Math.min(1, v / xmax)); },
+    py: function(v){ return y0 - (y0 - y1) * Math.max(0, Math.min(1, v / ymax)); }
+  };
+}
+/* 任意区间坐标系（用于误差分析局部放大） */
+function axesMM(c, W, H, pad, xmin, xmax, ymin, ymax, xlab, ylab){
+  c.fillStyle = '#fbfdff'; c.fillRect(0, 0, W, H);
+  var x0 = pad + 12, y0 = H - pad, x1 = W - pad * 0.5, y1 = pad * 0.6;
+  var i, gx, gy, v;
+  c.strokeStyle = '#eef2f7'; c.lineWidth = 1;
+  for (i = 0; i <= 5; i++){
+    gx = x0 + (x1 - x0) * i / 5;
+    c.beginPath(); c.moveTo(gx, y1); c.lineTo(gx, y0); c.stroke();
+    gy = y0 - (y0 - y1) * i / 5;
+    c.beginPath(); c.moveTo(x0, gy); c.lineTo(x1, gy); c.stroke();
+  }
+  c.strokeStyle = '#334155'; c.lineWidth = 1.6;
+  c.beginPath(); c.moveTo(x0, y1); c.lineTo(x0, y0); c.lineTo(x1, y0); c.stroke();
+  c.font = '11px Consolas, monospace'; c.fillStyle = '#64748b';
+  c.textAlign = 'center'; c.textBaseline = 'top';
+  for (i = 0; i <= 5; i++){
+    v = xmin + (xmax - xmin) * i / 5;
+    c.fillText(v.toFixed(2), x0 + (x1 - x0) * i / 5, y0 + 5);
+  }
+  c.textAlign = 'right'; c.textBaseline = 'middle';
+  for (i = 0; i <= 5; i++){
+    v = ymin + (ymax - ymin) * i / 5;
+    c.fillText(v.toFixed(2), x0 - 5, y0 - (y0 - y1) * i / 5);
+  }
+  c.fillStyle = '#334155'; c.textAlign = 'center'; c.textBaseline = 'top';
+  c.fillText(xlab, (x0 + x1) / 2, H - 14);
+  c.save(); c.translate(14, (y0 + y1) / 2); c.rotate(-Math.PI / 2);
+  c.textAlign = 'center'; c.textBaseline = 'top'; c.fillText(ylab, 0, 0); c.restore();
+  return {
+    x0: x0, y0: y0, x1: x1, y1: y1,
+    px: function(vv){ return x0 + (x1 - x0) * Math.max(0, Math.min(1, (vv - xmin) / (xmax - xmin))); },
+    py: function(vv){ return y0 - (y0 - y1) * Math.max(0, Math.min(1, (vv - ymin) / (ymax - ymin))); }
+  };
+}
+function rrect(c, x, y, w, h, r){
+  c.beginPath(); c.moveTo(x + r, y);
+  c.arcTo(x + w, y, x + w, y + h, r); c.arcTo(x + w, y + h, x, y + h, r);
+  c.arcTo(x, y + h, x, y, r); c.arcTo(x, y, x + w, y, r); c.closePath();
+}
+function label(c, x, y, txt, color, size, align){
+  c.font = (size || 12.5) + 'px "Microsoft YaHei", sans-serif';
+  c.fillStyle = color || '#1e293b'; c.textAlign = align || 'left';
+  c.textBaseline = 'alphabetic'; c.fillText(txt, x, y);
+}
+function mono(c, x, y, txt, color, size, align){
+  c.font = (size || 12) + 'px Consolas, monospace';
+  c.fillStyle = color || '#1e293b'; c.textAlign = align || 'left';
+  c.textBaseline = 'alphabetic'; c.fillText(txt, x, y);
+}
+function flowDots(c, pts, phase, spacing, color){
+  var segs = [], total = 0, i;
+  for (i = 0; i < pts.length; i++){
+    var a = pts[i], b = pts[(i + 1) % pts.length];
+    var len = Math.sqrt((b[0] - a[0]) * (b[0] - a[0]) + (b[1] - a[1]) * (b[1] - a[1]));
+    segs.push({ a: a, b: b, len: len, s: total }); total += len;
+  }
+  if (total <= 0) return;
+  var n = Math.floor(total / spacing);
+  c.fillStyle = color;
+  for (var k = 0; k < n; k++){
+    var d = (phase + k * spacing) % total;
+    if (d < 0) d += total;
+    for (var s = 0; s < segs.length; s++){
+      var sg = segs[s];
+      if (d >= sg.s && d < sg.s + sg.len){
+        var f = sg.len > 0 ? (d - sg.s) / sg.len : 0;
+        var x = sg.a[0] + (sg.b[0] - sg.a[0]) * f;
+        var y = sg.a[1] + (sg.b[1] - sg.a[1]) * f;
+        c.beginPath(); c.arc(x, y, 3.2, 0, 6.2832); c.fill();
+        break;
+      }
+    }
+  }
+}
+function batV(c, x, y){
+  c.save(); c.strokeStyle = '#0f172a'; c.lineWidth = 3;
+  c.beginPath(); c.moveTo(x - 19, y - 5); c.lineTo(x + 19, y - 5); c.stroke();
+  c.beginPath(); c.moveTo(x - 10, y + 6); c.lineTo(x + 10, y + 6); c.stroke();
+  c.restore();
+  c.font = '11px Consolas, monospace'; c.fillStyle = '#0f172a';
+  c.textAlign = 'right'; c.textBaseline = 'middle';
+  c.fillText('+', x - 23, y - 5); c.fillText('−', x - 23, y + 6);
+  c.textAlign = 'left'; c.textBaseline = 'alphabetic';
+}
+function meter(c, x, y, sym, txt, col){
+  c.save();
+  c.beginPath(); c.arc(x, y, 20, 0, 6.2832);
+  c.fillStyle = '#fff'; c.fill(); c.strokeStyle = col || '#0f172a'; c.lineWidth = 2; c.stroke();
+  c.font = 'bold 13px Consolas, monospace'; c.fillStyle = col || '#0f172a';
+  c.textAlign = 'center'; c.textBaseline = 'middle'; c.fillText(sym, x, y);
+  c.font = '11px Consolas, monospace'; c.fillStyle = '#b45309'; c.textBaseline = 'top';
+  c.fillText(txt, x, y + 23); c.restore(); c.textBaseline = 'alphabetic';
+}
+function rheo(c, x, y, R){
+  c.save();
+  c.fillStyle = '#fff'; c.strokeStyle = '#0f172a'; c.lineWidth = 2.2;
+  rrect(c, x - 30, y - 12, 60, 24, 4); c.fill(); c.stroke();
+  c.strokeStyle = '#0f172a'; c.lineWidth = 2;
+  c.beginPath(); c.moveTo(x - 40, y - 30); c.lineTo(x + 40, y - 30); c.stroke();
+  c.beginPath(); c.moveTo(x, y - 30); c.lineTo(x, y - 12); c.stroke();
+  c.beginPath(); c.moveTo(x - 10, y - 30); c.lineTo(x + 10, y - 38); c.stroke();
+  c.restore();
+  mono(c, x, y + 4, R.toFixed(1) + 'Ω', '#0f172a', 12, 'center');
+}
+function swBox(c, x, y, closed){
+  c.save(); c.strokeStyle = '#0f172a'; c.lineWidth = 2.5; c.fillStyle = '#0f172a';
+  c.beginPath(); c.arc(x - 15, y, 3.5, 0, 6.2832); c.fill();
+  c.beginPath(); c.arc(x + 15, y, 3.5, 0, 6.2832); c.fill();
+  c.beginPath(); c.moveTo(x - 15, y);
+  if (closed) c.lineTo(x + 15, y); else c.lineTo(x + 8, y - 14);
+  c.stroke(); c.restore();
+  c.font = '11px "Microsoft YaHei", sans-serif'; c.fillStyle = '#64748b';
+  c.textAlign = 'center'; c.textBaseline = 'alphabetic';
+  c.fillText(closed ? '闭合' : '断开', x, y - 20);
+}
+function card(c, x, y, w, h, title, val, col){
+  c.fillStyle = '#f8fafc'; c.strokeStyle = '#e2e8f0'; c.lineWidth = 1;
+  rrect(c, x, y, w, h, 7); c.fill(); c.stroke();
+  label(c, x + 8, y + 16, title, '#64748b', 11.5);
+  mono(c, x + 8, y + h - 8, val, col || '#0f172a', 14);
+}
+/* 近似标准正态随机数 */
+function gauss(){
+  var s = 0, i;
+  for (i = 0; i < 4; i++) s += Math.random();
+  return (s - 2) / 0.5774;
+}
+
+/* ================= 模块 1：U–I 法虚拟实验 ================= */
+var cv1 = $('cv1');
+/* 待测干电池（仿真真值）：新电池内阻小，旧电池内阻大 —— 教材实验常用旧电池，现象更明显 */
+var m1 = { R: 5, data: [], fit: null, showTrue: true, ph: 0, Et: 1.40, rt: 1.20 };
+
+function trueCalc(R){
+  var I = m1.Et / (Math.max(R, 0.01) + m1.rt);
+  return { I: I, U: m1.Et - I * m1.rt };
+}
+function measured(R){
+  var t = trueCalc(R);
+  return {
+    I: Math.max(0.001, t.I + 0.006 * gauss() + 0.01 * t.I * gauss()),
+    U: Math.max(0.001, t.U + 0.008 * gauss()),
+    R: R
+  };
+}
+/* 最小二乘拟合 U = a + b I ；E测 = a，r测 = −b */
+function lsq(d){
+  var n = d.length;
+  if (n < 2) return null;
+  var sx = 0, sy = 0, i;
+  for (i = 0; i < n; i++){ sx += d[i].I; sy += d[i].U; }
+  var mx = sx / n, my = sy / n;
+  var sxy = 0, sxx = 0;
+  for (i = 0; i < n; i++){
+    sxy += (d[i].I - mx) * (d[i].U - my);
+    sxx += (d[i].I - mx) * (d[i].I - mx);
+  }
+  var b = sxx > 1e-12 ? sxy / sxx : 0;
+  var a = my - b * mx;
+  return { a: a, b: b, E: a, r: -b, n: n };
+}
+
+function drawM1(){
+  var c = fit(cv1), W = cv1.clientWidth, H = cv1.clientHeight;
+  c.clearRect(0, 0, W, H);
+  var t = trueCalc(m1.R);
+  var cur = { I: t.I, U: t.U };
+  /* 上一次"读数"：用当前滑块对应的含噪声读数，实时刷新会跳，改为显示真值 + 噪声一次 */
+  if (m1.lastR !== m1.R){
+    m1.read = measured(m1.R);
+    m1.lastR = m1.R;
+  }
+  var rd = m1.read || { I: t.I, U: t.U };
+
+  /* ---- 左：实验电路 ---- */
+  var L = 56, Rr = W * 0.30, T = 54, B = 208, my = (T + B) / 2;
+  c.strokeStyle = '#0f172a'; c.lineWidth = 3; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(L, B); c.lineTo(L, T); c.lineTo(Rr, T); c.lineTo(Rr, B); c.closePath(); c.stroke();
+  batV(c, L, my);
+  meter(c, (L + Rr) / 2, T, 'A', rd.I.toFixed(3) + ' A');
+  rheo(c, Rr, my, m1.R);
+  swBox(c, (L + Rr) / 2, B, true);
+  /* 电压表并在电源两极 */
+  var vx = L - 58;
+  c.save(); c.setLineDash([4, 3]); c.lineWidth = 1.4; c.strokeStyle = '#94a3b8';
+  c.beginPath(); c.moveTo(L, T); c.lineTo(vx, T); c.lineTo(vx, my - 21); c.stroke();
+  c.beginPath(); c.moveTo(L, B); c.lineTo(vx, B); c.lineTo(vx, my + 21); c.stroke();
+  c.restore();
+  meter(c, vx, my, 'V', rd.U.toFixed(3) + ' V');
+  flowDots(c, [[L, B], [L, T], [Rr, T], [Rr, B]], m1.ph * (0.8 + cur.I * 0.8), 24, '#f59e0b');
+  mono(c, L + 26, my - 24, '待测电池', '#0f172a', 12);
+  mono(c, L + 26, my + 36, 'E=?  r=?', '#b45309', 12);
+
+  /* 读数卡片 */
+  var cw = (W * 0.34 - 40) / 2 - 8;
+  card(c, 24, 226, cw, 48, '电流表读数 I', rd.I.toFixed(3) + ' A', '#1d4ed8');
+  card(c, 32 + cw, 226, cw, 48, '电压表读数 U', rd.U.toFixed(3) + ' V', '#1d4ed8');
+  label(c, 24, 296, '已记录 ' + m1.data.length + ' 组（教材要求 ≥ 6 组）', '#1e293b', 13);
+  label(c, 24, 316, '拖动 R 改变电流，电流范围拉得越开，拟合越准。', '#64748b', 12);
+  label(c, 24, 350, '记错了？点"撤销上一组"。', '#64748b', 11.5);
+  label(c, 24, 336, '读数含随机误差（约 0.006 A / 0.008 V）。', '#64748b', 12);
+  if (m1.fit){
+    mono(c, 24, 362, 'E测 = ' + fmt(m1.fit.E, 3) + ' V', '#dc2626', 13);
+    mono(c, 24, 382, 'r测 = ' + fmt(m1.fit.r, 3) + ' Ω', '#dc2626', 13);
+  } else {
+    label(c, 24, 362, '点"拟合直线"后这里给出结果', '#94a3b8', 12.5);
+  }
+  label(c, 24, 404, '仿真真值（仅供核对）：E = ' + m1.Et.toFixed(2) + ' V，r = ' + m1.rt.toFixed(2) + ' Ω', '#94a3b8', 12);
+
+  /* ---- 右：U–I 图 ---- */
+  var gx = W * 0.36, gw = W - gx - 14, gh = 258;
+  c.save(); c.translate(gx, 12);
+  var Imax = m1.Et / (0.5 + m1.rt) * 1.05;
+  var Umax = m1.Et * 1.12;
+  var A = axes(c, gw, gh, 44, Imax, Umax, 'I / A', 'U / V', 2, 2);
+  /* 真实线 */
+  if (m1.showTrue){
+    c.save(); c.setLineDash([6, 4]); c.strokeStyle = 'rgba(148,163,184,.95)'; c.lineWidth = 1.6;
+    c.beginPath(); c.moveTo(A.px(0), A.py(m1.Et)); c.lineTo(A.px(m1.Et / m1.rt), A.py(0)); c.stroke(); c.restore();
+    label(c, A.x1 - 6, A.py(m1.Et) - 8, '真实线 U = E − Ir', '#94a3b8', 11.5, 'right');
+  }
+  /* 数据点 */
+  var i;
+  for (i = 0; i < m1.data.length; i++){
+    var p = m1.data[i];
+    c.fillStyle = '#1d4ed8';
+    c.beginPath(); c.arc(A.px(p.I), A.py(p.U), 4.6, 0, 6.2832); c.fill();
+    c.strokeStyle = '#fff'; c.lineWidth = 1.4; c.stroke();
+    mono(c, A.px(p.I) + 6, A.py(p.U) + 4, String(i + 1), '#64748b', 10.5);
+  }
+  /* 拟合直线 */
+  if (m1.fit){
+    var f = m1.fit;
+    c.strokeStyle = '#dc2626'; c.lineWidth = 2.4;
+    var xA = Math.min(-0.02, 0), xB = Imax;
+    var uA = f.a + f.b * xA, uB = f.a + f.b * xB;
+    c.beginPath(); c.moveTo(A.px(xA), A.py(uA)); c.lineTo(A.px(xB), A.py(uB)); c.stroke();
+    /* 延长到 U 轴 */
+    c.save(); c.setLineDash([3, 3]); c.strokeStyle = 'rgba(220,38,38,.5)'; c.lineWidth = 1.4;
+    c.beginPath(); c.moveTo(A.px(0), A.py(f.a)); c.lineTo(A.px(0), A.y0); c.stroke(); c.restore();
+    c.fillStyle = '#dc2626';
+    c.beginPath(); c.arc(A.px(0), A.py(f.a), 5.5, 0, 6.2832); c.fill();
+    c.strokeStyle = '#fff'; c.lineWidth = 1.6; c.stroke();
+    mono(c, A.px(0) + 8, A.py(f.a) - 10, '纵截距：E测 = ' + fmt(f.a, 3) + ' V', '#dc2626', 12.5);
+    mono(c, A.x1 - 4, A.y1 + 4, '斜率绝对值：r测 = ' + fmt(-f.b, 3) + ' Ω', '#dc2626', 12.5, 'right');
+    /* 斜率三角形 */
+    var i1 = Imax * 0.35, i2 = Imax * 0.7;
+    c.save(); c.setLineDash([4, 3]); c.strokeStyle = 'rgba(5,150,105,.9)'; c.lineWidth = 1.3;
+    c.beginPath(); c.moveTo(A.px(i1), A.py(f.a + f.b * i1)); c.lineTo(A.px(i2), A.py(f.a + f.b * i1));
+    c.lineTo(A.px(i2), A.py(f.a + f.b * i2)); c.stroke(); c.restore();
+    mono(c, A.px((i1 + i2) / 2), A.py(f.a + f.b * i1) - 6, 'ΔI', '#059669', 11.5, 'center');
+    mono(c, A.px(i2) + 6, A.py((f.a + f.b * i1 + f.a + f.b * i2) / 2), 'ΔU', '#059669', 11.5);
+  }
+  c.restore();
+
+  /* 数据表（2 列 × 3 行） */
+  var ty = 292, colw = (W - gx - 20) / 2;
+  label(c, gx, ty - 8, '实验数据记录表', '#1e293b', 13);
+  for (var k = 0; k < 6; k++){
+    var col = k < 3 ? 0 : 1, row = k % 3;
+    var bx = gx + col * colw, by = ty + row * 30;
+    c.fillStyle = '#f8fafc'; c.strokeStyle = '#e2e8f0'; c.lineWidth = 1;
+    rrect(c, bx, by, colw - 12, 26, 5); c.fill(); c.stroke();
+    var d = m1.data[k];
+    if (d) mono(c, bx + 8, by + 18, (k + 1) + ')  I=' + d.I.toFixed(3) + ' A   U=' + d.U.toFixed(3) + ' V', '#1e293b', 12);
+    else mono(c, bx + 8, by + 18, (k + 1) + ')  ——— 待记录 ———', '#cbd5e1', 12);
+  }
+  /* 拟合结果条 */
+  var vd = $('vd1');
+  if (m1.fit){
+    var de = (m1.fit.E - m1.Et) / m1.Et * 100, dr = (m1.fit.r - m1.rt) / m1.rt * 100;
+    var extra = '';
+    if (m1.data.length >= 2){
+      var p1 = m1.data[0], p2 = m1.data[m1.data.length - 1];
+      var dI = p2.I - p1.I;
+      if (Math.abs(dI) > 1e-6){
+        var r2 = (p1.U - p2.U) / dI;
+        var E2 = (p1.U * p2.I - p2.U * p1.I) / dI;
+        extra = '<br><b>对比"只取两组联立方程"：</b>用第 1 组与最后一组解 E＝U₁＋I₁r、E＝U₂＋I₂r，得到 E＝'
+          + fmt(E2, 3) + ' V、r＝' + fmt(r2, 3) + ' Ω —— 换两组数据结果就变了，因为随机误差被"照单全收"。'
+          + '作图拟合把 6 组一起平均，明显更可靠，这就是教材要求画 U–I 图象的原因。';
+      }
+    }
+    vd.style.display = 'block';
+    vd.innerHTML = '<b>拟合结果：</b>用 ' + m1.fit.n + ' 组数据得到 E测＝' + fmt(m1.fit.E, 3)
+      + ' V（真值 ' + m1.Et.toFixed(2) + ' V，偏差 ' + (de >= 0 ? '+' : '') + fmt(de, 1) + '%）、r测＝'
+      + fmt(m1.fit.r, 3) + ' Ω（真值 ' + m1.rt.toFixed(2) + ' Ω，偏差 ' + (dr >= 0 ? '+' : '') + fmt(dr, 1)
+      + '%）。随机误差让每个点都偏一点，最小二乘把它们"平均掉"了 —— 再多记几组、把电流范围拉开，结果会更稳。'
+      + extra;
+  } else {
+    vd.style.display = 'none';
+  }
+}
+
+/* ================= 模块 2：系统误差分析 ================= */
+var cv2 = $('cv2');
+var m2 = { mode: 'a', RV: 50, RA: 1, E: 3, r: 1 };
+
+function errModel(){
+  var E = m2.E, r = Math.max(m2.r, 0.05), RV = Math.max(m2.RV, 0.1), RA = Math.max(m2.RA, 0.01);
+  /* 甲：V 并在电源两端 → V 分流，A 读数偏小 */
+  var ka = 1 + r / RV;
+  var Ea = E / ka, ra = r / ka;
+  /* 乙：A 串在干路、V 只测 R → A 分压，r测 = r + RA */
+  var Eb = E, rb = r + RA;
+  return { E: E, r: r, RV: RV, RA: RA, Ea: Ea, ra: ra, Eb: Eb, rb: rb,
+    dEa: (Ea - E) / E * 100, dra: (ra - r) / r * 100,
+    dEb: (Eb - E) / E * 100, drb: (rb - r) / r * 100 };
+}
+
+function drawM2(){
+  var c = fit(cv2), W = cv2.clientWidth, H = cv2.clientHeight;
+  c.clearRect(0, 0, W, H);
+  var e = errModel();
+  var L = 74, Rr = W * 0.34, T = 62, B = 252, my = (T + B) / 2;
+
+  /* 电路：甲 / 乙 */
+  c.strokeStyle = '#0f172a'; c.lineWidth = 3; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(L, B); c.lineTo(L, T); c.lineTo(Rr, T); c.lineTo(Rr, B); c.closePath(); c.stroke();
+  batV(c, L, my);
+  rheo(c, Rr, my, 5);
+  mono(c, L + 26, my - 26, 'E=' + e.E.toFixed(2) + 'V', '#0f172a', 12);
+  mono(c, L + 26, my + 38, 'r=' + e.r.toFixed(2) + 'Ω', '#b45309', 12);
+
+  if (m2.mode === 'a'){
+    /* 甲：A 串在外电路（与 R 串联），V 并在电源两极 */
+    meter(c, (L + Rr) / 2, T, 'A', 'I_A', '#1d4ed8');
+    var vx = L - 62;
+    c.save(); c.setLineDash([4, 3]); c.lineWidth = 1.5; c.strokeStyle = '#dc2626';
+    c.beginPath(); c.moveTo(L, T); c.lineTo(vx, T); c.lineTo(vx, my - 21); c.stroke();
+    c.beginPath(); c.moveTo(L, B); c.lineTo(vx, B); c.lineTo(vx, my + 21); c.stroke();
+    c.restore();
+    meter(c, vx, my, 'V', 'U_V', '#dc2626');
+    label(c, vx - 22, my + 46, 'V 接在电源两端', '#dc2626', 11.5, 'center');
+    /* 分流示意 */
+    arrow(c, (L + Rr) / 2 - 52, T + 22, (L + Rr) / 2 - 52, T + 46, '#dc2626', 1.6);
+    label(c, (L + Rr) / 2 - 44, T + 44, 'V 分走的电流 I_V 没被 A 计入', '#dc2626', 11.5);
+    mono(c, Rr + 10, my + 40, 'R_V=' + e.RV.toFixed(0) + 'Ω', '#dc2626', 12);
+  } else {
+    /* 乙：A 串在干路（下边），V 只并在 R 两端 */
+    meter(c, (L + Rr) / 2, B, 'A', 'I_A', '#1d4ed8');
+    var wx = Rr - 88;
+    c.save(); c.setLineDash([4, 3]); c.lineWidth = 1.5; c.strokeStyle = '#dc2626';
+    c.beginPath(); c.moveTo(Rr, my - 30); c.lineTo(wx, my - 30); c.lineTo(wx, my - 21); c.stroke();
+    c.beginPath(); c.moveTo(Rr, my + 30); c.lineTo(wx, my + 30); c.lineTo(wx, my + 21); c.stroke();
+    c.restore();
+    meter(c, wx, my, 'V', 'U_R', '#dc2626');
+    label(c, wx, my + 46, 'V 只接在 R 两端', '#dc2626', 11.5, 'center');
+    label(c, (L + Rr) / 2 - 60, B - 22, 'A 在干路，自身的分压 I·R_A 没被 V 测到', '#dc2626', 11.5);
+    mono(c, (L + Rr) / 2 + 30, B - 40, 'R_A=' + e.RA.toFixed(2) + 'Ω', '#dc2626', 12);
+  }
+
+  /* 说明文字 */
+  var sy = 300;
+  if (m2.mode === 'a'){
+    label(c, 24, sy, '甲接法：电压表分流 ⇒ 电流表读数 I_A 比真实干路电流小', '#1e293b', 12.5);
+    mono(c, 24, sy + 20, 'U = E − (I_A + U/R_V)·r  ⇒  U = E/(1+r/R_V) − I_A·r/(1+r/R_V)', '#1d4ed8', 12);
+    mono(c, 24, sy + 40, 'E测 = E/(1+r/R_V) = ' + fmt(e.Ea, 3) + ' V（偏小 ' + fmt(-e.dEa, 2) + '%）', '#dc2626', 12.5);
+    mono(c, 24, sy + 60, 'r测 = r/(1+r/R_V) = ' + fmt(e.ra, 3) + ' Ω（偏小 ' + fmt(-e.dra, 2) + '%）', '#dc2626', 12.5);
+  } else {
+    label(c, 24, sy, '乙接法：电流表分压 ⇒ 电压表读数少了电流表上的那一段', '#1e293b', 12.5);
+    mono(c, 24, sy + 20, 'U_V = E − I·(r + R_A)  ⇒  截距仍是 E，斜率却变成 −(r+R_A)', '#7c3aed', 12);
+    mono(c, 24, sy + 40, 'E测 = E = ' + fmt(e.Eb, 3) + ' V（无系统误差）', '#059669', 12.5);
+    mono(c, 24, sy + 60, 'r测 = r + R_A = ' + fmt(e.rb, 3) + ' Ω（偏大 ' + fmt(e.drb, 1) + '%）', '#dc2626', 12.5);
+  }
+  label(c, 24, sy + 84, 'R_V 越大 → 甲误差越小；R_A 越小 → 乙误差越小。', '#64748b', 12);
+
+  /* ---- 右：读数卡片 + U–I 三线对比 ---- */
+  var gx = W * 0.42, gw = W - gx - 14;
+  var cw = (gw - 24) / 4;
+  var Em = m2.mode === 'a' ? e.Ea : e.Eb, rm = m2.mode === 'a' ? e.ra : e.rb;
+  var colE = m2.mode === 'a' ? '#dc2626' : '#7c3aed';
+  card(c, gx, 8, cw, 44, '真实 E', fmt(e.E, 3) + ' V', '#0f172a');
+  card(c, gx + cw + 8, 8, cw, 44, '真实 r', fmt(e.r, 3) + ' Ω', '#0f172a');
+  card(c, gx + 2 * (cw + 8), 8, cw, 44, 'E测', fmt(Em, 3) + ' V', colE);
+  card(c, gx + 3 * (cw + 8), 8, cw, 44, 'r测', fmt(rm, 3) + ' Ω', colE);
+  var Umin = Math.max(0, e.E * 0.55), Umax = e.E * 1.05;
+  var Imax = Math.max(0.2, Math.min(0.9 * e.E / e.r, 0.45 * e.E / e.rb));
+  c.save(); c.translate(gx, 62);
+  var A = axesMM(c, gw, H - 118, 46, 0, Imax, Umin, Umax, 'I / A', 'U / V');
+  var k;
+  /* 真实线 */
+  c.save(); c.setLineDash([6, 4]); c.strokeStyle = '#64748b'; c.lineWidth = 1.8;
+  c.beginPath(); c.moveTo(A.px(0), A.py(e.E)); c.lineTo(A.px(Imax), A.py(e.E - Imax * e.r)); c.stroke(); c.restore();
+  label(c, A.x0 + 6, A.py(e.E) - 8, '真实线 U = E − Ir', '#64748b', 11.5);
+  /* 甲测量线 */
+  c.strokeStyle = m2.mode === 'a' ? '#dc2626' : 'rgba(220,38,38,.45)';
+  c.lineWidth = m2.mode === 'a' ? 2.8 : 1.8;
+  c.beginPath(); c.moveTo(A.px(0), A.py(e.Ea)); c.lineTo(A.px(Imax), A.py(e.Ea - Imax * e.ra)); c.stroke();
+  mono(c, A.px(Imax) - 4, A.py(e.Ea - Imax * e.ra) - 8, '甲：E↓ r↓', '#dc2626', 12, 'right');
+  /* 乙测量线 */
+  c.strokeStyle = m2.mode === 'b' ? '#7c3aed' : 'rgba(124,58,237,.45)';
+  c.lineWidth = m2.mode === 'b' ? 2.8 : 1.8;
+  c.beginPath(); c.moveTo(A.px(0), A.py(e.Eb)); c.lineTo(A.px(Imax), A.py(e.Eb - Imax * e.rb)); c.stroke();
+  mono(c, A.px(Imax) - 4, A.py(e.Eb - Imax * e.rb) + 18, '乙：E 准确，r↑', '#7c3aed', 12, 'right');
+  /* 截距点 */
+  c.fillStyle = '#dc2626';
+  c.beginPath(); c.arc(A.px(0), A.py(e.Ea), 5, 0, 6.2832); c.fill();
+  c.fillStyle = '#7c3aed';
+  c.beginPath(); c.arc(A.px(0), A.py(e.Eb), 5, 0, 6.2832); c.fill();
+  c.fillStyle = '#64748b';
+  c.beginPath(); c.arc(A.px(0), A.py(e.E), 4, 0, 6.2832); c.fill();
+  /* 偏差箭头（纵轴附近） */
+  if (Math.abs(e.Ea - e.E) > 0.002){
+    c.save(); c.strokeStyle = '#dc2626'; c.lineWidth = 1.4; c.setLineDash([3, 2]);
+    c.beginPath(); c.moveTo(A.px(0) + 16, A.py(e.E)); c.lineTo(A.px(0) + 16, A.py(e.Ea)); c.stroke(); c.restore();
+    label(c, A.px(0) + 22, A.py((e.E + e.Ea) / 2), 'E测偏小', '#dc2626', 11.5);
+  }
+  c.restore();
+  label(c, gx + 4, H - 26, '（纵轴未按 0 起点，这是教材常用画法，为的是看清两条测量线与真实线的差别）', '#94a3b8', 11.5);
+
+  /* 结论 */
+  var vd = $('vd2');
+  vd.innerHTML = '<b>结论：测电池（r 很小、R_V 很大）应选用甲接法。</b>'
+    + ' 甲的相对误差约为 r/R_V = ' + fmt(e.r / e.RV * 100, 2)
+    + '%（本例 E 偏小 ' + fmt(-e.dEa, 2) + '%、r 偏小 ' + fmt(-e.dra, 2) + '%）；'
+    + ' 乙的 r 相对误差为 R_A/r = ' + fmt(e.RA / e.r * 100, 1)
+    + '%（本例 r 偏大 ' + fmt(e.drb, 1) + '%）。'
+    + '真实电压表内阻有几千欧，甲的误差还要小得多，所以教材实验采用甲接法。';
+}
+
+/* ================= 绑定 ================= */
+bindRange('r1', function(v){ m1.R = v; drawM1(); }, function(v){ return v.toFixed(1) + ' Ω'; });
+
+$('seg1').addEventListener('click', function(e){
+  var b = e.target;
+  if (b.tagName !== 'BUTTON') return;
+  var bs = this.getElementsByTagName('button');
+  for (var i = 0; i < bs.length; i++) bs[i].className = '';
+  b.className = 'on';
+  if (b.getAttribute('data-t') === 'new'){ m1.Et = 1.60; m1.rt = 0.30; }
+  else { m1.Et = 1.40; m1.rt = 1.20; }
+  m1.data = []; m1.fit = null; m1.lastR = null;
+  drawM1();
+});
+
+function addPoint(R){
+  if (m1.data.length >= 6) return false;
+  m1.data.push(measured(R === undefined ? m1.R : R));
+  return true;
+}
+$('rec1').addEventListener('click', function(){
+  if (m1.data.length >= 6){
+    alert('已经记满 6 组啦。想重新做请点"重来"。');
+    return;
+  }
+  addPoint(m1.R);
+  m1.fit = null;
+  drawM1();
+});
+$('auto1').addEventListener('click', function(){
+  m1.data = [];
+  var Rs = [1, 2, 3, 5, 8, 14];
+  for (var i = 0; i < Rs.length; i++) addPoint(Rs[i]);
+  m1.fit = null;
+  drawM1();
+});
+$('fit1').addEventListener('click', function(){
+  m1.fit = lsq(m1.data);
+  if (!m1.fit) alert('至少要记录 2 组数据才能拟合直线。');
+  drawM1();
+});
+$('und1').addEventListener('click', function(){
+  if (!m1.data.length) return;
+  m1.data.pop();
+  m1.fit = null;
+  drawM1();
+});
+$('clr1').addEventListener('click', function(){
+  m1.data = []; m1.fit = null; drawM1();
+});
+$('tru1').addEventListener('click', function(){
+  m1.showTrue = !m1.showTrue;
+  this.textContent = '真实线：' + (m1.showTrue ? '显示' : '隐藏');
+  this.className = m1.showTrue ? 'btn' : 'btn on';
+  drawM1();
+});
+
+$('seg2').addEventListener('click', function(e){
+  var b = e.target;
+  if (b.tagName !== 'BUTTON') return;
+  var bs = this.getElementsByTagName('button');
+  for (var i = 0; i < bs.length; i++) bs[i].className = '';
+  b.className = 'on';
+  m2.mode = b.getAttribute('data-m');
+  drawM2();
+});
+bindRange('rv2', function(v){ m2.RV = v; drawM2(); }, function(v){ return v.toFixed(0) + ' Ω'; });
+bindRange('ra2', function(v){ m2.RA = v; drawM2(); }, function(v){ return v.toFixed(1) + ' Ω'; });
+bindRange('e2', function(v){ m2.E = v; drawM2(); }, function(v){ return v.toFixed(1) + ' V'; });
+bindRange('rr2', function(v){ m2.r = v; drawM2(); }, function(v){ return v.toFixed(1) + ' Ω'; });
+
+/* ================= 动画 ================= */
+var last = 0;
+function loop(ts){
+  var dt = last ? Math.min((ts - last) / 1000, 0.05) : 0;
+  last = ts;
+  if (!document.hidden){
+    m1.ph += dt * 60;
+    drawM1();
+  }
+  requestAnimationFrame(loop);
+}
+window.addEventListener('resize', function(){ drawM1(); drawM2(); });
+drawM1(); drawM2();
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

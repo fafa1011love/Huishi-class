@@ -19,7 +19,7 @@ const initial={title:'心脏结构与功能',request:{courseName:'解剖学',dur
 function App(){const [plan,setPlan]=useState(initial);const [view,setView]=useState('workflow');return <main style={{maxWidth:1100,margin:'auto',padding:16}}>{view==='workflow'?<Workflow plan={plan} onChange={setPlan} onNotice={()=>{}} onComplete={()=>setView('export')}/>:<Export plan={plan} editing={false} onBack={()=>setView('workflow')} onNotice={()=>{}}/>}</main>};createRoot(document.getElementById('root')).render(<App/>);`
 const compiled = await transform(source, { loader: 'jsx', jsx: 'transform' })
 await page.route('**/__lesson_export_check', route => route.fulfill({ contentType: 'text/html', body: `<html><head><meta name="viewport" content="width=device-width, initial-scale=1.0"></head><body><div id="root"></div><script type="module">import RefreshRuntime from '/@react-refresh';RefreshRuntime.injectIntoGlobalHook(window);window.$RefreshReg$=()=>{};window.$RefreshSig$=()=>type=>type;window.__vite_plugin_react_preamble_installed__=true;</script><script type="module">${compiled.code.replaceAll('"react/jsx-runtime"', '"/node_modules/.vite/deps/react_jsx-runtime.js"')}</script></body></html>` }))
-await page.route('**/api/prep/local-model/status', route => route.fulfill({ json: { available: true } }))
+await page.route('**/api/prep/lesson-ai/status', route => route.fulfill({ json: { available: true } }))
 await page.route('**/api/prep/lesson-design/validate', async route => {
   const { workflow } = route.request().postDataJSON()
   workflow.status = 'approved'

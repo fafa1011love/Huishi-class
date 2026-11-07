@@ -1,0 +1,2017 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>9.2 坐标方法的简单应用 · 3D 演示（人教版七年级下册）</title>
+<style>
+  :root{
+    --ink:#16233a;
+    --ink2:#5a6b85;
+    --line:#e3eaf4;
+    --accent:#2563eb;
+    --bg:#eef3fa;
+    --book:#f8f4ea;
+    --book-line:#e7ddc8;
+  }
+  *{ box-sizing:border-box; }
+  html,body{
+    margin:0; padding:0; height:100%;
+    font-family:"PingFang SC","Microsoft YaHei","Hiragino Sans GB",system-ui,-apple-system,sans-serif;
+    color:var(--ink);
+    background:var(--bg);
+    -webkit-font-smoothing:antialiased;
+    overflow:hidden;
+  }
+  #app{ display:flex; flex-direction:row-reverse; height:100vh; width:100vw; }
+
+  /* ============ 右侧面板（舞台在左） ============ */
+  #panel{
+    width:366px; flex:0 0 366px;
+    background:#fff;
+    border-left:1px solid var(--line);
+    display:flex; flex-direction:column;
+    overflow-y:auto;
+    z-index:10;
+    box-shadow:-6px 0 28px rgba(22,35,58,.06);
+  }
+  #panel::-webkit-scrollbar{ width:8px; }
+  #panel::-webkit-scrollbar-thumb{ background:#d5e0ee; border-radius:4px; }
+
+  .brand{
+    padding:22px 22px 16px;
+    background:linear-gradient(160deg,#f7fbff 0%,#ffffff 70%);
+    border-bottom:1px solid var(--line);
+  }
+  .kicker{
+    display:inline-block;
+    font-size:11px; letter-spacing:.04em;
+    color:#7b8ca6; font-weight:600;
+    background:#eff4fb; border-radius:999px;
+    padding:3px 9px; margin-bottom:10px;
+  }
+  .brand h1{
+    margin:0 0 6px; font-size:19px; font-weight:700; letter-spacing:-.01em;
+    color:#0f1c30;
+  }
+  .brand .sub{
+    margin:0; font-size:12px; line-height:1.6; color:#8494ac;
+  }
+
+  .tabs{
+    display:flex; gap:6px; padding:12px 14px;
+    border-bottom:1px solid var(--line);
+    background:#fff; position:sticky; top:0; z-index:2;
+  }
+  .tab{
+    flex:1; padding:9px 4px;
+    border:1px solid transparent; border-radius:9px;
+    background:#f4f7fc; color:#66788f;
+    font:inherit; font-size:11.5px; font-weight:600;
+    cursor:pointer; transition:all .18s ease;
+    white-space:nowrap;
+  }
+  .tab:hover{ background:#eaf1fb; color:#3c5a7d; }
+  .tab.is-active{
+    background:var(--accent); color:#fff;
+    box-shadow:0 4px 12px rgba(37,99,235,.28);
+  }
+
+  .pane{ display:none; padding:18px 18px 26px; }
+  .pane.is-active{ display:block; }
+
+  /* 课本原文引用块 */
+  .book{
+    background:var(--book);
+    border:1px solid var(--book-line);
+    border-radius:12px;
+    padding:13px 14px;
+    margin:0 0 14px;
+  }
+  .book-tag{
+    display:inline-block;
+    font-size:10.5px; font-weight:700; letter-spacing:.08em;
+    color:#9a7b3f; background:#efe6d0;
+    border-radius:5px; padding:2px 7px; margin-bottom:8px;
+  }
+  .book p{
+    margin:0 0 6px; font-size:12.5px; line-height:1.8; color:#4a4536;
+  }
+  .book p:last-child{ margin-bottom:0; }
+  .book ul{ margin:6px 0 0; padding-left:16px; }
+  .book li{
+    font-size:12.5px; line-height:1.85; color:#4a4536;
+    margin-bottom:2px;
+  }
+  .book li::marker{ color:#b99b62; }
+
+  .hint{
+    font-size:12.5px; line-height:1.75; color:#4d6079;
+    background:#f6f9fe; border:1px solid #e6eefa;
+    border-radius:11px; padding:11px 13px;
+    margin:0 0 12px;
+  }
+  .hint b{ color:#0f1c30; }
+  .hint.small{ font-size:11.5px; background:#fbfcfe; }
+
+  .btn-row{ margin-bottom:12px; }
+  .btn{
+    border:1px solid var(--line); background:#fff; color:var(--ink);
+    border-radius:10px; padding:9px 12px;
+    font:inherit; font-size:12.5px; font-weight:500;
+    cursor:pointer; transition:all .16s ease;
+  }
+  .btn:hover{ border-color:#bcd0ec; background:#f7fbff; }
+  .btn.ghost{ width:100%; color:#6a7c94; }
+
+  .readout{
+    border:1px solid var(--line); border-radius:12px;
+    overflow:hidden; margin-bottom:14px;
+  }
+  .readout-title{
+    font-size:11px; font-weight:700; letter-spacing:.08em;
+    color:#8494ac;
+    padding:9px 13px 7px; background:#f8fafd;
+    border-bottom:1px solid var(--line);
+  }
+  #coordList,
+  #targetList{ list-style:none; margin:0; padding:4px 0; }
+  #coordList li,
+  #targetList li{
+    display:flex; align-items:center; gap:9px;
+    padding:7px 13px; font-size:12.5px; color:#3c4f68;
+    cursor:pointer; transition:background .16s;
+  }
+  #coordList li:hover,
+  #targetList li:hover{ background:#f7fbff; }
+  #coordList li.on,
+  #targetList li.on{ background:#eff6ff; }
+  #coordList li i,
+  #targetList li i{ width:9px; height:9px; border-radius:2px; flex:none; }
+  #coordList li span.coord,
+  #targetList li span.coord{
+    margin-left:auto; font-variant-numeric:tabular-nums;
+    font-weight:600; color:#1e3a5f;
+    background:#f1f5fb; border-radius:6px; padding:2px 8px;
+    font-family:ui-monospace,"SF Mono",Consolas,monospace;
+    font-size:11.5px;
+  }
+  #coordList li.on span.coord,
+  #targetList li.on span.coord{ background:#dbeafe; color:#1d4ed8; }
+
+  .tip{
+    margin-top:14px; font-size:11.5px; line-height:1.75;
+    color:#7c8da4; padding:10px 12px;
+    background:#fbfcfe; border-left:2px solid #dbe6f5; border-radius:0 8px 8px 0;
+  }
+  .tip b{ color:#4a6079; }
+
+  /* ---- 滑块 ---- */
+  .slider-row{ margin-bottom:15px; }
+  .slider-head{
+    display:flex; justify-content:space-between; align-items:baseline;
+    font-size:12.5px; color:#4d6079; margin-bottom:8px;
+  }
+  .slider-head b{
+    font-size:15px; color:var(--accent);
+    font-variant-numeric:tabular-nums;
+    font-family:ui-monospace,"SF Mono",Consolas,monospace;
+  }
+  input[type=range]{
+    -webkit-appearance:none; appearance:none;
+    width:100%; height:5px; border-radius:3px;
+    background:#e4ecf7; outline:none; margin:0;
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none; appearance:none;
+    width:18px; height:18px; border-radius:50%;
+    background:#fff; border:3px solid var(--accent);
+    box-shadow:0 2px 6px rgba(37,99,235,.3);
+    cursor:pointer; transition:transform .12s;
+  }
+  input[type=range]::-webkit-slider-thumb:hover{ transform:scale(1.12); }
+  input[type=range]::-moz-range-thumb{
+    width:14px; height:14px; border-radius:50%;
+    background:#fff; border:3px solid var(--accent);
+    box-shadow:0 2px 6px rgba(37,99,235,.3); cursor:pointer;
+  }
+
+  .rule{
+    text-align:center; font-size:13px; font-weight:700;
+    letter-spacing:.04em; color:#1d4ed8;
+    background:linear-gradient(135deg,#eff6ff,#f7fbff);
+    border:1px dashed #b9d3f7; border-radius:11px;
+    padding:11px; margin:2px 0 14px;
+  }
+
+  .table{ border:1px solid var(--line); border-radius:11px; overflow:hidden; margin-bottom:14px; }
+  .tr{
+    display:grid; grid-template-columns:34px 1fr 18px 1fr;
+    align-items:center; gap:2px;
+    padding:8px 11px; font-size:11.5px;
+    border-bottom:1px solid #f0f5fb;
+    font-family:ui-monospace,"SF Mono",Consolas,monospace;
+    color:#3c4f68;
+  }
+  .tr:last-child{ border-bottom:none; }
+  .tr.head{
+    font-family:inherit; font-size:10.5px; font-weight:700;
+    color:#8494ac; background:#f8fafd; letter-spacing:.05em;
+  }
+  .tr .vname{ font-weight:700; color:#64748b; }
+  .tr .arrow{ color:#b6c6da; text-align:center; font-size:11px; }
+  .tr .vnew{ color:#1d4ed8; font-weight:700; }
+
+  /* ---- 分段按钮 ---- */
+  .seg{
+    display:flex; gap:2px; padding:3px;
+    background:#f1f5fb; border-radius:11px; margin-bottom:14px;
+  }
+  .seg button{
+    flex:1; border:none; background:transparent; color:#5f7392;
+    font:inherit; font-size:11.5px; font-weight:600;
+    padding:8px 6px; border-radius:8px; cursor:pointer;
+    transition:all .16s;
+  }
+  .seg button:hover{ color:#2f5fa8; }
+  .seg button.is-active{
+    background:#fff; color:var(--accent);
+    box-shadow:0 2px 8px rgba(37,99,235,.16);
+  }
+
+  /* ---- 预设按钮网格 ---- */
+  .presets{
+    display:grid; grid-template-columns:1fr 1fr; gap:7px; margin-bottom:14px;
+  }
+  .presets button{
+    padding:9px 6px; border:1px solid var(--line); background:#fff;
+    border-radius:10px; font:inherit; font-size:11.5px; color:#3c4f68;
+    cursor:pointer; transition:all .16s ease;
+    font-family:ui-monospace,"SF Mono",Consolas,monospace;
+  }
+  .presets button:hover{ border-color:#c3d6f0; background:#f8fbff; }
+  .presets button.is-active{
+    background:var(--accent); color:#fff; border-color:var(--accent);
+    box-shadow:0 4px 12px rgba(37,99,235,.22); font-weight:600;
+  }
+
+  .sent{ padding:13px; font-size:12.5px; line-height:1.9; color:#4d6079; }
+  .sent b{ color:#c2410c; font-weight:700; }
+
+  .cmp{ border:1px solid var(--line); border-radius:11px; overflow:hidden; margin-bottom:12px; }
+  .cmp-row{
+    display:flex; justify-content:space-between; align-items:center; gap:10px;
+    padding:10px 13px; font-size:12px; border-bottom:1px solid #f0f5fb;
+  }
+  .cmp-row:last-child{ border-bottom:none; }
+  .cmp-row span{ color:#8494ac; flex:none; }
+  .cmp-row b{
+    font-family:ui-monospace,"SF Mono",Consolas,monospace;
+    color:#1e3a5f; font-weight:700; font-size:12px; text-align:right;
+  }
+
+  /* ============ 左侧舞台 ============ */
+  #stage{
+    position:relative; flex:1; min-width:0;
+    background:radial-gradient(125% 95% at 68% 6%, #ffffff 0%, #eff5fd 42%, #dde8f7 100%);
+  }
+  #scene{ position:absolute; inset:0; }
+  #scene canvas{ display:block; }
+  .label-layer{ position:absolute; inset:0; pointer-events:none; overflow:hidden; }
+
+  .lbl{
+    font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    font-size:11.5px; font-weight:600; line-height:1.2;
+    color:#334155; white-space:nowrap;
+    background:rgba(255,255,255,.92);
+    border:1px solid rgba(148,163,184,.32);
+    border-radius:7px; padding:2.5px 7px;
+    box-shadow:0 2px 8px rgba(30,50,80,.09);
+    backdrop-filter:blur(3px);
+    user-select:none;
+  }
+  .lbl-v{
+    font-family:ui-monospace,"SF Mono",Consolas,monospace;
+    font-size:11px; color:#1e40af; background:rgba(255,255,255,.94);
+    border-color:rgba(59,130,246,.35);
+  }
+  .lbl-origin{
+    background:#1f2a37; color:#fff; border-color:#1f2a37;
+    font-weight:700; font-size:11.5px; padding:1px 7px;
+    box-shadow:0 2px 8px rgba(15,23,42,.25);
+  }
+  .lbl-path{
+    background:rgba(255,251,240,.96); color:#b06a1a;
+    border-color:rgba(217,150,50,.4);
+    font-size:11px; font-weight:700;
+  }
+  .axis-x, .axis-y{
+    background:transparent; border:none; box-shadow:none;
+    font-size:16px; font-weight:700; font-style:italic;
+    padding:0; backdrop-filter:none;
+  }
+  .axis-x{ color:#d9482f; }
+  .axis-y{ color:#2f6fe0; }
+  .tk{
+    background:transparent; border:none; box-shadow:none;
+    font-size:9.5px; font-weight:500; padding:0;
+    color:#93a4ba; backdrop-filter:none;
+    font-variant-numeric:tabular-nums;
+  }
+  .tk-x{ color:#c0796a; }
+  .tk-y{ color:#7d9bc9; }
+  .lbl-north{
+    background:#1e293b; color:#fff; border-color:#1e293b;
+    font-size:11.5px; font-weight:700; padding:2px 9px;
+    box-shadow:0 2px 8px rgba(15,23,42,.22);
+  }
+
+  .badge{
+    position:absolute; left:20px; top:18px;
+    font-size:12px; font-weight:600; color:#41628f;
+    background:rgba(255,255,255,.78);
+    border:1px solid rgba(160,185,215,.4);
+    border-radius:999px; padding:6px 14px;
+    backdrop-filter:blur(8px);
+    box-shadow:0 3px 14px rgba(30,60,100,.07);
+    pointer-events:none;
+  }
+  .hud{
+    position:absolute; left:20px; bottom:18px;
+    font-size:11.5px; color:#7c8da4;
+    display:flex; align-items:center; gap:8px;
+    pointer-events:none;
+  }
+  .hud kbd{
+    font-family:inherit; font-size:10.5px;
+    background:rgba(255,255,255,.85); border:1px solid #dae5f2;
+    border-radius:5px; padding:1.5px 6px; color:#5a7196;
+    box-shadow:0 1px 0 #e6eef8;
+  }
+  .viewbtns{
+    position:absolute; right:20px; top:18px;
+    display:flex; gap:2px; padding:3px;
+    background:rgba(255,255,255,.82);
+    border:1px solid rgba(160,185,215,.42);
+    border-radius:10px; backdrop-filter:blur(8px);
+    box-shadow:0 3px 14px rgba(30,60,100,.08);
+  }
+  .viewbtns button{
+    border:none; background:transparent; color:#5f7392;
+    font:inherit; font-size:12px; font-weight:600;
+    padding:6px 13px; border-radius:7px; cursor:pointer;
+    transition:all .16s;
+  }
+  .viewbtns button:hover{ background:#eef4fd; color:#2f5fa8; }
+  .viewbtns button.is-active{ background:var(--accent); color:#fff; }
+
+  .drag-tip{
+    position:absolute; left:50%; bottom:22px; transform:translateX(-50%);
+    font-size:12px; color:#3f5a7d; font-weight:600;
+    background:rgba(255,255,255,.9);
+    border:1px solid rgba(160,185,215,.5);
+    border-radius:999px; padding:7px 16px;
+    box-shadow:0 4px 16px rgba(30,60,100,.1);
+    pointer-events:none;
+    opacity:0; transition:opacity .3s;
+    backdrop-filter:blur(6px);
+  }
+  .drag-tip.show{ opacity:1; }
+
+  #fallback{
+    position:absolute; inset:0; display:none;
+    align-items:center; justify-content:center;
+    text-align:center; padding:40px;
+    font-size:14px; line-height:2; color:#5a6b85;
+    background:rgba(255,255,255,.9);
+  }
+
+  @media (max-width:940px){
+    #app{ flex-direction:column-reverse; }
+    #panel{
+      width:100%; flex:0 0 auto; max-height:54vh;
+      border-left:none; border-top:1px solid var(--line);
+      box-shadow:0 -6px 28px rgba(22,35,58,.06);
+    }
+    .brand{ padding:14px 16px 12px; }
+    .brand h1{ font-size:16px; }
+    #stage{ flex:1; }
+  }
+</style>
+</head>
+<body>
+<div id="app">
+  <aside id="panel">
+    <div class="brand">
+      <span class="kicker">人教版 · 七年级下册 · 第九章 9.2</span>
+      <h1>坐标方法的简单应用</h1>
+      <p class="sub">拖动旋转 · 拖动物体直接改变位置 · 从 3D 里看懂坐标</p>
+    </div>
+
+    <div class="tabs">
+      <button class="tab is-active" data-tab="geo">① 地理位置</button>
+      <button class="tab" data-tab="bearing">② 方向距离</button>
+      <button class="tab" data-tab="move">③ 坐标平移</button>
+    </div>
+
+    <!-- ================= 模块① 用坐标表示地理位置 ================= -->
+    <section class="pane is-active" id="pane-geo">
+      <div class="book">
+        <span class="book-tag">课本 例 1</span>
+        <p>根据以下条件画一幅示意图，标出学校和小刚家、小强家、小敏家的位置。</p>
+        <ul>
+          <li>小刚家：出校门向东走 1500 m，再向北走 2000 m。</li>
+          <li>小强家：出校门向西走 2000 m，再向北走 3500 m，最后向东走 500 m。</li>
+          <li>小敏家：出校门向南走 1000 m，再向东走 3000 m，最后向南走 750 m。</li>
+        </ul>
+      </div>
+
+      <p class="hint">以<b>学校</b>为原点，正东为 x 轴正方向、正北为 y 轴正方向，规定<b>一个单位长度代表 500 m</b>。</p>
+
+      <div class="readout">
+        <div class="readout-title">各地点坐标（点一行可看走法）</div>
+        <ul id="coordList"></ul>
+      </div>
+
+      <div class="btn-row">
+        <button class="btn ghost" id="resetOrigin">把原点放回学校</button>
+      </div>
+
+      <p class="hint small">💡 直接<b>拖动地面上那个深色的原点标记</b>，换一个参照点试试——各家的坐标会怎么变？</p>
+
+      <div class="tip">选的参照点不同，坐标系就不同，得到的坐标当然也不同；但是它们之间的<b>相对位置始终不变</b>。这就是为什么画地图要先把原点、正方向、单位长度定下来。</div>
+    </section>
+
+    <!-- ================= 模块② 用方向和距离表示位置 ================= -->
+    <section class="pane" id="pane-bearing">
+      <div class="book">
+        <span class="book-tag">课本 思考</span>
+        <p>一艘船在 A 处遇险后，向相距 35 n mile 位于 B 处的救生船报警。</p>
+        <p>(1) 如何用方向和距离描述救生船相对于遇险船的位置？</p>
+        <p>(2) 救生船接到报警后准备前往救援，如何用方向和距离描述遇险船相对于救生船的位置？</p>
+      </div>
+
+      <div class="readout">
+        <div class="readout-title">海面上的目标 · 到遇险船 A 的位置（点一行突出显示）</div>
+        <ul id="targetList">
+          <li data-target="B" class="on"><i style="background:#ea580c"></i>救生船 B<span class="coord" id="rowB">—</span></li>
+          <li data-target="island"><i style="background:#16a34a"></i>海岛<span class="coord" id="rowIsland">—</span></li>
+          <li data-target="light"><i style="background:#7c3aed"></i>灯塔<span class="coord" id="rowLight">—</span></li>
+        </ul>
+      </div>
+
+      <div class="seg" id="refBtns">
+        <button class="is-active" data-ref="A">(1) 以 A 为参照</button>
+        <button data-ref="B">(2) 以 B 为参照</button>
+      </div>
+
+      <div class="readout">
+        <div class="readout-title">答</div>
+        <div class="sent" id="sent"></div>
+      </div>
+
+      <div class="cmp">
+        <div class="cmp-row"><span>方位角</span><b id="cmpDir">—</b></div>
+        <div class="cmp-row"><span>距离</span><b id="cmpDist">—</b></div>
+      </div>
+
+      <p class="hint small">💡 海面上三条彩色视线<b>同时</b>标出了救生船、海岛、灯塔到遇险船 A 的方位角和距离；<b>点上面列表一行（或直接拖动该目标）</b>可以突出显示它。选中救生船后切到 (2) 看看，方向有什么规律。</p>
+
+      <div class="tip">方位角是从参照点的<b>正北</b>（或正南）方向量起的。两个人互相看，方向正好<b>相反</b>，角度和距离却<b>相同</b>——所以描述位置必须先说清"谁相对于谁"。</div>
+    </section>
+
+    <!-- ================= 模块③ 用坐标表示平移 ================= -->
+    <section class="pane" id="pane-move">
+      <div class="book">
+        <span class="book-tag">课本 探究 · 例 2</span>
+        <p><b>探究：</b>三角形 ABC 三个顶点 A(4,3)、B(3,1)、C(1,2)，把各点横坐标都减 6（或纵坐标都减 5），得到 A₁、B₁、C₁。</p>
+        <p><b>例 2：</b>长方形 ABCD，A(-3,2)、B(-3,-2)、C(3,-2)、D(3,2)，横坐标都加 3、纵坐标都加 2，得到 A′B′C′D′。</p>
+      </div>
+
+      <div class="seg" id="figBtns">
+        <button data-fig="tri">探究 · 三角形 ABC</button>
+        <button class="is-active" data-fig="rect">例 2 · 长方形 ABCD</button>
+      </div>
+
+      <div class="presets" id="presetBtns"></div>
+
+      <div class="slider-row">
+        <div class="slider-head"><span>向左 ← → 向右</span><b id="valA">向右 3</b></div>
+        <input type="range" id="rangeA" min="-8" max="8" step="1" value="3">
+      </div>
+
+      <div class="slider-row">
+        <div class="slider-head"><span>向下 ← → 向上</span><b id="valB">向上 2</b></div>
+        <input type="range" id="rangeB" min="-8" max="8" step="1" value="2">
+      </div>
+
+      <div class="rule" id="dirSent"></div>
+
+      <div class="table" id="coordTable"></div>
+
+      <div class="tip">口诀：<b>右加左减 · 上加下减</b>——向右（上）平移几个单位，横（纵）坐标就加几；向左（下）平移几个单位，就减几。</div>
+
+      <p class="hint small">💡 灰色原图的<b>顶点可以一个个单独拖动</b>（拖哪个哪个变），蓝色平移图会同步跟着走；拖<b>橙色把手</b>则是整个图形一起平移。</p>
+
+      <div class="tip">图形平移，就是图形上<b>每一个点</b>都按同样的方向、同样的距离移动。所以四个顶点的坐标变化完全一致，图形的形状和大小都不变；反过来，只动一个顶点，图形的形状就变了——这就不是平移了。</div>
+    </section>
+  </aside>
+
+  <main id="stage">
+    <div id="scene"></div>
+    <div class="badge" id="sceneBadge">用坐标表示地理位置 · 例 1</div>
+    <div class="viewbtns">
+      <button id="viewIso" class="is-active">斜视</button>
+      <button id="viewTop">俯视</button>
+    </div>
+    <div class="hud"><kbd>拖动</kbd> 旋转视角 <kbd>滚轮</kbd> 缩放</div>
+    <div class="drag-tip" id="dragTip">按住拖动试试</div>
+    <div id="fallback">正在加载三维场景…<br><span style="font-size:12px;color:#94a3b8">若长时间无反应，请检查网络后刷新页面</span></div>
+  </main>
+</div>
+
+<script>
+  window.__threeReady = false;
+  setTimeout(function(){
+    if(!window.__threeReady) document.getElementById('fallback').style.display = 'flex';
+  }, 9000);
+</script>
+
+<script type="importmap">
+{
+  "imports": {
+    "three": "https://unpkg.com/three@0.160.0/build/three.module.js",
+    "three/addons/": "https://unpkg.com/three@0.160.0/examples/jsm/"
+  }
+}
+</script>
+
+<script type="module">
+import * as THREE from 'three';
+import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { CSS2DRenderer, CSS2DObject } from 'three/addons/renderers/CSS2DRenderer.js';
+
+window.__threeReady = true;
+document.getElementById('fallback').style.display = 'none';
+
+/* =========================================================
+   0. 常量
+   ========================================================= */
+const R = 8;                     // 坐标平面半边长（格）
+const S = { tab: 'geo', ox: 0, oy: 0, selected: null, a: 3, b: 2, ref: 'A', target: 'B' };
+const C_X = 0xd9482f;
+const C_Y = 0x2f6fe0;
+
+const UNIT_GEO = 500;            // 模块①：1 格 = 500 m
+const UNIT_SEA = 5;              // 模块②：1 格 = 5 n mile
+
+const host = document.getElementById('scene');
+
+/* =========================================================
+   1. 渲染器 / 场景 / 相机
+   ========================================================= */
+const scene = new THREE.Scene();
+
+const camera = new THREE.PerspectiveCamera(42, 1, 0.1, 500);
+const CAM_ISO = new THREE.Vector3(14, 15.5, 18.5);
+camera.position.copy(CAM_ISO);
+
+const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+renderer.setPixelRatio(Math.min(window.devicePixelRatio, 2));
+renderer.shadowMap.enabled = true;
+renderer.shadowMap.type = THREE.PCFSoftShadowMap;
+renderer.outputColorSpace = THREE.SRGBColorSpace;
+host.appendChild(renderer.domElement);
+
+const labelRenderer = new CSS2DRenderer();
+labelRenderer.domElement.className = 'label-layer';
+host.appendChild(labelRenderer.domElement);
+
+const controls = new OrbitControls(camera, renderer.domElement);
+controls.target.set(0, 0.6, 0);
+controls.enableDamping = true;
+controls.dampingFactor = 0.085;
+controls.enablePan = false;
+controls.minDistance = 10;
+controls.maxDistance = 58;
+controls.minPolarAngle = 0.02;
+controls.maxPolarAngle = 1.42;
+controls.update();
+
+/* =========================================================
+   2. 灯光
+   ========================================================= */
+scene.add(new THREE.HemisphereLight(0xffffff, 0xd9e5f6, 1.05));
+
+const keyLight = new THREE.DirectionalLight(0xffffff, 1.7);
+keyLight.position.set(12, 22, 12);
+keyLight.castShadow = true;
+keyLight.shadow.mapSize.set(2048, 2048);
+keyLight.shadow.camera.near = 2;
+keyLight.shadow.camera.far = 70;
+keyLight.shadow.camera.left = -16;
+keyLight.shadow.camera.right = 16;
+keyLight.shadow.camera.top = 16;
+keyLight.shadow.camera.bottom = -16;
+keyLight.shadow.bias = -0.0006;
+keyLight.shadow.radius = 2;
+scene.add(keyLight);
+
+const fillLight = new THREE.DirectionalLight(0xbed6ff, 0.5);
+fillLight.position.set(-14, 11, -12);
+scene.add(fillLight);
+
+/* =========================================================
+   3. 工具函数
+   ========================================================= */
+function makeLabel(html, cls) {
+  const el = document.createElement('div');
+  el.className = 'lbl ' + (cls || '');
+  el.innerHTML = html;
+  return new CSS2DObject(el);
+}
+
+function disposeNode(node) {
+  node.traverse((o) => {
+    if (o.element && o.element.parentNode) o.element.parentNode.removeChild(o.element);
+    if (o.geometry) o.geometry.dispose();
+    const m = o.material;
+    if (m) (Array.isArray(m) ? m : [m]).forEach((x) => x.dispose());
+  });
+  if (node.parent) node.parent.remove(node);
+}
+
+function clearGroup(g) {
+  while (g.children.length) disposeNode(g.children[0]);
+}
+
+/* CSS2DRenderer 不继承父级 visible，需要手动同步标签显隐 */
+function setLabelsVisible(root, v) {
+  root.traverse((o) => { if (o.isCSS2DObject) o.visible = v; });
+}
+
+const easeInOut = (t) => (t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2);
+const fmt = (n) => {
+  const r = Math.round(n * 10) / 10;
+  return String(r === 0 ? 0 : r);
+};
+
+/* 数学坐标 (x, y) → 世界坐标；北 = -z */
+const M2W = (x, y, h) => new THREE.Vector3(x, h || 0, -y);
+
+/* =========================================================
+   4. 地面 / 网格
+   ========================================================= */
+const ground = new THREE.Mesh(
+  new THREE.PlaneGeometry(2 * R, 2 * R),
+  new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.97, metalness: 0 })
+);
+ground.rotation.x = -Math.PI / 2;
+ground.receiveShadow = true;
+scene.add(ground);
+
+const grid = new THREE.GridHelper(2 * R, 2 * R, 0xa9bdd8, 0xd2dfef);
+grid.position.y = 0.004;
+grid.material.transparent = true;
+grid.material.opacity = 0.95;
+scene.add(grid);
+
+/* =========================================================
+   5. 坐标轴
+   ========================================================= */
+const axesGroup = new THREE.Group();
+scene.add(axesGroup);
+
+function buildAxis(from, to, color) {
+  const g = new THREE.Group();
+  const dir = to.clone().sub(from);
+  const len = dir.length();
+  dir.normalize();
+
+  const headLen = 0.62, headW = 0.2;
+  const shaftLen = len - headLen;
+  const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.45, metalness: 0.15 });
+
+  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(0.045, 0.045, shaftLen, 12), mat);
+  shaft.position.copy(from).addScaledVector(dir, shaftLen / 2);
+  shaft.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+  shaft.castShadow = true;
+  g.add(shaft);
+
+  const head = new THREE.Mesh(new THREE.ConeGeometry(headW, headLen, 18), mat);
+  head.position.copy(from).addScaledVector(dir, shaftLen + headLen / 2);
+  head.quaternion.copy(shaft.quaternion);
+  head.castShadow = true;
+  g.add(head);
+
+  return g;
+}
+
+axesGroup.add(buildAxis(new THREE.Vector3(-R - 0.7, 0, 0), new THREE.Vector3(R + 0.95, 0, 0), C_X));
+axesGroup.add(buildAxis(new THREE.Vector3(0, 0, R + 0.7), new THREE.Vector3(0, 0, -R - 0.95), C_Y));
+
+const lblX = makeLabel('x', 'axis-x');
+lblX.position.set(R + 1.7, 0.18, 0);
+axesGroup.add(lblX);
+
+const lblY = makeLabel('y', 'axis-y');
+lblY.position.set(0, 0.18, -R - 1.75);
+axesGroup.add(lblY);
+
+/* =========================================================
+   6. 刻度（随原点与单位重建）
+   ========================================================= */
+const ticksGroup = new THREE.Group();
+scene.add(ticksGroup);
+
+function currentUnit() {
+  if (S.tab === 'geo') return UNIT_GEO;
+  if (S.tab === 'bearing') return UNIT_SEA;
+  return 1;
+}
+
+function rebuildTicks() {
+  clearGroup(ticksGroup);
+  const unit = currentUnit();
+  const ox = S.ox, oy = S.oy;
+  const matX = new THREE.MeshBasicMaterial({ color: C_X });
+  const matY = new THREE.MeshBasicMaterial({ color: C_Y });
+  const step = unit > 1 ? 2 : 1;   // 单位大时隔格标注，避免拥挤
+
+  for (let i = -R; i <= R; i++) {
+    const vx = (i - ox) * unit;
+    if (vx !== 0) {
+      const t = new THREE.Mesh(new THREE.BoxGeometry(0.032, 0.02, 0.26), matX);
+      t.position.set(i, 0.014, 0);
+      ticksGroup.add(t);
+    }
+    if (vx !== 0 && Math.abs(i - ox) % step === 0 && Math.abs(vx) <= unit * 12) {
+      const l = makeLabel(fmt(vx), 'tk tk-x');
+      l.position.set(i, 0.06, 0.58);
+      ticksGroup.add(l);
+    }
+
+    const vy = (i - oy) * unit;
+    if (vy !== 0) {
+      const t = new THREE.Mesh(new THREE.BoxGeometry(0.26, 0.02, 0.032), matY);
+      t.position.set(0, 0.014, -i);
+      ticksGroup.add(t);
+    }
+    if (vy !== 0 && Math.abs(i - oy) % step === 0 && Math.abs(vy) <= unit * 12) {
+      const l = makeLabel(fmt(vy), 'tk tk-y');
+      l.position.set(-0.62, 0.06, -i);
+      ticksGroup.add(l);
+    }
+  }
+}
+
+/* =========================================================
+   7. 拖拽系统
+   ========================================================= */
+const raycaster = new THREE.Raycaster();
+const pointerNDC = new THREE.Vector2();
+const dragPlane = new THREE.Plane(new THREE.Vector3(0, 1, 0), 0);
+const dragHit = new THREE.Vector3();
+
+const dragState = {
+  active: false,
+  object: null,
+  hovered: null,
+  downX: 0, downY: 0, downT: 0
+};
+
+function setPointerFromEvent(e) {
+  const rect = renderer.domElement.getBoundingClientRect();
+  pointerNDC.x = ((e.clientX - rect.left) / rect.width) * 2 - 1;
+  pointerNDC.y = -((e.clientY - rect.top) / rect.height) * 2 + 1;
+  raycaster.setFromCamera(pointerNDC, camera);
+}
+
+function currentDraggables() {
+  if (S.tab === 'geo') return [originHandle].concat(homeGroups);
+  if (S.tab === 'bearing') return [boatB, islandGroup, lightGroup];
+  if (S.tab === 'move') return [moveHandle].concat(activeBuilt().ghost.verts);
+  return [];
+}
+
+function findDraggable() {
+  const objs = currentDraggables().filter(Boolean);
+  if (!objs.length) return null;
+  const hits = raycaster.intersectObjects(objs, true);
+  if (!hits.length) return null;
+  let o = hits[0].object;
+  while (o) {
+    if (objs.includes(o)) return o;
+    o = o.parent;
+  }
+  return null;
+}
+
+const dragTip = document.getElementById('dragTip');
+let tipTimer = null;
+
+function showDragTip(text) {
+  dragTip.textContent = text;
+  dragTip.classList.add('show');
+  clearTimeout(tipTimer);
+  tipTimer = setTimeout(() => dragTip.classList.remove('show'), 2400);
+}
+
+renderer.domElement.addEventListener('pointermove', (e) => {
+  if (dragState.active) {
+    setPointerFromEvent(e);
+    if (raycaster.ray.intersectPlane(dragPlane, dragHit)) {
+      handleDragMove(dragHit);
+    }
+    return;
+  }
+
+  setPointerFromEvent(e);
+  const obj = findDraggable();
+  if (obj !== dragState.hovered) {
+    dragState.hovered = obj;
+    renderer.domElement.style.cursor = obj ? 'grab' : 'default';
+    controls.enabled = !obj;
+  }
+}, { passive: true });
+
+renderer.domElement.addEventListener('pointerdown', (e) => {
+  dragState.downX = e.clientX;
+  dragState.downY = e.clientY;
+  dragState.downT = performance.now();
+
+  setPointerFromEvent(e);
+  const obj = findDraggable();
+  if (obj) {
+    dragState.active = true;
+    dragState.object = obj;
+    controls.enabled = false;
+    renderer.domElement.style.cursor = 'grabbing';
+    try { renderer.domElement.setPointerCapture(e.pointerId); } catch (err) {}
+    if (S.tab === 'geo') showDragTip(obj.userData.placeCfg ? '拖动房子，改变它的位置' : '拖动原点，看各家的坐标怎么变');
+    if (S.tab === 'bearing') showDragTip(obj === boatB ? '拖动救生船 B，改变方向和距离' : '拖动目标，改变方向和距离');
+    if (S.tab === 'move') showDragTip(obj.userData.isQuadVertex ? '拖动顶点，单独改变这个点' : '拖动把手，整个四边形一起平移');
+  }
+});
+
+renderer.domElement.addEventListener('pointerup', (e) => {
+  const wasActive = dragState.active;
+  dragState.active = false;
+  dragState.object = null;
+  renderer.domElement.style.cursor = dragState.hovered ? 'grab' : 'default';
+  if (!dragState.hovered) controls.enabled = true;
+  if (wasActive) {
+    try { renderer.domElement.releasePointerCapture(e.pointerId); } catch (err) {}
+    return;
+  }
+  if (Math.hypot(e.clientX - dragState.downX, e.clientY - dragState.downY) > 6) return;
+  if (performance.now() - dragState.downT > 700) return;
+  handleClick(e);
+});
+
+let handleDragMove = function () {};
+let handleClick = function () {};
+
+/* =========================================================
+   8. 模块①：课本例 1 —— 学校与三个同学家
+   ========================================================= */
+const geoRoot = new THREE.Group();
+scene.add(geoRoot);
+
+// 1 格 = 500 m
+const PLACES = [
+  { id: 'school', name: '学校',   color: 0x3b82f6, gx: 0,  gy: 0,    h: 1.5, w: 0.9,  tower: true },
+  { id: 'gang',   name: '小刚家', color: 0xf59e0b, gx: 3,  gy: 4,    h: 0.9, w: 0.78 },
+  { id: 'qiang',  name: '小强家', color: 0x10b981, gx: -3, gy: 7,    h: 0.9, w: 0.78 },
+  { id: 'min',    name: '小敏家', color: 0x8b5cf6, gx: 6,  gy: -3.5, h: 0.9, w: 0.78 }
+];
+
+const placeObjs = [];
+const pickables = [];
+const homeGroups = [];   // 可拖动的三户人家（学校是参照点，固定不动）
+
+function makeHouse(cfg) {
+  const g = new THREE.Group();
+  const w = cfg.w;
+  const h = cfg.h;
+
+  const base = new THREE.Mesh(
+    new THREE.BoxGeometry(w * 1.24, 0.08, w * 1.24),
+    new THREE.MeshStandardMaterial({ color: 0xe8eef7, roughness: 0.9 })
+  );
+  base.position.y = 0.04;
+  base.receiveShadow = true;
+  g.add(base);
+
+  const body = new THREE.Mesh(
+    new THREE.BoxGeometry(w, h, w),
+    new THREE.MeshStandardMaterial({ color: cfg.color, roughness: 0.55, metalness: 0.06 })
+  );
+  body.position.y = h / 2 + 0.08;
+  body.castShadow = true;
+  body.receiveShadow = true;
+  body.userData.place = cfg;
+  g.add(body);
+
+  if (cfg.tower) {
+    const top = new THREE.Mesh(
+      new THREE.BoxGeometry(w * 0.66, 0.42, w * 0.66),
+      new THREE.MeshStandardMaterial({ color: 0xffffff, roughness: 0.6 })
+    );
+    top.position.y = h + 0.29;
+    top.castShadow = true;
+    top.userData.place = cfg;
+    g.add(top);
+  } else {
+    const roof = new THREE.Mesh(
+      new THREE.ConeGeometry(w * 0.74, w * 0.62, 4),
+      new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.62, flatShading: true })
+    );
+    roof.rotation.y = Math.PI / 4;
+    roof.position.y = h + 0.08 + w * 0.31;
+    roof.castShadow = true;
+    roof.userData.place = cfg;
+    g.add(roof);
+  }
+
+  return g;
+}
+
+PLACES.forEach((p) => {
+  const g = makeHouse(p);
+  g.position.set(p.gx, 0, -p.gy);
+  g.userData.placeCfg = p;
+  geoRoot.add(g);
+  if (p.id !== 'school') homeGroups.push(g);
+
+  const lb = makeLabel('', 'lbl');
+  lb.position.set(0, p.h + 0.9, 0);
+  g.add(lb);
+
+  g.children.forEach((c) => { if (c.userData.place) pickables.push(c); });
+  placeObjs.push({ cfg: p, group: g, label: lb });
+});
+
+/* ---- 走法路径（选中某家时显示） ---- */
+const pathGroup = new THREE.Group();
+geoRoot.add(pathGroup);
+
+function drawPath(cfg) {
+  clearGroup(pathGroup);
+  if (!cfg || (cfg.gx === S.ox && cfg.gy === S.oy)) return;
+
+  const x = cfg.gx - S.ox;
+  const y = cfg.gy - S.oy;
+
+  const A = M2W(0, 0, 0.09);
+  const B = M2W(x, 0, 0.09);
+  const Cc = M2W(x, y, 0.09);
+
+  const mk = (p1, p2) => {
+    const geo = new THREE.BufferGeometry().setFromPoints([p1, p2]);
+    const mat = new THREE.LineDashedMaterial({
+      color: cfg.color, dashSize: 0.3, gapSize: 0.2, transparent: true, opacity: 0.95
+    });
+    const line = new THREE.Line(geo, mat);
+    line.computeLineDistances();
+    pathGroup.add(line);
+  };
+  mk(A, B);
+  mk(B, Cc);
+
+  const m = new THREE.Mesh(
+    new THREE.SphereGeometry(0.11, 16, 12),
+    new THREE.MeshBasicMaterial({ color: cfg.color })
+  );
+  m.position.copy(B);
+  pathGroup.add(m);
+
+  const lbl1 = makeLabel((x >= 0 ? '东 ' : '西 ') + Math.abs(x * UNIT_GEO) + ' m', 'lbl-path');
+  lbl1.position.copy(M2W(x / 2, 0, 0.62));
+  pathGroup.add(lbl1);
+
+  const lbl2 = makeLabel((y >= 0 ? '北 ' : '南 ') + Math.abs(y * UNIT_GEO) + ' m', 'lbl-path');
+  lbl2.position.copy(M2W(x, y / 2, 0.62));
+  pathGroup.add(lbl2);
+}
+
+/* ---- 原点把手（可拖动） ---- */
+const originHandle = new THREE.Group();
+
+const ohRing = new THREE.Mesh(
+  new THREE.RingGeometry(0.36, 0.56, 44),
+  new THREE.MeshBasicMaterial({ color: 0x1f2a37, transparent: true, opacity: 0.34, side: THREE.DoubleSide })
+);
+ohRing.rotation.x = -Math.PI / 2;
+ohRing.position.y = 0.028;
+originHandle.add(ohRing);
+
+const ohBall = new THREE.Mesh(
+  new THREE.SphereGeometry(0.2, 24, 16),
+  new THREE.MeshStandardMaterial({ color: 0x1f2a37, roughness: 0.35, metalness: 0.15 })
+);
+ohBall.position.y = 0.34;
+ohBall.castShadow = true;
+originHandle.add(ohBall);
+
+const ohStem = new THREE.Mesh(
+  new THREE.CylinderGeometry(0.036, 0.036, 0.62, 10),
+  new THREE.MeshStandardMaterial({ color: 0x1f2a37, roughness: 0.4 })
+);
+ohStem.position.y = 0.31;
+ohStem.castShadow = true;
+originHandle.add(ohStem);
+
+const ohLbl = makeLabel('O', 'lbl-origin');
+ohLbl.position.set(-0.52, 0.78, 0.44);
+originHandle.add(ohLbl);
+
+geoRoot.add(originHandle);
+
+/* ---- 更新模块① ---- */
+function updateGeo() {
+  originHandle.position.set(S.ox, 0, -S.oy);
+
+  placeObjs.forEach((o) => {
+    const x = (o.cfg.gx - S.ox) * UNIT_GEO;
+    const y = (o.cfg.gy - S.oy) * UNIT_GEO;
+    o.label.element.textContent = o.cfg.name + ' (' + fmt(x) + ', ' + fmt(y) + ')';
+  });
+
+  renderCoordList();
+  drawPath(S.selected);
+}
+
+const coordListEl = document.getElementById('coordList');
+
+function renderCoordList() {
+  coordListEl.innerHTML = placeObjs.map((o) => {
+    const x = (o.cfg.gx - S.ox) * UNIT_GEO;
+    const y = (o.cfg.gy - S.oy) * UNIT_GEO;
+    const hex = '#' + o.cfg.color.toString(16).padStart(6, '0');
+    const on = S.selected === o.cfg ? ' class="on"' : '';
+    return '<li' + on + ' data-id="' + o.cfg.id + '"><i style="background:' + hex + '"></i>' +
+      o.cfg.name + '<span class="coord">(' + fmt(x) + ', ' + fmt(y) + ')</span></li>';
+  }).join('');
+}
+
+function selectPlace(cfg) {
+  S.selected = cfg;
+  renderCoordList();
+  drawPath(cfg);
+}
+
+coordListEl.addEventListener('click', (e) => {
+  const li = e.target.closest('li');
+  if (!li) return;
+  const found = PLACES.find((p) => p.id === li.dataset.id);
+  if (found) selectPlace(found);
+});
+
+document.getElementById('resetOrigin').addEventListener('click', () => {
+  S.ox = 0; S.oy = 0;
+  updateGeo();
+  rebuildTicks();
+});
+
+/* =========================================================
+   9. 模块②：方位角 + 距离
+   ========================================================= */
+const bearingRoot = new THREE.Group();
+bearingRoot.visible = false;
+scene.add(bearingRoot);
+
+const BEAR = { dist: 7, bd: 60 };     // 距离（格）、方位角（度）
+const ARC_MAX = 1.5;
+
+function makeThickArrow(color, shaftR = 0.055, headR = 0.18, headH = 0.44) {
+  const g = new THREE.Group();
+  const mat = new THREE.MeshStandardMaterial({ color, roughness: 0.4, metalness: 0.05 });
+  const shaft = new THREE.Mesh(new THREE.CylinderGeometry(shaftR, shaftR, 1, 10), mat);
+  const head = new THREE.Mesh(new THREE.ConeGeometry(headR, headH, 14), mat);
+  shaft.castShadow = true;
+  head.castShadow = true;
+  g.add(shaft, head);
+  g.userData = { shaft, head, headH };
+  return g;
+}
+
+function setThickArrow(g, from, to) {
+  const { shaft, head, headH } = g.userData;
+  const dir = to.clone().sub(from);
+  const len = dir.length();
+  if (len < 0.06) { g.visible = false; return; }
+  g.visible = true;
+  dir.normalize();
+  const headLen = Math.min(headH, len * 0.45);
+  const shaftLen = Math.max(0.01, len - headLen);
+  shaft.scale.set(1, shaftLen, 1);
+  shaft.position.copy(from).addScaledVector(dir, shaftLen / 2);
+  shaft.quaternion.setFromUnitVectors(new THREE.Vector3(0, 1, 0), dir);
+  head.position.copy(from).addScaledVector(dir, shaftLen + headLen / 2);
+  head.quaternion.copy(shaft.quaternion);
+}
+
+function makeBoat(sailColor) {
+  const g = new THREE.Group();
+
+  const hull = new THREE.Mesh(
+    new THREE.BoxGeometry(0.72, 0.17, 0.32),
+    new THREE.MeshStandardMaterial({ color: 0x1e293b, roughness: 0.55, metalness: 0.12 })
+  );
+  hull.position.y = 0.14;
+  hull.castShadow = true;
+  hull.receiveShadow = true;
+  g.add(hull);
+
+  const deck = new THREE.Mesh(
+    new THREE.BoxGeometry(0.66, 0.05, 0.28),
+    new THREE.MeshStandardMaterial({ color: 0xe2e8f0, roughness: 0.7 })
+  );
+  deck.position.y = 0.25;
+  g.add(deck);
+
+  const mast = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.018, 0.018, 0.86, 8),
+    new THREE.MeshStandardMaterial({ color: 0x94a3b8, roughness: 0.35, metalness: 0.3 })
+  );
+  mast.position.y = 0.68;
+  mast.castShadow = true;
+  g.add(mast);
+
+  const shape = new THREE.Shape();
+  shape.moveTo(0, 0);
+  shape.lineTo(0, 0.5);
+  shape.lineTo(0.33, 0.05);
+  shape.closePath();
+  const sail = new THREE.Mesh(
+    new THREE.ExtrudeGeometry(shape, { depth: 0.015, bevelEnabled: false }),
+    new THREE.MeshStandardMaterial({ color: sailColor, roughness: 0.72, side: THREE.DoubleSide })
+  );
+  sail.position.set(0.018, 0.26, -0.008);
+  sail.castShadow = true;
+  g.add(sail);
+
+  return g;
+}
+
+const boatA = makeBoat(0xe2e8f0);
+bearingRoot.add(boatA);
+
+const boatB = makeBoat(0xf97316);
+bearingRoot.add(boatB);
+
+const labelA = makeLabel('遇险船 A', 'lbl');
+labelA.position.set(-0.95, 1.24, 0.4);
+bearingRoot.add(labelA);
+
+const labelB = makeLabel('救生船 B', 'lbl');
+bearingRoot.add(labelB);
+
+const bearingRay = makeThickArrow(0xea580c, 0.038, 0.15, 0.38);
+bearingRoot.add(bearingRay);
+
+/* 三个目标各自的视线与「方位角 · 距离」标注（同时显示） */
+const RAY_COLOR = { B: 0xea580c, island: 0x16a34a, light: 0x7c3aed };
+const rays = { B: bearingRay };
+['island', 'light'].forEach((k) => {
+  const r = makeThickArrow(RAY_COLOR[k], 0.03, 0.13, 0.34);
+  bearingRoot.add(r);
+  rays[k] = r;
+});
+
+const rayLabels = {};
+['B', 'island', 'light'].forEach((k) => {
+  const l = makeLabel('', 'lbl-v');
+  l.element.style.color = '#' + RAY_COLOR[k].toString(16).padStart(6, '0');
+  bearingRoot.add(l);
+  rayLabels[k] = l;
+});
+
+const sectorMesh = new THREE.Mesh(
+  new THREE.BufferGeometry(),
+  new THREE.MeshBasicMaterial({
+    color: 0xf59e0b, transparent: true, opacity: 0.3,
+    side: THREE.DoubleSide, depthWrite: false
+  })
+);
+sectorMesh.position.y = 0.02;
+bearingRoot.add(sectorMesh);
+
+const arcLine = new THREE.Line(
+  new THREE.BufferGeometry(),
+  new THREE.LineBasicMaterial({ color: 0xd97706 })
+);
+arcLine.position.y = 0.028;
+bearingRoot.add(arcLine);
+
+const angLabel = makeLabel('', 'lbl-v');
+bearingRoot.add(angLabel);
+
+const distLabel = makeLabel('', 'lbl-v');
+bearingRoot.add(distLabel);
+
+const northLabel = makeLabel('北', 'lbl-north');
+northLabel.position.set(0, 0.34, -R - 2.8);
+bearingRoot.add(northLabel);
+
+/* ---- 更多目标：海岛（东西向狭长小岛）与灯塔 ---- */
+const islandGroup = new THREE.Group();
+(function () {
+  const shape = new THREE.Shape();
+  shape.absellipse(0, 0, 1.15, 0.45, 0, Math.PI * 2, false, 0);
+  const geo = new THREE.ExtrudeGeometry(shape, { depth: 0.16, bevelEnabled: false, curveSegments: 28 });
+  geo.rotateX(-Math.PI / 2);
+  geo.translate(0, 0.1, 0);
+  const sand = new THREE.Mesh(
+    geo,
+    new THREE.MeshStandardMaterial({ color: 0x8fbf6a, roughness: 0.88 })
+  );
+  sand.castShadow = true;
+  sand.receiveShadow = true;
+  islandGroup.add(sand);
+
+  const hill1 = new THREE.Mesh(
+    new THREE.ConeGeometry(0.36, 0.55, 18),
+    new THREE.MeshStandardMaterial({ color: 0x5d9c58, roughness: 0.85, flatShading: true })
+  );
+  hill1.position.set(-0.3, 0.46, 0.06);
+  hill1.castShadow = true;
+  islandGroup.add(hill1);
+
+  const hill2 = new THREE.Mesh(
+    new THREE.ConeGeometry(0.22, 0.34, 14),
+    new THREE.MeshStandardMaterial({ color: 0x6fae63, roughness: 0.85, flatShading: true })
+  );
+  hill2.position.set(0.35, 0.32, -0.08);
+  hill2.castShadow = true;
+  islandGroup.add(hill2);
+})();
+bearingRoot.add(islandGroup);
+
+const islandLabel = makeLabel('海岛', 'lbl');
+bearingRoot.add(islandLabel);
+
+const lightGroup = new THREE.Group();
+(function () {
+  const matW = new THREE.MeshStandardMaterial({ color: 0xf8fafc, roughness: 0.55 });
+  const matR = new THREE.MeshStandardMaterial({ color: 0xe2574c, roughness: 0.55 });
+  const seg = (y0, h, r, mat) => {
+    const m = new THREE.Mesh(new THREE.CylinderGeometry(r * 0.78, r, h, 14), mat);
+    m.position.y = y0 + h / 2;
+    m.castShadow = true;
+    lightGroup.add(m);
+  };
+  seg(0, 0.5, 0.3, matW);
+  seg(0.5, 0.45, 0.24, matR);
+  seg(0.95, 0.45, 0.18, matW);
+  const lamp = new THREE.Mesh(
+    new THREE.CylinderGeometry(0.13, 0.13, 0.2, 10),
+    new THREE.MeshStandardMaterial({ color: 0xfbbf24, emissive: 0x7c5104, roughness: 0.3 })
+  );
+  lamp.position.y = 1.5;
+  lightGroup.add(lamp);
+  const cap = new THREE.Mesh(new THREE.ConeGeometry(0.2, 0.24, 12), matR);
+  cap.position.y = 1.72;
+  cap.castShadow = true;
+  lightGroup.add(cap);
+})();
+bearingRoot.add(lightGroup);
+
+const lightLabel = makeLabel('灯塔', 'lbl');
+bearingRoot.add(lightLabel);
+
+/* ---- 目标登记表 ---- */
+const SEA = {
+  island: { gx: 5, gy: 6 },
+  light:  { gx: -5, gy: 4 }
+};
+
+const SEA_TARGETS = {
+  B:      { name: '救生船 B', other: '遇险船 A', allowRefB: true },
+  island: { name: '海岛',     other: '遇险船 A', allowRefB: false },
+  light:  { name: '灯塔',     other: '遇险船 A', allowRefB: false }
+};
+
+function angleOf(x, y) {
+  let a = (Math.atan2(x, y) * 180) / Math.PI;
+  if (a < 0) a += 360;
+  return a;
+}
+
+function targetPos(t) {
+  if (t === 'island') return { x: SEA.island.gx, y: SEA.island.gy };
+  if (t === 'light') return { x: SEA.light.gx, y: SEA.light.gy };
+  const br = (BEAR.bd * Math.PI) / 180;
+  return { x: BEAR.dist * Math.sin(br), y: BEAR.dist * Math.cos(br) };
+}
+
+function makeSectorGeom(radius, startA, lenA, seg) {
+  const pos = [0, 0, 0];
+  for (let i = 0; i <= seg; i++) {
+    const a = startA + (lenA * i) / seg;
+    pos.push(radius * Math.sin(a), 0, -radius * Math.cos(a));
+  }
+  const idx = [];
+  for (let i = 1; i <= seg; i++) idx.push(0, i, i + 1);
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  g.setIndex(idx);
+  return g;
+}
+
+function makeArcGeom(radius, startA, lenA, seg) {
+  const pos = [];
+  for (let i = 0; i <= seg; i++) {
+    const a = startA + (lenA * i) / seg;
+    pos.push(radius * Math.sin(a), 0, -radius * Math.cos(a));
+  }
+  const g = new THREE.BufferGeometry();
+  g.setAttribute('position', new THREE.Float32BufferAttribute(pos, 3));
+  return g;
+}
+
+/* 方位角 → 「北偏东 60°」这样的读法 */
+function bearingText(bd) {
+  const b = ((bd % 360) + 360) % 360;
+  const r = Math.round(b);
+  if (r === 0) return '正北';
+  if (r === 90) return '正东';
+  if (r === 180) return '正南';
+  if (r === 270) return '正西';
+  if (r < 90) return '北偏东 ' + r + '°';
+  if (r < 180) return '南偏东 ' + (180 - r) + '°';
+  if (r < 270) return '南偏西 ' + (r - 180) + '°';
+  return '北偏西 ' + (360 - r) + '°';
+}
+
+/* 扇形张角：从基准方向量到目标方向 */
+function sectorRange(bd) {
+  const b = ((bd % 360) + 360) % 360;
+  if (b <= 90) return [0, b];
+  if (b <= 180) return [180 - b, 180];
+  if (b <= 270) return [180, b];
+  return [b - 360, 0];
+}
+
+function updateBearing() {
+  const t = SEA_TARGETS[S.target];
+  const fromIsA = !(S.ref === 'B' && t.allowRefB);
+
+  const bB = targetPos('B');
+  boatB.position.set(bB.x, 0, -bB.y);
+  labelB.position.set(bB.x, 1.24, -bB.y);
+
+  islandGroup.position.set(SEA.island.gx, 0, -SEA.island.gy);
+  islandLabel.position.set(SEA.island.gx, 1.05, -SEA.island.gy);
+  lightGroup.position.set(SEA.light.gx, 0, -SEA.light.gy);
+  lightLabel.position.set(SEA.light.gx, 2.35, -SEA.light.gy);
+
+  /* 三个目标的视线与「方位角 · 距离」同时画出 */
+  const info = {};
+  ['B', 'island', 'light'].forEach((k) => {
+    const tp = targetPos(k);
+    const d = Math.hypot(tp.x, tp.y);
+    const bd = angleOf(tp.x, tp.y);
+    info[k] = { tp, d, bd };
+
+    // 视线默认从遇险船 A 出发；「以 B 为参照」时救生船那条反向
+    let fx = 0, fz = 0, tx = tp.x, ty = tp.y, showBd = bd;
+    if (k === 'B' && !fromIsA) {
+      fx = tp.x; fz = -tp.y; tx = -tp.x; ty = -tp.y;
+      showBd = (bd + 180) % 360;
+    }
+    info[k].showBd = showBd;
+
+    const k2 = d > 0.5 ? Math.max(0, (d - 0.5) / d) : 0;
+    setThickArrow(
+      rays[k],
+      new THREE.Vector3(fx, 0.34, fz),
+      new THREE.Vector3(fx + tx * k2, 0.34, fz - ty * k2)
+    );
+
+    // 视线中点的标注
+    const br = (showBd * Math.PI) / 180;
+    const nx = Math.cos(br), nz = Math.sin(br);
+    rayLabels[k].position.set(fx + tx * 0.55 + nx * 0.8, 0.56, fz - ty * 0.55 + nz * 0.8);
+    rayLabels[k].element.textContent =
+      bearingText(showBd) + ' · ' + Math.round(d * UNIT_SEA) + ' n mile';
+  });
+
+  /* 选中的目标：扇形角度弧 + 大字距离标签 */
+  const sel = info[S.target];
+  const bx = sel.tp.x, by = sel.tp.y;
+  const eyeBd = sel.showBd;
+  const vx = fromIsA ? bx : -bx;
+  const vy = fromIsA ? by : -by;
+  const ox = fromIsA ? 0 : bx;
+  const oz = fromIsA ? 0 : -by;
+
+  const arcR = Math.min(ARC_MAX, Math.max(0.72, sel.d * 0.5));
+  const rng = sectorRange(eyeBd);
+  const s0 = (Math.min(rng[0], rng[1]) * Math.PI) / 180;
+  const len = Math.max((Math.abs(rng[1] - rng[0]) * Math.PI) / 180, 0.0001);
+  const deg = Math.round(Math.abs(rng[1] - rng[0]));
+
+  sectorMesh.geometry.dispose();
+  sectorMesh.geometry = makeSectorGeom(arcR, s0, len, 48);
+  sectorMesh.position.set(ox, 0.02, oz);
+  sectorMesh.visible = deg > 0;
+
+  arcLine.geometry.dispose();
+  arcLine.geometry = makeArcGeom(arcR, s0, len, 48);
+  arcLine.position.set(ox, 0.028, oz);
+  arcLine.visible = deg > 0;
+
+  const mid = s0 + len / 2;
+  const lr = arcR + 0.5;
+  angLabel.position.set(ox + lr * Math.sin(mid), 0.06, oz - lr * Math.cos(mid));
+  angLabel.element.textContent = deg + '°';
+  angLabel.visible = deg > 0 && S.tab === 'bearing';
+
+  const br2 = (eyeBd * Math.PI) / 180;
+  distLabel.position.set(ox + vx * 0.55 + Math.cos(br2) * 0.72, 0.62, oz - vy * 0.55 + Math.sin(br2) * 0.72);
+  distLabel.element.textContent = Math.round(sel.d * UNIT_SEA) + ' n mile';
+
+  // 面板：选中目标的完整表述
+  const miles = Math.round(sel.d * UNIT_SEA);
+  const subj = fromIsA ? t.name : t.other;
+  const obj = fromIsA ? t.other : t.name;
+  document.getElementById('sent').innerHTML =
+    subj + ' 在 ' + obj + ' 的 <b>' + bearingText(eyeBd) + '</b> 方向，' +
+    '距离 <b>' + miles + ' n mile</b> 处。';
+  document.getElementById('cmpDir').textContent = bearingText(eyeBd);
+  document.getElementById('cmpDist').textContent = miles + ' n mile';
+
+  // 目标列表三行同时更新
+  const rowIds = { B: 'rowB', island: 'rowIsland', light: 'rowLight' };
+  ['B', 'island', 'light'].forEach((k) => {
+    document.getElementById(rowIds[k]).textContent =
+      bearingText(info[k].showBd) + ' · ' + Math.round(info[k].d * UNIT_SEA) + ' n mile';
+  });
+  document.querySelectorAll('#targetList li').forEach((li) =>
+    li.classList.toggle('on', li.dataset.target === S.target)
+  );
+
+  // 以 B 为参照只对救生船 B 有意义
+  document.getElementById('refBtns').style.display = t.allowRefB ? '' : 'none';
+}
+
+document.getElementById('refBtns').addEventListener('click', (e) => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  S.ref = btn.dataset.ref;
+  document.querySelectorAll('#refBtns button').forEach((b) =>
+    b.classList.toggle('is-active', b === btn)
+  );
+  updateBearing();
+});
+
+document.getElementById('targetList').addEventListener('click', (e) => {
+  const li = e.target.closest('li');
+  if (!li) return;
+  S.target = li.dataset.target;
+  if (!SEA_TARGETS[S.target].allowRefB && S.ref === 'B') {
+    S.ref = 'A';
+    document.querySelectorAll('#refBtns button').forEach((b) =>
+      b.classList.toggle('is-active', b.dataset.ref === 'A')
+    );
+  }
+  updateBearing();
+});
+
+/* =========================================================
+   10. 模块③：用坐标表示平移（课本三角形）
+   ========================================================= */
+const moveRoot = new THREE.Group();
+moveRoot.visible = false;
+scene.add(moveRoot);
+
+/* 课本图形：探究的三角形 与 例2 的长方形 */
+const FIGS = {
+  tri: {
+    label: '三角形 ABC',
+    badge: '用坐标表示平移 · 探究',
+    pts: [
+      { name: 'A', x: 4, y: 3 },
+      { name: 'B', x: 3, y: 1 },
+      { name: 'C', x: 1, y: 2 }
+    ],
+    presets: [
+      [-6, 0, '横坐标都减 6（探究）'],
+      [0, -5, '纵坐标都减 5（探究）'],
+      [-6, -5, '横减 6、纵减 5'],
+      [0, 0, '回到原位置']
+    ]
+  },
+  rect: {
+    label: '长方形 ABCD',
+    badge: '用坐标表示平移 · 例 2',
+    pts: [
+      { name: 'A', x: -3, y: 2 },
+      { name: 'B', x: -3, y: -2 },
+      { name: 'C', x: 3, y: -2 },
+      { name: 'D', x: 3, y: 2 }
+    ],
+    presets: [
+      [3, 2, '横加 3、纵加 2（例 2）'],
+      [-6, 0, '横坐标都减 6'],
+      [0, -5, '纵坐标都减 5'],
+      [0, 0, '回到原位置']
+    ]
+  }
+};
+S.fig = 'rect';
+
+const TRI_H = 0.13;
+const TRI_BASE = 0.016;
+const TRI_TOP = TRI_BASE + TRI_H;
+
+const activePts = () => FIGS[S.fig].pts;
+
+function ptsCentroid(pts) {
+  let sx = 0, sy = 0;
+  pts.forEach((p) => { sx += p.x; sy += p.y; });
+  return { x: sx / pts.length, y: sy / pts.length };
+}
+
+function polyShape(pts) {
+  const shape = new THREE.Shape();
+  shape.moveTo(pts[0].x, pts[0].y);
+  for (let i = 1; i < pts.length; i++) shape.lineTo(pts[i].x, pts[i].y);
+  shape.closePath();
+  return shape;
+}
+
+function buildPolygon(points, cfg) {
+  const g = new THREE.Group();
+
+  const geo = new THREE.ExtrudeGeometry(polyShape(points), { depth: TRI_H, bevelEnabled: false, curveSegments: 1 });
+  geo.rotateX(-Math.PI / 2);
+  geo.translate(0, TRI_BASE, 0);
+
+  const mat = new THREE.MeshStandardMaterial({
+    color: cfg.color,
+    roughness: 0.4,
+    metalness: 0.06,
+    transparent: cfg.opacity < 1,
+    opacity: cfg.opacity,
+    depthWrite: cfg.opacity > 0.85,
+    side: THREE.DoubleSide
+  });
+
+  const mesh = new THREE.Mesh(geo, mat);
+  mesh.castShadow = cfg.shadow !== false;
+  mesh.receiveShadow = true;
+  g.add(mesh);
+
+  const pts = points.map((p) => new THREE.Vector3(p.x, TRI_TOP + 0.003, -p.y));
+  pts.push(pts[0].clone());
+  const outlineGeo = new THREE.BufferGeometry().setFromPoints(pts);
+  const outlineMat = cfg.dashed
+    ? new THREE.LineDashedMaterial({ color: cfg.edge, dashSize: 0.26, gapSize: 0.17 })
+    : new THREE.LineBasicMaterial({ color: cfg.edge });
+  const outline = new THREE.Line(outlineGeo, outlineMat);
+  if (cfg.dashed) outline.computeLineDistances();
+  g.add(outline);
+
+  const verts = points.map((p, i) => {
+    const s = new THREE.Mesh(
+      new THREE.SphereGeometry(cfg.handle ? 0.2 : 0.14, 20, 14),
+      new THREE.MeshStandardMaterial({ color: cfg.vertColor || cfg.edge, roughness: 0.3 })
+    );
+    s.position.set(p.x, TRI_TOP, -p.y);
+    s.castShadow = cfg.shadow !== false;
+    s.userData.isQuadVertex = !!cfg.handle;
+    s.userData.vIndex = i;
+    s.userData.fig = cfg.fig || null;
+    g.add(s);
+    return s;
+  });
+
+  const labels = points.map((p) => {
+    const l = makeLabel('', 'lbl-v');
+    l.position.set(p.x, TRI_TOP + 0.68, -p.y);
+    g.add(l);
+    return l;
+  });
+
+  return { group: g, mesh, outline, verts, labels };
+}
+
+/* 顶点被拖动后重建多边形几何 */
+function refreshPoly(built, points) {
+  const geo = new THREE.ExtrudeGeometry(polyShape(points), { depth: TRI_H, bevelEnabled: false, curveSegments: 1 });
+  geo.rotateX(-Math.PI / 2);
+  geo.translate(0, TRI_BASE, 0);
+  built.mesh.geometry.dispose();
+  built.mesh.geometry = geo;
+
+  const wpts = points.map((p) => new THREE.Vector3(p.x, TRI_TOP + 0.003, -p.y));
+  wpts.push(wpts[0].clone());
+  built.outline.geometry.dispose();
+  built.outline.geometry = new THREE.BufferGeometry().setFromPoints(wpts);
+  if (built.outline.material.isLineDashedMaterial) built.outline.computeLineDistances();
+
+  points.forEach((p, i) => {
+    built.verts[i].position.set(p.x, TRI_TOP, -p.y);
+    built.labels[i].position.set(p.x, TRI_TOP + 0.68, -p.y);
+  });
+}
+
+const GHOST_CFG = {
+  color: 0x9fb2c9, edge: 0x64748b, vertColor: 0xd97706,
+  opacity: 0.3, dashed: true, shadow: false, handle: true
+};
+const SOLID_CFG = { color: 0x3b82f6, edge: 0x1d4ed8, opacity: 1, dashed: false };
+
+const built = {
+  tri: {
+    ghost: buildPolygon(FIGS.tri.pts, Object.assign({ fig: 'tri' }, GHOST_CFG)),
+    solid: buildPolygon(FIGS.tri.pts, Object.assign({ fig: 'tri' }, SOLID_CFG))
+  },
+  rect: {
+    ghost: buildPolygon(FIGS.rect.pts, Object.assign({ fig: 'rect' }, GHOST_CFG)),
+    solid: buildPolygon(FIGS.rect.pts, Object.assign({ fig: 'rect' }, SOLID_CFG))
+  }
+};
+moveRoot.add(built.tri.ghost.group, built.tri.solid.group,
+             built.rect.ghost.group, built.rect.solid.group);
+
+const activeBuilt = () => built[S.fig];
+
+function setFig(f) {
+  S.fig = f;
+  document.querySelectorAll('#figBtns button').forEach((b) =>
+    b.classList.toggle('is-active', b.dataset.fig === f)
+  );
+  ['tri', 'rect'].forEach((k) => {
+    const on = k === f;
+    built[k].ghost.group.visible = on;
+    built[k].solid.group.visible = on;
+    setLabelsVisible(built[k].ghost.group, on);
+    setLabelsVisible(built[k].solid.group, on);
+  });
+  TAB_CONF.move.badge = FIGS[f].badge;
+  if (S.tab === 'move') sceneBadge.textContent = TAB_CONF.move.badge;
+  renderPresets();
+  applyMove(1);
+}
+
+document.getElementById('figBtns').addEventListener('click', (e) => {
+  const btn = e.target.closest('button');
+  if (btn && btn.dataset.fig !== S.fig) setFig(btn.dataset.fig);
+});
+
+/* ---- 平移把手 ---- */
+const moveHandle = new THREE.Group();
+
+const mhRing = new THREE.Mesh(
+  new THREE.RingGeometry(0.32, 0.5, 40),
+  new THREE.MeshBasicMaterial({ color: 0xea580c, transparent: true, opacity: 0.42, side: THREE.DoubleSide })
+);
+mhRing.rotation.x = -Math.PI / 2;
+mhRing.position.y = TRI_TOP + 0.02;
+moveHandle.add(mhRing);
+
+const mhBall = new THREE.Mesh(
+  new THREE.SphereGeometry(0.18, 22, 16),
+  new THREE.MeshStandardMaterial({ color: 0xea580c, roughness: 0.35, metalness: 0.1 })
+);
+mhBall.position.y = TRI_TOP + 0.22;
+mhBall.castShadow = true;
+moveHandle.add(mhBall);
+
+const mhLbl = makeLabel('拖我', 'lbl-path');
+mhLbl.position.set(0, TRI_TOP + 0.76, 0);
+moveHandle.add(mhLbl);
+
+moveRoot.add(moveHandle);
+
+const arrows = [0, 1, 2, 3].map(() => {
+  const a = makeThickArrow(0xea580c);
+  moveRoot.add(a);
+  return a;
+});
+
+const coordTableEl = document.getElementById('coordTable');
+
+function updateCoordTable(dx, dy) {
+  const head = '<div class="tr head"><span>顶点</span><span>原坐标</span><span></span><span>平移后</span></div>';
+  const rows = activePts().map((p) => {
+    return '<div class="tr"><span class="vname">' + p.name + '</span>' +
+      '<span>(' + p.x + ', ' + p.y + ')</span>' +
+      '<span class="arrow">→</span>' +
+      '<span class="vnew">' + p.name + '₁(' + fmt(p.x + dx) + ', ' + fmt(p.y + dy) + ')</span></div>';
+  }).join('');
+  coordTableEl.innerHTML = head + rows;
+}
+
+function updateDirSent(dx, dy) {
+  const el = document.getElementById('dirSent');
+  const h = dx === 0 ? '' :
+    (dx > 0 ? '<b>向右平移 ' + dx + ' 个单位长度</b>' : '<b>向左平移 ' + (-dx) + ' 个单位长度</b>');
+  const v = dy === 0 ? '' :
+    (dy > 0 ? '<b>向上平移 ' + dy + ' 个单位长度</b>' : '<b>向下平移 ' + (-dy) + ' 个单位长度</b>');
+  const words = [h, v].filter(Boolean).join('，');
+  if (!words) {
+    el.innerHTML = FIGS[S.fig].label + ' 没有移动（各点坐标不变）';
+    return;
+  }
+  const cx = dx === 0 ? '横坐标不变' : '横坐标都' + (dx > 0 ? '加 ' : '减 ') + Math.abs(dx);
+  const cy = dy === 0 ? '纵坐标不变' : '纵坐标都' + (dy > 0 ? '加 ' : '减 ') + Math.abs(dy);
+  el.innerHTML = '把' + FIGS[S.fig].label + ' 上的每一点' + words +
+    '<br><span style="font-weight:500;color:#3c5a7d">' + cx + '，' + cy + '</span>';
+}
+
+function applyMove(t) {
+  const pts = activePts();
+  const b = activeBuilt();
+  const dx = S.a * t;
+  const dy = S.b * t;
+
+  b.solid.group.position.set(dx, 0, -dy);
+  const c = ptsCentroid(pts);
+  moveHandle.position.set(c.x + dx, 0, -(c.y + dy));
+
+  pts.forEach((p, i) => {
+    b.solid.labels[i].element.textContent =
+      p.name + '₁(' + fmt(p.x + dx) + ', ' + fmt(p.y + dy) + ')';
+    b.ghost.labels[i].element.textContent =
+      p.name + '(' + p.x + ', ' + p.y + ')';
+  });
+  updateCoordTable(dx, dy);
+  updateDirSent(dx, dy);
+
+  const flyY = TRI_TOP + 0.5;
+  arrows.forEach((arr, i) => {
+    if (i >= pts.length) { arr.visible = false; return; }
+    arr.visible = true;
+    setThickArrow(
+      arr,
+      new THREE.Vector3(pts[i].x, flyY, -pts[i].y),
+      new THREE.Vector3(pts[i].x + dx, flyY, -(pts[i].y + dy))
+    );
+  });
+}
+
+/* ---- 预设与滑块 ---- */
+const presetBtns = document.getElementById('presetBtns');
+const rangeA = document.getElementById('rangeA');
+const rangeB = document.getElementById('rangeB');
+const valA = document.getElementById('valA');
+const valB = document.getElementById('valB');
+
+function renderPresets() {
+  presetBtns.innerHTML = FIGS[S.fig].presets.map((p) =>
+    '<button data-a="' + p[0] + '" data-b="' + p[1] + '"' +
+    (p[0] === S.a && p[1] === S.b ? ' class="is-active"' : '') +
+    '>' + p[2] + '</button>'
+  ).join('');
+}
+
+function syncPresetHighlight() {
+  [...presetBtns.querySelectorAll('button')].forEach((b) => {
+    b.classList.toggle('is-active', Number(b.dataset.a) === S.a && Number(b.dataset.b) === S.b);
+  });
+}
+
+function setMove(a, b) {
+  S.a = a; S.b = b;
+  rangeA.value = a;
+  rangeB.value = b;
+  valA.textContent = a === 0 ? '不动' : (a > 0 ? '向右 ' + a : '向左 ' + (-a));
+  valB.textContent = b === 0 ? '不动' : (b > 0 ? '向上 ' + b : '向下 ' + (-b));
+  applyMove(1);
+  syncPresetHighlight();
+}
+
+presetBtns.addEventListener('click', (e) => {
+  const btn = e.target.closest('button');
+  if (!btn) return;
+  setMove(Number(btn.dataset.a), Number(btn.dataset.b));
+});
+
+rangeA.addEventListener('input', () => setMove(Number(rangeA.value), S.b));
+rangeB.addEventListener('input', () => setMove(S.a, Number(rangeB.value)));
+
+/* =========================================================
+   11. 拖拽处理
+   ========================================================= */
+handleDragMove = function (p) {
+  if (S.tab === 'geo') {
+    const dragged = dragState.object;
+    if (dragged && dragged.userData.placeCfg && dragged.userData.placeCfg.id !== 'school') {
+      const cfg = dragged.userData.placeCfg;
+      const gx = Math.max(-R + 1, Math.min(R - 1, Math.round(p.x * 2) / 2));
+      const gy = Math.max(-R + 1, Math.min(R - 1, Math.round(-p.z * 2) / 2));
+      if (gx !== cfg.gx || gy !== cfg.gy) {
+        cfg.gx = gx; cfg.gy = gy;
+        dragged.position.set(gx, 0, -gy);
+        updateGeo();
+      }
+      return;
+    }
+    const gx = Math.max(-4, Math.min(4, Math.round(p.x * 2) / 2));
+    const gy = Math.max(-4, Math.min(4, Math.round(-p.z * 2) / 2));
+    if (gx !== S.ox || gy !== S.oy) {
+      S.ox = gx; S.oy = gy;
+      updateGeo();
+      rebuildTicks();
+    }
+    return;
+  }
+
+  if (S.tab === 'bearing') {
+    const dragged = dragState.object;
+    if (dragged === islandGroup || dragged === lightGroup) {
+      const key = dragged === islandGroup ? 'island' : 'light';
+      SEA[key].gx = Math.max(-R + 1.6, Math.min(R - 1.6, Math.round(p.x * 2) / 2));
+      SEA[key].gy = Math.max(-R + 1.6, Math.min(R - 1.6, Math.round(-p.z * 2) / 2));
+    } else {
+      const gx = p.x;
+      const gy = -p.z;
+      let dist = Math.hypot(gx, gy);
+      dist = Math.max(1.2, Math.min(R - 0.8, dist));
+      dist = Math.round(dist * 5) / 5;        // 吸附到 1 n mile
+
+      let ang = (Math.atan2(gx, gy) * 180) / Math.PI;
+      if (ang < 0) ang += 360;
+      ang = Math.round(ang);
+
+      BEAR.dist = dist;
+      BEAR.bd = ang;
+    }
+    updateBearing();
+    return;
+  }
+
+  if (S.tab === 'move') {
+    const dragged = dragState.object;
+    if (dragged && dragged.userData.isQuadVertex) {
+      const fig = dragged.userData.fig;
+      const pts = FIGS[fig].pts;
+      const i = dragged.userData.vIndex;
+      const nx = Math.max(-6, Math.min(6, Math.round(p.x)));
+      const ny = Math.max(-6, Math.min(6, Math.round(-p.z)));
+      if (nx !== pts[i].x || ny !== pts[i].y) {
+        pts[i].x = nx;
+        pts[i].y = ny;
+        refreshPoly(built[fig].ghost, pts);
+        refreshPoly(built[fig].solid, pts);
+        applyMove(1);
+      }
+      return;
+    }
+    const c = ptsCentroid(activePts());
+    const a = Math.round(p.x - c.x);
+    const b = Math.round(-p.z - c.y);
+    const ca = Math.max(-R, Math.min(R, a));
+    const cb = Math.max(-R, Math.min(R, b));
+    if (ca !== S.a || cb !== S.b) setMove(ca, cb);
+  }
+};
+
+/* =========================================================
+   12. 单击拾取（模块①）
+   ========================================================= */
+handleClick = function (e) {
+  if (S.tab !== 'geo') return;
+  setPointerFromEvent(e);
+
+  const hit = raycaster.intersectObjects(pickables, false);
+  if (hit.length) {
+    selectPlace(hit[0].object.userData.place);
+    return;
+  }
+
+  const gh = raycaster.intersectObject(ground, false);
+  if (gh.length) selectPlace(null);
+};
+
+/* =========================================================
+   13. 标签页切换
+   ========================================================= */
+const sceneBadge = document.getElementById('sceneBadge');
+
+const TAB_CONF = {
+  geo:     { pane: 'pane-geo',     root: geoRoot,     badge: '用坐标表示地理位置 · 例 1' },
+  bearing: { pane: 'pane-bearing', root: bearingRoot, badge: '用方向和距离表示位置' },
+  move:    { pane: 'pane-move',    root: moveRoot,    badge: '用坐标表示平移 · 例 2' }  // badge 由 setFig 动态更新
+};
+
+function setTab(tab) {
+  S.tab = tab;
+  document.querySelectorAll('.tab').forEach((t) =>
+    t.classList.toggle('is-active', t.dataset.tab === tab)
+  );
+
+  Object.keys(TAB_CONF).forEach((k) => {
+    const c = TAB_CONF[k];
+    const on = k === tab;
+    document.getElementById(c.pane).classList.toggle('is-active', on);
+    c.root.visible = on;
+    setLabelsVisible(c.root, on);
+  });
+
+  originHandle.visible = tab === 'geo';
+  northLabel.visible = tab === 'bearing';
+
+  lblX.element.textContent = tab === 'geo' ? 'x/m' : 'x';
+  lblY.element.textContent = tab === 'geo' ? 'y/m' : 'y';
+
+  sceneBadge.textContent = TAB_CONF[tab].badge;
+
+  rebuildTicks();
+  if (tab === 'geo') updateGeo();
+  if (tab === 'bearing') updateBearing();
+  if (tab === 'move') applyMove(1);
+
+  dragState.hovered = null;
+  renderer.domElement.style.cursor = 'default';
+  controls.enabled = true;
+}
+
+document.querySelectorAll('.tab').forEach((btn) => {
+  btn.addEventListener('click', () => setTab(btn.dataset.tab));
+});
+
+/* =========================================================
+   14. 视角切换
+   ========================================================= */
+function tweenCamera(toPos, toTarget) {
+  const p0 = camera.position.clone();
+  const t0 = controls.target.clone();
+  const start = performance.now();
+  const dur = 650;
+
+  const step = () => {
+    const k = Math.min(1, (performance.now() - start) / dur);
+    const e = easeInOut(k);
+    camera.position.lerpVectors(p0, toPos, e);
+    controls.target.lerpVectors(t0, toTarget, e);
+    controls.update();
+    if (k < 1) requestAnimationFrame(step);
+  };
+  step();
+}
+
+const btnIso = document.getElementById('viewIso');
+const btnTop = document.getElementById('viewTop');
+
+btnIso.addEventListener('click', () => {
+  btnIso.classList.add('is-active');
+  btnTop.classList.remove('is-active');
+  tweenCamera(CAM_ISO, new THREE.Vector3(0, 0.6, 0));
+});
+
+btnTop.addEventListener('click', () => {
+  btnTop.classList.add('is-active');
+  btnIso.classList.remove('is-active');
+  tweenCamera(new THREE.Vector3(0, 30, 0.05), new THREE.Vector3(0, 0, 0));
+});
+
+/* =========================================================
+   15. 尺寸自适应
+   ========================================================= */
+function resize() {
+  const w = host.clientWidth;
+  const h = host.clientHeight;
+  if (!w || !h) return;
+  camera.aspect = w / h;
+  camera.updateProjectionMatrix();
+  renderer.setSize(w, h);
+  labelRenderer.setSize(w, h);
+}
+
+new ResizeObserver(resize).observe(host);
+resize();
+
+/* =========================================================
+   16. 主循环
+   ========================================================= */
+function loop() {
+  requestAnimationFrame(loop);
+  controls.update();
+  renderer.render(scene, camera);
+  labelRenderer.render(scene, camera);
+}
+
+/* =========================================================
+   17. 初始化
+   ========================================================= */
+setFig('rect');
+setLabelsVisible(moveRoot, false);
+setLabelsVisible(bearingRoot, false);
+updateGeo();
+updateBearing();
+selectPlace(PLACES[1]);
+rebuildTicks();
+
+/* 供自动化测试/调试使用（不影响页面） */
+window.__wb = { S, FIGS, built, PLACES, homeGroups, islandGroup, lightGroup, boatB, dragState, handleDragMove, applyMove, updateGeo, updateBearing, setFig };
+
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

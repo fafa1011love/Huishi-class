@@ -1,0 +1,892 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>平抛运动分解 · 交互教学演示</title>
+<style>
+/* ============ 全局样式（浅色主题） ============ */
+:root{
+  --bg:#f4f6fa; --panel:#ffffff; --line:#dde3ec; --ink:#1f2937; --sub:#6b7280;
+  --blue:#2563eb; --red:#dc2626; --yellow:#d97706; --yellow-hl:#facc15;
+  --ok:#16a34a; --bad:#dc2626;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif;background:var(--bg);color:var(--ink);font-size:14px}
+header{background:linear-gradient(135deg,#1e3a8a,#2563eb);color:#fff;padding:12px 18px;display:flex;flex-wrap:wrap;align-items:center;gap:8px 18px}
+header h1{font-size:19px;font-weight:700;letter-spacing:1px}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px}
+.legend span{display:inline-flex;align-items:center;gap:5px}
+.dot{width:12px;height:12px;border-radius:3px;display:inline-block}
+.app{display:grid;grid-template-columns:312px 1fr;gap:12px;padding:12px;max-width:1600px;margin:0 auto}
+@media (max-width:980px){.app{grid-template-columns:1fr}.side{order:2}}
+.card{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:12px;margin-bottom:12px}
+.card h2{font-size:14px;margin-bottom:8px;padding-bottom:6px;border-bottom:1px dashed var(--line);color:#1e3a8a}
+.card h2 small{color:var(--sub);font-weight:400;margin-left:6px}
+/* ---- 控制项 ---- */
+.sl{margin-bottom:10px}
+.sl label{display:flex;justify-content:space-between;font-size:12.5px;color:#374151;margin-bottom:3px}
+.sl label b{color:#111827;font-variant-numeric:tabular-nums}
+input[type=range]{width:100%;accent-color:#2563eb}
+.seg{display:flex;gap:6px;flex-wrap:wrap;margin:6px 0}
+.seg button{flex:1;min-width:52px;padding:6px 4px;border:1px solid var(--line);background:#f9fafb;border-radius:7px;cursor:pointer;font-size:12.5px}
+.seg button.on{background:#2563eb;color:#fff;border-color:#2563eb}
+.toggles{display:grid;grid-template-columns:1fr 1fr;gap:5px 8px;font-size:12.5px}
+.toggles label{display:flex;align-items:center;gap:5px;cursor:pointer;white-space:nowrap}
+.btnrow{display:flex;gap:6px;margin:8px 0}
+.btnrow button{flex:1;padding:8px 4px;border:none;border-radius:8px;cursor:pointer;font-size:13.5px;font-weight:600}
+#btnPlay{background:#16a34a;color:#fff}
+#btnPause{background:#d97706;color:#fff}
+#btnReset{background:#6b7280;color:#fff}
+#btnStep,#btnStatic{background:#e5e7eb;color:#1f2937;font-weight:400}
+/* ---- 引导 / 测验 ---- */
+.gstep{font-size:12.8px;line-height:1.7}
+.gstep .tag{display:inline-block;background:#1e3a8a;color:#fff;border-radius:4px;padding:1px 8px;font-size:12px;margin-right:6px}
+.gstep .ask{margin-top:6px;padding:6px 8px;background:#fffbeb;border-left:3px solid #f59e0b;border-radius:0 6px 6px 0;color:#92400e}
+.gnav{display:flex;justify-content:space-between;align-items:center;margin-top:8px}
+.gnav .dots{font-size:13px;letter-spacing:3px;color:#cbd5e1}
+.gnav .dots i{font-style:normal}
+.gnav .dots i.on{color:#2563eb;font-weight:700}
+#btnNext{padding:6px 16px;border:none;background:#2563eb;color:#fff;border-radius:7px;cursor:pointer;font-size:13px}
+#btnNext:disabled{background:#cbd5e1;cursor:not-allowed}
+.quiz{margin-bottom:10px;padding-bottom:8px;border-bottom:1px dashed var(--line)}
+.quiz p{font-size:12.8px;margin-bottom:5px}
+.quiz .opt{display:inline-block;margin:2px 4px 2px 0;padding:4px 10px;border:1px solid var(--line);border-radius:14px;background:#f9fafb;cursor:pointer;font-size:12.3px}
+.quiz .opt:hover{border-color:#2563eb}
+.quiz .opt.right{background:#dcfce7;border-color:#16a34a;color:#14532d}
+.quiz .opt.wrong{background:#fee2e2;border-color:#dc2626;color:#7f1d1d}
+.quiz .why{font-size:12.2px;margin-top:4px;padding:5px 8px;border-radius:6px;display:none;line-height:1.6}
+.quiz .why.ok{display:block;background:#f0fdf4;color:#166534}
+.quiz .why.bad{display:block;background:#fef2f2;color:#991b1b}
+/* ---- 主区 ---- */
+.main{min-width:0}
+.stage{display:grid;grid-template-columns:1fr 330px;gap:12px}
+@media (max-width:1200px){.stage{grid-template-columns:1fr}}
+.panelwrap{position:relative;border:1px solid var(--line);border-radius:10px;background:#fff;overflow:hidden}
+#scene{display:block;width:100%;height:480px}
+@media (max-width:980px){#scene{height:400px}}
+.datapanel{border:1px solid var(--line);border-radius:10px;background:#fff;padding:10px;min-width:0}
+.reads{display:grid;grid-template-columns:1fr 1fr;gap:5px 8px;font-size:12.6px;margin-bottom:8px}
+.reads div{display:flex;justify-content:space-between;background:#f8fafc;border:1px solid #eef2f7;border-radius:6px;padding:4px 7px;font-variant-numeric:tabular-nums}
+.reads b{font-weight:600}
+.eqbadge{font-size:12.5px;background:#ecfdf5;border:1px solid #a7f3d0;color:#065f46;border-radius:7px;padding:6px 8px;margin-bottom:8px;line-height:1.6}
+.cmp{display:flex;gap:5px;margin:6px 0 8px}
+.cmp button{flex:1;padding:5px 2px;font-size:12px;border:1px solid var(--line);background:#f9fafb;border-radius:6px;cursor:pointer}
+.cmp button.on{background:#7c3aed;color:#fff;border-color:#7c3aed}
+#cmpNote{font-size:12.3px;color:#5b21b6;background:#f5f3ff;border-radius:6px;padding:5px 8px;margin-bottom:8px;display:none;line-height:1.6}
+.tblwrap{max-height:180px;overflow:auto;border:1px solid var(--line);border-radius:6px;margin-bottom:8px}
+table{width:100%;border-collapse:collapse;font-size:11.8px;font-variant-numeric:tabular-nums}
+th{position:sticky;top:0;background:#eef2f7;z-index:1}
+th,td{padding:3px 5px;text-align:center;border-bottom:1px solid #eef2f7}
+#btnCSV{width:100%;padding:7px;border:1px solid var(--line);background:#f9fafb;border-radius:7px;cursor:pointer;font-size:12.5px}
+#btnCSV:hover{background:#eef2f7}
+/* ---- 图像区 ---- */
+.charts{display:grid;grid-template-columns:repeat(4,1fr);gap:12px;margin-top:12px}
+@media (max-width:1100px){.charts{grid-template-columns:repeat(2,1fr)}}
+@media (max-width:560px){.charts{grid-template-columns:1fr}}
+.chartcard{background:#fff;border:1px solid var(--line);border-radius:10px;padding:8px}
+.chartcard h3{font-size:12.5px;text-align:center;color:#374151;margin-bottom:4px}
+.chartcard canvas{display:block;width:100%;height:170px}
+footer{text-align:center;color:var(--sub);font-size:12px;padding:8px 0 16px}
+@media (prefers-reduced-motion:reduce){*{transition:none!important;animation:none!important}}
+</style>
+</head>
+<body>
+<header>
+  <h1>平抛运动分解 · 交互教学演示</h1>
+  <div class="legend">
+    <span><i class="dot" style="background:#2563eb"></i>水平分运动（匀速，等间距）</span>
+    <span><i class="dot" style="background:#dc2626"></i>竖直分运动（自由落体，1:3:5:7）</span>
+    <span><i class="dot" style="background:#facc15"></i>合运动</span>
+  </div>
+</header>
+
+<div class="app">
+  <!-- ================= 左栏：控制台 ================= -->
+  <aside class="side">
+    <div class="card">
+      <h2>参数控制<small>物理参数集中配置</small></h2>
+      <div class="sl"><label>初速度 v₀ <b><span id="vV0">4.0</span> m/s</b></label>
+        <input type="range" id="slV0" min="1" max="10" step="0.1" value="4"></div>
+      <div class="sl"><label>释放高度 h <b><span id="vH">1.20</span> m</b></label>
+        <input type="range" id="slH" min="0.2" max="2" step="0.05" value="1.2"></div>
+      <div class="sl"><label>重力加速度 g</label>
+        <div class="seg" id="segG">
+          <button data-g="9.8" class="on">9.8 m/s²</button>
+          <button data-g="10">10 m/s²</button>
+        </div></div>
+    </div>
+
+    <div class="card">
+      <h2>播放控制</h2>
+      <div class="btnrow">
+        <button id="btnPlay">▶ 播放</button>
+        <button id="btnPause">⏸ 暂停</button>
+        <button id="btnReset">⟲ 重置</button>
+      </div>
+      <div class="btnrow">
+        <button id="btnStep">单步 +0.1s</button>
+        <button id="btnStatic">静态分帧图</button>
+      </div>
+      <div class="sl"><label>播放速度</label>
+        <div class="seg" id="segSp">
+          <button data-s="0.25">0.25×</button>
+          <button data-s="0.5">0.5×</button>
+          <button data-s="1" class="on">1×</button>
+        </div></div>
+      <h2 style="margin-top:10px">显示开关</h2>
+      <div class="toggles" id="togs">
+        <label><input type="checkbox" data-k="trace" checked>轨迹线</label>
+        <label><input type="checkbox" data-k="strobe" checked>频闪残影</label>
+        <label><input type="checkbox" data-k="vel" checked>速度矢量</label>
+        <label><input type="checkbox" data-k="disp" checked>位移矢量</label>
+        <label><input type="checkbox" data-k="aux" checked>分运动辅助线</label>
+        <label><input type="checkbox" data-k="grid" checked>方格底板</label>
+        <label><input type="checkbox" data-k="sound" checked>音效</label>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>教学引导<small>猜想 → 实验 → 数据 → 结论</small></h2>
+      <div class="gstep">
+        <div id="gBody"></div>
+        <div class="gnav">
+          <span class="dots" id="gDots"></span>
+          <button id="btnNext">下一步 →</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>即时测验<small>点击选项即时反馈</small></h2>
+      <div id="quizBox"></div>
+    </div>
+  </aside>
+
+  <!-- ================= 右区 ================= -->
+  <div class="main">
+    <div class="stage">
+      <div class="panelwrap"><canvas id="scene"></canvas></div>
+      <div class="datapanel">
+        <h2 style="font-size:14px;margin-bottom:8px;color:#1e3a8a">实时数据</h2>
+        <div class="eqbadge">等时性：t = √(2h/g) = <b id="eqT">—</b> s，只由高度决定，与 v₀ 无关</div>
+        <div class="reads" id="reads"></div>
+        <h2 style="font-size:13px;margin:8px 0 4px;color:#1e3a8a">对比模式</h2>
+        <div class="cmp" id="segCmp">
+          <button data-c="none" class="on">无</button>
+          <button data-c="v">不同 v₀（同高）</button>
+          <button data-c="h">不同高度（同 v₀）</button>
+        </div>
+        <div id="cmpNote"></div>
+        <h2 style="font-size:13px;margin:4px 0 4px;color:#1e3a8a">实验记录表（每 0.1 s 采样）</h2>
+        <div class="tblwrap"><table id="recTbl"><thead>
+          <tr><th>t/s</th><th>x/m</th><th>下落 y/m</th><th>vₓ/(m/s)</th><th>v_y/(m/s)</th><th>v/(m/s)</th></tr>
+        </thead><tbody></tbody></table></div>
+        <button id="btnCSV">⬇ 导出记录表 CSV</button>
+      </div>
+    </div>
+
+    <div class="charts">
+      <div class="chartcard"><h3>y–t 图（竖直位移–时间）</h3><canvas id="chYt"></canvas></div>
+      <div class="chartcard"><h3>x–t 图（水平位移–时间）</h3><canvas id="chXt"></canvas></div>
+      <div class="chartcard"><h3>v_y–t 图（竖直速度–时间）</h3><canvas id="chVyt"></canvas></div>
+      <div class="chartcard"><h3>y–x 图（轨迹抛物线 y = gx²/2v₀²）</h3><canvas id="chYx"></canvas></div>
+    </div>
+  </div>
+</div>
+<footer>平抛运动：水平匀速 x = v₀t ＋ 竖直自由落体 y = ½gt² ⟹ 轨迹 y = gx²/(2v₀²)</footer>
+
+<script>
+"use strict";
+/* =========================================================
+ * 配置对象：物理参数集中于此，便于修改
+ * ========================================================= */
+const CFG = {
+  v0: 4.0,          // 初速度 (m/s)
+  h: 1.2,           // 释放高度 (m)
+  g: 9.8,           // 重力加速度 (m/s^2)
+  dt: 1 / 240,      // 固定物理步长 (s)：不同帧率下积分结果一致
+  strobeDt: 0.1,    // 频闪/采样间隔 (s)
+  stepDt: 0.1,      // 单步推进 (s)
+  speed: 1,         // 播放倍速
+  mass: 1           // 小球质量（示意，不影响运动）
+};
+const TOG = { trace:true, strobe:true, vel:true, disp:true, aux:true, grid:true, sound:true };
+const REDUCED = window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ---------- 状态 ---------- */
+const S = {
+  t: 0, running: false, landed: false, landAt: 0,
+  acc: 0, lastRaf: 0, fx: 0,            // fx：落地闪光计时
+  strobes: [],                           // 已经过的频闪时刻
+  records: [],                           // 记录表数据
+  lastRecIdx: -1,
+  compare: "none"
+};
+/* ---------- 物理公式（解析解，配合固定步长累加器） ---------- */
+const landTime = () => Math.sqrt(2 * CFG.h / CFG.g);     // t = √(2h/g)
+const rangeX   = (v = CFG.v0, h = CFG.h) => v * Math.sqrt(2 * h / CFG.g);
+const posA = t => ({ x: CFG.v0 * t, y: CFG.h - 0.5 * CFG.g * t * t }); // 球A：平抛
+const posB = t => ({ x: 0, y: Math.max(0, CFG.h - 0.5 * CFG.g * t * t) }); // 球B：自由落体
+
+/* =========================================================
+ * Canvas 高 DPI 适配
+ * ========================================================= */
+function fitCanvas(cv) {
+  const dpr = window.devicePixelRatio || 1;
+  const w = cv.clientWidth, h = cv.clientHeight;
+  if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) {
+    cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+  }
+  const ctx = cv.getContext("2d");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx, w, h };
+}
+const $ = id => document.getElementById(id);
+const fmt = (v, d = 2) => (isFinite(v) ? v.toFixed(d) : "—");
+
+/* =========================================================
+ * 主画板：器材与实验情境还原
+ * ========================================================= */
+const scene = $("scene");
+// 世界坐标 → 屏幕像素（y 向上）
+let W2P = null;
+function computeScale(extraX, extraY) {
+  const { w, h } = { w: scene.clientWidth, h: scene.clientHeight };
+  const mL = 56, mR = 26, mT = 30, mB = 40;
+  const xNeed = Math.max(extraX, 0.6), yNeed = Math.max(extraY, 0.6);
+  const s = Math.min((w - mL - mR) / xNeed, (h - mT - mB) / yNeed);
+  W2P = { s, ox: mL, oy: h - mB, w, h };
+}
+const px = (x, y) => ({ x: W2P.ox + x * W2P.s, y: W2P.oy - y * W2P.s });
+
+function drawScene() {
+  const { ctx, w, h } = fitCanvas(scene);
+  computeScale(needX(), needY());
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = "#fbfcfe"; ctx.fillRect(0, 0, w, h);
+
+  if (TOG.grid) drawGrid(ctx);
+  drawApparatus(ctx);
+  if (S.compare !== "none") drawCompare(ctx);
+  if (TOG.trace) drawTrace(ctx);
+  if (TOG.strobe) drawStrobe(ctx);
+  if (S.compare !== "none") drawCompareStrobes(ctx);
+  drawCompareBalls(ctx);
+  drawBalls(ctx);
+  drawVectors(ctx);
+  drawLinkLine(ctx);
+  drawLandingFx(ctx);
+  drawWatch(ctx);
+  drawWallLabels(ctx);
+}
+/* 计算视窗所需的世界范围（含对比轨迹） */
+function needX() {
+  let m = rangeX();
+  if (S.compare === "v") for (const v of [2, 5, 8]) m = Math.max(m, rangeX(v));
+  if (S.compare === "h") m = Math.max(m, rangeX(CFG.v0, Math.max(CFG.h, 1.5)));
+  return m * 1.12 + 0.3;
+}
+function needY() {
+  let m = CFG.h + 0.42; // 顶部留给释放装置
+  if (S.compare === "h") m = Math.max(m, 1.5 + 0.3);
+  return m * 1.08;
+}
+/* 方格底板（0.25 m 一格） */
+function drawGrid(ctx) {
+  const { s } = W2P;
+  ctx.save();
+  ctx.strokeStyle = "#e2e8f0"; ctx.lineWidth = 1;
+  const xMax = needX(), yMax = needY();
+  for (let gx = 0; gx <= xMax; gx += 0.25) {
+    const p = px(gx, 0); ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(p.x, px(0, yMax).y); ctx.stroke();
+  }
+  for (let gy = 0; gy <= yMax; gy += 0.25) {
+    const p = px(0, gy); ctx.beginPath(); ctx.moveTo(p.x, p.y); ctx.lineTo(px(xMax, 0).x, p.y); ctx.stroke();
+  }
+  ctx.restore();
+}
+/* 器材：同步释放装置 / 弹簧枪 / 电磁铁 / 地面接收板 */
+function drawApparatus(ctx) {
+  const a0 = px(0, CFG.h);
+  // —— 弹簧枪（水平弹出球A）——
+  ctx.save();
+  ctx.fillStyle = "#475569";
+  ctx.fillRect(a0.x - 52 * W2P.s / 60, a0.y - 7, 46, 14);
+  ctx.fillStyle = "#94a3b8"; ctx.fillRect(a0.x - 10, a0.y - 3.5, 10, 7);
+  ctx.fillStyle = "#334155"; ctx.font = "11px sans-serif";
+  ctx.fillText("弹簧枪 → 球A（平抛）", a0.x - 96, a0.y - 12);
+  // —— 电磁铁释放装置（球B）——
+  const bm = px(0, CFG.h + 0.3);
+  ctx.fillStyle = "#7c3aed"; ctx.fillRect(bm.x - 16, bm.y - 12, 32, 12);
+  ctx.fillStyle = "#fff"; ctx.font = "10px sans-serif"; ctx.textAlign = "center";
+  ctx.fillText("电磁铁", bm.x, bm.y - 3);
+  ctx.textAlign = "left";
+  ctx.fillStyle = "#5b21b6";
+  ctx.fillText("同步释放装置（打击金属片 / 断电同时释放）", bm.x + 22, bm.y - 4);
+  // —— 地面接收板 ——
+  const g0 = px(0, 0), g1 = px(needX(), 0);
+  ctx.strokeStyle = "#334155"; ctx.lineWidth = 4;
+  ctx.beginPath(); ctx.moveTo(g0.x - 14, g0.y); ctx.lineTo(g1.x, g0.y); ctx.stroke();
+  ctx.lineWidth = 1; ctx.fillStyle = "#334155"; ctx.font = "11.5px sans-serif";
+  ctx.fillText("地面接收板", g1.x - 78, g0.y + 16);
+  // 刻度（m）
+  ctx.font = "10px sans-serif"; ctx.fillStyle = "#94a3b8";
+  for (let gx = 0; gx <= needX(); gx += 0.5) {
+    const p = px(gx, 0);
+    ctx.beginPath(); ctx.moveTo(p.x, g0.y); ctx.lineTo(p.x, g0.y + 5); ctx.strokeStyle = "#94a3b8"; ctx.stroke();
+    ctx.fillText(gx.toFixed(1), p.x - 8, g0.y + 16);
+  }
+  ctx.restore();
+}
+/* 理论轨迹（虚线抛物线） */
+function drawTrace(ctx) {
+  const T = landTime();
+  ctx.save();
+  ctx.strokeStyle = "rgba(250,204,21,.85)"; ctx.lineWidth = 2; ctx.setLineDash([6, 4]);
+  ctx.beginPath();
+  for (let i = 0; i <= 120; i++) {
+    const t = T * i / 120, p = posA(t);
+    const q = px(p.x, p.y); i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y);
+  }
+  ctx.stroke(); ctx.restore();
+}
+/* 频闪残影 + 水平等间距刻度（蓝）+ 竖直 1:3:5:7 刻度（红） */
+function drawStrobe(ctx) {
+  const g = CFG.g;
+  ctx.save();
+  for (const ts of S.strobes) {
+    const a = posA(ts);
+    // 残影
+    const pa = px(a.x, a.y);
+    ctx.beginPath(); ctx.arc(pa.x, pa.y, 5, 0, 7);
+    ctx.fillStyle = "rgba(250,204,21,.28)"; ctx.fill();
+    ctx.strokeStyle = "rgba(202,138,4,.55)"; ctx.lineWidth = 1; ctx.stroke();
+    const pb = px(0, a.y);
+    ctx.beginPath(); ctx.arc(pb.x, pb.y, 4.5, 0, 7);
+    ctx.fillStyle = "rgba(148,163,184,.3)"; ctx.fill(); ctx.stroke();
+    // 蓝色地面刻度：水平等间距（匀速）
+    const pg = px(a.x, 0);
+    ctx.strokeStyle = "#2563eb"; ctx.lineWidth = 2.2;
+    ctx.beginPath(); ctx.moveTo(pg.x, pg.y - 2); ctx.lineTo(pg.x, pg.y + 8); ctx.stroke();
+    ctx.fillStyle = "#2563eb"; ctx.font = "9.5px sans-serif"; ctx.textAlign = "center";
+    ctx.fillText("●", pg.x, pg.y + 18);
+    // 红色左侧刻度：竖直按 1:3:5:7 递减（匀加速）
+    if (a.y > 0.004) {
+      const pw = px(0, a.y);
+      ctx.strokeStyle = "#dc2626";
+      ctx.beginPath(); ctx.moveTo(pw.x - 2, pw.y); ctx.lineTo(pw.x - 12, pw.y); ctx.stroke();
+    }
+  }
+  ctx.textAlign = "left"; ctx.restore();
+}
+/* 两球 + 落地静止位置 */
+function drawBalls(ctx) {
+  const T = landTime(), t = Math.min(S.t, T);
+  const A = posA(t), B = posB(t);
+  const r = 7;
+  ctx.save();
+  // 球A（黄，描边深）
+  let p = px(A.x, A.y);
+  ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, 7);
+  const gr = ctx.createRadialGradient(p.x - 2, p.y - 2, 1, p.x, p.y, r);
+  gr.addColorStop(0, "#fef08a"); gr.addColorStop(1, "#eab308");
+  ctx.fillStyle = gr; ctx.fill();
+  ctx.strokeStyle = "#92400e"; ctx.lineWidth = 1.4; ctx.stroke();
+  ctx.fillStyle = "#92400e"; ctx.font = "bold 11px sans-serif"; ctx.fillText("A", p.x - 3.5, p.y - r - 5);
+  // 球B（灰）
+  p = px(B.x, B.y);
+  ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, 7);
+  const gr2 = ctx.createRadialGradient(p.x - 2, p.y - 2, 1, p.x, p.y, r);
+  gr2.addColorStop(0, "#e2e8f0"); gr2.addColorStop(1, "#64748b");
+  ctx.fillStyle = gr2; ctx.fill();
+  ctx.strokeStyle = "#334155"; ctx.lineWidth = 1.4; ctx.stroke();
+  ctx.fillStyle = "#334155"; ctx.fillText("B", p.x - 3.5, p.y - r - 5);
+  ctx.restore();
+}
+/* 矢量：vₓ蓝 / v_y红 / 合速度黄 / 位移矢量 */
+function drawVectors(ctx) {
+  const T = landTime();
+  if (S.t >= T) return;
+  const t = S.t, A = posA(t);
+  const vx = CFG.v0, vy = CFG.g * t;
+  const vS = 26; // 矢量缩放 px/(m/s)
+  const P = px(A.x, A.y);
+  const arrow = (x1, y1, x2, y2, color, lw) => {
+    ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = lw;
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+    const ang = Math.atan2(y2 - y1, x2 - x1), L = 9;
+    ctx.beginPath(); ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - L * Math.cos(ang - 0.42), y2 - L * Math.sin(ang - 0.42));
+    ctx.lineTo(x2 - L * Math.cos(ang + 0.42), y2 - L * Math.sin(ang + 0.42));
+    ctx.closePath(); ctx.fill();
+  };
+  ctx.save();
+  if (TOG.aux) { // 分运动辅助线（虚线投影）
+    ctx.strokeStyle = "rgba(37,99,235,.45)"; ctx.setLineDash([4, 4]); ctx.lineWidth = 1;
+    ctx.beginPath(); ctx.moveTo(P.x, P.y); ctx.lineTo(P.x, px(A.x, 0).y); ctx.stroke();
+    ctx.strokeStyle = "rgba(220,38,38,.45)";
+    ctx.beginPath(); ctx.moveTo(P.x, P.y); ctx.lineTo(px(0, A.y).x, P.y); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  if (TOG.vel) {
+    if (vx > 0.01) arrow(P.x, P.y, P.x + vx * vS, P.y, "#2563eb", 2.4);          // vₓ
+    if (vy > 0.01) arrow(P.x, P.y, P.x, P.y + vy * vS, "#dc2626", 2.4);          // v_y
+    const vm = Math.hypot(vx, vy);
+    if (vm > 0.01) arrow(P.x, P.y, P.x + vx / vm * vm * vS, P.y + vy / vm * vm * vS, "#d97706", 3); // 合速度 v
+  }
+  if (TOG.disp) { // 位移矢量：原点 → 球A
+    const O = px(0, CFG.h);
+    const dx = A.x, dy = A.y - CFG.h;
+    const dm = Math.hypot(dx, dy);
+    if (dm > 0.01) arrow(O.x, O.y, P.x, P.y, "rgba(124,58,237,.85)", 2);
+  }
+  ctx.restore();
+}
+/* 两球等高虚线（等时性直观呈现） */
+function drawLinkLine(ctx) {
+  const T = landTime();
+  if (S.t >= T) return;
+  const A = posA(S.t);
+  const p1 = px(0, A.y), p2 = px(A.x, A.y);
+  ctx.save();
+  ctx.strokeStyle = "rgba(100,116,139,.8)"; ctx.setLineDash([7, 5]); ctx.lineWidth = 1.4;
+  ctx.beginPath(); ctx.moveTo(p1.x, p1.y); ctx.lineTo(p2.x, p2.y); ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.fillStyle = "#475569"; ctx.font = "11px sans-serif"; ctx.textAlign = "center";
+  ctx.fillText("任意时刻两球等高", (p1.x + p2.x) / 2, p1.y - 8);
+  ctx.textAlign = "left"; ctx.restore();
+}
+/* 对比模式轨迹叠加 */
+function drawCompare(ctx) {
+  ctx.save();
+  ctx.font = "11px sans-serif";
+  if (S.compare === "v") {
+    const cols = ["#0ea5e9", "#8b5cf6", "#f97316"];
+    [2, 5, 8].forEach((v, i) => {
+      const T = landTime(), R = rangeX(v);
+      ctx.strokeStyle = cols[i]; ctx.lineWidth = 1.6; ctx.setLineDash([5, 4]);
+      ctx.beginPath();
+      for (let j = 0; j <= 90; j++) {
+        const t = T * j / 90, q = px(v * t, CFG.h - 0.5 * CFG.g * t * t);
+        j ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y);
+      }
+      ctx.stroke(); ctx.setLineDash([]);
+      const q = px(R, 0);
+      ctx.fillStyle = cols[i];
+      ctx.fillText(`v₀=${v}: t=${T.toFixed(2)}s 射程=${R.toFixed(2)}m`, Math.max(8, q.x - 60), q.y - 8 - i * 14);
+    });
+  } else if (S.compare === "h") {
+    const hs = [0.5, 1.0, 1.5];
+    if (!hs.includes(+CFG.h.toFixed(2))) hs.push(+CFG.h.toFixed(2));
+    const cols = ["#0ea5e9", "#8b5cf6", "#f97316", "#059669"];
+    hs.forEach((hh, i) => {
+      const T = Math.sqrt(2 * hh / CFG.g), R = rangeX(CFG.v0, hh);
+      ctx.strokeStyle = cols[i % 4]; ctx.lineWidth = 1.6; ctx.setLineDash([5, 4]);
+      ctx.beginPath();
+      for (let j = 0; j <= 90; j++) {
+        const t = T * j / 90, q = px(CFG.v0 * t, hh - 0.5 * CFG.g * t * t);
+        j ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y);
+      }
+      ctx.stroke(); ctx.setLineDash([]);
+      const q = px(R, 0);
+      ctx.fillStyle = cols[i % 4];
+      ctx.fillText(`h=${hh}: t=${T.toFixed(2)}s`, Math.min(q.x + 6, W2P.w - 90), q.y - 6 - i * 14);
+    });
+  }
+  ctx.restore();
+}
+/* 对比模式：参与对比的参数组（自动排除与主球重复的项） */
+function compareSets() {
+  if (S.compare === "v")
+    return [2, 5, 8].map((v, i) => ({ v0: v, h: CFG.h, col: ["#0ea5e9", "#8b5cf6", "#f97316"][i], label: `v₀=${v}` }))
+      .filter(o => Math.abs(o.v0 - CFG.v0) > 0.05);
+  if (S.compare === "h")
+    return [0.5, 1.0, 1.5].map((hh, i) => ({ v0: CFG.v0, h: hh, col: ["#0ea5e9", "#8b5cf6", "#f97316"][i], label: `h=${hh}` }))
+      .filter(o => Math.abs(o.h - CFG.h) > 0.025);
+  return [];
+}
+const cmpPos = (o, t) => ({ x: Math.min(o.v0 * t, o.v0 * Math.sqrt(2 * o.h / CFG.g)), y: Math.max(0, o.h - 0.5 * CFG.g * t * t) });
+/* 对比模式：多颗运动小球（与主球同步计时，各自落地后停在落点） */
+function drawCompareBalls(ctx) {
+  const t = S.t, r = 6;
+  for (const o of compareSets()) {
+    const T = Math.sqrt(2 * o.h / CFG.g);
+    const P = cmpPos(o, Math.min(t, T));
+    const p = px(P.x, P.y);
+    ctx.save();
+    ctx.beginPath(); ctx.arc(p.x, p.y, r, 0, 7);
+    const gr = ctx.createRadialGradient(p.x - 2, p.y - 2, 1, p.x, p.y, r);
+    gr.addColorStop(0, "#fff"); gr.addColorStop(1, o.col);
+    ctx.fillStyle = gr; ctx.fill();
+    ctx.strokeStyle = o.col; ctx.lineWidth = 1.6; ctx.stroke();
+    ctx.fillStyle = o.col; ctx.font = "bold 10px sans-serif"; ctx.textAlign = "center";
+    ctx.fillText(o.label, p.x, p.y - r - 4);
+    ctx.restore();
+  }
+}
+/* 对比模式：多球频闪残影（同一时刻高度相同的直观证据） */
+function drawCompareStrobes(ctx) {
+  for (const o of compareSets()) {
+    for (const ts of S.strobes) {
+      const T = Math.sqrt(2 * o.h / CFG.g);
+      if (ts > T) continue;
+      const P = cmpPos(o, ts), p = px(P.x, P.y);
+      ctx.beginPath(); ctx.arc(p.x, p.y, 4, 0, 7);
+      ctx.fillStyle = o.col + "38"; ctx.fill();
+      ctx.strokeStyle = o.col + "7a"; ctx.lineWidth = 1; ctx.stroke();
+    }
+  }
+}
+/* 落地闪光 + “同时”高亮 */
+function drawLandingFx(ctx) {
+  if (!S.landed) return;
+  const T = landTime();
+  const pA = px(rangeX(), 0), pB = px(0, 0);
+  const dt = (performance.now() - S.fx) / 1000;
+  if (dt < 1.4) { // 扩散圆环闪光
+    const k = dt / 1.4;
+    for (const p of [pA, pB]) {
+      ctx.beginPath(); ctx.arc(p.x, p.y, 8 + 26 * k, 0, 7);
+      ctx.strokeStyle = `rgba(250,204,21,${1 - k})`; ctx.lineWidth = 3; ctx.stroke();
+    }
+  }
+  // 高亮“同时”
+  ctx.save();
+  const mid = px(rangeX() / 2, 0);
+  ctx.font = "bold 22px sans-serif"; ctx.textAlign = "center";
+  ctx.fillStyle = "#dc2626";
+  ctx.strokeStyle = "#fff"; ctx.lineWidth = 4;
+  ctx.strokeText("✔ 同时落地！", mid.x, mid.y - 46);
+  ctx.fillText("✔ 同时落地！", mid.x, mid.y - 46);
+  ctx.font = "13px sans-serif"; ctx.fillStyle = "#1e3a8a";
+  ctx.fillText(`停表 t = ${T.toFixed(2)} s（只由高度 h 决定）`, mid.x, mid.y - 26);
+  ctx.textAlign = "left"; ctx.restore();
+}
+/* 停表读数 */
+function drawWatch(ctx) {
+  ctx.save();
+  ctx.fillStyle = "rgba(255,255,255,.9)";
+  ctx.fillRect(W2P.w - 118, 8, 108, 28);
+  ctx.strokeStyle = "#cbd5e1"; ctx.strokeRect(W2P.w - 118, 8, 108, 28);
+  ctx.fillStyle = S.landed ? "#dc2626" : "#1e3a8a";
+  ctx.font = "bold 16px monospace";
+  ctx.fillText(`⏱ ${Math.min(S.t, landTime()).toFixed(2)} s`, W2P.w - 108, 28);
+  ctx.restore();
+}
+/* 左侧墙面标注 */
+function drawWallLabels(ctx) {
+  ctx.save();
+  ctx.fillStyle = "#94a3b8"; ctx.font = "10.5px sans-serif"; ctx.textAlign = "right";
+  const yTop = needY();
+  for (let gy = 0; gy <= CFG.h + 0.01; gy += 0.5) {
+    const p = px(0, gy);
+    ctx.fillText(gy.toFixed(1) + " m", p.x - 16, p.y + 3);
+  }
+  ctx.textAlign = "left"; ctx.restore();
+}
+
+/* =========================================================
+ * 物理推进：固定时间步长 + 累加器（帧率无关）
+ * ========================================================= */
+function stepPhysics(dt) {
+  const prev = S.t;
+  S.t = Math.min(S.t + dt, landTime());
+  // 跨过频闪点 → 记录残影时刻 + 写入记录表
+  const i0 = Math.floor(prev / CFG.strobeDt + 1e-9);
+  const i1 = Math.floor(S.t / CFG.strobeDt + 1e-9);
+  for (let i = i0 + 1; i <= i1; i++) {
+    const ts = i * CFG.strobeDt;
+    if (ts < landTime() - 1e-9) { S.strobes.push(ts); pushRecord(ts); }
+  }
+  if (S.t >= landTime() - 1e-9 && !S.landed) {
+    S.landed = true; S.running = false; S.fx = performance.now();
+    S.strobes.push(landTime());
+    pushRecord(landTime());
+    playSound();
+    syncPlayBtn();
+  }
+}
+function pushRecord(t) {
+  const vx = CFG.v0, vy = CFG.g * t;
+  S.records.push({ t, x: vx * t, y: 0.5 * CFG.g * t * t, vx, vy, v: Math.hypot(vx, vy) });
+  renderTable();
+}
+/* 主循环 */
+function loop(now) {
+  if (S.running) {
+    const real = Math.min((now - S.lastRaf) / 1000, 0.1);
+    S.acc += real * CFG.speed;
+    while (S.acc >= CFG.dt && S.running) { stepPhysics(CFG.dt); S.acc -= CFG.dt; }
+  }
+  S.lastRaf = now;
+  drawScene(); updateReadouts(); drawAllCharts();
+  requestAnimationFrame(loop);
+}
+
+/* =========================================================
+ * 数据面板：实时读数 + 记录表
+ * ========================================================= */
+const READ_DEFS = [
+  ["t", "时间 t (s)", v => fmt(Math.min(S.t, landTime()))],
+  ["x", "水平位移 x (m)", () => fmt(CFG.v0 * Math.min(S.t, landTime()))],
+  ["y", "竖直下落 y (m)", () => fmt(CFG.h - posA(Math.min(S.t, landTime())).y)],
+  ["vx", "vₓ = v₀ (m/s)", () => fmt(CFG.v0)],
+  ["vy", "v_y = gt (m/s)", () => fmt(CFG.g * Math.min(S.t, landTime()))],
+  ["v", "合速度 v (m/s)", () => fmt(Math.hypot(CFG.v0, CFG.g * Math.min(S.t, landTime())))],
+  ["th", "速度角 θ（tanθ=gt/v₀）", () => fmt(Math.atan2(CFG.g * Math.min(S.t, landTime()), CFG.v0) * 180 / Math.PI, 1) + "°"],
+  ["al", "位移角 α（tanα=gt/2v₀）", () => fmt(Math.atan2(CFG.g * Math.min(S.t, landTime()), 2 * CFG.v0) * 180 / Math.PI, 1) + "°"]
+];
+function buildReads() {
+  $("reads").innerHTML = READ_DEFS.map(([id, label]) => `<div><span>${label}</span><b id="rd_${id}">—</b></div>`).join("");
+}
+function updateReadouts() {
+  const T = landTime();
+  $("eqT").textContent = T.toFixed(2);
+  for (const [id, , fn] of READ_DEFS) $("rd_" + id).textContent = fn();
+  // θ≠α 易错点提示
+  const t = Math.min(S.t, T);
+  if (t > 0.02) {
+    const th = Math.atan2(CFG.g * t, CFG.v0) * 180 / Math.PI;
+    const al = Math.atan2(CFG.g * t, 2 * CFG.v0) * 180 / Math.PI;
+    $("rd_th").textContent = fmt(th, 1) + "°";
+    $("rd_al").textContent = fmt(al, 1) + "°";
+  }
+}
+function renderTable() {
+  const tb = $("recTbl").querySelector("tbody");
+  tb.innerHTML = S.records.slice(-14).map(r =>
+    `<tr><td>${r.t.toFixed(2)}</td><td>${r.x.toFixed(3)}</td><td>${r.y.toFixed(3)}</td><td>${r.vx.toFixed(2)}</td><td>${r.vy.toFixed(2)}</td><td>${r.v.toFixed(2)}</td></tr>`).join("");
+  tb.parentElement.parentElement.scrollTop = 1e5;
+}
+/* CSV 导出 */
+$("btnCSV").addEventListener("click", () => {
+  let csv = "\uFEFFt(s),x(m),y_drop(m),vx(m/s),vy(m/s),v(m/s)\n";
+  for (const r of S.records) csv += `${r.t.toFixed(3)},${r.x.toFixed(3)},${r.y.toFixed(3)},${r.vx.toFixed(2)},${r.vy.toFixed(2)},${r.v.toFixed(2)}\n`;
+  const blob = new Blob([csv], { type: "text/csv" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = `平抛实验记录_v0${CFG.v0}_h${CFG.h}.csv`;
+  a.click(); URL.revokeObjectURL(a.href);
+});
+
+/* =========================================================
+ * 对比模式
+ * ========================================================= */
+$("segCmp").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  S.compare = b.dataset.c;
+  [...$("segCmp").children].forEach(x => x.classList.toggle("on", x === b));
+  const note = $("cmpNote");
+  if (S.compare === "v") {
+    const T = landTime();
+    note.style.display = "block";
+    note.innerHTML = `同一高度 h=${CFG.h} m：v₀=2 / 5 / 8 m/s 的三条轨迹——<b>落地时间都等于 ${T.toFixed(2)} s（等时性！）</b>，但水平射程 ${rangeX(2).toFixed(2)} / ${rangeX(5).toFixed(2)} / ${rangeX(8).toFixed(2)} m 随 v₀ 增大而增大。`;
+  } else if (S.compare === "h") {
+    note.style.display = "block";
+    note.innerHTML = `同一初速度 v₀=${CFG.v0} m/s：高度 h=0.5 / 1.0 / 1.5 m 的多颗小球同时出发——<b>落地时间 t = √(2h/g) 分别为 ${[0.5,1.0,1.5].map(hh=>Math.sqrt(2*hh/CFG.g).toFixed(2)).join(" / ")} s，随 h 增大而增大</b>；而任意相同时刻，各球下落的竖直位移 ½gt² 相同。`;
+  } else note.style.display = "none";
+});
+
+/* =========================================================
+ * 音效（WebAudio，可开关）
+ * ========================================================= */
+let audioCtx = null;
+function playSound() {
+  if (!TOG.sound) return;
+  try {
+    audioCtx = audioCtx || new (window.AudioContext || window.webkitAudioContext)();
+    const t0 = audioCtx.currentTime;
+    [880, 1320].forEach((f, i) => { // 双音“叮咚”：两球同步着地
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.frequency.value = f; o.type = "sine";
+      g.gain.setValueAtTime(0.18, t0 + i * 0.12);
+      g.gain.exponentialRampToValueAtTime(0.001, t0 + i * 0.12 + 0.25);
+      o.connect(g).connect(audioCtx.destination);
+      o.start(t0 + i * 0.12); o.stop(t0 + i * 0.12 + 0.3);
+    });
+  } catch (e) { /* 音频不可用时静默降级 */ }
+}
+
+/* =========================================================
+ * 四张联动图像（通用绘图器）
+ * ========================================================= */
+function drawPlot(cv, cfg) {
+  const { ctx, w, h } = fitCanvas(cv);
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, w, h);
+  const mL = 34, mR = 8, mT = 8, mB = 24;
+  const pw = w - mL - mR, ph = h - mT - mB;
+  const X = v => mL + v / cfg.xmax * pw;
+  const Y = v => mT + ph - v / cfg.ymax * ph;
+  // 网格 + 刻度
+  ctx.strokeStyle = "#eef2f7"; ctx.fillStyle = "#94a3b8"; ctx.font = "9.5px sans-serif"; ctx.lineWidth = 1;
+  for (let i = 0; i <= 4; i++) {
+    const gx = cfg.xmax * i / 4, gy = cfg.ymax * i / 4;
+    ctx.beginPath(); ctx.moveTo(X(gx), Y(0)); ctx.lineTo(X(gx), Y(cfg.ymax)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(X(0), Y(gy)); ctx.lineTo(X(cfg.xmax), Y(gy)); ctx.stroke();
+    ctx.textAlign = "center"; ctx.fillText(gx.toFixed(2), X(gx), Y(0) + 12);
+    ctx.textAlign = "right"; ctx.fillText(gy.toFixed(2), X(0) - 3, Y(gy) + 3);
+  }
+  // 轴与单位
+  ctx.strokeStyle = "#64748b";
+  ctx.beginPath(); ctx.moveTo(X(0), Y(0)); ctx.lineTo(X(cfg.xmax), Y(0)); ctx.moveTo(X(0), Y(0)); ctx.lineTo(X(0), Y(cfg.ymax)); ctx.stroke();
+  ctx.textAlign = "right"; ctx.fillStyle = "#475569";
+  ctx.fillText(cfg.yunit, X(0) - 4, Y(cfg.ymax) + 2);
+  ctx.textAlign = "left"; ctx.fillText(cfg.xunit, X(cfg.xmax) - 30, Y(0) + 20);
+  // 曲线
+  ctx.strokeStyle = cfg.color; ctx.lineWidth = 2; ctx.beginPath();
+  for (let i = 0; i <= 100; i++) {
+    const p = cfg.series(i / 100);
+    const q = { x: X(p[0]), y: Y(Math.min(p[1], cfg.ymax)) };
+    i ? ctx.lineTo(q.x, q.y) : ctx.moveTo(q.x, q.y);
+  }
+  ctx.stroke();
+  // 当前时刻标记
+  if (cfg.marker) {
+    const p = cfg.marker, q = { x: X(p[0]), y: Y(Math.min(p[1], cfg.ymax)) };
+    ctx.beginPath(); ctx.arc(q.x, q.y, 4, 0, 7);
+    ctx.fillStyle = cfg.color; ctx.fill();
+    ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.4; ctx.stroke();
+  }
+}
+function drawAllCharts() {
+  const T = landTime(), t = Math.min(S.t, T);
+  const tm = T || 1;
+  // y 一律取“竖直下落位移”= ½gt²（与知识点 y = ½gt² 定义一致）
+  drawPlot($("chYt"), { xmax: tm, ymax: Math.max(0.5 * CFG.g * T * T, 0.1), color: "#dc2626", xunit: "t/s", yunit: "y/m",
+    series: k => [tm * k, 0.5 * CFG.g * (tm * k) ** 2], marker: [t, 0.5 * CFG.g * t * t] });
+  drawPlot($("chXt"), { xmax: tm, ymax: Math.max(rangeX(), 0.1), color: "#2563eb", xunit: "t/s", yunit: "x/m",
+    series: k => [tm * k, CFG.v0 * tm * k], marker: [t, CFG.v0 * t] });
+  drawPlot($("chVyt"), { xmax: tm, ymax: Math.max(CFG.g * T, 0.1), color: "#dc2626", xunit: "t/s", yunit: "v_y/(m/s)",
+    series: k => [tm * k, CFG.g * tm * k], marker: [t, CFG.g * t] });
+  // 轨迹：以抛出点为原点、y 轴向下为正 → y = gx²/(2v₀²)
+  drawPlot($("chYx"), { xmax: Math.max(rangeX(), 0.1), ymax: Math.max(0.5 * CFG.g * T * T, 0.1), color: "#d97706", xunit: "x/m", yunit: "y/m",
+    series: k => { const x = rangeX() * k; return [x, 0.5 * CFG.g * (x / CFG.v0) ** 2]; },
+    marker: [CFG.v0 * t, 0.5 * CFG.g * t * t] });
+}
+
+/* =========================================================
+ * 教学引导流程：猜想 → 实验 → 数据 → 结论
+ * ========================================================= */
+const STEPS = [
+  { tag: "① 猜想", body: "两球<b>同时</b>被释放：球 A 水平弹出做平抛，球 B 自由下落。凭直觉猜一猜：谁先落地？",
+    ask: "待答：如果球 A 的初速度 v₀ 更大，它会落得更晚一些吗？" },
+  { tag: "② 实验", body: "点击 <b>▶ 播放</b> 观察两球。建议打开「频闪残影」和「方格底板」，并用 0.25× 慢动作仔细看。",
+    ask: "待答：任意时刻，两球的高度有什么关系？（注意灰色虚线）" },
+  { tag: "③ 数据", body: "查看右侧<b>记录表</b>与下方<b>四张图像</b>：水平方向相邻 0.1 s 的位移相等吗？竖直方向位移比是否接近 1:3:5:7？",
+    ask: "待答：x–t 图像与 y–t 图像分别是什么形状？说明什么？" },
+  { tag: "④ 结论", body: "", ask: "" }
+];
+let gStep = 0;
+function renderGuide() {
+  const st = STEPS[gStep];
+  let html = `<div><span class="tag">${st.tag}</span></div><p style="margin-top:6px">${st.body}`;
+  if (gStep === 3) {
+    const T = landTime();
+    html = `<div><span class="tag">④ 结论</span></div><p style="margin-top:6px;line-height:1.8">
+    <b style="color:#065f46">等时性：</b>平抛小球与自由落体小球<b>总是同时落地</b>，t = √(2h/g) = ${T.toFixed(2)} s，只由高度决定，与 v₀ 无关。<br>
+    <b style="color:#065f46">独立性：</b>水平匀速（x = v₀t）与竖直自由落体（y = ½gt²）<b>互不影响、同时进行</b>，合运动即两者的合成。<br>
+    <b style="color:#065f46">轨迹方程：</b>y = gx²/(2v₀²)，为抛物线。<br>
+    <b style="color:#92400e">易错点：</b>θ ≠ α（tanθ = gt/v₀，tanα = gt/2v₀，速度方向比位移方向更陡）。</p>`;
+  } else html += `</p><div class="ask">${st.ask}</div>`;
+  $("gBody").innerHTML = html;
+  $("gDots").innerHTML = STEPS.map((_, i) => `<i class="${i <= gStep ? "on" : ""}">●</i>`).join(" ");
+  $("btnNext").textContent = gStep >= 3 ? "重新开始" : "下一步 →";
+}
+$("btnNext").addEventListener("click", () => {
+  gStep = (gStep + 1) % 4;
+  renderGuide();
+  if (gStep === 1 && !S.running && !S.landed) startPlay(); // 进入“实验”步自动演示
+});
+
+/* =========================================================
+ * 即时测验（答错给针对性解释）
+ * ========================================================= */
+const QUIZ = [
+  { q: "Q1. 高度不变，增大初速度 v₀，落地时间将——",
+    opts: ["变长", "不变", "变短"], ans: 1,
+    why: "落地时间 t = √(2h/g) 只由高度 h 和 g 决定，与 v₀ 无关——这正是<b>等时性</b>。可在「不同 v₀」对比模式中验证：三条轨迹同时落地。" },
+  { q: "Q2. 平抛物体在水平方向的分运动是——",
+    opts: ["匀加速直线运动", "匀速直线运动", "先慢后快的变加速运动"], ans: 1,
+    why: "水平方向不受外力（忽略空气阻力），<b>没有加速度</b>——“水平方向也有加速度”是典型误解。x = v₀t，x–t 图像为过原点的直线。" },
+  { q: "Q3. 落地点处，合速度方向与位移方向——",
+    opts: ["恰好重合", "速度方向比位移方向更陡", "位移方向比速度方向更陡"], ans: 1,
+    why: "tanθ = gt/v₀，tanα = gt/(2v₀)，故 tanθ = 2tanα，<b>θ > α，两者不重合</b>（θ≠α 是易错点）。位移方向公式中多出的 2 来自 ½gt² 的平均效应。" }
+];
+function buildQuiz() {
+  $("quizBox").innerHTML = QUIZ.map((item, qi) =>
+    `<div class="quiz"><p>${item.q}</p>` +
+    item.opts.map((o, oi) => `<span class="opt" data-q="${qi}" data-o="${oi}">${String.fromCharCode(65 + oi)}. ${o}</span>`).join("") +
+    `<div class="why" id="why_${qi}"></div></div>`).join("");
+}
+$("quizBox").addEventListener("click", e => {
+  const el = e.target.closest(".opt"); if (!el) return;
+  const qi = +el.dataset.q, oi = +el.dataset.o, item = QUIZ[qi];
+  const card = el.parentElement;
+  card.querySelectorAll(".opt").forEach(o => { o.classList.remove("right", "wrong"); o.style.pointerEvents = "none"; });
+  const why = $("why_" + qi);
+  if (oi === item.ans) {
+    el.classList.add("right"); why.className = "why ok";
+    why.innerHTML = "✔ 回答正确！<br>" + item.why;
+  } else {
+    el.classList.add("wrong");
+    card.querySelectorAll(".opt")[item.ans].classList.add("right");
+    why.className = "why bad";
+    why.innerHTML = "✘ 答错了，看看针对性解释：<br>" + item.why;
+  }
+});
+
+/* =========================================================
+ * 控件绑定
+ * ========================================================= */
+function resetSim() {
+  S.t = 0; S.landed = false; S.acc = 0; S.strobes = []; S.records = [];
+  renderTable();
+}
+function startPlay() {
+  if (S.landed) resetSim();
+  S.running = true; syncPlayBtn();
+  if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+}
+function syncPlayBtn() { /* 状态由按钮自身文本体现 */ }
+
+$("slV0").addEventListener("input", e => { CFG.v0 = +e.target.value; $("vV0").textContent = CFG.v0.toFixed(1); resetSim(); });
+$("slH").addEventListener("input", e => { CFG.h = +e.target.value; $("vH").textContent = CFG.h.toFixed(2); resetSim(); });
+$("segG").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  CFG.g = +b.dataset.g;
+  [...$("segG").children].forEach(x => x.classList.toggle("on", x === b));
+  resetSim();
+});
+$("btnPlay").addEventListener("click", startPlay);
+$("btnPause").addEventListener("click", () => { S.running = false; });
+$("btnReset").addEventListener("click", resetSim);
+$("btnStep").addEventListener("click", () => { S.running = false; stepPhysics(CFG.stepDt); });
+$("btnStatic").addEventListener("click", () => { // 静态分帧图（也用于 prefers-reduced-motion）
+  S.running = false; resetSim();
+  const T = landTime();
+  for (let ts = CFG.strobeDt; ts < T; ts += CFG.strobeDt) S.strobes.push(ts);
+  S.t = T; S.landed = true; S.fx = -1e9; // 不播闪光动画
+});
+$("segSp").addEventListener("click", e => {
+  const b = e.target.closest("button"); if (!b) return;
+  CFG.speed = +b.dataset.s;
+  [...$("segSp").children].forEach(x => x.classList.toggle("on", x === b));
+});
+$("togs").addEventListener("change", e => {
+  const k = e.target.dataset.k; if (k) TOG[k] = e.target.checked;
+});
+
+/* =========================================================
+ * 初始化
+ * ========================================================= */
+buildReads(); renderGuide(); buildQuiz(); renderTable();
+if (REDUCED) { // 尊重减少动效偏好：默认呈现静态分帧
+  $("btnStatic").click();
+  $("btnStatic").textContent = "静态分帧图（已启用）";
+}
+requestAnimationFrame(t => { S.lastRaf = t; requestAnimationFrame(loop); });
+</script>
+</body>
+</html>

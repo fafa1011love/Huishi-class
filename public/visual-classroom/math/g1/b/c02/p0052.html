@@ -1,0 +1,1010 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>复数乘除的三角表示 · 交互模型</title>
+<style>
+  :root{
+    --ink:#1e293b;--ink-2:#475569;--muted:#94a3b8;--line:#e2e8f0;
+    --bg:#f4f6fb;--card:#ffffff;
+    --indigo:#4f46e5;--indigo-soft:#eef0ff;
+    --teal:#0d9488;--teal-soft:#e6fffa;
+    --rose:#e11d48;--rose-soft:#fff1f2;
+    --amber:#d97706;--violet:#7c3aed;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:radial-gradient(1200px 600px at 20% -10%, #e9edff 0%, rgba(233,237,255,0) 60%),var(--bg);
+    color:var(--ink);
+    font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,-apple-system,"Segoe UI",sans-serif;
+    min-height:100vh;padding:28px 24px 40px;
+  }
+  .app{max-width:1220px;margin:0 auto;}
+  header{margin-bottom:20px;}
+  .tag{
+    display:inline-flex;align-items:center;gap:8px;
+    font-size:12px;letter-spacing:.06em;color:var(--indigo);
+    background:var(--indigo-soft);border:1px solid #dfe3ff;
+    padding:5px 12px;border-radius:999px;font-weight:600;
+  }
+  h1{font-size:28px;line-height:1.3;margin:12px 0 6px;letter-spacing:.01em;}
+  .sub{margin:0;color:var(--ink-2);font-size:14.5px;}
+  main{display:grid;grid-template-columns:minmax(0,1fr) 360px;gap:22px;align-items:start;}
+  .stage{
+    position:relative;background:var(--card);border:1px solid var(--line);
+    border-radius:18px;box-shadow:0 10px 30px -18px rgba(30,41,59,.35);overflow:hidden;
+  }
+  .stage svg{display:block;width:100%;height:auto;touch-action:none;cursor:default;}
+  .hint{
+    position:absolute;left:16px;bottom:14px;font-size:12.5px;color:var(--muted);
+    background:rgba(255,255,255,.88);padding:5px 10px;border-radius:8px;border:1px solid var(--line);
+    pointer-events:none;
+  }
+  .panel{display:flex;flex-direction:column;gap:14px;max-height:660px;overflow-y:auto;padding-right:2px;}
+  .panel::-webkit-scrollbar{width:6px;}
+  .panel::-webkit-scrollbar-thumb{background:#d7dde8;border-radius:3px;}
+  .card{
+    background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:16px 16px 15px;box-shadow:0 8px 24px -20px rgba(30,41,59,.45);flex:none;
+  }
+  .card-title{
+    display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;
+    color:var(--ink-2);letter-spacing:.04em;margin-bottom:12px;
+  }
+  .dot{width:8px;height:8px;border-radius:50%;flex:none;}
+  .dot.indigo{background:var(--indigo);}.dot.teal{background:var(--teal);}
+  .dot.rose{background:var(--rose);}.dot.amber{background:var(--amber);}
+  .zline{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;}
+  .zlabel{font-size:16px;color:var(--ink-2);}
+  .zval{
+    font-size:26px;font-weight:600;letter-spacing:.01em;color:var(--ink);
+    font-family:"Cambria Math","STIX Two Math","Times New Roman",serif;
+  }
+  .zval i{font-style:italic;padding-right:1px;}
+  .map{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:12px;}
+  .chip{
+    font-size:12.5px;color:var(--ink-2);background:#f8fafc;border:1px solid var(--line);
+    padding:5px 9px;border-radius:8px;
+  }
+  .chip b{font-weight:600;}
+  .chip.indigo b{color:var(--indigo);}.chip.teal b{color:var(--teal);}.chip.rose b{color:var(--rose);}
+  .trig{
+    margin-top:10px;font-size:14.5px;line-height:1.7;color:var(--ink);
+    font-family:"Cambria Math","STIX Two Math","Times New Roman",serif;word-break:break-word;
+  }
+  .trig i{font-style:italic;}
+  .vinc{border-top:1.2px solid currentColor;padding-top:.08em;}
+  .formula{
+    font-family:"Cambria Math","STIX Two Math","Times New Roman",serif;
+    font-size:15px;line-height:1.9;color:var(--ink);word-break:break-word;
+  }
+  .formula i{font-style:italic;}
+  .formula .val{color:var(--rose);font-weight:600;}
+  .formula .dim{color:var(--ink-2);}
+  .note{margin-top:10px;font-size:12px;color:var(--muted);line-height:1.75;}
+  .note b{color:var(--ink-2);font-weight:600;}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:9px 0;}
+  .row-label{font-size:13px;color:var(--ink-2);}
+  .switch{
+    position:relative;width:40px;height:22px;border-radius:999px;background:#dbe1ea;
+    cursor:pointer;transition:background .2s;flex:none;
+  }
+  .switch::after{
+    content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;
+    background:#fff;box-shadow:0 1px 3px rgba(15,23,42,.25);transition:transform .2s;
+  }
+  .switch.on{background:var(--indigo);}
+  .switch.on::after{transform:translateX(18px);}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:10px;overflow:hidden;}
+  .seg button{
+    appearance:none;border:0;background:#fbfcfe;color:var(--ink-2);
+    font:inherit;font-size:12.5px;padding:7px 14px;cursor:pointer;transition:all .15s;
+  }
+  .seg button + button{border-left:1px solid var(--line);}
+  .seg button.on{background:var(--indigo);color:#fff;font-weight:600;}
+  .presets{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:12px;}
+  .btn{
+    appearance:none;border:1px solid var(--line);background:#fbfcfe;color:var(--ink-2);
+    font:inherit;font-size:12.5px;padding:8px 6px;border-radius:9px;cursor:pointer;
+    transition:all .15s;font-family:"Cambria Math","Times New Roman",serif;
+  }
+  .btn:hover{border-color:#c7cffb;background:var(--indigo-soft);color:var(--indigo);}
+  .btn.wide{grid-column:1 / -1;width:100%;font-family:inherit;margin-top:8px;}
+  .btn.play{
+    margin-top:12px;border-color:#fecdd3;background:var(--rose-soft);color:var(--rose);
+    font-weight:600;font-size:13px;padding:9px 6px;
+  }
+  .btn.play:hover{border-color:#fda4af;background:#ffe4e6;color:var(--rose);}
+  .btn.play.busy{background:var(--rose);color:#fff;border-color:var(--rose);cursor:wait;}
+  .cust{margin-top:4px;border-top:1px dashed var(--line);padding-top:12px;}
+  .cust-label{font-size:12.5px;color:var(--ink-2);margin-bottom:8px;font-weight:700;letter-spacing:.04em;}
+  .cust-row{display:flex;align-items:center;gap:6px;margin-bottom:7px;}
+  .cust-row .cust-lbl{font-size:14px;color:var(--ink-2);width:36px;font-family:"Cambria Math","Times New Roman",serif;}
+  .cust-row input{
+    width:64px;appearance:none;border:1px solid var(--line);border-radius:8px;
+    padding:5px 7px;font:inherit;font-size:13px;text-align:center;background:#fbfcfe;
+    color:var(--ink);font-family:"Cambria Math","Times New Roman",serif;
+  }
+  .cust-row input:focus{outline:none;border-color:var(--indigo);background:#fff;}
+  .cust-row .op{color:var(--muted);font-size:14px;}
+  .cust .btn.wide{margin-top:4px;}
+  footer{margin-top:22px;padding-top:16px;border-top:1px solid var(--line);font-size:12px;color:var(--muted);line-height:1.8;}
+  footer b{color:var(--ink-2);font-weight:600;}
+  @media (max-width:960px){
+    main{grid-template-columns:minmax(0,1fr);}
+    .panel{max-height:none;flex-direction:row;flex-wrap:wrap;overflow:visible;}
+    .panel .card{flex:1 1 320px;}
+    h1{font-size:23px;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="tag">人教A版 · 必修第二册 · 第七章 复数 · 7.3</div>
+    <h1>复数乘除的三角表示及其几何意义</h1>
+    <p class="sub">拖动 Z₁、Z₂（或直接拖动乘积点 Z），看清「乘法 = 旋转 θ 并伸缩 r 倍」</p>
+  </header>
+
+  <main>
+    <section class="stage">
+      <svg id="plane" viewBox="0 0 700 660" aria-label="复平面交互图" role="img">
+        <defs>
+          <marker id="arrowAxis" viewBox="0 0 10 10" refX="8" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#94a3b8"/>
+          </marker>
+          <marker id="arrowVec1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#4f46e5"/>
+          </marker>
+          <marker id="arrowVec2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#0d9488"/>
+          </marker>
+          <marker id="arrowVecR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#e11d48"/>
+          </marker>
+          <marker id="arrowArc1" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#4f46e5"/>
+          </marker>
+          <marker id="arrowArc2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#0d9488"/>
+          </marker>
+          <marker id="arrowArcR" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#e11d48"/>
+          </marker>
+          <marker id="arrowArcV" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse">
+            <path d="M 0 0 L 10 5 L 0 10 z" fill="#7c3aed"/>
+          </marker>
+        </defs>
+        <g id="gridLayer"></g>
+        <g id="axisLayer"></g>
+        <g id="dynLayer"></g>
+        <g id="animLayer"></g>
+      </svg>
+      <div class="hint">拖动向量箭头改变复数 ｜ 方向键调 Z₁，Shift + 方向键调 Z₂</div>
+    </section>
+
+    <aside class="panel">
+      <div class="card">
+        <div class="card-title"><span class="dot indigo"></span>复数 z₁（拖蓝色箭头）</div>
+        <div class="zline"><span class="zlabel">z₁ =</span><span class="zval" id="z1Val"></span></div>
+        <div class="map">
+          <span class="chip indigo">r₁ = <b id="r1Val"></b></span>
+          <span class="chip indigo">θ₁ = <b id="th1Val"></b></span>
+        </div>
+        <div class="trig" id="z1Trig"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="dot teal"></span>复数 z₂（拖绿色箭头）</div>
+        <div class="zline"><span class="zlabel">z₂ =</span><span class="zval" id="z2Val"></span></div>
+        <div class="map">
+          <span class="chip teal">r₂ = <b id="r2Val"></b></span>
+          <span class="chip teal">θ₂ = <b id="th2Val"></b></span>
+        </div>
+        <div class="trig" id="z2Trig"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="dot rose"></span><span id="resTitle">乘积 z = z₁·z₂</span></div>
+        <div class="formula" id="resFormula"></div>
+        <div class="note" id="resNote"></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="dot amber"></span>运算与显示</div>
+        <div class="row">
+          <span class="row-label">运算方式</span>
+          <div class="seg" id="segOp">
+            <button data-op="mul" class="on">乘法 ×</button>
+            <button data-op="div">除法 ÷</button>
+          </div>
+        </div>
+        <div class="cust">
+          <div class="cust-label">自定义复数</div>
+          <div class="cust-row">
+            <span class="cust-lbl">z₁ =</span>
+            <input type="number" id="inZ1a" value="2" step="0.1">
+            <span class="op">+</span>
+            <input type="number" id="inZ1b" value="1" step="0.1">
+            <span class="op">i</span>
+          </div>
+          <div class="cust-row">
+            <span class="cust-lbl">z₂ =</span>
+            <input type="number" id="inZ2a" value="1" step="0.1">
+            <span class="op">+</span>
+            <input type="number" id="inZ2b" value="2" step="0.1">
+            <span class="op">i</span>
+          </div>
+          <button class="btn wide" id="btnApply">应用自定义值</button>
+        </div>
+        <div class="row">
+          <span class="row-label">显示 z₁ 的角 θ₁</span>
+          <div class="switch on" id="swArc1" role="switch" tabindex="0"></div>
+        </div>
+        <div class="row">
+          <span class="row-label">显示 z₂ 的角 θ₂</span>
+          <div class="switch on" id="swArc2" role="switch" tabindex="0"></div>
+        </div>
+        <div class="row">
+          <span class="row-label">显示积 / 商的角 θ</span>
+          <div class="switch on" id="swArc3" role="switch" tabindex="0"></div>
+        </div>
+        <div class="row">
+          <span class="row-label">显示辅助三角形</span>
+          <div class="switch on" id="swAux" role="switch" tabindex="0"></div>
+        </div>
+        <div class="row">
+          <span class="row-label">显示积 / 商的模圆</span>
+          <div class="switch" id="swCircle" role="switch" tabindex="0"></div>
+        </div>
+        <div class="row">
+          <span class="row-label">动画留下余迹</span>
+          <div class="switch" id="swTrail" role="switch" tabindex="0"></div>
+        </div>
+        <button class="btn play" id="btnPlay">▶ 演示：先旋转，再伸缩</button>
+        <div class="presets">
+          <button class="btn" data-op="mul" data-a1="2" data-b1="1" data-a2="1" data-b2="2">(2+i)(1+2i)</button>
+          <button class="btn" data-op="mul" data-a1="1" data-b1="1" data-a2="1" data-b2="-1">(1+i)(1−i)</button>
+          <button class="btn" data-op="mul" data-a1="1" data-b1="1" data-a2="1" data-b2="1">(1+i)²</button>
+          <button class="btn" data-op="mul" data-a1="3" data-b1="0" data-a2="0" data-b2="2">3 · 2i</button>
+          <button class="btn" data-op="div" data-a1="0" data-b1="5" data-a2="1" data-b2="2">5i ÷ (1+2i)</button>
+          <button class="btn" data-op="div" data-a1="2" data-b1="0" data-a2="1" data-b2="1">2 ÷ (1+i)</button>
+        </div>
+        <button class="btn wide" id="btnReset">复位</button>
+      </div>
+    </aside>
+  </main>
+
+  <footer>
+    <b>教材原话：</b>z₁ = r₁(cos θ₁ + i sin θ₁)，z₂ = r₂(cos θ₂ + i sin θ₂)，则
+    z₁z₂ = r₁r₂[cos(θ₁+θ₂) + i sin(θ₁+θ₂)]，z₁÷z₂ = (r₁/r₂)[cos(θ₁−θ₂) + i sin(θ₁−θ₂)]。<br>
+    两个复数相乘，积的模等于模的积，积的辐角等于辐角的和 —— 几何上就是把向量 OZ₁ <b>先旋转 θ₂，再伸缩 r₂ 倍</b>；相除则旋转 −θ₂、伸缩 1/r₂ 倍。
+    非规范的近似数以 ≈ 标记；公式链中不能精确表达的数保留符号写法。
+  </footer>
+</div>
+
+<script>
+(function(){
+"use strict";
+  var W = 700, H = 660, OX = 350, OY = 330, U = 46;
+  var MIN_R = 0.2, MAX_R = 6.9, R_DRAW_MAX = 8.8;
+
+  var state = {
+    z1: {a: 2, b: 1},
+    z2: {a: 1, b: 2},
+    op: 'mul',
+    arc1: true, arc2: true, arc3: true,
+    aux: true, circle: false, trail: false
+  };
+  var anim = {on: false, paused: false, raf: 0, t0: 0, elapsed: 0, p: null, frame: null, trail: []};
+  var animating = false;
+
+  var svg = document.getElementById('plane');
+  var gridLayer = document.getElementById('gridLayer');
+  var axisLayer = document.getElementById('axisLayer');
+  var dynLayer = document.getElementById('dynLayer');
+  var animLayer = document.getElementById('animLayer');
+
+  // ---------- 数值工具 ----------
+  function num(x, d){
+    var v = (d === undefined) ? x : Math.round(x * Math.pow(10, d)) / Math.pow(10, d);
+    if (Math.abs(v) < 0.5 / Math.pow(10, 6)) v = 0;
+    return String(v);
+  }
+  function isInt(x){ return Math.abs(x - Math.round(x)) < 1e-9; }
+  // 角度格式化：优先 π 的分数，其次整数度，否则保留 1 位小数
+  function degTxt(rad){
+    var dg = rad * 180 / Math.PI;
+    var rd = Math.round(dg * 10) / 10;
+    if (Math.abs(rd) < 0.05) return '0°';
+    // π 分数（分母 ≤ 12）
+    var n = rad / (Math.PI / 12);
+    var r = Math.round(n);
+    if (Math.abs(n - r) < 0.015 && r !== 0 && Math.abs(r) <= 24){
+      var g = gcd(Math.abs(r), 12);
+      var p = r / g, q = 12 / g;
+      if (q === 1) return p === 1 ? 'π' : (p === -1 ? '−π' : p + 'π');
+      var ps = p === 1 ? 'π' : (p === -1 ? '−π' : p + 'π');
+      return ps + '/' + q;
+    }
+    if (Math.abs(rd - Math.round(rd)) < 0.05) return Math.round(rd) + '°';
+    return rd + '°';
+  }
+  function gcd(a, b){ while (b){ var t = a % b; a = b; b = t; } return a; }
+  // 角度是否为规范形式（π 分数或整数度）
+  function angExact(rad){
+    var dg = rad * 180 / Math.PI;
+    if (Math.abs(dg) < 0.05) return true;
+    var n = rad / (Math.PI / 12), r = Math.round(n);
+    if (Math.abs(n - r) < 0.015 && r !== 0 && Math.abs(r) <= 24) return true;
+    return Math.abs(dg - Math.round(dg)) < 0.05;
+  }
+  // 复数格式化（直角坐标）
+  function fmtComplex(a, b){
+    if (isInt(a)) a = Math.round(a);
+    if (isInt(b)) b = Math.round(b);
+    var sa = num(a, 2), sb = num(Math.abs(b), 2);
+    if (a === 0 && b === 0) return '0';
+    if (b === 0) return sa;
+    var bi = sb === '1' ? '<i>i</i>' : sb + '<i>i</i>';
+    if (a === 0) return (b >= 0 ? '' : '−') + bi;
+    return b >= 0 ? sa + ' + ' + bi : sa + ' − ' + bi;
+  }
+  // 带符号连接：b 以负号开头时写作 "a − x"
+  function signedJoin(a, b){
+    return (b.charAt(0) === '−' || b.charAt(0) === '-') ? a + ' − ' + b.slice(1) : a + ' + ' + b;
+  }
+  // 带符号相减：b 以负号开头时写作 "a + x"
+  function signedSub(a, b){
+    return (b.charAt(0) === '−' || b.charAt(0) === '-') ? a + ' + ' + b.slice(1) : a + ' − ' + b;
+  }
+  // √(a²+b²)：整数坐标时化简根式，否则给近似小数
+  function modTxt(a, b){
+    var r = Math.sqrt(a * a + b * b);
+    if (isInt(a) && isInt(b)){
+      var n = Math.round(a * a + b * b);
+      var out = 1, inner = n, i = 2;
+      while (i * i <= inner){
+        while (inner % (i * i) === 0){ inner /= i * i; out *= i; }
+        i++;
+      }
+      if (inner === 1) return String(out);
+      return (out === 1 ? '' : out) + '√<span class="vinc">' + inner + '</span>';
+    }
+    return num(r, 3);
+  }
+  // 模是否为规范形式（整数坐标 → 整数或根式）
+  function modExact(a, b){ return isInt(a) && isInt(b); }
+  function polarOf(z){
+    return { r: Math.sqrt(z.a * z.a + z.b * z.b), th: Math.atan2(z.b, z.a) };
+  }
+
+  // ---------- 几何工具 ----------
+  function px(x){ return OX + x * U; }
+  function py(y){ return OY - y * U; }
+  function fromSvg(sx, sy){ return { a: (sx - OX) / U, b: (OY - sy) / U }; }
+  function ptOf(r, th){ return [px(r * Math.cos(th)), py(r * Math.sin(th))]; }
+  function clampZ(z){
+    var r = Math.sqrt(z.a * z.a + z.b * z.b);
+    if (r > MAX_R){ z.a *= MAX_R / r; z.b *= MAX_R / r; }
+    return z;
+  }
+  function svgPt(evt){
+    var rect = svg.getBoundingClientRect();
+    return [
+      (evt.clientX - rect.left) * (W / rect.width),
+      (evt.clientY - rect.top) * (H / rect.height)
+    ];
+  }
+  function vecSvg(r, th, color, w, marker, dash, label, labelOff){
+    if (r < 1e-9) return '';
+    var rr = Math.min(r, R_DRAW_MAX);
+    var P = ptOf(rr, th);
+    var s = '<line x1="' + OX + '" y1="' + OY + '" x2="' + P[0] + '" y2="' + P[1] +
+            '" stroke="' + color + '" stroke-width="' + w + '"' +
+            (marker ? ' marker-end="url(#' + marker + ')"' : '') +
+            (dash ? ' stroke-dasharray="' + dash + '"' : '') + '/>';
+    if (label){
+      var lo = labelOff || 1, lx, ly, k = 1;
+      lx = P[0] + Math.cos(th) * 22 * lo;
+      ly = P[1] - Math.sin(th) * 22 * lo;
+      // 与已放置标签重合（如 z₁ = z₂）时，沿射线方向外移避免叠字
+      while (!farFrom(lx, ly, 17) && k < 5){
+        k++;
+        lx = P[0] + Math.cos(th) * 22 * lo * k;
+        ly = P[1] - Math.sin(th) * 22 * lo * k;
+      }
+      LBL_OCC.push([lx, ly]);
+      s += '<text x="' + lx + '" y="' + ly + '" text-anchor="middle" dominant-baseline="middle" ' +
+           'font-size="15" font-weight="700" fill="' + color + '" stroke="#fff" stroke-width="4" paint-order="stroke" ' +
+           'font-family="PingFang SC, Microsoft YaHei, sans-serif">' + label + '</text>';
+    }
+    return s;
+  }
+  function arcPath(rad, th1, th2){
+    var P1 = ptOf(rad / U, th1), P2 = ptOf(rad / U, th2);
+    var d = th2 - th1;
+    while (d > Math.PI) d -= 2 * Math.PI;
+    while (d < -Math.PI) d += 2 * Math.PI;
+    var large = Math.abs(d) > Math.PI ? 1 : 0;
+    var sweep = d > 0 ? 0 : 1;  // SVG y 向下：正向角对应 sweep=0
+    return 'M ' + P1[0] + ' ' + P1[1] + ' A ' + rad + ' ' + rad + ' 0 ' + large + ' ' + sweep + ' ' + P2[0] + ' ' + P2[1];
+  }
+  // 辐角弧半径：固定同心目标半径，超出向量端点时向内夹取，过短则返回 0（不画）
+  function angArcR(r, target){
+    var maxR = Math.min(r, R_DRAW_MAX) * U - 14;
+    if (maxR < 14) return 0;
+    return Math.min(target, maxR);
+  }
+  // 角度标签避让：记录已放置的标签位置，弧标签在弧上挑一个最不挤的位置
+  var LBL_OCC = [];
+  var ARC_VECS = [];
+  function farFrom(x, y, minD){
+    for (var i = 0; i < LBL_OCC.length; i++){
+      if (Math.hypot(x - LBL_OCC[i][0], y - LBL_OCC[i][1]) < minD) return false;
+    }
+    return true;
+  }
+  function distToRay(P, th, len){
+    var dx = P[0] - OX, dy = OY - P[1];
+    var ux = Math.cos(th), uy = Math.sin(th);
+    var t = dx * ux + dy * uy;
+    if (t < 0) t = 0; else if (t > len) t = len;
+    return Math.hypot(dx - t * ux, dy - t * uy);
+  }
+  function arcLabelPos(radPx, th1, th2, vecs){
+    var d = th2 - th1, best = null, bestScore = -1e9;
+    var fr = [0.5, 0.68, 0.32, 0.84, 0.16];
+    for (var i = 0; i < fr.length; i++){
+      var P = ptOf((radPx + 15) / U, th1 + d * fr[i]);
+      if (P[0] < 26 || P[0] > W - 26 || P[1] < 22 || P[1] > H - 22) continue;
+      var score = 999;
+      for (var j = 0; j < LBL_OCC.length; j++){
+        score = Math.min(score, Math.hypot(P[0] - LBL_OCC[j][0], P[1] - LBL_OCC[j][1]));
+      }
+      for (var k = 0; k < vecs.length; k++){
+        score = Math.min(score, distToRay(P, vecs[k][0], vecs[k][1]) - 1);
+      }
+      score = Math.min(score, Math.abs(P[1] - OY) + 4);
+      if (score > bestScore + 0.5){ bestScore = score; best = P; }
+    }
+    if (!best) best = ptOf((radPx + 15) / U, th1 + d / 2);
+    LBL_OCC.push(best);
+    return best;
+  }
+  function arcSvg(radPx, th1, th2, color, marker, label, labelSize, dashed){
+    var d = th2 - th1;
+    while (d > Math.PI) d -= 2 * Math.PI;
+    while (d < -Math.PI) d += 2 * Math.PI;
+    if (Math.abs(d) < 0.02) return '';
+    var LP = arcLabelPos(radPx, th1, th2, ARC_VECS);
+    var s = '<path d="' + arcPath(radPx, th1, th2) + '" fill="none" stroke="' + color +
+            '" stroke-width="' + (dashed ? 1.5 : 1.6) + '"' +
+            (dashed ? ' stroke-dasharray="4 4"' : '') +
+            ' marker-end="url(#' + marker + ')"/>';
+    if (label){
+      s += '<text x="' + LP[0] + '" y="' + LP[1] + '" text-anchor="middle" dominant-baseline="middle" ' +
+           'font-size="' + (labelSize || 13) + '" font-weight="600" fill="' + color + '" stroke="#fff" stroke-width="3.2" paint-order="stroke" ' +
+           'font-family="PingFang SC, Microsoft YaHei, sans-serif">' + label + '</text>';
+    }
+    return s;
+  }
+  function pointSvg(x, y, color, hitId){
+    // 只保留透明点击区，去掉可见大圆点（箭头已标记位置）
+    return '<circle cx="' + x + '" cy="' + y + '" r="20" fill="transparent" ' +
+           'style="cursor:grab" id="' + hitId + '"/>';
+  }
+  function modLabel(r, th, txt, color){
+    if (r < 1e-9) return '';
+    var rr = Math.min(r, R_DRAW_MAX);
+    var fr = [0.68, 0.46, 0.86, 0.32], P = null;
+    for (var i = 0; i < fr.length; i++){
+      P = ptOf(rr * fr[i], th);
+      // 向量贴近坐标轴时，标签抬离轴线
+      if (Math.abs(Math.sin(th)) < 0.2) P[1] -= 12;
+      else if (Math.abs(Math.cos(th)) < 0.2) P[0] += 12;
+      if (farFrom(P[0], P[1], 17)) break;
+    }
+    LBL_OCC.push([P[0], P[1]]);
+    return '<text x="' + P[0] + '" y="' + P[1] + '" text-anchor="middle" dominant-baseline="middle" ' +
+           'font-size="12" fill="' + color + '" stroke="#fff" stroke-width="3" paint-order="stroke" ' +
+           'font-family="Cambria Math, Times New Roman, serif">' + txt + '</text>';
+  }
+
+  // ---------- 静态层 ----------
+  function buildStatic(){
+    var g = '';
+    for (var i = -7; i <= 8; i++){
+      g += '<line x1="' + px(i) + '" y1="0" x2="' + px(i) + '" y2="' + H + '" stroke="#eef1f7" stroke-width="1"/>';
+    }
+    for (var j = -7; j <= 7; j++){
+      g += '<line x1="0" y1="' + py(j) + '" x2="' + W + '" y2="' + py(j) + '" stroke="#eef1f7" stroke-width="1"/>';
+    }
+    gridLayer.innerHTML = g;
+
+    var ax = '<line x1="0" y1="' + OY + '" x2="' + (W - 8) + '" y2="' + OY + '" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowAxis)"/>' +
+             '<line x1="' + OX + '" y1="' + H + '" x2="' + OX + '" y2="8" stroke="#94a3b8" stroke-width="1.5" marker-end="url(#arrowAxis)"/>' +
+             '<text x="' + (W - 20) + '" y="' + (OY + 22) + '" font-size="14" fill="#64748b" font-style="italic" font-family="Georgia, serif">x</text>' +
+             '<text x="' + (OX + 12) + '" y="24" font-size="14" fill="#64748b" font-style="italic" font-family="Georgia, serif">y</text>' +
+             '<text x="' + (OX - 18) + '" y="' + (OY + 20) + '" font-size="14" fill="#64748b" font-family="Georgia, serif">O</text>';
+    for (var k = -7; k <= 8; k++){
+      if (k === 0) continue;
+      ax += '<line x1="' + px(k) + '" y1="' + (OY - 4) + '" x2="' + px(k) + '" y2="' + (OY + 4) + '" stroke="#94a3b8" stroke-width="1"/>' +
+            '<text x="' + px(k) + '" y="' + (OY + 20) + '" text-anchor="middle" font-size="11" fill="#94a3b8" font-family="Georgia, serif">' + k + '</text>';
+    }
+    for (var m = -6; m <= 7; m++){
+      if (m === 0) continue;
+      ax += '<line x1="' + (OX - 4) + '" y1="' + py(m) + '" x2="' + (OX + 4) + '" y2="' + py(m) + '" stroke="#94a3b8" stroke-width="1"/>' +
+            '<text x="' + (OX - 10) + '" y="' + py(m) + '" text-anchor="end" dominant-baseline="middle" font-size="11" fill="#94a3b8" font-family="Georgia, serif">' + m + '</text>';
+    }
+    axisLayer.innerHTML = ax;
+  }
+  // ---------- 推导 ----------
+  function derive(){
+    var p1 = polarOf(state.z1), p2 = polarOf(state.z2);
+    var r3, thRaw, valid = true, a3, b3, s;
+    if (state.op === 'mul'){
+      r3 = p1.r * p2.r; thRaw = p1.th + p2.th; s = 1;
+      a3 = state.z1.a * state.z2.a - state.z1.b * state.z2.b;
+      b3 = state.z1.a * state.z2.b + state.z1.b * state.z2.a;
+    } else {
+      s = -1;
+      if (p2.r < 1e-9){ valid = false; r3 = NaN; thRaw = NaN; a3 = NaN; b3 = NaN; }
+      else {
+        r3 = p1.r / p2.r; thRaw = p1.th - p2.th;
+        var d = state.z2.a * state.z2.a + state.z2.b * state.z2.b;
+        a3 = (state.z1.a * state.z2.a + state.z1.b * state.z2.b) / d;
+        b3 = (state.z1.b * state.z2.a - state.z1.a * state.z2.b) / d;
+      }
+    }
+    var th3 = thRaw;
+    while (th3 > Math.PI) th3 -= 2 * Math.PI;
+    while (th3 <= -Math.PI) th3 += 2 * Math.PI;
+    return {p1: p1, p2: p2, r3: r3, thRaw: thRaw, th3: th3, a3: a3, b3: b3, s: s, valid: valid};
+  }
+
+  // ---------- 动态层 ----------
+  function render(){
+    var d = derive();
+    var s = '';
+    var p1 = d.p1, p2 = d.p2;
+    LBL_OCC = [];
+    ARC_VECS = [[p1.th, Math.min(p1.r, R_DRAW_MAX) * U], [p2.th, Math.min(p2.r, R_DRAW_MAX) * U]];
+    if (!animating && d.valid && d.r3 > 1e-9) ARC_VECS.push([d.th3, Math.min(d.r3, R_DRAW_MAX) * U]);
+
+    // 模圆
+    if (state.circle && d.valid && d.r3 > 1e-9){
+      var rc = Math.min(d.r3, R_DRAW_MAX) * U;
+      s += '<circle cx="' + OX + '" cy="' + OY + '" r="' + rc + '" fill="none" stroke="#fda4af" stroke-width="1.5" stroke-dasharray="5 5"/>';
+    }
+
+    // 辅助三角形
+    if (state.aux){
+      s += auxTri(state.z1, '#818cf8', 'rgba(129,140,248,0.12)');
+      s += auxTri(state.z2, '#2dd4bf', 'rgba(45,212,191,0.12)');
+    }
+
+    // 向量
+    s += vecSvg(p1.r, p1.th, '#4f46e5', 3.4, 'arrowVec1', null, 'Z₁');
+    s += vecSvg(p2.r, p2.th, '#0d9488', 3.4, 'arrowVec2', null, 'Z₂');
+
+    // 结果向量（动画期间隐藏，由 animLayer 的运动向量代替）
+    if (!animating && d.valid && d.r3 > 1e-9){
+      s += vecSvg(Math.min(d.r3, R_DRAW_MAX), d.th3, '#e11d48', 3.4, 'arrowVecR', null, state.op === 'mul' ? 'Z' : 'Z');
+    }
+
+    // 模标注
+    s += modLabel(p1.r, p1.th, 'r₁', '#4f46e5');
+    s += modLabel(p2.r, p2.th, 'r₂', '#0d9488');
+    if (!animating && d.valid && d.r3 > 1e-9) s += modLabel(d.r3, d.th3, 'r', '#e11d48');
+
+    // 辐角弧：固定同心半径（θ₁ 28 / θ₂ 50 / θ 72），保证嵌套不穿插
+    // 紫色旋转示意弧仅在动画中显示（drawAnim），静态下避免与 θ₁/θ₂/θ 扎堆
+    var r1a = angArcR(p1.r, 28);
+    if (state.arc1 && r1a) s += arcSvg(r1a, 0, p1.th, '#4f46e5', 'arrowArc1', 'θ₁');
+    var r2a = angArcR(p2.r, 50);
+    if (state.arc2 && r2a) s += arcSvg(r2a, 0, p2.th, '#0d9488', 'arrowArc2', 'θ₂');
+    if (state.arc3 && d.valid && d.r3 > 1e-9){
+      var r3a = angArcR(d.r3, 72);
+      if (r3a) s += arcSvg(r3a, 0, d.th3, '#e11d48', 'arrowArcR', 'θ');
+    }
+
+    // 可拖点（透明点击区）
+    if (p1.r > 1e-9){ var P1 = ptOf(Math.min(p1.r, R_DRAW_MAX), p1.th); s += pointSvg(P1[0], P1[1], '#4f46e5', 'hit1'); }
+    if (p2.r > 1e-9){ var P2 = ptOf(Math.min(p2.r, R_DRAW_MAX), p2.th); s += pointSvg(P2[0], P2[1], '#0d9488', 'hit2'); }
+    if (d.valid && d.r3 > 1e-9){ var P3 = ptOf(Math.min(d.r3, R_DRAW_MAX), d.th3); s += pointSvg(P3[0], P3[1], '#e11d48', 'hit3'); }
+
+    dynLayer.innerHTML = s;
+
+    updateCards(d);
+    syncInputs();
+  }
+  function auxTri(z, color, fill){
+    if (Math.abs(z.a) < 1e-9 && Math.abs(z.b) < 1e-9) return '';
+    var X = px(z.a), Y = py(z.b);
+    // 底边贴着 x 轴会被轴线盖住 → 底边抬到轴线上方 2px 绘制，并加半透明填充让三角形整体可见
+    var s = '<polygon points="' + OX + ',' + OY + ' ' + X + ',' + OY + ' ' + X + ',' + Y + '" fill="' + fill + '"/>';
+    s += '<path d="M ' + OX + ' ' + (OY - 2) + ' L ' + X + ' ' + (OY - 2) + '" fill="none" stroke="' + color +
+         '" stroke-width="2" stroke-dasharray="6 4" stroke-linecap="round"/>';
+    s += '<path d="M ' + X + ' ' + OY + ' L ' + X + ' ' + Y + '" fill="none" stroke="' + color +
+         '" stroke-width="2" stroke-dasharray="6 4" stroke-linecap="round"/>';
+    // 直角符号，标在 (a,0) 处
+    var sx = (X >= OX ? -1 : 1), sy = (Y <= OY ? -1 : 1);
+    s += '<path d="M ' + (X + sx * 10) + ' ' + (OY - 2) + ' L ' + (X + sx * 10) + ' ' + (OY - 2 + sy * 10) +
+         ' L ' + (X + sx * 2) + ' ' + (OY - 2 + sy * 10) + '" fill="none" stroke="' + color + '" stroke-width="1.5"/>';
+    return s;
+  }
+  function syncInputs(){
+    document.getElementById('inZ1a').value = num(state.z1.a, 2);
+    document.getElementById('inZ1b').value = num(state.z1.b, 2);
+    document.getElementById('inZ2a').value = num(state.z2.a, 2);
+    document.getElementById('inZ2b').value = num(state.z2.b, 2);
+  }
+
+  // ---------- 右侧面板 ----------
+  // 三角表示行：模 / 辐角不能用规范形式表达时写符号（公式写法）
+  function trigLine(name, rSym, thSym, z, p){
+    if (p.r < 1e-9) return name + ' = 0（模为 0，辐角任意）';
+    var rTxt = modExact(z.a, z.b) ? modTxt(z.a, z.b) : rSym;
+    var tTxt = angExact(p.th) ? degTxt(p.th) : thSym;
+    return name + ' = ' + rTxt + '(cos ' + tTxt + ' + <i>i</i> sin ' + tTxt + ')';
+  }
+
+  function updateCards(d){
+    var z1 = state.z1, z2 = state.z2;
+    var p1 = d.p1, p2 = d.p2;
+    var eR1 = modExact(z1.a, z1.b), eR2 = modExact(z2.a, z2.b);
+    var eT1 = angExact(p1.th), eT2 = angExact(p2.th);
+    var r1v = modTxt(z1.a, z1.b), r2v = modTxt(z2.a, z2.b);
+    var t1v = degTxt(p1.th), t2v = degTxt(p2.th);
+
+    document.getElementById('z1Val').innerHTML = fmtComplex(z1.a, z1.b);
+    document.getElementById('z2Val').innerHTML = fmtComplex(z2.a, z2.b);
+    document.getElementById('r1Val').innerHTML = (eR1 ? '' : '≈') + r1v;
+    document.getElementById('r2Val').innerHTML = (eR2 ? '' : '≈') + r2v;
+    document.getElementById('th1Val').textContent = p1.r < 1e-9 ? '任意' : (eT1 ? '' : '≈') + t1v;
+    document.getElementById('th2Val').textContent = p2.r < 1e-9 ? '任意' : (eT2 ? '' : '≈') + t2v;
+    document.getElementById('z1Trig').innerHTML = trigLine('z₁', 'r₁', 'θ₁', z1, p1);
+    document.getElementById('z2Trig').innerHTML = trigLine('z₂', 'r₂', 'θ₂', z2, p2);
+
+    var isMul = state.op === 'mul';
+    document.getElementById('resTitle').textContent = isMul ? '乘积 z = z₁·z₂' : '商 z = z₁ ÷ z₂';
+
+    var F = document.getElementById('resFormula'), N = document.getElementById('resNote');
+    if (!d.valid){
+      F.innerHTML = '<span class="dim">z₂ = 0，除法没有意义（除数不能为 0）。</span>';
+      N.innerHTML = '';
+      return;
+    }
+
+    // 代入值：能用规范形式（整数、根式、π 分数、整数度）表达才写数字，否则保留符号
+    var r1s = eR1 ? r1v : 'r₁', r2s = eR2 ? r2v : 'r₂';
+    var t1s = eT1 ? t1v : 'θ₁', t2s = eT2 ? t2v : 'θ₂';
+
+    var line1, line2, note;
+    var tExpr = isMul ? signedJoin(t1s, t2s) : signedSub(t1s, t2s);
+    var rExpr = (isMul ? r1s + ' × ' + r2s : r1s + ' ÷ ' + r2s);
+    var tMid = (eT1 || eT2) ? ' = ' + tExpr : '';
+    var rMid = (eR1 || eR2) ? ' = ' + rExpr : '';
+    var geoRot = isMul
+      ? '先旋转 θ₂' + (eT2 ? '（' + t2v + '）' : '')
+      : '先旋转 −θ₂' + (eT2 ? '（' + degTxt(-p2.th) + '）' : '');
+    var geoScl = isMul
+      ? '再伸缩 r₂' + (eR2 ? '（' + r2v + '）' : '') + ' 倍'
+      : '再伸缩 1/r₂' + (eR2 ? '（1/' + r2v + '）' : '') + ' 倍';
+    if (isMul){
+      line1 = 'z = z₁·z₂ = r₁·r₂[cos(θ₁+θ₂) + <i>i</i> sin(θ₁+θ₂)]';
+      line2 = '= (' + rExpr + ')[cos(' + tExpr + ') + <i>i</i> sin(' + tExpr + ')]';
+      note = '<b>模相乘：</b>|z| = r₁·r₂' + rMid + ' = <b>' + resultModTxt(d) + '</b>；' +
+             '<b>辐角相加：</b>θ = θ₁+θ₂' + tMid + ' = <b>' + degTxt(d.thRaw) + '</b>。' +
+             '几何上：把 OZ₁ <b>' + geoRot + '，' + geoScl + '</b>。';
+    } else {
+      line1 = 'z = z₁ ÷ z₂ = (r₁/r₂)[cos(θ₁−θ₂) + <i>i</i> sin(θ₁−θ₂)]';
+      line2 = '= (' + rExpr + ')[cos(' + tExpr + ') + <i>i</i> sin(' + tExpr + ')]';
+      note = '<b>模相除：</b>|z| = r₁/r₂' + rMid + ' = <b>' + resultModTxt(d) + '</b>；' +
+             '<b>辐角相减：</b>θ = θ₁−θ₂' + tMid + ' = <b>' + degTxt(d.thRaw) + '</b>。' +
+             '几何上：把 OZ₁ <b>' + geoRot + '，' + geoScl + '</b>。';
+    }
+    // 代入行若与符号行完全相同（全为符号），不重复显示
+    var showLine2 = (eR1 || eR2 || eT1 || eT2);
+
+    // 结果行：模 / 角非规范时用 ≈ 小数
+    var r3s = resultModTxt(d);
+    var eR3 = isInt(d.r3) || (eR1 && eR2);
+    var t3s = degTxt(d.th3);
+    var eT3 = angExact(d.th3);
+    var resC = fmtComplex(Math.abs(d.a3) < 5e-10 ? 0 : d.a3, Math.abs(d.b3) < 5e-10 ? 0 : d.b3);
+    var eRes = isInt(d.a3) && isInt(d.b3);
+    var line3 = '= <span class="val">' + (eR3 ? '' : '≈') + r3s + '</span>(cos ' + (eT3 ? '' : '≈') + t3s +
+                ' + <i>i</i> sin ' + (eT3 ? '' : '≈') + t3s + ') = <span class="val">' + (eRes ? '' : '≈') + resC + '</span>';
+    if (Math.abs(d.thRaw - d.th3) > 1e-6){
+      line3 += '<br><span class="dim">（θ = ' + degTxt(d.thRaw) + ' 与 ' + t3s + ' 终边相同，取主值 ' + t3s + '）</span>';
+    }
+    F.innerHTML = line1 + '<br>' + line2 + '<br>' + line3;
+    N.innerHTML = note;
+  }
+  // 结果模：整数坐标时可精确化简（乘 √n₁n₂，除 √n₁n₂/n₂），否则近似小数
+  function resultModTxt(d){
+    var z1 = state.z1, z2 = state.z2;
+    if (modExact(z1.a, z1.b) && modExact(z2.a, z2.b)){
+      var n1 = Math.round(z1.a * z1.a + z1.b * z1.b);
+      var n2 = Math.round(z2.a * z2.a + z2.b * z2.b);
+      var inner, out = 1, denom = 1;
+      if (state.op === 'mul'){ inner = n1 * n2; }
+      else { inner = n1 * n2; denom = n2; }
+      var i = 2;
+      while (i * i <= inner){
+        while (inner % (i * i) === 0){ inner /= i * i; out *= i; }
+        i++;
+      }
+      var core = inner === 1 ? String(out) : (out === 1 ? '' : out) + '√<span class="vinc">' + inner + '</span>';
+      if (denom !== 1) return core + '/' + denom;
+      return core;
+    }
+    return num(d.r3, 3);
+  }
+  // ---------- 交互：拖动 ----------
+  var dragTarget = null;
+  svg.addEventListener('pointerdown', function(evt){
+    stopAnim();
+    var id = evt.target.id;
+    if (id === 'hit1' || id === 'hit2' || id === 'hit3'){
+      dragTarget = id;
+      svg.setPointerCapture(evt.pointerId);
+      evt.preventDefault();
+    }
+  });
+  svg.addEventListener('pointermove', function(evt){
+    if (!dragTarget) return;
+    var sp = svgPt(evt);
+    var z = fromSvg(sp[0], sp[1]);
+    z.a = Math.round(z.a * 100) / 100;
+    z.b = Math.round(z.b * 100) / 100;
+    var r = Math.sqrt(z.a * z.a + z.b * z.b);
+    if (r < MIN_R){ z.a = MIN_R; z.b = 0; }
+    clampZ(z);
+    if (dragTarget === 'hit1'){ state.z1 = z; }
+    else if (dragTarget === 'hit2'){ state.z2 = z; }
+    else {
+      // 拖红点 Z：保持 z₁ 不变，反解 z₂
+      var p1 = polarOf(state.z1);
+      var pr = polarOf(z);
+      var nr2, nth2;
+      if (state.op === 'mul'){ nr2 = pr.r / p1.r; nth2 = pr.th - p1.th; }
+      else { nr2 = p1.r / pr.r; nth2 = p1.th - pr.th; }
+      state.z2 = clampZ({a: nr2 * Math.cos(nth2), b: nr2 * Math.sin(nth2)});
+    }
+    render();
+  });
+  svg.addEventListener('pointerup', function(){ dragTarget = null; });
+  svg.addEventListener('pointercancel', function(){ dragTarget = null; });
+  // 点击空白处移动 z₁
+  svg.addEventListener('click', function(evt){
+    var id = evt.target.id || '';
+    if (id.indexOf('hit') === 0) return;
+    stopAnim();
+    var sp = svgPt(evt);
+    var z = fromSvg(sp[0], sp[1]);
+    z.a = Math.round(z.a * 100) / 100;
+    z.b = Math.round(z.b * 100) / 100;
+    var r = Math.sqrt(z.a * z.a + z.b * z.b);
+    if (r < MIN_R) return;
+    clampZ(z);
+    state.z1 = z;
+    render();
+  });
+
+  // ---------- 键盘微调 ----------
+  document.addEventListener('keydown', function(e){
+    var st = {ArrowUp: [0, 0.1], ArrowDown: [0, -0.1], ArrowLeft: [-0.1, 0], ArrowRight: [0.1, 0]}[e.key];
+    if (!st) return;
+    if (e.target.tagName === 'INPUT') return;
+    e.preventDefault();
+    stopAnim();
+    var z = e.shiftKey ? state.z2 : state.z1;
+    z.a = Math.round((z.a + st[0]) * 100) / 100;
+    z.b = Math.round((z.b + st[1]) * 100) / 100;
+    var r = Math.sqrt(z.a * z.a + z.b * z.b);
+    if (r < MIN_R){ z.a = MIN_R; z.b = 0; }
+    clampZ(z);
+    render();
+  });
+
+  // ---------- 动画：先旋转，再伸缩（支持暂停/继续） ----------
+  var btnPlay = document.getElementById('btnPlay');
+  function ease(t){ return t < 0.5 ? 2 * t * t : 1 - Math.pow(-2 * t + 2, 2) / 2; }
+  function resetPlayBtn(){
+    btnPlay.textContent = '▶ 演示：先旋转，再伸缩';
+    btnPlay.classList.remove('busy');
+  }
+  function stopAnim(){
+    anim.on = false; anim.paused = false;
+    if (anim.raf) cancelAnimationFrame(anim.raf);
+    anim.raf = 0;
+    animLayer.innerHTML = '';
+    if (animating){ animating = false; render(); }
+    resetPlayBtn();
+  }
+  // 自然结束：保留余迹，不清空 animLayer
+  function finishAnim(){
+    anim.on = false; anim.paused = false;
+    if (anim.raf) cancelAnimationFrame(anim.raf);
+    anim.raf = 0;
+    resetPlayBtn();
+    var keep = state.trail ? anim.trail : [];
+    if (animating){ animating = false; render(); }  // 恢复静态结果向量
+    var s = '';
+    if (keep.length > 1){
+      var pts = keep.map(function(p){ return p[0].toFixed(1) + ',' + p[1].toFixed(1); }).join(' ');
+      s += '<polyline points="' + pts + '" fill="none" stroke="rgba(225,29,72,0.5)" ' +
+           'stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
+    }
+    animLayer.innerHTML = s;
+  }
+  function startAnim(){
+    // 播放中点击 → 暂停（冻结在当前位置）
+    if (anim.on && !anim.paused){
+      anim.paused = true;
+      anim.elapsed = performance.now() - anim.t0;
+      if (anim.raf) cancelAnimationFrame(anim.raf);
+      anim.raf = 0;
+      btnPlay.textContent = '▶ 继续演示';
+      return;
+    }
+    // 暂停中点击 → 继续
+    if (anim.on && anim.paused){
+      anim.paused = false;
+      anim.t0 = performance.now() - anim.elapsed;
+      btnPlay.textContent = '⏸ 暂停演示';
+      anim.raf = requestAnimationFrame(anim.frame);
+      return;
+    }
+    var d = derive();
+    if (!d.valid || d.p1.r < 1e-9) return;
+    anim.on = true; anim.paused = false;
+    animating = true;
+    render();  // 动画期间隐藏静态结果向量，避免重复箭头
+    btnPlay.textContent = '⏸ 暂停演示';
+    btnPlay.classList.add('busy');
+    var th1 = d.p1.th, r1 = d.p1.r, rot = d.s * d.p2.th;
+    var f = state.op === 'mul' ? d.p2.r : 1 / d.p2.r;
+    var r3t = d.r3;
+    var rotDur = Math.abs(rot) < 0.02 ? 0 : Math.min(Math.abs(rot), Math.PI) / 1.8 * 1300 + 500;
+    var sclDur = Math.abs(f - 1) < 0.02 ? 0 : 1400;
+    // 阶段文字：规范形式写数字，非规范写符号
+    var rotTxt = angExact(d.p2.th) ? degTxt(rot) : (state.op === 'mul' ? 'θ₂' : '−θ₂');
+    var fTxt;
+    if (state.op === 'mul') fTxt = modExact(state.z2.a, state.z2.b) ? modPlain(state.z2.a, state.z2.b) : 'r₂';
+    else fTxt = modExact(state.z2.a, state.z2.b) ? ('1/' + modPlain(state.z2.a, state.z2.b)) : '1/r₂';
+    anim.trail = [];
+    anim.t0 = performance.now();
+    anim.frame = function(now){
+      if (!anim.on || anim.paused) return;
+      var el = now - anim.t0, ang, rad, done = false, phase;
+      if (el < rotDur){
+        var k = ease(el / rotDur);
+        ang = th1 + rot * k; rad = r1;
+        phase = '① 旋转：把 OZ₁ 旋转 ' + rotTxt;
+      } else if (el < rotDur + sclDur){
+        var k2 = ease((el - rotDur) / sclDur);
+        ang = th1 + rot; rad = r1 * (1 + (f - 1) * k2);
+        phase = '② 伸缩：再伸缩 ' + fTxt + ' 倍';
+      } else {
+        ang = th1 + rot; rad = r3t; phase = '✓ 完成'; done = true;
+      }
+      drawAnim(rad, ang, anim.trail, el < rotDur, phase);
+      if (done){ finishAnim(); return; }
+      anim.raf = requestAnimationFrame(anim.frame);
+    };
+    anim.raf = requestAnimationFrame(anim.frame);
+  }
+  // 纯文本根式（动画文字用，不含 HTML 标签）
+  function modPlain(a, b){
+    return modTxt(a, b).replace(/<[^>]+>/g, '');
+  }
+  function drawAnim(rad, ang, trail, rotating, phase){
+    var s = '';
+    // 起点参考向量（灰虚线）
+    var p1 = polarOf(state.z1);
+    s += vecSvg(p1.r, p1.th, '#cbd5e1', 2.5, null, '4 4');
+    // 旋转阶段的引导弧（半径与实际向量端点一致，避免余迹偏离）
+    if (rotating){
+      var arcR = Math.min(p1.r, R_DRAW_MAX) * U;
+      s += '<path d="' + arcPath(arcR, p1.th, ang) + '" fill="none" stroke="#7c3aed" ' +
+           'stroke-width="1.6" stroke-dasharray="4 4" marker-end="url(#arrowArcV)"/>';
+    }
+    // 余迹：连续细线（而非散点）
+    var P = ptOf(Math.min(rad, R_DRAW_MAX), ang);
+    if (state.trail){
+      var last = trail[trail.length - 1];
+      if (!last || Math.hypot(P[0] - last[0], P[1] - last[1]) > 2) trail.push(P);
+      if (trail.length > 1){
+        var pts = trail.map(function(p){ return p[0].toFixed(1) + ',' + p[1].toFixed(1); }).join(' ');
+        s += '<polyline points="' + pts + '" fill="none" stroke="rgba(225,29,72,0.5)" ' +
+             'stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>';
+      }
+    }
+    // 当前运动中的向量与点（静态结果向量已在 render 中隐藏，无重复箭头）
+    s += vecSvg(Math.min(rad, R_DRAW_MAX), ang, '#e11d48', 3.4, 'arrowVecR');
+    s += '<circle cx="' + P[0] + '" cy="' + P[1] + '" r="7" fill="#e11d48" stroke="#fff" stroke-width="2"/>';
+    // 中途阶段通知
+    s += '<text x="' + (W / 2) + '" y="42" text-anchor="middle" font-size="17" font-weight="700" ' +
+         'fill="#7c3aed" stroke="#fff" stroke-width="5" paint-order="stroke" ' +
+         'font-family="PingFang SC, Microsoft YaHei, sans-serif">' + phase + '</text>';
+    animLayer.innerHTML = s;
+  }
+  btnPlay.addEventListener('click', startAnim);
+
+  // ---------- 控件 ----------
+  var segOp = document.getElementById('segOp');
+  segOp.querySelectorAll('button').forEach(function(b){
+    b.addEventListener('click', function(){
+      state.op = b.dataset.op;
+      segOp.querySelectorAll('button').forEach(function(x){ x.classList.toggle('on', x === b); });
+      stopAnim(); render();
+    });
+  });
+  function bindSwitch(id, key){
+    var el = document.getElementById(id);
+    el.classList.toggle('on', state[key]);
+    el.addEventListener('click', function(){
+      state[key] = !state[key];
+      el.classList.toggle('on', state[key]);
+      render();
+    });
+    el.addEventListener('keydown', function(e){
+      if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); el.click(); }
+    });
+  }
+  bindSwitch('swArc1', 'arc1');
+  bindSwitch('swArc2', 'arc2');
+  bindSwitch('swArc3', 'arc3');
+  bindSwitch('swAux', 'aux');
+  bindSwitch('swCircle', 'circle');
+  bindSwitch('swTrail', 'trail');
+
+  document.getElementById('btnApply').addEventListener('click', applyCustom);
+  function applyCustom(){
+    var a1 = parseFloat(document.getElementById('inZ1a').value);
+    var b1 = parseFloat(document.getElementById('inZ1b').value);
+    var a2 = parseFloat(document.getElementById('inZ2a').value);
+    var b2 = parseFloat(document.getElementById('inZ2b').value);
+    if (isNaN(a1)) a1 = 0; if (isNaN(b1)) b1 = 0;
+    if (isNaN(a2)) a2 = 0; if (isNaN(b2)) b2 = 0;
+    stopAnim();
+    state.z1 = clampZ({a: a1, b: b1});
+    state.z2 = clampZ({a: a2, b: b2});
+    render();
+  }
+  ['inZ1a', 'inZ1b', 'inZ2a', 'inZ2b'].forEach(function(id){
+    document.getElementById(id).addEventListener('keydown', function(e){
+      if (e.key === 'Enter') applyCustom();
+    });
+  });
+
+  document.querySelectorAll('.presets .btn').forEach(function(b){
+    b.addEventListener('click', function(){
+      stopAnim();
+      state.op = b.dataset.op;
+      segOp.querySelectorAll('button').forEach(function(x){ x.classList.toggle('on', x.dataset.op === state.op); });
+      state.z1 = {a: parseFloat(b.dataset.a1), b: parseFloat(b.dataset.b1)};
+      state.z2 = {a: parseFloat(b.dataset.a2), b: parseFloat(b.dataset.b2)};
+      render();
+    });
+  });
+  document.getElementById('btnReset').addEventListener('click', function(){
+    stopAnim();
+    state.z1 = {a: 2, b: 1}; state.z2 = {a: 1, b: 2}; state.op = 'mul';
+    segOp.querySelectorAll('button').forEach(function(x){ x.classList.toggle('on', x.dataset.op === 'mul'); });
+    render();
+  });
+
+  // ---------- 初始化 ----------
+  buildStatic();
+  render();
+})();
+</script>
+</body>
+</html>

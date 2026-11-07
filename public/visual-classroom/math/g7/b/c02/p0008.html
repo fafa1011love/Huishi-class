@@ -1,0 +1,1369 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>9.1 平面直角坐标系 · 课堂演示</title>
+<style>
+  :root{
+    --ink:#1e293b; --ink2:#475569; --muted:#94a3b8;
+    --blue:#2563eb; --amber:#e8890c; --red:#ef4444; --green:#10b981; --violet:#7c3aed;
+    --card:#ffffff; --line:#e2e8f0; --soft:#f8fafc;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:"PingFang SC","Microsoft YaHei","Hiragino Sans GB",-apple-system,system-ui,sans-serif;
+    color:var(--ink); background:#eef2f7; overflow:hidden; -webkit-font-smoothing:antialiased;
+  }
+  .app{display:flex;flex-direction:column;height:100%;}
+
+  /* ---------- 顶栏 ---------- */
+  .top{
+    height:64px;flex:0 0 64px;display:flex;align-items:center;justify-content:space-between;
+    padding:0 20px;background:#fff;border-bottom:1px solid var(--line);z-index:5;
+  }
+  .brand{display:flex;align-items:center;gap:12px;}
+  .logo{
+    width:38px;height:38px;border-radius:11px;display:grid;place-items:center;
+    background:linear-gradient(135deg,#2563eb,#7c3aed);color:#fff;font-weight:700;font-size:15px;
+    box-shadow:0 6px 14px rgba(37,99,235,.28);letter-spacing:-.5px;
+  }
+  .brand h1{font-size:16.5px;font-weight:700;letter-spacing:.2px;}
+  .brand p{font-size:11.5px;color:var(--muted);margin-top:2px;}
+  .tabs{display:flex;gap:4px;flex-wrap:wrap;}
+  .tab{
+    padding:8px 12px;border-radius:9px;font-size:13px;color:var(--ink2);cursor:pointer;
+    border:1px solid transparent;transition:.15s;white-space:nowrap;user-select:none;
+  }
+  .tab:hover{background:#f1f5f9;}
+  .tab.on{background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe;font-weight:600;}
+
+  /* ---------- 舞台 ---------- */
+  .stage{position:relative;flex:1;overflow:hidden;background:radial-gradient(120% 100% at 30% 0%,#ffffff 0%,#eef2f7 55%,#e3e9f2 100%);}
+  canvas{display:block;position:absolute;inset:0;cursor:grab;}
+  canvas.drag{cursor:grabbing;}
+
+  .tools{
+    position:absolute;left:18px;top:16px;display:flex;gap:6px;z-index:3;
+    background:rgba(255,255,255,.9);padding:5px;border-radius:12px;
+    box-shadow:0 6px 18px rgba(15,23,42,.10);border:1px solid rgba(226,232,240,.9);
+    backdrop-filter:blur(8px);
+  }
+  .tool{
+    border:none;background:transparent;font-family:inherit;font-size:12.8px;color:#475569;
+    padding:7px 13px;border-radius:8px;cursor:pointer;transition:.15s;white-space:nowrap;
+  }
+  .tool:hover{background:#f1f5f9;}
+  .tool.on{background:#2563eb;color:#fff;font-weight:600;box-shadow:0 2px 8px rgba(37,99,235,.35);}
+  .tool .ic{margin-right:4px;}
+
+  .hint{
+    position:absolute;left:18px;bottom:14px;font-size:12px;color:#8b9aae;
+    background:rgba(255,255,255,.78);border:1px solid rgba(203,213,225,.8);
+    padding:6px 11px;border-radius:8px;backdrop-filter:blur(6px);pointer-events:none;
+  }
+
+  /* ---------- 面板 ---------- */
+  .panel{
+    position:absolute;right:16px;top:16px;width:356px;max-height:calc(100% - 32px);
+    overflow-y:auto;overflow-x:hidden;background:#fff;border-radius:16px;padding:18px;
+    box-shadow:0 14px 38px rgba(15,23,42,.13),0 2px 6px rgba(15,23,42,.05);
+    border:1px solid rgba(226,232,240,.9);
+  }
+  .panel::-webkit-scrollbar{width:7px;}
+  .panel::-webkit-scrollbar-thumb{background:#dbe3ee;border-radius:4px;}
+  .panel h2{font-size:15px;font-weight:700;margin-bottom:4px;display:flex;align-items:center;gap:7px;}
+  .panel h2 .dotm{width:6px;height:6px;border-radius:3px;background:var(--blue);}
+  .panel .desc{font-size:12.5px;line-height:1.72;color:var(--ink2);margin-bottom:15px;}
+  .sect{border-top:1px dashed var(--line);padding-top:13px;margin-top:13px;}
+  .sect:first-of-type{border-top:none;padding-top:0;margin-top:0;}
+  .lbl{font-size:12px;font-weight:600;color:#64748b;margin-bottom:8px;letter-spacing:.3px;}
+  .btn{
+    border:1px solid var(--line);background:#fff;border-radius:9px;padding:8px 13px;
+    font-size:12.8px;cursor:pointer;color:var(--ink);transition:.15s;font-family:inherit;
+  }
+  .btn:hover{border-color:#b6c2d4;background:#fbfcfe;}
+  .btn.pri{background:#2563eb;border-color:#2563eb;color:#fff;font-weight:600;}
+  .btn.pri:hover{background:#1d4ed8;}
+  .btn.on{background:#eff6ff;border-color:#93c5fd;color:#1d4ed8;font-weight:600;}
+  .row{display:flex;gap:7px;flex-wrap:wrap;}
+
+  .slider{display:flex;align-items:center;gap:10px;margin:9px 0;}
+  .slider span.k{font-size:12.5px;color:#64748b;width:54px;flex:0 0 54px;}
+  .slider output{font-size:13px;font-weight:700;width:30px;text-align:right;font-variant-numeric:tabular-nums;}
+  input[type=range]{-webkit-appearance:none;flex:1;height:4px;border-radius:3px;background:#e2e8f0;outline:none;}
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:16px;height:16px;border-radius:50%;background:#2563eb;
+    border:3px solid #fff;box-shadow:0 1px 5px rgba(37,99,235,.45);cursor:pointer;
+  }
+
+  .kv{display:flex;align-items:center;gap:8px;background:var(--soft);border:1px solid var(--line);
+      border-radius:11px;padding:11px 13px;font-size:13px;margin-top:8px;flex-wrap:wrap;}
+  .kv b{font-family:ui-monospace,Consolas,monospace;font-size:15.5px;color:#1d4ed8;}
+
+  .table{width:100%;border-collapse:collapse;font-size:12.4px;margin-top:6px;}
+  .table th,.table td{padding:6px 4px;text-align:center;border-bottom:1px solid #eef2f7;}
+  .table th{color:#64748b;font-weight:600;font-size:11.5px;}
+  .table td.q{font-weight:700;}
+
+  .qtag{display:inline-block;font-size:11px;background:#fef3c7;color:#92400e;border-radius:6px;
+        padding:3px 8px;margin-bottom:9px;font-weight:600;}
+  .qtag.hard{background:#fee2e2;color:#991b1b;}
+  .stem{font-size:13.5px;line-height:1.85;color:#1f2937;}
+  .stem b{color:#1d4ed8;}
+  .opts{display:flex;flex-direction:column;gap:7px;margin-top:12px;}
+  .opt{
+    display:flex;align-items:center;gap:9px;border:1px solid var(--line);border-radius:10px;
+    padding:9px 11px;font-size:13px;cursor:pointer;transition:.13s;background:#fff;
+  }
+  .opt:hover{border-color:#93c5fd;background:#f8fbff;}
+  .opt .ab{width:20px;height:20px;border-radius:6px;background:#f1f5f9;color:#64748b;
+           display:grid;place-items:center;font-size:11.5px;font-weight:700;flex:0 0 20px;}
+  .opt.ok{border-color:#6ee7b7;background:#ecfdf5;}
+  .opt.ok .ab{background:#10b981;color:#fff;}
+  .opt.no{border-color:#fca5a5;background:#fef2f2;}
+  .opt.no .ab{background:#ef4444;color:#fff;}
+  .opt.dim{opacity:.55;}
+  .fb{margin-top:11px;font-size:12.8px;line-height:1.75;padding:11px 12px;border-radius:10px;}
+  .fb.good{background:#ecfdf5;color:#065f46;border:1px solid #a7f3d0;}
+  .fb.bad{background:#fef2f2;color:#991b1b;border:1px solid #fecaca;}
+  .fb .sol{margin-top:7px;color:#334155;line-height:1.8;}
+  .fb .sol b{color:#1d4ed8;}
+
+  .navq{display:flex;gap:7px;flex-wrap:wrap;margin-top:14px;}
+  .navq .dot{width:26px;height:26px;border-radius:8px;border:1px solid var(--line);background:#fff;
+             font-size:12px;cursor:pointer;color:#64748b;display:grid;place-items:center;font-family:inherit;}
+  .navq .dot:hover{border-color:#93c5fd;}
+  .navq .dot.cur{background:#2563eb;border-color:#2563eb;color:#fff;font-weight:700;}
+
+  .tip{font-size:11.8px;color:#94a3b8;line-height:1.7;margin-top:10px;}
+  .tip b{color:#64748b;}
+  .tag3{display:inline-block;font-size:11px;padding:2px 7px;border-radius:5px;background:#eef2ff;color:#4338ca;margin-left:6px;font-weight:600;}
+
+  @media(max-width:1240px){ .tab{padding:7px 9px;font-size:12px;} .brand p{display:none;} }
+  @media(max-width:900px){
+    .panel{left:12px;right:12px;top:auto;bottom:12px;width:auto;max-height:50%;}
+    .top{height:auto;padding:10px 12px;flex-direction:column;gap:8px;align-items:flex-start;}
+    .tools{top:10px;left:10px;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand">
+      <div class="logo">9.1</div>
+      <div>
+        <h1>平面直角坐标系 · 课堂演示</h1>
+        <p>人教版 七年级下册 · 第九章 9.1（含 9.1.1 有序数对）</p>
+      </div>
+    </div>
+    <nav class="tabs" id="tabs"></nav>
+  </header>
+  <main class="stage" id="stage">
+    <canvas id="cv"></canvas>
+
+    <div class="tools">
+      <button class="tool on" id="btnFront"><span class="ic">▣</span>正对视角</button>
+      <button class="tool" id="btnFree"><span class="ic">◈</span>立体视角</button>
+      <button class="tool" id="btnReset"><span class="ic">↺</span>复位</button>
+    </div>
+
+    <aside class="panel" id="panel"></aside>
+    <div class="hint">默认正对投屏 · 需要立体感时点「立体视角」，或直接拖动旋转</div>
+  </main>
+</div>
+
+<script>
+/* ==================================================================
+   0. 基础工具
+   ================================================================== */
+const cv = document.getElementById('cv');
+const ctx = cv.getContext('2d');
+const panelEl = document.getElementById('panel');
+const tabsEl = document.getElementById('tabs');
+
+const TAU = Math.PI * 2, HALF_PI = Math.PI / 2;
+const clamp = (v, a, b) => v < a ? a : (v > b ? b : v);
+const lerp = (a, b, t) => a + (b - a) * t;
+
+const V = {
+  add: (a, b) => ({ x: a.x + b.x, y: a.y + b.y, z: a.z + b.z }),
+  sub: (a, b) => ({ x: a.x - b.x, y: a.y - b.y, z: a.z - b.z }),
+  mul: (a, k) => ({ x: a.x * k, y: a.y * k, z: a.z * k }),
+  dot: (a, b) => a.x * b.x + a.y * b.y + a.z * b.z,
+  cross: (a, b) => ({ x: a.y * b.z - a.z * b.y, y: a.z * b.x - a.x * b.z, z: a.x * b.y - a.y * b.x }),
+  norm: a => { const l = Math.hypot(a.x, a.y, a.z) || 1; return { x: a.x / l, y: a.y / l, z: a.z / l }; }
+};
+
+const COL = {
+  x: '#2563eb', y: '#e8890c', pt: '#ef4444',
+  ink: '#1e293b', violet: '#7c3aed',
+  pathX: '#f97316', pathY: '#0ea5e9'
+};
+
+/* ==================================================================
+   1. 视角 —— 默认「正对」，投屏即课本视图
+   ================================================================== */
+const view  = { yaw: 0, pitch: 0, dist: 10.5, tilt: HALF_PI };
+const viewT = { yaw: 0, pitch: 0, dist: 10.5, tilt: HALF_PI };
+let viewMode = 'front';
+
+let W = 0, H = 0, DPR = 1, CX = 0, CY = 0;
+const CAM = { pos: { x: 0, y: 0, z: 20 }, f: { x: 0, y: 0, z: -1 }, r: { x: 1, y: 0, z: 0 }, u: { x: 0, y: 1, z: 0 }, focal: 800 };
+
+let POX = 0, POY = 0;   // 原点在世界平面中的位置（用于"换原点"演示）
+
+function P2W(x, y) {
+  const t = view.tilt, s = Math.sin(t), c = Math.cos(t);
+  const px = x + POX, py = y + POY;
+  return { x: px, y: py * s, z: -py * c };
+}
+
+function computeCam() {
+  const cp = Math.cos(view.pitch), sp = Math.sin(view.pitch);
+  const cy = Math.cos(view.yaw), sy = Math.sin(view.yaw);
+  const pos = { x: view.dist * cp * sy, y: view.dist * sp, z: view.dist * cp * cy };
+  const f = V.norm(V.mul(pos, -1));
+  const r = V.norm(V.cross(f, { x: 0, y: 1, z: 0 }));
+  const u = V.cross(r, f);
+  CAM.pos = pos; CAM.f = f; CAM.r = r; CAM.u = u;
+}
+
+function proj(w) {
+  const d = V.sub(w, CAM.pos);
+  const cz = V.dot(d, CAM.f);
+  const cx = V.dot(d, CAM.r);
+  const cyy = V.dot(d, CAM.u);
+  const s = CAM.focal / Math.max(cz, 0.4);
+  return { x: CX + cx * s, y: CY - cyy * s, z: cz, s };
+}
+
+/* ==================================================================
+   2. 绘制原语
+   ================================================================== */
+function seg(a, b, color, w, dash) {
+  const pa = proj(a), pb = proj(b);
+  ctx.beginPath(); ctx.moveTo(pa.x, pa.y); ctx.lineTo(pb.x, pb.y);
+  ctx.setLineDash(dash || []);
+  ctx.strokeStyle = color; ctx.lineWidth = w || 1; ctx.lineCap = 'round'; ctx.stroke();
+  ctx.setLineDash([]);
+}
+
+function poly3(pts, fill, stroke, lw) {
+  if (pts.length < 3) return;
+  const ps = pts.map(proj);
+  ctx.beginPath(); ctx.moveTo(ps[0].x, ps[0].y);
+  for (let i = 1; i < ps.length; i++) ctx.lineTo(ps[i].x, ps[i].y);
+  ctx.closePath();
+  if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+  if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw || 1; ctx.stroke(); }
+}
+
+function arrowLine(a, b, color, lw) {
+  const pa = proj(a), pb = proj(b);
+  ctx.beginPath(); ctx.moveTo(pa.x, pa.y); ctx.lineTo(pb.x, pb.y);
+  ctx.strokeStyle = color; ctx.lineWidth = lw || 2; ctx.lineCap = 'round'; ctx.stroke();
+  const ang = Math.atan2(pb.y - pa.y, pb.x - pa.x);
+  const L = 12, spread = 0.42;
+  ctx.beginPath();
+  ctx.moveTo(pb.x, pb.y);
+  ctx.lineTo(pb.x - L * Math.cos(ang - spread), pb.y - L * Math.sin(ang - spread));
+  ctx.lineTo(pb.x - L * Math.cos(ang + spread), pb.y - L * Math.sin(ang + spread));
+  ctx.closePath(); ctx.fillStyle = color; ctx.fill();
+}
+
+function text2d(x, y, str, o) {
+  o = o || {};
+  const size = o.size || 13;
+  ctx.font = (o.bold ? '700 ' : '') + size + 'px "PingFang SC","Microsoft YaHei",system-ui,sans-serif';
+  ctx.textAlign = o.align || 'center';
+  ctx.textBaseline = o.baseline || 'middle';
+  ctx.lineWidth = 4; ctx.lineJoin = 'round';
+  ctx.strokeStyle = o.halo || 'rgba(255,255,255,.95)';
+  ctx.strokeText(str, x, y);
+  ctx.fillStyle = o.color || COL.ink;
+  ctx.fillText(str, x, y);
+}
+
+function label3(w, str, o) {
+  o = o || {};
+  const p = proj(w);
+  text2d(p.x + (o.dx || 0), p.y + (o.dy || 0), str, o);
+}
+
+function marker(w, color, r, halo) {
+  const p = proj(w);
+  const base = CAM.focal / view.dist;
+  const rr = (r || 6) * clamp(p.s / base, 0.6, 1.4);
+  ctx.beginPath(); ctx.arc(p.x, p.y, rr, 0, TAU);
+  ctx.fillStyle = color; ctx.fill();
+  if (halo !== false) { ctx.lineWidth = 2.2; ctx.strokeStyle = '#fff'; ctx.stroke(); }
+  return p;
+}
+
+function pulseRing(w, color, ph, r0) {
+  const p = proj(w);
+  const k = (Math.sin(ph * 2.4) + 1) / 2;
+  ctx.beginPath();
+  ctx.arc(p.x, p.y, (r0 || 9) + k * 9, 0, TAU);
+  ctx.strokeStyle = color; ctx.globalAlpha = 0.42 * (1 - k);
+  ctx.lineWidth = 2.5; ctx.stroke(); ctx.globalAlpha = 1;
+}
+
+/* ==================================================================
+   3. 坐标平面底图
+   ================================================================== */
+const R = 6;
+const FRONT = () => viewMode === 'front';
+
+function drawGrid(alpha) {
+  for (let i = -R; i <= R; i++) {
+    if (i === 0) continue;
+    seg(P2W(i, -R), P2W(i, R), 'rgba(148,163,184,' + alpha + ')', 1);
+    seg(P2W(-R, i), P2W(R, i), 'rgba(148,163,184,' + alpha + ')', 1);
+  }
+}
+
+function drawAxisX(emph) {
+  const lw = emph ? 4 : (FRONT() ? 3 : 2.6);
+  arrowLine(P2W(-R - 0.5, 0), P2W(R + 1.0, 0), COL.x, lw);
+  for (let i = -R; i <= R; i++) {
+    if (i === 0) continue;
+    seg(P2W(i, -0.11), P2W(i, 0.11), COL.x, FRONT() ? 2 : 1.6);
+  }
+}
+
+function drawAxisY(emph) {
+  const lw = emph ? 4 : (FRONT() ? 3 : 2.6);
+  arrowLine(P2W(0, -R - 0.5), P2W(0, R + 1.0), COL.y, lw);
+  for (let i = -R; i <= R; i++) {
+    if (i === 0) continue;
+    seg(P2W(-0.11, i), P2W(0.11, i), COL.y, FRONT() ? 2 : 1.6);
+  }
+}
+
+function drawBase(opt) {
+  opt = opt || {};
+  const big = FRONT() ? 1.15 : 1;
+
+  poly3([P2W(-R, -R), P2W(R, -R), P2W(R, R), P2W(-R, R)],
+    'rgba(255,255,255,0.82)', 'rgba(148,163,184,0.6)', 1.2);
+
+  if (opt.quad) {
+    const boxes = [
+      ['rgba(37,99,235,0.11)', [0, 0, R, R]],
+      ['rgba(124,58,237,0.11)', [-R, 0, 0, R]],
+      ['rgba(16,185,129,0.10)', [-R, -R, 0, 0]],
+      ['rgba(232,137,12,0.12)', [0, -R, R, 0]]
+    ];
+    boxes.forEach(function (b) {
+      const q = b[1];
+      poly3([P2W(q[0], q[1]), P2W(q[2], q[1]), P2W(q[2], q[3]), P2W(q[0], q[3])], b[0], null);
+    });
+  }
+
+  if (opt.grid !== false) drawGrid(FRONT() ? 0.34 : 0.27);
+
+  drawAxisX(opt.emph === 'x');
+  drawAxisY(opt.emph === 'y');
+
+  if (opt.ticks !== false) {
+    for (let i = -R; i <= R; i++) {
+      if (i === 0) continue;
+      label3(P2W(i, -0.5), String(i), { size: 11 * big, color: '#94a3b8' });
+      label3(P2W(-0.5, i), String(i), { size: 11 * big, color: '#94a3b8' });
+    }
+  }
+
+  if (opt.emph === 'o') {
+    pulseRing(P2W(0, 0), '#334155', performance.now() / 1000, 8);
+    marker(P2W(0, 0), '#334155', 8);
+  } else {
+    marker(P2W(0, 0), '#334155', FRONT() ? 5.2 : 4.6);
+  }
+  label3(P2W(0, 0), 'O', { dx: -14, dy: 15, size: 14 * big, bold: true, color: '#334155' });
+
+  label3(P2W(R + 1.0, 0), 'x', { dx: 14, dy: -14, size: 17 * big, bold: true, color: COL.x });
+  label3(P2W(0, R + 1.0), 'y', { dx: -14, dy: -12, size: 17 * big, bold: true, color: COL.y });
+}
+
+/* ==================================================================
+   4. 状态
+   ================================================================== */
+const S = { mod: 'pair', grid: true, quadFill: false, ticks: true };
+
+const m1 = { a: 3, b: 4, compare: true };
+const m2 = { emph: 'all' };
+const m3 = { x: 3, y: 2, t: 1.45, playing: false, showPerp: true };
+const m4 = { q: 0 };
+const quiz = { i: 0, chosen: null, reveal: 0 };
+
+/* ==================================================================
+   5. 模块① 有序数对
+   ================================================================== */
+const SEAT_N = 5;
+const seatXY = (i, j) => [i - 3, j - 3];
+
+function cell3(i, j, fill, stroke, lw) {
+  const xy = seatXY(i, j), cx = xy[0], cy = xy[1], h = 0.44;
+  poly3([P2W(cx - h, cy - h), P2W(cx + h, cy - h), P2W(cx + h, cy + h), P2W(cx - h, cy + h)],
+    fill, stroke, lw);
+}
+
+function buildPair() {
+  return `
+  <h2><span class="dotm"></span>有序数对 —— 位置怎么"说清楚"</h2>
+  <p class="desc">教室里找座位，只说"3"说不清；说"第 3 列第 4 排"就唯一确定了。<br>
+  把两个数按<b>规定顺序</b>排成一队 <b>(a, b)</b>，就叫<b>有序数对</b>。</p>
+
+  <div class="sect">
+    <div class="lbl">选一个座位</div>
+    <div class="slider"><span class="k">第几列 a</span>
+      <input type="range" min="1" max="5" step="1" value="${m1.a}" data-in="a">
+      <output>${m1.a}</output></div>
+    <div class="slider"><span class="k">第几排 b</span>
+      <input type="range" min="1" max="5" step="1" value="${m1.b}" data-in="b">
+      <output>${m1.b}</output></div>
+    <div class="kv">
+      <span style="color:#64748b">第 ${m1.a} 列 第 ${m1.b} 排</span>
+      <b>(${m1.a}, ${m1.b})</b>
+    </div>
+  </div>
+
+  <div class="sect">
+    <div class="row">
+      <button class="btn ${m1.compare ? 'on' : ''}" data-act="cmp">对比 (${m1.b}, ${m1.a})</button>
+      <button class="btn" data-act="swap">交换 a、b</button>
+    </div>
+    ${m1.compare ? `<div class="kv" style="background:#eef2ff;border-color:#c7d2fe">
+      <span style="color:#4338ca">交换后变成</span><b style="color:#4338ca">(${m1.b}, ${m1.a})</b>
+      <span style="color:#4338ca;font-size:11.5px">—— 换到另一个位置！</span>
+    </div>` : ''}
+  </div>
+
+  <div class="sect">
+    <p class="desc" style="margin:0">
+      <b style="color:#dc2626">重点：</b>(3, 4) 和 (4, 3) 是<b>两个不同的位置</b>，因为顺序不同。<br>
+      所以叫"<b>有序</b>数对"—— 顺序有意义，不能随便调换。
+    </p>
+  </div>
+
+  <p class="tip">💡 课堂互动：请同学说出自己的座位号，全班一起写成有序数对；再故意交换两个数，问"还是他吗？"</p>
+  `;
+}
+
+function drawPair(ph) {
+  const N = SEAT_N;
+  poly3([P2W(-2.95, -2.95), P2W(2.95, -2.95), P2W(2.95, 2.95), P2W(-2.95, 2.95)],
+    'rgba(255,255,255,0.9)', 'rgba(148,163,184,0.55)', 1.4);
+
+  for (let i = 1; i <= N; i++) {
+    for (let j = 1; j <= N; j++) {
+      const isA = (i === m1.a && j === m1.b);
+      const isB = m1.compare && (i === m1.b && j === m1.a);
+      let fill = 'rgba(241,245,249,0.92)', stroke = 'rgba(203,213,225,0.95)', lw = 1.2;
+      if (isA) { fill = 'rgba(239,68,68,0.20)'; stroke = '#ef4444'; lw = 2.4; }
+      else if (isB) { fill = 'rgba(37,99,235,0.18)'; stroke = '#2563eb'; lw = 2.4; }
+      cell3(i, j, fill, stroke, lw);
+    }
+  }
+
+  const big = FRONT() ? 1.1 : 1;
+
+  for (let i = 1; i <= N; i++) {
+    const cx = seatXY(i, 1)[0];
+    label3(P2W(cx, -3.45), String(i), { size: 12 * big, color: '#64748b', bold: true });
+    const cy = seatXY(1, i)[1];
+    label3(P2W(-3.45, cy), String(i), { size: 12 * big, color: '#64748b', bold: true });
+  }
+  label3(P2W(0, -4.0), '列  a →', { size: 13 * big, color: '#94a3b8' });
+  label3(P2W(-4.0, 0), '↑ 排 b', { size: 13 * big, color: '#94a3b8' });
+
+  const A = seatXY(m1.a, m1.b);
+  pulseRing(P2W(A[0], A[1]), '#ef4444', ph, 12);
+  label3(P2W(A[0], A[1]), `(${m1.a}, ${m1.b})`, { size: 15 * big, bold: true, color: '#b91c1c' });
+
+  if (m1.compare) {
+    const B = seatXY(m1.b, m1.a);
+    pulseRing(P2W(B[0], B[1]), '#2563eb', ph + 0.6, 12);
+    label3(P2W(B[0], B[1]), `(${m1.b}, ${m1.a})`, { size: 15 * big, bold: true, color: '#1d4ed8' });
+    seg(P2W(A[0], A[1]), P2W(B[0], B[1]), 'rgba(148,163,184,.6)', 1.6, [6, 5]);
+    text2d(CX, CY + H * 0.42, `交换 a、b：(${m1.a}, ${m1.b}) → 跑到了 (${m1.b}, ${m1.a})，不是同一个座位`,
+      { size: 13.5, color: '#64748b' });
+  } else {
+    text2d(CX, CY + H * 0.42, `第 ${m1.a} 列 第 ${m1.b} 排 记作 (${m1.a}, ${m1.b})`,
+      { size: 13.5, color: '#64748b' });
+  }
+}
+
+/* ==================================================================
+   6. 模块② 平面直角坐标系（四个零件）
+   ================================================================== */
+function buildSys() {
+  const e = m2.emph;
+  return `
+  <h2><span class="dotm"></span>平面直角坐标系的"四个零件"</h2>
+  <p class="desc">在平面内画两条<b>互相垂直</b>、<b>原点重合</b>的数轴，就组成平面直角坐标系。<br>
+  点一点下面的按钮，单独看每个零件。</p>
+
+  <div class="sect">
+    <div class="lbl">点一下，单独看</div>
+    <div class="row">
+      <button class="btn ${e === 'x' ? 'on' : ''}" data-act="e-x">x 轴（横轴）</button>
+      <button class="btn ${e === 'y' ? 'on' : ''}" data-act="e-y">y 轴（纵轴）</button>
+      <button class="btn ${e === 'o' ? 'on' : ''}" data-act="e-o">原点 O</button>
+      <button class="btn ${e === 'all' ? 'on' : ''}" data-act="e-all">全部</button>
+    </div>
+  </div>
+
+  <div class="sect">
+    <div class="lbl">四个零件</div>
+    <table class="table">
+      <tr><td style="text-align:left;padding:7px 6px">
+        <b style="color:${COL.x}">① 水平的数轴</b> 叫 x 轴（横轴），<b>向右为正</b></td></tr>
+      <tr><td style="text-align:left;padding:7px 6px">
+        <b style="color:${COL.y}">② 竖直的数轴</b> 叫 y 轴（纵轴），<b>向上为正</b></td></tr>
+      <tr><td style="text-align:left;padding:7px 6px">
+        <b>③ 交点</b> 叫原点 O，是两条轴的公共起点</td></tr>
+      <tr><td style="text-align:left;padding:7px 6px">
+        <b>④ 单位长度</b> 两轴必须相同，否则图形会变形</td></tr>
+    </table>
+  </div>
+
+  <div class="sect">
+    <div class="lbl">显示设置</div>
+    <div class="row">
+      <button class="btn ${S.grid ? 'on' : ''}" data-act="tg-grid">网格</button>
+      <button class="btn ${S.quadFill ? 'on' : ''}" data-act="tg-quad">四个象限</button>
+      <button class="btn ${S.ticks ? 'on' : ''}" data-act="tg-tick">刻度数字</button>
+    </div>
+  </div>
+
+  <p class="tip">💡 投屏时保持「正对视角」就是课本上的图；想让学生看懂"这是一张平面"，点「立体视角」。</p>
+  `;
+}
+
+function drawSys(ph) {
+  if (m2.emph === 'all') {
+    drawBase({ grid: S.grid, quad: S.quadFill, ticks: S.ticks });
+    if (S.quadFill) {
+      const ql = [
+        { t: 'Ⅰ', x: 3.4, y: 3.4, c: '#1d4ed8' },
+        { t: 'Ⅱ', x: -3.4, y: 3.4, c: '#6d28d9' },
+        { t: 'Ⅲ', x: -3.4, y: -3.4, c: '#047857' },
+        { t: 'Ⅳ', x: 3.4, y: -3.4, c: '#b45309' }
+      ];
+      ql.forEach(q => label3(P2W(q.x, q.y), q.t, { size: 21, bold: true, color: q.c, halo: 'rgba(255,255,255,.8)' }));
+    }
+    return;
+  }
+
+  drawBase({ grid: S.grid, quad: false, ticks: S.ticks });
+  ctx.fillStyle = 'rgba(248,250,252,0.82)';
+  ctx.fillRect(0, 0, W, H);
+
+  if (m2.emph === 'x') {
+    drawAxisX(true);
+    for (let i = -R; i <= R; i++) {
+      if (i === 0) continue;
+      label3(P2W(i, -0.5), String(i), { size: 12.5, color: COL.x });
+    }
+    label3(P2W(R + 1.0, 0), 'x 轴', { dx: 30, dy: -16, size: 18, bold: true, color: COL.x });
+    label3(P2W(-2.6, 0), '向左为负', { dy: 26, size: 13, color: '#94a3b8' });
+    label3(P2W(2.6, 0), '向右为正', { dy: 26, size: 13, color: COL.x });
+    text2d(CX, CY + H * 0.355, 'x 轴：水平的数轴，规定向右为正方向', { size: 14, color: COL.x });
+  }
+  if (m2.emph === 'y') {
+    drawAxisY(true);
+    for (let i = -R; i <= R; i++) {
+      if (i === 0) continue;
+      label3(P2W(-0.5, i), String(i), { size: 12.5, color: COL.y });
+    }
+    label3(P2W(0, R + 1.0), 'y 轴', { dx: -32, dy: -14, size: 18, bold: true, color: COL.y });
+    label3(P2W(0, -2.8), '向下为负', { dx: 38, size: 13, color: '#94a3b8' });
+    label3(P2W(0, 2.8), '向上为正', { dx: 38, size: 13, color: COL.y });
+    text2d(CX, CY + H * 0.355, 'y 轴：竖直的数轴，规定向上为正方向', { size: 14, color: COL.y });
+  }
+  if (m2.emph === 'o') {
+    drawAxisX(false); drawAxisY(false);
+    marker(P2W(0, 0), '#334155', 10);
+    pulseRing(P2W(0, 0), '#334155', ph, 12);
+    label3(P2W(0, 0), 'O', { dx: -26, dy: 24, size: 22, bold: true, color: '#334155' });
+    text2d(CX, CY + H * 0.355, '原点 O：两条数轴的公共起点，坐标是 (0, 0)', { size: 14, color: '#334155' });
+  }
+}
+
+/* ==================================================================
+   7. 模块③ 点的坐标
+   ================================================================== */
+function buildCoord() {
+  return `
+  <h2><span class="dotm"></span>点的坐标怎么"读"出来</h2>
+  <p class="desc">过点 P 向 x 轴作垂线，垂足对应的数是 <b style="color:${COL.x}">横坐标</b>；<br>
+  过点 P 向 y 轴作垂线，垂足对应的数是 <b style="color:${COL.y}">纵坐标</b>。</p>
+
+  <div class="sect">
+    <div class="lbl">拖动设置点的位置</div>
+    <div class="slider"><span class="k">横坐标 a</span>
+      <input type="range" min="-5" max="5" step="1" value="${m3.x}" data-in="mx">
+      <output>${m3.x}</output></div>
+    <div class="slider"><span class="k">纵坐标 b</span>
+      <input type="range" min="-5" max="5" step="1" value="${m3.y}" data-in="my">
+      <output>${m3.y}</output></div>
+    <div class="kv">
+      <span style="color:#64748b">点 P 的坐标</span>
+      <b>P(${m3.x}, ${m3.y})</b>
+    </div>
+  </div>
+
+  <div class="sect">
+    <div class="row">
+      <button class="btn pri" data-act="play">▶ 走一遍</button>
+      <button class="btn ${m3.showPerp ? 'on' : ''}" data-act="tg-perp">垂线</button>
+      <button class="btn" data-act="rnd">随机一点</button>
+    </div>
+  </div>
+
+  <div class="sect">
+    <div class="lbl">自己点一个</div>
+    <p class="desc" style="margin:0">直接用鼠标<b>点击平面上的任意位置</b>，立刻读出这个点的坐标。</p>
+  </div>
+
+  <p class="tip"><b>口诀：</b>横坐标看左右（先读），纵坐标看上下（后读）。<br>
+  P(3, 2) 和 P(2, 3) 是<b>两个不同的点</b>。</p>
+  `;
+}
+
+function drawCoord(ph) {
+  drawBase({ grid: true, quad: false, ticks: true });
+  const big = FRONT() ? 1.12 : 1;
+  const x = m3.x, y = m3.y, t = m3.t;
+  const e1 = clamp(t / 0.42, 0, 1);
+  const e2 = clamp((t - 0.42) / 0.42, 0, 1);
+  const e3 = clamp((t - 0.84) / 0.3, 0, 1);
+
+  if (e1 > 0.001 && x !== 0) {
+    const a = P2W(0, 0), b = P2W(x * e1, 0);
+    if (e1 < 1) arrowLine(a, b, COL.pathX, 5); else seg(a, b, COL.pathX, 5.5);
+    if (e1 > 0.35) {
+      const mid = proj(P2W(x * e1 * 0.5, 0));
+      text2d(mid.x, mid.y + 24 * big, `向${x >= 0 ? '右' : '左'} ${Math.abs(x)} 格`,
+        { color: COL.pathX, size: 13 * big, bold: true });
+    }
+  }
+  if (e2 > 0.001 && y !== 0) {
+    const a = P2W(x, 0), b = P2W(x, y * e2);
+    if (e2 < 1) arrowLine(a, b, COL.pathY, 5); else seg(a, b, COL.pathY, 5.5);
+    if (e2 > 0.35) {
+      const mid = proj(P2W(x, y * e2 * 0.5));
+      text2d(mid.x + 18, mid.y, `向${y >= 0 ? '上' : '下'} ${Math.abs(y)} 格`,
+        { color: COL.pathY, size: 13 * big, bold: true, align: 'left' });
+    }
+  }
+
+  if (m3.showPerp && e3 > 0.02) {
+    ctx.globalAlpha = e3;
+    const P = P2W(x, y);
+    seg(P, P2W(x, 0), 'rgba(71,85,105,0.8)', 2, [7, 5]);
+    seg(P, P2W(0, y), 'rgba(71,85,105,0.8)', 2, [7, 5]);
+    [P2W(x, 0), P2W(0, y)].forEach(f => {
+      const p = proj(f);
+      ctx.beginPath(); ctx.rect(p.x - 4.5, p.y - 4.5, 9, 9);
+      ctx.fillStyle = '#fff'; ctx.fill();
+      ctx.strokeStyle = '#475569'; ctx.lineWidth = 1.8; ctx.stroke();
+    });
+    const fx = proj(P2W(x, 0)), fy = proj(P2W(0, y));
+    text2d(fx.x, fx.y + 21 * big, String(x), { color: COL.x, size: 15 * big, bold: true });
+    text2d(fy.x - 19, fy.y, String(y), { color: COL.y, size: 15 * big, bold: true });
+    ctx.globalAlpha = e3 * 0.95;
+    pulseRing(P2W(x, 0), COL.x, ph, 5);
+    pulseRing(P2W(0, y), COL.y, ph, 5);
+    ctx.globalAlpha = 1;
+  }
+
+  if (e2 > 0.02) {
+    pulseRing(P2W(x, y), COL.pt, ph, 10);
+    marker(P2W(x * e1, y * e2), COL.pt, 8);
+  }
+  if (e3 > 0.1) {
+    const p = proj(P2W(x, y));
+    ctx.globalAlpha = e3;
+    text2d(p.x, p.y + (y >= 0 ? -32 : 32), `P(${x}, ${y})`, { size: 19 * big, bold: true, color: COL.pt });
+    ctx.globalAlpha = 1;
+  }
+
+  if (e3 > 0.5) {
+    text2d(CX, CY + H * 0.33, '横坐标 → 过 P 作 x 轴垂线，垂足上的数', { size: 13.5, color: '#64748b' });
+    text2d(CX, CY + H * 0.33 + 26, '纵坐标 → 过 P 作 y 轴垂线，垂足上的数', { size: 13.5, color: '#64748b' });
+  }
+}
+
+/* ==================================================================
+   8. 模块④ 象限与符号
+   ================================================================== */
+const QUADS = [
+  { name: '第一象限', s: 'Ⅰ', sign: '(＋, ＋)', pt: [3, 2], color: '#1d4ed8', fill: 'rgba(37,99,235,0.12)', box: [0, 0, R, R] },
+  { name: '第二象限', s: 'Ⅱ', sign: '(－, ＋)', pt: [-3, 2], color: '#6d28d9', fill: 'rgba(124,58,237,0.12)', box: [-R, 0, 0, R] },
+  { name: '第三象限', s: 'Ⅲ', sign: '(－, －)', pt: [-3, -2], color: '#047857', fill: 'rgba(16,185,129,0.11)', box: [-R, -R, 0, 0] },
+  { name: '第四象限', s: 'Ⅳ', sign: '(＋, －)', pt: [3, -2], color: '#b45309', fill: 'rgba(232,137,12,0.13)', box: [0, -R, R, 0] }
+];
+
+function buildQuad() {
+  const cur = m4.q;
+  const qs = QUADS.map((q, i) => `<button class="btn ${cur === i ? 'on' : ''}" data-act="q${i}">${q.s} ${q.name}</button>`).join('');
+  const info = cur < 4
+    ? `<div class="kv" style="border-color:${QUADS[cur].color}33;background:${QUADS[cur].fill}">
+         <span style="color:#475569">${QUADS[cur].name}</span>
+         <b style="color:${QUADS[cur].color}">${QUADS[cur].sign}</b>
+       </div>`
+    : `<div class="kv" style="background:#f1f5f9">
+         <span style="color:#475569">坐标轴上的点</span>
+         <b style="color:#475569">不属于任何象限</b>
+       </div>`;
+  return `
+  <h2><span class="dotm"></span>四个象限与符号规律</h2>
+  <p class="desc">x 轴、y 轴把平面分成四个象限（<b>不含坐标轴本身</b>）。点落在哪个象限，两个坐标的<b>正负号</b>就定死了。</p>
+
+  <div class="sect">
+    <div class="lbl">点哪个，点就飞到哪</div>
+    <div class="row">${qs}</div>
+    <div class="row" style="margin-top:7px">
+      <button class="btn ${cur === 4 ? 'on' : ''}" data-act="q4">轴上的点（易错）</button>
+    </div>
+    ${info}
+  </div>
+
+  <div class="sect">
+    <div class="lbl">符号规律表</div>
+    <table class="table">
+      <tr><th>象限</th><th>x</th><th>y</th><th>例子</th></tr>
+      <tr><td class="q" style="color:#1d4ed8">Ⅰ</td><td>＋</td><td>＋</td><td>(3, 2)</td></tr>
+      <tr><td class="q" style="color:#6d28d9">Ⅱ</td><td>－</td><td>＋</td><td>(−3, 2)</td></tr>
+      <tr><td class="q" style="color:#047857">Ⅲ</td><td>－</td><td>－</td><td>(−3, −2)</td></tr>
+      <tr><td class="q" style="color:#b45309">Ⅳ</td><td>＋</td><td>－</td><td>(3, −2)</td></tr>
+      <tr><td class="q" style="color:#64748b">x 轴</td><td>任意</td><td>0</td><td>(2, 0)</td></tr>
+      <tr><td class="q" style="color:#64748b">y 轴</td><td>0</td><td>任意</td><td>(0, −2)</td></tr>
+    </table>
+  </div>
+  <p class="tip">两个必考结论：<b>x 轴上的点纵坐标为 0</b>；<b>y 轴上的点横坐标为 0</b>。</p>
+  `;
+}
+
+function drawQuad(ph) {
+  const cur = m4.q;
+  drawBase({ grid: true, quad: false, ticks: true });
+  const big = FRONT() ? 1.1 : 1;
+
+  QUADS.forEach((q, i) => {
+    const b = q.box;
+    poly3([P2W(b[0], b[1]), P2W(b[2], b[1]), P2W(b[2], b[3]), P2W(b[0], b[3])], q.fill, null);
+    const on = cur === i;
+    label3(P2W((b[0] + b[2]) / 2 * 1.22, (b[1] + b[3]) / 2 * 1.22), q.s,
+      { size: (on ? 32 : 21) * big, bold: true, color: q.color, halo: 'rgba(255,255,255,.85)' });
+  });
+
+  if (cur === 4) {
+    const pts = [[3, 0], [0, -3]];
+    pts.forEach((p, k) => {
+      const c = k === 0 ? COL.x : COL.y;
+      pulseRing(P2W(p[0], p[1]), c, ph + k, 9);
+      marker(P2W(p[0], p[1]), c, 8);
+      label3(P2W(p[0], p[1]), `(${p[0]}, ${p[1]})`, { dy: k === 0 ? 27 : -28, size: 15 * big, bold: true, color: c });
+    });
+    text2d(CX, CY + H * 0.35, '在坐标轴上 ⇒ 不属于任何象限', { size: 14.5, color: '#64748b' });
+  } else {
+    const q = QUADS[cur], pt = q.pt;
+    const P = P2W(pt[0], pt[1]);
+    seg(P, P2W(pt[0], 0), 'rgba(71,85,105,.6)', 1.8, [6, 5]);
+    seg(P, P2W(0, pt[1]), 'rgba(71,85,105,.6)', 1.8, [6, 5]);
+    pulseRing(P, q.color, ph, 10);
+    marker(P, q.color, 9);
+    label3(P, `(${pt[0]}, ${pt[1]})`, { dy: pt[1] > 0 ? -30 : 30, size: 17 * big, bold: true, color: q.color });
+    text2d(CX, CY + H * 0.35, `${q.name}：x ${pt[0] > 0 ? '> 0' : '< 0'}，y ${pt[1] > 0 ? '> 0' : '< 0'}`,
+      { size: 15, color: q.color });
+  }
+}
+
+/* ==================================================================
+   9. 模块⑤ 9.1 闯关
+   ================================================================== */
+const PROBLEMS = [
+  {
+    tag: '易错 · 距离 → 坐标', hard: false,
+    stem: '点 P 在第二象限，且点 P 到 x 轴的距离是 3，到 y 轴的距离是 4，则点 P 的坐标是（　　）',
+    opts: ['(4, 3)', '(−4, 3)', '(−3, 4)', '(4, −3)'],
+    ans: 1,
+    hint: '到 x 轴的距离 = 纵坐标的绝对值；到 y 轴的距离 = 横坐标的绝对值。先定绝对值，再用"第二象限"定符号。',
+    sol: '到 x 轴距离为 3 ⟹ |y| = 3；到 y 轴距离为 4 ⟹ |x| = 4。<br>又 P 在第二象限，x<0、y>0，所以 x=−4，y=3，即 <b>P(−4, 3)</b>。',
+    viz: 't1'
+  },
+  {
+    tag: '难点 · 符号推理', hard: true,
+    stem: '点 P(a, b) 在第二象限，则点 Q(b, a) 在（　　）',
+    opts: ['第一象限', '第二象限', '第三象限', '第四象限'],
+    ans: 3,
+    hint: '第二象限：a<0，b>0。Q 的横坐标是 b，纵坐标是 a —— 把符号"对调"一下再判断。',
+    sol: 'P(a, b) 在第二象限 ⟹ a<0，b>0。<br>Q(b, a) 中横坐标 b>0、纵坐标 a<0，即（＋,－），所以 Q 在 <b>第四象限</b>。',
+    viz: 't2'
+  },
+  {
+    tag: '难点 · 坐标轴上的点', hard: true,
+    stem: '若点 P(m − 3, m + 1) 在 y 轴上，则点 P 的坐标是（　　）',
+    opts: ['(0, 4)', '(4, 0)', '(0, −4)', '(−4, 0)'],
+    ans: 0,
+    hint: 'y 轴上的点，横坐标一定是 0。让 m−3 = 0 求出 m，再代回纵坐标。',
+    sol: '点 P 在 y 轴上 ⟹ 横坐标为 0，即 m−3 = 0，得 m = 3。<br>此时纵坐标 m+1 = 4，所以 <b>P(0, 4)</b>。<br>注意区分：若在 x 轴上，则应让 m+1 = 0。',
+    viz: 't3'
+  },
+  {
+    tag: '基础 · 到轴的距离', hard: false,
+    stem: '点 A(2, −3) 到 x 轴的距离是（　　）',
+    opts: ['2', '3', '−3', '5'],
+    ans: 1,
+    hint: '到 x 轴的距离只看纵坐标的绝对值，与横坐标无关，也不带负号。',
+    sol: '到 x 轴的距离 = |y| = |−3| = <b>3</b>。<br>（到 y 轴的距离才是 |x| = 2。）距离一定是非负数，所以不选 −3。',
+    viz: 't4'
+  },
+  {
+    tag: '难点 · 会漏解', hard: true,
+    stem: '点 P 在 y 轴上，且点 P 到 x 轴的距离是 4，则点 P 的坐标是（　　）',
+    opts: ['(0, 4)', '(0, −4)', '(0, 4) 或 (0, −4)', '(4, 0) 或 (−4, 0)'],
+    ans: 2,
+    hint: 'y 轴上 ⟹ 横坐标为 0；到 x 轴距离 4 ⟹ |y| = 4。y 有几种取法？',
+    sol: 'P 在 y 轴上 ⟹ P(0, y)。由 |y| = 4 得 y = ±4，<br>所以 <b>P(0, 4) 或 P(0, −4)</b>。<br>D 选项是 x 轴上的点，轴都看错了。',
+    viz: 't5'
+  },
+  {
+    tag: '难点 · 图形与坐标', hard: true,
+    stem: '已知长方形 ABCD 的三个顶点为 A(−1, 1)，B(2, 1)，C(2, 4)，则顶点 D 的坐标是（　　）',
+    opts: ['(−1, 4)', '(1, 4)', '(−1, 2)', '(4, −1)'],
+    ans: 0,
+    hint: 'AB 平行于 x 轴（纵坐标相同），BC 平行于 y 轴（横坐标相同）。长方形的对边平行且相等。',
+    sol: 'A(−1, 1)、B(2, 1) 纵坐标相同 ⟹ AB ∥ x 轴；B(2, 1)、C(2, 4) 横坐标相同 ⟹ BC ∥ y 轴。<br>所以 D 与 A 横坐标相同（−1）、与 C 纵坐标相同（4），即 <b>D(−1, 4)</b>。',
+    viz: 't6'
+  },
+  {
+    tag: '重点 · 原点变了，坐标就变', hard: true,
+    stem: '方格纸上 A、B 两点。若以点 B 为原点建立平面直角坐标系，则点 A 的坐标为 (−2, 1)。若以点 A 为原点建立平面直角坐标系，则点 B 的坐标是（　　）',
+    opts: ['(−2, 1)', '(2, −1)', '(−2, −1)', '(2, 1)'],
+    ans: 1,
+    hint: 'A、B 两个点本身没有动，动的是坐标系。原来 A 在 B 的左 2 格、上 1 格；反过来，B 就在 A 的右 2 格、下 1 格。',
+    sol: '以 B 为原点时 A(−2, 1)，说明 A 在 B 的左边 2 格、上边 1 格。<br>换成以 A 为原点后，方向正好反过来：B 在 A 的右边 2 格、下边 1 格，即 <b>B(2, −1)</b>。<br>核心：同一个点，原点选得不同，坐标就不同 —— 坐标是"相对于坐标系"的。',
+    viz: 't7'
+  }
+];
+
+function buildQuiz() {
+  const p = PROBLEMS[quiz.i];
+  const L = ['A', 'B', 'C', 'D'];
+  const opts = p.opts.map((o, k) => {
+    let cls = 'opt';
+    if (quiz.chosen !== null) {
+      if (k === p.ans) cls += ' ok';
+      else if (k === quiz.chosen) cls += ' no';
+      else cls += ' dim';
+    }
+    return `<div class="${cls}" data-act="opt-${k}"><span class="ab">${L[k]}</span><span>${o}</span></div>`;
+  }).join('');
+
+  let fb = '';
+  if (quiz.chosen !== null) {
+    const right = quiz.chosen === p.ans;
+    fb = `<div class="fb ${right ? 'good' : 'bad'}">
+      ${right ? '✅ 正确！' : '❌ 再想想 —— 正确答案是 ' + L[p.ans] + '。'}
+      ${quiz.reveal >= 1 ? `<div class="sol">${p.sol}</div>` : ''}
+    </div>`;
+  }
+
+  const dots = PROBLEMS.map((_, k) => `<button class="dot ${k === quiz.i ? 'cur' : ''}" data-act="go-${k}">${k + 1}</button>`).join('');
+
+  return `
+  <h2><span class="dotm"></span>9.1 闯关 <span class="tag3">${quiz.i + 1}/${PROBLEMS.length}</span></h2>
+  <div class="qtag ${p.hard ? 'hard' : ''}">${p.tag}</div>
+  <div class="stem">${p.stem}</div>
+  <div class="opts">${opts}</div>
+  ${fb}
+  <div class="sect" style="margin-top:13px">
+    <div class="row">
+      <button class="btn ${quiz.reveal >= 1 ? 'on' : ''}" data-act="hint">💡 看提示 / 解析</button>
+      <button class="btn" data-act="again">重做本题</button>
+    </div>
+    <div class="navq">${dots}</div>
+    <p class="tip">视图会跟着题目变化 —— 讲评时让学生先看"图"，再说"理"。</p>
+  </div>
+  `;
+}
+
+function vizT1(ph) {
+  const x = -4, y = 3;
+  poly3([P2W(-R, 0), P2W(0, 0), P2W(0, R), P2W(-R, R)], 'rgba(124,58,237,0.09)', null);
+  label3(P2W(-4.3, 4.7), '第二象限', { size: 13, color: '#6d28d9', bold: true });
+  seg(P2W(x, 0), P2W(x, y), COL.violet, 5);
+  seg(P2W(0, y), P2W(x, y), '#10b981', 5);
+  marker(P2W(x, 0), COL.violet, 5);
+  marker(P2W(0, y), '#10b981', 5);
+  const a = proj(P2W(x, y * 0.5));
+  text2d(a.x + 15, a.y, '3', { color: COL.violet, size: 16, bold: true, align: 'left' });
+  const b = proj(P2W(x * 0.5, y));
+  text2d(b.x, b.y - 17, '4', { color: '#059669', size: 16, bold: true });
+  const P = P2W(x, y);
+  pulseRing(P, COL.pt, ph, 10);
+  marker(P, COL.pt, 9);
+  label3(P, 'P(−4, 3)', { dy: -30, size: 18, bold: true, color: COL.pt });
+  text2d(CX, CY + H * 0.35, '到 x 轴距离 3 → |y| = 3　　到 y 轴距离 4 → |x| = 4', { size: 14, color: '#64748b' });
+}
+
+function vizT2(ph) {
+  const P = P2W(-3, 2), Q = P2W(2, -3);
+  poly3([P2W(-R, 0), P2W(0, 0), P2W(0, R), P2W(-R, R)], 'rgba(124,58,237,0.10)', null);
+  poly3([P2W(0, -R), P2W(R, -R), P2W(R, 0), P2W(0, 0)], 'rgba(232,137,12,0.12)', null);
+  label3(P2W(-4.2, 4.8), 'P(a, b) ∈ Ⅱ', { size: 13.5, color: '#6d28d9', bold: true });
+  label3(P2W(4.2, -4.8), 'Q(b, a) ∈ Ⅳ', { size: 13.5, color: '#b45309', bold: true });
+
+  seg(P, Q, 'rgba(148,163,184,.7)', 1.8, [7, 5]);
+  marker(P, '#6d28d9', 9);
+  label3(P, 'P(−3, 2)', { dx: -22, dy: -26, size: 16, bold: true, color: '#6d28d9' });
+  marker(Q, '#b45309', 9);
+  label3(Q, 'Q(2, −3)', { dx: 28, dy: 22, size: 16, bold: true, color: '#b45309' });
+
+  const mid = proj(P2W(-0.5, -0.5));
+  text2d(mid.x, mid.y, '纵横对调', { size: 12.5, color: '#94a3b8' });
+
+  text2d(CX, CY + H * 0.35, 'a<0，b>0　→　Q(b, a) 横坐标为正、纵坐标为负　→　第四象限',
+    { size: 14, color: '#64748b' });
+}
+
+function vizT3(ph) {
+  const P = P2W(0, 4);
+  seg(P2W(-R, 4), P2W(R, 4), 'rgba(37,99,235,.22)', 1.4, [5, 5]);
+  pulseRing(P, COL.pt, ph, 10);
+  marker(P, COL.pt, 10);
+  label3(P, 'P(0, 4)', { dx: 34, dy: -20, size: 18, bold: true, color: COL.pt });
+  const o = proj(P2W(0, 4));
+  text2d(o.x - 22, o.y + 24, '横坐标 = 0', { size: 13, color: '#94a3b8' });
+  text2d(CX, CY + H * 0.35, 'P(m−3, m+1) 在 y 轴上 ⇒ m−3 = 0 ⇒ m = 3 ⇒ P(0, 4)',
+    { size: 14, color: '#64748b' });
+}
+
+function vizT4(ph) {
+  const A = P2W(2, -3);
+  seg(P2W(2, 0), A, COL.violet, 5);
+  marker(P2W(2, 0), COL.violet, 5);
+  pulseRing(A, COL.pt, ph, 10);
+  marker(A, COL.pt, 9);
+  label3(A, 'A(2, −3)', { dx: 32, dy: 20, size: 17, bold: true, color: COL.pt });
+  const m = proj(P2W(2, -1.5));
+  text2d(m.x + 16, m.y, '|y| = 3', { color: COL.violet, size: 15, bold: true, align: 'left' });
+  seg(P2W(0, -3), A, 'rgba(16,185,129,.45)', 2, [5, 4]);
+  text2d(CX, CY + H * 0.35, '到 x 轴的距离 = |−3| = 3（到 y 轴的距离才是 |2| = 2）', { size: 14, color: '#64748b' });
+}
+
+function vizT5(ph) {
+  const P1 = P2W(0, 4), P2 = P2W(0, -4);
+  seg(P2W(0, 0), P1, 'rgba(37,99,235,.5)', 4);
+  pulseRing(P1, '#1d4ed8', ph, 10);
+  marker(P1, '#1d4ed8', 9);
+  label3(P1, 'P(0, 4)', { dx: 34, dy: -16, size: 17, bold: true, color: '#1d4ed8' });
+  if (quiz.chosen !== null) {
+    seg(P2W(0, 0), P2, 'rgba(232,137,12,.5)', 4);
+    pulseRing(P2, '#b45309', ph, 10);
+    marker(P2, '#b45309', 9);
+    label3(P2, 'P(0, −4)', { dx: 36, dy: 16, size: 17, bold: true, color: '#b45309' });
+  }
+  const a = proj(P2W(0, 2)), b = proj(P2W(0, -2));
+  text2d(a.x + 16, a.y, '4', { color: '#1d4ed8', size: 15, bold: true, align: 'left' });
+  if (quiz.chosen !== null) text2d(b.x + 16, b.y, '4', { color: '#b45309', size: 15, bold: true, align: 'left' });
+  text2d(CX, CY + H * 0.35, 'P 在 y 轴上 ⇒ x = 0；|y| = 4 ⇒ y = ±4 ⇒ 两个点', { size: 14, color: '#64748b' });
+}
+
+function vizT6(ph) {
+  const A = P2W(-1, 1), B = P2W(2, 1), C = P2W(2, 4), D = P2W(-1, 4);
+  poly3([A, B, C, D], 'rgba(37,99,235,0.08)', 'rgba(37,99,235,0.55)', 2);
+  seg(A, B, '#2563eb', 4);
+  seg(B, C, '#e8890c', 4);
+  pulseRing(D, '#10b981', ph, 10);
+  marker(D, '#10b981', 9);
+  label3(D, 'D(−1, 4)', { dx: -36, dy: -18, size: 17, bold: true, color: '#047857' });
+  marker(A, '#475569', 7); label3(A, 'A(−1, 1)', { dx: -34, dy: 18, size: 14.5, bold: true, color: '#475569' });
+  marker(B, '#475569', 7); label3(B, 'B(2, 1)', { dx: 24, dy: 20, size: 14.5, bold: true, color: '#475569' });
+  marker(C, '#475569', 7); label3(C, 'C(2, 4)', { dx: 24, dy: -18, size: 14.5, bold: true, color: '#475569' });
+  text2d(CX, CY + H * 0.35, 'AB ∥ x 轴（纵坐标相同）　BC ∥ y 轴（横坐标相同）', { size: 14, color: '#64748b' });
+}
+
+/* 第7题：换原点 —— 坐标系整体滑动，A、B 不动 */
+const t7 = { ox: 0, oy: 0, fx: 0, fy: 0, tox: 0, toy: 0, t0: -10 };
+
+function vizT7(ph) {
+  const ax = -2, ay = 1;                 // A 的世界坐标；B 固定在 (0,0)
+  const scene2 = quiz.chosen !== null || quiz.reveal >= 1;
+  const wx = scene2 ? ax : 0, wy = scene2 ? ay : 0;
+  if (t7.tox !== wx || t7.toy !== wy) {   // 目标变化 → 从当前位置重新起步
+    t7.fx = t7.ox; t7.fy = t7.oy;
+    t7.tox = wx; t7.toy = wy;
+    t7.t0 = ph;
+  }
+  const pp = clamp((ph - t7.t0) / 1.2, 0, 1);
+  const e = pp * (2 - pp);                // easeOut
+  t7.ox = lerp(t7.fx, t7.tox, e);
+  t7.oy = lerp(t7.fy, t7.toy, e);
+
+  // —— 在"当前原点"的坐标系里画网格与轴 ——
+  POX = t7.ox; POY = t7.oy;
+  drawBase({ grid: true, quad: false, ticks: true });
+
+  // 垂线：谁是"被读的点"就画谁
+  const lax = ax - t7.ox, lay = ay - t7.oy;   // A 的局部坐标
+  const lbx = 0 - t7.ox, lby = 0 - t7.oy;     // B 的局部坐标
+  if (!scene2) {
+    seg(P2W(lax, 0), P2W(lax, lay), COL.violet, 4.5);
+    seg(P2W(0, lay), P2W(lax, lay), '#10b981', 4.5);
+    const m1 = proj(P2W(lax, lay * 0.5));
+    text2d(m1.x + 15, m1.y, '1', { color: COL.violet, size: 14, bold: true, align: 'left' });
+    const m2 = proj(P2W(lax * 0.5, lay));
+    text2d(m2.x, m2.y - 16, '2', { color: '#059669', size: 14, bold: true });
+  } else {
+    seg(P2W(lbx, 0), P2W(lbx, lby), COL.violet, 4.5);
+    seg(P2W(0, lby), P2W(lbx, lby), '#10b981', 4.5);
+    const m1 = proj(P2W(lbx, lby * 0.5));
+    text2d(m1.x + 15, m1.y, '1', { color: COL.violet, size: 14, bold: true, align: 'left' });
+    const m2 = proj(P2W(lbx * 0.5, lby));
+    text2d(m2.x, m2.y + 18, '2', { color: '#059669', size: 14, bold: true });
+  }
+
+  // —— A、B 两个点固定在世界位置（不随坐标系滑动）——
+  POX = 0; POY = 0;
+  const WA = P2W(ax, ay), WB = P2W(0, 0);
+
+  pulseRing(WB, '#2563eb', ph, 9);
+  marker(WB, '#2563eb', 9);
+  pulseRing(WA, COL.pt, ph + 0.5, 9);
+  marker(WA, COL.pt, 9);
+
+  if (!scene2) {
+    label3(WB, 'B（原点）', { dx: 34, dy: 22, size: 15.5, bold: true, color: '#1d4ed8' });
+    label3(WA, 'A(−2, 1)', { dx: -30, dy: -24, size: 16.5, bold: true, color: COL.pt });
+    text2d(CX, CY + H * 0.35, '以 B 为原点：A 在 B 左 2 格、上 1 格 → A(−2, 1)',
+      { size: 14.5, color: '#64748b' });
+  } else {
+    label3(WA, 'A（原点）', { dx: -36, dy: 22, size: 15.5, bold: true, color: '#1d4ed8' });
+    label3(WB, 'B(2, −1)', { dx: 36, dy: -22, size: 16.5, bold: true, color: COL.pt });
+    text2d(CX, CY + H * 0.35, '以 A 为原点：B 在 A 右 2 格、下 1 格 → B(2, −1)',
+      { size: 14.5, color: '#64748b' });
+  }
+  text2d(CX, CY + H * 0.35 - 30, '↕ 点没有动，是坐标系在动', { size: 13, bold: true, color: '#94a3b8' });
+}
+
+function drawQuiz(ph) {
+  POX = 0; POY = 0;
+  const p = PROBLEMS[quiz.i];
+  if (p.viz !== 't7') drawBase({ grid: true, quad: false, ticks: true });  // 第7题自建"滑动坐标系"
+  if (p.viz === 't1') vizT1(ph);
+  else if (p.viz === 't2') vizT2(ph);
+  else if (p.viz === 't3') vizT3(ph);
+  else if (p.viz === 't4') vizT4(ph);
+  else if (p.viz === 't5') vizT5(ph);
+  else if (p.viz === 't6') vizT6(ph);
+  else if (p.viz === 't7') vizT7(ph);
+}
+
+/* ==================================================================
+   10. 模块注册
+   ================================================================== */
+const MODS = [
+  { id: 'pair',  tab: '① 有序数对',   build: buildPair,  draw: drawPair,  dist: 10.5 },
+  { id: 'sys',   tab: '② 坐标系',     build: buildSys,   draw: drawSys,   dist: 20 },
+  { id: 'coord', tab: '③ 点的坐标',   build: buildCoord, draw: drawCoord, dist: 20 },
+  { id: 'quad',  tab: '④ 象限与符号', build: buildQuad,  draw: drawQuad,  dist: 20 },
+  { id: 'quiz',  tab: '⑤ 9.1 闯关',   build: buildQuiz,  draw: drawQuiz,  dist: 20 }
+];
+
+const ACTS = {
+  pair: {
+    cmp: () => { m1.compare = !m1.compare; refresh(); },
+    swap: () => { const t = m1.a; m1.a = m1.b; m1.b = t; refresh(); }
+  },
+  sys: {
+    'e-x': () => { m2.emph = 'x'; refresh(); },
+    'e-y': () => { m2.emph = 'y'; refresh(); },
+    'e-o': () => { m2.emph = 'o'; refresh(); },
+    'e-all': () => { m2.emph = 'all'; refresh(); },
+    'tg-grid': () => { S.grid = !S.grid; refresh(); },
+    'tg-quad': () => { S.quadFill = !S.quadFill; refresh(); },
+    'tg-tick': () => { S.ticks = !S.ticks; refresh(); }
+  },
+  coord: {
+    play: () => { m3.t = 0; m3.playing = true; refresh(); },
+    'tg-perp': () => { m3.showPerp = !m3.showPerp; refresh(); },
+    rnd: () => {
+      m3.x = Math.floor(Math.random() * 9) - 4;
+      m3.y = Math.floor(Math.random() * 9) - 4;
+      m3.t = 0; m3.playing = true; refresh();
+    }
+  },
+  quad: {
+    q0: () => { m4.q = 0; refresh(); },
+    q1: () => { m4.q = 1; refresh(); },
+    q2: () => { m4.q = 2; refresh(); },
+    q3: () => { m4.q = 3; refresh(); },
+    q4: () => { m4.q = 4; refresh(); }
+  },
+  quiz: {
+    hint: () => { quiz.reveal = quiz.reveal >= 1 ? 0 : 1; refresh(); },
+    again: () => { quiz.chosen = null; quiz.reveal = 0; refresh(); }
+  }
+};
+
+const INPS = {
+  pair: {
+    a: v => { m1.a = +v; refresh(); },
+    b: v => { m1.b = +v; refresh(); }
+  },
+  coord: {
+    mx: v => { m3.x = +v; if (m3.t >= 1.4) m3.t = 1.45; refresh(); },
+    my: v => { m3.y = +v; if (m3.t >= 1.4) m3.t = 1.45; refresh(); }
+  }
+};
+
+function pickOpt(k) {
+  quiz.chosen = k;
+  if (k === PROBLEMS[quiz.i].ans) quiz.reveal = 1;
+  refresh();
+}
+
+try {
+  const qs = new URLSearchParams(location.search);
+  const pm = qs.get('mod');
+  if (pm && MODS.some(m => m.id === pm)) S.mod = pm;
+  const qi = parseInt(qs.get('qi'), 10);
+  if (!isNaN(qi) && qi >= 1 && qi <= PROBLEMS.length) { quiz.i = qi - 1; S.mod = 'quiz'; }
+  const ans = parseInt(qs.get('ans'), 10);   // ?ans=2 直接显示"选了B"的状态（备课用）
+  if (!isNaN(ans) && ans >= 1 && ans <= 4) {
+    quiz.chosen = ans - 1;
+    if (ans - 1 === PROBLEMS[quiz.i].ans) quiz.reveal = 1;
+    if (PROBLEMS[quiz.i].viz === 't7') {     // 第7题：跳过动画直达答案状态
+      t7.ox = -2; t7.oy = 1; t7.fx = -2; t7.fy = 1; t7.tox = -2; t7.toy = 1;
+    }
+  }
+  const cm = MODS.find(m => m.id === S.mod);
+  if (cm) { view.dist = cm.dist; viewT.dist = cm.dist; }
+} catch (e) {}
+
+/* ==================================================================
+   11. 面板与交互
+   ================================================================== */
+function buildTabs() {
+  tabsEl.innerHTML = MODS.map(m =>
+    `<div class="tab ${m.id === S.mod ? 'on' : ''}" data-tab="${m.id}">${m.tab}</div>`
+  ).join('');
+  tabsEl.querySelectorAll('[data-tab]').forEach(el => {
+    el.onclick = () => setMod(el.dataset.tab);
+  });
+}
+
+function currentMod() { return MODS.find(m => m.id === S.mod); }
+
+function setMod(id) {
+  S.mod = id;
+  const m = MODS.find(x => x.id === id);
+  if (m) viewT.dist = m.dist;
+  buildTabs(); refresh();
+}
+
+function refresh() {
+  buildTabs();
+  panelEl.innerHTML = currentMod().build();
+}
+
+panelEl.addEventListener('click', e => {
+  const btn = e.target.closest('[data-act]');
+  if (!btn) return;
+  const act = btn.dataset.act;
+  const m = currentMod();
+
+  if (m.id === 'quiz') {
+    if (act.indexOf('opt-') === 0) { pickOpt(+act.slice(4)); return; }
+    if (act.indexOf('go-') === 0) {
+      quiz.i = +act.slice(3); quiz.chosen = null; quiz.reveal = 0; refresh(); return;
+    }
+  }
+  const f = ACTS[m.id] && ACTS[m.id][act];
+  if (f) f();
+});
+
+panelEl.addEventListener('input', e => {
+  const el = e.target;
+  if (!el.dataset.in) return;
+  const m = currentMod();
+  const f = INPS[m.id] && INPS[m.id][el.dataset.in];
+  if (f) {
+    f(el.value);
+    const out = el.parentElement.querySelector('output');
+    if (out) out.textContent = el.value;
+  }
+});
+
+/* ---------- 视角按钮 ---------- */
+const btnFront = document.getElementById('btnFront');
+const btnFree = document.getElementById('btnFree');
+const btnReset = document.getElementById('btnReset');
+
+function syncTools() {
+  btnFront.classList.toggle('on', viewMode === 'front');
+  btnFree.classList.toggle('on', viewMode === 'free');
+}
+
+function goFront() {
+  viewMode = 'front';
+  viewT.tilt = HALF_PI; viewT.pitch = 0; viewT.yaw = 0;
+  viewT.dist = currentMod().dist;
+  syncTools();
+}
+
+function goFree() {
+  viewMode = 'free';
+  viewT.tilt = 0; viewT.pitch = 1.0; viewT.yaw = 0.62;
+  viewT.dist = 21;
+  syncTools();
+}
+
+btnFront.onclick = goFront;
+btnFree.onclick = goFree;
+btnReset.onclick = () => { if (viewMode === 'front') goFront(); else goFree(); };
+
+/* ---------- 拖拽 / 缩放 ---------- */
+let drag = null;
+
+function startDrag(x, y) { drag = { x: x, y: y, moved: 0 }; cv.classList.add('drag'); }
+function moveDrag(x, y) {
+  if (!drag) return;
+  const dx = x - drag.x, dy = y - drag.y;
+  drag.moved += Math.abs(dx) + Math.abs(dy);
+  if (viewMode === 'front' && drag.moved > 6) { viewMode = 'free'; syncTools(); }
+  view.yaw += dx * 0.0075;
+  viewT.yaw = view.yaw;
+  view.pitch = clamp(view.pitch - dy * 0.006, 0.02, 1.46);
+  viewT.pitch = view.pitch;
+  drag.x = x; drag.y = y;
+}
+function endDrag(x, y) {
+  const wasClick = drag && drag.moved < 5;
+  drag = null; cv.classList.remove('drag');
+  if (wasClick) handlePlaneClick(x, y);
+}
+
+cv.addEventListener('mousedown', e => startDrag(e.clientX, e.clientY));
+window.addEventListener('mousemove', e => moveDrag(e.clientX, e.clientY));
+window.addEventListener('mouseup', e => endDrag(e.clientX, e.clientY));
+cv.addEventListener('wheel', e => {
+  e.preventDefault();
+  viewT.dist = clamp(viewT.dist + e.deltaY * 0.012, 7, 42);
+}, { passive: false });
+
+cv.addEventListener('touchstart', e => {
+  if (e.touches.length === 1) startDrag(e.touches[0].clientX, e.touches[0].clientY);
+}, { passive: true });
+cv.addEventListener('touchmove', e => {
+  if (e.touches.length === 1) moveDrag(e.touches[0].clientX, e.touches[0].clientY);
+}, { passive: true });
+cv.addEventListener('touchend', e => {
+  const t = e.changedTouches[0];
+  endDrag(t.clientX, t.clientY);
+});
+
+/* ---------- 点击平面 ---------- */
+function handlePlaneClick(sx, sy) {
+  if (S.mod !== 'coord' && S.mod !== 'pair' && S.mod !== 'quad') return;
+  const r = cv.getBoundingClientRect();
+  const x = sx - r.left, y = sy - r.top;
+
+  const dc = { x: (x - CX) / CAM.focal, y: -(y - CY) / CAM.focal, z: 1 };
+  const dir = V.norm(V.add(V.add(V.mul(CAM.r, dc.x), V.mul(CAM.u, dc.y)), CAM.f));
+  const n = { x: 0, y: Math.cos(view.tilt), z: Math.sin(view.tilt) };
+  const den = V.dot(dir, n);
+  if (Math.abs(den) < 1e-4) return;
+  const t = -V.dot(CAM.pos, n) / den;
+  if (t <= 0) return;
+  const w = V.add(CAM.pos, V.mul(dir, t));
+
+  const mx = w.x;
+  const my = w.y * Math.sin(view.tilt) - w.z * Math.cos(view.tilt);
+
+  if (S.mod === 'coord') {
+    m3.x = clamp(Math.round(mx), -R, R);
+    m3.y = clamp(Math.round(my), -R, R);
+    m3.t = 1.45;
+    refresh();
+  } else if (S.mod === 'pair') {
+    m1.a = clamp(Math.round(mx) + 3, 1, SEAT_N);
+    m1.b = clamp(Math.round(my) + 3, 1, SEAT_N);
+    refresh();
+  } else if (S.mod === 'quad') {
+    const ix = Math.round(mx), iy = Math.round(my);
+    if (ix > 0 && iy > 0) m4.q = 0;
+    else if (ix < 0 && iy > 0) m4.q = 1;
+    else if (ix < 0 && iy < 0) m4.q = 2;
+    else if (ix > 0 && iy < 0) m4.q = 3;
+    else m4.q = 4;
+    refresh();
+  }
+}
+
+/* ==================================================================
+   12. 主循环
+   ================================================================== */
+let lastT = 0, phase = 0;
+
+function update(dt) {
+  const k = Math.min(1, dt * 8);
+  view.yaw = lerp(view.yaw, viewT.yaw, k);
+  view.pitch = lerp(view.pitch, viewT.pitch, k);
+  view.dist = lerp(view.dist, viewT.dist, k);
+  view.tilt = lerp(view.tilt, viewT.tilt, k);
+
+  if (m3.playing) {
+    m3.t += dt / 2.4;
+    if (m3.t >= 1.45) { m3.t = 1.45; m3.playing = false; }
+  }
+  phase += dt;
+}
+
+function render() {
+  computeCam();
+  ctx.clearRect(0, 0, W, H);
+  currentMod().draw(phase);
+}
+
+function loop(now) {
+  if (!lastT) lastT = now;
+  const dt = Math.min((now - lastT) / 1000, 0.05);
+  lastT = now;
+  update(dt);
+  render();
+  requestAnimationFrame(loop);
+}
+
+function resize() {
+  const rect = cv.parentElement.getBoundingClientRect();
+  W = rect.width; H = rect.height;
+  DPR = Math.min(window.devicePixelRatio || 1, 2);
+  cv.width = Math.round(W * DPR); cv.height = Math.round(H * DPR);
+  cv.style.width = W + 'px'; cv.style.height = H + 'px';
+  ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+
+  const narrow = W <= 900;
+  const panelW = narrow ? 0 : 372;
+  CX = panelW ? (W - panelW) / 2 - 6 : W / 2;
+  CY = narrow ? H * 0.32 : H / 2 + 2;
+  CAM.focal = (narrow ? Math.min(W, H * 0.72) : Math.min(W - panelW, H)) * 1.05;
+}
+
+window.addEventListener('resize', resize);
+resize();
+buildTabs();
+refresh();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

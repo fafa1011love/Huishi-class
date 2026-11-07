@@ -1,0 +1,414 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>探究动能大小的影响因素 · 物理仿真</title>
+<style>
+  :root{
+    --bg:#f4f8ff; --panel:#ffffff; --ink:#1f2d3d; --sub:#5b6b7b;
+    --line:#d8e3f0; --accent:#2f7cf6; --accent2:#ff8a3d; --green:#28a745; --red:#e23b3b;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    background:var(--bg); color:var(--ink); padding:14px;
+  }
+  .container{max-width:760px; margin:0 auto;}
+  h1{font-size:19px; margin:0 0 3px;}
+  .cmphead{font-size:13px; color:var(--ink); margin:2px 0 8px; font-weight:600;}
+  .cmprow{display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:13px;}
+  .cmp{background:var(--panel); border:1px solid var(--line); border-radius:12px; padding:10px;
+    box-shadow:0 4px 16px rgba(31,45,61,.06);}
+  .cmp .ct{font-size:12.5px; color:var(--accent); font-weight:600; margin-bottom:4px;}
+  .cmp svg{width:100%; height:auto; display:block;}
+  .cmp .cc{font-size:12px; color:var(--sub); margin-top:6px; line-height:1.5;}
+  .flow{margin-top:9px; background:#fbfdff; border:1px solid var(--line); border-radius:10px; padding:8px;}
+  .card{background:var(--panel); border:1px solid var(--line); border-radius:13px;
+    padding:13px; box-shadow:0 4px 16px rgba(31,45,61,.06); margin-bottom:13px;}
+  .card h2{font-size:14.5px; margin:0 0 10px; display:flex; align-items:center; gap:6px;}
+  .card h2 .dot{width:8px; height:8px; border-radius:50%; background:var(--accent);}
+  canvas{width:100%; height:auto; display:block; border-radius:10px; background:#eaf3ff;}
+  .grid2{display:grid; grid-template-columns:1fr 1fr; gap:13px; align-items:stretch;}
+  label{font-size:12.5px; color:var(--sub); display:block; margin-bottom:5px;}
+  input[type=range]{width:100%; accent-color:var(--accent);}
+  .hval{font-weight:700; color:var(--accent);}
+  .massrow{display:flex; gap:7px;}
+  .massbtn{flex:1; padding:8px 0; border:1.5px solid var(--line); background:#fff; border-radius:9px;
+    cursor:pointer; font-size:12.5px; color:var(--ink); transition:.15s;}
+  .massbtn.active{background:var(--accent); color:#fff; border-color:var(--accent);}
+  .btns{display:flex; gap:9px; margin-top:11px;}
+  button.act{flex:1; padding:10px 0; border:none; border-radius:10px; cursor:pointer; font-size:13.5px;
+    font-weight:600; transition:.15s;}
+  .go{background:var(--accent); color:#fff;}
+  .go:disabled{background:#b9cdf0; cursor:not-allowed;}
+  .reset{background:#eef2f8; color:var(--ink);}
+  .info{display:grid; grid-template-columns:1fr 1fr; gap:9px; height:100%;}
+  .info .box{background:#f6f9ff; border:1px solid var(--line); border-radius:10px; padding:9px;}
+  .info .box .k{font-size:11.5px; color:var(--sub);}
+  .info .box .v{font-size:18px; font-weight:700; color:var(--ink); margin-top:2px;}
+  .info .box .v small{font-size:11px; color:var(--sub); font-weight:500;}
+  table{width:100%; border-collapse:collapse; font-size:12px;}
+  th,td{border:1px solid var(--line); padding:5px 3px; text-align:center;}
+  th{background:#f1f6ff; color:var(--sub); font-weight:600;}
+  .note{font-size:12.5px; line-height:1.65; color:var(--ink);}
+  .note b{color:var(--accent);}
+  .tag{display:inline-block; background:#fff2e6; color:var(--accent2); border-radius:6px;
+    padding:1px 6px; font-size:11.5px; margin-right:3px;}
+  .clearbtn{font-size:12px; color:var(--sub); background:none; border:none; cursor:pointer;
+    text-decoration:underline; margin-top:7px;}
+  .know-grid{display:grid; grid-template-columns:1fr 1fr; gap:12px;}
+  .kb{background:#f6f9ff; border:1px solid var(--line); border-radius:10px; padding:10px 11px;}
+  .kb h3{font-size:13px; margin:0 0 6px; color:var(--accent);}
+  .kb p{margin:0; font-size:12.5px; line-height:1.75; color:var(--ink);}
+  .kb b{color:var(--accent);}
+  .graphbox{margin-top:12px; border-top:1px dashed var(--line); padding-top:11px;}
+  .graphbox h3{font-size:13px; margin:0 0 8px; color:var(--accent2);}
+  #graph{width:100%; height:auto; display:block; background:#fbfdff; border:1px solid var(--line); border-radius:10px;}
+  .glegend{display:flex; gap:12px; flex-wrap:wrap; margin-top:8px; font-size:12px; color:var(--sub);}
+  .glegend span{flex:1; min-width:240px; line-height:1.5;}
+  .glegend b{color:var(--accent);}
+  .concl{margin-top:12px; background:#eaf3ff; border-left:4px solid var(--accent); border-radius:8px;
+    padding:10px 12px; font-size:12.5px; line-height:1.7; font-weight:600;}
+  @media(max-width:640px){ .grid2,.know-grid{grid-template-columns:1fr;} }
+</style>
+</head>
+<body>
+ <div class="container">
+  <h1>探究动能大小的影响因素</h1>
+  <div class="cmprow">
+    <div class="cmp">
+      <div class="ct">① 质量相同 · 速度不同</div>
+      <svg viewBox="0 0 300 140">
+        <defs><marker id="ah1" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#2f7cf6"/></marker>
+        <marker id="oh1" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#ff8a3d"/></marker></defs>
+        <text x="2" y="18" font-size="11" fill="#5b6b7b">速度小</text>
+        <circle cx="28" cy="40" r="11" fill="#7e8aa0"/>
+        <line x1="42" y1="40" x2="62" y2="40" stroke="#2f7cf6" stroke-width="2.5" marker-end="url(#ah1)"/>
+        <text x="50" y="33" font-size="10" fill="#2f7cf6">v</text>
+        <line x1="0" y1="66" x2="300" y2="66" stroke="#cbb78f" stroke-width="2"/>
+        <rect x="118" y="36" width="34" height="30" fill="#a9743b" stroke="#7c5224"/>
+        <line x1="118" y1="74" x2="150" y2="74" stroke="#ff8a3d" stroke-width="2" stroke-dasharray="4 3" marker-end="url(#oh1)"/>
+        <text x="134" y="70" font-size="10" fill="#ff8a3d">s 小</text>
+        <text x="2" y="80" font-size="11" fill="#5b6b7b">速度大</text>
+        <circle cx="28" cy="102" r="11" fill="#7e8aa0"/>
+        <line x1="42" y1="102" x2="92" y2="102" stroke="#2f7cf6" stroke-width="2.5" marker-end="url(#ah1)"/>
+        <text x="67" y="95" font-size="10" fill="#2f7cf6">v 大</text>
+        <line x1="0" y1="128" x2="300" y2="128" stroke="#cbb78f" stroke-width="2"/>
+        <rect x="118" y="98" width="34" height="30" fill="#a9743b" stroke="#7c5224"/>
+        <line x1="118" y1="136" x2="222" y2="136" stroke="#ff8a3d" stroke-width="2" stroke-dasharray="4 3" marker-end="url(#oh1)"/>
+        <text x="170" y="132" font-size="10" fill="#ff8a3d">s 大</text>
+      </svg>
+      <div class="cc">速度越大 → 动能越<b style="color:#e23b3b">大</b> → 木块被撞得越<b style="color:#e23b3b">远</b></div>
+    </div>
+
+    <div class="cmp">
+      <div class="ct">② 速度相同 · 质量不同</div>
+      <svg viewBox="0 0 300 140">
+        <defs><marker id="ah2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#2f7cf6"/></marker>
+        <marker id="oh2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 Z" fill="#ff8a3d"/></marker></defs>
+        <text x="2" y="18" font-size="11" fill="#5b6b7b">质量小</text>
+        <circle cx="26" cy="40" r="8" fill="#7e8aa0"/>
+        <line x1="38" y1="40" x2="82" y2="40" stroke="#2f7cf6" stroke-width="2.5" marker-end="url(#ah2)"/>
+        <text x="60" y="33" font-size="10" fill="#2f7cf6">v</text>
+        <line x1="0" y1="66" x2="300" y2="66" stroke="#cbb78f" stroke-width="2"/>
+        <rect x="118" y="36" width="34" height="30" fill="#a9743b" stroke="#7c5224"/>
+        <line x1="118" y1="74" x2="156" y2="74" stroke="#ff8a3d" stroke-width="2" stroke-dasharray="4 3" marker-end="url(#oh2)"/>
+        <text x="137" y="70" font-size="10" fill="#ff8a3d">s 小</text>
+        <text x="2" y="80" font-size="11" fill="#5b6b7b">质量大</text>
+        <circle cx="26" cy="102" r="14" fill="#7e8aa0"/>
+        <line x1="44" y1="102" x2="88" y2="102" stroke="#2f7cf6" stroke-width="2.5" marker-end="url(#ah2)"/>
+        <text x="66" y="95" font-size="10" fill="#2f7cf6">v</text>
+        <line x1="0" y1="128" x2="300" y2="128" stroke="#cbb78f" stroke-width="2"/>
+        <rect x="118" y="98" width="34" height="30" fill="#a9743b" stroke="#7c5224"/>
+        <line x1="118" y1="136" x2="224" y2="136" stroke="#ff8a3d" stroke-width="2" stroke-dasharray="4 3" marker-end="url(#oh2)"/>
+        <text x="171" y="132" font-size="10" fill="#ff8a3d">s 大</text>
+      </svg>
+      <div class="cc">质量越大 → 动能越<b style="color:#e23b3b">大</b> → 木块被撞得越<b style="color:#e23b3b">远</b></div>
+    </div>
+  </div>
+
+  <div class="card">
+    <canvas id="cv" width="920" height="420"></canvas>
+  </div>
+
+  <div class="grid2">
+    <div class="card">
+      <h2><span class="dot"></span>实验控制</h2>
+      <label>钢球释放高度（控制速度）：<span class="hval" id="hLabel">0.50 m</span></label>
+      <input type="range" id="height" min="0.2" max="1.0" step="0.05" value="0.5">
+      <label style="margin-top:9px;">钢球质量：</label>
+      <div class="massrow" id="massRow">
+        <button class="massbtn" data-m="0.1">小 0.1kg</button>
+        <button class="massbtn active" data-m="0.2">中 0.2kg</button>
+        <button class="massbtn" data-m="0.4">大 0.4kg</button>
+      </div>
+      <div class="btns">
+        <button class="act go" id="go">▶ 释放小球</button>
+        <button class="act reset" id="reset">↺ 复位</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="dot" style="background:var(--green)"></span>实时数据</h2>
+      <div class="info">
+        <div class="box"><div class="k">到底部速度 v</div><div class="v"><span id="vOut">—</span> <small>m/s</small></div></div>
+        <div class="box"><div class="k">小球动能 E<sub>k</sub></div><div class="v"><span id="keOut">—</span> <small>J</small></div></div>
+        <div class="box"><div class="k">木块滑行距离 s</div><div class="v"><span id="sOut">—</span> <small>m</small></div></div>
+        <div class="box"><div class="k">换算厘米</div><div class="v"><span id="sCm">—</span> <small>cm</small></div></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2><span class="dot" style="background:var(--accent2)"></span>实验记录</h2>
+    <table>
+      <thead><tr><th>次数</th><th>质量/kg</th><th>高度/m</th><th>速度/m·s⁻¹</th><th>动能/J</th><th>距离/m</th></tr></thead>
+      <tbody id="tbody"><tr><td colspan="6" style="color:#9aa7b6">点击“释放小球”开始记录</td></tr></tbody>
+    </table>
+    <button class="clearbtn" id="clear">清空记录</button>
+  </div>
+
+  <div class="card">
+    <h2><span class="dot"></span>知识点讲解</h2>
+    <div class="know-grid">
+      <div class="kb">
+        <h3>① 动能的概念与公式</h3>
+        <p>物体由于<b>运动</b>而具有的能量叫动能，一切运动的物体都具有动能。<br>
+        公式：<b>E<sub>k</sub> = ½mv²</b>（m 为质量，v 为速度），单位<b>焦耳（J）</b>。<br>
+        本实验钢球从高 h 处滚下，重力势能转化为动能，底部速度 <b>v = √(2gh)</b>，故 E<sub>k</sub> = mgh。<br>
+        补充：重力势能 E<sub>p</sub> = mgh，与<b>质量</b>和<b>被举高度</b>有关。</p>
+      </div>
+      <div class="kb">
+        <h3>② 两大实验方法</h3>
+        <p><b>转换法：</b>动能大小看不见，用<b>木块被撞出的距离 s</b> 来反映——s 越大，说明钢球对木块做功越多，动能越大。<br>
+        <b>控制变量法：</b>探究与速度的关系时，控制<b>质量相同</b>（同一钢球），改变<b>释放高度</b>；探究与质量的关系时，控制<b>速度相同</b>（同一高度释放），改变<b>钢球质量</b>。</p>
+        <div class="flow">
+          <svg viewBox="0 0 540 84" style="width:100%;height:auto">
+            <defs><marker id="ar" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto">
+              <path d="M0,0 L6,3 L0,6 Z" fill="#2f7cf6"/></marker>
+              <marker id="aro" markerWidth="9" markerHeight="9" refX="6" refY="3" orient="auto">
+              <path d="M0,0 L6,3 L0,6 Z" fill="#ff8a3d"/></marker></defs>
+            <g font-size="14" text-anchor="middle" font-family="sans-serif" fill="#1f2d3d">
+              <rect x="6" y="34" width="92" height="36" rx="9" fill="#eaf3ff" stroke="#2f7cf6" stroke-width="1.5"/>
+              <text x="52" y="57">高度 h</text>
+              <rect x="156" y="34" width="92" height="36" rx="9" fill="#eaf3ff" stroke="#2f7cf6" stroke-width="1.5"/>
+              <text x="202" y="57">速度 v</text>
+              <rect x="306" y="34" width="92" height="36" rx="9" fill="#eaf3ff" stroke="#2f7cf6" stroke-width="1.5"/>
+              <text x="352" y="57">动能 Eₖ</text>
+              <rect x="453" y="34" width="86" height="36" rx="9" fill="#fff2e6" stroke="#ff8a3d" stroke-width="1.5"/>
+              <text x="496" y="57">距离 s</text>
+              <line x1="98" y1="52" x2="153" y2="52" stroke="#2f7cf6" stroke-width="2" marker-end="url(#ar)"/>
+              <line x1="248" y1="52" x2="303" y2="52" stroke="#2f7cf6" stroke-width="2" marker-end="url(#ar)"/>
+              <line x1="398" y1="52" x2="450" y2="52" stroke="#ff8a3d" stroke-width="2" marker-end="url(#aro)"/>
+            </g>
+            <text x="251" y="24" font-size="12" fill="#5b6b7b" text-anchor="middle" font-family="sans-serif">重力势能 → 动能（转换法）</text>
+          </svg>
+        </div>
+      </div>
+      <div class="kb">
+        <h3>③ 探究过程与结论</h3>
+        <p><b>探究一（同球不同高）：</b>高度越高 → 到水平面速度越<b>大</b> → 木块被撞得越<b>远</b> → 动能越<b>大</b>。<br>
+        <b>探究二（等高不同球）：</b>速度相同，质量越<b>大</b>的钢球把木块撞得越<b>远</b> → 动能越<b>大</b>。<br>
+        可见动能由<b>质量</b>和<b>速度</b>两个因素共同决定。</p>
+      </div>
+      <div class="kb">
+        <h3>④ 易错提醒</h3>
+        <p>1. <b>速度影响更大</b>：E<sub>k</sub>=½mv² 中 v 是平方项。速度变 2 倍，动能变 <b>4 倍</b>；质量变 2 倍，动能只变 <b>2 倍</b>。<br>
+        2. 释放"高度"决定的是到达水平面的<b>速度</b>，不是动能本身。<br>
+        3. 用"木块移动距离"反映动能属于<b>转换法</b>，不是控制变量法，别混淆。<br>
+        4. 一切<b>运动</b>的物体都有动能，静止物体动能为零。</p>
+      </div>
+    </div>
+
+    <div class="graphbox">
+      <h3>动能关系函数图（随上方实验实时变化）</h3>
+      <canvas id="graph" width="720" height="260"></canvas>
+      <div class="glegend">
+        <span>左图：质量一定时，Eₖ 与 v 成<b>二次</b>函数关系（抛物线）——速度影响更大</span>
+        <span>右图：速度一定时，Eₖ 与 m 成<b>正比</b>关系（过原点直线）</span>
+      </div>
+    </div>
+
+    <div class="concl">大量实验表明：质量相同的物体，运动的速度越大，它的动能越大；运动速度相同的物体，质量越大，它的动能也越大。</div>
+  </div>
+ </div>
+
+<script>
+const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+const W=920,H=420, groundY=340, bx=300, pixPerM=120;
+const g=10, theta=Math.PI/6;          // 斜面倾角 30°
+const Mblock=0.5, mu=0.3;             // 木块质量、摩擦系数
+const r=14;                            // 小球半径(px)
+let mass=0.2, height=0.5;              // 当前参数
+let ballX, ballY, blockDisp=0;         // 绘制状态
+let state={phase:'idle', t0:0};        // idle | rolling | sliding | done
+let timeScale=1.4;                     // 放慢便于观察
+let trialCount=0;
+
+function releasePoint(h){
+  const rx=bx - h/Math.tan(theta)*pixPerM;
+  const ry=groundY - h*pixPerM;
+  return {rx,ry};
+}
+function resetDraw(){ const p=releasePoint(height); ballX=p.rx; ballY=p.ry; blockDisp=0; }
+
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  const sky=ctx.createLinearGradient(0,0,0,groundY);
+  sky.addColorStop(0,'#eaf3ff'); sky.addColorStop(1,'#d6e8ff');
+  ctx.fillStyle=sky; ctx.fillRect(0,0,W,groundY);
+  ctx.fillStyle='#cdb892'; ctx.fillRect(0,groundY,W,H-groundY);
+  ctx.fillStyle='#b89b6e'; ctx.fillRect(0,groundY,W,5);
+
+  const top=releasePoint(1.0);
+  ctx.strokeStyle='#8a6d3b'; ctx.lineWidth=10; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(top.rx,top.ry); ctx.lineTo(bx,groundY); ctx.stroke();
+  ctx.strokeStyle='rgba(255,255,255,.55)'; ctx.lineWidth=2;
+  for(let h=0.05; h<=1.0; h+=0.08){
+    const a=releasePoint(h), b=releasePoint(Math.max(0,h-0.05));
+    ctx.beginPath(); ctx.moveTo(a.rx-6,a.ry+6); ctx.lineTo(b.rx+6,b.ry-6); ctx.stroke();
+  }
+
+  ctx.fillStyle='#5b6b7b'; ctx.font='11px sans-serif'; ctx.textAlign='center';
+  for(let m=0; m*pixPerM <= W-bx; m++){
+    const x=bx+m*pixPerM;
+    ctx.strokeStyle='#9a8a63'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(x,groundY); ctx.lineTo(x,groundY+8); ctx.stroke();
+    if(m%1===0 && x<W-10) ctx.fillText(m+'m', x, groundY+22);
+  }
+
+  const bw=54, bh=42;
+  const bl=bx+r+8 + blockDisp*pixPerM;
+  ctx.fillStyle='#a9743b'; ctx.strokeStyle='#7c5224'; ctx.lineWidth=2;
+  ctx.fillRect(bl, groundY-bh, bw, bh); ctx.strokeRect(bl, groundY-bh, bw, bh);
+  ctx.fillStyle='#7c5224'; ctx.font='10px sans-serif'; ctx.textAlign='center';
+  ctx.fillText('木块', bl+bw/2, groundY-bh/2+3);
+
+  const bg=ctx.createRadialGradient(ballX-4,ballY-4,2,ballX,ballY,r);
+  bg.addColorStop(0,'#e9eef5'); bg.addColorStop(1,'#7e8aa0');
+  ctx.fillStyle=bg; ctx.beginPath(); ctx.arc(ballX,ballY,r,0,7); ctx.fill();
+  ctx.strokeStyle='#5a6678'; ctx.lineWidth=1.5; ctx.stroke();
+
+  if(blockDisp>0.02){
+    const y=groundY+bh+30, x0=bx+r+8, x1=bl;
+    ctx.strokeStyle=var2('--red'); ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(x0,y); ctx.lineTo(x1,y); ctx.stroke();
+    arrow(x0,y,-1); arrow(x1,y,1);
+    ctx.beginPath(); ctx.moveTo(x0,groundY-bh); ctx.lineTo(x0,y+6);
+    ctx.moveTo(x1,groundY-bh); ctx.lineTo(x1,y+6); ctx.stroke();
+    ctx.fillStyle=var2('--red'); ctx.font='bold 14px sans-serif';
+    ctx.fillText('s = '+(blockDisp).toFixed(2)+' m', (x0+x1)/2, y-6);
+  }
+
+  if(state.phase==='rolling'){
+    ctx.strokeStyle=var2('--accent'); ctx.lineWidth=2.5;
+    ctx.beginPath(); ctx.moveTo(ballX+r,ballY); ctx.lineTo(ballX+r+22,ballY); ctx.stroke();
+    arrow(ballX+r+22,ballY,1);
+  }
+}
+function arrow(x,y,dir){
+  ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x-6*dir,y-4); ctx.lineTo(x-6*dir,y+4); ctx.closePath(); ctx.fill();
+}
+function var2(name){ return getComputedStyle(document.documentElement).getPropertyValue(name).trim(); }
+
+function startRun(){
+  if(state.phase==='rolling'||state.phase==='sliding') return;
+  document.getElementById('go').disabled=true;
+  state={phase:'rolling', t0:performance.now()};
+}
+
+function loop(ts){
+  if(state.phase==='rolling'){
+    const t=(ts-state.t0)/1000/timeScale;
+    const a=g*Math.sin(theta);
+    const dTot=height/Math.sin(theta);
+    const s=0.5*a*t*t;
+    if(s>=dTot){
+      state={phase:'sliding', t0:ts, vb:Math.sqrt(2*mass*g*height/Mblock),
+             smax:mass*height/(mu*Mblock), tstop:Math.sqrt(2*mass*g*height/Mblock)/(mu*g)};
+      ballX=bx; ballY=groundY-r;
+    } else {
+      const p=s/dTot, rp=releasePoint(height);
+      ballX=rp.rx+(bx-rp.rx)*p; ballY=rp.ry+(groundY-r-rp.ry)*p;
+    }
+  } else if(state.phase==='sliding'){
+    let t=(ts-state.t0)/1000/timeScale;
+    if(t>=state.tstop){ t=state.tstop; state.phase='done'; recordTrial(); document.getElementById('go').disabled=false; }
+    let disp=state.vb*t-0.5*mu*g*t*t; blockDisp=disp<0?0:disp;
+  }
+  const v=Math.sqrt(2*g*height), ke=mass*g*height;
+  document.getElementById('vOut').textContent=v.toFixed(2);
+  document.getElementById('keOut').textContent=ke.toFixed(2);
+  document.getElementById('sOut').textContent=(state.phase==='idle'?0:blockDisp).toFixed(2);
+  document.getElementById('sCm').textContent=((state.phase==='idle'?0:blockDisp)*100).toFixed(0);
+  draw();
+  drawGraph();
+  requestAnimationFrame(loop);
+}
+
+function recordTrial(){
+  trialCount++;
+  const v=Math.sqrt(2*g*height), ke=mass*g*height;
+  const tb=document.getElementById('tbody');
+  if(tb.querySelector('td[colspan]')) tb.innerHTML='';
+  const tr=document.createElement('tr');
+  tr.innerHTML=`<td>${trialCount}</td><td>${mass.toFixed(1)}</td><td>${height.toFixed(2)}</td>
+    <td>${v.toFixed(2)}</td><td>${ke.toFixed(2)}</td><td>${state.smax.toFixed(2)}</td>`;
+  tb.appendChild(tr);
+}
+
+document.getElementById('height').addEventListener('input',e=>{
+  height=parseFloat(e.target.value);
+  document.getElementById('hLabel').textContent=height.toFixed(2)+' m';
+  if(state.phase==='idle'||state.phase==='done'){ resetDraw(); }
+});
+document.getElementById('massRow').addEventListener('click',e=>{
+  const b=e.target.closest('.massbtn'); if(!b) return;
+  mass=parseFloat(b.dataset.m);
+  document.querySelectorAll('.massbtn').forEach(x=>x.classList.remove('active'));
+  b.classList.add('active');
+});
+document.getElementById('go').addEventListener('click',startRun);
+document.getElementById('reset').addEventListener('click',()=>{
+  state={phase:'idle',t0:0}; blockDisp=0; resetDraw();
+  document.getElementById('go').disabled=false;
+});
+document.getElementById('clear').addEventListener('click',()=>{
+  trialCount=0; document.getElementById('tbody').innerHTML=
+    '<tr><td colspan="6" style="color:#9aa7b6">点击“释放小球”开始记录</td></tr>';
+});
+
+// 动能关系函数图（随实验实时变化）
+const gcv=document.getElementById('graph'), gctx=gcv.getContext('2d');
+const GW=gcv.width, GH=gcv.height, vMax=5, mMax=0.5, EkMax=5;
+function drawPlot(g,x0,y0,w,h,xmax,ymax,lx,ly,color,fn,cx,cy,cap){
+  g.strokeStyle='#9aa7b6'; g.lineWidth=1.5;
+  g.beginPath(); g.moveTo(x0,y0); g.lineTo(x0+w,y0); g.moveTo(x0,y0); g.lineTo(x0,y0-h); g.stroke();
+  g.fillStyle='#5b6b7b'; g.font='11px sans-serif'; g.textAlign='center';
+  g.fillText(lx,x0+w/2,y0+15);
+  g.save(); g.translate(x0-12,y0-h/2); g.rotate(-Math.PI/2); g.textAlign='center'; g.fillText(ly,0,0); g.restore();
+  g.strokeStyle='#dde4ee'; g.lineWidth=1;
+  for(let i=1;i<=5;i++){ const xx=x0+w*i/5; g.beginPath(); g.moveTo(xx,y0); g.lineTo(xx,y0-h); g.stroke();
+    const yy=y0-h*i/5; g.beginPath(); g.moveTo(x0,yy); g.lineTo(x0+w,yy); g.stroke(); }
+  g.strokeStyle=color; g.lineWidth=2.5; g.beginPath();
+  for(let i=0;i<=100;i++){ const xv=xmax*i/100, yv=fn(xv); const px=x0+(xv/xmax)*w, py=y0-(yv/ymax)*h; i?g.lineTo(px,py):g.moveTo(px,py);} g.stroke();
+  const px=x0+(cx/xmax)*w, py=y0-(cy/ymax)*h;
+  g.fillStyle=color; g.beginPath(); g.arc(px,py,5,0,7); g.fill(); g.strokeStyle='#fff'; g.lineWidth=2; g.stroke();
+  g.fillStyle=color; g.font='bold 11px sans-serif';
+  g.textAlign='left'; g.fillText(cap,x0+8,y0-h+14);
+  const right=px>x0+w-60; g.textAlign=right?'right':'left';
+  g.fillText('Ek='+cy.toFixed(2)+'J', px+(right?-8:8), py-6);
+}
+function drawGraph(){
+  gctx.clearRect(0,0,GW,GH);
+  const v=Math.sqrt(2*g*height), Ek=mass*g*height;
+  drawPlot(gctx, 50,GH-40,300,180, vMax,EkMax,'速度 v (m/s)','动能 Ek (J)','#2f7cf6', x=>0.5*mass*x*x, v,Ek,'m='+mass.toFixed(1)+'kg');
+  drawPlot(gctx, 400,GH-40,300,180, mMax,EkMax,'质量 m (kg)','动能 Ek (J)','#ff8a3d', x=>0.5*x*v*v, mass,Ek,'v='+v.toFixed(1)+'m/s');
+}
+
+resetDraw();
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

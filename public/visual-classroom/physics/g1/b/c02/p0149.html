@@ -1,0 +1,1585 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>模型32 · 绳模型与杆模型：竖直平面内的圆周运动</title>
+<style>
+*{box-sizing:border-box}
+:root{
+  --bg:#f5f7fb; --card:#fff; --line:#e2e8f2; --ink:#1f2937; --sub:#64748b;
+  --blue:#2563eb; --red:#dc2626; --amber:#d97706; --green:#059669; --slate:#334155; --purple:#7c3aed;
+}
+body{margin:0;background:var(--bg);color:var(--ink);
+  font:14px/1.6 "Microsoft YaHei","PingFang SC",system-ui,sans-serif}
+h1,h2,h3{margin:0}
+button{font-family:inherit;cursor:pointer}
+.wrap{max-width:1560px;margin:0 auto;padding:12px 14px 40px}
+header.top{background:linear-gradient(135deg,#fff,#f0f5ff);border:1px solid var(--line);
+  border-radius:12px;padding:12px 16px;margin-bottom:12px;display:flex;gap:16px;
+  justify-content:space-between;align-items:center;flex-wrap:wrap}
+header.top h1{font-size:19px}
+header.top .sub{margin:3px 0 0;color:var(--sub);font-size:12.5px}
+.lgd{display:flex;flex-wrap:wrap;gap:10px;font-size:11.5px;color:var(--sub)}
+.lgd span{display:inline-flex;align-items:center;gap:4px}
+.lgd i{width:14px;height:4px;border-radius:2px;display:inline-block}
+.grid{display:grid;grid-template-columns:326px 1fr;gap:12px;align-items:start}
+.card{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:11px 12px;margin-bottom:12px}
+.card h2{font-size:14px;margin-bottom:8px;display:flex;justify-content:space-between;align-items:center}
+.card h2 small{font-weight:400;color:var(--sub);font-size:11.5px}
+.sl{margin-bottom:9px}
+.sl label{display:flex;justify-content:space-between;font-size:12.5px;margin-bottom:3px}
+.sl label b{color:var(--blue);font-weight:600}
+input[type=range]{width:100%;accent-color:var(--blue)}
+select,input[type=number]{border:1px solid var(--line);border-radius:7px;padding:4px 6px;font-family:inherit;font-size:12.5px;background:#fff}
+.btn{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 10px;font-size:12.5px;color:var(--ink)}
+.btn:hover{border-color:#b9c6da;background:#f8fafc}
+.btn.pri{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn.pri:hover{background:#1d4ed8}
+.btn.on{background:#e0edff;border-color:#93b8f7;color:#1d4ed8}
+.btns{display:flex;flex-wrap:wrap;gap:6px}
+.chk{display:flex;flex-wrap:wrap;gap:6px 12px;font-size:12.5px}
+.chk label{display:inline-flex;align-items:center;gap:4px;cursor:pointer}
+.critbox{background:#f8fafc;border:1px dashed #cbd5e1;border-radius:8px;padding:7px 9px;font-size:12px;color:var(--slate);margin-top:6px;line-height:1.75}
+.panels{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:10px 11px 11px}
+.ptitle{font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:7px;margin-bottom:7px}
+.ptitle .dot{width:9px;height:9px;border-radius:50%;display:inline-block}
+.ptitle .tag{margin-left:auto;font-size:11px;font-weight:400;color:var(--sub);border:1px solid var(--line);border-radius:20px;padding:1px 8px}
+.ptitle .tag.ok{color:#047857;border-color:#6ee7b7;background:#ecfdf5}
+.ptitle .tag.no{color:#b91c1c;border-color:#fca5a5;background:#fef2f2}
+.stagewrap{position:relative}
+.stagewrap canvas{width:100%;height:392px;display:block;border:1px solid #eef2f8;border-radius:9px;background:#fbfcfe}
+.hots{position:absolute;inset:0;pointer-events:none}
+.hots .hs{position:absolute;pointer-events:auto;transform:translate(-50%,-50%);
+  width:19px;height:19px;border-radius:50%;border:1.5px solid #fff;background:var(--blue);color:#fff;
+  font-size:10.5px;line-height:16px;text-align:center;padding:0;box-shadow:0 1px 4px rgba(15,23,42,.28)}
+.hots .hs.rd{background:var(--red)}
+.hots .hs.gr{background:var(--green)}
+.hots .hs.pu{background:var(--purple)}
+.read{margin-top:8px;font-size:12.3px}
+.read .rrow{display:flex;justify-content:space-between;padding:2px 0;border-bottom:1px dotted #eef2f8}
+.read .rrow b{font-weight:600}
+.ebar{display:flex;height:11px;border-radius:6px;overflow:hidden;margin-top:7px;border:1px solid var(--line);background:#fff}
+.ebar i{display:block;height:100%}
+.concl{margin:12px 0;background:#fff;border:1px solid var(--line);border-left:4px solid var(--purple);
+  border-radius:10px;padding:9px 12px;font-size:13px;line-height:1.8}
+.concl .k{color:var(--purple);font-weight:600}
+.charts{display:grid;grid-template-columns:repeat(4,1fr);gap:10px}
+.chartcard{background:var(--card);border:1px solid var(--line);border-radius:12px;padding:9px 10px;position:relative}
+.chartcard h3{font-size:12.5px;margin-bottom:5px;display:flex;gap:6px;align-items:center}
+.chartcard h3 .hs2{width:17px;height:17px;border-radius:50%;border:1px solid var(--line);background:#f1f5f9;
+  color:var(--slate);font-size:10px;line-height:14px;text-align:center;padding:0}
+.chartcard canvas{width:100%;height:186px;display:block}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{border:1px solid var(--line);padding:3px 5px;text-align:center;white-space:nowrap}
+th{background:#f8fafc;font-weight:600}
+tbody tr.rope{background:#fff5f5}
+tbody tr.rod{background:#f0f6ff}
+.scroll{max-height:212px;overflow:auto;border:1px solid var(--line);border-radius:8px}
+.guide .step{font-size:13px;line-height:1.8}
+.guide .tip{background:#f8fafc;border-radius:8px;padding:8px 10px;margin-bottom:7px}
+.guide .q{background:#fffbeb;border:1px solid #fde68a;border-radius:8px;padding:8px 10px;font-size:12.5px}
+.dots{display:flex;gap:5px;margin:8px 0}
+.dots i{width:8px;height:8px;border-radius:50%;background:#dbe3ee}
+.dots i.on{background:var(--blue)}
+.qz{border-top:1px solid var(--line);padding-top:9px;margin-top:9px}
+.qz:first-child{border-top:0;padding-top:0;margin-top:0}
+.qz .qq{font-size:12.8px;font-weight:600;margin-bottom:5px}
+.qz .opt{display:block;width:100%;text-align:left;border:1px solid var(--line);background:#fff;
+  border-radius:7px;padding:4px 8px;margin:3px 0;font-size:12.3px}
+.qz .opt.sel{border-color:var(--blue);background:#eff6ff}
+.qz .opt.right{border-color:#10b981;background:#ecfdf5}
+.qz .opt.wrong{border-color:#ef4444;background:#fef2f2}
+.qz .fb{margin-top:5px;font-size:12px;border-radius:7px;padding:6px 8px;background:#f1f5f9;line-height:1.7}
+.qz .fb.ok{background:#ecfdf5;color:#065f46}
+.qz .fb.no{background:#fef2f2;color:#991b1b}
+#fab{position:fixed;right:14px;bottom:14px;z-index:40;border:0;border-radius:24px;padding:10px 16px;
+  background:var(--slate);color:#fff;font-size:13px;box-shadow:0 4px 14px rgba(15,23,42,.28)}
+#drawer{position:fixed;top:0;right:0;width:420px;max-width:96vw;height:100%;background:#fff;
+  border-left:1px solid var(--line);box-shadow:-6px 0 22px rgba(15,23,42,.12);z-index:50;
+  transform:translateX(102%);transition:transform .22s ease;display:flex;flex-direction:column}
+#drawer.open{transform:none}
+#drawer header{padding:10px 12px;border-bottom:1px solid var(--line);display:flex;gap:6px;align-items:center}
+#drawer header h2{font-size:14px;margin-right:auto}
+.dbody{flex:1;overflow:auto;padding:10px 12px}
+.tabs{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
+.tabs button{border:1px solid var(--line);background:#fff;border-radius:20px;padding:3px 9px;font-size:11.5px}
+.tabs button.on{background:var(--blue);border-color:var(--blue);color:#fff}
+.clist button{display:block;width:100%;text-align:left;border:1px solid var(--line);background:#fff;
+  border-radius:8px;padding:6px 9px;margin-bottom:6px;font-size:12.5px}
+.clist button:hover{border-color:#93b8f7}
+.clist .ct{font-size:11px;color:var(--sub)}
+.kc{border:1px solid var(--line);border-radius:10px;padding:10px}
+.kc h3{font-size:14px;margin-bottom:4px}
+.kc .conc{font-size:12.8px;color:#0f172a;background:#f8fafc;border-radius:7px;padding:6px 9px;margin:6px 0}
+.kc .fm{font-size:13px;text-align:center;color:var(--blue);background:#eff6ff;border-radius:7px;padding:6px;margin:6px 0}
+.kc .mini{text-align:center;margin:6px 0}
+.kc .lb{font-size:11.5px;color:var(--sub);margin-top:5px}
+.kc .how{font-size:12px;background:#fffbeb;border:1px solid #fde68a;border-radius:7px;padding:6px 9px;margin-top:6px}
+.kc .warn{font-size:12px;background:#fef2f2;border:1px solid #fecaca;border-radius:7px;padding:6px 9px;margin-top:6px}
+.pinned{display:flex;flex-wrap:wrap;gap:5px;margin-bottom:8px}
+.pinned button{border:1px solid #93b8f7;background:#eff6ff;border-radius:20px;padding:2px 9px;font-size:11.5px}
+.hint{font-size:12px;color:var(--sub)}
+@media (max-width:1180px){
+  .grid{grid-template-columns:1fr}
+  .charts{grid-template-columns:repeat(2,1fr)}
+}
+@media (max-width:820px){
+  .panels{grid-template-columns:1fr}
+  .charts{grid-template-columns:1fr}
+  .stagewrap canvas{height:330px}
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header class="top">
+  <div>
+    <h1>模型32 · 绳模型与杆模型：竖直平面内的圆周运动</h1>
+    <p class="sub">一体化对照轨道：左侧细绳小球（单侧约束，只能拉）／右侧轻杆小球（双侧约束，可拉可推），同一 v₀ 同步释放</p>
+  </div>
+  <div class="lgd">
+    <span><i style="background:#2563eb"></i>速度 v（切线）</span>
+    <span><i style="background:#64748b"></i>重力 mg</span>
+    <span><i style="background:#dc2626"></i>拉力（指向圆心）</span>
+    <span><i style="background:#2563eb"></i>支持力（背离圆心）</span>
+    <span><i style="background:#d97706"></i>动能 E<sub>k</sub></span>
+    <span><i style="background:#059669"></i>势能 E<sub>p</sub></span>
+    <span><i style="background:#334155"></i>总机械能 E</span>
+  </div>
+</header>
+
+<div class="grid">
+  <!-- ================= 左：控制面板 ================= -->
+  <aside class="col">
+    <div class="card">
+      <h2>装置参数 <small>改动即重置</small></h2>
+      <div class="sl"><label>初速度 v₀ <b id="lV0">5.00 m/s</b></label>
+        <input type="range" id="sV0" min="0" max="8" step="0.05" value="5"></div>
+      <div class="sl"><label>半径 r <b id="lR">0.50 m</b></label>
+        <input type="range" id="sR" min="0.2" max="1" step="0.05" value="0.5"></div>
+      <div class="sl"><label>质量 m <b id="lM">0.20 kg</b></label>
+        <input type="range" id="sM" min="0.05" max="1" step="0.05" value="0.2"></div>
+      <div class="sl"><label>重力加速度 g <b id="lG">9.8 m/s²</b></label>
+        <select id="selG"><option value="9.8">9.8 m/s²</option><option value="10">10 m/s²</option></select></div>
+      <div class="critbox" id="critBox"></div>
+    </div>
+
+    <div class="card">
+      <h2>预设方案</h2>
+      <div class="btns" id="presets"></div>
+      <div class="hint" style="margin-top:7px">点预设会自动把 v₀ 设为对应临界倍数并重新运行。</div>
+    </div>
+
+    <div class="card">
+      <h2>临界扫描 <small>v₀ 由 0 逐步增大</small></h2>
+      <div class="sl"><label>步长 Δv₀ <b id="lStep">0.25 m/s</b></label>
+        <input type="range" id="sStep" min="0.05" max="0.5" step="0.05" value="0.25"></div>
+      <div class="btns"><button class="btn pri" id="btnScan">开始扫描</button>
+        <button class="btn" id="btnScanClear">清空结果</button></div>
+      <div class="scroll" style="margin-top:8px" id="scanBox"></div>
+    </div>
+
+    <div class="card">
+      <h2>播放控制</h2>
+      <div class="btns">
+        <button class="btn pri" id="btnPlay">▶ 播放</button>
+        <button class="btn" id="btnStep">单步</button>
+        <button class="btn" id="btnReset">重置</button>
+        <button class="btn" id="btnStatic">静态分帧图</button>
+      </div>
+      <div class="sl" style="margin-top:9px"><label>慢动作倍率</label>
+        <select id="selRate"><option value="1">1×（实时）</option><option value="0.5">0.5×</option><option value="0.25">0.25×</option></select></div>
+    </div>
+
+    <div class="card">
+      <h2>显示图层</h2>
+      <div class="sl"><label>频闪仪闪光间隔 Δt <b id="lSb">0.08 s</b></label>
+        <input type="range" id="sSb" min="0.03" max="0.2" step="0.01" value="0.08"></div>
+      <div class="chk" id="togs"></div>
+      <div class="hint" style="margin-top:6px">关闭全部辅助层后，仍可凭残影与读数判断两模型临界差异。</div>
+    </div>
+  </aside>
+
+  <!-- ================= 右：演示区 ================= -->
+  <main class="col">
+    <div class="panels">
+      <div class="panel">
+        <div class="ptitle"><span class="dot" style="background:#dc2626"></span>绳模型 · 细绳 + 小球（单侧约束）
+          <span class="tag" id="tagRope">待运行</span></div>
+        <div class="stagewrap">
+          <canvas id="cvRope"></canvas>
+          <div class="hots" id="hsRope">
+            <button class="hs rd" data-card="f_top">顶</button>
+            <button class="hs" data-card="c_rope">绳</button>
+            <button class="hs gr" data-card="f_bottom">底</button>
+            <button class="hs pu" data-card="g_slack" id="hsSlack">抛</button>
+          </div>
+        </div>
+        <div class="read" id="readRope"></div>
+      </div>
+      <div class="panel">
+        <div class="ptitle"><span class="dot" style="background:#2563eb"></span>杆模型 · 轻杆 + 小球（双侧约束）
+          <span class="tag" id="tagRod">待运行</span></div>
+        <div class="stagewrap">
+          <canvas id="cvRod"></canvas>
+          <div class="hots" id="hsRod">
+            <button class="hs rd" data-card="f_rod">顶</button>
+            <button class="hs" data-card="c_rod">杆</button>
+            <button class="hs gr" data-card="f_bottom">底</button>
+            <button class="hs pu" data-card="g_swing" id="hsSwing">摆</button>
+          </div>
+        </div>
+        <div class="read" id="readRod"></div>
+      </div>
+    </div>
+
+    <div class="concl" id="concl"></div>
+
+    <div class="charts">
+      <div class="chartcard"><h3>E–h 图（机械能守恒）<button class="hs2" data-card="f_energy">i</button></h3>
+        <canvas id="chEh"></canvas></div>
+      <div class="chartcard"><h3>F–θ 图（张力/杆力随位置）<button class="hs2" data-card="d_three">i</button></h3>
+        <canvas id="chFth"></canvas></div>
+      <div class="chartcard"><h3>v²–h 图（斜率 = −2g）<button class="hs2" data-card="f_energy">i</button></h3>
+        <canvas id="chV2h"></canvas></div>
+      <div class="chartcard"><h3>临界图 / 扫描带（v₀）<button class="hs2" data-card="m_scan">i</button></h3>
+        <canvas id="chCrit"></canvas></div>
+    </div>
+
+    <div class="card" style="margin-top:12px">
+      <h2>实验记录表 <small>绳/杆分组着色</small>
+        <span class="btns"><button class="btn" id="btnCsv">导出 CSV</button>
+        <button class="btn" id="btnRec">记录当前</button>
+        <button class="btn" id="btnRecClear">清空</button></span></h2>
+      <div class="scroll"><table id="recTbl">
+        <thead><tr><th>模型</th><th>v₀/(m/s)</th><th>r/m</th><th>m/kg</th><th>结果</th>
+          <th>最高点 v</th><th>最高点力/N</th><th>松弛角/(°)</th><th>理论临界/(m/s)</th><th>能量漂移</th></tr></thead>
+        <tbody></tbody></table></div>
+    </div>
+
+    <div class="card guide" id="guide">
+      <h2>教学引导流程 <small>六步</small>
+        <span><label class="hint"><input type="checkbox" id="autoCard" checked> 自动弹卡</label></span></h2>
+      <div class="dots" id="gdots"></div>
+      <div class="step" id="gstep"></div>
+      <div class="btns" style="margin-top:8px">
+        <button class="btn" id="gPrev">上一步</button>
+        <button class="btn pri" id="gNext">下一步</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2>练习与考核 <small>6 题 · 即时反馈</small>
+        <span><label class="hint"><input type="checkbox" id="examMode"> 教师考核模式</label></span></h2>
+      <div id="quiz"></div>
+      <div class="btns" style="margin-top:8px">
+        <button class="btn pri" id="qSubmit">提交答卷</button>
+        <button class="btn" id="qReset">重新作答</button>
+        <span class="hint" id="qScore"></span>
+      </div>
+    </div>
+  </main>
+</div>
+</div>
+
+<button id="fab">知识卡片库</button>
+<aside id="drawer" aria-hidden="true">
+  <header>
+    <h2>知识卡片库</h2>
+    <button class="btn" id="btnPrevCard">←</button>
+    <button class="btn" id="btnNextCard">→</button>
+    <button class="btn" id="btnClose">关闭</button>
+  </header>
+  <div class="dbody">
+    <div id="dlist">
+      <input id="search" type="search" placeholder="搜索关键词：绳 / 杆 / 临界 / 6mg / 抛体 …"
+        style="width:100%;margin-bottom:8px;padding:5px 8px;border:1px solid var(--line);border-radius:8px">
+      <div class="tabs" id="tabs"></div>
+      <div class="pinned" id="pinned"></div>
+      <div class="clist" id="clist"></div>
+    </div>
+    <div id="detail" style="display:none">
+      <div class="btns" style="margin-bottom:8px">
+        <button class="btn" id="btnBack">← 返回列表</button>
+        <button class="btn" id="btnFlip">翻转卡片</button>
+        <button class="btn" id="btnPin">钉住</button>
+      </div>
+      <div id="faceFront"></div>
+      <div id="faceBack" style="display:none"></div>
+    </div>
+  </div>
+</aside>
+
+<script>
+"use strict";
+/* ==================================================================
+   模型32 · 绳模型与杆模型竖直圆周运动 —— 单文件零依赖交互演示
+   结构： 1 配置与状态 / 2 物理内核 / 3 绘制 / 4 图像 / 5 卡片数据
+         6 抽屉与交互 / 7 引导与测验 / 8 初始化
+   ================================================================== */
+
+/* ---------------- 1. 配置与状态 ---------------- */
+const CFG = {
+  v0: 5, r: 0.5, m: 0.2, g: 9.8,
+  rate: 1,              // 慢动作倍率
+  dt: 1 / 240,          // 固定物理步长（s）
+  strobeDt: 0.08,       // 频闪采样间隔（s，模拟时间）
+  tog: { vec:1, energy:1, crit:1, slack:1, proj:1, dial:1, read:1, strobe:0, sound:0, arc:1 },
+  exam: 0
+};
+const S = {
+  t: 0, running: false, rope: null, rod: null,
+  strobe: { rope: [], rod: [] }, strobeT: 0,
+  recorded: false, records: [], scanRows: [], guide: 0
+};
+const REDUCED = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion:reduce)").matches);
+
+const $ = id => document.getElementById(id);
+const clamp = (x, a, b) => Math.min(b, Math.max(a, x));
+const fmt = (x, n) => (x === null || x === undefined || !isFinite(x) ? "—" : (+x).toFixed(n === undefined ? 2 : n));
+const DEG = 180 / Math.PI;
+
+/* 关键临界值（集中定义，便于核对） */
+const vTopMin = () => Math.sqrt(CFG.g * CFG.r);            // 绳最高点最小速度 √(gr)
+const v0RopeMin = () => Math.sqrt(5 * CFG.g * CFG.r);      // 绳最低点最小速度 √(5gr)
+const v0RodMin = () => 2 * Math.sqrt(CFG.g * CFG.r);       // 杆最低点最小速度 2√(gr)
+const vSwingMin = () => Math.sqrt(2 * CFG.g * CFG.r);      // 越过水平直径的最小速度 √(2gr)
+
+/* ---------------- 2. 物理内核 ---------------- */
+/* 坐标：圆心为原点，y 轴向上；位置角 α 自最低点起算（逆时针为正）
+   位置 x = r·sinα, y = −r·cosα；相对最低点高度 h = r(1 − cosα)
+   能量常数 K = v² + 2gh（单位质量能量的 2 倍），约束段内严格守恒   */
+const hOf = a => CFG.r * (1 - Math.cos(a));
+const v2Of = (K, a) => K - 2 * CFG.g * hOf(a);
+
+function newModel(kind) {
+  return {
+    kind,                 // 'rope' 绳 | 'rod' 杆
+    mode: "circ",         // 'circ' 受约束圆周 | 'proj' 抛体（仅绳松弛后）
+    a: 0,                 // 位置角 α（rad，可累积超过 2π）
+    s: 1,                 // 运动方向 +1 / −1
+    K: CFG.v0 * CFG.v0,   // 能量常数
+    pos: { x: 0, y: -CFG.r },
+    vel: { x: 0, y: 0 },
+    F: 0,                 // 绳张力 T 或杆力 F（正 = 拉力指向圆心，负 = 支持力背离圆心）
+    done: "",             // '完成' | '松弛' | '摆动'
+    completed: false, slackA: null, tautN: 0, loss: 0, inside: false,
+    aTurn: null,          // 往复摆动的折返角（rad）
+    proj: []              // 抛体轨迹点
+  };
+}
+
+/* 单个固定步长的推演；绳模型含松弛判据，杆模型含双侧约束 */
+function stepModel(M, dt) {
+  const g = CFG.g, r = CFG.r;
+  if (M.mode === "end") return;
+  if (M.mode === "circ") {
+    let v2 = Math.max(v2Of(M.K, M.a), 0);
+    const v = Math.sqrt(v2);
+    // 角位移：α' = α + s·(v/r)·dt
+    let a2 = M.a + M.s * (v / r) * dt;
+    const v2n = v2Of(M.K, a2);
+    if (v2n < 0) {
+      // 越过折返点：在 cos 空间线性插值定位折返角，保证能量严格守恒、不发散
+      const c = 1 - M.K / (2 * g * r);
+      const c0 = Math.cos(M.a), c1 = Math.cos(a2);
+      let f = (c1 === c0) ? 0 : (c0 - c) / (c0 - c1);
+      a2 = M.a + clamp(f, 0, 1) * (a2 - M.a);
+      M.a = a2; M.s = -M.s;                       // 折返（往复摆动）
+      M.aTurn = Math.abs(M.a);
+      if (Math.abs(Math.cos(M.a) + 1) < 1e-6) M.a = Math.PI - 1e-3;  // 恰在最高点：不稳定平衡，微扰后回落
+      if (!M.done) M.done = "摆动";
+    } else {
+      M.a = a2;
+    }
+    // 位置、速度（速度方向 = 切向）
+    M.pos.x = r * Math.sin(M.a); M.pos.y = -r * Math.cos(M.a);
+    const vNow = Math.sqrt(Math.max(v2Of(M.K, M.a), 0));
+    M.vel.x = M.s * Math.cos(M.a) * vNow; M.vel.y = M.s * Math.sin(M.a) * vNow;
+    // 约束力：F = m(v²/r + g·cosα)   正 = 拉力（指向圆心），负 = 支持力（背离圆心）
+    M.F = CFG.m * (vNow * vNow / r + g * Math.cos(M.a));
+    // 完成完整圆周：受约束状态下越过最高点 α = π
+    if (!M.completed && M.a >= Math.PI) { M.completed = true; if (!M.done) M.done = "完成"; }
+    // 绳松弛判据：T < 0 立即转抛体（绳只能拉，不能推）；阈值取 mg 的相对量，避免临界时浮点误判
+    if (M.kind === "rope" && !M.completed && M.F < -1e-4 * CFG.m * g) {
+      M.mode = "proj"; M.slackA = M.a; M.done = "松弛"; M.F = 0;
+      M.proj = [{ x: M.pos.x, y: M.pos.y }];
+      M.vel.x = M.s * Math.cos(M.a) * vNow; M.vel.y = M.s * Math.sin(M.a) * vNow;
+      beep(680);
+    }
+  } else {
+    // 抛体段：只受重力
+    M.vel.y -= g * dt;
+    M.pos.x += M.vel.x * dt; M.pos.y += M.vel.y * dt;
+    M.proj.push({ x: M.pos.x, y: M.pos.y });
+    if (M.proj.length > 900) M.proj.shift();
+    const d = Math.hypot(M.pos.x, M.pos.y);
+    if (d < r - 1e-4) M.inside = true;                 // 记录“确实进入圆内”，避免刚松弛时误判
+    if (M.inside && d >= r) {
+      // 绳重新绷紧：径向速度分量损失（理想化的非弹性绷紧，明确标注有机械能损失）
+      const ux = M.pos.x / d, uy = M.pos.y / d;
+      const vr = M.vel.x * ux + M.vel.y * uy;
+      const vt2 = (M.vel.x - vr * ux) ** 2 + (M.vel.y - vr * uy) ** 2;
+      const a = Math.atan2(ux, -uy);
+      const tentF = CFG.m * (vt2 / r + g * Math.cos(a));
+      if (tentF >= 0 && M.tautN < 2) {                 // 只有绷紧后张力 ≥ 0 才真正回到圆周运动
+        const e1 = energyAt(M.pos, M.vel);
+        M.vel.x -= vr * ux; M.vel.y -= vr * uy;
+        M.pos.x = ux * r; M.pos.y = uy * r;
+        M.loss += Math.max(0, e1 - energyAt(M.pos, M.vel));
+        M.a = a;
+        const vt = M.vel.x * Math.cos(a) + M.vel.y * Math.sin(a);
+        M.s = vt >= 0 ? 1 : -1;
+        M.K = (M.vel.x * M.vel.x + M.vel.y * M.vel.y) + 2 * g * hOf(a);
+        M.mode = "circ"; M.tautN++; M.inside = false;
+        beep(420);
+      } else {
+        // 绷紧后仍需“推力”或已多次绷紧：真实过程为非弹性抖动，本演示到此为止（理想化处理）
+        M.mode = "end";
+      }
+    }
+    // 飞出演示区域：结束
+    if (Math.abs(M.pos.x) > 2.6 * r || M.pos.y < -2.6 * r || M.pos.y > 2.6 * r) M.mode = "end";
+  }
+}
+/* 机械能（以最低点为零势能面） */
+function energyAt(pos, vel) {
+  return 0.5 * CFG.m * (vel.x * vel.x + vel.y * vel.y) + CFG.m * CFG.g * (pos.y + CFG.r);
+}
+/* 当前速率 */
+function speedOf(M) { return Math.hypot(M.vel.x, M.vel.y); }
+
+/* 解析预判：给定 v₀ 时绳/杆的结局（用于扫描与图表，不依赖动画） */
+function predict(kind, v0) {
+  const g = CFG.g, r = CFG.r, K = v0 * v0;
+  const out = { kind, v0, ok: false, slackDeg: null, turnDeg: null, vTop: null, Ftop: null };
+  const ratio = K / (2 * g * r);                 // 可上升的最大高度 / r
+  if (ratio >= 2) {                              // 能到达（越过）最高点
+    out.ok = true;
+    const v2top = K - 4 * g * r;
+    out.vTop = Math.sqrt(Math.max(v2top, 0));
+    out.Ftop = CFG.m * (Math.max(v2top, 0) / r - g);
+    if (kind === "rope" && out.Ftop < -1e-9) {   // 绳：最高点前已松弛
+      out.ok = false;
+      const cs = (2 * g * r - K) / (3 * g * r);
+      if (cs > -1 && cs < 1) out.slackDeg = Math.acos(cs) * DEG;
+    }
+  } else {
+    const cs = 1 - ratio;
+    out.turnDeg = Math.acos(clamp(cs, -1, 1)) * DEG;
+    if (kind === "rope") {                       // 绳：越过水平直径后才可能松弛
+      const cs2 = (2 * g * r - K) / (3 * g * r);
+      if (K > 2 * g * r && cs2 > -1 && cs2 < 1 && Math.acos(clamp(cs2, -1, 1)) < Math.acos(clamp(cs, -1, 1))) {
+        out.slackDeg = Math.acos(clamp(cs2, -1, 1)) * DEG; out.turnDeg = null;
+      }
+    }
+  }
+  return out;
+}
+
+/* 音效（可关） */
+let AC = null;
+function beep(f) {
+  if (!CFG.tog.sound) return;
+  try {
+    AC = AC || new (window.AudioContext || window.webkitAudioContext)();
+    const o = AC.createOscillator(), gn = AC.createGain();
+    o.frequency.value = f; o.connect(gn); gn.connect(AC.destination);
+    gn.gain.setValueAtTime(0.05, AC.currentTime);
+    gn.gain.exponentialRampToValueAtTime(0.0008, AC.currentTime + 0.2);
+    o.start(); o.stop(AC.currentTime + 0.22);
+  } catch (e) { /* 忽略音频不可用 */ }
+}
+
+/* ---------------- 3. 画布绘制：一体化对照装置 ---------------- */
+const SC = { rope: { cx: 0, cy: 0, R: 1, s: 1 }, rod: { cx: 0, cy: 0, R: 1, s: 1 } };
+
+/* 高 DPI 适配：按 devicePixelRatio 重设位图，返回 CSS 像素尺寸 */
+function fitCanvas(cv) {
+  const dpr = window.devicePixelRatio || 1;
+  const w = cv.clientWidth || 560, h = cv.clientHeight || 392;
+  cv.width = Math.max(1, Math.round(w * dpr));
+  cv.height = Math.max(1, Math.round(h * dpr));
+  const ctx = cv.getContext("2d");
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { ctx: ctx, w: w, h: h };
+}
+function rrect(ctx, x, y, w, h, r) {
+  ctx.beginPath();
+  if (ctx.roundRect) ctx.roundRect(x, y, w, h, r); else ctx.rect(x, y, w, h);
+}
+/* 带箭头的线段 */
+function arrow(ctx, x1, y1, x2, y2, color, lw, head) {
+  const dx = x2 - x1, dy = y2 - y1, L = Math.hypot(dx, dy);
+  if (L < 0.8) return;
+  const ux = dx / L, uy = dy / L;
+  ctx.save(); ctx.strokeStyle = color; ctx.fillStyle = color;
+  ctx.lineWidth = lw || 2; ctx.lineCap = "round";
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2 - ux * head, y2 - uy * head); ctx.stroke();
+  ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - ux * head - uy * head * 0.5, y2 - uy * head + ux * head * 0.5);
+  ctx.lineTo(x2 - ux * head + uy * head * 0.5, y2 - uy * head - ux * head * 0.5);
+  ctx.closePath(); ctx.fill(); ctx.restore();
+}
+/* 小胶囊标签 */
+function pill(ctx, x, y, text, fg, bg) {
+  ctx.save();
+  ctx.font = "10.5px 'Microsoft YaHei',sans-serif";
+  const tw = ctx.measureText(text).width;
+  ctx.fillStyle = bg || "rgba(255,255,255,.92)";
+  rrect(ctx, x, y, tw + 10, 16, 5); ctx.fill();
+  ctx.strokeStyle = "rgba(148,163,184,.45)"; ctx.lineWidth = 1; ctx.stroke();
+  ctx.fillStyle = fg || "#334155"; ctx.textAlign = "left";
+  ctx.fillText(text, x + 5, y + 12);
+  ctx.restore();
+}
+/* 当前高度与速率平方（圆周段用解析式，抛体段用实际状态） */
+function curH(M) { return M.mode === "circ" ? hOf(M.a) : (M.pos.y + CFG.r); }
+function curV2(M) {
+  if (M.mode === "circ") return Math.max(v2Of(M.K, M.a), 0);
+  const v = speedOf(M); return v * v;
+}
+
+/* 单侧画板：kind = 'rope' | 'rod' */
+function drawScene(cv, M, kind) {
+  const { ctx, w, h } = fitCanvas(cv);
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = "#fbfcfe"; ctx.fillRect(0, 0, w, h);
+  const R = Math.min(w * 0.30, h * 0.32);          // 圆半径（px）
+  const s = R / CFG.r;                              // 比例尺 px/m
+  const cx = w / 2, cy = h * 0.47;
+  SC[kind] = { cx: cx, cy: cy, R: R, s: s };
+  const g = CFG.g, m = CFG.m, r = CFG.r;
+  const P = (x, y) => [cx + x * s, cy - y * s];                              // 世界→屏幕
+  const pa = a => [cx + r * Math.sin(a) * s, cy + r * Math.cos(a) * s];      // 圆周上按角取点
+  const isRope = kind === "rope";
+
+  /* ① 底座与支柱（实验装置感） */
+  const by = cy + R + 24;
+  ctx.save();
+  ctx.fillStyle = "#e8edf5"; ctx.strokeStyle = "#cbd5e1"; ctx.lineWidth = 1;
+  rrect(ctx, cx - R * 0.95, by, R * 1.9, 11, 3); ctx.fill(); ctx.stroke();
+  ctx.strokeStyle = "#cbd5e1"; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(cx, by); ctx.lineTo(cx, cy); ctx.stroke();
+  ctx.fillStyle = "#94a3b8"; ctx.font = "10px 'Microsoft YaHei',sans-serif"; ctx.textAlign = "center";
+  ctx.fillText("一体化对照底座 · 电磁同步释放（两侧同 v₀）", cx, by + 24);
+  ctx.restore();
+
+  /* ② 角度刻度盘（0° 在最低点，逆时针增大） */
+  if (CFG.tog.dial) {
+    ctx.save();
+    ctx.strokeStyle = "#cbd5e1"; ctx.fillStyle = "#94a3b8";
+    ctx.font = "9.5px 'Microsoft YaHei',sans-serif"; ctx.textAlign = "center";
+    for (let d = 0; d < 360; d += 10) {
+      const a = d / DEG, big = (d % 90 === 0);
+      const len = big ? 8 : 4;
+      const p1 = pa(a), p2 = pa(a);
+      const ux = Math.sin(a), uy = Math.cos(a);
+      ctx.lineWidth = big ? 1.4 : 0.9;
+      ctx.beginPath();
+      ctx.moveTo(cx + ux * R, cy + uy * R);
+      ctx.lineTo(cx + ux * (R + len), cy + uy * (R + len));
+      ctx.stroke();
+      if (d % 30 === 0) {
+        const lx = cx + ux * (R + 17), ly = cy + uy * (R + 17);
+        let lab = d + "°";
+        if (d === 0) lab = "0°最低点"; else if (d === 180) lab = "180°最高点";
+        ctx.fillStyle = (d === 0 || d === 180) ? "#475569" : "#b6c2d2";
+        ctx.fillText(lab, lx, ly + 3);
+      }
+    }
+    ctx.restore();
+  }
+
+  /* ③ 轨道圆 */
+  ctx.save();
+  ctx.setLineDash([5, 4]); ctx.strokeStyle = "#cbd5e1"; ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.arc(cx, cy, R, 0, 7); ctx.stroke();
+  ctx.restore();
+
+  /* ④ 最高点临界线 */
+  if (CFG.tog.crit) {
+    const yT = cy - R, x0 = cx - R * 1.45, x1 = cx + R * 1.45;
+    ctx.save();
+    ctx.setLineDash([6, 4]); ctx.strokeStyle = "#dc2626"; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(x0, yT); ctx.lineTo(x1, yT); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle = "#dc2626"; ctx.font = "10.5px 'Microsoft YaHei',sans-serif"; ctx.textAlign = "left";
+    ctx.fillText(isRope ? `最高点 v ≥ √(gr) = ${fmt(vTopMin(), 2)} m/s` : "最高点 v ≥ 0（杆可推可拉）", x0, yT - 5);
+    ctx.restore();
+  }
+
+  /* ⑤ 摆动弧线（速度不足时的往复区间） */
+  if (CFG.tog.arc && M.aTurn) {
+    const aT = Math.min(Math.abs(M.aTurn), Math.PI - 0.02);
+    ctx.save();
+    ctx.strokeStyle = isRope ? "#fca5a5" : "#93c5fd"; ctx.lineWidth = 4.5; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.arc(cx, cy, R, Math.PI / 2 + aT, Math.PI / 2 - aT, true); ctx.stroke();
+    ctx.fillStyle = isRope ? "#b91c1c" : "#1d4ed8";
+    ctx.font = "10px 'Microsoft YaHei',sans-serif"; ctx.textAlign = "center";
+    ctx.fillText(`往复摆动 ±${fmt(aT * DEG, 0)}°`, cx, cy + R + 38);
+    ctx.restore();
+  }
+
+  /* ⑥ 抛体轨迹（绳松弛后） */
+  if (CFG.tog.proj && M.proj && M.proj.length > 1) {
+    ctx.save();
+    ctx.setLineDash([4, 3]); ctx.strokeStyle = "#d97706"; ctx.lineWidth = 1.6;
+    ctx.beginPath();
+    for (let i = 0; i < M.proj.length; i++) {
+      const q = P(M.proj[i].x, M.proj[i].y);
+      i ? ctx.lineTo(q[0], q[1]) : ctx.moveTo(q[0], q[1]);
+    }
+    ctx.stroke(); ctx.restore();
+    if (CFG.tog.slack && M.slackA != null) {
+      const q = pa(M.slackA);
+      ctx.save();
+      ctx.strokeStyle = "#d97706"; ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.arc(q[0], q[1], 7, 0, 7); ctx.stroke();
+      ctx.restore();
+      pill(ctx, Math.min(q[0] + 8, w - 150), q[1] - 20, `绳在 θ=${fmt(M.slackA * DEG, 1)}° 松弛 → 抛体`, "#9a3412", "#fff7ed");
+    }
+  }
+
+  /* ⑦ 频闪残影（等时间间隔点迹） */
+  if (CFG.tog.strobe) {
+    const arr = S.strobe[kind] || [];
+    ctx.save();
+    for (let i = 0; i < arr.length; i++) {
+      ctx.globalAlpha = 0.2 + 0.65 * (i + 1) / arr.length;
+      ctx.fillStyle = isRope ? "#dc2626" : "#2563eb";
+      const q = P(arr[i].x, arr[i].y);
+      ctx.beginPath(); ctx.arc(q[0], q[1], 3, 0, 7); ctx.fill();
+    }
+    ctx.restore();
+  }
+
+  /* ⑧ 绳 / 杆 与 小球 */
+  const taut = M.mode === "circ";
+  const bp = taut ? pa(M.a) : P(M.pos.x, M.pos.y);
+  const F = taut ? M.F : 0;
+  ctx.save();
+  if (taut) {
+    if (isRope) {
+      ctx.strokeStyle = "#475569"; ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(bp[0], bp[1]); ctx.stroke();
+    } else {
+      // 杆：F>0 拉力（红）／F<0 支持力（蓝）／F≈0 中性（灰）
+      const col = F > 1e-4 * m * g ? "#dc2626" : (F < -1e-4 * m * g ? "#2563eb" : "#94a3b8");
+      ctx.strokeStyle = col; ctx.lineWidth = 3.4; ctx.lineCap = "round";
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(bp[0], bp[1]); ctx.stroke();
+    }
+  } else {
+    ctx.setLineDash([3, 4]); ctx.strokeStyle = "#b6c2d2"; ctx.lineWidth = 1.4;
+    ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(bp[0], bp[1]); ctx.stroke();
+    ctx.setLineDash([]);
+    if (CFG.tog.slack) pill(ctx, cx + 8, cy - 8, "绳已松弛 T = 0", "#64748b", "#f1f5f9");
+  }
+  // 转轴（圆心）
+  ctx.fillStyle = "#334155"; ctx.beginPath(); ctx.arc(cx, cy, 4, 0, 7); ctx.fill();
+  ctx.fillStyle = "#94a3b8"; ctx.font = "9.5px 'Microsoft YaHei',sans-serif"; ctx.textAlign = "left";
+  ctx.fillText(`r = ${fmt(r, 2)} m`, cx + 7, cy - 6);
+  // 小球
+  ctx.beginPath(); ctx.arc(bp[0], bp[1], 8, 0, 7);
+  ctx.fillStyle = "#1f2937"; ctx.fill();
+  ctx.lineWidth = 2.4; ctx.strokeStyle = isRope ? "#dc2626" : "#2563eb"; ctx.stroke();
+  ctx.restore();
+
+  /* ⑨ 矢量：速度（切线·蓝）／重力（灰）／绳张力或杆力（沿半径·红拉蓝推） */
+  if (CFG.tog.vec) {
+    const v = speedOf(M), vpx = clamp(v * 13, 0, 78);
+    const ang = Math.atan2(M.vel.y, M.vel.x);            // 世界系速度方向
+    if (v > 1e-6) {
+      arrow(ctx, bp[0], bp[1], bp[0] + Math.cos(ang) * vpx, bp[1] - Math.sin(ang) * vpx, "#2563eb", 2.4, 8);
+      pill(ctx, bp[0] + Math.cos(ang) * vpx + 2, bp[1] - Math.sin(ang) * vpx - 8, `v = ${fmt(v, 2)} m/s`, "#1d4ed8", "#eff6ff");
+    }
+    const mgpx = clamp(m * g * 9, 14, 78);
+    arrow(ctx, bp[0], bp[1] + 8, bp[0], bp[1] + 8 + mgpx, "#64748b", 2.2, 7);
+    pill(ctx, bp[0] + 4, bp[1] + 8 + mgpx - 4, `mg = ${fmt(m * g, 2)} N`, "#475569", "#f1f5f9");
+    if (taut) {
+      const ux = -Math.sin(M.a), uy = Math.cos(M.a);      // 指向圆心的单位向量（屏幕系）
+      const fpx = clamp(Math.abs(F) * 9, 0, 74);
+      const pull = F >= 0;                                // 正 = 拉力（指向圆心）
+      const ex = bp[0] + (pull ? ux : -ux) * fpx, ey = bp[1] + (pull ? uy : -uy) * fpx;
+      const col = pull ? "#dc2626" : "#2563eb";
+      arrow(ctx, bp[0], bp[1], ex, ey, col, 2.6, 8);
+      const nm = isRope ? "T" : "F";
+      pill(ctx, ex - 20, ey + (pull ? 2 : -18),
+        `${nm} = ${fmt(Math.abs(F), 2)} N（${Math.abs(F) < 1e-3 * Math.max(1, m * g) ? "零" : (pull ? "拉力·指向圆心" : "支持力·背离圆心")}）`,
+        col, pull ? "#fef2f2" : "#eff6ff");
+    }
+  }
+
+  /* ⑩ 常驻参数标签与状态 */
+  const deg = ((M.mode === "circ" ? M.a : Math.atan2(M.pos.x, -M.pos.y)) * DEG + 360) % 360;
+  ctx.save();
+  ctx.font = "11px 'Microsoft YaHei',sans-serif"; ctx.textAlign = "left";
+  ctx.fillStyle = "#334155";
+  ctx.fillText(`θ = ${fmt(deg, 0)}°　h = ${fmt(curH(M), 2)} m`, 10, 16);
+  ctx.fillText(isRope ? "细绳：只能拉（T ≥ 0），T = 0 即松弛" : "轻杆：可拉可推（F 可正可负可零）", 10, 32);
+  ctx.restore();
+  // 比例尺
+  const bar = 0.2 * s;
+  ctx.save();
+  ctx.strokeStyle = "#475569"; ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(14, h - 14); ctx.lineTo(14 + bar, h - 14);
+  ctx.moveTo(14, h - 18); ctx.lineTo(14, h - 10);
+  ctx.moveTo(14 + bar, h - 18); ctx.lineTo(14 + bar, h - 10);
+  ctx.stroke();
+  ctx.fillStyle = "#475569"; ctx.font = "10px 'Microsoft YaHei',sans-serif"; ctx.textAlign = "left";
+  ctx.fillText("0.20 m", 16 + bar, h - 16);
+  ctx.restore();
+}
+
+/* 读数卡（含能量条） */
+function drawRead(el, M, kind) {
+  const m = CFG.m, g = CFG.g;
+  const v = speedOf(M), hh = curH(M);
+  const Ek = 0.5 * m * v * v, Ep = m * g * hh, E = Ek + Ep;
+  const E0 = 0.5 * m * CFG.v0 * CFG.v0;
+  const F = M.mode === "circ" ? M.F : 0;
+  const tol = 1e-4 * m * g;
+  const nat = F > tol ? "拉力（指向圆心）" : (F < -tol ? "支持力（背离圆心）" : "零");
+  const thName = kind === "rope" ? "绳张力 T" : "杆作用力 F";
+  const topV = M.completed ? Math.sqrt(Math.max(curV2(M), 0)) : (M.topV || null);
+  const row = (k, val) => `<div class="rrow"><span>${k}</span><b>${val}</b></div>`;
+  let html = '<div class="rrow" style="border:0"><span style="color:#64748b">传感器读数</span><b style="color:#64748b;font-weight:400">光电门 + 张力/杆力传感器</b></div>';
+  html += row("位置角 θ", `${fmt(((M.mode === "circ" ? M.a : Math.atan2(M.pos.x, -M.pos.y)) * DEG + 360) % 360, 0)}°`);
+  html += row("速率 v", `${fmt(v, 2)} m/s`);
+  html += row("高度 h（自最低点）", `${fmt(hh, 2)} m`);
+  html += row(thName, `${fmt(Math.abs(F), 2)} N · ${nat}`);
+  html += row("最高点 v", M.completed || M.topV ? `${fmt(M.topV != null ? M.topV : Math.sqrt(Math.max(v2Of(M.K, Math.PI), 0)), 2)} m/s` : "—");
+  html += row("结果", M.done ? M.done : "运行中");
+  if (M.slackA != null) html += row("松弛角 θ", `${fmt(M.slackA * DEG, 1)}°`);
+  if (M.aTurn) html += row("摆动折返角", `±${fmt(Math.abs(M.aTurn) * DEG, 1)}°`);
+  html += row("E<sub>k</sub> / E<sub>p</sub> / E", `${fmt(Ek, 2)} / ${fmt(Ep, 2)} / ${fmt(E, 2)} J`);
+  if (CFG.tog.energy) {
+    const pk = Math.max(E, 1e-9);
+    const w1 = (Ek / pk * 100).toFixed(1), w2 = (Ep / pk * 100).toFixed(1);
+    html += `<div class="ebar"><i style="width:${w1}%;background:#d97706"></i><i style="width:${w2}%;background:#059669"></i></div>`;
+    html += `<div class="hint" style="margin-top:3px">橙 = E<sub>k</sub>，绿 = E<sub>p</sub>；E<sub>总</sub> 理论值 ${fmt(E0, 2)} J，漂移 ${fmt(Math.abs(E - E0) / Math.max(E0, 1e-9) * 100, 2)}%</div>`;
+  }
+  el.innerHTML = html;
+}
+
+/* 结论条：两模型成对呈现 */
+function drawConcl() {
+  const v0 = CFG.v0, r = CFG.r, g = CFG.g, m = CFG.m;
+  const pr = predict("rope", v0), pd = predict("rod", v0);
+  const vTop = vTopMin(), v5 = v0RopeMin(), v4 = v0RodMin(), v2 = vSwingMin();
+  let A, B;
+  if (pr.ok) {
+    A = `v₀ = ${fmt(v0)} m/s ≥ √(5gr) = ${fmt(v5)} m/s → <b>能完成完整圆周</b>；最高点 v = ${fmt(pr.vTop)} m/s ≥ √(gr) = ${fmt(vTop)} m/s，最高点张力 T = ${fmt(pr.Ftop)} N` +
+      (Math.abs(pr.Ftop) < 0.02 * m * g ? "（≈0，恰好临界）" : "") + "。";
+  } else if (pr.slackDeg != null) {
+    A = `v₀ = ${fmt(v0)} m/s &lt; √(5gr) = ${fmt(v5)} m/s → 绳在 <b>θ = ${fmt(pr.slackDeg, 1)}°</b> 处张力先减为 0 而<b>松弛</b>，此后只受重力做<b>抛体运动</b>，未完成完整圆周。`;
+  } else {
+    A = `v₀ = ${fmt(v0)} m/s ≤ √(2gr) = ${fmt(v2)} m/s → 上升到 θ = ${fmt(pr.turnDeg, 1)}° 速率减为 0，绳未松弛，小球沿圆弧<b>往复摆动</b>。`;
+  }
+  if (pd.ok) {
+    const nat = pd.Ftop < -0.02 * m * g ? "支持力（背离圆心）" : (pd.Ftop > 0.02 * m * g ? "拉力（指向圆心）" : "零");
+    B = `v₀ = ${fmt(v0)} m/s ≥ 2√(gr) = ${fmt(v4)} m/s → <b>能完成完整圆周</b>；最高点 v = ${fmt(pd.vTop)} m/s（可为 0），杆力 F = ${fmt(pd.Ftop)} N，表现为<b>${nat}</b>。`;
+  } else {
+    B = `v₀ = ${fmt(v0)} m/s &lt; 2√(gr) = ${fmt(v4)} m/s → 到 θ = ${fmt(pd.turnDeg, 1)}° 速率减为 0 后折返，杆始终约束小球，<b>往复摆动、不脱离</b>。`;
+  }
+  if (S.rod && S.rod.critTop) B += " <span class=\"hint\">（临界：v→0，理论上恰能到达最高点，但数学上需无限长时间，属不稳定平衡；把 v₀ 调大一点即可看到通过过程。）</span>";
+  if (S.rope && S.rope.tautN > 0) A += " <span class=\"hint\">（绳重新绷紧瞬间按“损失径向速度分量”处理，有机械能损失 ΔE = " + fmt(S.rope.loss, 3) + " J，属理想化模型。）</span>";
+  $("concl").innerHTML =
+    `<div><span class="k">绳模型（单侧约束）</span>：${A}</div>` +
+    `<div><span class="k">杆模型（双侧约束）</span>：${B}</div>` +
+    `<div class="hint">关键值：√(gr) = ${fmt(vTop)} m/s（绳最高点最小速度）· √(5gr) = ${fmt(v5)} m/s（绳最低点最小速度，此时 T<sub>底</sub> = 6mg = ${fmt(6 * m * g)} N）· 2√(gr) = ${fmt(v4)} m/s（杆最低点最小速度，对应最高点 v = 0）。</div>`;
+}
+
+/* ---------------- 4. 联动图像 ---------------- */
+/* 通用二维绘图器：支持 yr 含负值、零线、竖/横参考线 */
+function plot(cv, o) {
+  const { ctx, w, h } = fitCanvas(cv);
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, w, h);
+  const mL = 36, mR = 8, mT = 18, mB = 24;
+  const pw = w - mL - mR, ph = h - mT - mB;
+  const y0 = o.yr[0], y1 = o.yr[1];
+  const X = x => mL + (x - o.xr[0]) / (o.xr[1] - o.xr[0]) * pw;
+  const Y = y => mT + ph - (y - y0) / (y1 - y0) * ph;
+  ctx.font = "8.5px sans-serif"; ctx.lineWidth = 1;
+  // 网格与刻度
+  for (let i = 0; i <= 4; i++) {
+    const gx = o.xr[0] + (o.xr[1] - o.xr[0]) * i / 4, gy = y0 + (y1 - y0) * i / 4;
+    ctx.strokeStyle = "#eef2f7";
+    ctx.beginPath(); ctx.moveTo(X(gx), Y(y0)); ctx.lineTo(X(gx), Y(y1)); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(X(o.xr[0]), Y(gy)); ctx.lineTo(X(o.xr[1]), Y(gy)); ctx.stroke();
+    ctx.fillStyle = "#94a3b8"; ctx.textAlign = "center";
+    ctx.fillText(fmt(gx, 2), X(gx), Y(y0) + 10);
+    ctx.textAlign = "right"; ctx.fillText(fmt(gy, 2), X(o.xr[0]) - 3, Y(gy) + 3);
+  }
+  // 零线（F–θ 图用，区分拉力/支持力）
+  if (y0 < 0 && y1 > 0) {
+    ctx.strokeStyle = "#94a3b8"; ctx.setLineDash([4, 3]);
+    ctx.beginPath(); ctx.moveTo(X(o.xr[0]), Y(0)); ctx.lineTo(X(o.xr[1]), Y(0)); ctx.stroke();
+    ctx.setLineDash([]);
+  }
+  // 坐标轴
+  ctx.strokeStyle = "#94a3b8";
+  ctx.beginPath();
+  ctx.moveTo(X(o.xr[0]), Y(y0)); ctx.lineTo(X(o.xr[1]), Y(y0));
+  ctx.moveTo(X(o.xr[0]), Y(y0)); ctx.lineTo(X(o.xr[0]), Y(y1));
+  ctx.stroke();
+  ctx.fillStyle = "#475569"; ctx.textAlign = "left";
+  ctx.fillText(o.xlab, X(o.xr[1]) - 30, Y(y0) + 20);
+  ctx.fillText(o.ylab, X(o.xr[0]) + 2, Y(y1) - 3);
+  // 参考横线
+  (o.hl || []).forEach(l => {
+    ctx.save(); ctx.strokeStyle = l.color; ctx.lineWidth = 1.4;
+    if (l.dash) ctx.setLineDash(l.dash);
+    ctx.beginPath(); ctx.moveTo(X(o.xr[0]), Y(l.y)); ctx.lineTo(X(o.xr[1]), Y(l.y)); ctx.stroke();
+    ctx.restore();
+  });
+  // 参考竖线
+  (o.vl || []).forEach(l => {
+    ctx.save(); ctx.strokeStyle = l.color; ctx.lineWidth = 1.2;
+    if (l.dash) ctx.setLineDash(l.dash);
+    ctx.beginPath(); ctx.moveTo(X(l.x), Y(y0)); ctx.lineTo(X(l.x), Y(y1)); ctx.stroke();
+    if (l.lab) { ctx.setLineDash([]); ctx.fillStyle = l.color; ctx.font = "9px 'Microsoft YaHei',sans-serif"; ctx.textAlign = "left"; ctx.fillText(l.lab, X(l.x) + 3, Y(y1) + 8); }
+    ctx.restore();
+  });
+  // 曲线
+  (o.curves || []).forEach(c => {
+    const xa = c.x0 != null ? c.x0 : o.xr[0], xb = c.x1 != null ? c.x1 : o.xr[1];
+    ctx.save(); ctx.strokeStyle = c.color; ctx.lineWidth = c.lw || 1.8;
+    if (c.dash) ctx.setLineDash(c.dash);
+    ctx.beginPath();
+    let started = false;
+    for (let i = 0; i <= 120; i++) {
+      const x = xa + (xb - xa) * i / 120, y = c.f(x);
+      if (!isFinite(y)) { started = false; continue; }
+      started ? ctx.lineTo(X(x), Y(clamp(y, y0, y1))) : ctx.moveTo(X(x), Y(clamp(y, y0, y1)));
+      started = true;
+    }
+    ctx.stroke(); ctx.restore();
+  });
+  // 当前点
+  (o.dots || []).forEach(d => {
+    const px = X(d.x), py = Y(clamp(d.y, y0, y1));
+    ctx.beginPath(); ctx.arc(px, py, d.ring ? 5.2 : 4, 0, 7);
+    if (d.ring) { ctx.strokeStyle = d.color; ctx.lineWidth = 1.8; ctx.stroke(); }
+    else { ctx.fillStyle = d.color; ctx.fill(); ctx.strokeStyle = "#fff"; ctx.lineWidth = 1.2; ctx.stroke(); }
+  });
+  if (o.note) {
+    ctx.fillStyle = "#1e3a8a"; ctx.font = "9.5px 'Microsoft YaHei',sans-serif";
+    ctx.textAlign = "center"; ctx.fillText(o.note, mL + pw / 2, mT - 6);
+  }
+}
+
+/* 一般位置的约束力：F(θ) = m(v²/r + g·cosθ)，正 = 拉力 */
+const FofTheta = (K, a) => CFG.m * ((K - 2 * CFG.g * hOf(a)) / CFG.r + CFG.g * Math.cos(a));
+
+function drawCharts() {
+  const g = CFG.g, r = CFG.r, m = CFG.m, v0 = CFG.v0, K = v0 * v0;
+  const E0 = 0.5 * m * K, hMax = 2 * r;
+  const pr = predict("rope", v0), pd = predict("rod", v0);
+  const Rp = S.rope, Rd = S.rod;
+  const dotOf = (M, f) => ({ x: curH(M), y: f(curH(M), curV2(M)), color: M.kind === "rope" ? "#dc2626" : "#7c3aed", ring: M.kind === "rod" });
+
+  /* ① E–h 图 */
+  plot($("chEh"), {
+    xr: [0, hMax], yr: [0, Math.max(E0 * 1.3, 0.2)], xlab: "h/m", ylab: "E/J",
+    curves: [
+      { f: h => E0 - m * g * h, color: "#d97706" },        // E_k
+      { f: h => m * g * h, color: "#059669" },             // E_p
+      { f: () => E0, color: "#334155", dash: [5, 3] }      // E 总
+    ],
+    dots: Rp && Rd ? [dotOf(Rp, (h, v2) => 0.5 * m * v2), dotOf(Rd, (h, v2) => 0.5 * m * v2)] : [],
+    note: "E 总水平 ⇒ 机械能守恒（橙 E_k 绿 E_p）"
+  });
+
+  /* ② F–θ 图：绳曲线终止于松弛角；杆曲线穿越零点变号 */
+  let fmin = 0, fmax = 0;
+  for (let i = 0; i <= 60; i++) {
+    const fv = FofTheta(K, Math.PI * i / 60);
+    fmin = Math.min(fmin, fv); fmax = Math.max(fmax, fv);
+  }
+  const pad = Math.max((fmax - fmin) * 0.18, 0.2);
+  const ropeEnd = pr.slackDeg != null ? pr.slackDeg : (pr.ok ? 360 : pr.turnDeg);
+  const rodEnd = pd.ok ? 360 : pd.turnDeg;
+  const dots = [];
+  if (Rp && Rp.mode === "circ") dots.push({ x: ((Rp.a * DEG) % 360 + 360) % 360, y: Rp.F, color: "#dc2626" });
+  if (Rd && Rd.mode === "circ") dots.push({ x: ((Rd.a * DEG) % 360 + 360) % 360, y: Rd.F, color: "#7c3aed", ring: true });
+  plot($("chFth"), {
+    xr: [0, 360], yr: [fmin - pad, fmax + pad], xlab: "θ/(°)", ylab: "F/N",
+    curves: [
+      { f: th => FofTheta(K, th / DEG), color: "#dc2626", x0: 0, x1: ropeEnd },
+      { f: th => FofTheta(K, th / DEG), color: "#7c3aed", x0: 0, x1: rodEnd, dash: [6, 3] }
+    ],
+    vl: pr.slackDeg != null ? [{ x: pr.slackDeg, color: "#d97706", dash: [3, 3], lab: "松弛" }] : [],
+    dots: dots,
+    note: "红 = 绳 T（≥0，过零即松弛）　紫 = 杆 F（可正可负）"
+  });
+
+  /* ③ v²–h 图：斜率 −2g */
+  plot($("chV2h"), {
+    xr: [0, hMax], yr: [0, Math.max(K * 1.2, 0.5)], xlab: "h/m", ylab: "v²/(m²/s²)",
+    curves: [{ f: h => K - 2 * g * h, color: "#2563eb" }],
+    dots: Rp && Rd ? [dotOf(Rp, (h, v2) => v2), dotOf(Rd, (h, v2) => v2)] : [],
+    note: `斜率 = −2g = ${fmt(-2 * g, 1)}（验证 v² = v₀² − 2gh）`
+  });
+
+  /* ④ 临界图 / 扫描带 */
+  drawCrit();
+}
+
+/* 临界图：v₀ 数轴 + 三区分带 + 理论阈值 + 当前 v₀ + 扫描结果 */
+function drawCrit() {
+  const { ctx, w, h } = fitCanvas($("chCrit"));
+  ctx.clearRect(0, 0, w, h);
+  ctx.fillStyle = "#fff"; ctx.fillRect(0, 0, w, h);
+  const g = CFG.g, r = CFG.r;
+  const vmax = 8, mL = 10, mR = 12, top = 30, bh = 17, gap = 14;
+  const X = v => mL + v / vmax * (w - mL - mR);
+  const th2 = vSwingMin(), thRod = v0RodMin(), thRope = v0RopeMin();
+  const bands = [
+    { name: "绳", y: top, seg: [[0, th2, "#e2e8f2", "摆动"], [th2, thRope, "#fed7aa", "松弛抛体"], [thRope, vmax, "#bbf7d0", "完成圆周"]] },
+    { name: "杆", y: top + bh + gap, seg: [[0, thRod, "#e2e8f2", "摆动"], [thRod, vmax, "#bbf7d0", "完成圆周"]] }
+  ];
+  ctx.font = "10px 'Microsoft YaHei',sans-serif"; ctx.textAlign = "left";
+  bands.forEach(b => {
+    b.seg.forEach(s => {
+      ctx.fillStyle = s[2];
+      ctx.fillRect(X(s[0]), b.y, X(s[1]) - X(s[0]), bh);
+      ctx.strokeStyle = "#cbd5e1"; ctx.lineWidth = 0.6;
+      ctx.strokeRect(X(s[0]), b.y, X(s[1]) - X(s[0]), bh);
+      const mid = (X(s[0]) + X(s[1])) / 2;
+      if (X(s[1]) - X(s[0]) > 40) {
+        ctx.fillStyle = "#475569"; ctx.textAlign = "center";
+        ctx.fillText(s[3], mid, b.y + 12);
+      }
+    });
+    ctx.fillStyle = "#334155"; ctx.textAlign = "right";
+    ctx.fillText(b.name, mL - 2, b.y + 12);
+  });
+  // 理论阈值竖线
+  [[th2, "#64748b", "√(2gr)"], [thRod, "#2563eb", "2√(gr)"], [thRope, "#dc2626", "√(5gr)"]].forEach(t => {
+    ctx.save(); ctx.strokeStyle = t[1]; ctx.lineWidth = 1.2; ctx.setLineDash([4, 3]);
+    ctx.beginPath(); ctx.moveTo(X(t[0]), top - 6); ctx.lineTo(X(t[0]), top + 2 * bh + gap + 4); ctx.stroke();
+    ctx.setLineDash([]); ctx.fillStyle = t[1]; ctx.textAlign = "center"; ctx.font = "9px 'Microsoft YaHei',sans-serif";
+    ctx.fillText(t[2], X(t[0]), top - 9);
+    ctx.restore();
+  });
+  // 扫描结果刻度
+  (S.scanRows || []).forEach(row => {
+    const x = X(row.v0);
+    if (row.rope.ok) { ctx.fillStyle = "#059669"; ctx.fillRect(x - 1, top + bh + 1, 2, 3); }
+    else if (row.rope.slackDeg != null) { ctx.fillStyle = "#d97706"; ctx.fillRect(x - 1, top + bh + 1, 2, 3); }
+    else { ctx.fillStyle = "#94a3b8"; ctx.fillRect(x - 1, top + bh + 1, 2, 3); }
+    if (row.rod.ok) { ctx.fillStyle = "#059669"; ctx.fillRect(x - 1, top + 2 * bh + gap + 1, 2, 3); }
+    else { ctx.fillStyle = "#94a3b8"; ctx.fillRect(x - 1, top + 2 * bh + gap + 1, 2, 3); }
+  });
+  // 当前 v₀ 指示
+  const cx0 = X(clamp(CFG.v0, 0, vmax));
+  ctx.save(); ctx.strokeStyle = "#1f2937"; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(cx0, top - 2); ctx.lineTo(cx0, top + 2 * bh + gap + 6); ctx.stroke();
+  ctx.fillStyle = "#1f2937"; ctx.textAlign = "center"; ctx.font = "9.5px 'Microsoft YaHei',sans-serif";
+  ctx.fillText(`v₀=${fmt(CFG.v0, 2)}`, cx0, top + 2 * bh + gap + 18);
+  ctx.restore();
+  // 横轴刻度
+  ctx.fillStyle = "#94a3b8"; ctx.textAlign = "center"; ctx.font = "9px sans-serif";
+  for (let v = 0; v <= vmax; v += 2) ctx.fillText(v + "", X(v), h - 6);
+  ctx.fillStyle = "#475569"; ctx.textAlign = "left";
+  ctx.fillText("v₀/(m/s)", w - 44, h - 6);
+  ctx.textAlign = "left"; ctx.fillStyle = "#1e3a8a"; ctx.font = "9.5px 'Microsoft YaHei',sans-serif";
+  ctx.fillText("带下小刻度 = 扫描结果", mL, top + 2 * bh + gap + 18);
+}
+
+/* ---------------- v₀ 扫描：逐步增大，记录两模型结局 ---------------- */
+function simOnce(kind, v0) {
+  const saveR = CFG.r, saveM = CFG.m, saveG = CFG.g, saveV = CFG.v0;
+  const M = newModel(kind);
+  M.K = v0 * v0;
+  M.vel = { x: v0, y: 0 };
+  const dt = CFG.dt;
+  let t = 0, vTop = null, Ftop = null;
+  while (t < 6) {
+    const wasA = M.a;
+    stepModel(M, dt); t += dt;
+    if (M.mode === "circ") {
+      const crossed = (wasA < Math.PI && M.a >= Math.PI) || (wasA > Math.PI && M.a < Math.PI && M.a >= Math.PI - 0.4 && M.s > 0);
+      if (crossed && vTop === null) { vTop = Math.sqrt(Math.max(curV2(M), 0)); Ftop = M.F; }
+    }
+    if (M.mode === "end") break;
+    if (M.completed && vTop !== null) break;
+    if (M.done === "摆动") break;
+    if (M.done === "松弛") break;
+  }
+  const out = { kind: kind, v0: v0, ok: M.completed, slackDeg: M.slackA != null ? M.slackA * DEG : null, turnDeg: M.aTurn ? Math.abs(M.aTurn) * DEG : null, vTop: vTop, Ftop: Ftop };
+  CFG.r = saveR; CFG.m = saveM; CFG.g = saveG; CFG.v0 = saveV;
+  return out;
+}
+function runScan() {
+  const step = +$("sStep").value;
+  const rows = [];
+  for (let v0 = step; v0 <= 8.0001; v0 += step) rows.push({ v0: +v0.toFixed(3), rope: simOnce("rope", v0), rod: simOnce("rod", v0) });
+  S.scanRows = rows;
+  renderScan();
+  drawCrit();
+}
+function renderScan() {
+  const rows = S.scanRows || [];
+  if (!rows.length) { $("scanBox").innerHTML = '<div class="hint" style="padding:6px">尚未扫描</div>'; return; }
+  let prevR = null, prevD = null, html = '<table><thead><tr><th>v₀/(m/s)</th><th>绳</th><th>杆</th></tr></thead><tbody>';
+  rows.forEach(row => {
+    const rt = row.rope.ok ? "完成圆周" : (row.rope.slackDeg != null ? `抛体 ${fmt(row.rope.slackDeg, 0)}°` : `摆动 ±${fmt(row.rope.turnDeg, 0)}°`);
+    const dt2 = row.rod.ok ? "完成圆周" : `摆动 ±${fmt(row.rod.turnDeg, 0)}°`;
+    const chR = prevR !== null && prevR !== row.rope.ok;
+    const chD = prevD !== null && prevD !== row.rod.ok;
+    prevR = row.rope.ok; prevD = row.rod.ok;
+    const mark = (chR || chD) ? ' style="background:#fff7ed;font-weight:600"' : "";
+    html += `<tr${mark}><td>${fmt(row.v0, 2)}</td><td>${rt}</td><td>${dt2}</td></tr>`;
+  });
+  html += "</tbody></table>";
+  const thR = v0RopeMin(), thD = v0RodMin();
+  html += `<div class="hint" style="padding:6px">理论临界：绳 √(5gr) = ${fmt(thR)} m/s，杆 2√(gr) = ${fmt(thD)} m/s（高亮行 = 结局发生转变处）。</div>`;
+  $("scanBox").innerHTML = html;
+}
+
+/* ---------------- 5. 预设方案与图层开关 ---------------- */
+const PRESETS = [
+  { t: "绳恰好临界", k: "rope", f: 1.00, tip: "v₀ = √(5gr)，最高点 T ≈ 0" },
+  { t: "绳速度不足", k: "rope", f: 0.85, tip: "v₀ = 0.85√(5gr)，绳松弛做抛体" },
+  { t: "杆缓慢过顶", k: "rod", f: 1.02, tip: "v₀ 略大于 2√(gr)，最高点 v≈0" },
+  { t: "杆往复摆动", k: "rod", f: 0.80, tip: "v₀ < 2√(gr)，到不了最高点" },
+  { t: "同速对照（关键区间）", k: "mid", f: 1.00, tip: "v₀ 介于 2√(gr) 与 √(5gr)：杆完成、绳松弛" },
+  { t: "极低速（两者都摆动）", k: "low", f: 1.00, tip: "v₀ = 0.6√(gr)，绳、杆均往复摆动" }
+];
+const TOGS = [
+  ["vec", "速度/力矢量"], ["energy", "能量条"], ["crit", "临界线标注"], ["slack", "松弛标记"],
+  ["proj", "抛体轨迹"], ["dial", "角度刻度盘"], ["read", "读数卡"], ["strobe", "频闪残影"],
+  ["arc", "摆动弧线"], ["sound", "音效"]
+];
+
+function buildPanel() {
+  $("presets").innerHTML = PRESETS.map((p, i) => `<button class="btn" data-p="${i}" title="${p.tip}">${p.t}</button>`).join("");
+  $("presets").addEventListener("click", e => {
+    const b = e.target.closest("button[data-p]"); if (!b) return;
+    applyPreset(+b.dataset.p);
+  });
+  $("togs").innerHTML = TOGS.map(t =>
+    `<label><input type="checkbox" data-t="${t[0]}" ${CFG.tog[t[0]] ? "checked" : ""}>${t[1]}</label>`).join("");
+  $("togs").addEventListener("change", e => {
+    const c = e.target.closest("input[data-t]"); if (!c) return;
+    CFG.tog[c.dataset.t] = c.checked ? 1 : 0; drawAll();
+  });
+}
+function applyPreset(i) {
+  const p = PRESETS[i], g = CFG.g, r = CFG.r;
+  let v0;
+  if (p.k === "rope") v0 = p.f * Math.sqrt(5 * g * r);
+  else if (p.k === "rod") v0 = p.f * 2 * Math.sqrt(g * r);
+  else if (p.k === "mid") v0 = (2 * Math.sqrt(g * r) + Math.sqrt(5 * g * r)) / 2;
+  else v0 = 0.6 * Math.sqrt(g * r);
+  CFG.v0 = clamp(Math.round(v0 * 100) / 100, 0, 8);
+  $("sV0").value = CFG.v0;
+  updateLabels(); reset(); startPlay();
+}
+
+/* ---------------- 6. 知识卡片库（22 张） ---------------- */
+const sb = (x1, y1, x2, y2, c, w) => `<line x1="${x1}" y1="${y1}" x2="${x2}" y2="${y2}" stroke="${c}" stroke-width="${w || 1.5}"/>`;
+function ah(x1, y1, x2, y2, c) {
+  const dx = x2 - x1, dy = y2 - y1, L = Math.hypot(dx, dy) || 1, ux = dx / L, uy = dy / L, h = 5;
+  return `<polygon points="${x2},${y2} ${(x2 - ux * h - uy * 2.2).toFixed(1)},${(y2 - uy * h + ux * 2.2).toFixed(1)} ${(x2 - ux * h + uy * 2.2).toFixed(1)},${(y2 - uy * h - ux * 2.2).toFixed(1)}" fill="${c}"/>`;
+}
+const arw = (x1, y1, x2, y2, c) => sb(x1, y1, x2, y2, c) + ah(x1, y1, x2, y2, c);
+const dt2 = (x, y, r, c) => `<circle cx="${x}" cy="${y}" r="${r || 5}" fill="${c || "#1f2937"}" stroke="#fff" stroke-width="1"/>`;
+const tx = (x, y, t, c, sz) => `<text x="${x}" y="${y}" font-size="${sz || 9}" fill="${c || "#334155"}" text-anchor="middle">${t}</text>`;
+const svgB = inner => '<svg viewBox="0 0 120 92" width="100%" height="88" style="background:#fff;border:1px solid #eef2f8;border-radius:8px">'
+  + '<circle cx="60" cy="44" r="30" fill="none" stroke="#cbd5e1" stroke-width="1.2" stroke-dasharray="4 3"/>'
+  + '<circle cx="60" cy="44" r="1.8" fill="#94a3b8"/>' + inner + '</svg>';
+const svgN = inner => '<svg viewBox="0 0 120 92" width="100%" height="88" style="background:#fff;border:1px solid #eef2f8;border-radius:8px">' + inner + '</svg>';
+const PA = a => [60 + 30 * Math.sin(a), 44 + 30 * Math.cos(a)];   // 圆周取点（0° 在最低点）
+const arcPath = (a1, a2, n) => {
+  let d = "";
+  for (let i = 0; i <= n; i++) { const p = PA(a1 + (a2 - a1) * i / n); d += (i ? "L" : "M") + p[0].toFixed(1) + "," + p[1].toFixed(1); }
+  return d;
+};
+const MINI = {
+  top: () => svgB(dt2(60, 14) + arw(55, 20, 55, 36, "#64748b") + arw(66, 20, 66, 36, "#dc2626")
+    + tx(46, 42, "mg", "#64748b", 8) + tx(78, 42, "T", "#dc2626", 8) + arw(53, 14, 34, 14, "#2563eb") + tx(28, 11, "v", "#2563eb", 8)
+    + tx(60, 88, "最高点：T + mg = mv²/r", "#334155", 8.5)),
+  bottom: () => svgB(dt2(60, 74) + arw(54, 68, 54, 50, "#dc2626") + arw(67, 80, 67, 88, "#64748b")
+    + tx(44, 46, "T", "#dc2626", 8) + tx(79, 88, "mg", "#64748b", 8) + arw(67, 74, 88, 74, "#2563eb") + tx(94, 77, "v", "#2563eb", 8)
+    + tx(60, 8, "最低点：T − mg = mv²/r", "#334155", 8.5)),
+  gen: () => { const p = PA(Math.PI / 3); return svgB(dt2(p[0], p[1]) + arw(p[0], p[1] + 6, p[0], p[1] + 22, "#64748b")
+    + arw(p[0] - 2, p[1] - 4, p[0] - 15, p[1] - 12, "#dc2626") + arw(p[0] + 3, p[1] - 6, p[0] + 13, p[1] - 22, "#2563eb")
+    + tx(p[0] + 4, p[1] + 32, "mg", "#64748b", 8) + tx(p[0] - 22, p[1] - 14, "F", "#dc2626", 8) + tx(p[0] + 22, p[1] - 26, "v", "#2563eb", 8)
+    + tx(60, 88, "一般位置：F = m(v²/r + g·cosθ)", "#334155", 8.5)); },
+  slack: () => { const p = PA(2.27); return svgB(dt2(p[0], p[1])
+    + `<path d="M${p[0].toFixed(0)},${p[1].toFixed(0)} Q56,0 22,36" fill="none" stroke="#d97706" stroke-width="1.4" stroke-dasharray="3 3"/>`
+    + dt2(22, 36, 4, "#d97706") + tx(36, 22, "抛体", "#b45309", 8.5) + tx(p[0] + 18, p[1] + 4, "T=0", "#dc2626", 8.5)
+    + tx(60, 88, "绳松弛 → 只受重力（虚线）", "#334155", 8.5)); },
+  swing: () => { const p = PA(-1.75); return svgB(`<path d="${arcPath(-1.75, 1.75, 26)}" fill="none" stroke="#93c5fd" stroke-width="4"/>`
+    + dt2(p[0], p[1]) + arw(p[0] + 6, p[1] + 4, p[0] + 20, p[1] + 12, "#2563eb") + tx(p[0] + 26, p[1] + 16, "折返", "#1d4ed8", 8)
+    + tx(60, 88, "速度不足 → 往复摆动，不脱离", "#334155", 8.5)); },
+  rodtop: () => svgB(dt2(60, 14) + arw(55, 20, 55, 36, "#64748b") + arw(66, 12, 66, -2, "#2563eb")
+    + tx(46, 42, "mg", "#64748b", 8) + tx(76, 8, "F(推)", "#2563eb", 8)
+    + tx(60, 88, "v < √(gr)：杆提供向外支持力", "#334155", 8.5)),
+  taut: () => svgB(dt2(60, 14) + arw(55, 20, 55, 36, "#64748b") + arw(66, 20, 66, 36, "#dc2626")
+    + tx(46, 42, "mg", "#64748b", 8) + tx(78, 42, "F(拉)", "#dc2626", 8)
+    + tx(60, 88, "v > √(gr)：杆表现为拉力", "#334155", 8.5)),
+  energy: () => svgN('<rect x="14" y="26" width="92" height="13" fill="#f1f5f9" stroke="#cbd5e1"/>'
+    + '<rect x="14" y="26" width="55" height="13" fill="#d97706"/><rect x="69" y="26" width="37" height="13" fill="#059669"/>'
+    + tx(41, 36, "Ek", "#fff", 9) + tx(87, 36, "Ep", "#fff", 9)
+    + sb(14, 22, 106, 22, "#334155", 1.6) + tx(60, 16, "E 总（水平不变）", "#334155", 9)
+    + tx(60, 62, "½mv₀² = ½mv² + mgh", "#2563eb", 10) + tx(60, 78, "v² = v₀² − 2gh（斜率 −2g）", "#334155", 9)),
+  v2h: () => svgN(sb(20, 14, 20, 74, "#94a3b8") + sb(20, 74, 108, 74, "#94a3b8")
+    + sb(24, 22, 100, 66, "#2563eb", 1.8) + tx(70, 40, "斜率 −2g", "#2563eb", 9.5)
+    + tx(64, 84, "h/m", "#475569", 9) + tx(14, 12, "v²", "#475569", 9)),
+  fth: () => svgN(sb(20, 44, 108, 44, "#94a3b8", 1) + sb(20, 14, 20, 76, "#94a3b8", 1)
+    + '<path d="M24,24 L100,64" stroke="#7c3aed" stroke-width="1.8" fill="none"/>'
+    + '<path d="M24,24 L64,44" stroke="#dc2626" stroke-width="1.8" fill="none"/>'
+    + dt2(64, 44, 3.6, "#dc2626") + tx(64, 56, "T=0 松弛", "#dc2626", 8.5)
+    + tx(90, 34, "杆 F 变号", "#7c3aed", 8.5) + tx(60, 86, "θ/(°)", "#475569", 9)),
+  three: () => svgN('<circle cx="22" cy="40" r="15" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>' + dt2(22, 25, 4) + sb(22, 40, 22, 29, "#475569") + tx(22, 72, "绳·只能拉", "#334155", 8.5)
+    + '<circle cx="60" cy="40" r="15" fill="none" stroke="#cbd5e1" stroke-width="1.2"/>' + dt2(60, 25, 4) + sb(60, 40, 60, 29, "#dc2626", 2.6) + tx(60, 72, "杆·可拉可推", "#334155", 8.5)
+    + '<path d="M76,55 Q98,18 120,55" fill="none" stroke="#cbd5e1" stroke-width="2"/>' + dt2(98, 30, 4) + sb(98, 24, 98, 16, "#2563eb") + tx(98, 72, "拱桥·只能推", "#334155", 8.5)
+    + tx(60, 88, "单侧约束的两种方向 vs 双侧约束", "#334155", 8.5)),
+  life: () => svgN('<circle cx="38" cy="46" r="26" fill="none" stroke="#cbd5e1" stroke-width="1.2" stroke-dasharray="4 3"/>'
+    + '<rect x="27" y="12" width="22" height="14" rx="2" fill="#93c5fd" stroke="#1d4ed8"/>' + '<path d="M27,12 q11,-9 22,0" fill="none" stroke="#1d4ed8"/>'
+    + tx(38, 84, "水桶过顶不洒", "#334155", 8.5)
+    + '<path d="M72,66 Q94,18 116,66" fill="none" stroke="#cbd5e1" stroke-width="2.4"/>' + dt2(94, 30, 4) + sb(94, 24, 94, 12, "#2563eb")
+    + tx(94, 84, "拱桥腾空（外轨）", "#334155", 8.5)),
+  scan: () => svgN(sb(16, 46, 108, 46, "#cbd5e1", 3) + sb(16, 46, 60, 46, "#94a3b8", 3) + sb(60, 46, 82, 46, "#f59e0b", 3) + sb(82, 46, 108, 46, "#22c55e", 3)
+    + sb(60, 38, 60, 54, "#2563eb", 1.6) + sb(82, 38, 82, 54, "#dc2626", 1.6)
+    + tx(60, 32, "2√(gr)", "#2563eb", 8.5) + tx(88, 32, "√(5gr)", "#dc2626", 8.5)
+    + arw(20, 66, 104, 66, "#334155") + tx(62, 80, "v₀ 逐步增大：摆动 → 抛体 → 完成", "#334155", 8.5)),
+  flow: () => svgN('<rect x="10" y="34" width="30" height="22" rx="4" fill="#eff6ff" stroke="#93b8f7"/>' + tx(25, 48, "①判约束", "#1d4ed8", 8)
+    + '<rect x="45" y="34" width="30" height="22" rx="4" fill="#fef2f2" stroke="#fca5a5"/>' + tx(60, 48, "②最高点", "#b91c1c", 8)
+    + '<rect x="80" y="34" width="30" height="22" rx="4" fill="#fffbeb" stroke="#fcd34d"/>' + tx(95, 48, "③能量回推", "#b45309", 8)
+    + arw(40, 45, 45, 45, "#64748b") + arw(75, 45, 80, 45, "#64748b") + tx(60, 78, "先定最高点条件，再用守恒回推最低点", "#334155", 8.5)),
+  tmax: () => svgB(arw(60, 68, 60, 48, "#dc2626", 3) + arw(90, 44, 74, 44, "#dc2626", 1.4)
+    + arw(60, 20, 60, 34, "#dc2626", 0.8) + dt2(60, 74, 4.5) + dt2(90, 44, 4) + dt2(60, 14, 4)
+    + tx(72, 84, "F 最低点最大、最高点最小", "#334155", 8.5)),
+  safe: () => svgN('<path d="M60,10 L96,24 V48 Q96,74 60,86 Q24,74 24,48 V24 Z" fill="#fef2f2" stroke="#fca5a5" stroke-width="1.5"/>'
+    + tx(60, 44, "⚠", "#b91c1c", 22) + tx(60, 62, "护目镜 · 装置固定", "#991b1b", 9) + tx(60, 76, "勿在轨道平面内伸手", "#991b1b", 9)),
+  six: () => svgN('<rect x="16" y="30" width="88" height="34" rx="6" fill="#eff6ff" stroke="#93b8f7"/>'
+    + tx(60, 46, "T底 = 6mg", "#1d4ed8", 13) + tx(60, 62, "与 r、m 无关", "#334155", 9))
+};
+
+const CARDS = [
+  { id: "c_vcm", cat: "概念", title: "竖直平面内的圆周运动", conc: "轨迹是圆，但速率随高度变化（重力做功），是<b>非匀速</b>圆周运动。", fm: "v² = v₀² − 2gh，½mv₀² = ½mv² + mgh", mini: MINI.gen(), how: "用预设「绳恰好临界」播放，看读数卡里 v 随 θ 变化（最低点最大、最高点最小）。", warn: "“竖直圆周是匀速圆周”是错的：速率在变。", back: "取最低点为零势能面：½mv₀² = ½mv² + mgh ⇒ v² = v₀² − 2gh。上升时 h 增大、v 减小；下降时相反。切向加速度由重力切向分量提供：a_t = −g·sinθ。" },
+  { id: "c_nonuni", cat: "概念", title: "合力一般不指向圆心", conc: "法向分量提供向心力 mv²/r；切向分量改变速率。<b>只有最高点与最低点</b>合力才指向圆心。", fm: "F_n = m v²/r；F_t = mg·sinθ", mini: MINI.gen(), how: "打开「速度/力矢量」，看一般位置处重力（灰）与绳力（红）的合力并不沿半径。", warn: "“合力始终指向圆心”是匀速圆周运动才有的结论。", back: "一般位置：沿半径方向 F + mg·cosθ = mv²/r（法向，改变方向）；沿切线方向 mg·sinθ = m·dv/dt（切向，改变大小）。最高/最低点 sinθ = 0，切向力为零，合力才沿半径。" },
+  { id: "c_rope", cat: "概念", title: "单侧约束：绳（轻绳、内轨）", conc: "绳只能<b>拉</b>（沿绳指向圆心），不能推；T ≥ 0，T = 0 即为松弛临界。", fm: "T = m(v²/r + g·cosθ) ≥ 0", mini: MINI.top(), how: "看左侧画板：绳用实线画（绷紧），一旦松弛变灰虚线并弹出「绳已松弛」标记。", warn: "绳<b>不能</b>提供支持力，这是与杆最本质的区别。", back: "绳只能产生沿绳指向圆心的拉力。列法向方程（指向圆心为正）：T − mg·cosθ = mv²/r 中重力径向分量为 −mg·cosθ，故 T = m(v²/r + g·cosθ)。当 θ > 90°（上半圈）cosθ < 0，v 又小，T 就可能降到 0。" },
+  { id: "c_rod", cat: "概念", title: "双侧约束：杆（轻杆、细管、双轨）", conc: "杆既能<b>拉</b>也能<b>推</b>，作用力可为正（拉力·指向圆心）、负（支持力·背离圆心）或零。", fm: "F = m(v²/r + g·cosθ)，可正可负可零", mini: MINI.rodtop(), how: "看右侧画板：杆按力的符号变色（红 = 拉，蓝 = 支持），读 F 的数值与性质。", warn: "“杆只能提供拉力”是错的；v &lt; √(gr) 时杆在最高点是<b>推</b>小球。", back: "杆为刚体约束，可传递拉、压。最高点：mg + F = mv²/r ⇒ F = mv²/r − mg。v = 0 → F = −mg（支持力，向外）；v = √(gr) → F = 0；v > √(gr) → F > 0（拉力）。" },
+  { id: "f_top", cat: "公式", title: "最高点临界速度 √(gr)", conc: "绳模型通过最高点的最小速度：重力恰好全部提供向心力，T = 0。", fm: "T + mg = m v²/r，T = 0 ⇒ v_顶,min = √(gr)", mini: MINI.top(), how: "预设「绳恰好临界」，到达最高点时读 T ≈ 0 N、v = √(gr)（当前 r 下的数值见临界线标注）。", warn: "这是<b>绳</b>的最小速度；杆的最高点速度可以为 0。", back: "最高点重力指向圆心：T + mg = mv²/r ⇒ T = mv²/r − mg。绳要求 T ≥ 0 ⇒ v² ≥ gr ⇒ v ≥ √(gr)。r = 0.5 m、g = 9.8 时 √(gr) = 2.21 m/s。" },
+  { id: "f_v0min", cat: "公式", title: "绳模型最低点最小速度 √(5gr)", conc: "由最高点临界条件 + 机械能守恒回推到最低点，得 v₀,min = √(5gr)。", fm: "v₀² = v_顶² + 2g·(2r) = gr + 4gr = 5gr", mini: MINI.v2h(), how: "预设「绳恰好临界」直接给出；也可用扫描表找绳由“抛体”变“完成”的转变点。", warn: "√(5gr) 是<b>最低点</b>速度，不要与最高点的 √(gr) 混淆。", back: "最低点→最高点升高 2r：½mv₀² = ½mv_顶² + mg·2r。代入 v_顶² = gr：v₀² = gr + 4gr = 5gr ⇒ v₀ = √(5gr)。r = 0.5 m、g = 9.8 时 ≈ 4.95 m/s。" },
+  { id: "f_bottom", cat: "公式", title: "临界时最低点张力 T_底 = 6mg", conc: "绳模型以 v₀ = √(5gr) 通过最低点时，张力恰为 6mg，<b>与 r、m 无关</b>。", fm: "T − mg = m v₀²/r，v₀² = 5gr ⇒ T = 6mg", mini: MINI.six(), how: "预设「绳恰好临界」，在最低点瞬间读 T（= 6mg），改 r 或 m 后再看，比值恒为 6。", warn: "“最低点张力等于 mg”是错的——那是静止悬挂的情形。", back: "T = mg + m v₀²/r = mg + m·5gr/r = 6mg。由于 v₀² ∝ r，r 被约掉；m 同时出现在两项中也被约掉，故结果与 r、m 都无关。" },
+  { id: "f_rod", cat: "公式", title: "杆模型：v₀,min = 2√(gr)", conc: "杆在最高点只需 v = 0 即可通过，回推最低点得 v₀,min = 2√(gr)。", fm: "mg ± F = m v²/r；v₀² = 0 + 4gr ⇒ v₀ = 2√(gr)", mini: MINI.rodtop(), how: "预设「杆缓慢过顶」，看小球几乎“停”在最高点又继续转过，读 F ≈ −mg（支持力）。", warn: "杆的临界值 2√(gr) 比绳的 √(5gr) <b>小</b>：√(5)≈2.236 > 2。", back: "最高点杆可提供等于 mg 的向外支持力使合力为零，故 v_顶 可为 0。能量守恒：½mv₀² = 0 + mg·2r ⇒ v₀² = 4gr ⇒ v₀ = 2√(gr)。r = 0.5、g = 9.8 时 ≈ 4.43 m/s。" },
+  { id: "f_general", cat: "公式", title: "一般位置的力：F = m(v²/r + g·cosθ)", conc: "θ 从最低点起算，约束力随位置连续变化：<b>最低点最大、最高点最小</b>。", fm: "F(θ) = m(v₀²/r − 2g + 3g·cosθ)", mini: MINI.fth(), how: "看 F–θ 图：曲线随 θ 单调下降；绳曲线在过零处终止，杆曲线穿过零线继续为负。", warn: "θ 的起点要统一：本 Demo 规定 θ = 0 在最低点。", back: "把 v² = v₀² − 2gr(1 − cosθ) 代入 F = m(v²/r + g·cosθ)：F = m(v₀²/r − 2g + 2g·cosθ + g·cosθ) = m(v₀²/r − 2g + 3g·cosθ)。cosθ 从 1 降到 −1，F 单调减小。" },
+  { id: "f_energy", cat: "公式", title: "机械能守恒（只有重力做功）", conc: "不计阻力时，动能与重力势能相互转化，总机械能不变。", fm: "½mv₁² + mgh₁ = ½mv₂² + mgh₂；v² = v₀² − 2gh", mini: MINI.energy(), how: "看 E–h 图（E 总为水平线）与 v²–h 图（斜率 −2g 的直线），以及读数卡的“能量漂移”。", warn: "绳重新绷紧的瞬间有能量损失，属<b>理想化处理</b>，此时不再守恒。", back: "约束力始终与速度垂直（不做功），只有重力做功 ⇒ 机械能守恒。以最低点为参考面：E = ½mv² + mgh = ½mv₀²（常量）。v² = v₀² − 2gh 说明 v² 与 h 成线性关系，斜率 −2g。" },
+  { id: "g_slack", cat: "规律", title: "绳速度不足 → 松弛做抛体", conc: "v₀ &lt; √(5gr) 时，绳张力在上半圈先减为 0，小球<b>脱离圆轨道做抛体运动</b>。", fm: "松弛角：cosθ = (2gr − v₀²)/(3gr)（θ &gt; 90° 才可能）", mini: MINI.slack(), how: "预设「绳速度不足」：橙色虚线即抛体轨迹，并标出松弛角 θ；读 F–θ 图曲线在 T = 0 处终止。", warn: "“绳松弛后继续做圆周运动”是错的：此后只受重力。", back: "令 T = m(v²/r + g·cosθ) = 0，代入 v² = v₀² − 2gr(1 − cosθ)：v₀² − 2gr + 3gr·cosθ = 0 ⇒ cosθ = (2gr − v₀²)/(3gr)。当 v₀² ≤ 2gr 时 θ ≤ 90°，绳不会松弛，小球只能往复摆动。" },
+  { id: "g_swing", cat: "规律", title: "杆速度不足 → 往复摆动（不脱离）", conc: "v₀ &lt; 2√(gr) 时，小球在到达最高点前速率减为 0，被杆约束着折返摆动。", fm: "折返角：cosθ = 1 − v₀²/(2gr)", mini: MINI.swing(), how: "预设「杆往复摆动」或「极低速」：蓝色弧线即摆动区间，读“摆动折返角 ±θ”。", warn: "杆模型<b>永不脱离</b>轨道，这是刚体双侧约束的结论。", back: "由 v² = v₀² − 2gr(1 − cosθ) = 0 ⇒ cosθ = 1 − v₀²/(2gr)。若 v₀² &lt; 4gr 则 θ &lt; 180°，在最高点之前停下并折返，杆始终提供所需的作用力（拉力或支持力）。" },
+  { id: "g_Tmax", cat: "规律", title: "最低点张力最大、最高点最小", conc: "F = m(v₀²/r − 2g + 3g·cosθ)，随 cosθ 减小而减小，故最低点最大。", fm: "F_底 = mg + mv₀²/r；F_顶 = mv_顶²/r − mg", mini: MINI.tmax(), how: "看 F–θ 图的单调下降曲线，并对比读数卡在最低点与最高点的 T（F）数值。", warn: "不要把“最高点力最小”误记成“最高点速率最小”——两者确实同时成立，但原因不同（力还含 mg 项）。", back: "cosθ 在最低点为 +1、最高点为 −1，代入 F 表达式可见 F_底 − F_顶 = 6mg（与 v₀、r 无关）。这也是 T_底 = 6mg 结论的另一种看法。" },
+  { id: "m_flow", cat: "方法", title: "临界问题三步法", conc: "① 判约束类型 → ② 用最高点临界条件定 v_顶 → ③ 用机械能守恒回推最低点 v₀。", fm: "绳：v_顶 ≥ √(gr) ⇒ v₀ ≥ √(5gr)；杆：v_顶 ≥ 0 ⇒ v₀ ≥ 2√(gr)", mini: MINI.flow(), how: "按左侧「预设方案」逐个点开，对照结论条给出的三个关键值，体会“先定最高点、再回推最低点”的流程。", warn: "第①步最易忽略：把绳当杆（或反之）会直接导致临界值用错。", back: "例：r = 0.5 m、g = 9.8。绳：v_顶 = √(4.9) = 2.21 m/s ⇒ v₀ = √(24.5) = 4.95 m/s。杆：v_顶 = 0 ⇒ v₀ = √(19.6) = 4.43 m/s。差异来自最高点是否允许合力为零。" },
+  { id: "m_scan", cat: "方法", title: "扫描逼近法找临界值", conc: "把 v₀ 从 0 逐步增大，观察结局由“摆动 → 抛体 → 完成圆周”的转变，转变点即临界值。", fm: "转变点：绳 ≈ √(5gr)，杆 ≈ 2√(gr)", mini: MINI.scan(), how: "点左侧「开始扫描」，看扫描表中高亮的转变行；临界图下方的小刻度即扫描结果。", warn: "扫描是数值实验，转变点分辨率受步长 Δv₀ 限制（步长越小越准）。", back: "结局由能量常数 K = v₀² 决定：K &lt; 2gr 摆动；2gr ≤ K &lt; 5gr 绳松弛抛体（杆则是 K &lt; 4gr 摆动）；K ≥ 5gr（杆 K ≥ 4gr）完成圆周。因此扫描只需判断 v₀ 落在哪一段。" },
+  { id: "d_three", cat: "辨析", title: "绳 vs 杆 vs 拱桥（三类约束）", conc: "绳＝单侧（只能拉）；杆＝双侧（可拉可推）；拱桥／外轨＝单侧（只能推）。", fm: "绳：v_顶 ≥ √(gr)　杆：v_顶 ≥ 0　拱桥：v_顶 ≤ √(gr)（否则腾空）", mini: MINI.three(), how: "本 Demo 左右两侧即“绳 vs 杆”；拱桥见本卡示意图，与绳构成“单侧约束的两种方向”。", warn: "三类模型的临界条件<b>不能互换</b>：先判断约束能提供什么方向的力。", back: "绳（内轨）：向心力不足时 T → 0，小球向圆内掉落（脱离）。拱桥（外轨）：N = mg·cosθ − mv²/r，v 过大时 N → 0，小球向圆外飞出（腾空）。两者都是单侧约束，但“缺口”方向相反；杆两侧都不缺。" },
+  { id: "d_sign", cat: "辨析", title: "拉力与支持力的符号约定", conc: "本 Demo 统一规定：指向圆心为<b>正（拉力·红）</b>，背离圆心为<b>负（支持力·蓝）</b>。", fm: "F > 0 拉；F < 0 推（支持）；F = 0 恰好无作用力", mini: MINI.taut(), how: "看右侧画板杆的颜色：红＝拉力（杆被拉长），蓝＝支持力（杆被压缩），灰＝零。", warn: "换参考方向时符号会反过来，但“拉力指向圆心、支持力背离圆心”的物理含义不变。", back: "国际习惯中“张力/压力”按效果命名：使物体靠近圆心的叫拉力，推离圆心的叫支持力（压力）。杆模型在最高点：v 小时需要“把球顶住”，即向外推，故为支持力；v 大时需要“把球拽住”，即向内拉，故为拉力。" },
+  { id: "w_1", cat: "易错", title: "易错①：最高点速度能否为 0", conc: "绳模型<b>不能</b>（最小 √(gr)）；杆模型<b>可以</b>（v = 0 也能过顶）。", fm: "绳：v_顶,min = √(gr)；杆：v_顶,min = 0", mini: MINI.top(), how: "同速对照预设中，绳侧在最高点前松弛，杆侧缓慢通过最高点——直接对比。", warn: "错在哪：忽略约束类型。记忆口诀：“绳要 √(gr)，杆可到 0”。", back: "绳在最高点若 v = 0，需要 T = −mg（向外推）才能平衡，绳做不到，故绳早在最高点前就松弛了。杆能提供向外支持力 mg，故 v = 0 也能静止通过（不稳定）。" },
+  { id: "w_2", cat: "易错", title: "易错②：绳能否推、杆能否拉、松弛后做什么", conc: "绳<b>只拉不推</b>；杆<b>既拉也推</b>；绳松弛后小球做<b>抛体运动</b>，不是圆周运动。", fm: "T ≥ 0；F 可正可负；松弛后 a = g（只受重力）", mini: MINI.slack(), how: "点「绳速度不足」看橙色虚线（抛体）与「绳已松弛」标记；点「杆缓慢过顶」看杆变蓝（支持力）。", warn: "错在哪：把绳的“拉力”与杆的“作用力”混为一谈。记忆：“绳松即抛，杆永远约束”。", back: "绳松弛瞬间 T = 0，之后只受重力，轨迹为抛物线（初速度沿切线）。教材通常到此为止；真实情况下绳再被拉直时会发生非弹性绷紧并损失能量，本 Demo 已按“损失径向速度分量”的理想化规则处理并标注。" },
+  { id: "w_3", cat: "易错", title: "易错③：匀速？合力指向圆心？T_底 = mg？", conc: "三条都错：竖直圆周<b>非匀速</b>；合力<b>一般不指向圆心</b>；临界时 T_底 = <b>6mg</b>。", fm: "a_t = −g·sinθ ≠ 0；F_n = mv²/r；T_底 = mg + mv₀²/r", mini: MINI.tmax(), how: "看读数卡的 v 随 θ 变化（非匀速）；看矢量图中合力方向（不在半径上）；预设「绳恰好临界」读最低点 T = 6mg。", warn: "错在哪：照搬匀速圆周运动的结论。记忆：“竖直圆周看两点：最高点定临界，最低点算力”。", back: "速率沿程变化（重力做功），故是变速运动；一般位置合力既有法向分量（改变方向）又有切向分量（改变大小），所以不指向圆心。最低点 T = mg + mv₀²/r，临界 v₀² = 5gr 时 T = 6mg。" },
+  { id: "a_life", cat: "应用", title: "生活与工程实例", conc: "水桶过顶、过山车竖直环、链球秋千属于“绳/内轨”类；杆式机械臂、曲柄连杆属于“杆”类；拱桥腾空属“外轨”类。", fm: "过顶不洒：v_顶 ≥ √(gr)；赛车腾空：v &gt; √(gr)", mini: MINI.life(), how: "把 r 调到 0.2–1.0 m，观察临界值 √(gr)、√(5gr)、2√(gr) 如何随 r 变化，体会实例中的数量级。", warn: "摩天轮吊舱是“匀速 + 双侧约束”，与本模型的“非匀速”不同，不可套用临界条件。", back: "水桶过顶：水恰好不洒时 v_顶 = √(gr)，此时重力全部提供向心力，水处于完全失重。过山车竖直环：内轨约束，顶部速度须 ≥ √(gr)（实际留有余量）。拱桥：v &gt; √(gr) 时车对桥面压力为零而腾空。" },
+  { id: "s_safe", cat: "安全", title: "演示装置操作安全", conc: "小球可能高速飞出：必须佩戴护目镜、装置固定、轨道平面内严禁伸手。", fm: "绳松弛后小球做抛体，速度可达 v₀ 量级", mini: MINI.safe(), how: "做任何预设前先确认周围无人站在轨道平面内；绳松弛演示（v₀ &lt; √(5gr)）尤其要注意飞出方向。", warn: "绳重新绷紧时会有冲击与能量损失，不要用手去接球。", back: "安全要点：① 底座用夹具固定；② 观察者与操作者佩戴护目镜；③ 绳松弛演示时在飞出方向设置挡板或留出安全距离；④ 转速（初速度）由小到大逐步增加；⑤ 装置出现松动、异响应立即停止。" }
+];
+
+/* ---------------- 7. 卡片抽屉（分类 / 搜索 / 翻转 / 钉住 / 键盘） ---------------- */
+const CATS = ["全部", "概念", "公式", "规律", "方法", "辨析", "易错", "应用", "安全"];
+const D = { cat: "全部", q: "", list: CARDS.slice(), idx: 0, flipped: false, pinned: [], lastFocus: null };
+const drawer = $("drawer"), dlist = $("dlist"), detail = $("detail");
+
+function renderTabs() {
+  $("tabs").innerHTML = CATS.map(c => `<button data-c="${c}" class="${c === D.cat ? "on" : ""}">${c}</button>`).join("");
+}
+function filterCards() {
+  const q = D.q.trim();
+  D.list = CARDS.filter(c =>
+    (D.cat === "全部" || c.cat === D.cat) &&
+    (!q || (c.title + c.conc + c.fm + c.how + (c.warn || "") + c.back).indexOf(q) >= 0));
+  renderList();
+}
+function renderList() {
+  $("clist").innerHTML = D.list.length ? D.list.map((c, i) =>
+    `<button data-i="${i}"><b>${c.title}</b><div class="ct">${c.cat}｜${c.conc.replace(/<[^>]+>/g, "")}</div></button>`).join("")
+    : '<div class="hint">没有匹配的卡片</div>';
+  $("pinned").innerHTML = D.pinned.length
+    ? D.pinned.map(id => `<button data-pin="${id}">📌 ${(CARDS.find(c => c.id === id) || {}).title || id}</button>`).join("")
+    : "";
+}
+function openCard(id) {
+  const i = CARDS.findIndex(c => c.id === id);
+  if (i < 0) return;
+  D.idx = i; D.flipped = false;
+  dlist.style.display = "none"; detail.style.display = "block";
+  renderDetail();
+}
+function renderDetail() {
+  const c = CARDS[D.idx];
+  $("faceFront").innerHTML =
+    `<div class="kc"><h3>${c.title} <span class="ct" style="font-size:11px;color:#64748b">${c.cat}</span></h3>
+     <div class="conc">${c.conc}</div>
+     <div class="fm">${c.fm}</div>
+     <div class="mini">${c.mini}</div>
+     <div class="how"><b>在本 Demo 中怎么看：</b>${c.how}</div>
+     ${c.warn ? `<div class="warn"><b>易错提醒：</b>${c.warn}</div>` : ""}
+     <div class="lb">共 ${CARDS.length} 张｜第 ${D.idx + 1} 张（← → 切换，Esc 关闭）</div></div>`;
+  $("faceBack").innerHTML =
+    `<div class="kc"><h3>${c.title} · 推导与说明</h3>
+     <div class="fm">${c.fm}</div>
+     <div style="font-size:12.5px;line-height:1.85">${c.back}</div>
+     <div class="mini">${c.mini}</div></div>`;
+  $("faceBack").style.display = D.flipped ? "block" : "none";
+  $("faceFront").style.display = D.flipped ? "none" : "block";
+  $("btnPin").textContent = D.pinned.indexOf(c.id) >= 0 ? "取消钉住" : "钉住";
+}
+function openDrawer(id) {
+  D.lastFocus = document.activeElement;
+  drawer.classList.add("open"); drawer.setAttribute("aria-hidden", "false");
+  $("fab").style.display = "none";
+  if (id) { openCard(id); } else { dlist.style.display = "block"; detail.style.display = "none"; renderList(); }
+  setTimeout(() => { const t = id ? $("btnFlip") : $("search"); if (t && t.focus) t.focus(); }, 120);
+}
+function closeDrawer() {
+  drawer.classList.remove("open"); drawer.setAttribute("aria-hidden", "true");
+  $("fab").style.display = "block";
+  if (D.lastFocus && D.lastFocus.focus) { try { D.lastFocus.focus(); } catch (e) { } }
+}
+function navCard(step) {
+  if (detail.style.display === "none") return;
+  D.idx = (D.idx + step + CARDS.length) % CARDS.length;
+  D.flipped = false; renderDetail();
+}
+
+/* ---------------- 8. 教学引导流程（六步） ---------------- */
+const STEPS = [
+  { t: "① 观察对照", tip: "点左侧预设「同速对照（关键区间）」，让绳、杆两侧以同一个 v₀ 同时释放，观察两侧的差别。", q: "两侧小球谁先到达最高点？绳侧小球在什么位置“离开”了圆轨道？", card: "c_rope" },
+  { t: "② 提出猜想", tip: "要让小球完成一整圈，绳模型和杆模型<b>哪个需要的初速度更小</b>？先写下你的猜想。", q: "绳需要 v₀ ≥ √(5gr)，杆需要 v₀ ≥ 2√(gr)，哪个更大？为什么？", card: "f_rod" },
+  { t: "③ 临界扫描实验", tip: "在左侧「临界扫描」中点「开始扫描」，让 v₀ 由 0 逐步增大，看扫描表中结局的转变。", q: "绳侧由“摆动”变“抛体”、再变“完成圆周”，分别发生在哪个 v₀ 附近？杆侧呢？", card: "m_scan" },
+  { t: "④ 数据与图像", tip: "读下方三张图：E–h（E 总是否水平）、v²–h（斜率是多少）、F–θ（杆的曲线为何能穿过零线）。", q: "v²–h 图的斜率是多少？F–θ 图中绳的曲线为什么会在中途终止？", card: "f_energy" },
+  { t: "⑤ 得出结论", tip: "对照结论条与卡片「绳 vs 杆 vs 拱桥」，把两模型的临界条件、速度不足时的表现列成对照表。", q: "√(gr)、√(5gr)、2√(gr) 三个值各自的物理意义是什么？成立前提有哪些（刚体、匀速、同轴？）", card: "d_three" },
+  { t: "⑥ 公式推导", tip: "从最高点 T + mg = mv²/r 出发，令 T = 0 得 √(gr)，再用机械能守恒回推最低点。", q: "为什么绳模型临界时最低点张力恰为 6mg，且与半径 r、质量 m 都无关？", card: "f_bottom" }
+];
+function renderGuide() {
+  const s = STEPS[S.guide];
+  $("gdots").innerHTML = STEPS.map((_, i) => `<i class="${i === S.guide ? "on" : ""}"></i>`).join("");
+  $("gstep").innerHTML = `<div class="tip"><b>${s.t}</b><br>${s.tip}</div><div class="q"><b>待答问题：</b>${s.q}</div>`;
+  if ($("autoCard").checked) openDrawer(s.card);
+}
+function gotoStep(i) {
+  S.guide = clamp(i, 0, STEPS.length - 1);
+  renderGuide();
+}
+
+/* ---------------- 9. 练习与考核 ---------------- */
+const QUIZ = [
+  { q: "绳模型小球<b>恰好</b>能完成完整圆周时，最高点的速度为（r = 0.5 m，g = 9.8 m/s²）", o: ["0", "√(gr) ≈ 2.21 m/s", "√(2gr) ≈ 3.13 m/s", "√(5gr) ≈ 4.95 m/s"], a: 1, c: "f_top", why: "最高点 T = 0 时重力全部提供向心力：mg = mv²/r ⇒ v = √(gr)。√(5gr) 是<b>最低点</b>的最小速度，不要混淆。" },
+  { q: "上题中，绳模型在最低点需要的最小初速度约为", o: ["2.21 m/s", "3.13 m/s", "4.43 m/s", "4.95 m/s"], a: 3, c: "f_v0min", why: "由最高点 v² = gr 与升高 2r 的能量关系：v₀² = v_顶² + 4gr = 5gr ⇒ v₀ = √(5·9.8·0.5) = √24.5 ≈ 4.95 m/s。" },
+  { q: "绳模型 v₀ 略小于 √(5gr) 时，小球将", o: ["停在最高点不动", "绳在上半圈松弛，此后做抛体运动", "继续做完整圆周运动", "立即静止落回最低点"], a: 1, c: "g_slack", why: "绳只能拉不能推。当所需 T 降到 0 时绳松弛，小球此后只受重力，沿切线方向做抛体运动，不再做圆周运动。" },
+  { q: "杆模型以 v₀ = 2√(gr) 恰好通过最高点时，杆对小球的作用力为", o: ["0", "支持力 mg（背离圆心）", "拉力 mg（指向圆心）", "拉力 2mg"], a: 1, c: "f_rod", why: "此时最高点 v = 0，需要合力为零，重力 mg 向下，故杆必须提供<b>向上（背离圆心）</b>的支持力 mg。" },
+  { q: "竖直平面内的圆周运动中（除最高点、最低点外），小球所受合力", o: ["始终指向圆心", "始终沿切线方向", "一般不指向圆心（含法向与切向分量）", "始终竖直向下"], a: 2, c: "c_nonuni", why: "法向分量提供向心力 mv²/r，切向分量（重力切向分量）改变速率，故合力一般不沿半径。只有最高、最低点切向分量为零。" },
+  { q: "绳模型临界通过时（v₀ = √(5gr)），最低点绳的张力为", o: ["mg", "2mg", "5mg", "6mg"], a: 3, c: "f_bottom", why: "T = mg + mv₀²/r = mg + m·5gr/r = 6mg，与半径、质量均无关。" }
+];
+function buildQuiz() {
+  const order = QUIZ.map((_, i) => i);
+  if (CFG.exam) for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(Math.random() * (i + 1)); const t = order[i]; order[i] = order[j]; order[j] = t; }
+  const perm = {};
+  QUIZ.forEach((_, i) => {
+    const p = QUIZ[i].o.map((_, k) => k);
+    if (CFG.exam) for (let k = p.length - 1; k > 0; k--) { const j = Math.floor(Math.random() * (k + 1)); const t = p[k]; p[k] = p[j]; p[j] = t; }
+    perm[i] = p;
+  });
+  $("quiz").innerHTML = order.map(qi => {
+    const Q = QUIZ[qi];
+    return `<div class="qz" data-q="${qi}">
+      <div class="qq">${Q.q}</div>
+      ${perm[qi].map(oi => `<button class="opt" data-q="${qi}" data-o="${oi}">${String.fromCharCode(65 + perm[qi].indexOf(oi))}. ${Q.o[oi]}</button>`).join("")}
+      <div class="fb" style="display:none"></div></div>`;
+  }).join("");
+  $("qScore").textContent = CFG.exam ? "考核模式：答案已隐藏，提交后可查看" : "";
+}
+function bindQuiz() {
+  $("quiz").addEventListener("click", e => {
+    const b = e.target.closest(".opt"); if (!b) return;
+    const qi = +b.dataset.q, oi = +b.dataset.o, Q = QUIZ[qi];
+    const box = b.closest(".qz"), fb = box.querySelector(".fb");
+    box.querySelectorAll(".opt").forEach(o => o.classList.remove("sel", "right", "wrong"));
+    b.classList.add("sel");
+    if (CFG.exam) { fb.style.display = "none"; return; }
+    const ok = oi === Q.a;
+    b.classList.add(ok ? "right" : "wrong");
+    if (!ok) box.querySelectorAll(".opt").forEach(o => { if (+o.dataset.o === Q.a) o.classList.add("right"); });
+    fb.className = "fb " + (ok ? "ok" : "no");
+    fb.innerHTML = (ok ? "✓ 正确。" : "✗ 不正确。" + Q.why + "　") +
+      `<button class="btn" data-goto="${Q.c}" style="padding:1px 7px;font-size:11.5px">查看相关卡片</button>`;
+    fb.style.display = "block";
+  });
+  $("quiz").addEventListener("click", e => {
+    const b = e.target.closest("button[data-goto]"); if (b) openDrawer(b.dataset.goto);
+  });
+}
+function submitQuiz() {
+  let right = 0, total = QUIZ.length;
+  $("quiz").querySelectorAll(".qz").forEach(box => {
+    const qi = +box.dataset.q, Q = QUIZ[qi];
+    const sel = box.querySelector(".opt.sel");
+    const fb = box.querySelector(".fb");
+    const ok = sel && (+sel.dataset.o === Q.a);
+    box.querySelectorAll(".opt").forEach(o => {
+      o.classList.remove("sel", "right", "wrong");
+      if (+o.dataset.o === Q.a) o.classList.add("right");
+      else if (o === sel) o.classList.add("wrong");
+    });
+    if (ok) right++;
+    fb.className = "fb " + (ok ? "ok" : "no");
+    fb.innerHTML = (ok ? "✓ 正确。" : "✗ 不正确。" + Q.why + "　") +
+      `<button class="btn" data-goto="${Q.c}" style="padding:1px 7px;font-size:11.5px">查看相关卡片</button>`;
+    fb.style.display = "block";
+  });
+  $("qScore").innerHTML = `本次得分：<b>${right} / ${total}</b>` + (CFG.exam ? "（考核模式）" : "");
+}
+
+/* ---------------- 10. 数据记录与导出 ---------------- */
+function resultText(M, p) {
+  if (M.completed) return "完成圆周";
+  if (M.slackA != null) return "松弛抛体";
+  if (M.aTurn) return "往复摆动";
+  return p.ok ? "完成圆周" : (p.slackDeg != null ? "松弛抛体" : "往复摆动");
+}
+function addRecords() {
+  ["rope", "rod"].forEach(k => {
+    const M = S[k], p = predict(k, CFG.v0), m = CFG.m, g = CFG.g;
+    const E0 = 0.5 * m * CFG.v0 * CFG.v0;
+    const E = energyAt(M.pos, M.vel);
+    const vTop = M.completed ? Math.sqrt(Math.max(v2Of(M.K, Math.PI), 0)) : null;
+    const Ftop = M.completed ? CFG.m * (Math.max(v2Of(M.K, Math.PI), 0) / CFG.r - g) : null;
+    S.records.push({
+      kind: k, v0: CFG.v0, r: CFG.r, m: m, res: resultText(M, p),
+      vTop: vTop == null ? "—" : fmt(vTop, 2), Ftop: Ftop == null ? "—" : fmt(Ftop, 2),
+      slack: M.slackA != null ? fmt(M.slackA * DEG, 1) : "—",
+      th: fmt(k === "rope" ? v0RopeMin() : v0RodMin(), 2),
+      drift: fmt(Math.abs(E - E0) / Math.max(E0, 1e-9) * 100, 2) + "%"
+    });
+  });
+  renderRecords();
+}
+function renderRecords() {
+  const tb = $("recTbl").querySelector("tbody");
+  tb.innerHTML = S.records.map(r =>
+    `<tr class="${r.kind}"><td>${r.kind === "rope" ? "绳" : "杆"}</td><td>${fmt(r.v0, 2)}</td><td>${fmt(r.r, 2)}</td>
+     <td>${fmt(r.m, 2)}</td><td>${r.res}</td><td>${r.vTop}</td><td>${r.Ftop}</td><td>${r.slack}</td>
+     <td>${r.th}</td><td>${r.drift}</td></tr>`).join("");
+}
+function exportCsv() {
+  let csv = "\uFEFF模型,v0(m/s),r(m),m(kg),结果,最高点v(m/s),最高点力(N),松弛角(°),理论临界(m/s),能量漂移\n";
+  S.records.forEach(r => {
+    csv += [r.kind === "rope" ? "绳" : "杆", fmt(r.v0, 3), fmt(r.r, 3), fmt(r.m, 3), r.res, r.vTop, r.Ftop, r.slack, r.th, r.drift].join(",") + "\n";
+  });
+  const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob);
+  a.download = "模型32-绳杆模型记录.csv";
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(() => URL.revokeObjectURL(a.href), 2000);
+}
+
+/* ---------------- 11. 状态刷新与动画主循环 ---------------- */
+function updateLabels() {
+  $("lV0").textContent = fmt(CFG.v0, 2) + " m/s";
+  $("lR").textContent = fmt(CFG.r, 2) + " m";
+  $("lM").textContent = fmt(CFG.m, 2) + " kg";
+  $("lG").textContent = fmt(CFG.g, 1) + " m/s²";
+  $("lStep").textContent = fmt(+$("sStep").value, 2) + " m/s";
+  $("lSb").textContent = fmt(CFG.strobeDt, 2) + " s";
+  const m = CFG.m;
+  $("critBox").innerHTML =
+    `√(gr) = <b>${fmt(vTopMin(), 2)}</b> m/s（绳最高点最小速度）<br>` +
+    `√(5gr) = <b>${fmt(v0RopeMin(), 2)}</b> m/s（绳最低点最小速度，此时 T<sub>底</sub> = 6mg = ${fmt(6 * m * CFG.g, 2)} N）<br>` +
+    `2√(gr) = <b>${fmt(v0RodMin(), 2)}</b> m/s（杆最低点最小速度，对应最高点 v = 0）<br>` +
+    `√(2gr) = ${fmt(vSwingMin(), 2)} m/s（绳越过水平直径、此后才可能松弛）`;
+}
+function updateTags() {
+  [["rope", "tagRope", S.rope], ["rod", "tagRod", S.rod]].forEach(a => {
+    const M = a[2], el = $(a[1]);
+    if (!M) { el.textContent = "待运行"; el.className = "tag"; return; }
+    let t = "运行中", cls = "tag";
+    if (M.completed) { t = (M.topV != null && M.topV < 0.05) ? "临界过顶（v≈0）" : "完成完整圆周 ✓"; cls = "tag ok"; }
+    else if (M.slackA != null) { t = "绳松弛 · 抛体"; cls = "tag no"; }
+    else if (M.aTurn) { t = "往复摆动"; cls = "tag"; }
+    else if (M.mode === "end") { t = "演示结束"; cls = "tag"; }
+    el.textContent = t; el.className = cls;
+  });
+}
+function layoutHotspots() {
+  ["rope", "rod"].forEach(k => {
+    const G = SC[k], box = $(k === "rope" ? "hsRope" : "hsRod");
+    if (!G || !box) return;
+    const c = box.children, set = (el, x, y) => { if (el) { el.style.left = x + "px"; el.style.top = y + "px"; } };
+    set(c[0], G.cx, G.cy - G.R - 6);                    // 顶：最高点
+    set(c[1], G.cx + G.R * 0.60, G.cy - G.R * 0.52);    // 绳 / 杆
+    set(c[2], G.cx, G.cy + G.R + 6);                    // 底：最低点
+    set(c[3], G.cx - G.R * 0.92, G.cy - G.R * 0.40);    // 抛体 / 摆动
+  });
+}
+function drawAll() {
+  drawScene($("cvRope"), S.rope, "rope");
+  drawScene($("cvRod"), S.rod, "rod");
+  drawRead($("readRope"), S.rope, "rope");
+  drawRead($("readRod"), S.rod, "rod");
+  $("readRope").style.display = CFG.tog.read ? "block" : "none";
+  $("readRod").style.display = CFG.tog.read ? "block" : "none";
+  drawConcl(); updateTags(); drawCharts(); layoutHotspots();
+}
+function reset() {
+  S.t = 0; S.running = false; S.recorded = false;
+  S.rope = newModel("rope"); S.rod = newModel("rod");
+  S.strobe = { rope: [], rod: [] }; S.strobeT = 0;
+  $("btnPlay").textContent = "▶ 播放";
+  updateLabels(); drawAll();
+}
+function startPlay() { S.running = true; $("btnPlay").textContent = "⏸ 暂停"; }
+
+function stepSim() {
+  const dt = CFG.dt;
+  S.t += dt;
+  const pre = { rope: S.rope.completed, rod: S.rod.completed };
+  stepModel(S.rope, dt); stepModel(S.rod, dt);
+  ["rope", "rod"].forEach(k => {
+    const M = S[k];
+    // 首次越过最高点：记录该时刻速度（用解析式，严格守恒）
+    if (M.completed && !pre[k] && M.topV == null) {
+      M.topV = Math.sqrt(Math.max(v2Of(M.K, Math.PI), 0));
+      M.topF = CFG.m * (Math.max(v2Of(M.K, Math.PI), 0) / CFG.r - CFG.g);
+    }
+    // 临界工况：K ≥ 4gr 时理论上恰能到达最高点，但 v→0 使小球以指数方式无限逼近（不稳定平衡），
+    // 故在极近最高点且速率极小时按解析值判定“已过顶”，与理论结论一致
+    if (M.mode === "circ" && M.topV == null && v2Of(M.K, Math.PI) >= 0 &&
+      M.a > Math.PI - 0.03 && M.a < Math.PI + 0.03 && speedOf(M) < 0.06) {
+      M.topV = Math.sqrt(Math.max(v2Of(M.K, Math.PI), 0));
+      M.topF = CFG.m * (Math.max(v2Of(M.K, Math.PI), 0) / CFG.r - CFG.g);
+      M.completed = true; M.critTop = true; if (!M.done) M.done = "完成";
+    }
+    // 频闪残影（等时间间隔采样）
+    if (M.mode !== "end") {
+      const p = M.mode === "circ" ? { x: CFG.r * Math.sin(M.a), y: -CFG.r * Math.cos(M.a) } : { x: M.pos.x, y: M.pos.y };
+      if (S.t - S.strobeT < dt * 1.5 || !S.strobe[k].length) S.strobe[k].push(p);
+      if (S.strobe[k].length > 60) S.strobe[k].shift();
+    }
+  });
+  if (S.t - S.strobeT >= CFG.strobeDt) S.strobeT += CFG.strobeDt;
+  // 结局已定 → 自动记录一行
+  const settled = M => M.completed || M.mode === "end" || M.done === "摆动" || M.done === "松弛";
+  if (!S.recorded && settled(S.rope) && settled(S.rod)) { addRecords(); S.recorded = true; }
+  // 双方都结束 → 停止
+  if ((S.rope.mode === "end" || S.rope.completed && S.rope.a > 4 * Math.PI) && (S.rod.mode === "end" || S.rod.completed && S.rod.a > 4 * Math.PI)) S.running = false;
+  if (S.t > 40) S.running = false;
+}
+let lastTs = 0, acc = 0;
+function frame(ts) {
+  if (!lastTs) lastTs = ts;
+  let dtr = Math.min((ts - lastTs) / 1000, 0.08); lastTs = ts;
+  if (S.running) {
+    acc += dtr * CFG.rate;
+    let n = 0;
+    while (acc >= CFG.dt && n < 600) { stepSim(); acc -= CFG.dt; n++; }
+    drawAll();
+  }
+  requestAnimationFrame(frame);
+}
+/* 静态分帧图（尊重 prefers-reduced-motion / 手动按钮）：跑到代表时刻后停住 */
+function staticFrame() {
+  reset();
+  const target = Math.max(0.75, Math.min(1.6, 0.9 * (2 * Math.PI / Math.max(v0RodMin(), 0.5))));
+  let n = 0;
+  while (S.t < target && n < 2400) { stepSim(); n++; }
+  S.running = false;
+  $("btnPlay").textContent = "▶ 播放";
+  drawAll();
+}
+
+/* ---------------- 12. 事件绑定与初始化 ---------------- */
+function bind() {
+  const sl = (id, key, dec) => $(id).addEventListener("input", e => {
+    CFG[key] = +e.target.value; updateLabels(); reset();
+  });
+  sl("sV0", "v0"); sl("sR", "r"); sl("sM", "m");
+  $("selG").addEventListener("change", e => { CFG.g = +e.target.value; updateLabels(); reset(); });
+  $("sStep").addEventListener("input", updateLabels);
+  $("sSb").addEventListener("input", e => { CFG.strobeDt = +e.target.value; S.strobeT = S.t; updateLabels(); });
+  $("selRate").addEventListener("change", e => { CFG.rate = +e.target.value; });
+  $("btnPlay").addEventListener("click", () => {
+    if (S.running) { S.running = false; $("btnPlay").textContent = "▶ 播放"; }
+    else startPlay();
+  });
+  $("btnStep").addEventListener("click", () => { for (let i = 0; i < 12; i++) stepSim(); drawAll(); });
+  $("btnReset").addEventListener("click", reset);
+  $("btnStatic").addEventListener("click", staticFrame);
+  $("btnScan").addEventListener("click", runScan);
+  $("btnScanClear").addEventListener("click", () => { S.scanRows = []; renderScan(); drawCrit(); });
+  $("btnRec").addEventListener("click", () => addRecords());
+  $("btnRecClear").addEventListener("click", () => { S.records = []; renderRecords(); });
+  $("btnCsv").addEventListener("click", exportCsv);
+  $("gPrev").addEventListener("click", () => gotoStep(S.guide - 1));
+  $("gNext").addEventListener("click", () => gotoStep(S.guide + 1));
+  $("qSubmit").addEventListener("click", submitQuiz);
+  $("qReset").addEventListener("click", () => { buildQuiz(); $("qScore").textContent = ""; });
+  $("examMode").addEventListener("change", e => { CFG.exam = e.target.checked ? 1 : 0; buildQuiz(); });
+  // 抽屉
+  $("fab").addEventListener("click", () => openDrawer());
+  $("btnClose").addEventListener("click", closeDrawer);
+  $("btnBack").addEventListener("click", () => { dlist.style.display = "block"; detail.style.display = "none"; renderList(); });
+  $("btnFlip").addEventListener("click", () => { D.flipped = !D.flipped; renderDetail(); });
+  $("btnPin").addEventListener("click", () => {
+    const id = CARDS[D.idx].id, i = D.pinned.indexOf(id);
+    if (i >= 0) D.pinned.splice(i, 1); else D.pinned.push(id);
+    renderDetail(); renderList();
+  });
+  $("btnPrevCard").addEventListener("click", () => navCard(-1));
+  $("btnNextCard").addEventListener("click", () => navCard(1));
+  $("tabs").addEventListener("click", e => {
+    const b = e.target.closest("button[data-c]"); if (!b) return;
+    D.cat = b.dataset.c; renderTabs(); filterCards();
+  });
+  $("search").addEventListener("input", e => { D.q = e.target.value; filterCards(); });
+  $("clist").addEventListener("click", e => {
+    const b = e.target.closest("button[data-i]"); if (!b) return;
+    const c = D.list[+b.dataset.i]; if (c) openCard(c.id);
+  });
+  $("pinned").addEventListener("click", e => {
+    const b = e.target.closest("button[data-pin]"); if (b) openCard(b.dataset.pin);
+  });
+  // 画面锚点热点
+  document.addEventListener("click", e => {
+    const b = e.target.closest(".hs, .hs2");
+    if (b && b.dataset.card) { e.preventDefault(); openDrawer(b.dataset.card); }
+  });
+  // 键盘无障碍
+  document.addEventListener("keydown", e => {
+    if (e.key === "Escape" && drawer.classList.contains("open")) closeDrawer();
+    else if (drawer.classList.contains("open") && detail.style.display !== "none") {
+      if (e.key === "ArrowRight") navCard(1);
+      else if (e.key === "ArrowLeft") navCard(-1);
+      else if (e.key === "Enter" && e.target === document.body) { D.flipped = !D.flipped; renderDetail(); }
+    }
+  });
+  window.addEventListener("resize", () => drawAll());
+}
+function init() {
+  buildPanel(); bind(); bindQuiz();
+  renderTabs(); filterCards(); renderScan();
+  reset(); buildQuiz(); gotoStep(0);
+  if (REDUCED) staticFrame();
+  requestAnimationFrame(frame);
+}
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+else init();
+</script>
+</body>
+</html>

@@ -1,0 +1,964 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>频率分布直方图 · 交互模型</title>
+<style>
+  :root{
+    --ink:#1e293b;--ink-2:#475569;--muted:#94a3b8;--line:#e2e8f0;
+    --bg:#f4f6fb;--card:#ffffff;
+    --indigo:#4f46e5;--indigo-soft:#eef0ff;
+    --teal:#0d9488;--teal-soft:#e6fffa;
+    --rose:#e11d48;--rose-soft:#fff1f2;
+    --amber:#d97706;--amber-soft:#fffbeb;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:radial-gradient(1200px 600px at 20% -10%, #e9edff 0%, rgba(233,237,255,0) 60%),var(--bg);
+    color:var(--ink);
+    font-family:"PingFang SC","Microsoft YaHei","Noto Sans SC",system-ui,-apple-system,"Segoe UI",sans-serif;
+    min-height:100vh;padding:28px 24px 40px;
+  }
+  .app{max-width:1220px;margin:0 auto;}
+  header{margin-bottom:20px;}
+  .tag{
+    display:inline-flex;align-items:center;gap:8px;
+    font-size:12px;letter-spacing:.06em;color:var(--indigo);
+    background:var(--indigo-soft);border:1px solid #dfe3ff;
+    padding:5px 12px;border-radius:999px;font-weight:600;
+  }
+  h1{font-size:28px;line-height:1.3;margin:12px 0 6px;letter-spacing:.01em;}
+  .sub{margin:0;color:var(--ink-2);font-size:14.5px;}
+  main{display:grid;grid-template-columns:minmax(0,1fr) 372px;gap:22px;align-items:start;}
+  .stage{
+    position:relative;background:var(--card);border:1px solid var(--line);
+    border-radius:18px;box-shadow:0 10px 30px -18px rgba(30,41,59,.35);overflow:hidden;
+  }
+  .stage svg{display:block;width:100%;height:auto;touch-action:none;}
+  .stage .bar{cursor:pointer;transition:fill .12s ease;}
+  .hint{
+    position:absolute;left:16px;bottom:12px;font-size:12.5px;color:var(--muted);
+    background:rgba(255,255,255,.9);padding:5px 10px;border-radius:8px;border:1px solid var(--line);
+    pointer-events:none;
+  }
+  .panel{display:flex;flex-direction:column;gap:14px;max-height:720px;overflow-y:auto;padding-right:2px;}
+  .panel::-webkit-scrollbar{width:6px;}
+  .panel::-webkit-scrollbar-thumb{background:#d7dde8;border-radius:3px;}
+  .card{
+    background:var(--card);border:1px solid var(--line);border-radius:16px;
+    padding:16px 16px 15px;box-shadow:0 8px 24px -20px rgba(30,41,59,.45);flex:none;
+  }
+  .card-title{
+    display:flex;align-items:center;gap:8px;font-size:12.5px;font-weight:700;
+    color:var(--ink-2);letter-spacing:.04em;margin-bottom:12px;
+  }
+  .dot{width:8px;height:8px;border-radius:50%;flex:none;}
+  .dot.indigo{background:var(--indigo);}.dot.teal{background:var(--teal);}
+  .dot.amber{background:var(--amber);}.dot.rose{background:var(--rose);}
+  .vline{display:flex;align-items:baseline;gap:8px;flex-wrap:wrap;}
+  .vlabel{font-size:13px;color:var(--ink-2);}
+  .vval{
+    font-size:22px;font-weight:600;letter-spacing:.01em;color:var(--ink);
+    font-family:"Cambria Math","STIX Two Math","Times New Roman",serif;
+    font-variant-numeric:tabular-nums;
+  }
+  .vval.small{font-size:17px;}
+  .map{display:flex;flex-wrap:wrap;align-items:center;gap:6px;margin-top:10px;}
+  .chip{
+    font-size:12.5px;color:var(--ink-2);background:#f8fafc;border:1px solid var(--line);
+    padding:5px 9px;border-radius:8px;font-variant-numeric:tabular-nums;
+  }
+  .chip b{font-weight:600;}
+  .chip.indigo b{color:var(--indigo);}
+  .chip.teal b{color:var(--teal);}
+  .chip.amber b{color:var(--amber);}
+  .badge{
+    display:inline-block;font-size:12px;font-weight:600;padding:4px 10px;border-radius:999px;
+    border:1px solid var(--line);margin-top:10px;
+  }
+  .badge.ok{color:var(--teal);background:var(--teal-soft);border-color:#99f6e4;}
+  .badge.warn{color:var(--amber);background:var(--amber-soft);border-color:#fde68a;}
+  .formula{
+    font-family:"Cambria Math","STIX Two Math","Times New Roman",serif;
+    font-size:15px;line-height:1.9;color:var(--ink);word-break:break-word;
+    font-variant-numeric:tabular-nums;
+  }
+  .formula.sm{font-size:13.5px;line-height:1.85;}
+  .formula sub{font-size:10px;vertical-align:-3px;}
+  .note{margin-top:8px;font-size:12px;color:var(--muted);line-height:1.75;}
+  .note b{color:var(--ink-2);font-weight:600;}
+  .row{display:flex;align-items:center;justify-content:space-between;gap:10px;margin:9px 0;}
+  .row-label{font-size:13px;color:var(--ink-2);}
+  .switch{
+    position:relative;width:40px;height:22px;border-radius:999px;background:#dbe1ea;
+    cursor:pointer;transition:background .2s;flex:none;
+  }
+  .switch::after{
+    content:"";position:absolute;top:2px;left:2px;width:18px;height:18px;border-radius:50%;
+    background:#fff;box-shadow:0 1px 3px rgba(15,23,42,.25);transition:transform .2s;
+  }
+  .switch.on{background:var(--indigo);}
+  .switch.on::after{transform:translateX(18px);}
+  .btn{
+    appearance:none;border:1px solid var(--line);background:#fbfcfe;color:var(--ink-2);
+    font:inherit;font-size:12.5px;padding:8px 6px;border-radius:9px;cursor:pointer;
+    transition:all .15s;
+  }
+  .btn:hover{border-color:#c7cffb;background:var(--indigo-soft);color:var(--indigo);}
+  .btn.active{background:var(--indigo);border-color:var(--indigo);color:#fff;font-weight:600;}
+  .btn.wide{grid-column:1 / -1;width:100%;}
+  .presets{display:grid;grid-template-columns:repeat(2,1fr);gap:8px;margin-top:10px;}
+
+  /* 自定义数据 */
+  .custom-box{margin-top:10px;border-top:1px dashed var(--line);padding-top:10px;}
+  .custom-box[hidden]{display:none;}
+  .tip-box{
+    background:var(--indigo-soft);border:1px solid #dfe3ff;border-radius:10px;
+    padding:9px 11px;margin-bottom:9px;
+  }
+  .tip-title{
+    display:flex;align-items:center;gap:6px;
+    font-size:11.5px;font-weight:700;color:var(--indigo);letter-spacing:.04em;margin-bottom:5px;
+  }
+  .tip-title i{
+    display:inline-flex;align-items:center;justify-content:center;width:14px;height:14px;
+    border-radius:50%;background:var(--indigo);color:#fff;font-size:10px;font-weight:700;
+    font-style:italic;font-family:Georgia,"Times New Roman",serif;
+  }
+  .tip-body{font-size:11.5px;color:var(--ink-2);line-height:1.75;}
+  .tip-body b{color:var(--indigo);font-weight:600;}
+  .toast{
+    position:fixed;left:50%;bottom:28px;z-index:50;pointer-events:none;
+    background:#0f172a;color:#fff;font-size:13px;line-height:1.5;
+    padding:9px 16px;border-radius:10px;box-shadow:0 12px 30px -12px rgba(15,23,42,.55);
+    opacity:0;transform:translateX(-50%) translateY(10px);
+    transition:opacity .2s ease,transform .2s ease;
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0);}
+  .cf-n{display:flex;align-items:center;gap:6px;margin:2px 0 8px;}
+  .cf-n .cf-lbl{font-size:12.5px;font-weight:600;color:var(--ink-2);}
+  .cf-n input, .custom-box input[type=number]{
+    border:1px solid var(--line);border-radius:8px;background:#fbfcfe;color:var(--ink);
+    font:inherit;font-size:12.5px;padding:6px 8px;font-variant-numeric:tabular-nums;
+  }
+  .cf-n input{width:86px;text-align:center;}
+  .cf-n input:focus, .cf-row input:focus{outline:none;border-color:var(--indigo);background:#fff;}
+  .cf-n .cf-unit{font-size:11.5px;color:var(--muted);}
+  .cf-head{
+    display:grid;grid-template-columns:1fr 72px 44px;gap:6px;align-items:center;
+    font-size:11px;color:var(--muted);padding:0 2px 4px;border-bottom:1px solid var(--line);
+  }
+  .cf-head span:nth-child(2),.cf-head span:nth-child(3){text-align:center;}
+  .cf-rows{max-height:252px;overflow-y:auto;padding:2px 0 2px;}
+  .cf-rows::-webkit-scrollbar{width:6px;}
+  .cf-rows::-webkit-scrollbar-thumb{background:#d7dde8;border-radius:3px;}
+  .cf-row{display:grid;grid-template-columns:1fr 72px 44px;gap:6px;align-items:center;padding:3px 2px;}
+  .cf-row .cf-range{font-size:11.5px;color:var(--ink-2);font-variant-numeric:tabular-nums;}
+  .cf-row input{width:100%;text-align:center;padding:4px 4px;font-size:12px;}
+  .cf-row .cf-cnt{font-size:11.5px;color:var(--muted);text-align:right;font-variant-numeric:tabular-nums;}
+  .cf-sum{
+    display:flex;align-items:center;justify-content:space-between;gap:8px;
+    font-size:11.5px;color:var(--ink-2);margin-top:8px;padding-top:7px;border-top:1px dashed var(--line);
+    font-variant-numeric:tabular-nums;
+  }
+  .cf-sum b{font-weight:600;font-size:12.5px;}
+  .cf-sum.bad b, .cf-sum.bad .cf-sum-tip{color:var(--rose);}
+  .cf-sum.ok b, .cf-sum.ok .cf-sum-tip{color:var(--teal);}
+  .custom-actions{display:flex;gap:8px;margin-top:8px;}
+  .custom-actions .btn{flex:1;}
+  .custom-msg{font-size:11.5px;color:var(--rose);margin-top:7px;line-height:1.6;}
+
+  /* 组距滑块 */
+  .slider-head{display:flex;align-items:baseline;justify-content:space-between;margin-bottom:2px;}
+  .slider-head .sl{font-size:13px;color:var(--ink-2);}
+  .slider-head .sv{
+    font-size:24px;font-weight:600;color:var(--indigo);
+    font-family:"Cambria Math","Times New Roman",serif;font-variant-numeric:tabular-nums;
+  }
+  .slider-head .sv span{font-size:12px;color:var(--muted);font-weight:400;margin-left:3px;}
+  input[type=range]{
+    -webkit-appearance:none;appearance:none;width:100%;height:22px;
+    background:transparent;cursor:pointer;margin:2px 0 0;
+  }
+  input[type=range]::-webkit-slider-runnable-track{
+    height:6px;border-radius:999px;
+    background:linear-gradient(90deg,var(--indigo) var(--p,30%),#e5e9f2 var(--p,30%));
+  }
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;width:18px;height:18px;margin-top:-6px;border-radius:50%;
+    background:#fff;border:3px solid var(--indigo);
+    box-shadow:0 2px 6px rgba(79,70,229,.4);
+  }
+  input[type=range]:focus{outline:none;}
+  input[type=range]:focus::-webkit-slider-thumb{box-shadow:0 0 0 4px rgba(79,70,229,.18);}
+  input[type=range]::-moz-range-track{height:6px;border-radius:999px;background:#e5e9f2;}
+  input[type=range]::-moz-range-progress{height:6px;border-radius:999px;background:var(--indigo);}
+  input[type=range]::-moz-range-thumb{
+    width:14px;height:14px;border-radius:50%;background:#fff;
+    border:3px solid var(--indigo);box-shadow:0 2px 6px rgba(79,70,229,.4);
+  }
+  .slider-scale{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);margin-top:1px;}
+
+  /* 频率求和条 */
+  .sumwrap{margin-top:12px;}
+  .sumlabel{display:flex;justify-content:space-between;font-size:11.5px;color:var(--muted);margin-bottom:6px;}
+  .sum-bar{display:flex;height:12px;border-radius:6px;overflow:hidden;background:#eef1f7;}
+  .sum-seg{cursor:pointer;transition:background .12s,transform .12s;}
+  .sum-seg:hover{transform:scaleY(1.15);}
+
+  /* 频率分布表 */
+  .tbl-wrap{max-height:214px;overflow:auto;margin-top:2px;}
+  .tbl-wrap::-webkit-scrollbar{width:6px;}
+  .tbl-wrap::-webkit-scrollbar-thumb{background:#d7dde8;border-radius:3px;}
+  table.freq{width:100%;border-collapse:collapse;font-size:12px;font-variant-numeric:tabular-nums;}
+  table.freq th{
+    position:sticky;top:0;background:#fff;z-index:2;
+    font-size:11px;font-weight:600;color:var(--muted);letter-spacing:.02em;
+    padding:6px 4px;border-bottom:1px solid var(--line);text-align:right;white-space:nowrap;
+  }
+  table.freq th:first-child,table.freq td:first-child{text-align:left;}
+  table.freq td{padding:5px 4px;border-bottom:1px solid #f1f5f9;color:var(--ink-2);text-align:right;}
+  table.freq tbody tr{cursor:pointer;}
+  table.freq tbody tr:hover td{background:#f8fafc;}
+  table.freq tbody tr.sel td{background:var(--amber-soft);color:var(--ink);}
+  footer{margin-top:22px;padding-top:16px;border-top:1px solid var(--line);font-size:12px;color:var(--muted);line-height:1.85;}
+  footer b{color:var(--ink-2);font-weight:600;}
+  @media (max-width:1020px){
+    main{grid-template-columns:minmax(0,1fr);}
+    .panel{max-height:none;flex-direction:row;flex-wrap:wrap;overflow:visible;}
+    .panel .card{flex:1 1 340px;}
+    h1{font-size:23px;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <div class="tag">人教A版 · 必修第二册 · 第九章 统计 · 9.2.1</div>
+    <h1>频率分布直方图：组距怎样决定图形</h1>
+    <p class="sub">拖动组距滑块改变分组，观察极差、组数、矩形高度的联动——无论怎么分，所有小矩形面积之和恒为 1</p>
+  </header>
+
+  <main>
+    <section class="stage">
+      <svg id="chart" viewBox="0 0 820 540" aria-label="频率分布直方图交互图" role="img">
+        <g id="gridLayer"></g>
+        <g id="rulerLayer"></g>
+        <g id="axisLayer"></g>
+        <g id="barLayer"></g>
+        <g id="tagLayer"></g>
+      </svg>
+      <div class="hint">拖动滑块改变组距 ｜ 悬停或点击小矩形，查看该组的频数、频率与面积</div>
+    </section>
+
+    <aside class="panel">
+      <div class="card">
+        <div class="card-title"><span class="dot indigo"></span>数据概况</div>
+        <div class="vline"><span class="vlabel">样本容量</span><span class="vval" id="nVal">100</span></div>
+        <div class="map">
+          <span class="chip">最小值 <b id="minVal">0.3</b></span>
+          <span class="chip">最大值 <b id="maxVal">4.3</b></span>
+          <span class="chip amber">极差 R <b id="rVal">4.0</b></span>
+        </div>
+        <div class="note" id="dsNote">100 户居民某月月均用水量（单位：t）。极差 R = x<sub>max</sub> − x<sub>min</sub>，它决定分组能覆盖的范围。</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="dot rose"></span>组距 d 与组数 k</div>
+        <div class="slider-head">
+          <span class="sl">组距 d</span>
+          <span class="sv" id="dVal">0.5</span>
+        </div>
+        <input type="range" id="dRange" min="0.2" max="1.5" step="0.1" value="0.5" aria-label="组距滑块">
+        <div class="slider-scale"><span id="dMinLbl">0.2</span><span>组距越大 · 组数越少</span><span id="dMaxLbl">1.5</span></div>
+        <div class="map">
+          <span class="chip">起点 a <b id="startVal">0</b></span>
+          <span class="chip teal">组数 k <b id="kVal">9</b></span>
+        </div>
+        <div class="formula sm" id="kFormula" style="margin-top:10px;"></div>
+        <div class="note">起点 a 取不超过最小值、且是组距 d 的整数倍的位置；组数 k = ⌈(最大值 − a)/d⌉（若整除则再加上边界组）。</div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="dot amber"></span><span id="grpTitle">最高的一组</span> · 面积就是频率</div>
+        <div class="vline"><span class="vlabel">分组</span><span class="vval small" id="grpRange">[1.5, 2.0)</span></div>
+        <div class="map">
+          <span class="chip">频数 <b id="grpCount">26</b></span>
+          <span class="chip">频率 <b id="grpFreq">0.26</b></span>
+          <span class="chip indigo">频率/组距 <b id="grpDensity">0.52</b></span>
+        </div>
+        <div class="formula sm" id="grpArea" style="margin-top:10px;"></div>
+        <div class="sumwrap">
+          <div class="sumlabel"><span>各组的频率（横向长度）</span><span>Σ 频率 = <b id="sumF">1</b> · Σ 面积 = <b id="sumA">1</b></span></div>
+          <div class="sum-bar" id="sumBar"></div>
+        </div>
+        <div><span class="badge ok" id="areaBadge"></span></div>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="dot teal"></span>显示与数据</div>
+        <div class="row">
+          <span class="row-label">频率分布折线图</span>
+          <div class="switch" id="swLine" role="switch" tabindex="0"></div>
+        </div>
+        <div class="row">
+          <span class="row-label">水平网格线</span>
+          <div class="switch on" id="swGrid" role="switch" tabindex="0"></div>
+        </div>
+        <div class="presets">
+          <button class="btn active ds-btn" data-ds="water">用水量 100 户</button>
+          <button class="btn ds-btn" data-ds="height">身高 120 人</button>
+        </div>
+        <button class="btn wide" id="btnCustom" style="margin-top:8px;">自定义数据…</button>
+        <div class="custom-box" id="customBox" hidden>
+          <div class="tip-box">
+            <div class="tip-title"><i>i</i>按频率表录入</div>
+            <div class="tip-body">
+              · 分组沿用当前的组距与起点，共 <b id="cfK">9</b> 组<br>
+              · 填写<b>数据量</b>与各组的<b>频率</b>，要求 <b>Σ频率 = 1</b><br>
+              · 频数由 频率 × 数据量 自动换算，表格与图形同步更新
+            </div>
+          </div>
+          <div class="cf-n">
+            <span class="cf-lbl">数据量：</span>
+            <input type="number" id="customN" min="2" max="2000" step="1" value="100" aria-label="数据量">
+            <span class="cf-unit">个</span>
+          </div>
+          <div class="cf-head"><span>分组</span><span>频率</span><span>频数</span></div>
+          <div class="cf-rows" id="customRows"></div>
+          <div class="cf-sum" id="customSumBox">
+            <span>Σ 频率 = <b id="customSum">0</b></span>
+            <span class="cf-sum-tip" id="customSumTip">各组合计需为 1</span>
+          </div>
+          <div class="custom-actions">
+            <button class="btn" id="btnApplyData">应用</button>
+            <button class="btn" id="btnCancelData">取消</button>
+          </div>
+          <div class="custom-msg" id="customMsg"></div>
+        </div>
+        <button class="btn wide" id="btnReset" style="margin-top:10px;">复位到初始组距</button>
+      </div>
+
+      <div class="card">
+        <div class="card-title"><span class="dot indigo"></span>频率分布表（与图形联动）</div>
+        <div class="tbl-wrap">
+          <table class="freq">
+            <thead><tr><th id="thGroup">分组</th><th>频数</th><th>频率</th><th>频率/组距</th></tr></thead>
+            <tbody id="tbody"></tbody>
+          </table>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <div class="toast" id="toast"></div>
+
+  <footer>
+    <b>教材原话（9.2.1 用样本的频率分布估计总体分布）：</b>求极差 → 决定组距与组数 → 将数据分组 → 列频率分布表 → 画频率分布直方图。<br>
+    <b>纵轴为什么是频率/组距：</b>若直接用频率作高，当各组组距不同时，高的矩形未必代表更大的频率；取 <b>频率/组距</b> 作高，则每个小矩形的面积 = (频率/组距) × 组距 = <b>频率</b>，既可比，又能保证所有矩形面积之和 = 1。<br>
+    <b>组距的影响：</b>组距过小 → 组数多、图形出现锯齿，样本的随机波动盖过分布规律；组距过大 → 组数少、各组的差别被抹平。样本容量越大，可适当取更小的组距。<br>
+    <b>折线图与密度曲线：</b>连接各小矩形上端中点得到频率分布折线图；当样本容量不断增大、组距不断缩小时，折线趋于一条光滑曲线——总体密度曲线。
+  </footer>
+</div>
+
+<script>
+(function(){
+"use strict";
+
+/* ---------------- 数据 ---------------- */
+var DATASETS = {
+  water: {
+    id: 'water',
+    name: '100 户居民月均用水量',
+    unit: 't',
+    axisName: '月均用水量 / t',
+    note: '100 户居民某月月均用水量（单位：t）。极差 R = x<sub>max</sub> − x<sub>min</sub>，它决定分组能覆盖的范围。',
+    values: [0.3, 0.8, 0.8, 0.9, 0.9, 1.0, 1.0, 1.0, 1.1, 1.1, 1.1, 1.1, 1.2, 1.2, 1.3, 1.3, 1.3, 1.3, 1.3, 1.4, 1.4, 1.5, 1.5, 1.5, 1.5, 1.5, 1.6, 1.6, 1.6, 1.6, 1.6, 1.7, 1.7, 1.7, 1.7, 1.7, 1.8, 1.8, 1.8, 1.8, 1.8, 1.9, 1.9, 1.9, 1.9, 1.9, 1.9, 2.0, 2.0, 2.0, 2.0, 2.0, 2.0, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.1, 2.2, 2.2, 2.2, 2.2, 2.2, 2.3, 2.3, 2.3, 2.3, 2.4, 2.4, 2.4, 2.5, 2.5, 2.5, 2.6, 2.7, 2.7, 2.7, 2.7, 2.7, 2.8, 2.8, 2.8, 2.9, 3.0, 3.0, 3.0, 3.1, 3.2, 3.3, 3.4, 3.4, 3.4, 3.5, 3.7, 3.8, 3.8, 4.3],
+    dMin: 0.2, dMax: 1.5, dStep: 0.1, d0: 0.5, dec: 1
+  },
+  height: {
+    id: 'height',
+    name: '120 名高一学生身高',
+    unit: 'cm',
+    axisName: '身高 / cm',
+    note: '120 名高一学生的身高（单位：cm）。同一组数据，极差与单位不同，滑块范围与图形也随之改变。',
+    values: [151, 152, 153, 154, 154, 154, 154, 155, 156, 156, 156, 158, 159, 159, 161, 162, 162, 162, 162, 162, 162, 163, 163, 164, 164, 164, 165, 165, 165, 165, 165, 166, 166, 166, 166, 166, 167, 167, 167, 167, 167, 167, 167, 167, 167, 167, 167, 167, 167, 167, 168, 168, 168, 168, 168, 168, 169, 169, 169, 169, 169, 169, 169, 170, 170, 170, 170, 170, 170, 170, 170, 171, 171, 171, 171, 171, 171, 171, 171, 171, 171, 172, 172, 172, 172, 172, 173, 173, 174, 174, 174, 174, 174, 174, 174, 175, 175, 176, 176, 176, 176, 177, 177, 177, 177, 179, 179, 179, 179, 180, 180, 180, 180, 181, 182, 182, 183, 185, 186, 186],
+    dMin: 2, dMax: 10, dStep: 1, d0: 5, dec: 0
+  }
+};
+
+/* ---------------- 画布几何 ---------------- */
+var W = 820, H = 540, L = 82, R = 26, T = 54, B = 86;
+var PW = W - L - R, PH = H - T - B, YB = T + PH;
+var COL = { bar:'#6366f1', barDeep:'#4f46e5', amber:'#d97706', teal:'#0d9488', grid:'#eef2f7', axis:'#cbd5e1', muted:'#94a3b8' };
+
+var state = { ds:'water', d:0.5, hover:-1, pin:-1, showLine:false, showGrid:true };
+var axis = { yMax:1, step:0.2, dec:1, ddec:2, ticks:5 };
+var CUR = null;   // 当前布局
+
+var svg     = document.getElementById('chart');
+var gridG   = document.getElementById('gridLayer');
+var rulerG  = document.getElementById('rulerLayer');
+var axisG   = document.getElementById('axisLayer');
+var barG    = document.getElementById('barLayer');
+var tagG    = document.getElementById('tagLayer');
+
+/* ---------------- 数值工具 ---------------- */
+function r6(v){ return Math.round(v * 1e6) / 1e6; }
+function trim(v, dec){
+  var s = v.toFixed(dec);
+  if (s.indexOf('.') >= 0){ s = s.replace(/0+$/, '').replace(/\.$/, ''); }
+  if (s === '-0') s = '0';
+  return s;
+}
+function fmtFreq(f){ return trim(f, 3); }
+function fmtDens(x){ return trim(x, axis.ddec); }
+function num(x){ return trim(r6(x), 4); }
+function decOfNum(x){
+  var s = String(r6(x)), i = s.indexOf('.');
+  return i < 0 ? 0 : Math.min(4, s.length - i - 1);
+}
+function dsObj(){ return DATASETS[state.ds]; }
+function Y(v){ return YB - (v / axis.yMax) * PH; }
+function XP(x, lay){ return L + ((x - lay.start) / (lay.end - lay.start)) * PW; }
+
+/* ---------------- 核心：分组与频率 ---------------- */
+function layoutFor(D, d){
+  var vals = D.values, n = vals.length;
+  var min = Math.min.apply(null, vals), max = Math.max.apply(null, vals);
+  var R = max - min;
+  var start = r6(Math.floor(min / d + 1e-9) * d);
+  var k = Math.max(1, Math.ceil((max - start) / d - 1e-9));
+
+  var counts = [];
+  for (var i = 0; i < k; i++) counts.push(0);
+  for (var j = 0; j < n; j++){
+    var idx = Math.floor((vals[j] - start) / d + 1e-9);
+    if (idx < 0) idx = 0;
+    if (idx >= k) idx = k - 1;
+    counts[idx]++;
+  }
+
+  var bins = [], maxDens = 0, tallest = 0, sumF = 0, sumA = 0;
+  for (var b = 0; b < k; b++){
+    var lo = r6(start + b * d), hi = r6(lo + d);
+    var freq = counts[b] / n, dens = freq / d;
+    bins.push({ lo: lo, hi: hi, count: counts[b], freq: freq, dens: dens });
+    if (dens > maxDens){ maxDens = dens; tallest = b; }
+    sumF += freq; sumA += dens * d;
+  }
+  return { ds:D, d:d, n:n, min:min, max:max, R:R, start:start,
+    ldec:Math.max(D.dec, decOfNum(d)),
+    end:r6(start + k * d), k:k, bins:bins, maxDens:maxDens, tallest:tallest,
+    sumF:sumF, sumA:sumA };
+}
+function layout(){ return layoutFor(dsObj(), state.d); }
+
+/* 由全滑块范围决定固定的 y 轴上限，保证拖动组距时纵轴刻度不变、便于比较 */
+function pickAxis(rawMax){
+  var target = rawMax / 5;
+  var e = Math.floor(Math.log10(target));
+  var base = Math.pow(10, e);
+  var m = target / base;
+  var cand = [1, 2, 2.5, 5, 10], s = 10 * base;
+  for (var i = 0; i < cand.length; i++){
+    if (cand[i] >= m - 1e-9){ s = cand[i] * base; break; }
+  }
+  var yMax = Math.ceil(rawMax / s - 1e-9) * s;
+  var dec = s >= 1 ? 0 : (s >= 0.1 ? 1 : (s >= 0.01 ? 2 : 3));
+  return { yMax:r6(yMax), step:s, dec:dec, ddec:dec + 1, ticks:Math.round(yMax / s) };
+}
+function calibrateAxis(D){
+  var raw = 0;
+  var steps = Math.round((D.dMax - D.dMin) / D.dStep);
+  for (var i = 0; i <= steps; i++){
+    var d = r6(D.dMin + i * D.dStep);
+    var lay = layoutFor(D, d);
+    if (lay.maxDens > raw) raw = lay.maxDens;
+  }
+  axis = pickAxis(raw * 1.08);
+}
+
+/* ---------------- 静态图层 ---------------- */
+function drawAxes(lay){
+  var s = '';
+  for (var i = 0; i <= axis.ticks; i++){
+    var v = r6(axis.step * i), y = Y(v);
+    if (i > 0 && state.showGrid){
+      s += '<line x1="' + L + '" y1="' + y + '" x2="' + (W - R) + '" y2="' + y + '" stroke="' + COL.grid + '" stroke-width="1"/>';
+    }
+    s += '<text x="' + (L - 9) + '" y="' + (y + 3.5) + '" text-anchor="end" font-size="10.5" fill="' + COL.muted + '">' + v.toFixed(axis.dec) + '</text>';
+  }
+  // 坐标轴
+  s += '<line x1="' + L + '" y1="' + YB + '" x2="' + (W - R + 6) + '" y2="' + YB + '" stroke="' + COL.axis + '" stroke-width="1.3"/>';
+  s += '<line x1="' + L + '" y1="' + YB + '" x2="' + L + '" y2="' + (T - 8) + '" stroke="' + COL.axis + '" stroke-width="1.3"/>';
+  // 分组端点刻度 + 标签
+  var bw = PW / lay.k;
+  for (var b = 0; b <= lay.k; b++){
+    var x = L + b * bw;
+    s += '<line x1="' + x + '" y1="' + YB + '" x2="' + x + '" y2="' + (YB + 5) + '" stroke="' + COL.axis + '" stroke-width="1.2"/>';
+    s += '<text x="' + x + '" y="' + (YB + 18) + '" text-anchor="middle" font-size="10.5" fill="' + COL.muted + '">' + trim(r6(lay.start + b * lay.d), lay.ldec) + '</text>';
+  }
+  // 轴标题
+  s += '<text x="24" y="' + (T + PH / 2) + '" transform="rotate(-90 24 ' + (T + PH / 2) + ')" text-anchor="middle" font-size="12.5" fill="#64748b">频率/组距</text>';
+  s += '<text x="' + (W - R) + '" y="' + (H - 16) + '" text-anchor="end" font-size="12.5" fill="#64748b">' + lay.ds.axisName + '</text>';
+  axisG.innerHTML = s;
+}
+
+function drawRuler(lay){
+  var xa = XP(lay.min, lay), xb = XP(lay.max, lay), y = 34;
+  var s = '';
+  s += '<line x1="' + xa + '" y1="' + y + '" x2="' + xb + '" y2="' + y + '" stroke="#f59e0b" stroke-width="1.3"/>';
+  s += '<line x1="' + xa + '" y1="' + (y - 5) + '" x2="' + xa + '" y2="' + (y + 5) + '" stroke="#f59e0b" stroke-width="1.3"/>';
+  s += '<line x1="' + xb + '" y1="' + (y - 5) + '" x2="' + xb + '" y2="' + (y + 5) + '" stroke="#f59e0b" stroke-width="1.3"/>';
+  s += '<text x="' + ((xa + xb) / 2) + '" y="' + (y - 10) + '" text-anchor="middle" font-size="11.5" fill="#b45309">极差 R = 最大值 − 最小值 = ' +
+       trim(lay.max, lay.ldec) + ' − ' + trim(lay.min, lay.ldec) + ' = ' + lay.R.toFixed(lay.ldec) + (lay.ds.unit ? ' ' + lay.ds.unit : '') + '</text>';
+  rulerG.innerHTML = s;
+}
+
+/* ---------------- 矩形与折线 ---------------- */
+function barGeometry(lay){
+  var bw = PW / lay.k, gap = Math.min(2.5, bw * 0.12);
+  return lay.bins.map(function(b, i){
+    var x = L + i * bw + gap / 2, w = Math.max(1, bw - gap), y = Y(b.dens);
+    return { x:r6(x), y:r6(y), w:r6(w), h:r6(YB - y) };
+  });
+}
+function snapshot(){
+  var rects = barG.querySelectorAll('rect.bar');
+  if (!rects.length) return null;
+  return Array.prototype.map.call(rects, function(r){
+    return { x:+r.getAttribute('x'), y:+r.getAttribute('y'), w:+r.getAttribute('width'), h:+r.getAttribute('height') };
+  });
+}
+function syncLine(rects){
+  var poly = document.getElementById('freqLine');
+  if (!poly) return;
+  var dots = barG.querySelectorAll('circle.line-dot'), pts = [];
+  for (var i = 0; i < rects.length; i++){
+    var cx = parseFloat(rects[i].getAttribute('x')) + parseFloat(rects[i].getAttribute('width')) / 2;
+    var cy = parseFloat(rects[i].getAttribute('y'));
+    pts.push(cx + ',' + cy);
+    if (dots[i]){ dots[i].setAttribute('cx', cx); dots[i].setAttribute('cy', cy); }
+  }
+  poly.setAttribute('points', pts.join(' '));
+}
+function drawBars(lay, animate){
+  var geo = barGeometry(lay), old = snapshot(), s = '';
+  for (var i = 0; i < geo.length; i++){
+    s += '<rect class="bar" data-i="' + i + '" x="' + geo[i].x + '" y="' + geo[i].y + '" width="' + geo[i].w + '" height="' + geo[i].h +
+         '" rx="1.5" fill="' + COL.bar + '" fill-opacity="0.72"/>';
+  }
+  if (state.showLine){
+    s += '<polyline id="freqLine" points="' + geo.map(function(g){ return (g.x + g.w / 2) + ',' + g.y; }).join(' ') +
+         '" fill="none" stroke="' + COL.teal + '" stroke-width="2" stroke-linejoin="round"/>';
+    s += geo.map(function(g){
+      return '<circle class="line-dot" cx="' + (g.x + g.w / 2) + '" cy="' + g.y + '" r="2.6" fill="#fff" stroke="' + COL.teal + '" stroke-width="1.6"/>';
+    }).join('');
+  }
+  barG.innerHTML = s;
+
+  if (!animate){ return; }
+  var rects = barG.querySelectorAll('rect.bar');
+  var from = old || geo.map(function(g){ return { x:g.x, y:YB, w:g.w, h:0 }; });
+  var dur = 260, t0 = null;
+  function frame(ts){
+    if (t0 === null) t0 = ts;
+    var p = Math.min(1, (ts - t0) / dur), e = 1 - Math.pow(1 - p, 3);
+    for (var i = 0; i < rects.length; i++){
+      var t = geo[i], o = from[i] || { x:t.x, y:YB, w:t.w, h:0 };
+      rects[i].setAttribute('x', o.x + (t.x - o.x) * e);
+      rects[i].setAttribute('y', o.y + (t.y - o.y) * e);
+      rects[i].setAttribute('width', o.w + (t.w - o.w) * e);
+      rects[i].setAttribute('height', o.h + (t.h - o.h) * e);
+    }
+    if (state.showLine) syncLine(rects);
+    if (p < 1) requestAnimationFrame(frame);
+  }
+  requestAnimationFrame(frame);
+}
+
+function drawTag(idx, lay){
+  if (idx < 0){ tagG.innerHTML = ''; return; }
+  var g = barGeometry(lay)[idx];
+  var cx = g.x + g.w / 2, w = 112, h = 24;
+  var x = Math.min(Math.max(cx - w / 2, L + 2), W - R - w - 2);
+  var y = g.y - h - 8;
+  if (y < T + 2) y = g.y + 8;
+  var txt = '面积 = ' + fmtFreq(lay.bins[idx].freq);
+  tagG.innerHTML = '<rect x="' + x + '" y="' + y + '" width="' + w + '" height="' + h + '" rx="7" fill="#ffffff" stroke="#fcd34d" stroke-width="1.2"/>' +
+    '<text x="' + (x + w / 2) + '" y="' + (y + 16) + '" text-anchor="middle" font-size="12" font-weight="600" fill="#b45309">' + txt + '</text>';
+}
+
+/* ---------------- 面板 ---------------- */
+function updatePanel(lay){
+  var D = lay.ds;
+  document.getElementById('nVal').textContent = lay.n;
+  document.getElementById('minVal').textContent = trim(lay.min, lay.ldec);
+  document.getElementById('maxVal').textContent = trim(lay.max, lay.ldec);
+  document.getElementById('rVal').textContent = lay.R.toFixed(lay.ldec);
+  document.getElementById('dsNote').innerHTML = D.note;
+
+  document.getElementById('dVal').textContent = num(lay.d);
+  document.getElementById('startVal').textContent = trim(lay.start, lay.ldec);
+  document.getElementById('kVal').textContent = lay.k;
+  document.getElementById('dMinLbl').textContent = num(D.dMin);
+  document.getElementById('dMaxLbl').textContent = num(D.dMax);
+  document.getElementById('btnReset').textContent = '复位到初始组距（d = ' + num(D.d0) + '）';
+
+  var range = document.getElementById('dRange');
+  range.min = D.dMin; range.max = D.dMax; range.step = D.dStep; range.value = lay.d;
+  var pct = (lay.d - D.dMin) / (D.dMax - D.dMin) * 100;
+  range.style.setProperty('--p', pct.toFixed(2) + '%');
+
+  document.getElementById('kFormula').innerHTML =
+    'k = ⌈(x<sub>max</sub> − a)/d⌉ = ⌈(' + trim(lay.max, lay.ldec) + ' − ' + trim(lay.start, lay.ldec) + ')/' + num(lay.d) + '⌉ = ' + lay.k;
+
+  document.getElementById('sumF').textContent = fmtFreq(lay.sumF);
+  document.getElementById('sumA').textContent = fmtFreq(lay.sumA);
+  document.getElementById('areaBadge').textContent =
+    lay.k + ' 组覆盖全部 ' + lay.n + ' 个数据 · 矩形面积之和 = ' + fmtFreq(lay.sumA);
+}
+
+function buildSumBar(lay){
+  var box = document.getElementById('sumBar'), s = '';
+  for (var i = 0; i < lay.bins.length; i++){
+    var pct = lay.bins[i].freq * 100;
+    s += '<span class="sum-seg" data-i="' + i + '" style="flex:0 0 ' + pct.toFixed(4) + '%;background:' + segColor(lay, i, -1) + '"></span>';
+  }
+  box.innerHTML = s;
+}
+function segColor(lay, i, sel){
+  if (i === sel) return '#d97706';
+  var mx = 1;
+  for (var j = 0; j < lay.bins.length; j++) mx = Math.max(mx, lay.bins[j].freq);
+  return 'rgba(99,102,241,' + (0.26 + 0.62 * (lay.bins[i].freq / mx)).toFixed(2) + ')';
+}
+
+function buildTable(lay){
+  var s = '';
+  for (var i = 0; i < lay.bins.length; i++){
+    var b = lay.bins[i];
+    var last = (i === lay.bins.length - 1);
+    var label = '[' + trim(b.lo, lay.ldec) + ', ' + trim(b.hi, lay.ldec) + (last ? ']' : ')');
+    s += '<tr data-i="' + i + '"><td>' + label + '</td><td>' + b.count + '</td><td>' + fmtFreq(b.freq) + '</td><td>' + fmtDens(b.dens) + '</td></tr>';
+  }
+  document.getElementById('tbody').innerHTML = s;
+  document.getElementById('thGroup').textContent = lay.ds.unit ? '分组 / ' + lay.ds.unit : '分组';
+}
+
+function updateDetail(idx, lay, isSel){
+  var b = lay.bins[idx], D = lay.ds;
+  var last = (idx === lay.bins.length - 1);
+  document.getElementById('grpTitle').textContent = isSel ? '第 ' + (idx + 1) + ' 组' : '最高的一组（第 ' + (idx + 1) + ' 组）';
+  document.getElementById('grpRange').textContent = '[' + trim(b.lo, lay.ldec) + ', ' + trim(b.hi, lay.ldec) + (last ? ']' : ')');
+  document.getElementById('grpCount').textContent = b.count;
+  document.getElementById('grpFreq').textContent = fmtFreq(b.freq);
+  document.getElementById('grpDensity').textContent = fmtDens(b.dens);
+  document.getElementById('grpArea').innerHTML =
+    '面积 = (频率/组距) × 组距 = ' + fmtDens(b.dens) + ' × ' + num(lay.d) + ' = <b>' + fmtFreq(b.freq) + '</b> = 该组频率';
+}
+
+/* ---------------- 高亮联动 ---------------- */
+function highlight(lay){
+  var sel = state.hover >= 0 ? state.hover : (state.pin >= 0 ? state.pin : -1);
+  var rects = barG.querySelectorAll('rect.bar');
+  for (var i = 0; i < rects.length; i++){
+    var on = (i === sel);
+    rects[i].setAttribute('fill', on ? COL.amber : COL.bar);
+    rects[i].setAttribute('fill-opacity', on ? 0.92 : 0.72);
+  }
+  var rows = document.getElementById('tbody').querySelectorAll('tr');
+  for (var r = 0; r < rows.length; r++) rows[r].classList.toggle('sel', +rows[r].getAttribute('data-i') === sel);
+
+  var segs = document.getElementById('sumBar').querySelectorAll('.sum-seg');
+  for (var s = 0; s < segs.length; s++){
+    var j = +segs[s].getAttribute('data-i');
+    segs[s].style.background = segColor(lay, j, sel);
+  }
+  drawTag(sel, lay);
+  updateDetail(sel >= 0 ? sel : lay.tallest, lay, sel >= 0);
+}
+
+/* ---------------- 总渲染 ---------------- */
+function render(animate){
+  var lay = layout();
+  CUR = lay;
+  drawAxes(lay);
+  drawRuler(lay);
+  drawBars(lay, animate);
+  updatePanel(lay);
+  buildTable(lay);
+  buildSumBar(lay);
+  highlight(lay);
+}
+
+/* ---------------- 交互 ---------------- */
+var range = document.getElementById('dRange');
+range.addEventListener('input', function(){
+  state.d = parseFloat(this.value);
+  state.hover = -1; state.pin = -1;
+  render(true);
+});
+
+function setHover(i){
+  if (state.hover === i) return;
+  state.hover = i;
+  if (CUR) highlight(CUR);
+}
+svg.addEventListener('mouseleave', function(){ setHover(-1); });
+
+barG.addEventListener('mouseover', function(e){
+  var t = e.target;
+  if (t && t.getAttribute && t.getAttribute('data-i') !== null && t.classList && t.classList.contains('bar')){
+    setHover(+t.getAttribute('data-i'));
+  }
+});
+barG.addEventListener('click', function(e){
+  var t = e.target;
+  if (!t || !t.classList || !t.classList.contains('bar')) return;
+  var i = +t.getAttribute('data-i');
+  state.pin = (state.pin === i ? -1 : i);
+  if (CUR) highlight(CUR);
+});
+
+var tbody = document.getElementById('tbody');
+tbody.addEventListener('mouseover', function(e){
+  var tr = e.target.closest ? e.target.closest('tr') : null;
+  if (tr && tr.getAttribute('data-i') !== null) setHover(+tr.getAttribute('data-i'));
+});
+tbody.addEventListener('mouseleave', function(){ setHover(-1); });
+tbody.addEventListener('click', function(e){
+  var tr = e.target.closest ? e.target.closest('tr') : null;
+  if (!tr) return;
+  var i = +tr.getAttribute('data-i');
+  state.pin = (state.pin === i ? -1 : i);
+  if (CUR) highlight(CUR);
+});
+
+var sumBar = document.getElementById('sumBar');
+sumBar.addEventListener('mouseover', function(e){
+  if (e.target.classList && e.target.classList.contains('sum-seg')) setHover(+e.target.getAttribute('data-i'));
+});
+sumBar.addEventListener('mouseleave', function(){ setHover(-1); });
+
+function bindSwitch(id, key){
+  var el = document.getElementById(id);
+  function toggle(){
+    state[key] = !state[key];
+    el.classList.toggle('on', state[key]);
+    render(false);
+  }
+  el.addEventListener('click', toggle);
+  el.addEventListener('keydown', function(e){
+    if (e.key === ' ' || e.key === 'Enter'){ e.preventDefault(); toggle(); }
+  });
+}
+bindSwitch('swLine', 'showLine');
+bindSwitch('swGrid', 'showGrid');
+
+var dsBtns = document.querySelectorAll('.ds-btn');
+Array.prototype.forEach.call(dsBtns, function(btn){
+  btn.addEventListener('click', function(){
+    var key = btn.getAttribute('data-ds');
+    if (key === state.ds) return;
+    state.ds = key;
+    Array.prototype.forEach.call(dsBtns, function(b){ b.classList.toggle('active', b === btn); });
+    document.getElementById('btnCustom').classList.remove('active');
+    document.getElementById('customBox').hidden = true;
+    calibrateAxis(dsObj());
+    state.d = dsObj().d0;
+    state.hover = -1; state.pin = -1;
+    barG.innerHTML = '';
+    render(false);
+  });
+});
+
+/* ---------------- 自定义数据：按频率表录入 ---------------- */
+var btnCustom = document.getElementById('btnCustom');
+var customBox = document.getElementById('customBox');
+var customRows = document.getElementById('customRows');
+var customN = document.getElementById('customN');
+var customSum = document.getElementById('customSum');
+var customSumTip = document.getElementById('customSumTip');
+var customSumBox = document.getElementById('customSumBox');
+var customMsg = document.getElementById('customMsg');
+var customBase = null;   // 打开面板时的分组快照
+var toastTimer = null;
+
+function showToast(text){
+  var el = document.getElementById('toast');
+  el.textContent = text;
+  requestAnimationFrame(function(){ el.classList.add('show'); });
+  clearTimeout(toastTimer);
+  toastTimer = setTimeout(function(){
+    el.classList.remove('show');
+  }, 2400);
+}
+
+function customFreqInputs(){
+  return Array.prototype.slice.call(customRows.querySelectorAll('input.cf-freq'));
+}
+
+function buildCustomForm(){
+  customBase = layout();
+  var lay = customBase;
+  document.getElementById('cfK').textContent = lay.k;
+
+  var typed = null;
+  if (DATASETS.custom && DATASETS.custom.freqInputs && DATASETS.custom.freqInputs.length === lay.k &&
+      Math.abs(lay.d - DATASETS.custom.d0) < 1e-9){
+    typed = DATASETS.custom.freqInputs;
+  }
+  var s = '';
+  for (var i = 0; i < lay.k; i++){
+    var b = lay.bins[i], last = (i === lay.k - 1);
+    var pre = typed ? String(typed[i]) : '';
+    s += '<div class="cf-row">' +
+      '<span class="cf-range">[' + trim(b.lo, lay.ldec) + ', ' + trim(b.hi, lay.ldec) + (last ? ']' : ')') + '</span>' +
+      '<input type="number" class="cf-freq" data-i="' + i + '" min="0" max="1" step="any" value="' + pre + '" placeholder="0" aria-label="第 ' + (i + 1) + ' 组频率">' +
+      '<span class="cf-cnt" id="cfCnt' + i + '">–</span>' +
+      '</div>';
+  }
+  customRows.innerHTML = s;
+
+  customN.value = typed ? DATASETS.custom.n : Math.min(2000, lay.n);
+  customMsg.textContent = '';
+  updateCustomSum();
+}
+
+function updateCustomSum(){
+  var inputs = customFreqInputs();
+  var n = Math.round(Number(customN.value));
+  if (!isFinite(n) || n < 2) n = 0;
+  var sum = 0;
+  for (var i = 0; i < inputs.length; i++){
+    var v = Number(inputs[i].value);
+    if (!isFinite(v) || v < 0) v = 0;
+    sum += v;
+    var cell = document.getElementById('cfCnt' + i);
+    if (cell) cell.textContent = (n > 0 && v > 0) ? Math.round(v * n) : '–';
+  }
+  var ok = Math.abs(sum - 1) <= 1e-6;
+  customSum.textContent = trim(sum, 4);
+  customSumBox.classList.toggle('ok', ok);
+  customSumBox.classList.toggle('bad', !ok);
+  customSumTip.textContent = ok ? '✓ 满足 Σ频率 = 1' : '各组合计需为 1';
+}
+
+customRows.addEventListener('input', updateCustomSum);
+customN.addEventListener('input', updateCustomSum);
+
+btnCustom.addEventListener('click', function(){
+  customBox.hidden = !customBox.hidden;
+  if (!customBox.hidden){
+    buildCustomForm();
+    var first = customRows.querySelector('input.cf-freq');
+    if (first) first.focus();
+  }
+});
+document.getElementById('btnCancelData').addEventListener('click', function(){
+  customBox.hidden = true;
+});
+
+document.getElementById('btnApplyData').addEventListener('click', function(){
+  customMsg.textContent = '';
+  var lay = customBase || layout();
+  var n = Number(customN.value);
+  if (!isFinite(n) || Math.round(n) !== n || n < 2 || n > 2000){
+    customMsg.textContent = '数据量需为 2 ~ 2000 的整数。';
+    customN.focus(); return;
+  }
+  n = Math.round(n);
+
+  var inputs = customFreqInputs();
+  if (inputs.length !== lay.k){
+    customMsg.textContent = '分组已变化，请关闭面板、调整组距后重新打开。';
+    return;
+  }
+  var freqs = [], sum = 0;
+  for (var i = 0; i < inputs.length; i++){
+    var v = inputs[i].value === '' ? 0 : Number(inputs[i].value);
+    if (!isFinite(v) || v < 0){
+      customMsg.textContent = '第 ' + (i + 1) + ' 组的频率不是有效的非负数。';
+      inputs[i].focus(); return;
+    }
+    if (v > 1 + 1e-9){
+      customMsg.textContent = '第 ' + (i + 1) + ' 组的频率大于 1，频率应在 0 ~ 1 之间。';
+      inputs[i].focus(); return;
+    }
+    freqs.push(v); sum += v;
+  }
+  if (Math.abs(sum - 1) > 1e-6){
+    customMsg.textContent = 'Σ 频率 = ' + trim(sum, 4) + ' ≠ 1，请调整各组频率后再应用。';
+    return;
+  }
+
+  /* 频数 = 频率 × n；用最大余数法取整，保证 Σ频数 = n */
+  var raw = freqs.map(function(f){ return f * n; });
+  var counts = raw.map(function(x){ return Math.floor(x); });
+  var used = counts.reduce(function(a, b){ return a + b; }, 0);
+  var rem = n - used;
+  if (rem > 0){
+    var order = raw.map(function(x, idx){ return { idx:idx, r:x - counts[idx] }; })
+      .sort(function(a, b){ return b.r - a.r; });
+    for (var q = 0; q < rem; q++) counts[order[q % order.length].idx]++;
+  }
+
+  /* 由频率表还原出一组样本：每组内均匀取值，保证重新分组后频数不变 */
+  var d = lay.d, vals = [];
+  for (var g = 0; g < counts.length; g++){
+    var c = counts[g];
+    if (!c) continue;
+    var lo = lay.bins[g].lo, lastG = (g === lay.k - 1);
+    for (var j = 0; j < c; j++){
+      var t = lastG ? (c === 1 ? 1 : j / (c - 1)) : (j / c);
+      vals.push(r6(lo + d * t));
+    }
+  }
+
+  var R = lay.k * d;
+  var dStep = r6(d / 10);
+  var dMin = r6(dStep * 4);
+  var dMax = r6(dStep * Math.max(6, Math.ceil((R / 3) / dStep)));
+
+  DATASETS.custom = {
+    id:'custom', name:'自定义频率表', unit:'', axisName:'变量取值',
+    note:'按频率表录入：数据量 n = <b>' + n + '</b>，起点 ' + trim(lay.start, lay.ldec) + '，组距 d = ' + num(d) +
+         '，共 ' + lay.k + ' 组，Σ频率 = 1。频数 = 频率 × n，每个矩形的面积 = 该组频率。',
+    values:vals, dMin:dMin, dMax:dMax, dStep:dStep, d0:d, dec:lay.ldec,
+    n:n, freqInputs:freqs.slice()
+  };
+
+  state.ds = 'custom';
+  state.d = d;
+  state.hover = -1; state.pin = -1;
+  Array.prototype.forEach.call(dsBtns, function(b){ b.classList.remove('active'); });
+  btnCustom.classList.add('active');
+  calibrateAxis(DATASETS.custom);
+  barG.innerHTML = '';
+  customMsg.textContent = '';
+  customBox.hidden = true;
+  render(false);
+  showToast('已按频率表生成数据：n = ' + n + '，组距 d = ' + num(d) + '（' + CUR.k + ' 组）');
+});
+
+document.getElementById('btnReset').addEventListener('click', function(){
+  state.d = dsObj().d0;
+  state.hover = -1; state.pin = -1;
+  state.showLine = false; state.showGrid = true;
+  document.getElementById('swLine').classList.remove('on');
+  document.getElementById('swGrid').classList.add('on');
+  render(false);
+});
+
+/* ---------------- 初始化 ---------------- */
+calibrateAxis(dsObj());
+state.d = dsObj().d0;
+render(false);
+})();
+</script>
+</body>
+</html>

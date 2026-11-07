@@ -1,0 +1,736 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>6.2 直线、射线、线段 · 3D 数学课堂（人教版七上 第六章）</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  :root{
+    --blue:#3b82f6; --blue-d:#1d4ed8; --blue-l:#eff6ff;
+    --green:#10b981; --green-l:#ecfdf5;
+    --orange:#f59e0b; --orange-l:#fffbeb;
+    --purple:#8b5cf6; --red:#ef4444;
+    --ink:#0f172a; --muted:#94a3b8; --bg:#f8fafc; --card:#ffffff;
+  }
+  body{ font-family:"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif; background:var(--bg); color:var(--ink); }
+  header{
+    background:linear-gradient(120deg,#1e293b,#1e40af 65%,#2563eb);
+    color:#fff; padding:14px 26px; display:flex; align-items:center; gap:14px;
+  }
+  header .logo{ width:40px; height:40px; background:rgba(255,255,255,.15); border-radius:9px; display:flex; align-items:center; justify-content:center; font-size:22px; }
+  header h1{ font-size:18px; font-weight:600; letter-spacing:.5px; }
+  header p{ font-size:12px; opacity:.7; margin-top:2px; }
+  nav{ display:flex; gap:4px; padding:8px 26px; background:#fff; border-bottom:1px solid #e2e8f0; flex-wrap:wrap; }
+  nav button{
+    border:none; background:transparent; padding:8px 15px; font-size:13px; font-weight:600;
+    color:var(--muted); border-radius:8px; cursor:pointer; transition:.15s;
+  }
+  nav button:hover{ background:var(--blue-l); color:var(--blue-d); }
+  nav button.active{ color:var(--blue-d); background:var(--blue-l); }
+  .page{ display:none; padding:16px 26px 36px; max-width:1280px; margin:0 auto; }
+  .page.active{ display:block; }
+  .card{ background:var(--card); border-radius:14px; padding:14px; box-shadow:0 1px 4px rgba(15,23,42,.06); }
+  .grid{ display:grid; gap:14px; }
+  .grid.cols-2{ grid-template-columns:1fr 1fr; }
+  @media(max-width:900px){ .grid.cols-2{ grid-template-columns:1fr; } }
+  .topline{ display:flex; align-items:center; gap:12px; margin-bottom:10px; flex-wrap:wrap; }
+  .topline b{ font-size:15px; font-weight:700; }
+  .topline span{ font-size:12.5px; color:var(--muted); }
+  .scene-wrap{ position:relative; border-radius:12px; overflow:hidden; border:1px solid #e2e8f0;
+    background:linear-gradient(180deg,#fdfdff 0%,#eef4ff 100%); }
+  .scene-wrap canvas{ display:block; }
+  .hint{ position:absolute; left:10px; bottom:8px; font-size:11.5px; color:#7c8aa0; background:rgba(255,255,255,.85); padding:3px 10px; border-radius:7px; pointer-events:none; }
+  .ovl{ position:absolute; right:10px; top:10px; display:flex; gap:6px; }
+  .ovl button{
+    padding:6px 14px; border:none; border-radius:8px; background:rgba(255,255,255,.92); color:#475569;
+    font-size:12px; font-weight:600; cursor:pointer; box-shadow:0 1px 4px rgba(15,23,42,.12);
+  }
+  .ovl button.on{ background:var(--purple); color:#fff; }
+  .seg-btns{ display:flex; gap:6px; }
+  .seg-btns button{
+    padding:7px 20px; border-radius:999px; border:1.5px solid transparent; font-size:13.5px; font-weight:600; cursor:pointer; transition:.15s;
+  }
+  .btn-seg{ background:var(--green-l); color:#059669; border-color:#10b981!important; }
+  .btn-ray{ background:var(--orange-l); color:#b45309; border-color:#f59e0b!important; }
+  .btn-line{ background:var(--blue-l); color:var(--blue-d); border-color:#3b82f6!important; }
+  .seg-btns button.dim{ opacity:.4; filter:grayscale(.6); }
+  .mode-btns{ display:flex; gap:6px; flex-wrap:wrap; }
+  .mode-btns button{
+    padding:7px 18px; border-radius:999px; border:1.5px solid #cbd5e1; background:#fff; color:#475569;
+    font-size:13px; font-weight:600; cursor:pointer; transition:.15s;
+  }
+  .mode-btns button.on{ background:var(--purple); border-color:var(--purple); color:#fff; }
+  input[type=range]{ width:100%; accent-color:var(--blue); height:22px; }
+  .formula-box{ background:var(--blue-l); border:1px solid #dbeafe; border-radius:10px; padding:10px 14px; font-size:13px; margin-top:10px; line-height:1.9; }
+  ul.points{ padding-left:18px; font-size:13px; line-height:2; }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="logo">📐</div>
+  <div>
+    <h1>6.2 直线 · 射线 · 线段 —— 3D 交互课堂 <span style="background:#fbbf24;color:#78350f;font-size:11px;padding:2px 8px;border-radius:999px;vertical-align:middle;margin-left:8px">v4 最终版</span></h1>
+    <p>人教版（2024）数学 · 七年级上册 · 第六章 几何图形初步 &nbsp;|&nbsp; 鼠标拖动旋转 · 滚轮缩放</p>
+  </div>
+</header>
+
+<nav>
+  <button class="active" data-page="p1">① 认识三种线</button>
+  <button data-page="p2">② 两点确定一条直线</button>
+  <button data-page="p3">③ 线段的比较与中点</button>
+  <button data-page="p4">④ 线段的和差运算</button>
+  <button data-page="p5">⑤ 两点之间线段最短</button>
+  <button data-page="p6">⑥ 课堂小结</button>
+</nav>
+
+<!-- ================= Page 1 认识三种线 + 延长线 ================= -->
+<div class="page active" id="p1">
+  <div class="card">
+    <div class="topline">
+      <div class="seg-btns" id="typeBtns">
+        <button class="btn-seg" data-type="seg">线段</button>
+        <button class="btn-ray dim" data-type="ray">射线</button>
+        <button class="btn-line dim" data-type="line">直线</button>
+      </div>
+      <span id="typeInfo" style="font-size:12px;font-weight:700;color:#059669">线段：2 个端点，不可延伸，可以度量长度</span>
+    </div>
+    <div class="scene-wrap">
+      <div class="ovl" id="extOvl" style="display:none">
+        <button id="extAB">延长线段 AB</button>
+        <button id="extBA">反向延长线段 BA</button>
+      </div>
+      <div id="scene1" style="height:600px"></div>
+      <div class="hint">拖动旋转 · 滚轮缩放 · 红球 = 端点 · 线段模式下可演示"延长线"</div>
+    </div>
+    <div class="formula-box">
+      射线和线段都是<b>直线的一部分</b> · 线段向一方延长得射线，向两方延长得直线 · 表示：线段 AB（或线段 a）、射线 OA（端点字母在前）、直线 AB（或直线 l）
+    </div>
+  </div>
+</div>
+
+<!-- ================= Page 2 两点确定一条直线 + 点与直线位置 ================= -->
+<div class="page" id="p2">
+  <div class="card">
+    <div class="topline">
+      <b style="color:var(--blue-d)">经过两点有一条直线，并且只有一条直线</b>
+      <span>两点确定一条直线 · 应用：砌墙拉线、植树排队</span>
+    </div>
+    <div class="scene-wrap">
+      <div class="ovl">
+        <button id="drawA">① 过 A 画一条直线</button>
+        <button id="drawAB">② 画经过 A、B 的直线</button>
+        <button id="clearExtra">清空</button>
+      </div>
+      <div id="scene3" style="height:560px"></div>
+      <div class="hint">先多点几次①，看看画出的线一样吗？再点②对比 · 拖动红球 A / B 移动两点</div>
+    </div>
+    <div class="formula-box">
+      点与直线的位置关系：<b>点在直线上</b>（直线经过这个点）· <b>点在直线外</b>（直线不经过这个点）。<br>
+      当两条不同的直线有一个公共点时，称这两条直线<b>相交</b>，这个公共点叫做它们的<b>交点</b>。
+    </div>
+  </div>
+</div>
+
+<!-- ================= Page 3 线段的比较与中点 ================= -->
+<div class="page" id="p3">
+  <div class="grid cols-2">
+    <div class="card">
+      <div class="topline">
+        <b style="color:#059669">比较线段长短</b>
+        <span>度量法 · 叠合法（尺规作图）</span>
+      </div>
+      <input type="range" id="lenSlider" min="30" max="100" value="60">
+      <div class="scene-wrap" style="margin-top:8px"><div id="scene5" style="height:360px"></div>
+        <div class="hint" id="cmpText">AB = 60，CD = 70 → AB &lt; CD</div>
+      </div>
+    </div>
+    <div class="card">
+      <div class="topline">
+        <b style="color:var(--purple)">线段的中点</b>
+        <span>AM = MB = ½ AB · 还有三等分点、四等分点</span>
+      </div>
+      <div class="scene-wrap"><div id="scene6" style="height:392px"></div>
+        <div class="hint">拖动 M 点：移到正中间时，AM = MB（变绿色）</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- ================= Page 4 线段的和差运算 ================= -->
+<div class="page" id="p4">
+  <div class="card">
+    <div class="topline">
+      <b style="color:var(--blue-d)">线段的和与差</b>
+      <span>已知线段 a、b，作一条线段等于 a+b、a−b、2a−b（教材例题）</span>
+    </div>
+    <div class="mode-btns" style="margin-bottom:10px" id="opBtns">
+      <button class="on" data-op="add">作 a + b</button>
+      <button data-op="sub">作 a − b</button>
+      <button data-op="mix">作 2a − b</button>
+    </div>
+    <div class="scene-wrap"><div id="scene8" style="height:420px"></div>
+      <div class="hint">拖动旋转观察 · 在直线上依次截取线段，逐段作图</div>
+    </div>
+    <div class="formula-box" id="opText">
+      在直线 l 上作线段 AB = a，再在 AB 的延长线上作线段 BC = b，则线段 <b>AC = a + b</b>。
+    </div>
+  </div>
+</div>
+
+<!-- ================= Page 5 两点之间线段最短 ================= -->
+<div class="page" id="p5">
+  <div class="card">
+    <div class="topline">
+      <b style="color:#059669">两点之间，线段最短</b>
+      <span>从 A 地到 B 地，走直的路最近 · 连接两点的线段的长度叫做两点间的<b>距离</b></span>
+    </div>
+    <div class="scene-wrap">
+      <div class="ovl">
+        <button id="str1">拉直路线 ①</button>
+        <button id="str2">拉直路线 ②</button>
+        <button id="str3">拉直路线 ③</button>
+        <button id="strReset">全部恢复弯曲</button>
+      </div>
+      <div id="scene9" style="height:480px"></div>
+      <div class="hint">拖动 A、B 移动两点 · 拉直弯路后彩色线段保留，末端超过 B 点——弯路就是更长</div>
+    </div>
+    <div class="formula-box">
+      <b>两点的所有连线中，线段最短</b>（简称：两点之间，线段最短）。<br>
+      连接两点的线段的长度，叫做这两点间的<b>距离（distance）</b>——距离是一个<b>数值</b>，不是图形。
+    </div>
+  </div>
+</div>
+
+<!-- ================= Page 6 课堂小结 ================= -->
+<div class="page" id="p6">
+  <div class="card">
+    <b style="font-size:15px">课堂小结 · 6.2 直线、射线、线段</b>
+    <div class="grid cols-2" style="margin-top:8px">
+      <div class="formula-box" style="margin-top:0">
+        <b>三种线的特征与联系</b>
+        <ul class="points">
+          <li>线段：2 个端点，可度量；射线：1 个端点；直线：无端点；</li>
+          <li>射线、线段都是直线的一部分；</li>
+          <li>线段向一方延长得射线，向两方延长得直线；</li>
+          <li>⚠️ 射线 OA 端点字母必须写在前。</li>
+        </ul>
+      </div>
+      <div class="formula-box" style="margin-top:0;background:#ecfdf5;border-color:#a7f3d0">
+        <b>重要结论</b>
+        <ul class="points">
+          <li>经过两点有且只有一条直线（两点确定一条直线）；</li>
+          <li>两直线相交只有一个交点；</li>
+          <li>两点之间，线段最短；线段长度 = 两点间距离；</li>
+          <li>中点：AM = MB = ½AB；</li>
+          <li>直线上 n 个点确定 n(n−1)/2 条线段、2n 条射线。</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/three@0.128.0/examples/js/controls/OrbitControls.js"></script>
+<script>
+/* ============ 通用工具 ============ */
+function makeScene(containerId, camPos){
+  const box = document.getElementById(containerId);
+  const w = box.clientWidth||600, h = box.clientHeight||400;
+  const scene = new THREE.Scene();
+  const camera = new THREE.PerspectiveCamera(45, w/h, 0.1, 2000);
+  camera.position.set(...(camPos||[0,6,18]));
+  camera.lookAt(0,0,0);
+  const renderer = new THREE.WebGLRenderer({antialias:true, alpha:true});
+  renderer.setSize(w,h); renderer.setPixelRatio(window.devicePixelRatio);
+  box.appendChild(renderer.domElement);
+  const controls = new THREE.OrbitControls(camera, renderer.domElement);
+  controls.enableDamping = true; controls.autoRotate = true; controls.autoRotateSpeed = 0.6;
+  renderer.domElement.addEventListener('pointerdown', ()=>{ controls.autoRotate = false; });
+  scene.add(new THREE.HemisphereLight(0xffffff, 0xdbe6ff, 1.0));
+  const dl = new THREE.DirectionalLight(0xffffff, 0.35); dl.position.set(6,12,8); scene.add(dl);
+  const grid = new THREE.GridHelper(30, 30, 0xc7d8f5, 0xe4ecfa);
+  grid.position.y = -2.2; scene.add(grid);
+  const animate = ()=>{ requestAnimationFrame(animate); controls.update(); renderer.render(scene,camera); };
+  animate();
+  window.addEventListener('resize', ()=>{ renderer.setSize(box.clientWidth,h); });
+  return {scene, camera, renderer, controls, box};
+}
+function ball(scene, pos, color, r){
+  const m = new THREE.Mesh(new THREE.SphereGeometry(r||0.26,32,32),
+    new THREE.MeshStandardMaterial({color:color, roughness:0.35, metalness:0.1}));
+  m.position.set(...pos); scene.add(m); return m;
+}
+function fatLine(color, radius, flat){
+  const mesh = new THREE.Mesh(new THREE.CylinderGeometry(radius||0.07, radius||0.07, 1, 14),
+    flat ? new THREE.MeshBasicMaterial({color:color})
+         : new THREE.MeshStandardMaterial({color:color, roughness:0.3}));
+  mesh.setPoints = function(a, b){
+    const A = a.isVector3 ? a.clone() : new THREE.Vector3(a[0],a[1],a[2]);
+    const B = b.isVector3 ? b.clone() : new THREE.Vector3(b[0],b[1],b[2]);
+    const d = new THREE.Vector3().subVectors(B,A);
+    const len = Math.max(d.length(), 0.01);
+    mesh.position.copy(A).addScaledVector(d, 0.5);
+    mesh.scale.set(1, len, 1);
+    mesh.quaternion.setFromUnitVectors(new THREE.Vector3(0,1,0), d.normalize());
+  };
+  return mesh;
+}
+// 虚线（用于延长线）
+function dashLine(scene, a, b, color){
+  const g = new THREE.BufferGeometry().setFromPoints([new THREE.Vector3(...a), new THREE.Vector3(...b)]);
+  const l = new THREE.Line(g, new THREE.LineDashedMaterial({color:color, dashSize:0.35, gapSize:0.25}));
+  l.computeLineDistances(); scene.add(l); return l;
+}
+function arrowCone(color){
+  return new THREE.Mesh(new THREE.ConeGeometry(0.4,1.0,18),
+    new THREE.MeshStandardMaterial({color:color, roughness:0.3}));
+}
+function textSprite(scene, txt, pos, color, size){
+  const S4 = 4, fs = 56;
+  const mc = document.createElement('canvas'); const mctx = mc.getContext('2d');
+  mctx.font = '500 ' + fs + 'px "Segoe UI","Microsoft YaHei",sans-serif';
+  const tw = Math.ceil(mctx.measureText(txt).width);
+  const c = document.createElement('canvas');
+  c.width = (tw + 30) * S4; c.height = (fs + 24) * S4;
+  const ctx = c.getContext('2d');
+  ctx.scale(S4, S4);
+  ctx.font = '500 ' + fs + 'px "Segoe UI","Microsoft YaHei",sans-serif';
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  ctx.strokeStyle = 'rgba(255,255,255,0.95)'; ctx.lineWidth = 4; ctx.lineJoin = 'round';
+  ctx.strokeText(txt, (tw+30)/2, (fs+24)/2 + 2);
+  ctx.fillStyle = color;
+  ctx.fillText(txt, (tw+30)/2, (fs+24)/2 + 2);
+  const sp = new THREE.Sprite(new THREE.SpriteMaterial({map:new THREE.CanvasTexture(c), transparent:true}));
+  const s = (size||1.0) * 0.58;   // 全局缩小：标注更精致
+  sp.scale.set(s * (tw+30)/(fs+24), s, 1);
+  sp.position.set(...pos); scene.add(sp); return sp;
+}
+/* ============ Page1 三种线 + 延长线 ============ */
+(function(){
+  const S = makeScene('scene1',[0,4,14]);
+  let group = new THREE.Group(); S.scene.add(group);
+  const COLORS = {seg:0x10b981, ray:0xf59e0b, line:0x3b82f6};
+  const INFO = {
+    seg:['线段：2 个端点，不可延伸，可以度量长度','#059669'],
+    ray:['射线：1 个端点，向一方无限延伸，不可度量','#b45309'],
+    line:['直线：没有端点，向两方无限延伸，不可度量','#1d4ed8']
+  };
+  const TARGET = {seg:8, ray:26, line:26};
+  let curType=null, extGroup=null, extMode=0;
+  const X0=-4, XB=4;
+  function build(type){
+    const info=document.getElementById('typeInfo');
+    info.textContent=INFO[type][0]; info.style.color=INFO[type][1];
+    group.clear(); extGroup=null; extMode=0;
+    document.getElementById('extOvl').style.display = (type==='seg')?'flex':'none';
+    document.querySelectorAll('#extOvl button').forEach(b=>b.classList.remove('on'));
+    if(type==='seg'){
+      ball(group,[X0,0,0],0xef4444); ball(group,[XB,0,0],0xef4444);
+      textSprite(group,'A',[X0-0.4,0.75,0],'#b91c1c',0.55); textSprite(group,'B',[XB+0.4,0.75,0],'#b91c1c',0.55);
+    } else if(type==='ray'){
+      ball(group,[X0,0,0],0xef4444);
+      textSprite(group,'O',[X0-0.4,0.75,0],'#b91c1c',0.55);
+    }
+    curType=type;
+    const lm=fatLine(COLORS[type],0.09); group.add(lm);
+    // 不画箭头（会被误认成端点）：线一直延伸到画面之外，看不到头；
+    // 再让几段淡白色短段沿线向外流动、到边缘淡出，表示"还在一直延伸下去"
+    const flows=[];
+    function addFlow(dir){
+      for(let i=0;i<3;i++){
+        const m=new THREE.Mesh(new THREE.CylinderGeometry(0.125,0.125,1.1,10),
+          new THREE.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:0}));
+        m.rotation.z=-Math.PI/2; group.add(m);
+        flows.push({m:m, dir:dir, t:i/3});
+      }
+    }
+    if(type!=='seg') addFlow(1);
+    if(type==='line') addFlow(-1);
+    const animT0=performance.now();
+    function step(t){
+      if(curType!==type) return;
+      const tt=(t-animT0)/1000;
+      const grow=Math.min(tt/1.1,1);
+      const e=1-Math.pow(1-grow,3);
+      if(type==='seg'){
+        lm.setPoints([X0,0,0],[X0+8*e,0,0]);
+      } else if(type==='ray'){
+        const L=4+38*e;                      // 端点 O 固定，另一端一直伸到画面外
+        lm.setPoints([X0,0,0],[X0+L,0,0]);
+      } else {
+        const L=3+42*e;                      // 以中心对称，两端同时一直伸到画面外
+        lm.setPoints([-L,0,0],[L,0,0]);
+      }
+      // 流动短段：从起点向外跑，越往外越淡，跑出边缘就消失
+      const base = (type==='ray') ? X0 : 0;
+      const span = (type==='ray') ? 30 : 22;
+      flows.forEach(f=>{
+        f.t += 0.006;
+        if(f.t>1) f.t-=1;
+        f.m.position.set(base + f.dir*(2+f.t*span), 0, 0);
+        f.m.material.opacity = 0.75*Math.pow(Math.sin(Math.PI*f.t),0.7);
+      });
+      requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+  function showExt(mode){
+    if(extGroup){ group.remove(extGroup); extGroup=null; }
+    extMode=mode;
+    document.querySelectorAll('#extOvl button').forEach(b=>b.classList.remove('on'));
+    if(mode===0) return;
+    extGroup=new THREE.Group(); group.add(extGroup);
+    if(mode===1){ // 延长线段 AB：从 A 向 B 方向延长
+      dashLine(extGroup,[XB,0,0],[XB+4,0,0],0x94a3b8);
+      textSprite(extGroup,'延长线段 AB（虚线部分）',[XB+2,1.3,0],'#64748b',0.8);
+      document.getElementById('extAB').classList.add('on');
+    } else { // 反向延长线段 BA：从 B 向 A 方向反向延长
+      dashLine(extGroup,[X0,0,0],[X0-4,0,0],0x94a3b8);
+      textSprite(extGroup,'反向延长线段 BA',[X0-2,1.3,0],'#64748b',0.8);
+      document.getElementById('extBA').classList.add('on');
+    }
+  }
+  build('seg');
+  document.getElementById('extAB').addEventListener('click',()=>showExt(extMode===1?0:1));
+  document.getElementById('extBA').addEventListener('click',()=>showExt(extMode===2?0:2));
+  document.querySelectorAll('#typeBtns button').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('#typeBtns button').forEach(b=>b.classList.add('dim'));
+      btn.classList.remove('dim');
+      build(btn.dataset.type);
+    });
+  });
+})();
+/* ============ Page2 两点确定直线 + 点与直线位置 ============ */
+(function(){
+  const S = makeScene('scene3',[0,6,16]);
+  const ray = new THREE.Raycaster(); const mouse=new THREE.Vector2();
+  const pts=[new THREE.Vector3(-4,0,0), new THREE.Vector3(4,0,0)];
+  const balls=[0,1].map(i=>ball(S.scene,[pts[i].x,pts[i].y,pts[i].z],0xef4444,0.32));
+  const labels=[textSprite(S.scene,'A',[-4,1.2,0],'#b91c1c',0.95), textSprite(S.scene,'B',[4,1.2,0],'#b91c1c',0.95)];
+  textSprite(S.scene,'直线 l',[9.5,1.4,0],'#1d4ed8',1.0);
+  const line = fatLine(0x3b82f6, 0.08);
+  line.setPoints([-40,0,0],[40,0,0]); S.scene.add(line);
+  // 探究演示：过 A 反复画直线 → 每次都不一样（过一点有无数条）；
+  // 画"经过 A、B"的直线 → 不管画多少次都是同一条（两点确定一条直线）
+  let extraGroup=new THREE.Group(); S.scene.add(extraGroup);
+  let extras=[]; // {line, angle}
+  const PALETTE=[0xf59e0b,0x8b5cf6,0xec4899,0x14b8a6,0xef4444,0x84cc16];
+  const capSprite=textSprite(S.scene,'点上面的按钮试一试：过 A 反复画线，再画经过 A、B 的线',[0,4.0,0],'#64748b',0.75);
+  function setCap(txt,color){
+    capSprite.material.map.dispose();
+    capSprite.material.map=(()=>{const S4=4,fs=56;const c=document.createElement('canvas');c.width=1600*S4;c.height=(fs+24)*S4;
+      const x=c.getContext('2d');x.scale(S4,S4);x.font='500 '+fs+'px "Segoe UI","Microsoft YaHei",sans-serif';
+      x.textAlign='center';x.textBaseline='middle';x.fillStyle=color||'#475569';x.fillText(txt,800,(fs+24)/2+2);
+      return new THREE.CanvasTexture(c);})();
+    capSprite.material.needsUpdate=true;
+  }
+  function addExtra(angle){
+    const l=fatLine(PALETTE[extras.length%PALETTE.length],0.075,true);
+    S.scene.add(l); extras.push({line:l,angle});
+    updExtras(); S.controls.autoRotate=false;
+  }
+  function updExtras(){
+    const d=new THREE.Vector3().subVectors(pts[1],pts[0]).normalize();
+    extras.forEach(x=>{
+      const d2=d.clone().applyAxisAngle(new THREE.Vector3(0,1,0),x.angle);
+      x.line.setPoints(new THREE.Vector3().copy(pts[0]).addScaledVector(d2,-5.5),
+                       new THREE.Vector3().copy(pts[0]).addScaledVector(d2,5.5));
+    });
+  }
+  function flashAB(){
+    // 蓝色直线闪两下，强调"还是这一条"
+    const t0=performance.now();
+    (function blink(t){
+      const k=Math.floor((t-t0)/220)%2;
+      line.material.color.set(k?0x93c5fd:0x3b82f6);
+      if(t-t0<1000) requestAnimationFrame(blink);
+      else line.material.color.set(0x3b82f6);
+    })(t0);
+  }
+  document.getElementById('drawA').addEventListener('click',()=>{
+    let a; do{ a=(Math.random()*2-1)*2.4; }while(Math.abs(a)<0.25); // 避开恰好经过 B 的方向
+    addExtra(a);
+    setCap('又画了一条！过一点可以画无数条直线，但这些都不经过 B','#b45309');
+  });
+  document.getElementById('drawAB').addEventListener('click',()=>{
+    flashAB();
+    setCap('不管点多少次，经过 A、B 的都是同一条直线 —— 两点确定一条直线！','#1d4ed8');
+  });
+  document.getElementById('clearExtra').addEventListener('click',()=>{
+    extras.forEach(x=>{S.scene.remove(x.line);});
+    extras=[]; setCap('已清空。先"过 A 画直线"多画几条，再"画经过 A、B 的直线"对比','#64748b');
+  });
+  // 点 O 在直线上（教材样式：扁平小圆点，不是立体球）
+  const dotO=new THREE.Mesh(new THREE.SphereGeometry(0.09,16,12),new THREE.MeshBasicMaterial({color:0x334155}));
+  dotO.scale.y=0.35; dotO.position.set(0,0,0); S.scene.add(dotO);
+  textSprite(S.scene,'O',[0,-0.85,0],'#475569',0.55);
+  // 点 P 在直线外：只画点 + 字母（教材就是这样，不画连线）；放在同一平面内、直线的一侧
+  const dotP=new THREE.Mesh(new THREE.SphereGeometry(0.13,16,12),new THREE.MeshBasicMaterial({color:0xdb2777}));
+  dotP.scale.y=0.35; dotP.position.set(-2.2,0,4.4); S.scene.add(dotP);
+  textSprite(S.scene,'P',[-1.7,0.6,4.4],'#be185d',0.6);
+  // 一行小结
+  textSprite(S.scene,'O 在直线 l 上 · P 在直线 l 外',[1.5,-1.9,0],'#475569',0.8);
+  let dragging=-1, plane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
+  function cvPos(e){ const r=S.renderer.domElement.getBoundingClientRect();
+    mouse.x=((e.clientX-r.left)/r.width)*2-1; mouse.y=-((e.clientY-r.top)/r.height)*2+1; }
+  S.renderer.domElement.addEventListener('pointerdown',e=>{
+    cvPos(e); ray.setFromCamera(mouse,S.camera);
+    const hits=ray.intersectObjects(balls);
+    if(hits.length){ dragging=balls.indexOf(hits[0].object); S.controls.enabled=false; S.controls.autoRotate=false; }
+  });
+  S.renderer.domElement.addEventListener('pointermove',e=>{
+    if(dragging<0) return; cvPos(e); ray.setFromCamera(mouse,S.camera);
+    const p=new THREE.Vector3();
+    if(ray.ray.intersectPlane(plane,p)){
+      p.y=0; p.clampLength(0,9); pts[dragging].copy(p);
+      balls[dragging].position.copy(p);
+      labels[dragging].position.set(p.x,p.y+1.2,p.z);
+      const d=new THREE.Vector3().subVectors(pts[1],pts[0]).normalize();
+      line.setPoints(new THREE.Vector3().copy(pts[0]).addScaledVector(d,-40),
+                     new THREE.Vector3().copy(pts[0]).addScaledVector(d,40));
+      updExtras();
+    }
+  });
+  window.addEventListener('pointerup',()=>{ dragging=-1; S.controls.enabled=true; });
+})();
+/* ============ Page3 线段比较 ============ */
+(function(){
+  const S = makeScene('scene5',[0,5,14]);
+  let abLen=60, cdLen=70;
+  const lineA=fatLine(0xef4444,0.075), lineC=fatLine(0x3b82f6,0.075);
+  S.scene.add(lineA,lineC);
+  const b=ball(S.scene,[0,0.8,0],0xef4444,0.22), d=ball(S.scene,[0,-0.8,0],0x3b82f6,0.22);
+  ball(S.scene,[-6,0.8,0],0xef4444,0.22); ball(S.scene,[-6,-0.8,0],0x3b82f6,0.22);
+  textSprite(S.scene,'线段 AB',[-7.6,0.8,0],'#b91c1c',1.0);
+  textSprite(S.scene,'线段 CD',[-7.6,-0.8,0],'#1d4ed8',1.0);
+  function upd(){
+    const A=abLen/100*9, C=cdLen/100*9;
+    lineA.setPoints([-6,0.8,0],[-6+A,0.8,0]); b.position.set(-6+A,0.8,0);
+    lineC.setPoints([-6,-0.8,0],[-6+C,-0.8,0]); d.position.set(-6+C,-0.8,0);
+    const s = abLen<cdLen? 'AB < CD' : abLen>cdLen? 'AB > CD' : 'AB = CD';
+    document.getElementById('cmpText').textContent = 'AB = '+abLen+'，CD = '+cdLen+'  →  '+s;
+  }
+  document.getElementById('lenSlider').addEventListener('input',e=>{ abLen=+e.target.value; upd(); });
+  upd();
+})();
+/* ============ Page3 中点 ============ */
+(function(){
+  const S = makeScene('scene6',[0,4,12]);
+  const base=fatLine(0xcbd5e1,0.055); base.setPoints([-5,0,0],[5,0,0]); S.scene.add(base);
+  ball(S.scene,[-5,0,0],0xef4444,0.26); ball(S.scene,[5,0,0],0xef4444,0.26);
+  textSprite(S.scene,'A',[-5,1.1,0],'#b91c1c',0.9); textSprite(S.scene,'B',[5,1.1,0],'#b91c1c',0.9);
+  const M=ball(S.scene,[0,0,0],0x8b5cf6,0.3);
+  const textM=textSprite(S.scene,'M（拖我）',[0,1.35,0],'#7c3aed',0.95);
+  const l1=fatLine(0xf59e0b,0.07), l2=fatLine(0xf59e0b,0.07);
+  S.scene.add(l1,l2);
+  const ray=new THREE.Raycaster(), mouse=new THREE.Vector2();
+  const plane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
+  let drag=false;
+  function cv(e){const r=S.renderer.domElement.getBoundingClientRect();mouse.x=((e.clientX-r.left)/r.width)*2-1;mouse.y=-((e.clientY-r.top)/r.height)*2+1;}
+  S.renderer.domElement.addEventListener('pointerdown',e=>{cv(e);ray.setFromCamera(mouse,S.camera);
+    if(ray.intersectObjects([M]).length){drag=true;S.controls.enabled=false;S.controls.autoRotate=false;}});
+  S.renderer.domElement.addEventListener('pointermove',e=>{
+    if(!drag)return; cv(e);ray.setFromCamera(mouse,S.camera);
+    const p=new THREE.Vector3();
+    if(ray.ray.intersectPlane(plane,p)){ p.y=0;p.x=Math.max(-4.9,Math.min(4.9,p.x));
+      M.position.copy(p); textM.position.set(p.x,1.35,p.z);
+      l1.setPoints([-5,0,0],[p.x,0,0]);
+      l2.setPoints([p.x,0,0],[5,0,0]);
+      const isMid=Math.abs(p.x)<0.15;
+      const col=isMid?0x10b981:0xf59e0b;
+      l1.material.color.set(col); l2.material.color.set(col);
+      textM.material.map.dispose();
+      textM.material.map = (()=>{const S4=4;const c=document.createElement('canvas');c.width=260*S4;c.height=56*S4;const x=c.getContext('2d');
+        x.scale(S4,S4);x.font='500 34px "Segoe UI","Microsoft YaHei",sans-serif';x.textAlign='center';x.textBaseline='middle';
+        x.fillStyle=isMid?'#059669':'#b45309';
+        x.fillText(isMid?'AM = MB ✓':'AM ≠ MB',130,30);return new THREE.CanvasTexture(c);})();
+      textM.scale.set(1.5,0.32,1);
+    }
+  });
+  window.addEventListener('pointerup',()=>{drag=false;S.controls.enabled=true;});
+})();
+/* ============ Page4 线段和差运算（教材例题） ============ */
+(function(){
+  const S = makeScene('scene8',[0,5,15]);
+  let group=new THREE.Group(); S.scene.add(group);
+  const A=-7, a=5, b=3;
+  const TEXTS = {
+    add:['在直线 l 上作线段 AB = a，再在 AB 的延长线上作线段 BC = b，则线段 <b>AC = a + b</b>。',
+         [['A',A],['B',A+a],['C',A+a+b]]],
+    sub:['在线段 AB 上作线段 BD = b（从 B 向 A 方向截取），则线段 <b>AD = a − b</b>。',
+         [['A',A],['D',A+a-b],['B',A+a]]],
+    mix:['在直线 l 上作线段 AB = a，在延长线上作 BC = a，再在线段 AC 上作线段 CD = b（C 向 A 方向），则线段 <b>AD = 2a − b</b>。',
+         [['A',A],['B',A+a],['C',A+2*a],['D',A+2*a-b]]]
+  };
+  // 底部基准直线 l（浅灰虚线延伸感）
+  const base=fatLine(0xcbd5e1,0.04); base.setPoints([A-2.5,0,0],[A+2*a+3.5,0,0]); S.scene.add(base);
+  textSprite(S.scene,'直线 l',[A+2*a+3,1.2,0],'#94a3b8',0.85);
+  function seg(x1,x2,color,label,ly){
+    const ln=fatLine(color,0.075); ln.setPoints([x1,0,0],[x2,0,0]); group.add(ln);
+    ball(group,[x1,0,0],0xef4444,0.2); ball(group,[x2,0,0],0xef4444,0.2);
+    if(label) textSprite(group,label,[(x1+x2)/2,ly||0.9,0],'#334155',0.85);
+  }
+  function dot(x,name){
+    ball(group,[x,0,0],0xef4444,0.24);
+    textSprite(group,name,[x,1.7,0],'#b91c1c',0.9);
+  }
+  function build(op){
+    group.clear();
+    const segs = {
+      add:[[A,A+a,0x10b981,'a'],[A+a,A+a+b,0xf59e0b,'b']],
+      sub:[[A,A+a,0x10b981,'a'],[A+a-b,A+a,0xf59e0b,'b']],
+      mix:[[A,A+a,0x10b981,'a'],[A+a,A+2*a,0x10b981,'a'],[A+2*a-b,A+2*a,0xf59e0b,'b']]
+    }[op];
+    segs.forEach(s=>seg(s[0],s[1],s[2],s[3],-0.9));
+    const pts = TEXTS[op][1];
+    const names={};
+    pts.forEach(([n,x])=>{ if(!names[n]){ names[n]=1; dot(x,n);} });
+    // 结论括线
+    const res = {add:['AC = a + b',A,A+a+b,'#1d4ed8'],sub:['AD = a − b',A,A+a-b,'#1d4ed8'],mix:['AD = 2a − b',A,A+2*a-b,'#7c3aed']}[op];
+    const ln=fatLine(new THREE.Color(res[3]).getHex(),0.045);
+    ln.setPoints([res[1],-2.2,0],[res[2],-2.2,0]); group.add(ln);
+    textSprite(group,res[0],[(res[1]+res[2])/2,-3.2,0],res[3],1.1);
+    document.getElementById('opText').innerHTML=TEXTS[op][0];
+  }
+  build('add');
+  document.querySelectorAll('#opBtns button').forEach(btn=>{
+    btn.addEventListener('click',()=>{
+      document.querySelectorAll('#opBtns button').forEach(b=>b.classList.remove('on'));
+      btn.classList.add('on');
+      build(btn.dataset.op);
+    });
+  });
+})();
+/* ============ Page5 两点之间线段最短（A/B 可拖动） ============ */
+(function(){
+  const S = makeScene('scene9',[0,6,15]);
+  window.__S9=S;
+  window.addEventListener('error',e=>{window.__err=(window.__err||[]).concat(String((e.error&&e.error.stack)||e.message));});
+  const ray=new THREE.Raycaster(), mouse=new THREE.Vector2();
+  const plane=new THREE.Plane(new THREE.Vector3(0,1,0),0);
+  const A=new THREE.Vector3(-5,0,0), B=new THREE.Vector3(5,0,0);
+  const bA=ball(S.scene,[-5,0,0],0xef4444,0.36), bB=ball(S.scene,[5,0,0],0xef4444,0.36);
+  const tA=textSprite(S.scene,'A 地',[-5,1.2,0],'#b91c1c',0.75);
+  const tB=textSprite(S.scene,'B 地',[5,1.2,0],'#b91c1c',0.75);
+  const best=fatLine(0x10b981,0.11); S.scene.add(best);
+  const tBest=textSprite(S.scene,'线段 AB（最短 ✓）',[0,0.9,0],'#059669',0.9);
+  // 三条弯曲路线：点击可"拉直"与线段对比，再点恢复弯曲
+  const curveDefs=[
+    {color:0x94a3b8, offs:[[0,2.2,2.5],[0,2.2,-2.5]], k:0, target:0},
+    {color:0xf59e0b, offs:[[0.5,-2.4,2.5]], k:0, target:0},
+    {color:0x8b5cf6, offs:[[-1,-1.5,-2.5],[3,-1.2,-1.5]], k:0, target:0}
+  ];
+  let tubes=[];
+  function rebuild(){
+    best.setPoints(A,B);
+    bA.position.copy(A); bB.position.copy(B);
+    tA.position.set(A.x,1.2,A.z); tB.position.set(B.x,1.2,B.z);
+    tBest.position.set((A.x+B.x)/2,0.9,(A.z+B.z)/2);
+    tubes.forEach(t=>{ S.scene.remove(t); t.geometry.dispose(); });
+    tubes=[];
+    const mid=new THREE.Vector3().addVectors(A,B).multiplyScalar(0.5);
+    const up=new THREE.Vector3(0,1,0);
+    curveDefs.forEach(cd=>{
+      // 弯路真实长度（始终按完全弯曲形态计算）
+      const bentPts=[A.clone()];
+      cd.offs.forEach(o=>bentPts.push(mid.clone().add(new THREE.Vector3(o[0],o[1],o[2]))));
+      bentPts.push(B.clone());
+      const bentLen=new THREE.CatmullRomCurve3(bentPts).getLength();
+      let curve;
+      if(cd.k>0.98){
+        // A、B 之间保持绿色线段；只把弯路"多出来的部分"用彩色接到 B 点外面
+        const dir=new THREE.Vector3().subVectors(B,A).normalize();
+        const abLen=A.distanceTo(B);
+        const extra=Math.max(bentLen-abLen,0.01);
+        curve=new THREE.LineCurve3(B.clone(), B.clone().addScaledVector(dir, extra));
+      }else{
+        const s=Math.max(1-cd.k,0.02); // 动画过程中控制点永不重合
+        const pts=[A.clone()];
+        cd.offs.forEach(o=>pts.push(mid.clone().add(new THREE.Vector3(o[0]*s,o[1]*s,o[2]*s))));
+        pts.push(B.clone());
+        curve=new THREE.CatmullRomCurve3(pts);
+      }
+      const tube=new THREE.Mesh(new THREE.TubeGeometry(curve,64,0.13,10,false),
+        new THREE.MeshStandardMaterial({color:cd.color,roughness:0.4}));
+      tube.userData.ci=curveDefs.indexOf(cd);
+      S.scene.add(tube); tubes.push(tube);
+      // 拉直后末端标注（彩色段起点在 B 外侧）
+      if(cd.k>0.98){
+        const dir=new THREE.Vector3().subVectors(B,A).normalize();
+        const abLen=A.distanceTo(B);
+        const end=B.clone().addScaledVector(dir, Math.max(bentLen-abLen,0.01));
+        if(cd.tip){ S.scene.remove(cd.tip); cd.tip.material.map.dispose(); }
+        cd.tip=textSprite(S.scene,'弯路多出的部分',[ (B.x+end.x)/2, 1.4, (B.z+end.z)/2 ],'#475569',0.85);
+      } else if(cd.tip){ S.scene.remove(cd.tip); cd.tip.material.map.dispose(); cd.tip=null; }
+    });
+  }
+  function animateTo(cd){
+    const k0=cd.k, k1=cd.target, t0=performance.now();
+    function step(t){
+      const p=Math.min((t-t0)/500,1);
+      cd.k=k0+(k1-k0)*(1-Math.pow(1-p,2));
+      try{ rebuild(); }catch(err){ console.warn('rebuild error', err); }
+      if(p<1) requestAnimationFrame(step);
+    }
+    requestAnimationFrame(step);
+  }
+  function toggleCurve(i){
+    const cd=curveDefs[i];
+    cd.target=cd.target===0?1:0;
+    S.controls.autoRotate=false;
+    animateTo(cd);
+    const btn=document.getElementById('str'+(i+1));
+    if(btn) btn.classList.toggle('on', cd.target===1);
+  }
+  ['str1','str2','str3'].forEach((id,i)=>{
+    document.getElementById(id).addEventListener('click',()=>toggleCurve(i));
+  });
+  document.getElementById('strReset').addEventListener('click',()=>{
+    curveDefs.forEach((cd,i)=>{ if(cd.target!==0){ cd.target=0; animateTo(cd);} });
+    ['str1','str2','str3'].forEach(id=>document.getElementById(id).classList.remove('on'));
+  });
+  // 单击弯线拉直/恢复（注意：pointerdown 里不能再切换，否则一次点击=切换两次=看不到变化）
+  S.renderer.domElement.addEventListener('click',e=>{
+    cv(e); ray.setFromCamera(mouse,S.camera);
+    const hitTube=ray.intersectObjects(tubes);
+    if(hitTube.length) toggleCurve(hitTube[0].object.userData.ci);
+  });
+  rebuild();
+  textSprite(S.scene,'弯曲路线都比较长 · 点击弯线可拉直对比',[0,-3.2,1.5],'#64748b',0.75);
+  let dragging=null;
+  function cv(e){const r=S.renderer.domElement.getBoundingClientRect();mouse.x=((e.clientX-r.left)/r.width)*2-1;mouse.y=-((e.clientY-r.top)/r.height)*2+1;}
+  S.renderer.domElement.addEventListener('pointerdown',e=>{cv(e);ray.setFromCamera(mouse,S.camera);
+    const hits=ray.intersectObjects([bA,bB]);
+    if(hits.length){dragging=hits[0].object===bA?'A':'B';S.controls.enabled=false;S.controls.autoRotate=false;}});
+  S.renderer.domElement.addEventListener('pointermove',e=>{
+    if(!dragging){ // 悬停提示：可点击处显示手型
+      cv(e); ray.setFromCamera(mouse,S.camera);
+      const hot=ray.intersectObjects([...tubes,bA,bB]).length>0;
+      S.renderer.domElement.style.cursor=hot?'pointer':'grab';
+    }
+    if(!dragging)return; cv(e);ray.setFromCamera(mouse,S.camera);
+    const p=new THREE.Vector3();
+    if(ray.ray.intersectPlane(plane,p)){
+      p.y=0; p.clampLength(0,9);
+      if(dragging==='A') A.copy(p); else B.copy(p);
+      rebuild();
+    }
+  });
+  window.addEventListener('pointerup',()=>{dragging=null;S.controls.enabled=true;});
+})();
+/* ============ 导航 ============ */
+document.querySelectorAll('nav button').forEach(btn=>{
+  btn.addEventListener('click',()=>{
+    document.querySelectorAll('nav button').forEach(b=>b.classList.remove('active'));
+    document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+    btn.classList.add('active');
+    document.getElementById(btn.dataset.page).classList.add('active');
+    window.dispatchEvent(new Event('resize'));
+  });
+});
+</script>
+</body>
+</html>

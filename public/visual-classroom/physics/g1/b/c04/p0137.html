@@ -1,0 +1,2801 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>模型42 · 功与功率（W = Fx cos α 与 P = Fv cos α 的区分）</title>
+<style>
+:root{
+  --bg:#f5f7fa; --panel:#ffffff; --line:#e2e8f0; --ink:#1e293b; --ink2:#475569; --ink3:#94a3b8;
+  --accent:#2563eb; --accent2:#eff6ff;
+  --pos:#16a34a; --neg:#dc2626; --zero:#94a3b8;
+  --pull:#f97316; --grav:#2563eb; --fric:#7c3aed; --norm:#0891b2;
+  --data:#38bdf8; --theory:#16a34a; --fit:#ea580c;
+  --warnBg:#fff7ed; --warnLine:#fdba74;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{
+  font-family:"Microsoft YaHei","PingFang SC","Hiragino Sans GB",system-ui,sans-serif;
+  background:var(--bg); color:var(--ink); font-size:14px; line-height:1.55;
+}
+h1,h2,h3,h4{margin:0 0 6px 0;font-weight:600}
+button{font-family:inherit;font-size:13px;cursor:pointer;border:1px solid var(--line);
+  background:#fff;color:var(--ink);border-radius:7px;padding:5px 10px;transition:.15s}
+button:hover{background:var(--accent2);border-color:#bfdbfe}
+button:active{transform:translateY(1px)}
+button.on{background:var(--accent);color:#fff;border-color:var(--accent)}
+button.sm{padding:3px 8px;font-size:12px}
+input[type=range]{width:100%;accent-color:var(--accent);height:18px}
+input[type=number],select{font-family:inherit;font-size:13px;padding:3px 6px;border:1px solid var(--line);border-radius:6px;background:#fff;color:var(--ink)}
+input[type=number]{width:72px}
+label{color:var(--ink2)}
+.mono{font-family:"Consolas","Courier New",monospace}
+.small{font-size:12px;color:var(--ink3)}
+.kbd{border:1px solid var(--line);border-bottom-width:2px;border-radius:4px;padding:0 4px;font-size:11px;background:#f8fafc}
+
+/* 顶栏 */
+.topbar{display:flex;align-items:center;gap:12px;flex-wrap:wrap;padding:10px 16px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:0;z-index:40}
+.topbar .title{font-size:17px;font-weight:700}
+.topbar .sub{font-size:12px;color:var(--ink3);font-weight:400}
+.topbtns{margin-left:auto;display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+
+/* 标签页 */
+.tabs{display:flex;gap:4px;padding:8px 16px 0 16px;background:#fff;border-bottom:1px solid var(--line);position:sticky;top:52px;z-index:35;overflow-x:auto}
+.tab{border:1px solid transparent;border-bottom:none;border-radius:8px 8px 0 0;padding:7px 14px;background:#f1f5f9;color:var(--ink2);font-size:13px;white-space:nowrap}
+.tab.active{background:var(--bg);border-color:var(--line);color:var(--accent);font-weight:600}
+main{padding:12px 16px 90px 16px}
+.tabpane{display:none}
+.tabpane.active{display:block}
+.row{display:flex;gap:12px;flex-wrap:wrap;margin-bottom:12px}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:10px 12px;min-width:280px}
+.panel.grow{flex:1 1 420px;min-width:300px}
+.panel h3{font-size:14px;color:var(--ink);display:flex;align-items:center;gap:6px}
+.panel h3 .n{background:var(--accent);color:#fff;border-radius:50%;width:18px;height:18px;display:inline-flex;align-items:center;justify-content:center;font-size:11px}
+.panel h4{font-size:13px;margin:8px 0 4px;color:var(--ink2)}
+.ctrls{display:grid;grid-template-columns:repeat(auto-fill,minmax(210px,1fr));gap:4px 14px;margin-top:6px}
+.ctl{display:grid;grid-template-columns:74px 1fr 78px;align-items:center;gap:6px;font-size:12px}
+.ctl output{text-align:right;font-family:Consolas,monospace;font-size:12px;color:var(--ink)}
+.ctl.locked{opacity:.45}
+.ctl.locked input{pointer-events:none}
+.lockicon{color:var(--zero)}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid3{display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+@media(max-width:1100px){.grid3{grid-template-columns:1fr 1fr}}
+@media(max-width:760px){.grid2,.grid3{grid-template-columns:1fr}}
+.cwrap{position:relative;width:100%}
+canvas{display:block;width:100%;background:#fff;border:1px solid var(--line);border-radius:8px;touch-action:none}
+.readout{display:grid;grid-template-columns:repeat(auto-fill,minmax(104px,1fr));gap:4px 10px;margin-top:6px;font-size:12px}
+.ro{background:#f8fafc;border:1px solid var(--line);border-radius:6px;padding:2px 6px;font-family:Consolas,monospace;font-size:12px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.ro b{color:var(--ink3);font-weight:500;font-family:inherit}
+.verdict{margin-top:6px;padding:6px 10px;border-radius:8px;font-size:13px;border:1px solid}
+.v-pos{background:#f0fdf4;border-color:#86efac;color:#15803d}
+.v-neg{background:#fef2f2;border-color:#fca5a5;color:#b91c1c}
+.v-zero{background:#f8fafc;border-color:#cbd5e1;color:#475569}
+.hint{background:var(--accent2);border:1px solid #bfdbfe;border-radius:8px;padding:6px 10px;font-size:12px;color:#1d4ed8;margin-top:6px}
+.warn{background:var(--warnBg);border:1px solid var(--warnLine);border-radius:8px;padding:6px 10px;font-size:12px;color:#9a3412;margin-top:6px}
+.ok{background:#f0fdf4;border:1px solid #86efac;border-radius:8px;padding:6px 10px;font-size:12px;color:#15803d;margin-top:6px}
+.tag{display:inline-block;font-size:11px;padding:1px 6px;border-radius:10px;background:#eef2ff;color:#4338ca;margin-right:4px}
+.chip{display:inline-block;font-size:11px;padding:1px 7px;border-radius:10px;border:1px solid var(--line);background:#fff;color:var(--ink2);margin:0 4px 4px 0;cursor:pointer}
+.chip:hover{border-color:var(--accent);color:var(--accent)}
+table{border-collapse:collapse;width:100%;font-size:12px}
+th,td{border:1px solid var(--line);padding:3px 6px;text-align:center;white-space:nowrap}
+th{background:#f1f5f9;font-weight:600}
+.tablewrap{overflow:auto;max-height:230px}
+.legend{display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--ink2);margin-top:4px}
+.legend i{display:inline-block;width:12px;height:3px;border-radius:2px;margin-right:3px;vertical-align:middle}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:3px;vertical-align:middle}
+
+/* 抽屉 */
+.drawer{position:fixed;top:0;right:-420px;width:400px;max-width:92vw;height:100%;background:#fff;border-left:1px solid var(--line);
+  box-shadow:-4px 0 18px rgba(15,23,42,.10);transition:right .22s ease;z-index:60;display:flex;flex-direction:column}
+.drawer.open{right:0}
+.drawer header{padding:10px 12px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px}
+.drawer .body{flex:1;overflow:auto;padding:10px 12px}
+.cattabs{display:flex;flex-wrap:wrap;gap:4px;padding:8px 12px;border-bottom:1px solid var(--line)}
+.mini{border:1px solid var(--line);border-radius:8px;padding:6px 8px;margin-bottom:6px;cursor:pointer;background:#fff}
+.mini:hover{border-color:var(--accent);background:var(--accent2)}
+.mini .t{font-size:13px;font-weight:600}
+.mini .c{font-size:12px;color:var(--ink2)}
+.mini:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
+
+/* 卡片弹窗 */
+.modal{position:fixed;left:50%;top:58px;transform:translateX(-50%);width:min(560px,94vw);max-height:78vh;overflow:auto;
+  background:#fff;border:1px solid var(--line);border-radius:12px;box-shadow:0 12px 32px rgba(15,23,42,.18);z-index:70;display:none}
+.modal.open{display:block}
+.modal .mhead{cursor:move;padding:10px 14px;border-bottom:1px solid var(--line);display:flex;align-items:center;gap:8px;background:#f8fafc;border-radius:12px 12px 0 0}
+.modal .mbody{padding:12px 14px}
+.modal .field{margin-bottom:8px}
+.modal .field .k{font-size:11px;color:var(--ink3);letter-spacing:.5px}
+.flipbtn{font-size:12px}
+svg.mfig{width:100%;height:120px;background:#fbfdff;border:1px solid var(--line);border-radius:8px}
+
+/* 教学引导 */
+.flowbar{position:fixed;left:16px;bottom:16px;width:min(430px,92vw);background:#fff;border:1px solid var(--line);
+  border-left:4px solid var(--accent);border-radius:10px;box-shadow:0 8px 24px rgba(15,23,42,.12);padding:10px 12px;z-index:55;display:none}
+.flowbar.open{display:block}
+.flowbar .fstep{font-size:11px;color:var(--accent);font-weight:700}
+.flowbar .fq{font-size:13px;margin:4px 0}
+.flowbar .frow{display:flex;gap:6px;align-items:center;margin-top:6px;flex-wrap:wrap}
+
+/* 练习 */
+.qbox{border:1px solid var(--line);border-radius:8px;padding:8px 10px;margin-bottom:8px;background:#fff}
+.qbox .q{font-weight:600;font-size:13px}
+.opt{display:block;margin:4px 0;padding:4px 8px;border:1px solid var(--line);border-radius:6px;cursor:pointer;font-size:13px}
+.opt:hover{background:var(--accent2)}
+.opt.sel{border-color:var(--accent);background:var(--accent2)}
+.opt.right{background:#f0fdf4;border-color:#86efac;color:#15803d}
+.opt.bad{background:#fef2f2;border-color:#fca5a5;color:#b91c1c}
+details.fold{border:1px solid var(--line);border-radius:8px;padding:6px 10px;margin-top:8px;background:#fbfdff}
+details.fold summary{cursor:pointer;font-size:12px;color:var(--ink2)}
+.pinned{position:fixed;right:8px;bottom:16px;width:230px;z-index:50;display:flex;flex-direction:column;gap:6px}
+.pinned .p{background:#fff;border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:8px;padding:5px 8px;font-size:11px;box-shadow:0 4px 12px rgba(15,23,42,.08)}
+.hot{position:absolute;width:18px;height:18px;border-radius:50%;background:#fff;border:2px solid var(--accent);
+  color:var(--accent);font-size:11px;line-height:15px;text-align:center;cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.15)}
+.hot:hover{background:var(--accent);color:#fff}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media(max-width:760px){
+  .tabs{top:0;position:static}.topbar{position:static}
+  .drawer{width:100%}.pinned{display:none}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="title">模型42 · 功与功率 <span class="sub">W = F·x·cos α ｜ P = F·v·cos α ｜ 单位：J 与 W（瓦）</span></div>
+  <div class="topbtns">
+    <button id="btnDrawer" aria-label="打开知识卡片库">📚 知识卡片库</button>
+    <button id="btnFlow" aria-label="打开教学引导">🧭 教学引导</button>
+    <label class="small"><input type="checkbox" id="chkReduced"> 静态模式（减少动效）</label>
+    <button id="btnHelp" class="sm" aria-label="使用说明">?</button>
+  </div>
+</header>
+
+<nav class="tabs" role="tablist" aria-label="模块标签页">
+  <button class="tab active" role="tab" data-tab="1" aria-selected="true">① 功的定义与正负</button>
+  <button class="tab" role="tab" data-tab="2" aria-selected="false">② 斜面 DIS 实验与实时曲线</button>
+  <button class="tab" role="tab" data-tab="3" aria-selected="false">③ 功率：平均与瞬时</button>
+  <button class="tab" role="tab" data-tab="4" aria-selected="false">④ W–α 与 P–v 控制变量</button>
+  <button class="tab" role="tab" data-tab="5" aria-selected="false">⑤ 机车两类启动</button>
+  <button class="tab" role="tab" data-tab="6" aria-selected="false">⑥ 练习考核</button>
+</nav>
+
+<main>
+<div class="panel" style="margin-bottom:12px">
+  <h3>预设与扫描（一键载入）</h3>
+  <div id="presetBtns" style="display:flex;gap:6px;flex-wrap:wrap"></div>
+  <div class="small" style="margin-top:4px">点击预设会自动跳转到对应标签页并载入参数；随后可用各页的「自动扫描 / 拟合 / 运行」按钮复现结论。</div>
+</div>
+<!-- ======================= 标签① ======================= -->
+<section class="tabpane active" id="tab-1" role="tabpanel" aria-label="功的定义与正负">
+  <div class="row">
+    <div class="panel grow">
+      <h3><span class="n">1</span>力与位移的夹角 α：W = F·x·cos α</h3>
+      <div class="cwrap"><canvas id="c1vec" style="height:250px" aria-label="力与位移矢量及夹角示意图"></canvas></div>
+      <div class="ctrls">
+        <div class="ctl"><label for="inF1">拉力 F</label><input type="range" id="inF1" min="0" max="50" step="0.5" value="10"><output id="outF1"></output></div>
+        <div class="ctl"><label for="inX1">位移 x</label><input type="range" id="inX1" min="0" max="5" step="0.05" value="2"><output id="outX1"></output></div>
+        <div class="ctl"><label for="inA1">夹角 α</label><input type="range" id="inA1" min="0" max="180" step="1" value="60"><output id="outA1"></output></div>
+        <div class="ctl"><label for="inM1">质量 m</label><input type="range" id="inM1" min="0.2" max="5" step="0.1" value="1"><output id="outM1"></output></div>
+        <div class="ctl"><label for="inTh1">斜面倾角 θ<sub>斜面</sub></label><input type="range" id="inTh1" min="0" max="60" step="1" value="30"><output id="outTh1"></output></div>
+        <div class="ctl"><label for="inMu1">摩擦因数 μ</label><input type="range" id="inMu1" min="0" max="0.6" step="0.01" value="0.2"><output id="outMu1"></output></div>
+        <div class="ctl"><label for="selDir1">运动方向</label><select id="selDir1"><option value="1">沿斜面上升</option><option value="-1">沿斜面下滑</option></select><output></output></div>
+        <div class="ctl"><label>α 自动扫描</label><button id="btnScanA1" class="sm">0→180° 扫描</button><output></output></div>
+      </div>
+      <div class="readout">
+        <div class="ro"><b>cos α</b> <span id="roCos1">—</span></div>
+        <div class="ro"><b>F cos α</b> <span id="roFcos1">—</span></div>
+        <div class="ro"><b>W = Fx cos α</b> <span id="roW1">—</span></div>
+        <div class="ro"><b>单位</b> N·m = J</div>
+      </div>
+      <div id="verdict1" class="verdict v-pos">—</div>
+      <div class="hint">规范说法：<b>功是标量</b>，正负不表示方向，只表示该力是<b>动力（正功）</b>还是<b>阻力（负功）</b>。「摩擦力做功 −2 J」与「<b>克服</b>摩擦力做功 2 J」是同一事实的两种说法；比较做功多少时比较<b>绝对值</b>。</div>
+    </div>
+    <div class="panel" style="flex:1 1 340px">
+      <h3><span class="n">2</span>W–α 余弦曲线（F、x 恒定）</h3>
+      <div class="cwrap"><canvas id="c1wa" style="height:250px" aria-label="功随夹角变化的余弦曲线"></canvas></div>
+      <div class="legend">
+        <span><i style="background:#16a34a"></i>W&gt;0 动力功（α&lt;90°）</span>
+        <span><i style="background:#dc2626"></i>W&lt;0 阻力功（α&gt;90°）</span>
+        <span><i style="background:#94a3b8"></i>W=0（α=90°）</span>
+      </div>
+      <div class="hint">α = 90° 时 cos α = 0 ⇒ <b>W = 0</b>：力再大、位移再大也不做功。</div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="panel grow">
+      <h3><span class="n">3</span>逐力做功与总功（斜面拉木块）</h3>
+      <div class="cwrap"><canvas id="c1bar" style="height:250px" aria-label="各力做功条形图与总功"></canvas></div>
+      <div class="ctrls">
+        <div class="ctl"><label>错误对照</label><button id="btnAbsSum" class="sm">显示「绝对值之和」</button><output id="outAbsSum"></output></div>
+        <div class="ctl"><label>图层</label><button id="btnBarGrid" class="sm on">网格</button><output></output></div>
+      </div>
+      <div class="readout">
+        <div class="ro"><b>W<sub>拉</sub></b> <span id="roWp">—</span></div>
+        <div class="ro"><b>W<sub>重</sub></b> <span id="roWg">—</span></div>
+        <div class="ro"><b>W<sub>摩</sub></b> <span id="roWf">—</span></div>
+        <div class="ro"><b>W<sub>支</sub></b> <span id="roWn">—</span></div>
+        <div class="ro"><b>W<sub>总</sub></b> <span id="roWt">—</span></div>
+        <div class="ro"><b>F<sub>合</sub></b> <span id="roFnet">—</span></div>
+      </div>
+      <div id="sumInfo" class="ok">—</div>
+    </div>
+    <div class="panel" style="flex:1 1 340px">
+      <h3><span class="n">4</span>不做功的三因子判据</h3>
+      <div class="cwrap"><canvas id="c1zero" style="height:180px" aria-label="不做功三种情形示意"></canvas></div>
+      <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
+        <button id="btnZ1" class="sm">① 无力 F = 0</button>
+        <button id="btnZ2" class="sm">② 无位移 x = 0</button>
+        <button id="btnZ3" class="sm">③ 垂直 α = 90°</button>
+        <button id="btnZ0" class="sm">复位</button>
+      </div>
+      <div id="zeroInfo" class="hint">判据：<b>W = 0 ⇔ F = 0 或 x = 0 或 cos α = 0</b>（三因子任一为零）。</div>
+      <div class="warn">反例纠正：<b>摩擦力可以做正功</b>（传送带把物体带上、叠放物体被带动）；<b>支持力可以做正功</b>（电梯地板对物体）；<b>重力可以做负功</b>（上升过程）。「摩擦力一定做负功」是错误认识。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= 标签② ======================= -->
+<section class="tabpane" id="tab-2" role="tabpanel" aria-label="斜面 DIS 实验与实时曲线">
+  <div class="row">
+    <div class="panel grow">
+      <h3><span class="n">1</span>斜面 DIS 装置（力传感器 + 位移/速度传感器）</h3>
+      <div class="cwrap"><canvas id="c2scene" style="height:270px" aria-label="斜面木块与传感器装置示意图"></canvas></div>
+      <div class="ctrls">
+        <div class="ctl"><label for="selFmode2">拉力模式</label><select id="selFmode2"><option value="c">恒力</option><option value="v">变力 F(x)（可拖动控制点）</option></select><output></output></div>
+        <div class="ctl"><label for="inF2">拉力 F</label><input type="range" id="inF2" min="0" max="50" step="0.5" value="12"><output id="outF2"></output></div>
+        <div class="ctl"><label for="inA2">夹角 α</label><input type="range" id="inA2" min="0" max="180" step="1" value="0"><output id="outA2"></output></div>
+        <div class="ctl"><label for="inM2">质量 m</label><input type="range" id="inM2" min="0.2" max="5" step="0.1" value="1"><output id="outM2"></output></div>
+        <div class="ctl"><label for="inTh2">斜面倾角 θ<sub>斜面</sub></label><input type="range" id="inTh2" min="0" max="60" step="1" value="20"><output id="outTh2"></output></div>
+        <div class="ctl"><label for="inMu2">摩擦因数 μ</label><input type="range" id="inMu2" min="0" max="0.6" step="0.01" value="0.15"><output id="outMu2"></output></div>
+        <div class="ctl"><label for="inSr2">采样率</label><input type="range" id="inSr2" min="2" max="60" step="1" value="20"><output id="outSr2"></output></div>
+        <div class="ctl"><label for="inSm2">滑动平均</label><input type="range" id="inSm2" min="1" max="15" step="2" value="1"><output id="outSm2"></output></div>
+        <div class="ctl"><label>噪声</label><button id="btnNoise2" class="sm">关</button><output id="outNoise2"></output></div>
+        <div class="ctl"><label>锁定木块</label><button id="btnLock2" class="sm">否（可动）</button><output></output></div>
+      </div>
+      <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <button id="btnPlay2">▶ 播放</button>
+        <button id="btnStep2" class="sm">单步</button>
+        <button id="btnReset2" class="sm">重置</button>
+        <label class="small">倍率 <input type="number" id="inSpd2" value="1" min="0.1" max="5" step="0.1"> ×</label>
+        <span class="small" id="labTime2">t = 0.00 s</span>
+      </div>
+      <div class="readout">
+        <div class="ro"><b>F</b> <span id="roF2">—</span></div>
+        <div class="ro"><b>x</b> <span id="roX2">—</span></div>
+        <div class="ro"><b>v</b> <span id="roV2">—</span></div>
+        <div class="ro"><b>W(积分)</b> <span id="roW2">—</span></div>
+        <div class="ro"><b>W(解析)</b> <span id="roWa2">—</span></div>
+        <div class="ro"><b>相对误差</b> <span id="roErr2">—</span></div>
+        <div class="ro"><b>P = Fv cos α</b> <span id="roP2">—</span></div>
+        <div class="ro"><b>F–x 面积</b> <span id="roArea2">—</span></div>
+      </div>
+      <div id="msg2" class="hint">恒力模式下 W 由 <b>∫F·dx</b> 累积得到，与解析式 F·x·cos α 对照；切换到变力模式后只能用积分（F–x 图面积）。</div>
+    </div>
+    <div class="panel" style="flex:1 1 360px">
+      <h3><span class="n">2</span>实时曲线</h3>
+      <div class="grid2">
+        <div class="cwrap"><canvas id="c2fx" style="height:190px" aria-label="F-x 曲线"></canvas></div>
+        <div class="cwrap"><canvas id="c2wx" style="height:190px" aria-label="W-x 累积功曲线"></canvas></div>
+        <div class="cwrap"><canvas id="c2pt" style="height:190px" aria-label="P-t 曲线"></canvas></div>
+        <div class="cwrap"><canvas id="c2vt" style="height:190px" aria-label="v-t 曲线"></canvas></div>
+      </div>
+      <div class="cwrap" style="margin-top:8px"><canvas id="c2pv" style="height:190px" aria-label="P-v 曲线"></canvas></div>
+      <div class="legend">
+        <span><span class="dot" style="background:#38bdf8"></span>实测数据点</span>
+        <span><i style="background:#16a34a"></i>理论曲线</span>
+        <span><i style="background:#ea580c"></i>平滑/拟合</span>
+      </div>
+      <div class="small">提示：在<b>变力模式</b>下可在 F–x 图上拖动控制点改变 F(x)；滚轮缩放、拖动平移、双击复位。</div>
+    </div>
+  </div>
+  <div class="panel">
+    <h3>安全与规范（可折叠）</h3>
+    <details class="fold"><summary>传感器量程与零点校准、实验规范</summary>
+      <ul style="margin:6px 0 0 16px;padding:0;font-size:12px;color:var(--ink2)">
+        <li>力传感器使用前<b>调零</b>并确认量程（本模型 0–50 N），禁止超量程拉伸。</li>
+        <li>位移/速度传感器需标定基准点，采样率越高细节越丰富但噪声更明显，可用滑动平均平滑。</li>
+        <li>木块勿超速滑落，斜面底端加缓冲；细线质量与滑轮摩擦会带来系统误差。</li>
+        <li>单位与有效数字：内部用 SI（N、m、J、W、s、kg），cos α 保留 3 位小数，功与功率保留 2–3 位有效数字。</li>
+        <li>注意区分物理量符号 <b>W（功）</b> 与单位 <b>W（瓦特）</b>；P̄ 表示平均功率，P 表示瞬时功率。</li>
+      </ul>
+    </details>
+  </div>
+</section>
+
+<!-- ======================= 标签③ ======================= -->
+<section class="tabpane" id="tab-3" role="tabpanel" aria-label="功率平均与瞬时">
+  <div class="row">
+    <div class="panel grow">
+      <h3><span class="n">1</span>W–t、P–t、v–t 三图联动（共享时间轴）</h3>
+      <div class="cwrap"><canvas id="c3wt" style="height:190px" aria-label="W-t 曲线"></canvas></div>
+      <div class="cwrap" style="margin-top:6px"><canvas id="c3pt" style="height:190px" aria-label="P-t 曲线"></canvas></div>
+      <div class="cwrap" style="margin-top:6px"><canvas id="c3vt" style="height:170px" aria-label="v-t 曲线"></canvas></div>
+      <div class="ctrls" style="margin-top:8px">
+        <div class="ctl"><label for="selMode3">过程</label><select id="selMode3"><option value="u">匀速直线（v 恒定）</option><option value="a">匀加速（由静止起动）</option></select><output></output></div>
+        <div class="ctl"><label for="inF3">恒力 F</label><input type="range" id="inF3" min="0" max="50" step="0.5" value="10"><output id="outF3"></output></div>
+        <div class="ctl"><label for="inA3">α（F 与 v 夹角）</label><input type="range" id="inA3" min="0" max="180" step="1" value="0"><output id="outA3"></output></div>
+        <div class="ctl"><label for="inV3">速度 v</label><input type="range" id="inV3" min="0" max="5" step="0.05" value="2"><output id="outV3"></output></div>
+        <div class="ctl"><label for="inA3c">加速度 a</label><input type="range" id="inA3c" min="0.1" max="5" step="0.1" value="1"><output id="outA3c"></output></div>
+        <div class="ctl"><label for="inT3">总时长 t</label><input type="range" id="inT3" min="1" max="20" step="0.5" value="6"><output id="outT3"></output></div>
+      </div>
+      <div class="readout">
+        <div class="ro"><b>W(总)</b> <span id="roW3">—</span></div>
+        <div class="ro"><b>P̄ = W/t</b> <span id="roPavg3">—</span></div>
+        <div class="ro"><b>P = Fv cos α</b> <span id="roP3">—</span></div>
+        <div class="ro"><b>末时刻 v</b> <span id="roVend3">—</span></div>
+      </div>
+    </div>
+    <div class="panel" style="flex:1 1 360px">
+      <h3><span class="n">2</span>割线斜率（平均）vs 切线斜率（瞬时）</h3>
+      <div class="ctrls">
+        <div class="ctl"><label for="inT3a">起点 t₁</label><input type="range" id="inT3a" min="0" max="20" step="0.1" value="0"><output id="outT3a"></output></div>
+        <div class="ctl"><label for="inT3b">终点 t₂</label><input type="range" id="inT3b" min="0" max="20" step="0.1" value="6"><output id="outT3b"></output></div>
+        <div class="ctl"><label for="inT3c">瞬时 t₀</label><input type="range" id="inT3c" min="0" max="20" step="0.1" value="3"><output id="outT3c"></output></div>
+      </div>
+      <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
+        <button id="btnSec3" class="sm">取两点求平均功率（割线）</button>
+        <button id="btnTan3" class="sm">求 t₀ 瞬时功率（切线）</button>
+        <button id="btnArea3" class="sm">▶ 填充 P–t 面积 = W</button>
+      </div>
+      <div class="readout" style="margin-top:8px">
+        <div class="ro"><b>P̄(割线斜率)</b> <span id="roSec3">—</span></div>
+        <div class="ro"><b>P(切线/Fv)</b> <span id="roTan3">—</span></div>
+        <div class="ro"><b>两者之比</b> <span id="roRatio3">—</span></div>
+        <div class="ro"><b>P–t 面积</b> <span id="roArea3">—</span></div>
+        <div class="ro"><b>面积 vs W 误差</b> <span id="roAreaErr3">—</span></div>
+      </div>
+      <div id="msg3" class="hint">匀速时 P̄ = P（功率恒定）；匀加速时 P 随 v 线性增大，<b>P̄(0→t) = ½·P(t)</b>，可见平均功率<b>不等于</b>力乘平均速度的一般结论（此处恰好 F 恒定且 v 线性变化时才有一半关系）。</div>
+      <div class="warn">易错：<b>P̄ = W/t 与 P = Fv 不是一回事</b>——前者是一段时间的平均，后者是某一时刻的瞬时；<b>平均功率一般不等于 F·v̄</b>。</div>
+    </div>
+  </div>
+
+  <div class="row">
+    <div class="panel grow">
+      <h3><span class="n">3</span>电动机匀速提升砝码：机械功率 / 电功率 / 效率</h3>
+      <div class="cwrap"><canvas id="c3motor" style="height:200px" aria-label="电动机提升砝码示意图"></canvas></div>
+      <div class="ctrls">
+        <div class="ctl"><label for="inMm3">砝码质量 m</label><input type="range" id="inMm3" min="0.1" max="20" step="0.1" value="2"><output id="outMm3"></output></div>
+        <div class="ctl"><label for="inVm3">提升速度 v</label><input type="range" id="inVm3" min="0.05" max="3" step="0.05" value="0.5"><output id="outVm3"></output></div>
+        <div class="ctl"><label for="inU3">电压 U</label><input type="range" id="inU3" min="1" max="36" step="0.5" value="12"><output id="outU3"></output></div>
+        <div class="ctl"><label for="inI3">电流 I</label><input type="range" id="inI3" min="0.1" max="10" step="0.1" value="1.2"><output id="outI3"></output></div>
+        <div class="ctl"><label for="inR3">线圈电阻 R</label><input type="range" id="inR3" min="0" max="10" step="0.1" value="1"><output id="outR3"></output></div>
+        <div class="ctl"><label>播放</label><button id="btnPlay3" class="sm">▶ 提升</button><output></output></div>
+      </div>
+      <div class="readout">
+        <div class="ro"><b>P<sub>电</sub> = UI</b> <span id="roPe3">—</span></div>
+        <div class="ro"><b>P<sub>机</sub> = mgv</b> <span id="roPm3">—</span></div>
+        <div class="ro"><b>P<sub>热</sub> = I²R</b> <span id="roPh3">—</span></div>
+        <div class="ro"><b>效率 η</b> <span id="roEta3">—</span></div>
+        <div class="ro"><b>高度 h</b> <span id="roH3">—</span></div>
+      </div>
+      <div class="hint">匀速 ⇒ <b>F = mg</b> ⇒ P<sub>机</sub> = F·v = mgv；能量关系 P<sub>电</sub> = P<sub>机</sub> + P<sub>热</sub>（余量即铜损等）。单位提醒：<b>千瓦(kW)是功率单位，千瓦时(kWh)是能量单位，1 kWh = 3.6×10⁶ J</b>。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= 标签④ ======================= -->
+<section class="tabpane" id="tab-4" role="tabpanel" aria-label="控制变量研究">
+  <div class="row">
+    <div class="panel grow">
+      <h3><span class="n">1</span>控制变量研究（模式互锁）</h3>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">
+        <button id="btnM4A" class="sm on">A：F 恒定 → P–v 直线</button>
+        <button id="btnM4B" class="sm">B：v 恒定 → W–α 余弦</button>
+        <button id="btnM4C" class="sm">C：F、α 恒定 → W–x 直线</button>
+      </div>
+      <div class="cwrap"><canvas id="c4main" style="height:330px" aria-label="控制变量研究主图"></canvas></div>
+      <div class="ctrls">
+        <div class="ctl" id="ctlF4"><label for="inF4">拉力 F（固定量）</label><input type="range" id="inF4" min="1" max="50" step="0.5" value="10"><output id="outF4"></output></div>
+        <div class="ctl" id="ctlV4"><label for="inV4">速度 v（固定量）</label><input type="range" id="inV4" min="0.2" max="5" step="0.05" value="2"><output id="outV4"></output></div>
+        <div class="ctl" id="ctlA4"><label for="inA4">夹角 α</label><input type="range" id="inA4" min="0" max="180" step="1" value="30"><output id="outA4"></output></div>
+        <div class="ctl" id="ctlX4"><label for="inX4">位移 x</label><input type="range" id="inX4" min="0.2" max="5" step="0.05" value="2"><output id="outX4"></output></div>
+        <div class="ctl" id="ctlT4"><label for="inT4">取样时长 t</label><input type="range" id="inT4" min="0.2" max="5" step="0.1" value="1"><output id="outT4"></output></div>
+        <div class="ctl"><label>扫描</label><button id="btnScan4" class="sm">▶ 自动扫描</button><output></output></div>
+        <div class="ctl"><label>错误对照</label><button id="btnWrong4" class="sm">叠加错误假设</button><output></output></div>
+        <div class="ctl"><label>噪声</label><button id="btnNoise4" class="sm">关</button><output></output></div>
+      </div>
+      <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
+        <button id="btnFit4" class="sm">线性/余弦拟合</button>
+        <button id="btnClear4" class="sm">清除数据</button>
+        <button id="btnInv4" class="sm">由 P–v 斜率反推 F</button>
+      </div>
+      <div class="readout">
+        <div class="ro"><b>拟合斜率 k</b> <span id="roK4">—</span></div>
+        <div class="ro"><b>与 F 相对误差</b> <span id="roKerr4">—</span></div>
+        <div class="ro"><b>拟合振幅 A</b> <span id="roA4">—</span></div>
+        <div class="ro"><b>相位 φ</b> <span id="roPhi4">—</span></div>
+        <div class="ro"><b>采样点</b> <span id="roN4">—</span></div>
+      </div>
+      <div id="msg4" class="hint">—</div>
+    </div>
+    <div class="panel" style="flex:1 1 320px">
+      <h3><span class="n">2</span>控制变量清单</h3>
+      <table id="tblCV"><thead><tr><th>项目</th><th>内容</th></tr></thead><tbody></tbody></table>
+      <div class="hint">控制变量<b>互锁</b>：切换模式后，被"固定"的量滑块自动锁定（灰色不可拖动），避免参数同时自由变化导致结论不成立。</div>
+      <div class="warn">方法卡：<b>P–v 直线斜率 = F</b>（α = 0 时）；<b>W–x 直线斜率 = F cos α</b>；<b>W–α 是余弦曲线</b>，α = 90° 为零点。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= 标签⑤ ======================= -->
+<section class="tabpane" id="tab-5" role="tabpanel" aria-label="机车两类启动">
+  <div class="row">
+    <div class="panel grow">
+      <h3><span class="n">1</span>两类启动四图联动（v–t / F–t / P–t / F–v）</h3>
+      <div class="grid2">
+        <div class="cwrap"><canvas id="c5vt" style="height:200px" aria-label="机车 v-t 曲线"></canvas></div>
+        <div class="cwrap"><canvas id="c5ft" style="height:200px" aria-label="机车 F-t 曲线"></canvas></div>
+        <div class="cwrap"><canvas id="c5pt" style="height:200px" aria-label="机车 P-t 曲线"></canvas></div>
+        <div class="cwrap"><canvas id="c5fv" style="height:200px" aria-label="机车 F-v 曲线"></canvas></div>
+      </div>
+      <div class="cwrap" style="margin-top:8px"><canvas id="c5cmp" style="height:200px" aria-label="两类启动 v-t 并列对比"></canvas></div>
+      <div class="legend">
+        <span><i style="background:#f97316"></i>恒定功率启动</span>
+        <span><i style="background:#2563eb"></i>恒定牵引力启动</span>
+        <span><i style="background:#dc2626"></i>错误对照曲线</span>
+        <span><span class="dot" style="background:#7c3aed"></span>阶段分界</span>
+      </div>
+    </div>
+    <div class="panel" style="flex:1 1 340px">
+      <h3><span class="n">2</span>参数与控制</h3>
+      <div class="ctrls">
+        <div class="ctl"><label for="selM5">启动方式</label><select id="selM5"><option value="P">恒定功率启动</option><option value="F">恒定牵引力启动</option></select><output></output></div>
+        <div class="ctl"><label for="inMm5">车质量 m</label><input type="range" id="inMm5" min="500" max="10000" step="100" value="2000"><output id="outMm5"></output></div>
+        <div class="ctl"><label for="inP5">额定功率 P<sub>额</sub></label><input type="range" id="inP5" min="5" max="300" step="5" value="60"><output id="outP5"></output></div>
+        <div class="ctl"><label for="inF5">牵引力 F<sub>牵</sub></label><input type="range" id="inF5" min="500" max="30000" step="500" value="6000"><output id="outF5"></output></div>
+        <div class="ctl"><label for="inf0_5">阻力 f₀</label><input type="range" id="inf0_5" min="200" max="20000" step="100" value="3000"><output id="outf0_5"></output></div>
+        <div class="ctl"><label for="selRes5">阻力模型</label><select id="selRes5"><option value="c">恒定 f = f₀</option><option value="k">f = f₀ + k·v</option></select><output></output></div>
+        <div class="ctl"><label for="inK5">空气阻力系数 k</label><input type="range" id="inK5" min="0" max="400" step="5" value="0"><output id="outK5"></output></div>
+        <div class="ctl"><label for="inFmax5">牵引力上限</label><input type="range" id="inFmax5" min="1000" max="60000" step="1000" value="15000"><output id="outFmax5"></output></div>
+        <div class="ctl"><label for="inT5">仿真时长</label><input type="range" id="inT5" min="10" max="200" step="5" value="80"><output id="outT5"></output></div>
+      </div>
+      <div style="margin-top:6px;display:flex;gap:6px;flex-wrap:wrap">
+        <button id="btnRun5" class="sm">▶ 运行仿真</button>
+        <button id="btnCmp5" class="sm on">并列对比</button>
+        <button id="btnWrong5" class="sm">错误对照</button>
+        <button id="btnPlay5" class="sm">▶ 动画</button>
+      </div>
+      <div class="readout">
+        <div class="ro"><b>v<sub>max</sub> 理论</b> <span id="roVmax5">—</span></div>
+        <div class="ro"><b>末速 v</b> <span id="roVend5">—</span></div>
+        <div class="ro"><b>相对误差</b> <span id="roVerr5">—</span></div>
+        <div class="ro"><b>分界时刻</b> <span id="roTs5">—</span></div>
+        <div class="ro"><b>分界速度</b> <span id="roVs5">—</span></div>
+        <div class="ro"><b>初加速度</b> <span id="roA05">—</span></div>
+      </div>
+      <div id="msg5" class="hint">—</div>
+    </div>
+  </div>
+  <div class="row">
+    <div class="panel grow">
+      <h3><span class="n">3</span>结论与公式</h3>
+      <div class="grid2">
+        <div>
+          <h4>恒定功率启动</h4>
+          <div class="small">P 恒定 ⇒ F = P/v ↓ ⇒ a = (F − f)/m ↓ ⇒ <b>加速度减小的加速运动</b>；F = f 时 a = 0，<b>v<sub>max</sub> = P<sub>额</sub>/f</b>；F–v 图为等轴双曲线。</div>
+        </div>
+        <div>
+          <h4>恒定牵引力启动</h4>
+          <div class="small">F 恒定 ⇒ a = (F − f)/m 恒定 ⇒ <b>匀加速</b>，P = Fv 线性增大；P 达<b>额定功率</b>后转入恒功率阶段（a 减小）。分界速度 v = P<sub>额</sub>/F。</div>
+        </div>
+      </div>
+      <div class="warn">易错：「恒定功率启动时加速度不变」错误（a 逐渐减小）；「恒定牵引力可以一直匀加速」错误（功率达额定值后转入恒功率）；「最大速度时牵引力最大」错误（v<sub>max</sub> 时 F = f，牵引力最小）。</div>
+      <div class="hint">生活应用：汽车爬坡换低速档（P 一定时 v 小则 F 大）；高铁功率大而阻力小 ⇒ 最大速度高；卡车功率相近但阻力大 ⇒ 最大速度低。</div>
+    </div>
+  </div>
+</section>
+
+<!-- ======================= 标签⑥ ======================= -->
+<section class="tabpane" id="tab-6" role="tabpanel" aria-label="练习考核">
+  <div class="row">
+    <div class="panel grow">
+      <h3><span class="n">1</span>即时反馈练习（6 题）</h3>
+      <div id="quizBox"></div>
+      <div style="margin-top:8px;display:flex;gap:6px;flex-wrap:wrap;align-items:center">
+        <button id="btnSubmit6" class="sm">提交全部</button>
+        <button id="btnReset6" class="sm">重做</button>
+        <label class="small"><input type="checkbox" id="chkTeacher6"> 教师考核模式（随机出题 / 隐藏答案 / 记录结果）</label>
+      </div>
+      <div id="score6" class="ok" style="display:none"></div>
+      <div class="tablewrap" style="margin-top:8px">
+        <table id="tblScore"><thead><tr><th>题号</th><th>知识点</th><th>你的答案</th><th>结果</th></tr></thead><tbody></tbody></table>
+      </div>
+    </div>
+    <div class="panel" style="flex:1 1 320px">
+      <h3><span class="n">2</span>数据记录与工具</h3>
+      <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:6px">
+        <button id="btnLog" class="sm">记录当前实验</button>
+        <button id="btnCsv" class="sm">导出记录 CSV</button>
+        <button id="btnCsvChart" class="sm">导出当前图数据</button>
+        <button id="btnClearLog" class="sm">清空</button>
+        <button id="btnInvTool" class="sm">反推工具</button>
+      </div>
+      <div class="tablewrap"><table id="tblLog"><thead><tr>
+        <th>模式</th><th>F(N)</th><th>x(m)</th><th>α(°)</th><th>v(m/s)</th><th>t(s)</th><th>W(J)</th><th>P̄(W)</th><th>P(W)</th><th>W<sub>总</sub>(J)</th><th>拟合</th><th>误差</th><th>备注</th>
+      </tr></thead><tbody></tbody></table></div>
+      <div id="invOut" class="hint" style="display:none"></div>
+    </div>
+  </div>
+</section>
+</main>
+
+<!-- 卡片抽屉 -->
+<aside class="drawer" id="drawer" aria-label="知识卡片库">
+  <header>
+    <strong>知识卡片库</strong>
+    <span class="small" id="cardCount"></span>
+    <button id="btnDrawerClose" class="sm" style="margin-left:auto" aria-label="关闭卡片库">✕</button>
+  </header>
+  <div class="cattabs" id="cattabs"></div>
+  <div style="padding:8px 12px;border-bottom:1px solid var(--line)">
+    <input type="search" id="cardSearch" placeholder="关键词搜索：功 / 功率 / α / 摩擦 / 额定…" style="width:100%;padding:5px 8px;border:1px solid var(--line);border-radius:6px">
+  </div>
+  <div class="body" id="cardList"></div>
+  <div style="padding:8px 12px;border-top:1px solid var(--line);display:flex;gap:6px">
+    <button id="cardPrev" class="sm">← 上一张</button>
+    <button id="cardNext" class="sm">下一张 →</button>
+    <span class="small" style="margin-left:auto">Enter 打开 · Esc 关闭 · ←→ 切换</span>
+  </div>
+</aside>
+
+<!-- 卡片弹窗 -->
+<div class="modal" id="cardModal" role="dialog" aria-modal="false" aria-label="知识点卡片">
+  <div class="mhead" id="cardModalHead">
+    <strong id="cmTitle">卡片</strong>
+    <span class="tag" id="cmCat">分类</span>
+    <button id="cmFlip" class="sm flipbtn">🔄 翻面</button>
+    <button id="cmPin" class="sm">📌 钉住</button>
+    <button id="cmClose" class="sm" style="margin-left:auto" aria-label="关闭卡片">✕</button>
+  </div>
+  <div class="mbody" id="cmBody"></div>
+</div>
+
+<div class="pinned" id="pinnedBox" aria-label="已钉住的卡片"></div>
+
+<!-- 教学引导 -->
+<div class="flowbar" id="flowbar" aria-label="教学引导">
+  <div class="fstep" id="flowStep">步骤 1 / 8</div>
+  <div class="fq" id="flowText"></div>
+  <div class="small" id="flowQ"></div>
+  <div class="frow">
+    <button id="flowPrev" class="sm">← 上一步</button>
+    <button id="flowNext" class="sm">下一步 →</button>
+    <button id="flowCard" class="sm">打开相关卡片</button>
+    <button id="flowClose" class="sm" style="margin-left:auto">关闭</button>
+  </div>
+</div>
+
+<script>
+"use strict";
+/* ==========================================================================
+   模型42 · 功与功率  —— 单文件零依赖交互模型
+   结构：① 配置与常量 ② 工具函数 ③ 知识卡片数据 ④ 预设 ⑤ 题库
+        ⑥ 图表引擎 ⑦ 各标签页逻辑 ⑧ 卡片/引导/数据记录 ⑨ 初始化
+   ========================================================================== */
+
+/* ---------- ① 配置与常量 ---------- */
+const G = 9.8;                       // 重力加速度 m/s²
+const COL = {
+  pos:'#16a34a', neg:'#dc2626', zero:'#94a3b8',
+  pull:'#f97316', grav:'#2563eb', fric:'#7c3aed', norm:'#0891b2',
+  data:'#38bdf8', theory:'#16a34a', fit:'#ea580c',
+  ink:'#1e293b', grid:'#eef2f7', axis:'#94a3b8', wrong:'#dc2626'
+};
+const REDUCED = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+const S = {};                        // 全局参数状态（按控件 id 索引）
+
+/* ---------- ② 工具函数 ---------- */
+const $ = id => document.getElementById(id);
+const $$ = s => Array.prototype.slice.call(document.querySelectorAll(s));
+const RAD = d => d * Math.PI / 180;
+const DEG = r => r * 180 / Math.PI;
+const clamp = (v,a,b) => Math.min(b, Math.max(a, v));
+
+/** 数值格式化：自适应 J/kJ、W/kW */
+function fmt(v, d){
+  if (v === null || v === undefined || !isFinite(v)) return '—';
+  if (Math.abs(v) >= 1e6) return (v/1e6).toFixed(d===undefined?3:d) + '×10⁶';
+  return v.toFixed(d===undefined?2:d);
+}
+function fmtE(v, unit, d){
+  if (!isFinite(v)) return '—';
+  d = d===undefined ? 2 : d;
+  if (unit === 'J' && Math.abs(v) >= 1000) return (v/1000).toFixed(3) + ' kJ';
+  if (unit === 'W' && Math.abs(v) >= 1000) return (v/1000).toFixed(3) + ' kW';
+  return v.toFixed(d) + ' ' + unit;
+}
+function fmtNum(v, d){ return isFinite(v) ? v.toFixed(d===undefined?2:d) : '—'; }
+/** 相对误差（%） */
+function relErr(a, b){
+  if (!isFinite(a) || !isFinite(b)) return NaN;
+  const den = Math.max(Math.abs(a), Math.abs(b), 1e-9);
+  return Math.abs(a - b) / den * 100;
+}
+/** 颜色：正功绿、负功红、零功灰 */
+function signColor(w, eps){
+  eps = eps || 1e-9;
+  if (w > eps) return COL.pos;
+  if (w < -eps) return COL.neg;
+  return COL.zero;
+}
+/** 梯形积分 */
+function trapz(xs, ys){
+  let s = 0;
+  for (let i = 1; i < xs.length; i++) s += 0.5 * (ys[i] + ys[i-1]) * (xs[i] - xs[i-1]);
+  return s;
+}
+/** 复合 Simpson（n 为偶数段） */
+function simpson(f, a, b, n){
+  if (n % 2) n++;
+  const h = (b - a) / n;
+  let s = f(a) + f(b);
+  for (let i = 1; i < n; i++) s += f(a + i*h) * (i % 2 ? 4 : 2);
+  return s * h / 3;
+}
+/** 滑动平均 */
+function smooth(arr, win){
+  if (win <= 1) return arr.slice();
+  const out = [];
+  const half = Math.floor(win/2);
+  for (let i = 0; i < arr.length; i++){
+    let s = 0, c = 0;
+    for (let j = i-half; j <= i+half; j++){ if (j>=0 && j<arr.length){ s += arr[j]; c++; } }
+    out.push(s / c);
+  }
+  return out;
+}
+/** 简易随机噪声（高斯近似） */
+function gauss(){ let u=0,v=0; while(!u)u=Math.random(); while(!v)v=Math.random();
+  return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v); }
+/** 绑定滑块：值写入 S[id]，回调更新 */
+function bindRange(id, outId, unit, dig, cb){
+  const el = $(id); if (!el) return null;
+  const out = outId ? $(outId) : null;
+  function upd(fire){
+    const v = parseFloat(el.value);
+    S[id] = v;
+    if (out) out.textContent = v.toFixed(dig===undefined?2:dig) + (unit ? ' ' + unit : '');
+    if (fire && cb) cb(v);
+  }
+  el.addEventListener('input', () => upd(true));
+  upd(false);
+  return el;
+}
+/** 切换按钮状态 */
+function toggleBtn(btn, on){ if(btn){ btn.classList.toggle('on', !!on); } }
+/** 下载 CSV */
+function downloadCSV(name, rows){
+  try{
+    const csv = rows.map(r => r.map(c => '"' + String(c).replace(/"/g,'""') + '"').join(',')).join('\r\n');
+    const blob = new Blob(['\ufeff' + csv], {type:'text/csv;charset=utf-8'});
+    const a = document.createElement('a');
+    if (URL.createObjectURL){ a.href = URL.createObjectURL(blob); setTimeout(()=>URL.revokeObjectURL(a.href), 2000); }
+    else { a.href = 'data:text/csv;charset=utf-8,' + encodeURIComponent('\ufeff' + csv); }
+    a.download = name; document.body.appendChild(a); a.click(); a.remove();
+  } catch(err){
+    alert('导出失败，可手动复制数据记录表中的内容。');
+  }
+}
+
+/* ---------- 迷你示意图（内联 SVG） ---------- */
+const FIG = {
+  vector(a){
+    a = (a===undefined?40:a); const t = RAD(a), x0=22, y0=64, L=70;
+    const fx = x0 + L*Math.cos(t), fy = y0 - L*Math.sin(t);
+    return '<svg class="mfig" viewBox="0 0 170 92">'+
+      '<line x1="10" y1="'+y0+'" x2="160" y2="'+y0+'" stroke="#cbd5e1" stroke-width="1"/>'+
+      '<path d="M'+x0+' '+y0+' L'+fx+' '+fy+'" stroke="#f97316" stroke-width="2.5" marker-end="url(#ar)"/>'+
+      '<defs><marker id="ar" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0 0 L7 3 L0 6 z" fill="#f97316"/></marker></defs>'+
+      '<line x1="'+x0+'" y1="'+y0+'" x2="'+(x0+82)+'" y2="'+y0+'" stroke="#16a34a" stroke-width="2.5"/>'+
+      '<path d="M'+(x0+82)+' '+y0+' l-8 -4 l0 8 z" fill="#16a34a"/>'+
+      '<line x1="'+fx+'" y1="'+fy+'" x2="'+fx+'" y2="'+y0+'" stroke="#94a3b8" stroke-dasharray="3 3"/>'+
+      '<path d="M'+(x0+26)+' '+y0+' A26 26 0 0 0 '+(x0+26*Math.cos(t))+' '+(y0-26*Math.sin(t))+'" fill="none" stroke="#2563eb" stroke-width="1.2"/>'+
+      '<text x="'+(x0+30)+'" y="'+(y0-10)+'" font-size="9" fill="#2563eb">α</text>'+
+      '<text x="'+fx+'" y="'+(fy-4)+'" font-size="9" fill="#f97316">F</text>'+
+      '<text x="'+(x0+50)+'" y="'+(y0+13)+'" font-size="9" fill="#16a34a">位移 x</text>'+
+      '<text x="'+(fx+3)+'" y="'+(y0+18)+'" font-size="8" fill="#64748b">F cos α</text>'+
+      '</svg>';
+  },
+  bar(){
+    const bars = [[12,40,'#f97316','拉'],[42,26,'#2563eb','重'],[72,18,'#7c3aed','摩'],[102,0,'#0891b2','支'],[132,52,'#0f172a','总']];
+    let s = '<svg class="mfig" viewBox="0 0 170 92"><line x1="6" y1="70" x2="164" y2="70" stroke="#94a3b8"/>';
+    bars.forEach(b=>{
+      const h = b[1];
+      s += '<rect x="'+b[0]+'" y="'+(70-Math.max(h,0.8))+'" width="20" height="'+Math.max(h,0.8)+'" fill="'+b[2]+'" opacity="'+(h===0?0.35:0.9)+'" rx="2"/>';
+      s += '<text x="'+(b[0]+10)+'" y="82" font-size="9" fill="#475569" text-anchor="middle">'+b[3]+'</text>';
+    });
+    return s+'</svg>';
+  },
+  zero3(){
+    let s = '<svg class="mfig" viewBox="0 0 170 92">';
+    s += '<text x="8" y="12" font-size="8.5" fill="#475569">① 无力</text><rect x="8" y="20" width="46" height="34" fill="#f8fafc" stroke="#cbd5e1"/><text x="20" y="44" font-size="10" fill="#94a3b8">F=0</text>';
+    s += '<text x="62" y="12" font-size="8.5" fill="#475569">② 无位移</text><rect x="62" y="20" width="46" height="34" fill="#f8fafc" stroke="#cbd5e1"/><line x1="72" y1="40" x2="98" y2="40" stroke="#f97316" stroke-width="2"/><text x="84" y="52" font-size="8" fill="#94a3b8">x=0</text>';
+    s += '<text x="116" y="12" font-size="8.5" fill="#475569">③ 垂直</text><rect x="116" y="20" width="46" height="34" fill="#f8fafc" stroke="#cbd5e1"/><line x1="139" y1="50" x2="139" y2="26" stroke="#f97316" stroke-width="2"/><line x1="120" y1="44" x2="158" y2="44" stroke="#16a34a" stroke-width="2"/><text x="120" y="60" font-size="8" fill="#94a3b8">α=90°</text>';
+    return s + '<text x="8" y="80" font-size="9" fill="#b91c1c">W = 0 ⇔ F=0 或 x=0 或 cos α=0</text></svg>';
+  },
+  cos(){
+    let d = 'M8 46 ';
+    for (let a = 0; a <= 180; a += 6){ d += 'L' + (8 + a/180*152).toFixed(1) + ' ' + (46 - 34*Math.cos(RAD(a))).toFixed(1) + ' '; }
+    return '<svg class="mfig" viewBox="0 0 170 92"><line x1="8" y1="46" x2="162" y2="46" stroke="#94a3b8"/>'+
+      '<path d="'+d+'" fill="none" stroke="#2563eb" stroke-width="2"/>'+
+      '<line x1="84" y1="12" x2="84" y2="80" stroke="#16a34a" stroke-dasharray="3 3"/>'+
+      '<circle cx="84" cy="46" r="3" fill="#16a34a"/>'+
+      '<text x="88" y="20" font-size="8.5" fill="#16a34a">α=90° ⇒ W=0</text>'+
+      '<text x="100" y="72" font-size="8.5" fill="#dc2626">α&gt;90° 负功区</text>'+
+      '<text x="14" y="38" font-size="8.5" fill="#16a34a">正功区</text></svg>';
+  },
+  line(slope){
+    const y = 76 - (slope===undefined?60:slope);
+    return '<svg class="mfig" viewBox="0 0 170 92"><line x1="14" y1="80" x2="160" y2="80" stroke="#94a3b8"/><line x1="14" y1="80" x2="14" y2="10" stroke="#94a3b8"/>'+
+      '<line x1="14" y1="80" x2="140" y2="'+y+'" stroke="#ea580c" stroke-width="2"/>'+
+      '<text x="120" y="'+(y-4)+'" font-size="9" fill="#ea580c">斜率 = F</text>'+
+      '<text x="20" y="90" font-size="8.5" fill="#475569">0</text></svg>';
+  },
+  area(){
+    let d = 'M14 78 ';
+    for (let i = 0; i <= 20; i++){ const x = 14 + i*6.8; const y = 78 - (18 + 40*Math.sin(i/20*Math.PI)); d += 'L'+x.toFixed(1)+' '+y.toFixed(1)+' '; }
+    return '<svg class="mfig" viewBox="0 0 170 92"><line x1="14" y1="78" x2="160" y2="78" stroke="#94a3b8"/><line x1="14" y1="78" x2="14" y2="10" stroke="#94a3b8"/>'+
+      '<path d="'+d+' L150 78 L14 78 Z" fill="#bfdbfe" opacity="0.6"/>'+
+      '<path d="'+d+'" fill="none" stroke="#2563eb" stroke-width="2"/>'+
+      '<text x="60" y="60" font-size="9" fill="#1d4ed8">面积 = W</text>'+
+      '<text x="120" y="88" font-size="8.5" fill="#475569">x</text><text x="2" y="16" font-size="8.5" fill="#475569">F</text></svg>';
+  },
+  slope(){
+    return '<svg class="mfig" viewBox="0 0 170 92"><line x1="14" y1="80" x2="160" y2="80" stroke="#94a3b8"/><line x1="14" y1="80" x2="14" y2="8" stroke="#94a3b8"/>'+
+      '<path d="M14 80 Q90 60 150 16" fill="none" stroke="#2563eb" stroke-width="2"/>'+
+      '<line x1="14" y1="80" x2="110" y2="42" stroke="#16a34a" stroke-width="2"/>'+
+      '<line x1="70" y1="62" x2="130" y2="34" stroke="#ea580c" stroke-width="2" stroke-dasharray="4 3"/>'+
+      '<text x="112" y="38" font-size="8.5" fill="#16a34a">割线=P̄</text>'+
+      '<text x="120" y="30" font-size="8.5" fill="#ea580c">切线=P</text>'+
+      '<text x="120" y="90" font-size="8.5" fill="#475569">t</text><text x="2" y="14" font-size="8.5" fill="#475569">W</text></svg>';
+  },
+  parea(){
+    return '<svg class="mfig" viewBox="0 0 170 92"><line x1="14" y1="80" x2="160" y2="80" stroke="#94a3b8"/><line x1="14" y1="80" x2="14" y2="8" stroke="#94a3b8"/>'+
+      '<path d="M14 40 L150 40 L150 80 L14 80 Z" fill="#bfdbfe" opacity=".6"/>'+
+      '<line x1="14" y1="40" x2="150" y2="40" stroke="#2563eb" stroke-width="2"/>'+
+      '<text x="66" y="64" font-size="9" fill="#1d4ed8">面积 = W</text>'+
+      '<text x="120" y="92" font-size="8" fill="#475569">t</text><text x="2" y="36" font-size="8.5" fill="#475569">P</text></svg>';
+  },
+  hyper(){
+    let d = 'M';
+    for (let v = 4; v <= 30; v += 0.5){ d += (v===4?'M':'L') + (14 + v) + ' ' + (78 - 900/(v+6)) + ' '; }
+    return '<svg class="mfig" viewBox="0 0 170 92"><line x1="14" y1="80" x2="160" y2="80" stroke="#94a3b8"/><line x1="14" y1="80" x2="14" y2="8" stroke="#94a3b8"/>'+
+      '<path d="'+d+'" fill="none" stroke="#f97316" stroke-width="2"/>'+
+      '<text x="90" y="30" font-size="9" fill="#f97316">F = P/v（等轴双曲线）</text>'+
+      '<text x="130" y="90" font-size="8.5" fill="#475569">v</text><text x="2" y="14" font-size="8.5" fill="#475569">F</text></svg>';
+  },
+  twostage(){
+    return '<svg class="mfig" viewBox="0 0 170 92"><line x1="14" y1="80" x2="160" y2="80" stroke="#94a3b8"/><line x1="14" y1="80" x2="14" y2="8" stroke="#94a3b8"/>'+
+      '<path d="M14 80 L80 40" stroke="#2563eb" stroke-width="2"/>'+
+      '<path d="M80 40 Q120 26 150 22" fill="none" stroke="#f97316" stroke-width="2"/>'+
+      '<line x1="80" y1="80" x2="80" y2="34" stroke="#7c3aed" stroke-dasharray="3 3"/>'+
+      '<line x1="14" y1="22" x2="160" y2="22" stroke="#94a3b8" stroke-dasharray="2 3"/>'+
+      '<text x="84" y="34" font-size="8.5" fill="#7c3aed">P=P额</text>'+
+      '<text x="16" y="18" font-size="8.5" fill="#94a3b8">v_max</text>'+
+      '<text x="130" y="90" font-size="8.5" fill="#475569">t</text><text x="2" y="14" font-size="8.5" fill="#475569">v</text></svg>';
+  },
+  motor(){
+    return '<svg class="mfig" viewBox="0 0 170 92"><rect x="20" y="12" width="34" height="24" rx="3" fill="#e2e8f0" stroke="#64748b"/>'+
+      '<text x="24" y="28" font-size="9" fill="#1e293b">M 电动机</text>'+
+      '<circle cx="92" cy="20" r="9" fill="none" stroke="#64748b"/>'+
+      '<line x1="54" y1="18" x2="83" y2="18" stroke="#64748b"/>'+
+      '<line x1="101" y1="20" x2="101" y2="52" stroke="#64748b"/>'+
+      '<rect x="88" y="52" width="26" height="20" fill="#93c5fd" stroke="#2563eb"/>'+
+      '<text x="92" y="66" font-size="9" fill="#1e3a8a">m</text>'+
+      '<line x1="101" y1="58" x2="130" y2="58" stroke="#16a34a" stroke-width="2" marker-end="url(#am)"/>'+
+      '<defs><marker id="am" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0 0 L7 3 L0 6 z" fill="#16a34a"/></marker></defs>'+
+      '<text x="132" y="62" font-size="9" fill="#16a34a">v</text>'+
+      '<text x="20" y="86" font-size="8.5" fill="#475569">匀速 ⇒ F = mg；P机 = mgv；P电 = UI；η = P机/P电</text></svg>';
+  },
+  units(){
+    return '<svg class="mfig" viewBox="0 0 170 92">'+
+      '<rect x="10" y="18" width="66" height="52" rx="6" fill="#fef3c7" stroke="#f59e0b"/>'+
+      '<text x="20" y="46" font-size="12" fill="#92400e">kW</text><text x="20" y="62" font-size="8.5" fill="#92400e">功率单位</text>'+
+      '<rect x="96" y="18" width="66" height="52" rx="6" fill="#dbeafe" stroke="#2563eb"/>'+
+      '<text x="106" y="46" font-size="12" fill="#1e3a8a">kWh</text><text x="106" y="62" font-size="8.5" fill="#1e3a8a">能量单位</text>'+
+      '<text x="30" y="86" font-size="9" fill="#475569">1 kWh = 3.6 × 10⁶ J</text></svg>';
+  },
+  incline(){
+    return '<svg class="mfig" viewBox="0 0 170 92"><path d="M10 76 L150 30 L150 80 L10 80 Z" fill="#f1f5f9" stroke="#94a3b8"/>'+
+      '<rect x="60" y="42" width="24" height="16" transform="rotate(-17 72 50)" fill="#fdba74" stroke="#ea580c"/>'+
+      '<line x1="84" y1="46" x2="130" y2="34" stroke="#f97316" stroke-width="2"/>'+
+      '<line x1="72" y1="50" x2="72" y2="76" stroke="#2563eb" stroke-width="2"/>'+
+      '<line x1="60" y1="58" x2="36" y2="70" stroke="#7c3aed" stroke-width="2"/>'+
+      '<text x="118" y="30" font-size="8.5" fill="#f97316">F</text>'+
+      '<text x="66" y="88" font-size="8.5" fill="#2563eb">mg</text>'+
+      '<text x="16" y="70" font-size="8.5" fill="#7c3aed">f</text></svg>';
+  },
+  compare(){
+    return '<svg class="mfig" viewBox="0 0 170 92"><rect x="8" y="14" width="72" height="62" rx="6" fill="#f0fdf4" stroke="#86efac"/>'+
+      '<text x="16" y="34" font-size="10" fill="#15803d">功 W</text><text x="16" y="50" font-size="8" fill="#475569">力对空间的积累</text><text x="16" y="64" font-size="8" fill="#475569">单位 J</text>'+
+      '<rect x="92" y="14" width="72" height="62" rx="6" fill="#eff6ff" stroke="#93c5fd"/>'+
+      '<text x="100" y="34" font-size="10" fill="#1d4ed8">功率 P</text><text x="100" y="50" font-size="8" fill="#475569">做功的快慢</text><text x="100" y="64" font-size="8" fill="#475569">单位 W = J/s</text></svg>';
+  }
+};
+function figOf(type, arg){
+  const f = FIG[type] || FIG.vector;
+  return f(arg);
+}
+
+/* ---------- ③ 知识卡片数据（分类齐全，≥17 张） ---------- */
+const KNOWLEDGE_CARDS = [
+/* —— 概念卡 —— */
+{id:'k_work',cat:'概念',title:'功 W',fig:'vector',conc:'功是力对空间的积累：力与"力的方向上位移"的乘积，是标量，单位焦耳 J。',
+ formula:'W = F·x·cos α　（1 J = 1 N·m，"N·m"作功的单位叫焦耳，不叫牛米）',demo:'标签①：拖动 F、x、α 三个滑块，看 W 实时变化。',
+ warn:'功没有方向；正负只表示动力/阻力。',back:'把 F 正交分解：沿位移的 F cos α 做功，垂直的 F sin α 不做功，故 W = (F cos α)·x。'},
+{id:'k_disp',cat:'概念',title:'位移（力的作用点位移）',fig:'incline',conc:'公式中的 x 是"力的作用点的位移"，不是物体上任意一点的路程。',
+ formula:'W = F·x<sub>作用点</sub>·cos α',demo:'标签②：锁定木块（x 恒为 0）时，F 再大 W 仍为 0。',
+ warn:'人推墙未动、静摩擦力对静止物体：有力无位移 ⇒ W = 0。',back:'若力作用点始终不动（如手扶静止物体），即使有力也不做功。'},
+{id:'k_alpha',cat:'概念',title:'夹角 α',fig:'vector',conc:'α 是"力与位移（或速度）方向"的夹角，范围 0°–180°；W = Fx cos α 中的 α 与斜面倾角 θ<sub>斜面</sub> 不是一回事。',
+ formula:'α ∈ [0°,180°]；cos α 保留 3 位小数',demo:'标签①：α 滑块 0→180° 连续可调，并可用"0→180° 扫描"按钮。',
+ warn:'θ<sub>斜面</sub> 决定重力沿斜面分量 mg sin θ，不要与 α 混用。',back:'α 由矢量箭头画出，用量角器意识而不是凭直觉：力与位移反向时 α = 180°。'},
+{id:'k_scalar',cat:'概念',title:'功的标量性与正负',fig:'bar',conc:'功是标量，正负不表示方向，只表示该力是动力（正功）还是阻力（负功），即能量转移的方向。',
+ formula:'α&lt;90° ⇒ W&gt;0；α=90° ⇒ W=0；α&gt;90° ⇒ W&lt;0',demo:'标签①：α 调到 120°，W 变红（负功），逐力条形图同步变色。',
+ warn:'比较做功"多少"时比较绝对值。',back:'标量的正负来自 cos α 的符号，不代表空间方向；矢量才有方向。'},
+{id:'k_overcome',cat:'概念',title:'克服某力做功',fig:'bar',conc:'"摩擦力做功 −2 J"与"克服摩擦力做功 2 J"是同一事实的两种说法。',
+ formula:'W<sub>摩</sub> = −2 J ⇔ 克服摩擦力做功 2 J',demo:'标签①：看 W<sub>摩</sub> 读数的负号与"克服"表述。',
+ warn:'回答"做了多少功"用绝对值；回答"该力做功"带符号。',back:'负号表示能量从物体流出（阻力消耗机械能）。'},
+{id:'k_pavg',cat:'概念',title:'平均功率 P̄',fig:'slope',conc:'平均功率描述一段时间内做功的平均快慢，对应"一段时间"或"一段位移"。',
+ formula:'P̄ = W / t　（单位 W = J/s）',demo:'标签③：拖动 t₁、t₂ 求割线斜率即 P̄。',
+ warn:'P̄ 一般不等于 F·v̄（仅当 F 恒定且 v 线性变化等特殊情形才相等）。',back:'W–t 图上两点连线的斜率即该段的平均功率。'},
+{id:'k_pins',cat:'概念',title:'瞬时功率 P',fig:'slope',conc:'瞬时功率是某一时刻做功的快慢，等于该时刻的 F 与 v 的点乘。',
+ formula:'P = F·v·cos α　（α 为 F 与 v 的夹角；同向时 P = Fv）',demo:'标签③：拖动 t₀ 画切线，切线斜率 = Fv cos α。',
+ warn:'P = Fv 中的 F 与 v 必须是同一时刻的值。',back:'P = dW/dt = F·(dx/dt)·cos α = Fv cos α。'},
+{id:'k_rating',cat:'概念',title:'额定功率与实际功率',fig:'twostage',conc:'额定功率是长期安全运行的最大输出功率；实际功率随工况变化，可小于、等于额定值。',
+ formula:'实际功率 P = F·v ≤ P<sub>额</sub>（长期）',demo:'标签⑤：恒牵引力阶段 P 线性增大，到 P<sub>额</sub> 处切换阶段。',
+ warn:'"最大功率"常指短时极限，不等于额定功率。',back:'P = Fv：低速时受牵引力上限约束，高速时受额定功率约束。'},
+{id:'k_eta',cat:'概念',title:'效率 η',fig:'motor',conc:'效率是有用输出功率与输入功率之比，永小于 1。',
+ formula:'η = P<sub>机械</sub> / P<sub>电</sub>；P<sub>电</sub> = UI；P<sub>热</sub> = I²R',demo:'标签③：电动机面板调节 U、I、R，看 η 与 P<sub>热</sub>。',
+ warn:'η 无单位；不要用"省功"描述机械效率。',back:'能量守恒：P电 = P机 + P热（+其他损耗）。'},
+
+/* —— 公式卡 —— */
+{id:'f_wfx',cat:'公式',title:'W = F·x·cos α',fig:'vector',conc:'恒力做功的定义式，只适用于恒力（大小方向都不变）。',
+ formula:'W = F·x·cos α　[J]',demo:'标签①：F=10 N、x=2 m、α=60° ⇒ W = 10 J（可自测）。',
+ warn:'变力做功不能直接用此式，须用积分或 F–x 图面积。',back:'由 W = (F cos α)·x 直接得到；α=0 时 W = Fx。'},
+{id:'f_int',cat:'公式',title:'W = ∫F·dx（变力功）',fig:'area',conc:'变力做功等于 F–x 图线与 x 轴围成的有向面积。',
+ formula:'W = ∫ F(x) dx ≈ Σ 梯形面积（Simpson 更精确）',demo:'标签②：切到"变力 F(x)"，拖动控制点，看面积值。',
+ warn:'面积在 x 轴下方为负功。',back:'把位移分成许多小段，每小段内力近似恒定，求和取极限即积分。'},
+{id:'f_sum',cat:'公式',title:'W<sub>总</sub> = ΣWᵢ = F<sub>合</sub>·x·cos α<sub>合</sub>',fig:'bar',conc:'总功等于各力做功的代数和，也等于合力做的功，两种算法结果一致。',
+ formula:'W<sub>总</sub> = W₁ + W₂ + …（代数和，不是绝对值之和）',demo:'标签①：逐力条形图 + "绝对值之和"错误对照按钮。',
+ warn:'错误做法：把各力做功取绝对值相加。',back:'功是标量，求和是代数相加；合力法先求矢量合力再做功。'},
+{id:'f_pwt',cat:'公式',title:'P̄ = W / t',fig:'slope',conc:'平均功率定义式，与一段过程对应。',
+ formula:'P̄ = W/t，1 W = 1 J/s，1 kW = 10³ W',demo:'标签③：割线斜率与 P̄ 读数一致（相对误差&lt;2%）。',
+ warn:'P̄ 与 P 数值不同时不矛盾：一个是平均，一个是瞬时。',back:'由 P = dW/dt 在 [0,t] 上的平均值得出。'},
+{id:'f_pfv',cat:'公式',title:'P = F·v·cos α',fig:'line',conc:'瞬时功率计算式；α = 0 时 P = Fv。',
+ formula:'P = F·v·cos α；F 恒定时 P ∝ v（P–v 为过原点直线）',demo:'标签④ 模式 A：P–v 拟合斜率 = F（相对误差&lt;2%）。',
+ warn:'F 与 v 必须同一时刻；平均功率一般 ≠ F·v̄。',back:'P = dW/dt = F cos α · dx/dt = Fv cos α。'},
+{id:'f_vmax',cat:'公式',title:'v<sub>max</sub> = P<sub>额</sub> / f',fig:'twostage',conc:'机车以额定功率运行、牵引力等于阻力（匀速）时速度达到最大。',
+ formula:'a = (F − f)/m；F = P/v；v<sub>max</sub> = P<sub>额</sub>/f',demo:'标签⑤：运行后末速与 P<sub>额</sub>/f 比较（误差&lt;3%）。',
+ warn:'v<sub>max</sub> 时牵引力最小（等于 f），不是最大。',back:'a = 0 ⇒ F = f，又 P = Fv = P额 ⇒ v = P额/f。'},
+{id:'f_ui',cat:'公式',title:'P<sub>电</sub> = UI 与 1 kWh = 3.6×10⁶ J',fig:'units',conc:'电功率 UI，能量单位千瓦时与功率单位千瓦完全不同。',
+ formula:'P<sub>电</sub> = UI；1 kWh = 1000 W × 3600 s = 3.6×10⁶ J',demo:'标签③：电动机面板显示 P电 与 η。',
+ warn:'"千瓦"是功率，"千瓦时"是能量，不能混用。',back:'W = P·t ⇒ 1 kWh = 1 kW × 1 h = 3.6×10⁶ J。'},
+
+/* —— 规律卡 —— */
+{id:'r_sign',cat:'规律',title:'正负功判据',fig:'cos',conc:'α&lt;90° 动力做正功；α=90° 不做功；α&gt;90° 阻力做负功。',
+ formula:'符号(W) = 符号(cos α)',demo:'标签①：α 从 0 扫到 180°，看颜色绿→灰→红。',
+ warn:'正负不表示方向，只表示动力/阻力。',back:'cos α 在 [0°,180°] 上单调递减，90° 处过零。'},
+{id:'r_zero',cat:'规律',title:'W = 0 的三因子判据',fig:'zero3',conc:'W = 0 ⇔ F = 0 或 x = 0 或 cos α = 0，三因子任一为零。',
+ formula:'F = 0 ／ x = 0 ／ α = 90°',demo:'标签①：三个"不做功"按钮逐个演示并高亮判据。',
+ warn:'常见被忽略：力作用点没有位移、力始终垂直速度（如向心力）。',back:'W = F·x·cos α 是三因子乘积，任一因子为零则积为零。'},
+{id:'r_graph',cat:'规律',title:'图象中的斜率与面积',fig:'slope',conc:'W–t 斜率 = 功率（割线平均、切线瞬时）；P–t 面积 = 功；F–x 面积 = 功。',
+ formula:'P̄ = ΔW/Δt；P = dW/dt；W = ∫P dt = ∫F dx',demo:'标签③：三图联动 + "填充 P–t 面积"按钮校验。',
+ warn:'看斜率前先确认纵轴量纲，别把 W–x 斜率当成力以外的量。',back:'导数与积分的互逆关系在图象上的体现。'},
+{id:'r_start',cat:'规律',title:'机车两类启动规律',fig:'twostage',conc:'恒功率：a 减小、F ∝ 1/v；恒牵引力：a 恒定、P 线性增大，达额定后转恒功率。',
+ formula:'恒功率：F = P/v，a = (P/v − f)/m；恒牵引力：a = (F − f)/m，P = Fv',demo:'标签⑤：四图联动与阶段分界标记。',
+ warn:'恒功率启动不是匀加速；恒牵引力不能一直匀加速。',back:'两个阶段的约束量不同：一个约束 P，一个约束 F。'},
+
+/* —— 方法卡 —— */
+{id:'m_cv',cat:'方法',title:'控制变量法',fig:'line',conc:'一次只改变一个量：F 恒定看 P–v；v 恒定看 W–α；F、α 恒定看 W–x。',
+ formula:'固定量 / 变化量 / 观测量 三栏清单',demo:'标签④：切换 A/B/C 模式，看"控制变量清单"与滑块锁定。',
+ warn:'多个量同时变化则结论不成立。',back:'单因子实验设计是得出函数关系的前提。'},
+{id:'m_lin',cat:'方法',title:'图像线性化与面积法',fig:'area',conc:'把非线性关系画成直线：P–v 斜率 = F；W–x 斜率 = F cos α；变力功用 F–x 面积。',
+ formula:'k<sub>P–v</sub> = F；k<sub>W–x</sub> = F cos α；W = S<sub>F–x</sub>',demo:'标签④：拟合按钮给出斜率/振幅/相位与相对误差。',
+ warn:'拟合前确认过原点假设是否成立。',back:'y = kx + b 的 k 即被测量；曲线下面积用数值积分。'},
+
+/* —— 辨析卡 —— */
+{id:'d_wp',cat:'辨析',title:'功 vs 功率',fig:'compare',conc:'功是"做了多少"（能量转移量），功率是"做得多快"（变化率）。',
+ formula:'W [J]；P [W = J/s]；P = dW/dt',demo:'标签③：同一过程 W 增大而 P 可能恒定或增大。',
+ warn:'做功多不代表功率大，还要看时间。',back:'类比：位移 vs 速度。'},
+{id:'d_avg_ins',cat:'辨析',title:'平均功率 vs 瞬时功率',fig:'slope',conc:'P̄ = W/t 对过程；P = Fv cos α 对时刻；匀加速时 P̄(0→t) = ½P(t)。',
+ formula:'P̄ = W/t；P = Fv cos α',demo:'标签③：勾选匀加速，比较割线与切线读数之比。',
+ warn:'"平均功率等于 F·v̄"一般不成立。',back:'只有 F 恒定且 v 随时间线性变化时，平均值才等于端点平均。'},
+{id:'d_fric',cat:'辨析',title:'摩擦力可以做正功',fig:'incline',conc:'摩擦力方向与相对运动方向相反，但可以与物体对地位移同向 ⇒ 做正功。',
+ formula:'W<sub>f</sub> = f·x·cos α<sub>f</sub>（可为 +、0、−）',demo:'标签①："不做功"面板下方的反例纠正提示。',
+ warn:'"摩擦力一定做负功""支持力一定不做功"都是错误认识。',back:'传送带加速物体时静摩擦力做正功；电梯地板支持力做正功。'},
+{id:'d_rate',cat:'辨析',title:'额定功率 vs 实际功率',fig:'twostage',conc:'额定是设计上限，实际由 P = Fv 决定，可长时间低于额定值。',
+ formula:'P<sub>实</sub> = F·v ≤ P<sub>额</sub>',demo:'标签⑤：恒牵引力启动初段 P 远小于 P额。',
+ warn:'不要用额定功率去算起动阶段的牵引力。',back:'起动低速时受最大牵引力限制，高速时受额定功率限制。'},
+{id:'d_kwh',cat:'辨析',title:'千瓦 vs 千瓦时',fig:'units',conc:'kW 是功率单位，kWh 是能量单位，二者量纲不同。',
+ formula:'1 kWh = 3.6 × 10⁶ J；1 kW = 10³ W',demo:'标签③：电动机面板下方单位提醒。',
+ warn:'说"这个月用了 200 千瓦"是错误的。',back:'W = P·t ⇒ 能量 = 功率 × 时间。'},
+{id:'d_two',cat:'辨析',title:'恒功率启动 vs 恒牵引力启动',fig:'twostage',conc:'前者加速度单调减小至 0；后者先匀加速，功率达额定后加速度减小。',
+ formula:'恒功率：F = P/v；恒牵引力：a = (F−f)/m 恒定',demo:'标签⑤：并列对比 + 错误对照按钮。',
+ warn:'两条 v–t 线在分界点后都趋于同一 v<sub>max</sub>。',back:'约束量不同 ⇒ 微分方程不同 ⇒ 曲线形状不同。'},
+
+/* —— 易错卡（12 条） —— */
+{id:'e1',cat:'易错',title:'"功有正负，所以功是矢量"',fig:'bar',conc:'错！功是标量，正负只表示动力/阻力，不表示方向。',
+ formula:'W = Fx cos α（点乘结果，标量）',demo:'标签①：α=120° 时 W 为负但箭头仍画在平面内，无"功的方向"。',
+ warn:'一句话记忆：功的正负是"收入/支出"，不是"东南西北"。',back:'两个矢量点乘得到标量，这是矢量代数的基本结果。'},
+{id:'e2',cat:'易错',title:'"力大、位移大，做功就一定多"',fig:'vector',conc:'错！还要看 cos α；α = 90° 时无论 F、x 多大，W = 0。',
+ formula:'W = F·x·cos α，α = 90° ⇒ cos α = 0',demo:'标签①：点"③ 垂直 α=90°"按钮。',
+ warn:'一句话记忆：三因子乘积，任一为零即为零。',back:'垂直分量不做功，只有沿位移分量才积累功。'},
+{id:'e3',cat:'易错',title:'"摩擦力一定做负功"',fig:'incline',conc:'错！摩擦力可以做正功（传送带带动物体）、零功或负功。',
+ formula:'W<sub>f</sub> = f·x·cos α<sub>f</sub>，符号由 α<sub>f</sub> 决定',demo:'标签①：反例纠正提示卡。',
+ warn:'一句话记忆：看摩擦方向与对地位移的夹角，别看"摩擦"二字。',back:'摩擦力阻碍的是相对运动，不一定阻碍对地运动。'},
+{id:'e4',cat:'易错',title:'"向心力做功改变速度大小"',fig:'vector',conc:'错！向心力始终垂直速度，恒不做功，只改变速度方向。',
+ formula:'α = 90° ⇒ P = Fv cos 90° = 0',demo:'标签①：α=90° 时 P 读数恒为 0。',
+ warn:'一句话记忆：向心力只"转方向"，不"给能量"。',back:'匀速圆周运动动能不变，由动能定理知总功为零。'},
+{id:'e5',cat:'易错',title:'"总功等于各力做功绝对值之和"',fig:'bar',conc:'错！总功是各力做功的代数和。',
+ formula:'W<sub>总</sub> = ΣWᵢ（带符号相加）',demo:'标签①：点"显示绝对值之和"看两者差异。',
+ warn:'一句话记忆：功是标量，代数相加不是绝对值相加。',back:'正负功互相抵消，绝对值之和会高估总功。'},
+{id:'e6',cat:'易错',title:'"P = W/t 与 P = Fv 完全一样"',fig:'slope',conc:'错！前者是平均功率（过程量），后者是瞬时功率（状态量）。',
+ formula:'P̄ = W/t；P = Fv cos α',demo:'标签③：匀加速模式下 P̄ = ½P(t)。',
+ warn:'一句话记忆：一个管一段，一个管一瞬。',back:'只有当功率恒定时两者数值才相等。'},
+{id:'e7',cat:'易错',title:'"平均功率等于力乘以平均速度"',fig:'slope',conc:'不严谨！一般不成立；仅当 F 恒定且 v 随时间线性变化时成立。',
+ formula:'P̄ = (1/t)∫Fv dt ≠ F·v̄（一般情形）',demo:'标签③：切到匀加速，比较读数。',
+ warn:'一句话记忆：先积分再平均 ≠ 先平均再相乘。',back:'乘积的平均不等于平均的乘积（除非线性情形）。'},
+{id:'e8',cat:'易错',title:'"恒定功率启动时加速度不变"',fig:'twostage',conc:'错！v 增大使 F = P/v 减小，a = (F−f)/m 单调减小到 0。',
+ formula:'a = (P/v − f)/m ↓',demo:'标签⑤：恒功率模式 F–t 曲线下降、v–t 斜率变缓。',
+ warn:'一句话记忆：恒功率 ⇒ 越跑越没劲。',back:'P = Fv，P 定则 F 与 v 成反比。'},
+{id:'e9',cat:'易错',title:'"恒定牵引力启动可以一直匀加速"',fig:'twostage',conc:'错！P = Fv 随 v 增大，达额定功率后必须转入恒功率阶段。',
+ formula:'匀加速段止于 v = P<sub>额</sub>/F',demo:'标签⑤：P–t 曲线在分界点后转为水平。',
+ warn:'一句话记忆：功率有天花板，匀加速有终点。',back:'额定功率是不可长期逾越的约束。'},
+{id:'e10',cat:'易错',title:'"最大速度时牵引力最大"',fig:'twostage',conc:'错！v<sub>max</sub> 时 a = 0 ⇒ F = f，牵引力恰恰最小（等于阻力）。',
+ formula:'v<sub>max</sub> = P<sub>额</sub>/f',demo:'标签⑤：F–t 曲线末端趋于 f₀。',
+ warn:'一句话记忆：跑得最快时"刚好拉得住"。',back:'若 F &gt; f 则仍在加速，速度还没到最大。'},
+{id:'e11',cat:'易错',title:'"变力做功也能用 W = Fx cos α"',fig:'area',conc:'错！变力必须用 W = ∫F·dx，或由 F–x 图面积求得。',
+ formula:'W = ∫ F(x) dx',demo:'标签②：切到变力模式，界面提示"此时不能用 W = Fx cos α"。',
+ warn:'一句话记忆：力在变，就积分。',back:'定义式要求 F 恒定；变力需分段求和取极限。'},
+{id:'e12',cat:'易错',title:'"千瓦与千瓦时都是功率单位"',fig:'units',conc:'错！kW 是功率，kWh 是能量，1 kWh = 3.6×10⁶ J。',
+ formula:'1 kWh = 1000 W × 3600 s',demo:'标签③：电动机面板单位提醒。',
+ warn:'一句话记忆：带"时"的是能量。',back:'W = P·t，功率乘时间才是能量。'},
+
+/* —— 应用卡 —— */
+{id:'a_ramp',cat:'应用',title:'斜面搬运：省力不省功',fig:'incline',conc:'斜面可以减小所需拉力，但把物体提升同一高度所做的功（不计摩擦）相同。',
+ formula:'F·L = mgh（理想斜面）',demo:'标签①：改变 θ<sub>斜面</sub>，比较 W<sub>拉</sub> 与 W<sub>重</sub>。',
+ warn:'实际斜面因摩擦要多做功。',back:'功的原理：任何机械都不省功。'},
+{id:'a_crane',cat:'应用',title:'起重机匀速提升与效率',fig:'motor',conc:'匀速 ⇒ F = mg ⇒ P<sub>机</sub> = mgv；输入 P<sub>电</sub> = UI，η = P<sub>机</sub>/P<sub>电</sub>。',
+ formula:'η = mgv / (UI)',demo:'标签③：电动机面板调 m、v、U、I。',
+ warn:'加速上升时 F &gt; mg，P 更大。',back:'匀速时动能不变，输出功率全部用于增加重力势能。'},
+{id:'a_car',cat:'应用',title:'汽车爬坡换低速档',fig:'twostage',conc:'P 一定时 v 减小则 F = P/v 增大，故爬坡需要换低速档获得大牵引力。',
+ formula:'F = P/v',demo:'标签⑤：F–v 等轴双曲线上取小 v 处看大 F。',
+ warn:'换档不增功率，只改变 F 与 v 的分配。',back:'功率是 F 与 v 的乘积，减 v 才能增 F。'},
+{id:'a_pump',cat:'应用',title:'抽水机与水泵功率',fig:'motor',conc:'把质量 m 的水提升高度 h 用时 t，有用功率 P = mgh/t。',
+ formula:'P<sub>有用</sub> = mgh/t；P<sub>输入</sub> = P<sub>有用</sub>/η',demo:'标签③：用电动机面板类比（P<sub>机</sub> = mgv）。',
+ warn:'别忘了效率与管阻损耗。',back:'重力势能增加量 ΔE<sub>p</sub> = mgh 除以时间即功率。'},
+{id:'a_human',cat:'应用',title:'人体上楼功率',fig:'motor',conc:'估算：体重 mg 乘以上升速度 v 即为输出功率，普通人约几十到上百瓦。',
+ formula:'P = mgv（v 为竖直上升速度）',demo:'标签③：把 m 调到 60 kg、v 调到 0.3 m/s 试算。',
+ warn:'人体效率约 20%–25%，实际代谢功率更大。',back:'上楼是克服重力做功，位移取竖直高度。'},
+
+/* —— 误差卡 —— */
+{id:'x_zero',cat:'误差',title:'传感器零点漂移',fig:'vector',conc:'力传感器未调零会给所有 F 加一个偏置，使 W 出现系统误差。',
+ formula:'ΔW ≈ ΔF₀·x·cos α',demo:'标签②：开启噪声并观察读数抖动与平均值的偏离。',
+ warn:'实验前必须调零并复校。',back:'零点漂移是系统误差，多次测量不能消除。'},
+{id:'x_mu',cat:'误差',title:'摩擦系数变化',fig:'incline',conc:'接触面状态变化使 μ 不恒定，摩擦力功随之改变。',
+ formula:'W<sub>f</sub> = −μmg cos θ·x',demo:'标签①/②：拖动 μ 看 W<sub>摩</sub> 与总功变化。',
+ warn:'同一组数据内应保持接触面一致。',back:'μ 受表面清洁度、湿度、速度影响。'},
+{id:'x_noise',cat:'误差',title:'采样噪声与平滑',fig:'line',conc:'采样率越高细节越丰富但噪声越明显；滑动平均可平滑但会滞后。',
+ formula:'平滑后 W 与原值差异体现处理影响',demo:'标签②：开噪声 + 调滑动平均窗口，看平滑前后对比。',
+ warn:'过度平滑会丢失真实的快速变化。',back:'噪声是随机误差，可通过多次平均减小。'},
+{id:'x_pulley',cat:'误差',title:'滑轮摩擦与细线质量',fig:'incline',conc:'细线质量与滑轮摩擦使传感器测得的 F 与木块受的拉力不等。',
+ formula:'F<sub>绳</sub> = F<sub>测</sub> − 损耗',demo:'标签②：装置示意中标注滑轮与细线。',
+ warn:'用轻绳、润滑滑轮可减小该误差。',back:'滑轮两侧张力不等是常见的系统误差来源。'}
+];
+
+/* ---------- ④ 预设方案 ---------- */
+const PRESETS = [
+  {name:'恒力沿斜面 α = 0', tab:1, run(){ goTab(1); setR('inF1',10); setR('inX1',2); setR('inA1',0); }},
+  {name:'斜拉 α = 30°', tab:1, run(){ goTab(1); setR('inF1',10); setR('inX1',2); setR('inA1',30); }},
+  {name:'斜拉 α = 60°（W = 10 J 自测）', tab:1, run(){ goTab(1); setR('inF1',10); setR('inX1',2); setR('inA1',60); }},
+  {name:'垂直 α = 90°（不做功）', tab:1, run(){ goTab(1); setR('inF1',10); setR('inX1',2); setR('inA1',90); }},
+  {name:'阻力 α = 120°（负功）', tab:1, run(){ goTab(1); setR('inF1',10); setR('inX1',2); setR('inA1',120); }},
+  {name:'斜面 m=1kg θ=30° μ=0.2 x=1m', tab:1, run(){ goTab(1); setR('inM1',1); setR('inTh1',30); setR('inMu1',0.2); setR('inX1',1); setR('inA1',0); }},
+  {name:'变力拉伸（F–x 面积）', tab:2, run(){ goTab(2); $('selFmode2').value='v'; $('selFmode2').dispatchEvent(new Event('change')); resetSim2(); }},
+  {name:'DIS 恒力实时曲线', tab:2, run(){ goTab(2); $('selFmode2').value='c'; $('selFmode2').dispatchEvent(new Event('change')); resetSim2(); play2(true); }},
+  {name:'匀加速：平均 vs 瞬时功率', tab:3, run(){ goTab(3); $('selMode3').value='a'; $('selMode3').dispatchEvent(new Event('change')); }},
+  {name:'电动机匀速提升', tab:3, run(){ goTab(3); setR('inMm3',2); setR('inVm3',0.5); setR('inU3',12); setR('inI3',1.2); }},
+  {name:'F 恒定扫描 v（P–v 直线）', tab:4, run(){ goTab(4); setR('inF4',10); setR('inA4',0); setMode4('A'); scan4(); }},
+  {name:'v 恒定扫描 α（W–α 余弦）', tab:4, run(){ goTab(4); setR('inF4',10); setR('inV4',2); setR('inT4',1); setMode4('B'); scan4(); }},
+  {name:'F、α 恒定扫描 x（W–x 直线）', tab:4, run(){ goTab(4); setR('inF4',10); setR('inA4',0); setMode4('C'); scan4(); }},
+  {name:'恒功率启动 P额=60kW f=3kN', tab:5, run(){ goTab(5); $('selM5').value='P'; setR('inP5',60); setR('inf0_5',3000); setR('inK5',0); runSim5(); }},
+  {name:'恒牵引力启动 F=6kN m=2t', tab:5, run(){ goTab(5); $('selM5').value='F'; setR('inF5',6000); setR('inMm5',2000); setR('inf0_5',3000); setR('inP5',60); runSim5(); }}
+];
+function setR(id, v){ const el = $(id); if (el){ el.value = v; el.dispatchEvent(new Event('input')); } }
+function goTab(n){
+  $$('.tab').forEach(b => { const on = b.dataset.tab === String(n); b.classList.toggle('active', on); b.setAttribute('aria-selected', on ? 'true' : 'false'); });
+  $$('.tabpane').forEach(p => p.classList.toggle('active', p.id === 'tab-' + n));
+  S.tab = n;
+  requestAnimationFrame(() => { resizeAll(); drawAll(); });
+}
+
+/* ---------- ⑤ 题库 ---------- */
+const QUIZ = [
+  {q:'关于功的正负，下列说法正确的是？', opts:['功有正负，所以功是矢量','功是标量，正功表示动力做功，负功表示阻力做功','正功方向向右，负功方向向左','功的正负由位移方向决定'],
+   a:1, card:'k_scalar', exp:'功是标量，正负只表示该力是动力还是阻力，不表示空间方向。'},
+  {q:'下列情形中，力对物体一定不做功的是？', opts:['物体在粗糙水平面上滑动时的摩擦力','用力推墙但墙未动时的推力','沿斜面下滑物体的重力','匀速上升电梯中地板对物体的支持力'],
+   a:1, card:'r_zero', exp:'推墙未动：有力无位移（x = 0）⇒ W = 0。支持力在电梯上升时做正功，故 D 错。'},
+  {q:'关于摩擦力做功，正确的是？', opts:['摩擦力一定做负功','摩擦力一定不做功','摩擦力可以做正功、负功或零功','静摩擦力一定不做功'],
+   a:2, card:'d_fric', exp:'传送带带动工件时静摩擦力做正功；叠放物体被带动时摩擦力也可做正功。'},
+  {q:'物体受两个力，做功分别为 +6 J 与 −4 J，则总功为？', opts:['10 J','2 J','−2 J','无法判断'],
+   a:1, card:'f_sum', exp:'总功是各力做功的代数和：6 + (−4) = 2 J，不是绝对值之和 10 J。'},
+  {q:'关于平均功率与瞬时功率，正确的是？', opts:['P = W/t 与 P = Fv 完全等价','P̄ = W/t 对应一段时间，P = Fv cos α 对应某一时刻','平均功率总等于 F 乘以平均速度','瞬时功率无法用图象表示'],
+   a:1, card:'d_avg_ins', exp:'前者是过程平均，后者是状态瞬时；W–t 图切线斜率即瞬时功率。'},
+  {q:'机车以恒定功率启动的过程中，加速度如何变化？', opts:['保持不变','逐渐增大','逐渐减小到零','先减小后增大'],
+   a:2, card:'r_start', exp:'P 恒定 ⇒ F = P/v 随 v 增大而减小 ⇒ a = (F − f)/m 逐渐减小，F = f 时 a = 0。'}
+];
+
+/* ==========================================================================
+   ⑥ 图表引擎：坐标轴/网格/曲线/标记/热点，支持滚轮缩放、拖拽平移、双击复位
+   ========================================================================== */
+const CHART_REG = [];
+function niceStep(range, target){
+  const raw = range / Math.max(1, target);
+  const mag = Math.pow(10, Math.floor(Math.log10(raw || 1)));
+  const n = raw / mag;
+  let s;
+  if (n <= 1) s = 1; else if (n <= 2) s = 2; else if (n <= 2.5) s = 2.5; else if (n <= 5) s = 5; else s = 10;
+  return s * mag;
+}
+function ticksOf(a, b, target){
+  const st = niceStep(b - a, target === undefined ? 5 : target);
+  const out = [];
+  let t = Math.ceil(a / st) * st;
+  for (let i = 0; i < 60 && t <= b + st * 1e-6; i++){ out.push(Math.abs(t) < st*1e-9 ? 0 : t); t += st; }
+  return {ticks: out, step: st};
+}
+function fmtTick(v){
+  if (Math.abs(v) >= 1000 || (Math.abs(v) > 0 && Math.abs(v) < 0.01)) return v.toExponential(1);
+  if (Math.abs(v - Math.round(v)) < 1e-9) return String(Math.round(v));
+  return v.toFixed(Math.abs(v) < 1 ? 2 : 1);
+}
+/** 准备画布（高 DPI 自适应） */
+function prep(cv){
+  const r = cv.getBoundingClientRect();
+  const d = Math.min(window.devicePixelRatio || 1, 2);
+  const w = Math.max(1, Math.round(r.width * d)), h = Math.max(1, Math.round(r.height * d));
+  if (cv.width !== w || cv.height !== h){ cv.width = w; cv.height = h; }
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(d, 0, 0, d, 0, 0);
+  ctx.clearRect(0, 0, r.width, r.height);
+  cv.__w = r.width; cv.__h = r.height;
+  return {ctx: ctx, W: r.width, H: r.height};
+}
+
+class Chart{
+  constructor(canvas, cfg){
+    this.cv = canvas;
+    this.ctx = canvas.getContext('2d');
+    this.cfg = Object.assign({
+      xl:'x', yl:'y', pad:{l:58, r:14, t:16, b:32},
+      zero:false, yPad:0.08, showScale:true
+    }, cfg || {});
+    this.series = []; this.marks = []; this.hots = []; this.bands = [];
+    this.view = {x0:0, x1:1, y0:0, y1:1};
+    this.userView = false;
+    CHART_REG.push(this);
+    this._bind();
+  }
+  _bind(){
+    const cv = this.cv;
+    cv.addEventListener('wheel', e => {
+      e.preventDefault();
+      const r = cv.getBoundingClientRect();
+      const px = e.clientX - r.left, py = e.clientY - r.top;
+      const d = this._toData(px, py);
+      const k = e.deltaY > 0 ? 1.12 : 1 / 1.12;
+      const v = this.view;
+      const nx0 = d.x - (d.x - v.x0) * k, nx1 = d.x + (v.x1 - d.x) * k;
+      const ny0 = d.y - (d.y - v.y0) * k, ny1 = d.y + (v.y1 - d.y) * k;
+      v.x0 = nx0; v.x1 = nx1; v.y0 = ny0; v.y1 = ny1;
+      this.userView = true; this.scaleInfo = null; this.draw();
+    }, {passive:false});
+    let drag = false, lx = 0, ly = 0, moved = false;
+    cv.addEventListener('pointerdown', e => {
+      drag = true; moved = false; lx = e.clientX; ly = e.clientY;
+      try { cv.setPointerCapture(e.pointerId); } catch(err){}
+    });
+    cv.addEventListener('pointermove', e => {
+      if (!drag) return;
+      const dx = e.clientX - lx, dy = e.clientY - ly;
+      if (Math.abs(dx) + Math.abs(dy) > 2) moved = true;
+      lx = e.clientX; ly = e.clientY;
+      const pw = (this.W || cv.clientWidth) - this.cfg.pad.l - this.cfg.pad.r;
+      const ph = (this.H || cv.clientHeight) - this.cfg.pad.t - this.cfg.pad.b;
+      const v = this.view;
+      const kx = (v.x1 - v.x0) / Math.max(1, pw), ky = (v.y1 - v.y0) / Math.max(1, ph);
+      v.x0 -= dx * kx; v.x1 -= dx * kx; v.y0 += dy * ky; v.y1 += dy * ky;
+      this.userView = true; this.draw();
+    });
+    cv.addEventListener('pointerup', e => {
+      if (drag && !moved){ const r = cv.getBoundingClientRect(); this._hit(e.clientX - r.left, e.clientY - r.top); }
+      drag = false;
+    });
+    cv.addEventListener('dblclick', () => { this.userView = false; this.fit(); this.draw(); });
+  }
+  /** 由全部数据自动定坐标（可强制含 0） */
+  fit(){
+    let x0 = Infinity, x1 = -Infinity, y0 = Infinity, y1 = -Infinity;
+    this.series.forEach(s => {
+      (s.data || []).forEach(p => {
+        if (!isFinite(p[0]) || !isFinite(p[1])) return;
+        x0 = Math.min(x0, p[0]); x1 = Math.max(x1, p[0]);
+        y0 = Math.min(y0, p[1]); y1 = Math.max(y1, p[1]);
+      });
+    });
+    if (!isFinite(x0)) { x0 = 0; x1 = 1; }
+    if (!isFinite(y0)) { y0 = 0; y1 = 1; }
+    if (this.cfg.xMin !== null && this.cfg.xMin !== undefined) x0 = Math.min(x0, this.cfg.xMin);
+    if (this.cfg.xMax !== null && this.cfg.xMax !== undefined) x1 = Math.max(x1, this.cfg.xMax);
+    if (x1 - x0 < 1e-9){ x0 -= 0.5; x1 += 0.5; }
+    if (y1 - y0 < 1e-9){ y0 -= 0.5; y1 += 0.5; }
+    const py = (y1 - y0) * this.cfg.yPad, pxx = (x1 - x0) * 0.04;
+    this.view = {x0: x0 - pxx, x1: x1 + pxx, y0: y0 - py, y1: y1 + py};
+    if (this.cfg.zero){ this.view.y0 = Math.min(this.view.y0, 0); this.view.y1 = Math.max(this.view.y1, 0); }
+    if (this.view.y1 - this.view.y0 < 1e-6) { this.view.y0 -= 1; this.view.y1 += 1; }
+    return this.view;
+  }
+  setSeries(list){ this.series = list || []; if (!this.userView) this.fit(); return this; }
+  setMarks(list){ this.marks = list || []; return this; }
+  setHots(list){ this.hots = list || []; return this; }
+  setBands(list){ this.bands = list || []; return this; }
+  _tx(){ const p = this.cfg.pad; return {
+    X: x => p.l + (x - this.view.x0) / (this.view.x1 - this.view.x0 || 1) * this._pw(),
+    Y: y => p.t + this._ph() - (y - this.view.y0) / (this.view.y1 - this.view.y0 || 1) * this._ph()
+  };}
+  _pw(){ return Math.max(10, this.W - this.cfg.pad.l - this.cfg.pad.r); }
+  _ph(){ return Math.max(10, this.H - this.cfg.pad.t - this.cfg.pad.b); }
+  _toData(px, py){
+    const p = this.cfg.pad;
+    return {x: this.view.x0 + (px - p.l) / this._pw() * (this.view.x1 - this.view.x0),
+            y: this.view.y0 + (this._ph() - (py - p.t)) / this._ph() * (this.view.y1 - this.view.y0)};
+  }
+  _hit(px, py){
+    const T = this._tx();
+    for (let i = 0; i < this.hots.length; i++){
+      const h = this.hots[i];
+      const dx = T.X(h.x) - px, dy = T.Y(h.y) - py;
+      if (dx*dx + dy*dy < 15*15){ openCard(h.card); return true; }
+    }
+    return false;
+  }
+  draw(){
+    const {ctx, W, H} = prep(this.cv);
+    this.W = W; this.H = H;
+    const p = this.cfg.pad, pw = this._pw(), ph = this._ph();
+    const T = this._tx(), X = T.X, Y = T.Y;
+    const v = this.view;
+    ctx.fillStyle = '#fff'; ctx.fillRect(0, 0, W, H);
+    // 背景色带（如负功区）
+    this.bands.forEach(b => {
+      const xa = X(b.x0), xb = X(b.x1);
+      ctx.fillStyle = b.color || '#fef2f2';
+      ctx.fillRect(Math.min(xa, xb), p.t, Math.abs(xb - xa), ph);
+    });
+    // 网格
+    const tx = ticksOf(v.x0, v.x1, 5), ty = ticksOf(v.y0, v.y1, 4);
+    ctx.strokeStyle = COL.grid; ctx.lineWidth = 1; ctx.font = '11px Consolas, monospace';
+    tx.ticks.forEach(t => {
+      const px = Math.round(X(t)) + 0.5;
+      if (px < p.l - 1 || px > p.l + pw + 1) return;
+      ctx.beginPath(); ctx.moveTo(px, p.t); ctx.lineTo(px, p.t + ph); ctx.stroke();
+    });
+    ty.ticks.forEach(t => {
+      const py = Math.round(Y(t)) + 0.5;
+      if (py < p.t - 1 || py > p.t + ph + 1) return;
+      ctx.beginPath(); ctx.moveTo(p.l, py); ctx.lineTo(p.l + pw, py); ctx.stroke();
+    });
+    // 坐标轴
+    ctx.strokeStyle = COL.axis; ctx.lineWidth = 1.2;
+    ctx.beginPath(); ctx.moveTo(p.l, p.t); ctx.lineTo(p.l, p.t + ph); ctx.lineTo(p.l + pw, p.t + ph); ctx.stroke();
+    // 零线
+    if (v.y0 < 0 && v.y1 > 0){
+      ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 1.4; ctx.beginPath();
+      ctx.moveTo(p.l, Y(0)); ctx.lineTo(p.l + pw, Y(0)); ctx.stroke();
+    }
+    // 刻度标签
+    ctx.fillStyle = '#475569'; ctx.font = '11px Consolas, monospace';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    tx.ticks.forEach(t => { const px = X(t); if (px < p.l - 8 || px > p.l + pw + 8) return; ctx.fillText(fmtTick(t), px, p.t + ph + 5); });
+    ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+    ty.ticks.forEach(t => { const py = Y(t); if (py < p.t - 8 || py > p.t + ph + 8) return; ctx.fillText(fmtTick(t), p.l - 6, py); });
+    ctx.fillStyle = '#334155'; ctx.font = '12px "Microsoft YaHei", sans-serif';
+    ctx.textAlign = 'center'; ctx.textBaseline = 'bottom';
+    ctx.fillText(this.cfg.xl, p.l + pw / 2, H - 2);
+    ctx.save(); ctx.translate(11, p.t + ph / 2); ctx.rotate(-Math.PI / 2);
+    ctx.textBaseline = 'top'; ctx.fillText(this.cfg.yl, 0, 0); ctx.restore();
+    // 曲线
+    ctx.save();
+    ctx.beginPath(); ctx.rect(p.l, p.t, pw, ph); ctx.clip();
+    this.series.forEach(s => {
+      const d = s.data || [];
+      if (!d.length) return;
+      if (s.area){
+        ctx.beginPath();
+        ctx.moveTo(X(d[0][0]), Y(0));
+        d.forEach(pt => ctx.lineTo(X(pt[0]), Y(pt[1])));
+        ctx.lineTo(X(d[d.length-1][0]), Y(0)); ctx.closePath();
+        ctx.fillStyle = s.fillColor || 'rgba(59,130,246,.18)'; ctx.fill();
+      }
+      if (s.line !== false){
+        ctx.beginPath();
+        d.forEach((pt, i) => { const px = X(pt[0]), py = Y(pt[1]); i ? ctx.lineTo(px, py) : ctx.moveTo(px, py); });
+        ctx.strokeStyle = s.color || COL.theory; ctx.lineWidth = s.width || 2;
+        ctx.setLineDash(s.dash || []); ctx.stroke(); ctx.setLineDash([]);
+      }
+      if (s.point){
+        ctx.fillStyle = s.color || COL.data;
+        d.forEach(pt => { ctx.beginPath(); ctx.arc(X(pt[0]), Y(pt[1]), s.pr || 2.6, 0, 6.2832); ctx.fill(); });
+      }
+    });
+    ctx.restore();
+    // 标记线
+    (this.marks || []).forEach(m => {
+      ctx.strokeStyle = m.color || COL.fric; ctx.setLineDash(m.dash || [4,3]); ctx.lineWidth = 1.4;
+      ctx.beginPath();
+      if (m.type === 'v'){ ctx.moveTo(X(m.at), p.t); ctx.lineTo(X(m.at), p.t + ph); }
+      else { ctx.moveTo(p.l, Y(m.at)); ctx.lineTo(p.l + pw, Y(m.at)); }
+      ctx.stroke(); ctx.setLineDash([]);
+      if (m.label){
+        ctx.fillStyle = m.color || COL.fric; ctx.font = '11px "Microsoft YaHei", sans-serif';
+        ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+        if (m.type === 'v') ctx.fillText(m.label, X(m.at) + 4, p.t + 3);
+        else ctx.fillText(m.label, p.l + 4, Y(m.at) - 14);
+      }
+    });
+    // 热点
+    this.hots.forEach(h => {
+      const px = X(h.x), py = Y(h.y);
+      if (px < p.l - 6 || px > p.l + pw + 6 || py < p.t - 6 || py > p.t + ph + 6) return;
+      ctx.beginPath(); ctx.arc(px, py, 8, 0, 6.2832);
+      ctx.fillStyle = '#fff'; ctx.fill();
+      ctx.strokeStyle = COL.grav; ctx.lineWidth = 2; ctx.stroke();
+      ctx.fillStyle = COL.grav; ctx.font = 'bold 10px sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillText('?', px, py + 0.5);
+    });
+    // 图例
+    const named = this.series.filter(s => s.name);
+    if (named.length){
+      ctx.font = '11px "Microsoft YaHei", sans-serif'; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      let ly = p.t + 8;
+      named.forEach(s => {
+        ctx.strokeStyle = s.color; ctx.lineWidth = 2; ctx.setLineDash(s.dash || []);
+        ctx.beginPath(); ctx.moveTo(p.l + pw - 96, ly); ctx.lineTo(p.l + pw - 78, ly); ctx.stroke(); ctx.setLineDash([]);
+        ctx.fillStyle = '#475569'; ctx.fillText(s.name, p.l + pw - 74, ly);
+        ly += 14;
+      });
+    }
+    // 比例尺提示
+    if (this.cfg.showScale){
+      ctx.fillStyle = '#94a3b8'; ctx.font = '10px sans-serif'; ctx.textAlign = 'right'; ctx.textBaseline = 'bottom';
+      ctx.fillText('横轴 1 格 = ' + fmtTick(tx.step) + '　滚轮缩放 · 拖动平移 · 双击复位', p.l + pw, p.t + ph - 2);
+    }
+  }
+}
+function mkChart(id, cfg){ return new Chart($(id), cfg); }
+
+/* 全局热点层（自定义画布用） */
+function clearHots(cv){ cv.__hots = []; }
+function addHot(cv, px, py, cardId){ if (!cv.__hots) cv.__hots = []; cv.__hots.push({x:px, y:py, card:cardId}); }
+document.addEventListener('click', e => {
+  const cv = e.target;
+  if (!cv || cv.tagName !== 'CANVAS' || !cv.__hots) return;
+  const r = cv.getBoundingClientRect();
+  const px = e.clientX - r.left, py = e.clientY - r.top;
+  for (let i = 0; i < cv.__hots.length; i++){
+    const h = cv.__hots[i];
+    if ((h.x - px) * (h.x - px) + (h.y - py) * (h.y - py) < 15 * 15){ openCard(h.card); break; }
+  }
+});
+
+/* ==========================================================================
+   ⑦-① 标签页①：功的定义与正负
+   ========================================================================== */
+let CH = {};                 // 图表实例表
+let zeroCase = 0;            // 0 无 / 1 无力 / 2 无位移 / 3 垂直
+let absSumOn = false;
+let barGridOn = true;
+let scanA1Timer = null;
+
+function phys1(){
+  const F = S.inF1, x = S.inX1, a = RAD(S.inA1), m = S.inM1, th = RAD(S.inTh1), mu = S.inMu1;
+  const dir = parseFloat($('selDir1').value);
+  const Wp = F * x * Math.cos(a);
+  const Wg = -dir * m * G * x * Math.sin(th);
+  const Wf = -mu * m * G * Math.cos(th) * x;
+  const Wn = 0;
+  const Wt = Wp + Wg + Wf + Wn;
+  // 合力沿位移方向的分量（由各力直接投影求和，与"各力做功代数和 ÷ 位移"互为独立校验）
+  const Fnet = F * Math.cos(a) - dir * m * G * Math.sin(th) - mu * m * G * Math.cos(th);
+  return {F:F, x:x, a:a, m:m, th:th, mu:mu, dir:dir, Wp:Wp, Wg:Wg, Wf:Wf, Wn:Wn, Wt:Wt, Fnet:Fnet};
+}
+function drawVec1(){
+  const cv = $('c1vec'), {ctx, W, H} = prep(cv);
+  clearHots(cv);
+  const P = phys1();
+  const ox = 70, oy = H * 0.62;
+  const xLen = clamp(P.x / 5 * (W - 190), 0, W - 190);
+  const fLen = clamp(P.F / 50 * 130, 0, 150);
+  // 地面
+  ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 2;
+  ctx.beginPath(); ctx.moveTo(20, oy + 22); ctx.lineTo(W - 20, oy + 22); ctx.stroke();
+  ctx.fillStyle = '#f1f5f9'; ctx.fillRect(20, oy + 22, W - 40, 10);
+  // 木块
+  ctx.fillStyle = '#fdba74'; ctx.strokeStyle = '#ea580c'; ctx.lineWidth = 1.5;
+  ctx.fillRect(ox - 18, oy - 14, 36, 28); ctx.strokeRect(ox - 18, oy - 14, 36, 28);
+  ctx.fillStyle = '#7c2d12'; ctx.font = '11px "Microsoft YaHei"'; ctx.textAlign = 'center';
+  ctx.fillText('m', ox, oy + 4);
+  // 位移矢量
+  ctx.strokeStyle = COL.pos; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(ox + xLen, oy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(ox + xLen, oy); ctx.lineTo(ox + xLen - 10, oy - 5); ctx.lineTo(ox + xLen - 10, oy + 5); ctx.closePath();
+  ctx.fillStyle = COL.pos; ctx.fill();
+  ctx.fillStyle = COL.pos; ctx.font = '12px "Microsoft YaHei"'; ctx.textAlign = 'left';
+  ctx.fillText('位移 x = ' + P.x.toFixed(2) + ' m', ox + xLen + 6, oy - 8);
+  // 力矢量
+  const fx = ox + fLen * Math.cos(P.a), fy = oy - fLen * Math.sin(P.a);
+  ctx.strokeStyle = P.F > 1e-9 ? COL.pull : COL.zero; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(ox, oy); ctx.lineTo(fx, fy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(fx, fy);
+  ctx.lineTo(fx - 11 * Math.cos(P.a - 0.38), fy + 11 * Math.sin(P.a - 0.38));
+  ctx.lineTo(fx - 11 * Math.cos(P.a + 0.38), fy + 11 * Math.sin(P.a + 0.38));
+  ctx.closePath(); ctx.fillStyle = P.F > 1e-9 ? COL.pull : COL.zero; ctx.fill();
+  ctx.fillStyle = COL.pull; ctx.font = '12px "Microsoft YaHei"'; ctx.textAlign = 'center';
+  ctx.fillText('F = ' + P.F.toFixed(1) + ' N', fx + (P.a > 90 ? -26 : 26), fy - 6);
+  // 投影分量
+  const px = ox + fLen * Math.cos(P.a);
+  ctx.setLineDash([4,3]); ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.moveTo(fx, fy); ctx.lineTo(px, oy); ctx.stroke(); ctx.setLineDash([]);
+  if (Math.abs(Math.cos(P.a)) > 1e-6){
+    ctx.strokeStyle = COL.fit; ctx.lineWidth = 4; ctx.beginPath();
+    ctx.moveTo(ox, oy); ctx.lineTo(px, oy); ctx.stroke();
+    ctx.fillStyle = COL.fit; ctx.font = '11px "Microsoft YaHei"'; ctx.textAlign = 'center';
+    ctx.fillText('F cos α = ' + (P.F * Math.cos(P.a)).toFixed(2) + ' N', (ox + px) / 2, oy + 18);
+  }
+  // 垂直分量
+  if (Math.abs(Math.sin(P.a)) > 1e-6){
+    ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 2.5; ctx.beginPath();
+    ctx.moveTo(px, oy); ctx.lineTo(fx, fy); ctx.stroke();
+    ctx.fillStyle = '#94a3b8'; ctx.font = '11px "Microsoft YaHei"'; ctx.textAlign = 'left';
+    ctx.fillText('F sin α（不做功）', fx + 4, (oy + fy) / 2);
+  }
+  // 夹角弧
+  const rr = 34;
+  ctx.strokeStyle = COL.grav; ctx.lineWidth = 1.4; ctx.beginPath();
+  ctx.arc(ox, oy, rr, -P.a, 0, P.a > 0 ? false : true); ctx.stroke();
+  ctx.fillStyle = COL.grav; ctx.font = 'bold 12px "Microsoft YaHei"'; ctx.textAlign = 'left';
+  const lx = ox + (rr + 12) * Math.cos(P.a / 2), ly2 = oy - (rr + 12) * Math.sin(P.a / 2);
+  ctx.fillText('α = ' + S.inA1.toFixed(0) + '°', lx + 2, ly2);
+  addHot(cv, lx, ly2, 'k_alpha');
+  // 结论
+  const w = P.Wp;
+  ctx.fillStyle = signColor(w);
+  ctx.font = 'bold 15px "Microsoft YaHei"'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  ctx.fillText('W = F·x·cos α = ' + w.toFixed(3) + ' J', 18, 12);
+  ctx.font = '12px "Microsoft YaHei"'; ctx.fillStyle = '#475569';
+  ctx.fillText('cos α = ' + Math.cos(P.a).toFixed(3) + '　（' + (w > 1e-9 ? '动力做正功' : w < -1e-9 ? '阻力做负功' : '不做功') + '）', 18, 34);
+  addHot(cv, 60, 18, 'k_work');
+}
+function drawWA1(){
+  const P = phys1();
+  const F = P.F, x = P.x;
+  const pos = [], neg = [], all = [];
+  for (let a = 0; a <= 180; a += 1){
+    const w = F * x * Math.cos(RAD(a));
+    all.push([a, w]);
+    (w >= 0 ? pos : neg).push([a, w]);
+  }
+  const ch = CH.wa;
+  ch.setBands([{x0:90, x1:180, color:'#fef2f2'}]);
+  ch.setSeries([
+    {name:'W = Fx cos α（正）', color:COL.pos, data:pos, width:2.4},
+    {name:'W = Fx cos α（负）', color:COL.neg, data:neg, width:2.4},
+    {name:'当前 α', color:COL.fit, data:[[S.inA1, F * x * Math.cos(P.a)]], point:true, line:false, pr:5}
+  ]);
+  ch.setMarks([
+    {type:'v', at:90, color:COL.zero, label:'α = 90° ⇒ W = 0'},
+    {type:'v', at:S.inA1, color:COL.fit, label:'α = ' + S.inA1.toFixed(0) + '°'}
+  ]);
+  ch.setHots([{x:90, y:0, card:'r_zero'}, {x:180, y:-F*x, card:'k_scalar'}]);
+  if (!ch.userView){ ch.cfg.xMin = 0; ch.cfg.xMax = 180; ch.fit(); }
+  ch.draw();
+}
+function drawBar1(){
+  const cv = $('c1bar'), {ctx, W, H} = prep(cv);
+  clearHots(cv);
+  const P = phys1();
+  const items = [
+    {n:'W拉（拉力）', v:P.Wp, c:COL.pull, card:'f_wfx'},
+    {n:'W重（重力）', v:P.Wg, c:COL.grav, card:'k_overcome'},
+    {n:'W摩（摩擦）', v:P.Wf, c:COL.fric, card:'d_fric'},
+    {n:'W支（支持力）', v:P.Wn, c:COL.norm, card:'r_zero'},
+    {n:'W总（代数和）', v:P.Wt, c:'#0f172a', card:'f_sum'}
+  ];
+  const pad = {l:52, r:14, t:18, b:52};
+  const pw = W - pad.l - pad.r, ph = H - pad.t - pad.b;
+  let mx = 0.5; items.forEach(it => mx = Math.max(mx, Math.abs(it.v)));
+  if (absSumOn){
+    const abs = items.slice(0,4).reduce((s, it) => s + Math.abs(it.v), 0);
+    mx = Math.max(mx, Math.abs(abs));
+  }
+  const Y0 = pad.t + ph / 2;                 // 零线位置（居中）
+  const scale = (ph / 2) / mx;
+  const Y = v => Y0 - v * scale;
+  if (barGridOn){
+    ctx.strokeStyle = COL.grid; ctx.lineWidth = 1;
+    for (let i = -4; i <= 4; i++){
+      const yv = mx * i / 4, py = Y(yv);
+      if (py < pad.t || py > pad.t + ph) continue;
+      ctx.beginPath(); ctx.moveTo(pad.l, py); ctx.lineTo(pad.l + pw, py); ctx.stroke();
+      ctx.fillStyle = '#94a3b8'; ctx.font = '10px Consolas'; ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+      ctx.fillText(yv.toFixed(1), pad.l - 5, py);
+    }
+  }
+  ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 1.4;
+  ctx.beginPath(); ctx.moveTo(pad.l, Y0); ctx.lineTo(pad.l + pw, Y0); ctx.stroke();
+  const bw = pw / (items.length + (absSumOn ? 1.2 : 0.2)) * 0.62;
+  const step = pw / (items.length + (absSumOn ? 1 : 0));
+  items.forEach((it, i) => {
+    const cx = pad.l + step * (i + 0.5);
+    const h = Math.abs(it.v) * scale;
+    const col = Math.abs(it.v) < 1e-9 ? COL.zero : signColor(it.v);
+    ctx.fillStyle = col;
+    ctx.globalAlpha = Math.abs(it.v) < 1e-9 ? 0.35 : 0.9;
+    const yy = it.v >= 0 ? Y0 - h : Y0;
+    ctx.fillRect(cx - bw/2, yy, bw, Math.max(h, 1.5));
+    ctx.globalAlpha = 1;
+    ctx.strokeStyle = it.c; ctx.lineWidth = 1.5; ctx.strokeRect(cx - bw/2, yy, bw, Math.max(h, 1.5));
+    ctx.fillStyle = '#334155'; ctx.font = '11px "Microsoft YaHei"'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText(it.n, cx, pad.t + ph + 6);
+    ctx.fillStyle = col; ctx.font = 'bold 11px Consolas';
+    ctx.textBaseline = it.v >= 0 ? 'bottom' : 'top';
+    ctx.fillText(it.v.toFixed(2) + ' J', cx, it.v >= 0 ? yy - 2 : yy + Math.max(h,1.5) + 2);
+    addHot(cv, cx, yy + h/2, it.card);
+  });
+  if (absSumOn){
+    const abs = items.slice(0,4).reduce((s, it) => s + Math.abs(it.v), 0);
+    const cx = pad.l + step * (items.length + 0.5);
+    const h = Math.abs(abs) * scale;
+    ctx.setLineDash([4,3]); ctx.strokeStyle = COL.neg; ctx.lineWidth = 2;
+    ctx.strokeRect(cx - bw/2, Y0 - h, bw, h); ctx.setLineDash([]);
+    ctx.fillStyle = COL.neg; ctx.font = '11px "Microsoft YaHei"'; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+    ctx.fillText('绝对值之和 ' + abs.toFixed(2) + ' J（错误）', cx, pad.t + ph + 6);
+    ctx.textBaseline = 'bottom'; ctx.font = 'bold 11px Consolas';
+    ctx.fillText('Δ = ' + (abs - P.Wt).toFixed(2) + ' J', cx, Y0 - h - 2);
+    addHot(cv, cx, Y0 - h/2, 'e5');
+  }
+  ctx.fillStyle = '#475569'; ctx.font = '11px "Microsoft YaHei"'; ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+  ctx.fillText('纵轴单位：J（正功向上、负功向下，支持力恒为 0）', pad.l, 2);
+}
+function drawZero1(){
+  const cv = $('c1zero'), {ctx, W, H} = prep(cv);
+  clearHots(cv);
+  const cases = [
+    {t:'① 无力', d:'F = 0', c:'k_disp'},
+    {t:'② 无位移', d:'x = 0', c:'k_disp'},
+    {t:'③ 垂直', d:'α = 90°', c:'r_zero'}
+  ];
+  const bw = (W - 30) / 3;
+  cases.forEach((c, i) => {
+    const x = 10 + i * bw, y = 14, h = H - 40;
+    const on = zeroCase === i + 1;
+    ctx.fillStyle = on ? '#eff6ff' : '#f8fafc';
+    ctx.strokeStyle = on ? COL.grav : '#cbd5e1';
+    ctx.lineWidth = on ? 2 : 1;
+    ctx.beginPath(); ctx.rect(x + 4, y, bw - 10, h); ctx.fill(); ctx.stroke();
+    // 小图
+    const cx = x + 4 + (bw - 10) / 2, cy = y + h * 0.55;
+    ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 1.5;
+    ctx.beginPath(); ctx.moveTo(x + 14, cy + 16); ctx.lineTo(x + bw - 14, cy + 16); ctx.stroke();
+    if (i === 0){
+      ctx.fillStyle = '#e2e8f0'; ctx.fillRect(cx - 12, cy - 10, 24, 20);
+      ctx.fillStyle = '#94a3b8'; ctx.font = '10px "Microsoft YaHei"'; ctx.textAlign = 'center';
+      ctx.fillText('无 F', cx, cy + 30);
+    } else if (i === 1){
+      ctx.fillStyle = '#fdba74'; ctx.fillRect(cx - 12, cy - 10, 24, 20);
+      ctx.strokeStyle = COL.pull; ctx.lineWidth = 2.5; ctx.beginPath();
+      ctx.moveTo(cx + 12, cy); ctx.lineTo(cx + 34, cy); ctx.stroke();
+      ctx.fillStyle = '#94a3b8'; ctx.font = '10px "Microsoft YaHei"'; ctx.textAlign = 'center';
+      ctx.fillText('推而不动', cx, cy + 30);
+    } else {
+      ctx.fillStyle = '#fdba74'; ctx.fillRect(cx - 12, cy - 10, 24, 20);
+      ctx.strokeStyle = COL.pull; ctx.lineWidth = 2.5; ctx.beginPath();
+      ctx.moveTo(cx, cy - 10); ctx.lineTo(cx, cy - 34); ctx.stroke();
+      ctx.strokeStyle = COL.pos; ctx.beginPath(); ctx.moveTo(cx, cy + 12); ctx.lineTo(cx + 34, cy + 12); ctx.stroke();
+      ctx.fillStyle = '#94a3b8'; ctx.font = '10px "Microsoft YaHei"'; ctx.textAlign = 'center';
+      ctx.fillText('F ⊥ x', cx, cy + 30);
+    }
+    ctx.fillStyle = on ? '#1d4ed8' : '#475569'; ctx.font = 'bold 12px "Microsoft YaHei"'; ctx.textAlign = 'center';
+    ctx.fillText(c.t, x + 4 + (bw - 10) / 2, y + 12);
+    ctx.fillStyle = '#64748b'; ctx.font = '11px Consolas';
+    ctx.fillText(c.d, x + 4 + (bw - 10) / 2, y + h - 18);
+    addHot(cv, x + 4 + (bw - 10) / 2, y + h / 2, c.c);
+  });
+  ctx.fillStyle = '#b91c1c'; ctx.font = '11px "Microsoft YaHei"'; ctx.textAlign = 'left';
+  ctx.fillText('W = 0 ⇔ F = 0 或 x = 0 或 cos α = 0', 10, H - 8);
+}
+function update1(){
+  const P = phys1();
+  $('roCos1').textContent = Math.cos(P.a).toFixed(3);
+  $('roFcos1').textContent = (P.F * Math.cos(P.a)).toFixed(3) + ' N';
+  $('roW1').textContent = P.Wp.toFixed(3) + ' J';
+  const vd = $('verdict1');
+  const w = P.Wp;
+  vd.className = 'verdict ' + (w > 1e-9 ? 'v-pos' : w < -1e-9 ? 'v-neg' : 'v-zero');
+  vd.innerHTML = Math.abs(w) < 1e-9
+    ? '<b>W = 0</b>　判据：' + (P.F < 1e-9 ? '<span style="color:#2563eb">F = 0</span>（无力）' : P.x < 1e-9 ? '<span style="color:#2563eb">x = 0</span>（无位移）' : '<span style="color:#2563eb">cos α = 0</span>（力与位移垂直）')
+    : '<b>W = ' + w.toFixed(3) + ' J</b>　' + (w > 0 ? 'α &lt; 90°，该力为<b>动力</b>，做正功' : 'α &gt; 90°，该力为<b>阻力</b>，做负功（也可说「克服该力做功 ' + Math.abs(w).toFixed(3) + ' J」）');
+  $('roWp').textContent = P.Wp.toFixed(3) + ' J';
+  $('roWg').textContent = P.Wg.toFixed(3) + ' J';
+  $('roWf').textContent = P.Wf.toFixed(3) + ' J';
+  $('roWn').textContent = '0.000 J';
+  $('roWt').textContent = P.Wt.toFixed(3) + ' J';
+  $('roFnet').textContent = P.Fnet.toFixed(3) + ' N';
+  const abs = Math.abs(P.Wp) + Math.abs(P.Wg) + Math.abs(P.Wf) + Math.abs(P.Wn);
+  $('outAbsSum').textContent = abs.toFixed(2) + ' J';
+  const err = relErr(P.Wt, P.Fnet * P.x);
+  $('sumInfo').className = absSumOn ? 'warn' : 'ok';
+  $('sumInfo').innerHTML = 'W<sub>总</sub> = ΣWᵢ = ' + P.Wt.toFixed(3) + ' J；合力法 W<sub>总</sub> = F<sub>合</sub>·x = ' +
+    (P.Fnet * P.x).toFixed(3) + ' J，相对误差 <b>' + fmtNum(err, 4) + '%</b>（两法等价）。' +
+    (absSumOn ? '　<b style="color:#b91c1c">绝对值之和 = ' + abs.toFixed(3) + ' J ≠ W<sub>总</sub>，差异 ' + (abs - P.Wt).toFixed(3) + ' J</b>。' : '');
+  drawVec1(); drawWA1(); drawBar1(); drawZero1();
+}
+
+/* ==========================================================================
+   ⑦-② 标签页②：斜面 DIS 实验与实时曲线
+   ========================================================================== */
+const sim2 = {
+  t:0, x:0, v:0, W:0, Wraw:0, Wprev:0, playing:false, lock:false,
+  noise:false, samples:[], acc:0, dtPhys:0.002, lastFrame:0,
+  pts:[{x:0,F:6},{x:0.6,F:16},{x:1.4,F:9},{x:2.2,F:19},{x:3.0,F:7}]
+};
+const TRACK2 = 3.0;   // 斜面可用长度（m）
+function fmode2(){ return $('selFmode2').value; }
+/** 变力 F(x)：控制点线性插值 */
+function interpPts(pts, x){
+  if (x <= pts[0].x) return pts[0].F;
+  for (let i = 1; i < pts.length; i++){
+    if (x <= pts[i].x){
+      const t = (x - pts[i-1].x) / (pts[i].x - pts[i-1].x || 1);
+      return pts[i-1].F + t * (pts[i].F - pts[i-1].F);
+    }
+  }
+  return pts[pts.length-1].F;
+}
+/** 变力模式的解析积分（分段线性精确值），乘 cos α 得有效功 */
+function analyticW2(x){
+  const a = Math.cos(RAD(S.inA2));
+  if (fmode2() === 'c') return S.inF2 * x * a;
+  const pts = sim2.pts; let s = 0;
+  for (let i = 1; i < pts.length; i++){
+    const x0 = pts[i-1].x, x1 = Math.min(pts[i].x, x);
+    if (x <= x0) break;
+    s += 0.5 * (pts[i-1].F + pts[i-1].F + (pts[i].F - pts[i-1].F) * (x1 - x0) / (pts[i].x - pts[i-1].x || 1)) * (x1 - x0);
+  }
+  return s * a;
+}
+function Fprof2(x){ return fmode2() === 'c' ? S.inF2 : interpPts(sim2.pts, x); }
+/** 单步物理积分（固定步长） */
+function step2(dt){
+  const m = S.inM2, th = RAD(S.inTh2), mu = S.inMu2, a = RAD(S.inA2);
+  const N = m * G * Math.cos(th), grav = m * G * Math.sin(th);
+  if (sim2.lock){ sim2.v = 0; return; }
+  const F0 = Fprof2(sim2.x), Feff0 = F0 * Math.cos(a);
+  let acc = 0;
+  if (Math.abs(sim2.v) < 1e-6 && Math.abs(Feff0 - grav) <= mu * N){ acc = 0; sim2.v = 0; }
+  else { const dv = sim2.v >= 0 ? 1 : -1; acc = (Feff0 - grav - dv * mu * N) / m; }
+  let vn = sim2.v + acc * dt;
+  let dx = 0.5 * (sim2.v + vn) * dt;
+  let xn = clamp(sim2.x + dx, 0, TRACK2);
+  dx = xn - sim2.x;
+  if (xn >= TRACK2 - 1e-9){ vn = 0; sim2.playing = false; }
+  const F1 = Fprof2(xn), Feff1 = F1 * Math.cos(a);
+  sim2.W += 0.5 * (Feff0 + Feff1) * dx;
+  sim2.x = xn; sim2.v = vn; sim2.t += dt;
+  return dx;
+}
+function resetSim2(){
+  sim2.t = 0; sim2.x = 0; sim2.v = 0; sim2.W = 0; sim2.Wraw = 0; sim2.acc = 0;
+  sim2.samples = []; sim2.playing = false; sim2.lastFrame = 0;
+  $('btnPlay2').textContent = '▶ 播放';
+  draw2();
+}
+function play2(on){
+  sim2.playing = on === undefined ? !sim2.playing : on;
+  $('btnPlay2').textContent = sim2.playing ? '⏸ 暂停' : '▶ 播放';
+}
+/** 采样（按采样率记录，含可选噪声） */
+function sample2(){
+  const sr = S.inSr2, dtS = 1 / sr;
+  sim2.acc += sim2.dtPhys;
+  if (sim2.acc < dtS) return;
+  sim2.acc = 0;
+  const a = RAD(S.inA2);
+  const F0 = Fprof2(sim2.x);
+  const nx = sim2.noise ? gauss() * 0.006 : 0;
+  const nF = sim2.noise ? gauss() * 0.6 : 0;
+  const nv = sim2.noise ? gauss() * 0.04 : 0;
+  const xr = Math.max(0, sim2.x + nx), Fr = Math.max(0, F0 + nF), vr = Math.max(0, sim2.v + nv);
+  const prev = sim2.samples.length ? sim2.samples[sim2.samples.length-1] : null;
+  if (prev){
+    const dxr = xr - prev.xr;
+    sim2.Wraw += 0.5 * (Fr * Math.cos(a) + prev.Fr * Math.cos(a)) * dxr;
+  }
+  sim2.samples.push({t:sim2.t, x:sim2.x, xr:xr, v:sim2.v, vr:vr, F:F0, Fr:Fr, W:sim2.W, Wr:sim2.Wraw,
+                     P:F0 * Math.cos(a) * sim2.v, Pr:Fr * Math.cos(a) * vr});
+  if (sim2.samples.length > 4000) sim2.samples.shift();
+}
+function drawScene2(){
+  const cv = $('c2scene'), {ctx, W, H} = prep(cv);
+  clearHots(cv);
+  const th = RAD(S.inTh2);
+  const x0 = 40, y0 = H - 56, L = W - 150;
+  const x1 = x0 + L * Math.cos(th), y1 = y0 - L * Math.sin(th);
+  // 斜面
+  ctx.beginPath(); ctx.moveTo(x0, y0); ctx.lineTo(x1, y1); ctx.lineTo(x1, y0); ctx.closePath();
+  ctx.fillStyle = '#f1f5f9'; ctx.fill(); ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 1.5; ctx.stroke();
+  ctx.fillStyle = '#64748b'; ctx.font = '10px "Microsoft YaHei"'; ctx.textAlign = 'left';
+  ctx.fillText('θ斜面 = ' + S.inTh2.toFixed(0) + '°', x0 + 6, y0 - 6);
+  // 滑轮
+  ctx.beginPath(); ctx.arc(x1 + 8, y1 - 8, 9, 0, 6.2832);
+  ctx.fillStyle = '#fff'; ctx.fill(); ctx.strokeStyle = '#64748b'; ctx.lineWidth = 1.5; ctx.stroke();
+  // 位移刻度
+  ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 1;
+  for (let s = 0; s <= TRACK2; s += 0.5){
+    const px = x0 + (s / TRACK2) * L * Math.cos(th), py = y0 - (s / TRACK2) * L * Math.sin(th);
+    ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(px - 6 * Math.sin(th), py - 6 * Math.cos(th)); ctx.stroke();
+  }
+  // 木块位置
+  const frac = clamp(sim2.x / TRACK2, 0, 1);
+  const bx = x0 + frac * L * Math.cos(th), by = y0 - frac * L * Math.sin(th);
+  ctx.save(); ctx.translate(bx, by); ctx.rotate(-th);
+  ctx.fillStyle = '#fdba74'; ctx.strokeStyle = '#ea580c'; ctx.lineWidth = 1.5;
+  ctx.fillRect(-18, -22, 36, 22); ctx.strokeRect(-18, -22, 36, 22);
+  ctx.fillStyle = '#7c2d12'; ctx.font = '11px "Microsoft YaHei"'; ctx.textAlign = 'center';
+  ctx.fillText('m=' + S.inM2.toFixed(1) + 'kg', 0, -7);
+  ctx.restore();
+  // 细线与力传感器
+  const a = RAD(S.inA2);
+  const fdir = -(th + a);       // 屏幕坐标（y 向下）
+  const flen = clamp(Fprof2(sim2.x) / 50 * 90, 0, 110);
+  const fx = bx + flen * Math.cos(fdir), fy = by + flen * Math.sin(fdir);
+  ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(x1 + 8, y1 - 8); ctx.stroke();
+  ctx.strokeStyle = COL.pull; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(fx, fy); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(fx, fy);
+  ctx.lineTo(fx - 10 * Math.cos(fdir - 0.36), fy - 10 * Math.sin(fdir - 0.36));
+  ctx.lineTo(fx - 10 * Math.cos(fdir + 0.36), fy - 10 * Math.sin(fdir + 0.36));
+  ctx.closePath(); ctx.fillStyle = COL.pull; ctx.fill();
+  ctx.fillStyle = COL.pull; ctx.font = '11px "Microsoft YaHei"'; ctx.textAlign = 'left';
+  ctx.fillText('力传感器 F = ' + Fprof2(sim2.x).toFixed(2) + ' N', fx + 4, fy - 2);
+  addHot(cv, fx, fy, 'k_work');
+  // 力的分解（沿斜面分量）
+  if (Math.abs(Math.cos(a)) > 1e-6){
+    const pl = flen * Math.cos(a);
+    const px2 = bx + pl * Math.cos(-th), py2 = by + pl * Math.sin(-th);
+    ctx.strokeStyle = COL.fit; ctx.lineWidth = 3.5;
+    ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(px2, py2); ctx.stroke();
+  }
+  // 受力：重力、摩擦力、支持力
+  const m = S.inM2, mu = S.inMu2;
+  ctx.lineWidth = 2;
+  ctx.strokeStyle = COL.grav; ctx.beginPath(); ctx.moveTo(bx, by); ctx.lineTo(bx, by + 44); ctx.stroke();
+  ctx.fillStyle = COL.grav; ctx.font = '10px "Microsoft YaHei"'; ctx.textAlign = 'center';
+  ctx.fillText('mg=' + (m*G).toFixed(1) + 'N', bx, by + 58);
+  const fdirv = Math.PI - th; // 沿斜面向下（屏幕）
+  const fL = clamp(mu * m * G * Math.cos(th) / 25 * 60, 0, 70);
+  if (fL > 1){
+    ctx.strokeStyle = COL.fric; ctx.beginPath();
+    ctx.moveTo(bx, by); ctx.lineTo(bx + fL * Math.cos(fdirv), by + fL * Math.sin(fdirv)); ctx.stroke();
+    ctx.fillStyle = COL.fric; ctx.textAlign = 'left';
+    ctx.fillText('f=' + (mu*m*G*Math.cos(th)).toFixed(1) + 'N', bx + fL * Math.cos(fdirv) + 2, by + fL * Math.sin(fdirv) + 10);
+  }
+  const ndir = -Math.PI/2 - th;
+  const nL = clamp(m * G * Math.cos(th) / 25 * 50, 0, 60);
+  ctx.strokeStyle = COL.norm; ctx.beginPath();
+  ctx.moveTo(bx, by); ctx.lineTo(bx + nL * Math.cos(ndir), by + nL * Math.sin(ndir)); ctx.stroke();
+  ctx.fillStyle = COL.norm; ctx.textAlign = 'right';
+  ctx.fillText('N（⊥位移，不做功）', bx + nL * Math.cos(ndir) - 2, by + nL * Math.sin(ndir) - 4);
+  addHot(cv, bx + nL * Math.cos(ndir), by + nL * Math.sin(ndir), 'r_zero');
+  // 读数框
+  ctx.fillStyle = 'rgba(255,255,255,.92)'; ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 1;
+  ctx.fillRect(W - 138, 8, 130, 92); ctx.strokeRect(W - 138, 8, 130, 92);
+  ctx.fillStyle = '#334155'; ctx.font = '11px Consolas'; ctx.textAlign = 'left';
+  const lines = ['t = ' + sim2.t.toFixed(2) + ' s', 'x = ' + sim2.x.toFixed(3) + ' m',
+                 'v = ' + sim2.v.toFixed(3) + ' m/s', 'α = ' + S.inA2.toFixed(0) + '°',
+                 'W = ' + sim2.W.toFixed(3) + ' J', 'P = ' + (Fprof2(sim2.x) * Math.cos(a) * sim2.v).toFixed(3) + ' W'];
+  lines.forEach((s, i) => ctx.fillText(s, W - 130, 26 + i * 14));
+  ctx.fillStyle = '#94a3b8'; ctx.font = '10px "Microsoft YaHei"';
+  ctx.fillText('采样率 ' + S.inSr2.toFixed(0) + ' Hz' + (sim2.noise ? ' · 噪声开' : ''), W - 130, 8 + 92 - 4);
+}
+function draw2(){
+  drawScene2();
+  const S2 = sim2.samples;
+  const a = Math.cos(RAD(S.inA2));
+  const win = S.inSm2 | 1;
+  // F–x
+  const fxData = [];
+  for (let xx = 0; xx <= TRACK2; xx += 0.05) fxData.push([xx, Fprof2(xx)]);
+  const ptsS = S2.map(s => [s.x, s.Fr]);
+  const smF = smooth(S2.map(s => s.Fr), win);
+  CH.fx.setSeries([
+    {name:'理论 F(x)', color:COL.theory, data:fxData, dash:[6,4], width:2, area:(fmode2()==='v'), fillColor:'rgba(22,163,74,.12)'},
+    {name:'实测点', color:COL.data, data:ptsS, point:true, line:false, pr:2.4},
+    {name:'平滑', color:COL.fit, data:S2.map((s,i) => [s.x, smF[i]]), width:1.8}
+  ]);
+  if (fmode2() === 'v') CH.fx.setHots(sim2.pts.map(p => ({x:p.x, y:p.F, card:'f_int'})));
+  else CH.fx.setHots([{x:TRACK2 * 0.5, y:S.inF2, card:'f_wfx'}]);
+  if (!CH.fx.userView) CH.fx.fit();
+  CH.fx.draw();
+  // W–x
+  const waData = [];
+  for (let xx = 0; xx <= TRACK2; xx += 0.05) waData.push([xx, analyticW2(xx)]);
+  CH.wx.setSeries([
+    {name:'W = ∫F·dx（累积）', color:COL.theory, data:S2.map(s => [s.x, s.W]), width:2.2},
+    {name:'解析值', color:COL.fit, data:waData, dash:[6,4], width:1.8},
+    {name:'含噪声累积', color:COL.data, data:S2.map(s => [s.x, s.Wr]), point:true, line:false, pr:2}
+  ]);
+  CH.wx.setHots([{x:Math.max(0.2, sim2.x), y:sim2.W, card:'f_int'}]);
+  if (!CH.wx.userView) CH.wx.fit();
+  CH.wx.draw();
+  // P–t
+  CH.pt2.setSeries([
+    {name:'P = Fv cos α', color:COL.pull, data:S2.map(s => [s.t, s.P]), width:2.2},
+    {name:'含噪声', color:COL.data, data:S2.map(s => [s.t, s.Pr]), point:true, line:false, pr:2}
+  ]);
+  if (!CH.pt2.userView) CH.pt2.fit();
+  CH.pt2.draw();
+  // v–t
+  CH.vt2.setSeries([
+    {name:'v（速度传感器）', color:COL.grav, data:S2.map(s => [s.t, s.v]), width:2.2},
+    {name:'含噪声', color:COL.data, data:S2.map(s => [s.t, s.vr]), point:true, line:false, pr:2}
+  ]);
+  if (!CH.vt2.userView) CH.vt2.fit();
+  CH.vt2.draw();
+  // P–v
+  const pvData = [];
+  const vmax = 5;
+  for (let vv = 0; vv <= vmax; vv += 0.05) pvData.push([vv, Fprof2(sim2.x) * a * vv]);
+  CH.pv2.setSeries([
+    {name:'实测 P–v', color:COL.data, data:S2.map(s => [s.v, s.P]), point:true, line:false, pr:2.4},
+    {name:'P = (F cos α)·v', color:COL.theory, data:pvData, dash:[6,4], width:2}
+  ]);
+  CH.pv2.setHots([{x:vmax * 0.6, y:Fprof2(sim2.x) * a * vmax * 0.6, card:'f_pfv'}]);
+  if (!CH.pv2.userView) CH.pv2.fit();
+  CH.pv2.draw();
+  // 读数
+  $('roF2').textContent = Fprof2(sim2.x).toFixed(2) + ' N';
+  $('roX2').textContent = sim2.x.toFixed(3) + ' m';
+  $('roV2').textContent = sim2.v.toFixed(3) + ' m/s';
+  $('roW2').textContent = sim2.W.toFixed(3) + ' J';
+  const wa = analyticW2(sim2.x);
+  $('roWa2').textContent = wa.toFixed(3) + ' J';
+  $('roErr2').textContent = sim2.x > 1e-6 ? fmtNum(relErr(sim2.W, wa), 3) + ' %' : '—';
+  $('roP2').textContent = (Fprof2(sim2.x) * a * sim2.v).toFixed(3) + ' W';
+  $('roArea2').textContent = sim2.W.toFixed(3) + ' J';
+  $('labTime2').textContent = 't = ' + sim2.t.toFixed(2) + ' s';
+  const msg = $('msg2');
+  if (fmode2() === 'v'){
+    msg.className = 'warn';
+    msg.innerHTML = '<b>变力模式</b>：F 随 x 变化，<b>不能</b>用 W = Fx cos α，只能用 W = ∫F·dx（F–x 图面积）。拖动 F–x 图上的控制点可改变 F(x)。' +
+      (sim2.noise ? '　噪声开启：原始累积 W = ' + sim2.Wraw.toFixed(3) + ' J，与真值差 ' + fmtNum(relErr(sim2.Wraw, sim2.W), 2) + '%。' : '');
+  } else {
+    msg.className = 'ok';
+    msg.innerHTML = '恒力模式：W(积分) = ' + sim2.W.toFixed(3) + ' J 与解析式 F·x·cos α = ' + wa.toFixed(3) +
+      ' J 的相对误差 <b>' + (sim2.x > 1e-6 ? fmtNum(relErr(sim2.W, wa), 3) : '0.000') + '%</b>（&lt;1%）。P–v 为过原点直线，斜率 = F cos α = ' + (Fprof2(sim2.x) * a).toFixed(2) + ' N。' +
+      (sim2.noise ? '　噪声开启：原始累积 ' + sim2.Wraw.toFixed(3) + ' J，差 ' + fmtNum(relErr(sim2.Wraw, sim2.W), 2) + '%。' : '');
+  }
+}
+/** 变力控制点拖动 */
+function bindFxDrag(){
+  const cv = $('c2fx');
+  let idx = -1;
+  cv.addEventListener('pointerdown', e => {
+    if (fmode2() !== 'v') return;
+    const r = cv.getBoundingClientRect(), px = e.clientX - r.left, py = e.clientY - r.top;
+    const T = CH.fx._tx();
+    let best = -1, bd = 1e9;
+    sim2.pts.forEach((p, i) => {
+      const dx = T.X(p.x) - px, dy = T.Y(p.F) - py, d = dx*dx + dy*dy;
+      if (d < bd){ bd = d; best = i; }
+    });
+    if (bd < 18*18){ idx = best; cv.setPointerCapture(e.pointerId); CH.fx.dragging = true; }
+  });
+  cv.addEventListener('pointermove', e => {
+    if (idx < 0) return;
+    const r = cv.getBoundingClientRect();
+    const d = CH.fx._toData(e.clientX - r.left, e.clientY - r.top);
+    sim2.pts[idx].x = clamp(d.x, idx === 0 ? 0 : sim2.pts[idx-1].x + 0.05,
+                            idx === sim2.pts.length-1 ? TRACK2 : sim2.pts[idx+1].x - 0.05);
+    sim2.pts[idx].F = clamp(d.F !== undefined ? d.F : d.y, 0, 50);
+    draw2();
+  });
+  cv.addEventListener('pointerup', () => { idx = -1; CH.fx.dragging = false; });
+}
+
+/* ==========================================================================
+   ⑦-③ 标签页③：功率 —— 平均与瞬时
+   ========================================================================== */
+let proc3 = {mode:'u', F:10, al:0, v:2, a:1, T:6};
+let secOn = false, tanOn = false, areaAnim = 0, areaTimer = null;
+function buildProc3(){
+  proc3.mode = $('selMode3').value;
+  proc3.F = S.inF3; proc3.al = S.inA3; proc3.v = S.inV3; proc3.a = S.inA3c; proc3.T = S.inT3;
+  const cs = Math.cos(RAD(proc3.al));
+  const N = 500, ts = [], xs = [], vs = [], Ws = [], Ps = [];
+  for (let i = 0; i <= N; i++){
+    const t = proc3.T * i / N;
+    let v, x;
+    if (proc3.mode === 'u'){ v = proc3.v; x = proc3.v * t; }
+    else { v = proc3.a * t; x = 0.5 * proc3.a * t * t; }
+    ts.push(t); vs.push(v); xs.push(x);
+    Ws.push(proc3.F * x * cs); Ps.push(proc3.F * v * cs);
+  }
+  proc3.ts = ts; proc3.xs = xs; proc3.vs = vs; proc3.Ws = Ws; proc3.Ps = Ps; proc3.cs = cs;
+}
+function Wof3(t){
+  const cs = proc3.cs;
+  if (proc3.mode === 'u') return proc3.F * proc3.v * t * cs;
+  return proc3.F * 0.5 * proc3.a * t * t * cs;
+}
+function Vof3(t){ return proc3.mode === 'u' ? proc3.v : proc3.a * t; }
+function Pof3(t){ return proc3.F * Vof3(t) * proc3.cs; }
+function draw3(){
+  buildProc3();
+  const ts = proc3.ts, Ws = proc3.Ws, Ps = proc3.Ps, vs = proc3.vs;
+  const t1 = Math.min(S.inT3a, S.inT3b), t2 = Math.max(S.inT3a, S.inT3b);
+  // W–t
+  const wtS = [{name:'W(t)', color:COL.grav, data:ts.map((t,i) => [t, Ws[i]]), width:2.4}];
+  if (secOn){
+    wtS.push({name:'割线（P̄）', color:COL.pos, data:[[t1, Wof3(t1)], [t2, Wof3(t2)]], width:2.2, dash:[6,4]});
+  }
+  if (tanOn){
+    const t0 = S.inT3c, P0 = Pof3(t0), w0 = Wof3(t0), span = Math.max(0.6, proc3.T * 0.18);
+    wtS.push({name:'切线（P）', color:COL.fit, data:[[t0 - span, w0 - P0 * span], [t0 + span, w0 + P0 * span]], width:2.2});
+  }
+  CH.wt.setSeries(wtS);
+  CH.wt.setMarks((secOn ? [{type:'v', at:t1, color:COL.pos, label:'t₁'}, {type:'v', at:t2, color:COL.pos, label:'t₂'}] : [])
+    .concat(tanOn ? [{type:'v', at:S.inT3c, color:COL.fit, label:'t₀'}] : []));
+  CH.wt.setHots([{x:proc3.T * 0.5, y:Wof3(proc3.T * 0.5), card:'r_graph'}]);
+  if (!CH.wt.userView) CH.wt.fit();
+  CH.wt.draw();
+  // P–t
+  const ptS = [{name:'P = Fv cos α', color:COL.pull, data:ts.map((t,i) => [t, Ps[i]]), width:2.4,
+                area:true, fillColor:'rgba(249,115,22,.16)'}];
+  if (areaAnim > 0){
+    const te = proc3.T * areaAnim;
+    ptS.push({name:'已积分区间', color:COL.grav, data:ts.filter(t => t <= te).map(t => [t, Pof3(t)]), width:3});
+  }
+  CH.pt3.setSeries(ptS);
+  if (!CH.pt3.userView) CH.pt3.fit();
+  CH.pt3.draw();
+  // v–t
+  CH.vt3.setSeries([{name:'v(t)', color:COL.grav, data:ts.map((t,i) => [t, vs[i]]), width:2.2}]);
+  if (!CH.vt3.userView) CH.vt3.fit();
+  CH.vt3.draw();
+  // 读数
+  const T = proc3.T;
+  $('roW3').textContent = Wof3(T).toFixed(3) + ' J';
+  $('roPavg3').textContent = (Wof3(T) / T).toFixed(3) + ' W';
+  $('roP3').textContent = Pof3(T).toFixed(3) + ' W';
+  $('roVend3').textContent = Vof3(T).toFixed(3) + ' m/s';
+  if (secOn){
+    const pb = (Wof3(t2) - Wof3(t1)) / Math.max(1e-9, t2 - t1);
+    $('roSec3').textContent = pb.toFixed(3) + ' W';
+    $('roSec3').title = '割线斜率';
+  } else $('roSec3').textContent = '—';
+  if (tanOn){
+    const t0 = S.inT3c, P0 = Pof3(t0);
+    const h = Math.max(1e-4, proc3.T / 500);
+    const num = (Wof3(t0 + h) - Wof3(t0 - h)) / (2 * h);
+    $('roTan3').textContent = P0.toFixed(3) + ' W';
+    $('roTan3').title = '数值导数 = ' + num.toFixed(3) + ' W';
+    const t0b = Math.max(1e-6, t0);
+    const pbar0 = Wof3(t0b) / t0b;                 // 0→t₀ 的平均功率
+    $('roRatio3').textContent = '切线数值导数误差 ' + fmtNum(relErr(num, P0), 3) + '%；P(t₀)/P̄(0→t₀) = ' +
+      (Math.abs(pbar0) > 1e-9 ? (P0 / pbar0).toFixed(3) : '—') +
+      '（' + (proc3.mode === 'a' ? '匀加速应为 2.000' : '匀速应为 1.000') + '）';
+  } else { $('roTan3').textContent = '—'; $('roRatio3').textContent = '—'; }
+  if (areaAnim > 0){
+    const te = proc3.T * areaAnim;
+    const N = 2000, arr = [];
+    for (let i = 0; i <= N; i++){ const t = te * i / N; arr.push(Pof3(t)); }
+    const ts2 = []; for (let i = 0; i <= N; i++) ts2.push(te * i / N);
+    const area = trapz(ts2, arr);
+    $('roArea3').textContent = area.toFixed(3) + ' J';
+    $('roAreaErr3').textContent = fmtNum(relErr(area, Wof3(te)), 3) + ' %';
+  } else { $('roArea3').textContent = '—'; $('roAreaErr3').textContent = '—'; }
+  // 结论提示
+  const msg = $('msg3');
+  if (proc3.mode === 'u'){
+    msg.className = 'ok';
+    msg.innerHTML = '匀速：P 恒定 ⇒ <b>P̄ = P</b>（割线斜率 = 切线斜率 = Fv cos α = ' + Pof3(T).toFixed(2) + ' W）。';
+  } else {
+    msg.className = 'warn';
+    msg.innerHTML = '匀加速：P(t) = F·at·cos α 线性增大，<b>P̄(0→t) = ½·P(t)</b> ⇒ 平均功率 ≠ 瞬时功率；' +
+      '且 P̄ = F·(v̄) 仅在此线性特例成立（v̄ = v/2）。';
+  }
+}
+function drawMotor3(){
+  const cv = $('c3motor'), {ctx, W, H} = prep(cv);
+  clearHots(cv);
+  const m = S.inMm3, v = S.inVm3;
+  const h = motorH;
+  // 支架与电动机
+  ctx.fillStyle = '#e2e8f0'; ctx.strokeStyle = '#64748b'; ctx.lineWidth = 1.5;
+  ctx.fillRect(18, 14, 74, 34); ctx.strokeRect(18, 14, 74, 34);
+  ctx.fillStyle = '#1e293b'; ctx.font = '11px "Microsoft YaHei"'; ctx.textAlign = 'center';
+  ctx.fillText('电动机 M', 55, 35);
+  ctx.beginPath(); ctx.arc(55, 62, 12, 0, 6.2832); ctx.fillStyle = '#fff'; ctx.fill(); ctx.stroke();
+  ctx.strokeStyle = '#64748b'; ctx.beginPath(); ctx.moveTo(55, 74); ctx.lineTo(55, H - 14 - 60); ctx.stroke();
+  // 砝码
+  const gy = H - 30 - Math.min(60, h * 30);
+  ctx.fillStyle = '#93c5fd'; ctx.strokeStyle = '#2563eb'; ctx.lineWidth = 1.5;
+  ctx.fillRect(45, gy, 22, 20); ctx.strokeRect(45, gy, 22, 20);
+  ctx.fillStyle = '#1e3a8a'; ctx.font = '10px "Microsoft YaHei"'; ctx.textAlign = 'center';
+  ctx.fillText(m.toFixed(1) + 'kg', 56, gy + 14);
+  // 速度箭头
+  ctx.strokeStyle = COL.pos; ctx.lineWidth = 2.5;
+  ctx.beginPath(); ctx.moveTo(78, gy + 10); ctx.lineTo(78, gy - 14); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(78, gy - 14); ctx.lineTo(74, gy - 7); ctx.lineTo(82, gy - 7); ctx.closePath();
+  ctx.fillStyle = COL.pos; ctx.fill();
+  ctx.fillStyle = COL.pos; ctx.font = '11px "Microsoft YaHei"'; ctx.textAlign = 'left';
+  ctx.fillText('v = ' + v.toFixed(2) + ' m/s', 84, gy - 8);
+  // 电表
+  ctx.fillStyle = '#fff'; ctx.strokeStyle = '#94a3b8';
+  ctx.fillRect(W - 150, 14, 136, 66); ctx.strokeRect(W - 150, 14, 136, 66);
+  ctx.fillStyle = '#334155'; ctx.font = '11px Consolas'; ctx.textAlign = 'left';
+  const U = S.inU3, I = S.inI3, R = S.inR3;
+  const rows = ['U = ' + U.toFixed(1) + ' V', 'I = ' + I.toFixed(2) + ' A',
+                'P电 = UI = ' + (U*I).toFixed(2) + ' W', 'P机 = mgv = ' + (m*G*v).toFixed(2) + ' W',
+                'η = ' + (U*I > 0 ? (m*G*v/(U*I)*100).toFixed(1) : '0') + ' %'];
+  rows.forEach((s, i) => ctx.fillText(s, W - 142, 30 + i * 12));
+  addHot(cv, 55, 35, 'k_eta');
+  ctx.fillStyle = '#475569'; ctx.font = '11px "Microsoft YaHei"'; ctx.textAlign = 'left';
+  ctx.fillText('匀速 ⇒ F = mg ⇒ P机 = mgv；h = ' + h.toFixed(2) + ' m', 18, H - 8);
+}
+let motorH = 0, motorPlay = false;
+function updateMotor3(){
+  const U = S.inU3, I = S.inI3, R = S.inR3, m = S.inMm3, v = S.inVm3;
+  const Pe = U * I, Pm = m * G * v, Ph = I * I * R;
+  $('roPe3').textContent = Pe.toFixed(2) + ' W';
+  $('roPm3').textContent = Pm.toFixed(2) + ' W';
+  $('roPh3').textContent = Ph.toFixed(2) + ' W（余量 ' + (Pe - Pm - Ph).toFixed(2) + ' W）';
+  $('roEta3').textContent = Pe > 0 ? (Pm / Pe * 100).toFixed(1) + ' %' : '—';
+  $('roH3').textContent = motorH.toFixed(2) + ' m';
+  const box = $('roEta3').parentNode;
+  if (Pe > 0 && Pm > Pe){
+    box.style.background = '#fef2f2'; box.style.borderColor = '#fca5a5'; box.style.color = '#b91c1c';
+    box.title = '输入电功率小于输出机械功率，违背能量守恒：请增大 U 或 I（η 必须 < 100%）';
+  } else { box.style.background = ''; box.style.borderColor = ''; box.style.color = ''; box.title = ''; }
+  drawMotor3();
+}
+
+/* ==========================================================================
+   ⑦-④ 标签页④：W–α 与 P–v 控制变量研究
+   ========================================================================== */
+let mode4 = 'A', data4 = [], fit4 = null, noise4 = false, wrong4 = false, scanTimer4 = null;
+const CV_TABLE = {
+  A:{fix:['拉力 F（锁定）','夹角 α（可预置，扫描时保持不变）'], chg:['速度 v（自动扫描 0→5 m/s）'], obs:['瞬时功率 P = Fv cos α'],
+     xl:'v / (m·s⁻¹)', yl:'P / W', concl:'P ∝ v，过原点直线，斜率 = F cos α'},
+  B:{fix:['速度 v（锁定）','取样时长 t（锁定）','拉力 F（锁定）'], chg:['夹角 α（自动扫描 0→180°）'], obs:['功 W = Fx cos α（x = vt）'],
+     xl:'α / (°)', yl:'W / J', concl:'W–α 为余弦曲线，α = 90° 为零点，α &gt; 90° 为负'},
+  C:{fix:['拉力 F（锁定）','夹角 α（锁定）'], chg:['位移 x（自动扫描 0→5 m）'], obs:['功 W = Fx cos α'],
+     xl:'x / m', yl:'W / J', concl:'W–x 为过原点直线，斜率 = F cos α'}
+};
+function setMode4(m){
+  mode4 = m; data4 = []; fit4 = null;
+  ['A','B','C'].forEach(k => toggleBtn($('btnM4' + k), k === m));
+  const c = CV_TABLE[m];
+  CH.m4.cfg.xl = c.xl; CH.m4.cfg.yl = c.yl; CH.m4.userView = false;
+  // 控制变量互锁：固定量禁用
+  const lock = id => { const el = $(id); el.classList.add('locked'); const inp = el.querySelector('input'); if (inp) inp.disabled = true; };
+  const free = id => { const el = $(id); el.classList.remove('locked'); const inp = el.querySelector('input'); if (inp) inp.disabled = false; };
+  ['ctlF4','ctlV4','ctlA4','ctlX4','ctlT4'].forEach(free);
+  if (m === 'A'){ lock('ctlF4'); lock('ctlV4'); }   // v 由扫描给出，与 B/C 一致地锁定
+  if (m === 'B'){ lock('ctlV4'); lock('ctlF4'); lock('ctlT4'); lock('ctlA4'); }
+  if (m === 'C'){ lock('ctlF4'); lock('ctlA4'); lock('ctlX4'); }
+  const tb = $('tblCV').querySelector('tbody');
+  tb.innerHTML = '<tr><td>固定量</td><td>' + c.fix.join('；') + '</td></tr>' +
+                 '<tr><td>变化量</td><td>' + c.chg.join('；') + '</td></tr>' +
+                 '<tr><td>观测量</td><td>' + c.obs.join('；') + '</td></tr>' +
+                 '<tr><td>预期结论</td><td>' + c.concl + '</td></tr>';
+  $('msg4').className = 'hint';
+  $('msg4').innerHTML = '模式 ' + m + '：' + c.concl + '。点「自动扫描」生成数据，再点「拟合」定量验证。';
+  draw4();
+}
+function y4val(u){
+  const F = S.inF4, al = RAD(S.inA4), cs = Math.cos(al);
+  let y;
+  if (mode4 === 'A') y = F * cs * u;                         // P = Fv cos α
+  else if (mode4 === 'B'){ const x = S.inV4 * S.inT4; y = F * x * Math.cos(RAD(u)); }  // W = Fx cos α
+  else y = F * cs * u;                                        // W = F cos α · x
+  if (noise4) y *= (1 + gauss() * 0.02);
+  return y;
+}
+function theory4(){
+  const F = S.inF4, al = RAD(S.inA4), cs = Math.cos(al), out = [];
+  if (mode4 === 'A'){ for (let v = 0; v <= 5; v += 0.05) out.push([v, F * cs * v]); }
+  else if (mode4 === 'B'){ const x = S.inV4 * S.inT4; for (let a = 0; a <= 180; a += 1) out.push([a, F * x * Math.cos(RAD(a))]); }
+  else { for (let x = 0; x <= 5; x += 0.05) out.push([x, F * cs * x]); }
+  return out;
+}
+function wrongCurve4(){
+  const F = S.inF4, cs = Math.cos(RAD(S.inA4)), out = [];
+  if (mode4 === 'A'){                    // 错误假设 P ∝ v²（在 v = 5 处与真值相等）
+    const k = F * cs / 5;
+    for (let v = 0; v <= 5; v += 0.05) out.push([v, k * v * v]);
+  } else if (mode4 === 'B'){             // 错误假设 |cos|（忽略正负）
+    const x = S.inV4 * S.inT4;
+    for (let a = 0; a <= 180; a += 1) out.push([a, F * x * Math.abs(Math.cos(RAD(a)))]);
+  } else {                               // 错误假设 W = Fx（忽略 cos α）
+    for (let x = 0; x <= 5; x += 0.05) out.push([x, F * x]);
+  }
+  return out;
+}
+function scan4(){
+  if (scanTimer4){ clearInterval(scanTimer4); scanTimer4 = null; }
+  data4 = []; fit4 = null;
+  const seq = [];
+  if (mode4 === 'A'){ for (let v = 0.1; v <= 5.0001; v += 0.1) seq.push(v); }
+  else if (mode4 === 'B'){ for (let a = 0; a <= 180; a += 2) seq.push(a); }
+  else { for (let x = 0.1; x <= 5.0001; x += 0.1) seq.push(x); }
+  if (STATIC){ seq.forEach(u => data4.push([u, y4val(u)])); doFit4(); draw4(); return; }
+  let i = 0;
+  scanTimer4 = setInterval(() => {
+    const chunk = 4;
+    for (let k = 0; k < chunk && i < seq.length; k++, i++) data4.push([seq[i], y4val(seq[i])]);
+    draw4();
+    if (i >= seq.length){ clearInterval(scanTimer4); scanTimer4 = null; doFit4(); draw4(); }
+  }, 24);
+}
+function doFit4(){
+  if (data4.length < 3){ fit4 = null; return; }
+  if (mode4 === 'B'){
+    let A = 0, B = 0, scc = 0, sss = 0;
+    data4.forEach(p => { const r = RAD(p[0]); scc += Math.cos(r) * Math.cos(r); sss += Math.sin(r) * Math.sin(r);
+      A += p[1] * Math.cos(r); B += p[1] * Math.sin(r); });
+    A /= (scc || 1); B /= (sss || 1);
+    const amp = Math.hypot(A, B), phi = DEG(Math.atan2(B, A));
+    const expect = S.inF4 * S.inV4 * S.inT4;
+    fit4 = {type:'cos', A:A, B:B, amp:amp, phi:phi, expect:expect, err:relErr(amp, expect),
+            data:data4.map(p => [p[0], A * Math.cos(RAD(p[0])) + B * Math.sin(RAD(p[0]))])};
+    $('roA4').textContent = amp.toFixed(3) + ' J（期望 Fx = ' + expect.toFixed(3) + ' J）';
+    $('roPhi4').textContent = phi.toFixed(2) + '°';
+    $('roK4').textContent = '—'; $('roKerr4').textContent = fmtNum(fit4.err, 3) + ' %';
+  } else {
+    let sxy = 0, sxx = 0;
+    data4.forEach(p => { sxy += p[0] * p[1]; sxx += p[0] * p[0]; });
+    const k = sxy / (sxx || 1);
+    const expect = S.inF4 * Math.cos(RAD(S.inA4));
+    fit4 = {type:'line', k:k, expect:expect, err:relErr(k, expect),
+            data:[[0,0],[Math.max.apply(null, data4.map(p=>p[0])), k * Math.max.apply(null, data4.map(p=>p[0]))]]};
+    $('roK4').textContent = k.toFixed(3) + (mode4 === 'A' ? ' N' : ' N');
+    $('roKerr4').textContent = fmtNum(fit4.err, 3) + ' %';
+    $('roA4').textContent = '—'; $('roPhi4').textContent = '—';
+  }
+  $('roN4').textContent = String(data4.length);
+}
+function draw4(){
+  const ser = [
+    {name:'理论曲线', color:COL.theory, data:theory4(), dash:[6,4], width:2},
+    {name:'扫描数据点', color:COL.data, data:data4, point:true, line:false, pr:2.6}
+  ];
+  if (fit4) ser.push({name:'拟合结果', color:COL.fit, data:fit4.data, width:2.2});
+  if (wrong4) ser.push({name:'错误假设', color:COL.wrong, data:wrongCurve4(), dash:[3,3], width:1.8});
+  const marks = [], hots = [], bands = [];
+  if (mode4 === 'B'){
+    marks.push({type:'v', at:90, color:COL.zero, label:'α = 90° ⇒ W = 0'});
+    bands.push({x0:90, x1:180, color:'#fef2f2'});
+    hots.push({x:90, y:0, card:'r_zero'}, {x:180, y:-S.inF4 * S.inV4 * S.inT4, card:'k_scalar'});
+  }
+  if (mode4 === 'A') hots.push({x:2.5, y:S.inF4 * Math.cos(RAD(S.inA4)) * 2.5, card:'f_pfv'});
+  if (mode4 === 'C') hots.push({x:2.5, y:S.inF4 * Math.cos(RAD(S.inA4)) * 2.5, card:'m_lin'});
+  CH.m4.setBands(bands); CH.m4.setSeries(ser); CH.m4.setMarks(marks); CH.m4.setHots(hots);
+  if (!CH.m4.userView) CH.m4.fit();
+  CH.m4.draw();
+  $('roN4').textContent = String(data4.length);
+  if (fit4){
+    if (mode4 === 'A'){
+      $('msg4').className = Math.abs(fit4.err) < 2 ? 'ok' : 'warn';
+      $('msg4').innerHTML = 'P–v 拟合斜率 k = <b>' + fit4.k.toFixed(3) + '</b>，与 F cos α = ' + fit4.expect.toFixed(3) +
+        ' 的相对误差 <b>' + fmtNum(fit4.err, 3) + '%</b>（&lt;2%）。结论：<b>P ∝ v，斜率即力沿速度方向的分量</b>。' +
+        (wrong4 ? '　红色虚线为错误假设 P ∝ v²，明显偏离直线。' : '');
+    } else if (mode4 === 'B'){
+      $('msg4').className = Math.abs(fit4.err) < 2 ? 'ok' : 'warn';
+      $('msg4').innerHTML = 'W–α 拟合为余弦曲线：振幅 <b>' + fit4.amp.toFixed(3) + ' J</b>（期望 Fx = ' + fit4.expect.toFixed(3) +
+        ' J，误差 ' + fmtNum(fit4.err, 3) + '%），相位 φ = ' + fit4.phi.toFixed(2) + '°（理想为 0°）。<b>α = 90° 为零点</b>。' +
+        (wrong4 ? '　红色虚线为错误假设 |cos α|（忽略负功）。' : '');
+    } else {
+      $('msg4').className = Math.abs(fit4.err) < 2 ? 'ok' : 'warn';
+      $('msg4').innerHTML = 'W–x 拟合斜率 k = <b>' + fit4.k.toFixed(3) + ' N</b>，与 F cos α = ' + fit4.expect.toFixed(3) +
+        ' N 的相对误差 <b>' + fmtNum(fit4.err, 3) + '%</b>。结论：<b>W–x 直线斜率 = F cos α</b>。' +
+        (wrong4 ? '　红色虚线为错误假设 W = Fx（忽略夹角）。' : '');
+    }
+  }
+}
+
+/* ==========================================================================
+   ⑦-⑤ 标签页⑤：机车两类启动
+   ========================================================================== */
+let out5 = null, wrong5 = false, cmp5 = true, anim5 = 0, animTimer5 = null;
+function res5(v){
+  const f0 = S.inf0_5, k = S.inK5;
+  return $('selRes5').value === 'k' ? f0 + k * v : f0;
+}
+function vmaxTheory(){
+  const P0 = S.inP5 * 1000, f0 = S.inf0_5, k = S.inK5;
+  if ($('selRes5').value === 'k' && k > 0){
+    return (-f0 + Math.sqrt(f0 * f0 + 4 * k * P0)) / (2 * k);
+  }
+  return f0 > 0 ? P0 / f0 : Infinity;
+}
+/** 固定步长积分仿真（a = (F − f)/m） */
+function runMode(mode){
+  const m = S.inMm5, P0 = S.inP5 * 1000, F1 = S.inF5, Fmax = S.inFmax5;
+  const dt = 0.005, T = S.inT5, N = Math.round(T / dt);
+  const t = [], v = [], F = [], P = [], a = [];
+  let vv = 0, ts = 0, sw = null;
+  for (let i = 0; i <= N; i++){
+    let Fv;
+    if (mode === 'P'){ Fv = Math.min(Fmax, P0 / Math.max(vv, 0.05)); }
+    else {
+      if (vv * F1 < P0){ Fv = F1; }
+      else { if (sw === null) sw = {t:ts, v:vv}; Fv = Math.min(F1, P0 / Math.max(vv, 0.05)); }
+    }
+    const rr = res5(vv);
+    const aa = (Fv - rr) / m;
+    t.push(ts); v.push(vv); F.push(Fv); P.push(Math.min(P0, Fv * vv)); a.push(aa);
+    vv = Math.max(0, vv + aa * dt);
+    ts += dt;
+  }
+  return {t:t, v:v, F:F, P:P, a:a, sw:sw, vEnd:v[v.length-1], a0:a[0]};
+}
+function runSim5(){
+  out5 = {P:runMode('P'), F:runMode('F')};
+  const cur = $('selM5').value === 'P' ? out5.P : out5.F;
+  const vt = vmaxTheory();
+  $('roVmax5').textContent = isFinite(vt) ? vt.toFixed(3) + ' m/s' : '—';
+  $('roVend5').textContent = cur.vEnd.toFixed(3) + ' m/s';
+  $('roVerr5').textContent = fmtNum(relErr(cur.vEnd, vt), 3) + ' %';
+  $('roTs5').textContent = cur.sw ? cur.sw.t.toFixed(2) + ' s' : '（恒功率全程无分界）';
+  $('roVs5').textContent = cur.sw ? cur.sw.v.toFixed(2) + ' m/s' : '—';
+  $('roA05').textContent = cur.a0.toFixed(3) + ' m/s²';
+  const msg = $('msg5');
+  if ($('selM5').value === 'P'){
+    msg.className = 'ok';
+    msg.innerHTML = '恒定功率：F = P/v 随 v 增大而<b>减小</b> ⇒ a = (F−f)/m <b>单调减小至 0</b>；末速 ' +
+      cur.vEnd.toFixed(3) + ' m/s 与 v<sub>max</sub> = P<sub>额</sub>/f = ' + vt.toFixed(3) +
+      ' m/s 的相对误差 <b>' + fmtNum(relErr(cur.vEnd, vt), 3) + '%</b>（&lt;3%）。' +
+      (S.inK5 > 0 && $('selRes5').value === 'k' ? '（含空气阻力 f = f₀ + kv，v<sub>max</sub> 由 kv² + f₀v − P = 0 解出）' : '');
+  } else {
+    msg.className = 'ok';
+    msg.innerHTML = '恒定牵引力：a = (F−f)/m = ' + cur.a0.toFixed(3) + ' m/s² <b>恒定</b>（匀加速），P = Fv <b>线性增大</b>；' +
+      (cur.sw ? '在 t = ' + cur.sw.t.toFixed(2) + ' s、v = ' + cur.sw.v.toFixed(2) + ' m/s 处 P 达额定值，转入恒功率阶段（a 减小）。' : '本次时长内未达额定功率。');
+  }
+  draw5();
+}
+function wrongCurve5(){
+  const cur = $('selM5').value === 'P' ? out5.P : out5.F;
+  const m = S.inMm5, F1 = S.inF5, f0 = S.inf0_5, P0 = S.inP5 * 1000;
+  const T = S.inT5, out = [];
+  if ($('selM5').value === 'P'){
+    const a0 = (Math.min(S.inFmax5, P0 / 0.05) - f0) / m;
+    for (let t = 0; t <= T; t += 0.05) out.push([t, Math.min(a0 * t, vmaxTheory() || 1e9)]);
+  } else {
+    const a0 = (F1 - f0) / m;
+    for (let t = 0; t <= T; t += 0.05) out.push([t, a0 * t]);
+  }
+  return out;
+}
+function draw5(){
+  if (!out5) return;
+  const mode = $('selM5').value;
+  const cur = mode === 'P' ? out5.P : out5.F;
+  const oth = mode === 'P' ? out5.F : out5.P;
+  // 动画播放头：anim5 ∈ (0,1) 时只绘制到 t = T·anim5，并标出当前时刻
+  const animating = anim5 > 0 && anim5 < 1;
+  const tNow = anim5 * S.inT5;
+  // zip：按"时间"截断，用于 v–t / F–t / P–t / 对比图
+  const zip = (xs, ys) => {
+    const o = [];
+    for (let i = 0; i < xs.length; i++){ if (animating && xs[i] > tNow) break; o.push([xs[i], ys[i]]); }
+    return o;
+  };
+  // ph：按"当前时刻的索引"截断，用于 F–v 相图（横轴是 v 不是 t，不能与 tNow 比较）
+  const ph = (xs, ys) => {
+    const n = animating ? Math.max(1, iNow) : xs.length, o = [];
+    for (let i = 0; i < n; i++) o.push([xs[i], ys[i]]);
+    return o;
+  };
+  let iNow = 0;
+  if (animating){
+    for (let i = 0; i < cur.t.length; i++){ if (cur.t[i] > tNow){ iNow = i; break; } iNow = i; }
+  }
+  // 曲线上"当前时刻"所在的样本下标（与时间图最后一点对齐）
+  const iLast = animating ? Math.max(0, iNow - 1) : cur.t.length - 1;
+  const vt = vmaxTheory();
+  // v–t
+  const sv = [{name:mode === 'P' ? '恒功率 v–t' : '恒牵引力 v–t', color: mode === 'P' ? COL.pull : COL.grav,
+               data: zip(cur.t, cur.v), width:2.4}];
+  if (cmp5) sv.push({name:mode === 'P' ? '恒牵引力 v–t' : '恒功率 v–t', color: mode === 'P' ? COL.grav : COL.pull,
+               data: zip(oth.t, oth.v), width:1.8, dash:[5,4]});
+  if (wrong5) sv.push({name:'错误：匀加速', color:COL.wrong,
+               data: wrongCurve5().filter(p => !animating || p[0] <= tNow), dash:[3,3], width:1.8});
+  if (animating) sv.push({name:'当前时刻', color:COL.fit, data:[[tNow, cur.v[iLast]]], point:true, line:false, pr:5});
+  CH.vt5.setSeries(sv);
+  CH.vt5.setMarks((cur.sw ? [{type:'v', at:cur.sw.t, color:COL.fric, label:'P = P额'}] : [])
+    .concat(isFinite(vt) ? [{type:'h', at:vt, color:COL.zero, label:'v_max = P额/f'}] : [])
+    .concat(animating ? [{type:'v', at:tNow, color:COL.fit, label:'t = ' + tNow.toFixed(1) + ' s'}] : []));
+  CH.vt5.setHots(isFinite(vt) ? [{x:S.inT5 * 0.8, y:vt, card:'f_vmax'}] : []);
+  if (!CH.vt5.userView) CH.vt5.fit();
+  CH.vt5.draw();
+  // F–t
+  CH.ft5.setSeries([{name:'牵引力 F', color:mode === 'P' ? COL.pull : COL.grav, data:zip(cur.t, cur.F), width:2.4}]
+    .concat(cmp5 ? [{name:'另一模式', color:mode === 'P' ? COL.grav : COL.pull, data:zip(oth.t, oth.F), width:1.8, dash:[5,4]}] : [])
+    .concat(animating ? [{name:'当前时刻', color:COL.fit, data:[[tNow, cur.F[iLast]]], point:true, line:false, pr:5}] : []));
+  CH.ft5.setMarks([{type:'h', at:S.inf0_5, color:COL.zero, label:'阻力 f'}]
+    .concat(cur.sw ? [{type:'v', at:cur.sw.t, color:COL.fric, label:'分界'}] : [])
+    .concat(animating ? [{type:'v', at:tNow, color:COL.fit, label:'t = ' + tNow.toFixed(1) + ' s'}] : []));
+  CH.ft5.setHots([{x:S.inT5 * 0.9, y:S.inf0_5, card:'e10'}]);
+  if (!CH.ft5.userView) CH.ft5.fit();
+  CH.ft5.draw();
+  // P–t
+  CH.pt5.setSeries([{name:'实际功率 P', color:mode === 'P' ? COL.pull : COL.grav, data:zip(cur.t, cur.P.map(p => p/1000)), width:2.4,
+      area:true, fillColor:'rgba(249,115,22,.12)'}]
+    .concat(cmp5 ? [{name:'另一模式', color:mode === 'P' ? COL.grav : COL.pull, data:zip(oth.t, oth.P.map(p => p/1000)), width:1.8, dash:[5,4]}] : []));
+  CH.pt5.setMarks([{type:'h', at:S.inP5, color:COL.fric, label:'P额 = ' + S.inP5 + ' kW'}]
+    .concat(cur.sw ? [{type:'v', at:cur.sw.t, color:COL.fric, label:'达额定'}] : [])
+    .concat(animating ? [{type:'v', at:tNow, color:COL.fit, label:'t = ' + tNow.toFixed(1) + ' s'}] : []));
+  if (!CH.pt5.userView) CH.pt5.fit();
+  CH.pt5.draw();
+  // F–v
+  const hyp = [];
+  const vtop = Math.max(1, cur.vEnd * 1.1);
+  for (let v = Math.max(0.2, vtop / 200); v <= vtop; v += vtop / 200) hyp.push([v, Math.min(S.inFmax5, S.inP5 * 1000 / v)]);
+  CH.fv5.setSeries([{name:'F–v 实测', color:mode === 'P' ? COL.pull : COL.grav, data:ph(cur.v, cur.F), width:2.4},
+    {name:'F = P额/v（等轴双曲线）', color:COL.theory, data:hyp, dash:[6,4], width:1.8},
+    {name:'阻力 f', color:COL.zero, data:[[0, S.inf0_5], [vtop, res5(vtop)]], width:1.6}]
+    .concat(animating ? [{name:'当前时刻', color:COL.fit, data:[[cur.v[iLast], cur.F[iLast]]], point:true, line:false, pr:5}] : []));
+  CH.fv5.setHots([{x:Math.max(1, vtop * 0.4), y:S.inP5 * 1000 / Math.max(1, vtop * 0.4), card:'a_car'}]);
+  if (!CH.fv5.userView) CH.fv5.fit();
+  CH.fv5.draw();
+  // 并列对比图
+  CH.cmp5.setSeries([
+    {name:'恒功率启动', color:COL.pull, data:zip(out5.P.t, out5.P.v), width:2.4},
+    {name:'恒牵引力启动', color:COL.grav, data:zip(out5.F.t, out5.F.v), width:2.4}
+  ]);
+  CH.cmp5.setMarks((isFinite(vt) ? [{type:'h', at:vt, color:COL.zero, label:'共同 v_max'}] : [])
+    .concat(animating ? [{type:'v', at:tNow, color:COL.fit, label:'t = ' + tNow.toFixed(1) + ' s'}] : []));
+  if (!CH.cmp5.userView) CH.cmp5.fit();
+  CH.cmp5.draw();
+}
+
+/* ==========================================================================
+   ⑦-⑥ 标签页⑥：练习考核 + 数据记录
+   ========================================================================== */
+let logRows = [], quizAns = [], quizOrder = [], teacher6 = false;
+function renderQuiz6(){
+  const box = $('quizBox');
+  quizOrder = QUIZ.map((q, i) => i);
+  if (teacher6) quizOrder.sort(() => Math.random() - 0.5);
+  quizAns = new Array(QUIZ.length).fill(null);
+  box.innerHTML = '';
+  quizOrder.forEach((qi, pos) => {
+    const q = QUIZ[qi];
+    const d = document.createElement('div');
+    d.className = 'qbox';
+    d.innerHTML = '<div class="q">' + (pos + 1) + '. ' + q.q + '</div>';
+    q.opts.forEach((o, oi) => {
+      const b = document.createElement('button');
+      b.className = 'opt'; b.type = 'button';
+      b.setAttribute('role', 'radio'); b.setAttribute('aria-label', o);
+      b.innerHTML = '<span class="mono">' + 'ABCD'[oi] + '</span>. ' + o;
+      b.onclick = () => {
+        quizAns[qi] = oi;
+        Array.prototype.slice.call(d.querySelectorAll('.opt')).forEach(x => x.classList.remove('sel'));
+        b.classList.add('sel');
+      };
+      d.appendChild(b);
+    });
+    const fb = document.createElement('div');
+    fb.className = 'small'; fb.style.marginTop = '4px'; fb.id = 'fb' + qi;
+    d.appendChild(fb);
+    box.appendChild(d);
+  });
+}
+function submitQuiz6(){
+  let right = 0;
+  const tb = $('tblScore').querySelector('tbody');
+  tb.innerHTML = '';
+  quizOrder.forEach((qi, pos) => {
+    const q = QUIZ[qi], my = quizAns[qi];
+    const ok = my === q.a;
+    if (ok) right++;
+    const box = $('quizBox').children[pos];
+    Array.prototype.slice.call(box.querySelectorAll('.opt')).forEach((b, oi) => {
+      b.classList.remove('sel');
+      if (teacher6) { /* 教师模式：提交后仍可显示对错 */ }
+      if (oi === q.a) b.classList.add('right');
+      else if (oi === my) b.classList.add('bad');
+    });
+    const fb = $('fb' + qi);
+    fb.innerHTML = (ok ? '<span style="color:#15803d">✔ 正确。</span>' : '<span style="color:#b91c1c">✘ 错误。</span>') +
+      ' ' + q.exp + ' <button class="sm" onclick="openCard(\'' + q.card + '\')">查看卡片</button>';
+    const tr = document.createElement('tr');
+    tr.innerHTML = '<td>' + (pos + 1) + '</td><td>' + ['功的标量性','不做功判据','摩擦力做功','总功代数和','平均/瞬时功率','恒功率启动'][qi] +
+      '</td><td>' + (my === null ? '未答' : 'ABCD'[my]) + '</td><td style="color:' + (ok ? '#15803d' : '#b91c1c') + '">' + (ok ? '✔' : '✘') + '</td>';
+    tb.appendChild(tr);
+  });
+  const sc = $('score6');
+  sc.style.display = 'block';
+  sc.innerHTML = '得分：<b>' + right + ' / ' + QUIZ.length + '</b>　（答错可点「查看卡片」跳转对应知识点）';
+  if (teacher6) logRows.push(['测验', '', '', '', '', '', '', '', '', '', '', '', '得分 ' + right + '/' + QUIZ.length]);
+}
+const TAB_COLOR = {'①':'#2563eb','②':'#f97316','③':'#16a34a','④':'#7c3aed','⑤':'#dc2626','⑥':'#0891b2'};
+function addLog(rec){
+  logRows.push(rec);
+  const tb = $('tblLog').querySelector('tbody');
+  const tr = document.createElement('tr');
+  rec.forEach((c, i) => {
+    const td = document.createElement('td'); td.textContent = c;
+    if (i === 0){ td.style.color = TAB_COLOR[String(c).charAt(0)] || '#334155'; td.style.fontWeight = '600'; }
+    tr.appendChild(td);
+  });
+  tb.appendChild(tr);
+}
+/** 导出当前标签页各图的曲线数据 */
+function exportChartData(){
+  const map = {
+    1: [['W–α 图', CH.wa]],
+    2: [['F–x 图', CH.fx], ['W–x 图', CH.wx], ['P–t 图', CH.pt2], ['v–t 图', CH.vt2], ['P–v 图', CH.pv2]],
+    3: [['W–t 图', CH.wt], ['P–t 图', CH.pt3], ['v–t 图', CH.vt3]],
+    4: [['主图（模式' + mode4 + '）', CH.m4]],
+    5: [['v–t 图', CH.vt5], ['F–t 图', CH.ft5], ['P–t 图(kW)', CH.pt5], ['F–v 图', CH.fv5], ['对比 v–t 图', CH.cmp5]]
+  };
+  const rows = [['图', '系列', 'x', 'y']];
+  (map[S.tab] || []).forEach(pair => {
+    const ch = pair[1];
+    if (!ch) return;
+    (ch.series || []).forEach(s => {
+      (s.data || []).forEach(p => rows.push([pair[0], s.name || '', p[0], p[1]]));
+    });
+  });
+  if (rows.length < 2){ alert('当前页没有可导出的曲线数据。'); return; }
+  downloadCSV('模型42_图数据_标签' + S.tab + '.csv', rows);
+}
+function currentLog(){
+  const t = S.tab;
+  if (t === 1){
+    const P = phys1();
+    return ['① 功的定义', P.F.toFixed(2), P.x.toFixed(3), S.inA1.toFixed(0), '—', '—',
+            P.Wp.toFixed(3), '—', '—', P.Wt.toFixed(3), '—', '—', '斜面 m=' + S.inM1 + ' θ=' + S.inTh1 + '° μ=' + S.inMu1];
+  }
+  if (t === 2){
+    const wa = analyticW2(sim2.x);
+    return ['② DIS ' + (fmode2() === 'c' ? '恒力' : '变力'), Fprof2(sim2.x).toFixed(2), sim2.x.toFixed(3), S.inA2.toFixed(0),
+            sim2.v.toFixed(3), sim2.t.toFixed(2), sim2.W.toFixed(3), (sim2.t > 0 ? (sim2.W / sim2.t).toFixed(3) : '—'),
+            (Fprof2(sim2.x) * Math.cos(RAD(S.inA2)) * sim2.v).toFixed(3), '—', '—',
+            (sim2.x > 1e-6 ? fmtNum(relErr(sim2.W, wa), 3) + '%' : '—'), (sim2.noise ? '噪声开' : '') + ' 采样' + S.inSr2 + 'Hz'];
+  }
+  if (t === 3){
+    const T = proc3.T || S.inT3;
+    return ['③ 功率过程', S.inF3.toFixed(2), '—', S.inA3.toFixed(0), Vof3(T).toFixed(3), T.toFixed(2),
+            Wof3(T).toFixed(3), (Wof3(T) / T).toFixed(3), Pof3(T).toFixed(3), '—', '—', '—',
+            proc3.mode === 'u' ? '匀速' : '匀加速 a=' + S.inA3c];
+  }
+  if (t === 4){
+    return ['④ 模式' + mode4, S.inF4.toFixed(2), (mode4 === 'B' ? (S.inV4 * S.inT4).toFixed(3) : '—'), S.inA4.toFixed(0),
+            S.inV4.toFixed(3), S.inT4.toFixed(2), '—', '—', '—', '—',
+            (fit4 ? (mode4 === 'B' ? 'A=' + fit4.amp.toFixed(3) : 'k=' + fit4.k.toFixed(3)) : '—'),
+            (fit4 ? fmtNum(fit4.err, 3) + '%' : '—'), CV_TABLE[mode4].concl];
+  }
+  if (t === 5){
+    const cur = $('selM5').value === 'P' ? out5.P : out5.F;
+    return ['⑤ ' + ($('selM5').value === 'P' ? '恒功率' : '恒牵引力'), S.inF5.toFixed(0), '—', '—',
+            cur.vEnd.toFixed(3), S.inT5.toFixed(0), '—', '—', (cur.P[cur.P.length-1]).toFixed(0), '—',
+            'v_max=' + vmaxTheory().toFixed(3), fmtNum(relErr(cur.vEnd, vmaxTheory()), 3) + '%',
+            'P额=' + S.inP5 + 'kW f=' + S.inf0_5 + 'N'];
+  }
+  return ['—','','','','','','','','','','','',''];
+}
+function invTool(){
+  const o = $('invOut');
+  o.style.display = 'block';
+  let s = '<b>反推工具</b><br>';
+  if (fit4 && mode4 === 'A'){
+    const al = RAD(S.inA4);
+    s += '由 P–v 斜率 k = ' + fit4.k.toFixed(3) + ' 反推 F = k / cos α = <b>' + (fit4.k / Math.max(1e-6, Math.cos(al))).toFixed(3) + ' N</b>（设定值 ' + S.inF4.toFixed(2) + ' N）。<br>';
+  } else s += '（切换到模式 A 并拟合后可用「由 P–v 斜率反推 F」）<br>';
+  if (fit4 && mode4 === 'B'){
+    const x = S.inV4 * S.inT4;
+    s += '由 W–α 拟合振幅 A = ' + fit4.amp.toFixed(3) + ' J 与相位 φ = ' + fit4.phi.toFixed(2) + '° 得 F·x = ' + fit4.amp.toFixed(3) +
+      ' J ⇒ F = <b>' + (fit4.amp / Math.max(1e-6, x)).toFixed(3) + ' N</b>（设定值 ' + S.inF4.toFixed(2) + ' N，x = vt = ' + x.toFixed(3) + ' m）。';
+  } else s += '（切换到模式 B 并拟合后可反推振幅与相位）';
+  o.innerHTML = s;
+}
+
+/* ==========================================================================
+   ⑧ 知识卡片库 / 教学引导 / 热点
+   ========================================================================== */
+let cardIdx = 0, cardView = [], pinned = {}, curCardId = null, flipOn = false;
+function cardCats(){ const s = ['全部']; KNOWLEDGE_CARDS.forEach(c => { if (s.indexOf(c.cat) < 0) s.push(c.cat); }); return s; }
+let curCat = '全部';
+function renderCats(){
+  const box = $('cattabs');
+  box.innerHTML = '';
+  cardCats().forEach(c => {
+    const b = document.createElement('button');
+    b.className = 'sm' + (c === curCat ? ' on' : '');
+    b.textContent = c;
+    b.onclick = () => { curCat = c; renderCats(); renderCardList(); };
+    box.appendChild(b);
+  });
+}
+function filteredCards(){
+  const kw = ($('cardSearch').value || '').trim().toLowerCase();
+  return KNOWLEDGE_CARDS.filter(c => {
+    if (curCat !== '全部' && c.cat !== curCat) return false;
+    if (!kw) return true;
+    return (c.title + c.conc + c.formula + c.demo + (c.warn||'') + (c.back||'')).toLowerCase().indexOf(kw) >= 0;
+  });
+}
+function renderCardList(){
+  cardView = filteredCards();
+  const box = $('cardList');
+  box.innerHTML = '';
+  $('cardCount').textContent = '共 ' + KNOWLEDGE_CARDS.length + ' 张（当前 ' + cardView.length + '）';
+  cardView.forEach((c, i) => {
+    const d = document.createElement('div');
+    d.className = 'mini'; d.tabIndex = 0; d.setAttribute('role', 'button');
+    d.setAttribute('aria-label', c.cat + '：' + c.title + '，按 Enter 打开');
+    d.innerHTML = '<div class="t">' + (pinned[c.id] ? '📌 ' : '') + '<span class="tag">' + c.cat + '</span>' + c.title + '</div>' +
+                  '<div class="c">' + c.conc + '</div>';
+    d.onclick = () => openCard(c.id, i);
+    d.onkeydown = e => { if (e.key === 'Enter' || e.key === ' '){ e.preventDefault(); openCard(c.id, i); } };
+    box.appendChild(d);
+  });
+}
+function openCard(id, idx){
+  const card = KNOWLEDGE_CARDS.filter(c => c.id === id)[0];
+  if (!card) return;
+  curCardId = id;
+  if (idx === undefined) cardIdx = Math.max(0, cardView.map(c => c.id).indexOf(id));
+  else cardIdx = idx;
+  flipOn = false;
+  renderCardModal();
+  const m = $('cardModal');
+  m.classList.add('open');
+  m.style.left = '50%'; m.style.top = '70px'; m.style.transform = 'translateX(-50%)';
+  $('cmClose').focus();
+}
+function renderCardModal(){
+  const c = KNOWLEDGE_CARDS.filter(x => x.id === curCardId)[0];
+  if (!c) return;
+  $('cmTitle').textContent = c.title;
+  $('cmCat').textContent = c.cat;
+  const body = $('cmBody');
+  if (!flipOn){
+    body.innerHTML =
+      '<div class="field"><div class="k">一句话结论</div><div>' + c.conc + '</div></div>' +
+      '<div class="field"><div class="k">公式 / 判据</div><div class="mono" style="font-size:14px">' + c.formula + '</div></div>' +
+      '<div class="field"><div class="k">迷你示意图</div>' + figOf(c.fig, c.figArg) + '</div>' +
+      '<div class="field"><div class="k">在本 Demo 中怎么看</div><div>' + c.demo + '</div></div>' +
+      (c.warn ? '<div class="field"><div class="k">易错提醒</div><div class="warn">' + c.warn + '</div></div>' : '');
+  } else {
+    body.innerHTML =
+      '<div class="field"><div class="k">推导 / 说明（背面）</div><div>' + (c.back || c.conc) + '</div></div>' +
+      '<div class="field"><div class="k">公式回顾</div><div class="mono" style="font-size:14px">' + c.formula + '</div></div>' +
+      '<div class="field"><div class="k">迷你示意图</div>' + figOf(c.fig, c.figArg) + '</div>';
+  }
+  $('cmPin').textContent = pinned[c.id] ? '📌 已钉住' : '📌 钉住';
+  $('cmPin').classList.toggle('on', !!pinned[c.id]);
+}
+function closeCard(){
+  $('cardModal').classList.remove('open');
+  curCardId = null;
+}
+function renderPinned(){
+  const box = $('pinnedBox');
+  box.innerHTML = '';
+  Object.keys(pinned).forEach(id => {
+    const c = KNOWLEDGE_CARDS.filter(x => x.id === id)[0];
+    if (!c) return;
+    const d = document.createElement('div');
+    d.className = 'p';
+    d.innerHTML = '<b>' + c.title + '</b><br>' + c.formula + '<br><span class="small" style="cursor:pointer" onclick="openCard(\'' + id + '\')">打开</span> · <span class="small" style="cursor:pointer" onclick="unpin(\'' + id + '\')">取消</span>';
+    box.appendChild(d);
+  });
+}
+function unpin(id){ delete pinned[id]; renderPinned(); renderCardList(); if (curCardId === id) renderCardModal(); }
+function cardNav(dir){
+  if (!cardView.length) return;
+  cardIdx = (cardIdx + dir + cardView.length) % cardView.length;
+  openCard(cardView[cardIdx].id, cardIdx);
+}
+/* 卡片弹窗拖动 */
+function bindModalDrag(){
+  const head = $('cardModalHead'), modal = $('cardModal');
+  let sx = 0, sy = 0, ox = 0, oy = 0, drag = false;
+  head.addEventListener('pointerdown', e => {
+    drag = true; sx = e.clientX; sy = e.clientY;
+    const r = modal.getBoundingClientRect(); ox = r.left; oy = r.top;
+    modal.style.transform = 'none';
+    head.setPointerCapture(e.pointerId);
+  });
+  head.addEventListener('pointermove', e => {
+    if (!drag) return;
+    modal.style.left = Math.max(4, Math.min(window.innerWidth - 200, ox + e.clientX - sx)) + 'px';
+    modal.style.top = Math.max(4, oy + e.clientY - sy) + 'px';
+  });
+  head.addEventListener('pointerup', () => { drag = false; });
+}
+/* 教学引导八步 */
+const FLOW = [
+  {tab:1, card:'k_work', t:'功的定义：W = F·x·cos α，α 是力与位移方向的夹角。', q:'思考：α = 90° 时为什么不做功？'},
+  {tab:1, card:'r_zero', t:'不做功三因子判据：F = 0 或 x = 0 或 cos α = 0。', q:'思考：用力推墙未动，为什么推力不做功？'},
+  {tab:1, card:'f_sum', t:'总功 = 各力做功的代数和 = 合力做的功。', q:'思考：把各力做功取绝对值相加对吗？'},
+  {tab:2, card:'f_int', t:'DIS 实时曲线：W 由 ∫F·dx 累积，恒力时退化为 Fx cos α。', q:'思考：变力还能用 W = Fx cos α 吗？'},
+  {tab:3, card:'d_avg_ins', t:'平均功率 P̄ = W/t（割线斜率）；瞬时功率 P = Fv cos α（切线斜率）。', q:'思考：匀加速时 P̄ 与 P(t) 相差多少倍？'},
+  {tab:4, card:'m_cv', t:'控制变量：F 恒定看 P–v 直线；v 恒定看 W–α 余弦。', q:'思考：P–v 图斜率代表什么？'},
+  {tab:5, card:'r_start', t:'机车两类启动：恒功率 a 减小、恒牵引力先匀加速后恒功率。', q:'思考：恒功率启动时加速度怎么变？最大速度满足什么条件？'},
+  {tab:6, card:'e8', t:'误解辨析与练习考核。', q:'思考：「最大速度时牵引力最大」对吗？'}
+];
+let flowStep = 0, flowOn = false;
+function showFlow(i){
+  flowStep = clamp(i, 0, FLOW.length - 1);
+  const f = FLOW[flowStep];
+  $('flowbar').classList.add('open'); flowOn = true;
+  $('flowStep').textContent = '步骤 ' + (flowStep + 1) + ' / ' + FLOW.length;
+  $('flowText').textContent = f.t;
+  $('flowQ').textContent = f.q;
+  goTab(f.tab);
+  if (f.tab === 5 && !out5) runSim5();
+}
+function flowCard(){ openCard(FLOW[flowStep].card); }
+
+/* ==========================================================================
+   ⑨ 初始化
+   ========================================================================== */
+let STATIC = REDUCED;
+function initCharts(){
+  CH.wa  = mkChart('c1wa',  {xl:'α / (°)', yl:'W / J', zero:true});
+  CH.fx  = mkChart('c2fx',  {xl:'x / m', yl:'F / N', zero:true});
+  CH.wx  = mkChart('c2wx',  {xl:'x / m', yl:'W / J', zero:true});
+  CH.pt2 = mkChart('c2pt',  {xl:'t / s', yl:'P / W', zero:true});
+  CH.vt2 = mkChart('c2vt',  {xl:'t / s', yl:'v / (m·s⁻¹)', zero:true});
+  CH.pv2 = mkChart('c2pv',  {xl:'v / (m·s⁻¹)', yl:'P / W', zero:true});
+  CH.wt  = mkChart('c3wt',  {xl:'t / s', yl:'W / J', zero:true});
+  CH.pt3 = mkChart('c3pt',  {xl:'t / s', yl:'P / W', zero:true});
+  CH.vt3 = mkChart('c3vt',  {xl:'t / s', yl:'v / (m·s⁻¹)', zero:true});
+  CH.m4  = mkChart('c4main',{xl:'v / (m·s⁻¹)', yl:'P / W', zero:true});
+  CH.vt5 = mkChart('c5vt',  {xl:'t / s', yl:'v / (m·s⁻¹)', zero:true});
+  CH.ft5 = mkChart('c5ft',  {xl:'t / s', yl:'F / N', zero:true});
+  CH.pt5 = mkChart('c5pt',  {xl:'t / s', yl:'P / kW', zero:true});
+  CH.fv5 = mkChart('c5fv',  {xl:'v / (m·s⁻¹)', yl:'F / N', zero:true});
+  CH.cmp5= mkChart('c5cmp', {xl:'t / s', yl:'v / (m·s⁻¹)', zero:true});
+}
+function drawAll(){
+  if (S.tab === 1) update1();
+  else if (S.tab === 2) draw2();
+  else if (S.tab === 3){ draw3(); updateMotor3(); }
+  else if (S.tab === 4) draw4();
+  else if (S.tab === 5){ if (!out5) runSim5(); else draw5(); }
+}
+function resizeAll(){
+  CHART_REG.forEach(c => { c.userView = false; });
+  drawAll();
+}
+function init(){
+  initCharts();
+  S.tab = 1;
+  // —— 标签切换 ——
+  $$('.tab').forEach(b => b.addEventListener('click', () => goTab(parseInt(b.dataset.tab, 10))));
+  // —— 标签① ——
+  bindRange('inF1','outF1','N',1, update1);
+  bindRange('inX1','outX1','m',2, update1);
+  bindRange('inA1','outA1','°',0, update1);
+  bindRange('inM1','outM1','kg',1, update1);
+  bindRange('inTh1','outTh1','°',0, update1);
+  bindRange('inMu1','outMu1','',2, update1);
+  $('selDir1').addEventListener('change', update1);
+  $('btnScanA1').onclick = () => {
+    if (STATIC){ setR('inA1', 90); update1(); return; }
+    let a = 0;
+    if (scanA1Timer) clearInterval(scanA1Timer);
+    scanA1Timer = setInterval(() => {
+      a += 2; setR('inA1', Math.min(180, a)); update1();
+      if (a >= 180) clearInterval(scanA1Timer);
+    }, 30);
+  };
+  $('btnAbsSum').onclick = () => { absSumOn = !absSumOn; toggleBtn($('btnAbsSum'), absSumOn); drawBar1(); update1(); };
+  $('btnBarGrid').onclick = () => { barGridOn = !barGridOn; toggleBtn($('btnBarGrid'), barGridOn); drawBar1(); };
+  const zeroTxt = ['判据：<b>W = 0 ⇔ F = 0 或 x = 0 或 cos α = 0</b>（三因子任一为零）。点上面三个按钮逐个演示。',
+    '<b>① 无力</b>：撤去拉力 F = 0 ⇒ W = 0。此时重力、摩擦力也无（或不做功），总功为零。',
+    '<b>② 无位移</b>：木块被锁定，x = 0 ⇒ 尽管 F ≠ 0，W = F·0·cos α = 0（用力推墙未动即此类）。',
+    '<b>③ 垂直</b>：α = 90° ⇒ cos α = 0 ⇒ W = 0（支持力对水平运动物体、向心力对圆周运动均属此类）。'];
+  $('btnZ1').onclick = () => { zeroCase = 1; setR('inF1', 0); $('zeroInfo').innerHTML = zeroTxt[1]; update1(); };
+  $('btnZ2').onclick = () => { zeroCase = 2; setR('inX1', 0); $('zeroInfo').innerHTML = zeroTxt[2]; update1(); };
+  $('btnZ3').onclick = () => { zeroCase = 3; setR('inA1', 90); $('zeroInfo').innerHTML = zeroTxt[3]; update1(); };
+  $('btnZ0').onclick = () => { zeroCase = 0; setR('inF1', 10); setR('inX1', 2); setR('inA1', 60); $('zeroInfo').innerHTML = zeroTxt[0]; update1(); };
+  // —— 标签② ——
+  bindRange('inF2','outF2','N',1, draw2);
+  bindRange('inA2','outA2','°',0, draw2);
+  bindRange('inM2','outM2','kg',1, draw2);
+  bindRange('inTh2','outTh2','°',0, draw2);
+  bindRange('inMu2','outMu2','',2, draw2);
+  bindRange('inSr2','outSr2','Hz',0, draw2);
+  bindRange('inSm2','outSm2','点',0, draw2);
+  $('selFmode2').addEventListener('change', () => { resetSim2(); });
+  $('btnNoise2').onclick = () => { sim2.noise = !sim2.noise; $('btnNoise2').textContent = sim2.noise ? '开' : '关';
+    $('btnNoise2').classList.toggle('on', sim2.noise); $('outNoise2').textContent = sim2.noise ? '已开启' : ''; draw2(); };
+  $('btnLock2').onclick = () => { sim2.lock = !sim2.lock; $('btnLock2').textContent = sim2.lock ? '是（锁定）' : '否（可动）';
+    $('btnLock2').classList.toggle('on', sim2.lock); draw2(); };
+  $('btnPlay2').onclick = () => play2();
+  $('btnStep2').onclick = () => { for (let i = 0; i < 100; i++){ step2(sim2.dtPhys); sample2(); } draw2(); };
+  $('btnReset2').onclick = resetSim2;
+  bindFxDrag();
+  // —— 标签③ ——
+  bindRange('inF3','outF3','N',1, draw3);
+  bindRange('inA3','outA3','°',0, draw3);
+  bindRange('inV3','outV3','m/s',2, draw3);
+  bindRange('inA3c','outA3c','m/s²',1, draw3);
+  bindRange('inT3','outT3','s',1, () => { S.inT3b = Math.min(S.inT3b, S.inT3); setR('inT3b', Math.min(S.inT3b, S.inT3)); draw3(); });
+  $('selMode3').addEventListener('change', () => { draw3(); });
+  bindRange('inT3a','outT3a','s',1, draw3);
+  bindRange('inT3b','outT3b','s',1, draw3);
+  bindRange('inT3c','outT3c','s',1, draw3);
+  $('btnSec3').onclick = () => { secOn = !secOn; toggleBtn($('btnSec3'), secOn); draw3(); };
+  $('btnTan3').onclick = () => { tanOn = !tanOn; toggleBtn($('btnTan3'), tanOn); draw3(); };
+  $('btnArea3').onclick = () => {
+    if (areaTimer) { clearInterval(areaTimer); areaTimer = null; areaAnim = 0; draw3(); return; }
+    if (STATIC){ areaAnim = 1; draw3(); return; }
+    areaAnim = 0;
+    areaTimer = setInterval(() => {
+      areaAnim += 0.02; if (areaAnim >= 1){ areaAnim = 1; clearInterval(areaTimer); areaTimer = null; }
+      draw3();
+    }, 30);
+  };
+  bindRange('inMm3','outMm3','kg',1, updateMotor3);
+  bindRange('inVm3','outVm3','m/s',2, updateMotor3);
+  bindRange('inU3','outU3','V',1, updateMotor3);
+  bindRange('inI3','outI3','A',2, updateMotor3);
+  bindRange('inR3','outR3','Ω',1, updateMotor3);
+  $('btnPlay3').onclick = () => { motorPlay = !motorPlay; toggleBtn($('btnPlay3'), motorPlay); $('btnPlay3').textContent = motorPlay ? '⏸ 暂停' : '▶ 提升'; };
+  // —— 标签④ ——
+  bindRange('inF4','outF4','N',1, () => { data4 = []; fit4 = null; draw4(); });
+  bindRange('inV4','outV4','m/s',2, () => { data4 = []; fit4 = null; draw4(); });
+  bindRange('inA4','outA4','°',0, () => { data4 = []; fit4 = null; draw4(); });
+  bindRange('inX4','outX4','m',2, () => { data4 = []; fit4 = null; draw4(); });
+  bindRange('inT4','outT4','s',1, () => { data4 = []; fit4 = null; draw4(); });
+  $('btnM4A').onclick = () => setMode4('A');
+  $('btnM4B').onclick = () => setMode4('B');
+  $('btnM4C').onclick = () => setMode4('C');
+  $('btnScan4').onclick = scan4;
+  $('btnFit4').onclick = () => { doFit4(); draw4(); };
+  $('btnClear4').onclick = () => { data4 = []; fit4 = null; draw4(); };
+  $('btnWrong4').onclick = () => { wrong4 = !wrong4; toggleBtn($('btnWrong4'), wrong4); draw4(); };
+  $('btnNoise4').onclick = () => { noise4 = !noise4; $('btnNoise4').textContent = noise4 ? '开' : '关'; toggleBtn($('btnNoise4'), noise4); draw4(); };
+  $('btnInv4').onclick = () => { doFit4(); invTool(); };
+  setMode4('A');
+  // —— 标签⑤ ——
+  bindRange('inMm5','outMm5','kg',0, runSim5);
+  bindRange('inP5','outP5','kW',0, runSim5);
+  bindRange('inF5','outF5','N',0, runSim5);
+  bindRange('inf0_5','outf0_5','N',0, runSim5);
+  bindRange('inK5','outK5','N·s/m',0, runSim5);
+  bindRange('inFmax5','outFmax5','N',0, runSim5);
+  bindRange('inT5','outT5','s',0, runSim5);
+  $('selM5').addEventListener('change', runSim5);
+  $('selRes5').addEventListener('change', runSim5);
+  $('btnRun5').onclick = runSim5;
+  $('btnCmp5').onclick = () => { cmp5 = !cmp5; toggleBtn($('btnCmp5'), cmp5); draw5(); };
+  $('btnWrong5').onclick = () => { wrong5 = !wrong5; toggleBtn($('btnWrong5'), wrong5); draw5(); };
+  $('btnPlay5').onclick = () => {
+    if (animTimer5){                       // 已在播放 → 停止并复位
+      clearInterval(animTimer5); animTimer5 = null; anim5 = 0;
+      toggleBtn($('btnPlay5'), false); $('btnPlay5').textContent = '▶ 动画'; draw5(); return;
+    }
+    anim5 = 0;
+    toggleBtn($('btnPlay5'), true); $('btnPlay5').textContent = '⏸ 暂停';
+    animTimer5 = setInterval(() => {
+      anim5 += 0.02;
+      if (anim5 >= 1){                     // 播完 → 恢复完整曲线
+        anim5 = 1; clearInterval(animTimer5); animTimer5 = null;
+        toggleBtn($('btnPlay5'), false); $('btnPlay5').textContent = '▶ 动画';
+      }
+      draw5();
+    }, 40);
+  };
+  // —— 标签⑥ ——
+  renderQuiz6();
+  $('btnSubmit6').onclick = submitQuiz6;
+  $('btnReset6').onclick = () => { renderQuiz6(); $('score6').style.display = 'none'; $('tblScore').querySelector('tbody').innerHTML = ''; };
+  $('chkTeacher6').addEventListener('change', e => { teacher6 = e.target.checked; renderQuiz6(); });
+  $('btnLog').onclick = () => addLog(currentLog());
+  $('btnClearLog').onclick = () => { logRows = []; $('tblLog').querySelector('tbody').innerHTML = ''; };
+  $('btnCsv').onclick = () => {
+    const head = ['模式','F(N)','x(m)','α(°)','v(m/s)','t(s)','W(J)','P̄(W)','P(W)','W总(J)','拟合','误差','备注'];
+    downloadCSV('模型42_数据记录.csv', [head].concat(logRows));
+  };
+  $('btnCsvChart').onclick = exportChartData;
+  $('btnInvTool').onclick = invTool;
+  // —— 预设 ——
+  const pb = $('presetBtns');
+  PRESETS.forEach(p => {
+    const b = document.createElement('button');
+    b.className = 'sm'; b.type = 'button'; b.textContent = p.name;
+    b.setAttribute('aria-label', '载入预设：' + p.name);
+    b.onclick = () => { p.run(); };
+    pb.appendChild(b);
+  });
+  // —— 卡片库 ——
+  renderCats(); renderCardList(); bindModalDrag();
+  $('btnDrawer').onclick = () => { $('drawer').classList.add('open'); renderCardList(); $('cardSearch').focus(); };
+  $('btnDrawerClose').onclick = () => $('drawer').classList.remove('open');
+  $('cardSearch').addEventListener('input', renderCardList);
+  $('cmClose').onclick = closeCard;
+  $('cmFlip').onclick = () => { flipOn = !flipOn; renderCardModal(); };
+  $('cmPin').onclick = () => {
+    if (!curCardId) return;
+    if (pinned[curCardId]) delete pinned[curCardId]; else pinned[curCardId] = true;
+    renderPinned(); renderCardModal(); renderCardList();
+  };
+  $('cardPrev').onclick = () => cardNav(-1);
+  $('cardNext').onclick = () => cardNav(1);
+  // —— 引导 ——
+  $('btnFlow').onclick = () => showFlow(flowStep);
+  $('flowPrev').onclick = () => showFlow(flowStep - 1);
+  $('flowNext').onclick = () => showFlow(flowStep + 1);
+  $('flowCard').onclick = flowCard;
+  $('flowClose').onclick = () => { $('flowbar').classList.remove('open'); flowOn = false; };
+  $('chkReduced').checked = STATIC;
+  $('chkReduced').addEventListener('change', e => { STATIC = e.target.checked; });
+  $('btnHelp').onclick = () => openCard('k_work');
+  // —— 键盘无障碍 ——
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Escape'){ closeCard(); $('drawer').classList.remove('open'); }
+    if ($('cardModal').classList.contains('open')){
+      if (e.key === 'ArrowRight') cardNav(1);
+      if (e.key === 'ArrowLeft') cardNav(-1);
+      if (e.key === 'f' || e.key === 'F'){ flipOn = !flipOn; renderCardModal(); }
+    }
+  });
+  window.addEventListener('resize', () => { if (window.__rz) clearTimeout(window.__rz); window.__rz = setTimeout(resizeAll, 160); });
+  // —— 初始绘制 ——
+  goTab(1);
+  setR('inA1', 60); setR('inF1', 10); setR('inX1', 2);
+  draw3(); updateMotor3(); runSim5();
+  if (!REDUCED) setTimeout(() => showFlow(0), 600);
+  requestAnimationFrame(loop);
+}
+/* 主循环：驱动 DIS 仿真与电动机动画 */
+let lastT = 0;
+function loop(now){
+  const dt = Math.min(0.05, lastT ? (now - lastT) / 1000 : 0);
+  lastT = now;
+  if (S.tab === 2 && sim2.playing && !STATIC){
+    const spd = clamp(parseFloat($('inSpd2').value) || 1, 0.1, 5);
+    let rem = dt * spd;
+    let guard = 0;
+    while (rem > 0 && guard++ < 4000){
+      const d = Math.min(sim2.dtPhys, rem);
+      step2(d); sample2(); rem -= d;
+    }
+    draw2();
+  }
+  if (S.tab === 3 && motorPlay && !STATIC){
+    motorH += S.inVm3 * dt;
+    if (motorH > 2.2) motorH = 0;
+    updateMotor3();
+  }
+  requestAnimationFrame(loop);
+}
+init();
+</script>
+</body>
+</html>

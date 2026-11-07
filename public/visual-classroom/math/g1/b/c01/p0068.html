@@ -1,0 +1,652 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>正弦定理验证模型</title>
+<style>
+  :root{
+    --bg:#eef1f7;
+    --card:#ffffff;
+    --ink:#1b2432;
+    --ink2:#5c6879;
+    --ink3:#8d99aa;
+    --line:#e3e8f0;
+    --blue:#2563eb;
+    --blue-d:#1a49b8;
+    --blue-soft:#eef4ff;
+    --serif:"Times New Roman","Songti SC","SimSun",Times,serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;
+    padding:24px 20px 40px;
+    background:
+      radial-gradient(1100px 520px at 18% -12%, #ffffff 0%, rgba(255,255,255,0) 62%),
+      radial-gradient(900px 480px at 92% -4%, #e9f1ff 0%, rgba(233,241,255,0) 58%),
+      var(--bg);
+    color:var(--ink);
+    font-family:"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1250px;margin:0 auto;}
+
+  /* ---------- 页头 ---------- */
+  .head{margin-bottom:16px;}
+  .badge{display:inline-block;font-size:11.5px;letter-spacing:.16em;color:var(--blue);
+    background:var(--blue-soft);border:1px solid #d6e3ff;padding:5px 11px;border-radius:999px;font-weight:700;}
+  h1{font-family:var(--serif);font-size:31px;margin:11px 0 7px;font-weight:700;letter-spacing:.01em;}
+  .sub{margin:0;color:var(--ink2);font-size:14px;line-height:1.7;max-width:840px;}
+  .sub b{color:var(--ink);font-weight:600;}
+
+  /* ---------- 布局 ---------- */
+  .layout{display:grid;grid-template-columns:minmax(0,1fr) 468px;gap:18px;align-items:start;}
+  @media (max-width:1090px){.layout{grid-template-columns:1fr;}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;
+    box-shadow:0 1px 2px rgba(20,30,50,.04),0 16px 34px -22px rgba(20,30,50,.35);}
+
+  /* ---------- 画布 ---------- */
+  .stage-card{padding:14px 14px 6px;}
+  .stage-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:2px 4px 10px;flex-wrap:wrap;}
+  .tag{font-size:12px;font-weight:700;color:var(--ink2);background:#f4f6fa;border:1px solid var(--line);border-radius:8px;padding:4px 9px;}
+  .hint{font-size:12.5px;color:var(--ink3);}
+  .stage{
+    position:relative;border:1px solid var(--line);border-radius:12px;overflow:hidden;
+    background:
+      radial-gradient(circle at 1px 1px, #dde5f0 1px, transparent 0) 0 0/23px 23px,
+      linear-gradient(180deg,#fdfeff,#f6f9fd);
+  }
+  svg#board{display:block;width:100%;height:auto;touch-action:none;user-select:none;}
+
+  /* ---------- 控制条 ---------- */
+  .controls{display:flex;align-items:center;gap:12px;padding:14px 6px 12px;flex-wrap:wrap;}
+  .btn{font:inherit;font-size:13.5px;font-weight:700;color:var(--blue-d);background:var(--blue-soft);
+    border:1px solid #d6e3ff;border-radius:10px;padding:9px 16px;cursor:pointer;transition:.15s;white-space:nowrap;}
+  .btn:hover{background:#e2ecff;}
+  .btn.ghost{color:var(--ink2);background:#f6f8fb;border-color:var(--line);}
+  .btn.ghost:hover{background:#eef1f6;}
+  .btn.active{background:var(--blue);color:#fff;border-color:var(--blue);}
+  .btn.active:hover{background:#1d4ed8;}
+  .btn .ico{font-family:var(--serif);font-size:15px;margin-right:5px;vertical-align:1px;}
+  .ctl-note{font-size:12.5px;color:var(--ink3);margin-left:2px;}
+
+  /* ---------- 右侧面板 ---------- */
+  .panel{padding:18px 18px 20px;}
+  .panel-head{display:flex;align-items:baseline;gap:10px;margin-bottom:4px;}
+  .panel-head h2{font-family:var(--serif);font-size:21px;margin:0;font-weight:700;}
+  .panel-head .en{font-family:var(--serif);font-size:12.5px;color:var(--ink3);letter-spacing:.06em;}
+
+  .chain{display:flex;align-items:center;justify-content:center;gap:9px;flex-wrap:wrap;
+    padding:16px 10px;margin:12px 0 16px;background:linear-gradient(180deg,#f9fbff,#f1f6ff);
+    border:1px solid #deeaff;border-radius:12px;}
+  .eq{font-family:var(--serif);font-size:19px;color:#7b8798;}
+  .bigval{font-family:var(--serif);font-size:27px;font-weight:700;color:var(--blue-d);
+    font-variant-numeric:tabular-nums;letter-spacing:.01em;}
+  i{font-family:var(--serif);font-style:italic;}
+
+  .frac{display:inline-grid;grid-auto-rows:auto;justify-items:center;
+    font-family:var(--serif);font-size:17.5px;line-height:1.16;color:#12386f;letter-spacing:.01em;}
+  .frac .den{border-top:1.5px solid currentColor;padding-top:2px;margin-top:2px;}
+  .frac .op{font-style:normal;}
+  .frac.s{font-size:18.5px;}
+  .frac.n{font-size:16px;color:var(--ink);font-variant-numeric:tabular-nums;}
+
+  .cmp{border:1px solid var(--line);border-radius:12px;overflow:hidden;}
+  .cmp-row{display:grid;grid-template-columns:96px 18px minmax(0,1fr) 18px 88px;
+    align-items:center;padding:12px 14px;border-top:1px solid var(--line);}
+  .cmp-row:first-child{border-top:0;}
+  .cmp-row:not(.head):hover{background:#fafcff;}
+  .cmp-row.head{background:#f7f9fc;padding:9px 14px;}
+  .cmp-row.head span{font-size:11.5px;letter-spacing:.1em;color:var(--ink3);font-weight:700;}
+  .cmp-row.head .res-h{text-align:right;}
+  .cell{display:flex;align-items:center;}
+  .cell.res{justify-content:flex-end;font-family:var(--serif);font-size:21px;font-weight:700;
+    color:var(--blue-d);font-variant-numeric:tabular-nums;}
+  .cmp-row.sum{background:#fffaf0;}
+  .cmp-row.sum:hover{background:#fff5e4;}
+  .cmp-row.sum .cell.res{color:#b8801b;}
+  .cmp-row.sum .cell.expr{font-family:var(--serif);font-style:italic;font-size:19px;color:#8a5f10;}
+  .cmp-row.sum .cell.num{font-family:var(--serif);font-size:16px;color:var(--ink);font-variant-numeric:tabular-nums;}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:8px 10px;margin-top:14px;}
+  .item{display:flex;justify-content:space-between;align-items:center;font-size:14px;
+    padding:7px 11px;background:#f7f9fc;border:1px solid #eef2f8;border-radius:8px;}
+  .item .k{font-family:var(--serif);font-style:italic;font-size:16px;color:#12386f;}
+  .item .v{font-family:var(--serif);font-variant-numeric:tabular-nums;color:var(--ink);}
+  .note{margin:14px 0 0;font-size:12.5px;color:var(--ink3);line-height:1.7;}
+
+  /* ---------- SVG 内部 ---------- */
+  .sub{transition:opacity .3s ease;}
+  .sub.is-hidden{opacity:0;}
+  .sub.is-hidden *{pointer-events:none;}
+  .handle{pointer-events:all;cursor:grab;}
+  .handle circle{transition:r .12s ease;}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="head">
+    <span class="badge">平面几何 · 数学模型</span>
+    <h1>正弦定理验证模型</h1>
+    <p class="sub">
+      三角形 <em style="font-family:'Times New Roman',serif;font-style:italic;">ABC</em> 可以<b>任意拖动</b>：
+      拖动顶点自由改变形状（不受任何圆约束），拖动三角形本体可整体移动。
+      点击「外接圆」按钮即显示该三角形的外接圆——<b>改变三角形，外接圆的大小与位置会随之改变</b>；
+      点击「固定 2R」则把当前的 2R 锁住，此后<b>三角形只能在圆周上滑动</b>（形状可变、大小不变），再点一次解除锁定。
+      右侧把 <b>a / sin A、b / sin B、c / sin C</b> 与 <b>2R</b> 的结果列在同一列，随时可读出它们相等。
+    </p>
+  </header>
+
+  <main class="layout">
+
+    <!-- ===== 左：几何画布 ===== -->
+    <section class="card stage-card">
+      <div class="stage-head">
+        <span class="tag">几何图形</span>
+        <span class="hint">提示：拖动顶点任意改变三角形；点「固定 2R」后三角形只能在圆上变化</span>
+      </div>
+      <div class="stage">
+        <svg id="board" viewBox="0 0 680 560" xmlns="http://www.w3.org/2000/svg"></svg>
+      </div>
+      <div class="controls">
+        <button class="btn active" id="circBtn"><span class="ico">○</span>外接圆</button>
+        <button class="btn ghost" id="lockBtn"><span class="ico">⌾</span>固定 2R</button>
+        <button class="btn ghost" id="toggleBtn">隐藏全部</button>
+        <button class="btn ghost" id="resetBtn">重置</button>
+        <span class="ctl-note" id="ctlNote">外接圆随三角形自动变化</span>
+      </div>
+    </section>
+
+    <!-- ===== 右：数值面板 ===== -->
+    <aside class="card panel">
+      <div class="panel-head">
+        <h2>正弦定理</h2>
+        <span class="en">Law of Sines</span>
+      </div>
+
+      <div class="chain">
+        <span class="frac s"><span class="num"><i>a</i></span><span class="den"><span class="op">sin</span>&thinsp;<i>A</i></span></span>
+        <span class="eq">=</span>
+        <span class="frac s"><span class="num"><i>b</i></span><span class="den"><span class="op">sin</span>&thinsp;<i>B</i></span></span>
+        <span class="eq">=</span>
+        <span class="frac s"><span class="num"><i>c</i></span><span class="den"><span class="op">sin</span>&thinsp;<i>C</i></span></span>
+        <span class="eq">=</span>
+        <span class="frac s" style="color:#8a5f10;"><span class="num"><i>2R</i></span></span>
+        <span class="eq">=</span>
+        <span class="bigval" id="chainVal">—</span>
+      </div>
+
+      <div class="cmp">
+        <div class="cmp-row head">
+          <span>关系式</span><span></span><span>数值代入</span><span></span><span class="res-h">结果</span>
+        </div>
+
+        <div class="cmp-row">
+          <span class="cell expr"><span class="frac s"><span class="num"><i>a</i></span><span class="den"><span class="op">sin</span>&thinsp;<i>A</i></span></span></span>
+          <span class="eq">=</span>
+          <span class="cell num"><span class="frac n"><span class="num" id="vA_num">—</span><span class="den" id="vA_den">—</span></span></span>
+          <span class="eq">=</span>
+          <span class="cell res" id="rA">—</span>
+        </div>
+
+        <div class="cmp-row">
+          <span class="cell expr"><span class="frac s"><span class="num"><i>b</i></span><span class="den"><span class="op">sin</span>&thinsp;<i>B</i></span></span></span>
+          <span class="eq">=</span>
+          <span class="cell num"><span class="frac n"><span class="num" id="vB_num">—</span><span class="den" id="vB_den">—</span></span></span>
+          <span class="eq">=</span>
+          <span class="cell res" id="rB">—</span>
+        </div>
+
+        <div class="cmp-row">
+          <span class="cell expr"><span class="frac s"><span class="num"><i>c</i></span><span class="den"><span class="op">sin</span>&thinsp;<i>C</i></span></span></span>
+          <span class="eq">=</span>
+          <span class="cell num"><span class="frac n"><span class="num" id="vC_num">—</span><span class="den" id="vC_den">—</span></span></span>
+          <span class="eq">=</span>
+          <span class="cell res" id="rC">—</span>
+        </div>
+
+        <div class="cmp-row sum">
+          <span class="cell expr"><i>2R</i></span>
+          <span class="eq">=</span>
+          <span class="cell num" id="v2R">—</span>
+          <span class="eq">=</span>
+          <span class="cell res" id="r2R">—</span>
+        </div>
+      </div>
+
+      <div class="grid2">
+        <div class="item"><span class="k">∠<i>A</i></span><span class="v" id="angA">—</span></div>
+        <div class="item"><span class="k"><i>a</i></span><span class="v" id="sideA">—</span></div>
+        <div class="item"><span class="k">∠<i>B</i></span><span class="v" id="angB">—</span></div>
+        <div class="item"><span class="k"><i>b</i></span><span class="v" id="sideB">—</span></div>
+        <div class="item"><span class="k">∠<i>C</i></span><span class="v" id="angC">—</span></div>
+        <div class="item"><span class="k"><i>c</i></span><span class="v" id="sideC">—</span></div>
+        <div class="item"><span class="k"><i>R</i></span><span class="v" id="radVal">—</span></div>
+        <div class="item"><span class="k"><i>2R</i></span><span class="v" id="rad2Val">—</span></div>
+      </div>
+
+      <p class="note">
+        长度单位统一（图中 1 单位 = 100 个绘图坐标），故 <i>a</i>、<i>b</i>、<i>c</i> 与 <i>2R</i> 可直接比较：
+        <i>a</i> / sin <i>A</i> = <i>b</i> / sin <i>B</i> = <i>c</i> / sin <i>C</i> = <i>2R</i>。
+        外接圆的圆心即三角形的外心 <i>O</i>。
+      </p>
+    </aside>
+
+  </main>
+</div>
+
+<script>
+(function(){
+  'use strict';
+
+  var NS = 'http://www.w3.org/2000/svg';
+  var board = document.getElementById('board');
+  var SERIF = "Times New Roman, Times, serif";
+
+  function E(tag, attrs, parent){
+    var n = document.createElementNS(NS, tag);
+    if (attrs) for (var k in attrs) n.setAttribute(k, attrs[k]);
+    if (parent) parent.appendChild(n);
+    return n;
+  }
+  function S(node, attrs){ for (var k in attrs) node.setAttribute(k, attrs[k]); return node; }
+  function T(id, txt){ document.getElementById(id).textContent = txt; }
+
+  /* ================= 常量与状态 ================= */
+  var W = 680, H = 560;
+  var PX_PER_UNIT = 100;        // 100 绘图坐标 = 1 长度单位
+  var MARGIN = 10;              // 顶点距画布边缘的最小留白
+  var MIN_ANG = 6 * Math.PI / 180;  // 最小内角，避免退化成"一条线"
+  var MAX_R = 900;              // 外接圆半径上限（绘图坐标），仅用于拦住趋于共线的病态情形
+
+  // 初始三角形：三个自由顶点（初始恰为半径 186、圆心 (340,280) 圆的内接三角形）
+  var START = [
+    {x: 323.79, y:  94.70},     // A
+    {x: 171.43, y: 358.60},     // B
+    {x: 482.48, y: 399.57}      // C
+  ];
+  var verts = START.map(function(p){ return {x: p.x, y: p.y}; });
+
+  var circleHidden = false, triHidden = false;
+  var lockR = false;                      // 是否固定 2R（锁定后三角形只能沿圆周滑动）
+  var lockCenter = {x: 0, y: 0};          // 锁定时固定的外心
+  var lockRpx = 0;                        // 锁定时固定的外接圆半径（绘图坐标）
+  var lockAng = [0, 0, 0];                // 锁定时三顶点相对外心的极角
+  var dragIdx = -1;
+  var triDrag = null, swallowTriClick = false;
+
+  /* ================= 构建 SVG ================= */
+  var defs = E('defs', null, board);
+  var gFill = E('linearGradient', {id:'triFill', x1:'0', y1:'0', x2:'0', y2:'1'}, defs);
+  E('stop', {offset:'0%',   'stop-color':'#3b82f6', 'stop-opacity':'0.20'}, gFill);
+  E('stop', {offset:'100%', 'stop-color':'#2563eb', 'stop-opacity':'0.07'}, gFill);
+  var shadow = E('filter', {id:'knobShadow', x:'-120%', y:'-120%', width:'340%', height:'340%'}, defs);
+  E('feDropShadow', {dx:'0', dy:'1.5', stdDeviation:'2', 'flood-color':'#0f2547', 'flood-opacity':'0.3'}, shadow);
+
+  var figure = E('g', {id:'figure'}, board);
+
+  /* ---- 外接圆（可见部分） ---- */
+  var circG = E('g', {class:'sub'}, figure);
+  var circ = E('circle', {cx:0, cy:0, r:0, fill:'none', stroke:'#7ea6e6', 'stroke-width':1.7}, circG);
+  var centerDot = E('circle', {cx:0, cy:0, r:3.4, fill:'#5c6879'}, circG);
+  var oLabel = E('text', {x:0, y:0, 'font-family':SERIF, 'font-style':'italic',
+    'font-size':17, fill:'#5c6879', 'text-anchor':'start'}, circG);
+  oLabel.textContent = 'O';
+
+  /* ---- 三角形（可见部分） ---- */
+  var triG = E('g', {class:'sub'}, figure);
+  var tri = E('polygon', {points:'', fill:'url(#triFill)', stroke:'#1d4ed8',
+    'stroke-width':2.1, 'stroke-linejoin':'round'}, triG);
+  var arcG = E('g', {fill:'none', stroke:'#c98a1e', 'stroke-width':1.6, 'stroke-linecap':'round'}, triG);
+  var arcs = [0,1,2].map(function(){ return E('path', {d:''}, arcG); });
+  var sideLabels = [0,1,2].map(function(){
+    return E('text', {'font-family':SERIF, 'font-style':'italic', 'font-size':20, 'font-weight':600,
+      fill:'#1d4ed8', 'text-anchor':'middle', 'dominant-baseline':'middle'}, triG);
+  });
+  sideLabels.forEach(function(t, i){ t.textContent = ['a','b','c'][i]; });
+
+  /* ---- 命中区（透明、永远存在：隐藏后仍可点击原位置恢复） ---- */
+  var hitG = E('g', null, figure);
+  var circleHit = E('circle', {cx:0, cy:0, r:0, fill:'none',
+    'pointer-events':'all', style:'cursor:pointer'}, hitG);
+  var triHit = E('polygon', {points:'', fill:'none',
+    'pointer-events':'all', style:'cursor:move'}, hitG);
+
+  /* ---- 顶点把手（最上层，跟随三角形显示/隐藏） ---- */
+  var handleG = E('g', {class:'sub'}, figure);
+  var vLabels = [], knobs = [], handles = [];
+  ['A','B','C'].forEach(function(ch, i){
+    var g = E('g', {class:'handle'}, handleG);
+    var k = E('circle', {cx:0, cy:0, r:8.5, fill:'#ffffff', stroke:'#1d4ed8',
+      'stroke-width':2.5, filter:'url(#knobShadow)'}, g);
+    var t = E('text', {'font-family':SERIF, 'font-style':'italic', 'font-size':24, 'font-weight':600,
+      fill:'#12386f', 'text-anchor':'middle', 'dominant-baseline':'middle'}, g);
+    t.textContent = ch;
+    knobs.push(k); vLabels.push(t); handles.push(g);
+  });
+
+  /* ================= 数学工具 ================= */
+  function dist(p, q){ return Math.hypot(p.x - q.x, p.y - q.y); }
+  function clamp(v, lo, hi){ return v < lo ? lo : (v > hi ? hi : v); }
+  function angleOf(adj1, adj2, opp){                 // 余弦定理：对边 opp 所对的角
+    return Math.acos(clamp((adj1*adj1 + adj2*adj2 - opp*opp) / (2*adj1*adj2), -1, 1));
+  }
+  function norm(a){ while (a <= -Math.PI) a += 2*Math.PI; while (a > Math.PI) a -= 2*Math.PI; return a; }
+
+  // 外心（外接圆圆心）：三边中垂线交点
+  function circumcenter(P){
+    var ax=P[0].x, ay=P[0].y, bx=P[1].x, by=P[1].y, cx=P[2].x, cy=P[2].y;
+    var d = 2 * (ax*(by-cy) + bx*(cy-ay) + cx*(ay-by));
+    if (Math.abs(d) < 1e-6) return null;              // 三点共线
+    var a2 = ax*ax + ay*ay, b2 = bx*bx + by*by, c2 = cx*cx + cy*cy;
+    return {
+      x: (a2*(by-cy) + b2*(cy-ay) + c2*(ay-by)) / d,
+      y: (a2*(cx-bx) + b2*(ax-cx) + c2*(bx-ax)) / d
+    };
+  }
+
+  // 由三顶点算出整套几何量
+  function measure(P){
+    var a = dist(P[1], P[2]);   // ∠A 的对边
+    var b = dist(P[2], P[0]);   // ∠B 的对边
+    var c = dist(P[0], P[1]);   // ∠C 的对边
+    var A = angleOf(b, c, a), B = angleOf(c, a, b), C = angleOf(a, b, c);
+    var cc = circumcenter(P);
+    var R = cc ? dist(cc, P[0]) : Infinity;
+    return {P:P, a:a, b:b, c:c, A:A, B:B, C:C, O:cc, R:R, minAng:Math.min(A, B, C)};
+  }
+  // 合法性：三角形不能退化，外接圆不能过大
+  function isValid(m){
+    return !!m.O && m.minAng >= MIN_ANG && m.R <= MAX_R;
+  }
+  function withV(i, p){
+    var P = [{x:verts[0].x, y:verts[0].y}, {x:verts[1].x, y:verts[1].y}, {x:verts[2].x, y:verts[2].y}];
+    P[i] = {x:p.x, y:p.y};
+    return P;
+  }
+
+  /* ---- 固定 2R 模式：顶点被约束在固定圆上，只能改变极角 ---- */
+  function ptOnCircle(a){
+    return {x: lockCenter.x + lockRpx * Math.cos(a), y: lockCenter.y - lockRpx * Math.sin(a)};
+  }
+  function lockPts(){
+    return [ptOnCircle(lockAng[0]), ptOnCircle(lockAng[1]), ptOnCircle(lockAng[2])];
+  }
+  function syncLocked(){ verts = lockPts(); }
+  // 把第 i 个顶点沿圆周转到角度 a，是否仍然合法
+  function angValid(i, a){
+    var P = lockPts();
+    P[i] = ptOnCircle(a);
+    return isValid(measure(P));
+  }
+  // 沿圆弧方向二分，滑到"最远仍然合法"的角度
+  function slideAngle(i, from, to){
+    if (angValid(i, to)) return to;
+    var lo = 0, hi = 1;
+    for (var k = 0; k < 14; k++){
+      var mid = (lo + hi) / 2;
+      if (angValid(i, from + (to - from) * mid)) lo = mid; else hi = mid;
+    }
+    return from + (to - from) * lo;
+  }
+  // 开启/关闭固定 2R
+  function setLock(v){
+    lockR = !!v;
+    if (lockR){
+      var m = measure(verts);
+      lockCenter = {x: m.O.x, y: m.O.y};
+      lockRpx = m.R;
+      lockAng = verts.map(function(p){
+        return Math.atan2(lockCenter.y - p.y, p.x - lockCenter.x);
+      });
+      if (circleHidden) setCircleHidden(false);   // 锁定时需要看见圆周
+    }
+    applyVis();
+    render();
+  }
+
+  function arcPath(v, q, r, rad){
+    var a1 = Math.atan2(q.y - v.y, q.x - v.x);
+    var a2 = Math.atan2(r.y - v.y, r.x - v.x);
+    var d = norm(a2 - a1);
+    var x1 = v.x + rad * Math.cos(a1), y1 = v.y + rad * Math.sin(a1);
+    var x2 = v.x + rad * Math.cos(a1 + d), y2 = v.y + rad * Math.sin(a1 + d);
+    return 'M ' + x1.toFixed(2) + ' ' + y1.toFixed(2) +
+           ' A ' + rad.toFixed(2) + ' ' + rad.toFixed(2) + ' 0 0 ' + (d > 0 ? 1 : 0) +
+           ' ' + x2.toFixed(2) + ' ' + y2.toFixed(2);
+  }
+
+  /* ================= 渲染 ================= */
+  function render(){
+    var m = measure(verts);
+    var P = m.P;
+    var pts = P.map(function(q){ return q.x.toFixed(2) + ',' + q.y.toFixed(2); }).join(' ');
+
+    // 外接圆：由三个顶点算出，随三角形自动变化
+    var ok = !!m.O;
+    S(circ, {cx: m.O ? m.O.x : 0, cy: m.O ? m.O.y : 0, r: ok ? m.R : 0});
+    S(circleHit, {cx: m.O ? m.O.x : 0, cy: m.O ? m.O.y : 0, r: ok ? m.R : 0});
+    S(centerDot, {cx: m.O ? m.O.x : 0, cy: m.O ? m.O.y : 0});
+    oLabel.setAttribute('x', (m.O ? m.O.x : 0) + 9);
+    oLabel.setAttribute('y', (m.O ? m.O.y : 0) + 15);
+
+    // 三角形
+    tri.setAttribute('points', pts);
+    triHit.setAttribute('points', pts);
+
+    // 角弧
+    var K = [Math.min(m.b, m.c), Math.min(m.c, m.a), Math.min(m.a, m.b)];
+    for (var j = 0; j < 3; j++){
+      var v = P[j], q = P[(j+1) % 3], r = P[(j+2) % 3];
+      var rad = Math.max(16, Math.min(42, 0.27 * K[j]));
+      arcs[j].setAttribute('d', arcPath(v, q, r, rad));
+    }
+
+    // 边的标签：沿边的法线向外偏移（远离对顶点的一侧）
+    for (var mm = 0; mm < 3; mm++){
+      var q1 = P[(mm+1) % 3], r1 = P[(mm+2) % 3];
+      var mx = (q1.x + r1.x) / 2, my = (q1.y + r1.y) / 2;
+      var ex = r1.x - q1.x, ey = r1.y - q1.y;
+      var L = Math.hypot(ex, ey) || 1;
+      var nx = -ey / L, ny = ex / L;
+      if ((P[mm].x - mx) * nx + (P[mm].y - my) * ny > 0){ nx = -nx; ny = -ny; }
+      sideLabels[mm].setAttribute('x', mx + nx * 19);
+      sideLabels[mm].setAttribute('y', my + ny * 19);
+    }
+
+    // 顶点把手与字母（沿重心方向向外）
+    var Gx = (P[0].x + P[1].x + P[2].x) / 3;
+    var Gy = (P[0].y + P[1].y + P[2].y) / 3;
+    for (var n = 0; n < 3; n++){
+      var v2 = P[n];
+      var dx = v2.x - Gx, dy = v2.y - Gy, L2 = Math.hypot(dx, dy) || 1;
+      knobs[n].setAttribute('cx', v2.x);
+      knobs[n].setAttribute('cy', v2.y);
+      vLabels[n].setAttribute('x', v2.x + dx / L2 * 31);
+      vLabels[n].setAttribute('y', v2.y + dy / L2 * 31);
+    }
+
+    /* ---------- 数值 ---------- */
+    var aU = m.a / PX_PER_UNIT, bU = m.b / PX_PER_UNIT, cU = m.c / PX_PER_UNIT;
+    var RU = (isFinite(m.R) ? m.R : 0) / PX_PER_UNIT;
+    var sA = Math.sin(m.A), sB = Math.sin(m.B), sC = Math.sin(m.C);
+    var rA = aU / sA, rB = bU / sB, rC = cU / sC, r2R = 2 * RU;
+
+    var f3 = function(v){ return v.toFixed(3); };
+    var f1 = function(v){ return v.toFixed(1); };
+
+    T('vA_num', f3(aU)); T('vA_den', f3(sA)); T('rA', f3(rA));
+    T('vB_num', f3(bU)); T('vB_den', f3(sB)); T('rB', f3(rB));
+    T('vC_num', f3(cU)); T('vC_den', f3(sC)); T('rC', f3(rC));
+    T('v2R', '2 × ' + f3(RU)); T('r2R', f3(r2R));
+    T('chainVal', f3(rA));
+
+    T('angA', f1(m.A * 180 / Math.PI) + '°');
+    T('angB', f1(m.B * 180 / Math.PI) + '°');
+    T('angC', f1(m.C * 180 / Math.PI) + '°');
+    T('sideA', f3(aU)); T('sideB', f3(bU)); T('sideC', f3(cU));
+    T('radVal', f3(RU)); T('rad2Val', f3(r2R));
+
+    // 控制条状态说明
+    T('ctlNote', lockR
+      ? '已固定 2R = ' + f3(r2R) + '，三角形只能沿圆周滑动'
+      : '外接圆随三角形自动变化');
+  }
+
+  /* ================= 显示 / 隐藏（圆与三角形相互独立） ================= */
+  function applyVis(){
+    circG.classList.toggle('is-hidden', circleHidden);
+    triG.classList.toggle('is-hidden', triHidden);
+    handleG.classList.toggle('is-hidden', triHidden);
+    var cb = document.getElementById('circBtn');
+    cb.classList.toggle('active', !circleHidden);
+    cb.title = circleHidden ? '点击显示该三角形的外接圆' : '点击隐藏外接圆';
+    var lb = document.getElementById('lockBtn');
+    lb.classList.toggle('active', lockR);
+    lb.title = lockR ? '已固定 2R：三角形只能沿圆周滑动（再点一次解除）'
+                     : '点击固定当前 2R，之后三角形只能在圆上变化';
+    triHit.style.cursor = triHidden ? 'pointer' : 'move';
+    document.getElementById('toggleBtn').textContent =
+      (circleHidden || triHidden) ? '显示全部' : '隐藏全部';
+  }
+  function setCircleHidden(v){ circleHidden = v; applyVis(); }
+  function setTriHidden(v){ triHidden = v; applyVis(); }
+
+  circleHit.addEventListener('click', function(){ setCircleHidden(!circleHidden); });
+  document.getElementById('circBtn').addEventListener('click', function(){
+    setCircleHidden(!circleHidden);
+  });
+  document.getElementById('lockBtn').addEventListener('click', function(){
+    setLock(!lockR);
+  });
+  triHit.addEventListener('click', function(){
+    if (swallowTriClick){ swallowTriClick = false; return; }   // 刚才是拖动，不当作点击
+    setTriHidden(!triHidden);
+  });
+  document.getElementById('toggleBtn').addEventListener('click', function(){
+    var show = circleHidden || triHidden;
+    circleHidden = !show; triHidden = !show;
+    applyVis();
+  });
+  document.getElementById('resetBtn').addEventListener('click', function(){
+    lockR = false;
+    verts = START.map(function(p){ return {x: p.x, y: p.y}; });
+    circleHidden = false; triHidden = false;
+    applyVis();
+    render();
+  });
+
+  /* ================= 交互工具 ================= */
+  function toSvg(ev){
+    var r = board.getBoundingClientRect();
+    return {x: (ev.clientX - r.left) / r.width * W,
+            y: (ev.clientY - r.top) / r.height * H};
+  }
+
+  /* ================= 交互：拖动顶点（自由移动，仅受画布与非退化约束） ================= */
+  handles.forEach(function(g, i){
+    g.addEventListener('pointerdown', function(ev){
+      if (triHidden) return;
+      ev.preventDefault();
+      ev.stopPropagation();
+      dragIdx = i;
+      try { g.setPointerCapture(ev.pointerId); } catch(e){}
+      g.style.cursor = 'grabbing';
+    });
+    g.addEventListener('pointermove', function(ev){
+      if (dragIdx !== i) return;
+      ev.preventDefault();
+      var s = toSvg(ev);
+      if (lockR){
+        // 固定 2R：顶点只能沿圆周滑动，改变的是极角
+        var from = lockAng[i];
+        var raw = Math.atan2(lockCenter.y - s.y, s.x - lockCenter.x);
+        var to = from + norm(raw - from);      // 取最近的等价角，避免绕过 2π 时反向
+        lockAng[i] = slideAngle(i, from, to);
+        syncLocked();
+        render();
+        return;
+      }
+      // 自由模式：顶点可移到任意位置（仅受画布与非退化约束）
+      var p0 = {x: verts[i].x, y: verts[i].y};
+      var to2 = {x: clamp(s.x, MARGIN, W - MARGIN), y: clamp(s.y, MARGIN, H - MARGIN)};
+      if (isValid(measure(withV(i, to2)))){
+        verts[i] = to2;
+      } else {
+        // 沿拖动方向二分，滑到"最远仍然合法"的位置，避免卡死
+        var dx = to2.x - p0.x, dy = to2.y - p0.y, lo = 0, hi = 1;
+        for (var k = 0; k < 14; k++){
+          var mid = (lo + hi) / 2;
+          var cand = {x: p0.x + dx * mid, y: p0.y + dy * mid};
+          if (isValid(measure(withV(i, cand)))) lo = mid; else hi = mid;
+        }
+        verts[i] = {x: p0.x + dx * lo, y: p0.y + dy * lo};
+      }
+      render();
+    });
+    function end(ev){
+      if (dragIdx !== i) return;
+      dragIdx = -1;
+      g.style.cursor = 'grab';
+      try { g.releasePointerCapture(ev.pointerId); } catch(e){}
+    }
+    g.addEventListener('pointerup', end);
+    g.addEventListener('pointercancel', end);
+    g.addEventListener('pointerenter', function(){ if (!triHidden) knobs[i].setAttribute('r', 10.5); });
+    g.addEventListener('pointerleave', function(){ knobs[i].setAttribute('r', 8.5); });
+  });
+
+  /* ================= 交互：拖动三角形本体（整体平移，形状不变） ================= */
+  triHit.addEventListener('pointerdown', function(ev){
+    if (triHidden) return;                     // 隐藏时只保留“点击恢复”
+    triDrag = {
+      sx: ev.clientX, sy: ev.clientY,
+      pts: verts.map(function(p){ return {x:p.x, y:p.y}; }),
+      cx: lockCenter.x, cy: lockCenter.y,
+      moved: false
+    };
+    try { triHit.setPointerCapture(ev.pointerId); } catch(e){}
+  });
+  triHit.addEventListener('pointermove', function(ev){
+    if (!triDrag) return;
+    var ddx = ev.clientX - triDrag.sx, ddy = ev.clientY - triDrag.sy;
+    if (!triDrag.moved && Math.hypot(ddx, ddy) < 4) return;   // 4px 内视为点击
+    triDrag.moved = true;
+    ev.preventDefault();
+    var r = board.getBoundingClientRect();
+    var dx = ddx * W / r.width, dy = ddy * H / r.height;
+    // 让三个顶点都不出界
+    var minX = Math.min(triDrag.pts[0].x, triDrag.pts[1].x, triDrag.pts[2].x);
+    var maxX = Math.max(triDrag.pts[0].x, triDrag.pts[1].x, triDrag.pts[2].x);
+    var minY = Math.min(triDrag.pts[0].y, triDrag.pts[1].y, triDrag.pts[2].y);
+    var maxY = Math.max(triDrag.pts[0].y, triDrag.pts[1].y, triDrag.pts[2].y);
+    dx = clamp(dx, MARGIN - minX, (W - MARGIN) - maxX);
+    dy = clamp(dy, MARGIN - minY, (H - MARGIN) - maxY);
+    if (lockR){
+      // 固定 2R：整体平移（圆的半径不变，连带圆一起移动）
+      lockCenter = {x: triDrag.cx + dx, y: triDrag.cy + dy};
+      syncLocked();
+    } else {
+      verts = triDrag.pts.map(function(p){ return {x: p.x + dx, y: p.y + dy}; });
+    }
+    triHit.style.cursor = 'grabbing';
+    render();
+  });
+  function endTriDrag(ev){
+    if (!triDrag) return;
+    swallowTriClick = triDrag.moved;
+    triDrag = null;
+    triHit.style.cursor = triHidden ? 'pointer' : 'move';
+    try { triHit.releasePointerCapture(ev.pointerId); } catch(e){}
+  }
+  triHit.addEventListener('pointerup', endTriDrag);
+  triHit.addEventListener('pointercancel', endTriDrag);
+
+  /* ================= 启动 ================= */
+  render();
+  applyVis();
+})();
+</script>
+</body>
+</html>

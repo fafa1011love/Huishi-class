@@ -1,0 +1,1841 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>模型41 · 相对论时空观与牛顿力学的局限性</title>
+<style>
+:root{
+  --blue:#2563eb; --orange:#ea580c; --yellow:#ca8a04; --red:#dc2626;
+  --green:#16a34a; --gray:#9ca3af; --purple:#9333ea;
+  --bg:#f5f7fb; --panel:#ffffff; --ink:#1e293b; --ink2:#475569; --line:#e2e8f0;
+}
+*{box-sizing:border-box; margin:0; padding:0;}
+html,body{height:100%;}
+body{font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif; background:var(--bg); color:var(--ink); font-size:14px; line-height:1.6;}
+.app{max-width:1280px; margin:0 auto; padding:10px 14px 40px;}
+.topbar{display:flex; flex-wrap:wrap; align-items:center; gap:10px; padding:10px 0; border-bottom:2px solid var(--ink);}
+.brand{display:flex; align-items:center; gap:10px; flex:1; min-width:280px;}
+.badge{background:var(--ink); color:#fff; padding:2px 10px; border-radius:14px; font-size:12px; white-space:nowrap;}
+.brand h1{font-size:19px; font-weight:700;}
+.top-actions{display:flex; gap:8px; flex-wrap:wrap;}
+button{font-family:inherit; font-size:13px; padding:5px 12px; border:1px solid var(--ink2); background:#fff; color:var(--ink); border-radius:6px; cursor:pointer;}
+button:hover{background:#eef2ff;}
+button.primary{background:var(--blue); border-color:var(--blue); color:#fff;}
+button.primary:hover{background:#1d4ed8;}
+button.warn{background:var(--red); border-color:var(--red); color:#fff;}
+button.on{background:var(--green); border-color:var(--green); color:#fff;}
+.tabs{display:flex; flex-wrap:wrap; gap:6px; margin:12px 0;}
+.tab-btn{border-radius:16px; padding:5px 14px;}
+.tab-btn.active{background:var(--ink); color:#fff; border-color:var(--ink);}
+.tab-panel{display:none;}
+.tab-panel.active{display:block;}
+.panel{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:14px; margin-bottom:14px; box-shadow:0 1px 3px rgba(15,23,42,.05);}
+.panel h2{font-size:16px; margin-bottom:8px; border-left:4px solid var(--blue); padding-left:8px;}
+.panel h3{font-size:14px; margin:10px 0 6px; color:var(--ink2);}
+canvas.block{width:100%; display:block; border:1px solid var(--line); border-radius:8px; background:#fff; touch-action:none;}
+.ctrl-row{display:flex; flex-wrap:wrap; align-items:center; gap:10px; margin:8px 0;}
+.ctrl-row label{font-size:13px; color:var(--ink2); white-space:nowrap;}
+input[type=range]{vertical-align:middle; width:170px;}
+input[type=number],input[type=text],select{padding:4px 6px; border:1px solid var(--line); border-radius:5px; font-size:13px; width:110px;}
+input[type=checkbox]{vertical-align:middle;}
+.readout{display:flex; flex-wrap:wrap; gap:8px; margin:8px 0;}
+.kv{background:#f8fafc; border:1px solid var(--line); border-radius:8px; padding:6px 12px; min-width:120px;}
+.kv b{display:block; font-size:15px; color:var(--blue);}
+.kv span{font-size:12px; color:var(--ink2);}
+.kv.warnK b{color:var(--red);}
+.kv.okK b{color:var(--green);}
+.grid2{display:grid; grid-template-columns:1fr 1fr; gap:14px;}
+.grid3{display:grid; grid-template-columns:repeat(3,1fr); gap:10px;}
+@media(max-width:900px){.grid2,.grid3{grid-template-columns:1fr;}}
+table.tbl{border-collapse:collapse; width:100%; font-size:13px; margin:6px 0;}
+table.tbl th,table.tbl td{border:1px solid var(--line); padding:5px 8px; text-align:center;}
+table.tbl th{background:#f1f5f9;}
+.note{font-size:12px; color:var(--ink2); background:#f8fafc; border-left:3px solid var(--gray); padding:6px 10px; border-radius:4px; margin:6px 0;}
+.note.ok{border-left-color:var(--green); background:#f0fdf4;}
+.note.bad{border-left-color:var(--red); background:#fef2f2;}
+.tl{list-style:none; border-left:3px solid var(--blue); margin:8px 0 4px 8px; padding-left:16px;}
+.tl li{margin:10px 0; position:relative;}
+.tl li::before{content:""; position:absolute; left:-22px; top:6px; width:9px; height:9px; border-radius:50%; background:var(--blue);}
+.tl b{color:var(--blue);}
+.tl .yr{font-weight:700; margin-right:6px;}
+/* 抽屉 */
+.drawer{position:fixed; top:0; right:-420px; width:400px; max-width:92vw; height:100%; background:#fff; border-left:1px solid var(--line); box-shadow:-4px 0 16px rgba(0,0,0,.12); z-index:60; transition:right .25s; display:flex; flex-direction:column;}
+.drawer.open{right:0;}
+.drawer .d-head{padding:12px 14px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:8px;}
+.drawer .d-head h3{flex:1; font-size:15px;}
+.d-cats{display:flex; flex-wrap:wrap; gap:5px; padding:8px 12px; border-bottom:1px solid var(--line);}
+.d-cats button{padding:2px 10px; border-radius:12px; font-size:12px;}
+.d-cats button.active{background:var(--ink); color:#fff; border-color:var(--ink);}
+.d-list{flex:1; overflow-y:auto; padding:10px 12px;}
+.d-item{border:1px solid var(--line); border-radius:8px; padding:8px 10px; margin-bottom:8px; cursor:pointer;}
+.d-item:hover{border-color:var(--blue); background:#eff6ff;}
+.d-item .cat{font-size:11px; color:#fff; background:var(--blue); border-radius:8px; padding:1px 8px; margin-right:6px;}
+.d-item .t{font-weight:600;}
+.d-item .c{font-size:12px; color:var(--ink2);}
+/* 弹窗 */
+.mask{position:fixed; inset:0; background:rgba(15,23,42,.4); z-index:70; display:none;}
+.mask.open{display:flex; align-items:center; justify-content:center;}
+.modal{background:#fff; border-radius:12px; width:560px; max-width:94vw; max-height:88vh; overflow:auto; padding:18px; position:relative;}
+.m-actions{display:flex; gap:8px; flex-wrap:wrap; margin-top:12px;}
+.flip{perspective:900px;}
+.flip-inner{position:relative; transition:transform .45s; transform-style:preserve-3d; min-height:200px;}
+.flip-inner.flipped{transform:rotateY(180deg);}
+.face{backface-visibility:hidden;}
+.face.back{position:absolute; inset:0; transform:rotateY(180deg); overflow:auto;}
+.m-title{font-size:17px; font-weight:700; margin-bottom:6px;}
+.m-con{margin:6px 0;}
+.m-con .lbl{font-size:12px; color:var(--ink2); font-weight:600;}
+.formula{font-family:"Cambria Math",Georgia,serif; background:#f8fafc; border:1px dashed var(--blue); border-radius:6px; padding:6px 10px; margin:6px 0; font-size:15px;}
+.minisvg{display:block; margin:6px 0; max-width:240px; height:auto; border:1px solid var(--line); border-radius:6px; background:#fff;}
+/* 钉住 */
+#pinned{position:fixed; left:12px; bottom:12px; z-index:55; display:flex; flex-direction:column; gap:8px; max-width:300px;}
+.pin-card{background:#fff; border:1px solid var(--blue); border-radius:8px; padding:8px 10px; box-shadow:0 2px 8px rgba(0,0,0,.12); font-size:12px; position:relative;}
+.pin-card b{color:var(--blue);}
+.pin-card .x{position:absolute; right:6px; top:4px; border:none; padding:0 4px; font-size:12px;}
+/* 引导 */
+#guidePanel{position:fixed; right:14px; top:70px; width:320px; background:#fff; border:1px solid var(--green); border-radius:10px; padding:12px; z-index:50; box-shadow:0 4px 14px rgba(0,0,0,.15); display:none;}
+#guidePanel.open{display:block;}
+#guidePanel .step{font-size:12px; color:var(--green); font-weight:700;}
+#guidePanel .q{font-size:13px; color:var(--red); margin:6px 0;}
+/* 日志 */
+#logPanel{position:fixed; inset:0; background:rgba(15,23,42,.4); z-index:65; display:none; align-items:center; justify-content:center;}
+#logPanel.open{display:flex;}
+#logPanel .box{background:#fff; border-radius:12px; width:860px; max-width:95vw; max-height:86vh; overflow:auto; padding:16px;}
+/* toast */
+#toast{position:fixed; left:50%; bottom:26px; transform:translateX(-50%); background:var(--ink); color:#fff; padding:8px 18px; border-radius:20px; z-index:90; opacity:0; transition:opacity .3s; pointer-events:none; font-size:13px;}
+#toast.show{opacity:1;}
+.quiz-q{border:1px solid var(--line); border-radius:10px; padding:12px; margin-bottom:12px;}
+.quiz-q h4{font-size:14px; margin-bottom:8px;}
+.opt{display:block; border:1px solid var(--line); border-radius:6px; padding:6px 10px; margin:5px 0; cursor:pointer;}
+.opt:hover{border-color:var(--blue);}
+.opt.sel{border-color:var(--blue); background:#eff6ff;}
+.opt.right{border-color:var(--green); background:#f0fdf4;}
+.opt.wrong{border-color:var(--red); background:#fef2f2;}
+.exp{font-size:12px; color:var(--ink2); background:#f8fafc; padding:6px 8px; border-radius:6px; margin-top:6px; display:none;}
+.legend{display:flex; flex-wrap:wrap; gap:12px; font-size:12px; color:var(--ink2); margin:4px 0;}
+.legend i{display:inline-block; width:14px; height:3px; border-radius:2px; margin-right:4px; vertical-align:middle;}
+footer{margin-top:18px; font-size:12px; color:var(--ink2); border-top:1px dashed var(--gray); padding-top:10px;}
+.maplegend span{font-size:12px; margin-right:10px;}
+.hint{font-size:12px; color:var(--purple);}
+kbd{background:#eef2ff; border:1px solid #c7d2fe; border-radius:4px; padding:0 5px; font-size:11px;}
+@media (prefers-reduced-motion: reduce){ .flip-inner{transition:none;} .drawer{transition:none;} }
+</style>
+</head>
+<body>
+<div class="app">
+<header class="topbar">
+  <div class="brand"><span class="badge">模型 41</span><h1>相对论时空观与牛顿力学的局限性</h1></div>
+  <div class="top-actions">
+    <button id="btnGuide">教学引导</button>
+    <button id="btnUnit">单位：SI 制</button>
+    <button id="btnCards">知识卡片库</button>
+    <button id="btnLog">数据记录</button>
+  </div>
+</header>
+
+<nav class="tabs" role="tablist" aria-label="模块标签页">
+  <button class="tab-btn active" data-tab="t1" role="tab">① 时空观对照</button>
+  <button class="tab-btn" data-tab="t2" role="tab">② γ–β 曲线</button>
+  <button class="tab-btn" data-tab="t3" role="tab">③ 时间膨胀</button>
+  <button class="tab-btn" data-tab="t4" role="tab">④ 长度收缩</button>
+  <button class="tab-btn" data-tab="t5" role="tab">⑤ 同时的相对性</button>
+  <button class="tab-btn" data-tab="t6" role="tab">⑥ 质能与速度叠加</button>
+  <button class="tab-btn" data-tab="t7" role="tab">⑦ 牛顿力学的局限</button>
+  <button class="tab-btn" data-tab="t8" role="tab">⑧ 练习考核</button>
+</nav>
+
+<!-- ============ Tab1 时空观对照 ============ -->
+<section class="tab-panel active" id="t1">
+  <div class="panel">
+    <h2>经典（伽利略）时空观 vs 相对论时空观 —— 同一场景并列对照</h2>
+    <p class="note">场景：列车中央的灯发出一个光脉冲，光到达车头这一"事件"，分别在<b>伽利略变换</b>与<b>洛伦兹变换</b>下换算到车厢参考系。拖动 β 观察：β→0 时两套变换完全一致。</p>
+    <div class="ctrl-row">
+      <label>β = v/c <input type="range" id="t1beta" min="0" max="0.99" step="0.001" value="0.6"></label>
+      <output id="t1betaOut">0.600</output>
+      <label>固有车长 L₀ <input type="number" id="t1L0" value="600" min="100" max="2000" step="50"> m</label>
+      <button class="primary" data-preset="0.01">β=0.01（低速·两变换重合）</button>
+      <button data-preset="0.6">β=0.6</button>
+      <button data-preset="0.9">β=0.9</button>
+    </div>
+    <canvas class="block" id="cvScene" height="300" aria-label="光脉冲对照场景示意图"></canvas>
+    <table class="tbl" id="t1table"></table>
+    <div class="note" id="t1note"></div>
+    <h3>速度叠加对照（光脉冲相对地面的速度）</h3>
+    <div class="readout" id="t1speed"></div>
+    <h3>时空间隔不变量（拓展，可开关）</h3>
+    <div class="ctrl-row">
+      <label><input type="checkbox" id="t1invOn"> 显示时空间隔 s² = c²t² − x² 的计算</label>
+      <label>Δx <input type="range" id="t1dx" min="-600" max="600" step="10" value="300"> m</label>
+      <output id="t1dxOut"></output>
+      <label>Δt <input type="range" id="t1dt" min="-4" max="4" step="0.1" value="1"> μs</label>
+      <output id="t1dtOut"></output>
+    </div>
+    <div id="t1invBox" style="display:none"></div>
+  </div>
+  <div class="panel">
+    <h2>历史逻辑时间轴：从伽利略到爱因斯坦</h2>
+    <ul class="tl" id="histTL"></ul>
+    <div class="note">逻辑链：伽利略相对性（力学）→ 麦克斯韦方程组预言电磁波速 c（相对"以太"）→ 迈克尔逊—莫雷实验<b>零结果</b>（测不到以太漂移）→ 爱因斯坦（1905）以<b>相对性原理 + 光速不变原理</b>两条假设重建时空观。洛伦兹、庞加莱已得到洛伦兹变换的数学形式，是重要前驱。光速不变是<b>实验事实 + 原理选择</b>，不是"光追不上"的直觉问题；现代物理不采用"以太真实存在"的表述。</div>
+  </div>
+</section>
+
+<!-- ============ Tab2 γ曲线 ============ -->
+<section class="tab-panel" id="t2">
+  <div class="panel">
+    <h2>洛伦兹因子 γ = 1/√(1−β²) 交互曲线（定量主线）</h2>
+    <div class="legend">
+      <span><i style="background:var(--green)"></i>理论曲线 γ（绿虚线为叠加对照）</span>
+      <span><i style="background:var(--gray)"></i>泰勒近似 γ≈1+β²/2</span>
+      <span><i style="background:var(--purple)"></i>渐近线 β=1</span>
+      <span><i style="background:var(--red)"></i>游标</span>
+    </div>
+    <div class="ctrl-row">
+      <label>β 滑块 <input type="range" id="t2beta" min="0" max="0.9999" step="0.0001" value="0.5"></label>
+      <label>β 数值 <input type="number" id="t2betaNum" min="0" max="0.999999" step="0.0001" value="0.5"></label>
+      <button data-b="0.1">β=0.1</button><button data-b="0.5">β=0.5</button>
+      <button data-b="0.8">β=0.8</button><button data-b="0.9">β=0.9</button>
+      <button data-b="0.99">β=0.99</button>
+      <button class="primary" data-b="0.998" id="t2muonBtn">β=0.998（μ子）</button>
+      <button id="t2view">切换视图：全范围</button>
+      <button id="t2axis">横轴：β</button>
+      <button id="t2reset">重置缩放</button>
+    </div>
+    <div class="ctrl-row">
+      <label><input type="checkbox" id="t2taylor" checked> 泰勒近似曲线</label>
+      <label><input type="checkbox" id="t2dev" checked> 相对偏差曲线（下方）</label>
+      <label><input type="checkbox" id="t2mark" checked> 典型对象标记</label>
+      <label><input type="checkbox" id="t2grid" checked> 网格</label>
+      <span class="hint">滚轮缩放 β 范围，拖拽平移，拖动游标读数</span>
+    </div>
+    <canvas class="block" id="cvGamma" height="420" aria-label="γ随β变化曲线"></canvas>
+    <canvas class="block" id="cvGammaDev" height="130" style="margin-top:8px" aria-label="泰勒近似相对偏差曲线"></canvas>
+    <div class="readout" id="t2read"></div>
+    <div id="t2low"></div>
+    <div class="grid3">
+      <div><h3>γ−1 – β² 图（近原点直线，验证 γ≈1+β²/2）</h3><canvas class="block" id="cvGammaLin" height="180"></canvas></div>
+      <div><h3>Δt/Δt₀ – β 图（=γ）</h3><canvas class="block" id="cvDt" height="180"></canvas></div>
+      <div><h3>L/L₀ – β 图（=1/γ 双曲线）</h3><canvas class="block" id="cvLl" height="180"></canvas></div>
+    </div>
+    <div class="ctrl-row"><button id="t2log">记录本次读数</button></div>
+    <div class="note">β–γ 对照：β=0.1→γ≈1.005；0.5→1.155；0.8→1.667；0.9→2.294；0.99→7.09；0.998→15.8。β→1 时 γ→∞（图中紫色渐近线），有质量的物体无法达到光速。</div>
+  </div>
+</section>
+
+<!-- ============ Tab3 时间膨胀 ============ -->
+<section class="tab-panel" id="t3">
+  <div class="panel">
+    <h2>模块 B：光钟时间膨胀（几何推导）</h2>
+    <p class="note">静止光钟（蓝）：光路竖直；运动光钟（橙）：光路斜向。由勾股定理 (cΔt/2)² = (cΔt₀/2)² + (vΔt/2)² 解得 <b>Δt = γΔt₀</b>。Δt₀ 为<b>固有时</b>（两事件同地，相对事件静止的钟测得）。钟慢是<b>时空本身的性质</b>——所有物理、化学、生物过程同步变慢；互为惯性系的双方都测得对方钟慢，并不矛盾（同时性不同）。</p>
+    <div class="ctrl-row">
+      <label>β <input type="range" id="t3beta" min="0" max="0.99" step="0.001" value="0.6"></label>
+      <output id="t3betaOut"></output>
+      <label>光钟半距 d <input type="range" id="t3d" min="60" max="160" step="5" value="110"> px</label>
+      <button class="primary" id="t3play">暂停</button>
+      <button id="t3step">单步</button>
+      <button id="t3reset">重置</button>
+      <label>慢动作 <select id="t3speed"><option value="0.1">0.1×</option><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="1" selected>1×</option><option value="2">2×</option><option value="5">5×</option></select></label>
+      <label><input type="checkbox" id="t3path" checked> 光路轨迹</label>
+      <label><input type="checkbox" id="t3tri" checked> 推导三角形</label>
+      <label><input type="checkbox" id="t3sound"> 音效（滴答）</label>
+    </div>
+    <canvas class="block" id="cvClock" height="360" aria-label="光钟动画"></canvas>
+    <div class="readout" id="t3read"></div>
+    <div class="ctrl-row"><button id="t3log">记录本次读数</button></div>
+  </div>
+  <div class="panel">
+    <h2>模块 E：宇宙线 μ 子落地（钟慢效应数据验证，数据链闭合）</h2>
+    <p class="note">μ 子静止平均寿命 τ₀ ≈ 2.2 μs。取 v = 0.998c ⇒ γ ≈ 15.8 ⇒ 实验室测得寿命 Δt = γτ₀ ≈ 34.8 μs ⇒ 射程 ≈ 10.4 km（与产生高度量级相符，故能到达地面）；<b>经典预言仅约 660 m</b>。等价解释：在 μ 子自身参考系中寿命不变（2.2 μs），是<b>大气层厚度沿运动方向收缩</b>为约 1/γ——两种解释自洽。</p>
+    <div class="ctrl-row">
+      <label>v/c <input type="range" id="t3mv" min="0.9" max="0.9999" step="0.0001" value="0.998"></label>
+      <output id="t3mvOut"></output>
+      <label>产生高度 <input type="range" id="t3h" min="5" max="20" step="1" value="10"> km</label>
+      <output id="t3hOut"></output>
+      <button class="primary" id="t3mplay">暂停</button>
+      <button id="t3mreset">重置动画</button>
+      <button id="t3mc">运行 1000 个 μ 子（蒙特卡洛）</button>
+      <button id="t3mview">切换视角：实验室系</button>
+    </div>
+    <canvas class="block" id="cvMuon" height="380" aria-label="μ子落地动画"></canvas>
+    <div class="readout" id="t3mread"></div>
+    <div class="grid2">
+      <div><h3>μ 子射程 – β 图（绿虚线：相对论；灰虚线：经典）</h3><canvas class="block" id="cvMuonR" height="200"></canvas></div>
+      <div><h3>衰变高度直方图（蒙特卡洛，固定随机种子，可复现）</h3><canvas class="block" id="cvMuonHist" height="200"></canvas></div>
+    </div>
+    <div id="t3mcBox"></div>
+    <div class="ctrl-row"><button id="t3mlog">记录本次读数</button></div>
+    <h3>其他实验验证（图文卡）</h3>
+    <div class="grid3" id="t3verify"></div>
+  </div>
+</section>
+
+<!-- ============ Tab4 长度收缩 ============ -->
+<section class="tab-panel" id="t4">
+  <div class="panel">
+    <h2>模块 C：长度收缩（尺缩效应，"同时测量"可视化）</h2>
+    <p class="note">L = L₀/γ：L₀ 为<b>固有长度</b>（物体静止系中测得），L 为相对物体运动的惯性系<b>沿运动方向</b>测得的长度。测量必须<b>同时</b>记录两端位置（依赖同时的相对性）；垂直方向不收缩。收缩是<b>测量结果</b>，不等于"眼睛看到的样子"（视觉效应含光传播延迟与光行差，即 Terrell 旋转——拓展）。</p>
+    <div class="ctrl-row">
+      <label>β <input type="range" id="t4beta" min="0" max="0.99" step="0.001" value="0.6"></label>
+      <output id="t4betaOut"></output>
+      <label>L₀ <input type="number" id="t4L0" value="100" min="20" max="300" step="10"> m</label>
+      <label><input type="checkbox" id="t4sim" checked> 同时测量（关闭=演示错误测量）</label>
+      <label><input type="checkbox" id="t4vert" checked> 垂直方向对照（杆旋转 90°）</label>
+      <label><input type="checkbox" id="t4grid" checked> 网格刻度</label>
+      <button class="primary" id="t4mark">此刻同时标记两端</button>
+      <button id="t4reset">重置</button>
+    </div>
+    <canvas class="block" id="cvRod" height="380" aria-label="运动杆长度收缩动画"></canvas>
+    <div class="readout" id="t4read"></div>
+    <div class="note" id="t4warn"></div>
+    <div class="ctrl-row"><button id="t4log">记录本次读数</button></div>
+  </div>
+</section>
+
+<!-- ============ Tab5 同时的相对性 ============ -->
+<section class="tab-panel" id="t5">
+  <div class="panel">
+    <h2>模块 D：爱因斯坦火车 —— 同时的相对性</h2>
+    <p class="note">地面观察者位于两事件中点：两道闪电<b>同时</b>击中列车前后端（地面系同时异地事件）。列车观察者位于车中点，向前进方向运动，<b>先看到前端的光</b>；扣除光传播时间后<b>判定</b>：两事件不同时（前端事件先发生）。区分"看到（光到达眼睛）"与"判定（扣除光传播时间）"。</p>
+    <div class="ctrl-row">
+      <label>v/c <input type="range" id="t5v" min="0.1" max="0.95" step="0.01" value="0.6"></label>
+      <output id="t5vOut"></output>
+      <label>L₀ <input type="number" id="t5L0" value="600" min="200" max="2000" step="100"> m</label>
+      <button class="primary" id="t5play">暂停</button>
+      <button id="t5step">单步</button>
+      <button id="t5reset">重置</button>
+      <label><input type="checkbox" id="t5same"> Δx=0 对照（同地事件：时序不变）</label>
+      <label>慢动作 <select id="t5speed"><option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="1" selected>1×</option></select></label>
+    </div>
+    <canvas class="block" id="cvTrain" height="480" aria-label="爱因斯坦火车思想实验动画，上半地面系，下半列车系"></canvas>
+    <div class="readout" id="t5read"></div>
+    <table class="tbl" id="t5table"></table>
+    <div class="note" id="t5note"></div>
+  </div>
+</section>
+
+<!-- ============ Tab6 质能与速度叠加 ============ -->
+<section class="tab-panel" id="t6">
+  <div class="panel">
+    <h2>模块 F1：质能计算台（以静止质量 m₀ 为主线）</h2>
+    <p class="note">动量 p = γm₀v，总能量 E = γm₀c²，静止能量 E₀ = m₀c²，动能 E_k = (γ−1)m₀c²。旧表述"质量随速度增大"即相对论质量 m = γm₀（此时 E = mc²）；<b>现代物理更倾向只用不变质量 m₀</b>，避免"质量随速度变"的误解。E = mc² 应理解为<b>质量与能量等价</b>（质量是能量的一种量度），核反应中质量亏损对应释放能量 ΔE = Δm·c²；不能说"质量变成了能量"。β→1 时 γ→∞，所需能量→∞，有质量物体不能达到光速；无质量粒子（光子）只能以 c 运动。</p>
+    <div class="ctrl-row">
+      <label>m₀ <input type="number" id="t6m0" value="9.109e-31" step="1e-35"></label>
+      <select id="t6m0u"><option value="kg">kg</option><option value="ev">eV/c²</option><option value="mev">MeV/c²</option></select>
+      <label>β <input type="range" id="t6beta" min="0" max="0.9999" step="0.0001" value="0.5"></label>
+      <output id="t6betaOut"></output>
+      <button data-b6="0.001">β=0.001</button><button data-b6="0.01">β=0.01</button>
+      <button data-b6="0.5">β=0.5</button><button data-b6="0.9">β=0.9</button>
+      <button data-b6="0.99">β=0.99</button>
+      <button id="t6electron">电子（默认）</button><button id="t6proton">质子</button><button id="t6kg">1 kg 物体</button>
+    </div>
+    <div class="readout" id="t6read"></div>
+    <div id="t6low"></div>
+    <h3>E_k – v² 图（β² 横轴；蓝：相对论 (γ−1)；灰虚线：牛顿 β²/2）</h3>
+    <canvas class="block" id="cvEk" height="220"></canvas>
+    <div class="ctrl-row"><button id="t6log">记录本次读数</button></div>
+  </div>
+  <div class="panel">
+    <h2>模块 F2：相对论速度叠加 vs 伽利略叠加</h2>
+    <p class="note">一维速度变换 u = (u′+v)/(1+u′v/c²)。u′=c 时 u=c（光速不变）；两个 0.9c 合成仍小于 c（u ≈ 0.994c）。低速下与伽利略叠加 u = u′+v 一致。超光速信号会破坏因果顺序（类空间隔事件的时序可反转）——拓展。</p>
+    <div class="ctrl-row">
+      <label>u′/c <input type="range" id="t6up" min="0" max="1" step="0.0001" value="0.9"></label>
+      <output id="t6upOut"></output>
+      <label>v/c <input type="range" id="t6vv" min="0" max="0.9999" step="0.0001" value="0.9"></label>
+      <output id="t6vvOut"></output>
+      <button id="t6c">u′ = c 演示（⇒ u = c）</button>
+      <button id="t6pair">两个 0.9c</button>
+      <button id="t6slow">低速对照（0.001）</button>
+    </div>
+    <canvas class="block" id="cvVel" height="260"></canvas>
+    <div class="readout" id="t6vread"></div>
+  </div>
+</section>
+
+<!-- ============ Tab7 牛顿力学局限 ============ -->
+<section class="tab-panel" id="t7">
+  <div class="panel">
+    <h2>模块 G：牛顿力学适用域地图（对数坐标）+ 对象探针</h2>
+    <p class="note">横轴：速度（对数，β = v/c）；纵轴：尺度（对数，m）。牛顿力学适用于<b>宏观、低速（v≪c）、弱引力场</b>。高速→狭义相对论；微观（作用量 ~ h）→量子力学；强引力场→广义相对论。<span class="hint">拖动探针或点击预设对象，实时显示应使用的理论。</span></p>
+    <div class="ctrl-row">
+      <button data-obj="baseball">棒球</button><button data-obj="atom">氢原子电子</button>
+      <button data-obj="lhc">LHC 质子</button><button data-obj="muon">宇宙线 μ 子</button>
+      <button data-obj="galaxy">星系</button><button data-obj="photon">光子</button>
+      <button data-obj="sat">人造卫星</button>
+    </div>
+    <canvas class="block" id="cvMap" height="420"></canvas>
+    <div class="readout" id="t7read"></div>
+    <h3>三分对照表</h3>
+    <table class="tbl" id="t7table"></table>
+    <h3>对应原理动画：β 从 0.99 降到 0.01，看相对论如何退化为牛顿力学</h3>
+    <div class="ctrl-row">
+      <label>β <input type="range" id="t7beta" min="0.01" max="0.99" step="0.001" value="0.99"></label>
+      <output id="t7betaOut"></output>
+      <button class="primary" id="t7anim">自动演示</button>
+    </div>
+    <canvas class="block" id="cvCorr" height="240"></canvas>
+    <div class="readout" id="t7corr"></div>
+    <div class="note ok">对应原理：v≪c 时 γ→1、E_k→½m₀v²、洛伦兹变换→伽利略变换。相对论与量子力学是对牛顿力学的<b>扩展</b>，而非"推翻"——在其适用域内牛顿力学依然精确成立（日常速度下 γ≈1，牛顿力学足够精确）。</div>
+    <h3>广义相对论经典验证（史实卡）</h3>
+    <div class="grid3" id="t7gr"></div>
+  </div>
+</section>
+
+<!-- ============ Tab8 练习考核 ============ -->
+<section class="tab-panel" id="t8">
+  <div class="panel">
+    <h2>练习与考核（6 道即时反馈选择题）</h2>
+    <div class="ctrl-row">
+      <label><input type="checkbox" id="t8teacher"> 教师考核模式（随机出题、隐藏答案、统一交卷）</label>
+      <button class="primary" id="t8start">开始 / 重新出题</button>
+      <button id="t8submit" style="display:none">交卷</button>
+      <span id="t8score"></span>
+    </div>
+    <div id="quizBox"></div>
+  </div>
+  <div class="panel">
+    <h2>结论总结</h2>
+    <div class="note ok">两大基本假设（相对性原理 + 光速不变原理）⇒ 洛伦兹变换 ⇒ γ = 1/√(1−β²) ⇒ Δt = γΔt₀（钟慢）、L = L₀/γ（尺缩）、Δt′ = −γvΔx/c²（同时的相对性）、E = γm₀c² 与 E₀ = m₀c²（质能等价）。牛顿力学适用于宏观、低速、弱引力；v≪c 时相对论退化为牛顿力学（对应原理）——扩展而非推翻。</div>
+  </div>
+</section>
+
+<footer>
+  ⚠️ 安全与规范提示：本模型为<b>教学示意</b>仿真——动画中时间与空间均做了"教学放大"（慢放 c、放大尺缩/钟慢效应的视觉比例），忽略引力与加速过程细节；所有读数均由洛伦兹变换与 γ 解析计算，与画面比例无关。内部单位 SI（c = 3.0×10⁸ m/s，1 eV = 1.602×10⁻¹⁹ J）。
+  <br>卡片库操作：<kbd>Enter</kbd> 打开 · <kbd>Esc</kbd> 关闭 · <kbd>←</kbd>/<kbd>→</kbd> 切换卡片。
+</footer>
+</div>
+
+<!-- 抽屉 -->
+<aside class="drawer" id="drawer" aria-label="知识卡片库">
+  <div class="d-head"><h3>📚 知识卡片库</h3><button id="dClose">关闭</button></div>
+  <div class="ctrl-row" style="padding:8px 12px 0"><input type="text" id="dSearch" placeholder="关键词搜索…" style="width:100%"></div>
+  <div class="d-cats" id="dCats"></div>
+  <div class="d-list" id="dList" role="listbox"></div>
+</aside>
+
+<!-- 卡片弹窗 -->
+<div class="mask" id="cardMask">
+  <div class="modal" role="dialog" aria-modal="true" aria-label="知识卡片详情">
+    <div class="flip"><div class="flip-inner" id="flipInner">
+      <div class="face front" id="cardFront"></div>
+      <div class="face back" id="cardBack"></div>
+    </div></div>
+    <div class="m-actions">
+      <button id="cFlip">翻转（推导/详情）</button>
+      <button id="cPin">📌 钉住</button>
+      <button id="cPrev">上一张</button>
+      <button id="cNext">下一张</button>
+      <button class="warn" id="cClose">关闭 (Esc)</button>
+    </div>
+  </div>
+</div>
+
+<div id="pinned"></div>
+
+<div id="guidePanel" role="region" aria-label="教学引导">
+  <div class="step" id="gStep"></div>
+  <div id="gText"></div>
+  <div class="q" id="gQ"></div>
+  <div class="ctrl-row" style="margin:8px 0 0">
+    <button class="primary" id="gNext">下一步</button>
+    <button id="gClose">关闭引导</button>
+  </div>
+</div>
+
+<div id="logPanel">
+  <div class="box">
+    <h2 style="font-size:16px;margin-bottom:10px">📋 数据记录与拟合工具</h2>
+    <div class="ctrl-row">
+      <button class="primary" id="logCsv">导出 CSV</button>
+      <button class="warn" id="logClear">清空记录</button>
+      <button id="logClose">关闭</button>
+      <span class="hint">每次实验按模块着色区分</span>
+    </div>
+    <div style="max-height:300px;overflow:auto"><table class="tbl" id="logTable"></table></div>
+    <h3 style="margin-top:12px">拟合工具：由 Δt/Δt₀ 反解 γ 与 β</h3>
+    <div class="ctrl-row">
+      <label>Δt/Δt₀ = <input type="number" id="fitR" value="15.82" step="0.01" min="1"></label>
+      <button id="fitGo">反解</button>
+      <span id="fitOut"></span>
+    </div>
+  </div>
+</div>
+
+<div id="toast"></div>
+
+<script>
+"use strict";
+/* ================= 0. 常量与工具 ================= */
+var C = 3.0e8;            // 光速（教材取值，m/s）
+var TAU0 = 2.2e-6;        // μ子静止平均寿命 s
+var EV = 1.602e-19;       // 1 eV
+var GAMMA_MAX = 1e4;      // γ 上限，超限显示"≈∞"
+var COL = {blue:'#2563eb',orange:'#ea580c',yellow:'#ca8a04',red:'#dc2626',green:'#16a34a',gray:'#9ca3af',purple:'#9333ea',ink:'#1e293b',ink2:'#475569',line:'#e2e8f0'};
+
+function el(id){ return document.getElementById(id); }
+/* 关键修复：把 HTML 中 canvas 的 height 属性固化为 CSS 高度。
+   否则 canvas 只有 width:100% 时会按属性宽高比(300:300=1:1)放大，
+   显示高度 = 容器宽度，产生大面积空白。 */
+document.querySelectorAll('canvas.block').forEach(function(cv){
+  var h=cv.getAttribute('height');
+  if(h) cv.style.height=h+'px';
+});
+function clamp(x,a,b){ return Math.min(b,Math.max(a,x)); }
+/* 洛伦兹因子：用 (1-β)(1+β) 计算避免浮点抵消；β=0 严格返回 1 */
+function gammaOf(beta){
+  if(!isFinite(beta) || beta<=0) return 1;
+  if(beta>=1) return Infinity;
+  var om=(1-beta)*(1+beta);
+  return 1/Math.sqrt(om);
+}
+function safeGamma(beta){ var g=gammaOf(beta); if(g>GAMMA_MAX) return {g:GAMMA_MAX,capped:true}; return {g:g,capped:false}; }
+/* 洛伦兹变换（一维） */
+function lor(x,t,beta){ var g=gammaOf(beta),v=beta*C; return {x:g*(x-v*t), t:g*(t-v*x/(C*C))}; }
+/* 伽利略变换 */
+function gal(x,t,beta){ return {x:x-beta*C*t, t:t}; }
+/* 相对论速度叠加（以 c 为单位） */
+function velAdd(up,vp){ return (up+vp)/(1+up*vp); }
+/* 可复现随机数（mulberry32，固定种子） */
+function mulberry32(a){ return function(){ a|=0; a=a+0x6D2B79F5|0; var t=Math.imul(a^a>>>15,1|a); t=t+Math.imul(t^t>>>7,61|t)^t; return ((t^t>>>14)>>>0)/4294967296; }; }
+
+/* 自适应单位显示 */
+function fmtTime(s){
+  var a=Math.abs(s);
+  if(a>=1) return s.toFixed(3)+' s';
+  if(a>=1e-3) return (s*1e3).toFixed(3)+' ms';
+  if(a>=1e-6) return (s*1e6).toFixed(3)+' μs';
+  return (s*1e9).toFixed(2)+' ns';
+}
+function fmtLen(m){
+  var a=Math.abs(m);
+  if(a>=1000) return (m/1000).toFixed(3)+' km';
+  if(a<1e-3&&a>0) return (m*1e3).toFixed(2)+' mm';
+  return m.toFixed(2)+' m';
+}
+function fmtVel(beta){
+  return (beta*C/1000).toFixed(0)+' km/s（= '+beta.toFixed(4)+' c）';
+}
+function fmtEev(J){
+  var ev=J/EV;
+  if(ev>=1e21) return ev.toExponential(3)+' eV';   // toFixed 对 ≥1e21 会退化成指数串，显式处理
+  if(ev>=1e9) return (ev/1e9).toFixed(3)+' GeV';
+  if(ev>=1e6) return (ev/1e6).toFixed(3)+' MeV';
+  if(ev>=1e3) return (ev/1e3).toFixed(3)+' keV';
+  if(ev>=1e-3) return ev.toFixed(3)+' eV';
+  return ev.toExponential(2)+' eV';
+}
+function fmtE(J){ return J.toExponential(3)+' J = '+fmtEev(J); }
+function toast(msg){ var t=el('toast'); t.textContent=msg; t.classList.add('show'); clearTimeout(t._tm); t._tm=setTimeout(function(){t.classList.remove('show');},2200); }
+/* 画布 DPI 适配 */
+function fitCanvas(cv){
+  var dpr=window.devicePixelRatio||1, r=cv.getBoundingClientRect();
+  cv.width=Math.max(10,Math.round(r.width*dpr)); cv.height=Math.max(10,Math.round(r.height*dpr));
+  var ctx=cv.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {ctx:ctx,W:r.width,H:r.height};
+}
+function txt(ctx,s,x,y,o){ o=o||{}; ctx.font=o.font||'12px sans-serif'; ctx.fillStyle=o.color||COL.ink; ctx.textAlign=o.align||'left'; ctx.textBaseline=o.base||'alphabetic'; ctx.fillText(s,x,y); }
+function ln(ctx,x1,y1,x2,y2,color,dash,w){ ctx.save(); ctx.strokeStyle=color; ctx.lineWidth=w||1; ctx.setLineDash(dash||[]); ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke(); ctx.restore(); }
+var RM = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ================= 1. 全局状态 ================= */
+var S = { unit:'SI', tab:'t1' };
+var hotspots = {};  // canvasId -> [{x,y,r,card}]
+function addHot(cvId,x,y,card){ (hotspots[cvId]=hotspots[cvId]||[]).push({x:x,y:y,r:10,card:card}); }
+function bindHotspots(cvId){
+  var cv=el(cvId);
+  cv.addEventListener('click',function(e){
+    var r=cv.getBoundingClientRect(), x=e.clientX-r.left, y=e.clientY-r.top;
+    var hs=hotspots[cvId]||[];
+    for(var i=0;i<hs.length;i++){ var dx=x-hs[i].x, dy=y-hs[i].y; if(dx*dx+dy*dy<=hs[i].r*hs[i].r*1.6){ openCard(hs[i].card); return; } }
+    if(cvId==='cvGamma') gammaPointer(e);
+  });
+  cv.addEventListener('mousemove',function(e){
+    var r=cv.getBoundingClientRect(), x=e.clientX-r.left, y=e.clientY-r.top, hit=false;
+    (hotspots[cvId]||[]).forEach(function(h){ if((x-h.x)*(x-h.x)+(y-h.y)*(y-h.y)<=h.r*h.r*1.6) hit=true; });
+    cv.style.cursor = (hit||cvId==='cvGamma') ? 'pointer' : 'default';
+  });
+}
+
+/* ================= 2. 标签页 ================= */
+var tabDraws = {};
+document.querySelectorAll('.tab-btn').forEach(function(b){
+  b.addEventListener('click',function(){
+    document.querySelectorAll('.tab-btn').forEach(function(x){x.classList.remove('active');});
+    document.querySelectorAll('.tab-panel').forEach(function(x){x.classList.remove('active');});
+    b.classList.add('active'); el(b.dataset.tab).classList.add('active');
+    S.tab=b.dataset.tab; if(tabDraws[S.tab]) tabDraws[S.tab](0);
+  });
+});
+
+/* ================= 3. 知识卡片系统 ================= */
+var MINI = {
+  curve:'<svg class="minisvg" viewBox="0 0 120 60"><path d="M10 52 C60 52 92 48 108 8" fill="none" stroke="#16a34a" stroke-width="2" stroke-dasharray="4 3"/><line x1="110" y1="6" x2="110" y2="54" stroke="#9333ea" stroke-dasharray="3 2"/><circle cx="88" cy="30" r="4" fill="#dc2626"/><text x="12" y="58" font-size="9" fill="#475569">0</text><text x="104" y="58" font-size="9" fill="#475569">β=1</text><text x="60" y="20" font-size="10" fill="#16a34a">γ</text></svg>',
+  clock:'<svg class="minisvg" viewBox="0 0 120 70"><rect x="14" y="8" width="34" height="3" fill="#2563eb"/><rect x="14" y="58" width="34" height="3" fill="#2563eb"/><line x1="31" y1="11" x2="31" y2="58" stroke="#ca8a04" stroke-width="2" stroke-dasharray="3 2"/><rect x="72" y="8" width="34" height="3" fill="#ea580c"/><rect x="72" y="58" width="34" height="3" fill="#ea580c"/><line x1="89" y1="11" x2="106" y2="58" stroke="#ca8a04" stroke-width="2"/><line x1="89" y1="11" x2="89" y2="58" stroke="#9ca3af" stroke-dasharray="3 2"/><line x1="89" y1="58" x2="106" y2="58" stroke="#9ca3af" stroke-dasharray="3 2"/><text x="18" y="36" font-size="8" fill="#475569">静止</text><text x="78" y="40" font-size="8" fill="#475569">运动</text></svg>',
+  rod:'<svg class="minisvg" viewBox="0 0 120 50"><line x1="10" y1="15" x2="110" y2="15" stroke="#2563eb" stroke-width="6"/><text x="10" y="10" font-size="9" fill="#2563eb">L₀</text><line x1="25" y1="38" x2="65" y2="38" stroke="#ea580c" stroke-width="6"/><text x="25" y="34" font-size="9" fill="#ea580c">L=L₀/γ</text></svg>',
+  train:'<svg class="minisvg" viewBox="0 0 120 60"><rect x="30" y="18" width="60" height="24" rx="4" fill="none" stroke="#ea580c" stroke-width="2"/><circle cx="102" cy="30" r="5" fill="none" stroke="#dc2626" stroke-width="2"/><circle cx="18" cy="30" r="5" fill="none" stroke="#dc2626" stroke-width="2"/><line x1="60" y1="30" x2="102" y2="30" stroke="#ca8a04" stroke-width="1.5"/><line x1="60" y1="30" x2="18" y2="30" stroke="#ca8a04" stroke-width="1.5"/><circle cx="60" cy="30" r="3" fill="#2563eb"/></svg>',
+  muon:'<svg class="minisvg" viewBox="0 0 120 70"><rect x="10" y="6" width="100" height="14" fill="#dbeafe"/><text x="30" y="17" font-size="9" fill="#1e40af">大气层 10 km</text><circle cx="60" cy="30" r="4" fill="#ea580c"/><line x1="60" y1="34" x2="60" y2="62" stroke="#ea580c" stroke-width="2" marker-end=""/><text x="66" y="50" font-size="9" fill="#ea580c">μ</text><line x1="10" y1="64" x2="110" y2="64" stroke="#475569" stroke-width="2"/><text x="12" y="50" font-size="8" fill="#9ca3af">660 m(经典)</text></svg>',
+  energy:'<svg class="minisvg" viewBox="0 0 120 60"><circle cx="60" cy="30" r="18" fill="none" stroke="#16a34a" stroke-width="2"/><text x="47" y="36" font-size="13" fill="#16a34a">E</text><path d="M85 12 l8 8 -4 0 0 10 -8 0 0 -10 -4 0 z" fill="#dc2626"/><text x="8" y="50" font-size="9" fill="#475569">E=γm₀c²</text></svg>',
+  map:'<svg class="minisvg" viewBox="0 0 120 70"><rect x="8" y="10" width="70" height="50" fill="#dcfce7" stroke="#16a34a"/><rect x="78" y="10" width="34" height="50" fill="#fee2e2" stroke="#dc2626"/><rect x="8" y="10" width="70" height="20" fill="#e0f2fe" stroke="#2563eb"/><text x="14" y="44" font-size="9" fill="#166534">牛顿</text><text x="84" y="40" font-size="9" fill="#991b1b">SR</text><text x="14" y="24" font-size="9" fill="#1e40af">QM</text></svg>',
+  ship:'<svg class="minisvg" viewBox="0 0 120 60"><path d="M15 35 q45 14 90 0 l-8 12 -74 0 z" fill="#e2e8f0" stroke="#475569"/><rect x="40" y="20" width="18" height="15" fill="#fff" stroke="#475569"/><circle cx="49" cy="28" r="2" fill="#ea580c"/><line x1="49" y1="28" x2="49" y2="16" stroke="#ca8a04" stroke-width="2"/><text x="66" y="16" font-size="9" fill="#475569">→ 匀速</text></svg>',
+  wave:'<svg class="minisvg" viewBox="0 0 120 60"><path d="M10 30 q10 -18 20 0 t20 0 t20 0 t20 0 t20 0" fill="none" stroke="#ca8a04" stroke-width="2"/><text x="34" y="55" font-size="10" fill="#475569">c = 3.0×10⁸ m/s</text></svg>',
+  interf:'<svg class="minisvg" viewBox="0 0 120 60"><rect x="45" y="8" width="3" height="44" fill="#9ca3af" transform="rotate(45 46 30)"/><line x1="10" y1="30" x2="110" y2="30" stroke="#ca8a04" stroke-width="1.5"/><line x1="60" y1="30" x2="95" y2="10" stroke="#ca8a04" stroke-width="1.5"/><text x="16" y="24" font-size="9" fill="#475569">零结果</text></svg>',
+  atom:'<svg class="minisvg" viewBox="0 0 120 60"><circle cx="60" cy="30" r="4" fill="#ea580c"/><ellipse cx="60" cy="30" rx="30" ry="12" fill="none" stroke="#2563eb"/><ellipse cx="60" cy="30" rx="30" ry="12" fill="none" stroke="#2563eb" transform="rotate(60 60 30)"/><ellipse cx="60" cy="30" rx="30" ry="12" fill="none" stroke="#2563eb" transform="rotate(-60 60 30)"/></svg>',
+  swap:'<svg class="minisvg" viewBox="0 0 120 60"><rect x="10" y="10" width="40" height="40" rx="4" fill="#eff6ff" stroke="#2563eb"/><rect x="70" y="10" width="40" height="40" rx="4" fill="#fff7ed" stroke="#ea580c"/><text x="22" y="34" font-size="10" fill="#2563eb">经典</text><text x="82" y="34" font-size="10" fill="#ea580c">相对论</text><path d="M52 30 h14 m-5 -4 l5 4 -5 4" stroke="#16a34a" stroke-width="2" fill="none"/></svg>',
+  warn:'<svg class="minisvg" viewBox="0 0 120 60"><circle cx="60" cy="30" r="22" fill="none" stroke="#dc2626" stroke-width="2"/><line x1="60" y1="16" x2="60" y2="34" stroke="#dc2626" stroke-width="3"/><circle cx="60" cy="42" r="2" fill="#dc2626"/></svg>',
+  app:'<svg class="minisvg" viewBox="0 0 120 60"><rect x="14" y="14" width="36" height="36" rx="4" fill="none" stroke="#2563eb" stroke-width="2"/><rect x="70" y="14" width="36" height="36" rx="4" fill="none" stroke="#ea580c" stroke-width="2"/><circle cx="32" cy="32" r="5" fill="#2563eb"/><circle cx="88" cy="32" r="3" fill="#ea580c"/></svg>'
+};
+/* 卡片数据（配置对象，便于增删） */
+var CARDS = [
+/* --- 史实卡 --- */
+{id:'h1',cat:'史实',icon:'ship',title:'伽利略相对性（1632）',con:'封闭匀速船舱内的任何力学实验都无法判断船是否在匀速运动。',f:'x′ = x − vt，t′ = t',demo:'①时空观对照 → 伽利略变换栏',warn:'说的是"规律形式相同"，不是"速度相同"。'},
+{id:'h2',cat:'史实',icon:'wave',title:'麦克斯韦与光速（1865）',con:'麦克斯韦方程组预言电磁波以 c = 1/√(ε₀μ₀) ≈ 3×10⁸ m/s 传播，把"光速相对谁"的问题摆上台面。',f:'c = 1/√(ε₀μ₀)',demo:'①时空观对照 → 历史时间轴',warn:'方程并未指明相对哪个参考系。'},
+{id:'h3',cat:'史实',icon:'interf',title:'迈克尔逊—莫雷零结果（1887）',con:'精密干涉实验没有测到地球相对"以太"的运动，光速不随方向变化。',f:'Δt_顺 − ΔT_逆 = 0（零结果）',demo:'①时空观对照 → 历史时间轴',warn:'零结果是实验事实，不是仪器不够灵敏。'},
+{id:'h4',cat:'史实',icon:'atom',title:'爱因斯坦两条假设（1905）',con:'《论动体的电动力学》以"相对性原理 + 光速不变原理"两条假设重建时空观。',f:'假设①所有惯性系物理规律形式相同；②真空光速与光源、观察者运动无关',demo:'①时空观对照 → 场景演示',warn:'光速不变是实验事实+原理选择，不是"光追不上"的直觉问题。'},
+{id:'h5',cat:'史实',icon:'swap',title:'洛伦兹与庞加莱（前驱）',con:'洛伦兹（1904）给出变换公式，庞加莱提出"洛伦兹变换"名称与群性质，但未放弃以太；爱因斯坦从原理出发赋予其时空意义。',f:'x′ = γ(x − vt)',demo:'②γ曲线 → 洛伦兹因子卡',warn:'数学形式先行 ≠ 时空观革命。'},
+{id:'h6',cat:'史实',icon:'app',title:'广义相对论（1915）',con:'把引力解释为时空弯曲，预言水星近日点进动、光线偏折、引力红移，后被引力波（2015）与黑洞照片（2019）证实。',f:'引力 = 时空几何',demo:'⑦局限 → 广义相对论验证卡',warn:'狭义相对论不包含引力。'},
+{id:'h7',cat:'史实',icon:'muon',title:'μ子与原子钟实验验证',con:'1940年代宇宙线μ子、1971年Hafele–Keating飞行原子钟、加速器粒子寿命延长，均定量验证钟慢效应。',demo:'③时间膨胀 → μ子模块',warn:'GPS/北斗须同时做狭义（运动钟慢）与广义（引力钟快）修正，净效应中广义贡献更大。'},
+/* --- 概念卡 --- */
+{id:'c1',cat:'概念',icon:'ship',title:'惯性系',con:'牛顿第一定律成立的参考系；相对某惯性系匀速运动的参考系也是惯性系。',demo:'⑤火车 → 地面系/列车系都是惯性系'},
+{id:'c2',cat:'概念',icon:'swap',title:'绝对时空（经典观）',con:'牛顿认为时间均匀流逝、空间绝对不变，与参考系无关；同时是绝对的。',f:'t′ = t（时间绝对）',demo:'①时空观对照 → 伽利略栏',warn:'仅是低速近似。'},
+{id:'c3',cat:'概念',icon:'train',title:'同时的相对性',con:'异地两事件是否同时取决于参考系——相对论时空观的核心。',f:'Δt′ = −γ·v·Δx/c²',demo:'⑤火车 → 双视角对比',warn:'同地（Δx=0）事件的同时性与时序才不依赖参考系。'},
+{id:'c4',cat:'概念',icon:'clock',title:'固有时 Δt₀ 与固有长度 L₀',con:'固有时：两事件同地时相对事件静止的钟测得的时间间隔；固有长度：物体静止系中测得的长度。',f:'Δt = γΔt₀ ≥ Δt₀；L = L₀/γ ≤ L₀',demo:'③光钟 → Δt₀ 读数；④尺缩 → L₀ 读数',warn:'固有时最短、固有长度最长。'},
+{id:'c5',cat:'概念',icon:'curve',title:'洛伦兹因子 γ',con:'γ = 1/√(1−β²) 是所有相对论效应的"总开关"：β=0 时 γ=1；β→1 时 γ→∞。',f:'γ = 1/√(1−β²)',demo:'②γ曲线 → 拖动游标',warn:'β≥1 无意义：有质量物体达不到光速。'},
+{id:'c6',cat:'概念',icon:'clock',title:'光钟',con:'两块平行镜面之间光脉冲往返计时的理想钟，是推导时间膨胀的几何工具。',demo:'③时间膨胀 → 光钟动画',warn:'钟慢对所有钟一视同仁，与钟的原理无关。'},
+{id:'c7',cat:'概念',icon:'energy',title:'质能等价',con:'质量与能量是同一事物的两种量度：E₀ = m₀c²；质量亏损对应释放能量 ΔE = Δm·c²。',f:'E₀ = m₀c²，ΔE = Δm·c²',demo:'⑥质能 → 计算台',warn:'不是"质量变成能量"——质量与能量各自守恒（系统总能量含静能）。'},
+/* --- 公式卡 --- */
+{id:'f1',cat:'公式',icon:'curve',title:'γ 与 β 的定义',con:'β = v/c 是速度与光速之比；γ = 1/√(1−β²)。',f:'β = v/c，γ = 1/√(1−β²)',demo:'②γ曲线',back:'推导要点：由光速不变 + 相对性原理两条假设可严格导出。'},
+{id:'f2',cat:'公式',icon:'clock',title:'钟慢与尺缩',con:'运动的钟变慢、沿运动方向的长度收缩，两者都由 γ 给出。',f:'Δt = γΔt₀；L = L₀/γ',demo:'③光钟；④尺缩',back:'光钟勾股推导：(cΔt/2)² = (cΔt₀/2)² + (vΔt/2)² ⇒ Δt = γΔt₀。'},
+{id:'f3',cat:'公式',icon:'swap',title:'洛伦兹变换',con:'两个惯性系时空坐标的换算，β→0 时退化为伽利略变换。',f:'x′ = γ(x−vt)，t′ = γ(t−vx/c²)',demo:'①时空观对照 → 变换表',back:'逆变换：x = γ(x′+vt′)，t = γ(t′+vx′/c²)。'},
+{id:'f4',cat:'公式',icon:'train',title:'同时的相对性公式',con:'异地事件的同时性差随参考系变化。',f:'Δt′ = −γ·v·Δx/c²',demo:'⑤火车 → 坐标读数表',back:'由 t′ = γ(t−vx/c²) 两式相减即得；Δx=0 时 Δt′=γΔt，时序不变。'},
+{id:'f5',cat:'公式',icon:'energy',title:'相对论动力学组',con:'以静止质量 m₀ 表述的动量与能量。',f:'p = γm₀v；E = γm₀c²；E₀ = m₀c²；E_k = (γ−1)m₀c²',demo:'⑥质能 → 计算台',back:'E² = (pc)² + (m₀c²)²。'},
+{id:'f6',cat:'公式',icon:'curve',title:'低速近似（对应原理）',con:'β≪1 时 γ ≈ 1 + β²/2，相对论结果退化为牛顿结果。',f:'γ ≈ 1 + β²/2；E_k ≈ ½m₀v²',demo:'②γ曲线 → 低速放大视图；⑥质能 → β=0.01',back:'泰勒展开：(1−β²)^(−1/2) ≈ 1 + β²/2 + 3β⁴/8…'},
+/* --- 规律卡 --- */
+{id:'r1',cat:'规律',icon:'curve',title:'γ 的取值规律',con:'γ ≥ 1 恒成立；β→1 时 γ→∞（所需能量→∞），故有质量物体 v < c。',demo:'②γ曲线 → β 拖到 0.9999'},
+{id:'r2',cat:'规律',icon:'clock',title:'三大时空效应规律',con:'运动钟变慢（Δt>Δt₀）、运动杆沿运动方向收缩（L<L₀）、同时性依赖参考系。',demo:'③④⑤ 三个模块联动同一 β'},
+{id:'r3',cat:'规律',icon:'app',title:'低速退化规律',con:'v≪c 时 γ≈1，牛顿力学足够精确；相对论是扩展不是推翻。',demo:'⑦局限 → 对应原理动画'},
+/* --- 方法卡 --- */
+{id:'m1',cat:'方法',icon:'clock',title:'光钟几何推导法',con:'用勾股定理把"光路变斜"翻译成"时间变长"。',f:'(cΔt/2)² = (cΔt₀/2)² + (vΔt/2)²',demo:'③光钟 → 打开推导三角形',back:'解出 Δt = Δt₀/√(1−β²) = γΔt₀。'},
+{id:'m2',cat:'方法',icon:'rod',title:'同时测量法',con:'测运动物体长度必须同一时刻记录两端位置。',demo:'④尺缩 → 关闭"同时测量"看错误读数'},
+{id:'m3',cat:'方法',icon:'curve',title:'控制变量与图像线性化',con:'固定 Δt₀、L₀、m₀，只变 β；用 γ−1–β²、E_k–v² 图把曲线化为直线检验。',demo:'②γ曲线 → 三个迷你图'},
+{id:'m4',cat:'方法',icon:'muon',title:'蒙特卡洛统计法',con:'用固定随机种子大量抽样指数衰变，统计到达率 ± 统计误差。',demo:'③μ子 → 运行1000个μ子'},
+/* --- 辨析卡 --- */
+{id:'d1',cat:'辨析',icon:'swap',title:'经典 vs 相对论时空观',con:'经典：时间、空间彼此独立且绝对；相对论：时空相互联系、与参考系有关，不变量是时空间隔 s²。',f:'经典 t′=t；相对论 t′=γ(t−vx/c²)',demo:'①时空观对照'},
+{id:'d2',cat:'辨析',icon:'clock',title:'固有时 vs 坐标时',con:'固有时由相对事件静止的钟测得（最短）；坐标时是其他惯性系测得（Δt=γΔt₀）。',demo:'③光钟 → 两个读数对比'},
+{id:'d3',cat:'辨析',icon:'train',title:'看到 vs 判定',con:'"看到"是光到达眼睛的时刻；"判定"是扣除光传播时间后的事件时刻。同时性谈的是判定。',demo:'⑤火车 → 看到/判定两行读数'},
+{id:'d4',cat:'辨析',icon:'energy',title:'静止质量 vs 相对论质量',con:'现代物理以不变质量 m₀ 为主线；m = γm₀ 是旧表述（此时 E=mc²），两者对应关系明确。',demo:'⑥质能 → 表述说明'},
+{id:'d5',cat:'辨析',icon:'swap',title:'扩展 vs 推翻',con:'相对论与量子力学在各自适用域内退化为牛顿力学，是扩展而非推翻。',demo:'⑦局限 → 对应原理动画'},
+{id:'d6',cat:'辨析',icon:'atom',title:'狭义 vs 广义相对论',con:'狭义：惯性系、无引力；广义：包含引力（时空弯曲），1915。',demo:'⑦局限 → 三分对照表'},
+/* --- 易错卡（11条误解） --- */
+{id:'e1',cat:'易错',icon:'warn',title:'"时间变慢是钟表不准/视觉错觉"',con:'错。钟慢是时空本身的性质，所有物理、化学、生物过程同步变慢。',memory:'一句话：变慢的不是钟，是时间本身。',demo:'③光钟 → 换任何钟结论相同'},
+{id:'e2',cat:'易错',icon:'warn',title:'"长度收缩就是眼睛看到的变短"',con:'错。测量须同时记录两端；视觉另有光行差效应（Terrell 旋转，拓展）。',memory:'一句话：尺缩是测出来的，不是看出来的。',demo:'④尺缩 → 同时测量开关'},
+{id:'e3',cat:'易错',icon:'warn',title:'"同时是绝对的，只是看起来不同"',con:'错。同时本身依赖参考系（Δt′=−γvΔx/c²），不只是视觉问题。',memory:'一句话：异地同时性随参考系变。',demo:'⑤火车 → 判定读数'},
+{id:'e4',cat:'易错',icon:'warn',title:'"双方都测对方钟慢自相矛盾"',con:'错。两系的同时性不同，比较时钟读数需换系；无矛盾。',memory:'一句话：各说各的同时，各测各的钟慢。',demo:'⑤火车 → 双视角'},
+{id:'e5',cat:'易错',icon:'warn',title:'"物体可加速到甚至超过光速"',con:'错。β→1 时 γ→∞，所需能量→∞；有质量物体 v<c。',memory:'一句话：光速是有质量物体的速度上限。',demo:'②γ曲线 → β→1'},
+{id:'e6',cat:'易错',icon:'warn',title:'"E=mc² 说明质量变成能量"',con:'不严谨。质能等价：质量是能量的量度，ΔE=Δm·c²；不是"质量消灭变成能量"。',memory:'一句话：等价，不是转化消灭。',demo:'⑥质能 → 质能等价卡'},
+{id:'e7',cat:'易错',icon:'warn',title:'"相对论推翻了牛顿力学"',con:'错。v≪c 时相对论退化为牛顿力学（对应原理），牛顿力学在其适用域内依然精确。',memory:'一句话：扩展适用域，不是推翻。',demo:'⑦局限 → 对应原理动画'},
+{id:'e8',cat:'易错',icon:'warn',title:'"μ子落地是因为寿命机制变了"',con:'错。μ子内部过程不变；是时间膨胀（或等价的大气尺缩）的时空效应。',memory:'一句话：时空效应，不是粒子变心。',demo:'③μ子 → 切换μ子系视角'},
+{id:'e9',cat:'易错',icon:'warn',title:'"光速不变是光源运动抵消"',con:'错。光速与光源和观察者运动无关，是实验事实（迈克尔逊—莫雷等）+原理选择。',memory:'一句话：光速对谁都一样，与光源无关。',demo:'①时空观 → 场景演示'},
+{id:'e10',cat:'易错',icon:'warn',title:'"GPS 不需要相对论修正"',con:'错。须同时做狭义（运动钟慢）与广义（引力钟快）修正；净效应中广义贡献更大，否则每天偏差约 10 μs 量级、定位迅速失效。',memory:'一句话：卫星钟要双重修正。',demo:'③时间膨胀 → 验证卡'},
+{id:'e11',cat:'易错',icon:'warn',title:'"质量随速度增大是必须接受的结论"',con:'不严谨。现代表述以不变质量 m₀ 为主；m=γm₀ 是旧表述（教材表述有差异），两者可以换算。',memory:'一句话：质量不变，动量能量随 γ。',demo:'⑥质能 → 计算台'},
+/* --- 应用卡 --- */
+{id:'a1',cat:'应用',icon:'muon',title:'宇宙线 μ 子',con:'10–20 km 高空产生的μ子靠钟慢效应到达地面，是相对论最直观的天然实验。',demo:'③μ子模块'},
+{id:'a2',cat:'应用',icon:'atom',title:'粒子加速器与同步辐射',con:'设计中必须按 p=γm₀v、E=γm₀c² 计算；同步辐射光源直接利用相对论电子。',demo:'⑥质能 → 电子预设'},
+{id:'a3',cat:'应用',icon:'energy',title:'核能与质量亏损',con:'裂变/聚变中 Δm 对应释放能量 ΔE=Δm·c²（结合能变小）。',demo:'⑥质能 → 质能等价卡'},
+{id:'a4',cat:'应用',icon:'app',title:'GPS 与北斗时间修正',con:'卫星钟运动钟慢（狭义）+引力钟快（广义），净效应约 +38 μs/天（广义贡献更大），必须修正。',demo:'③时间膨胀 → 验证卡'},
+{id:'a5',cat:'应用',icon:'atom',title:'正电子湮灭与 PET',con:'e⁺e⁻湮灭 γ 光子能量 511 keV = m_e c²，PET 成像直接验证质能等价。',demo:'⑥质能 → 电子 + β=0'},
+{id:'a6',cat:'应用',icon:'ship',title:'双生子佯谬',con:'旅行者折返需加速换系，过程非对称，故重逢时确实更年轻——不是"双方都慢"的对称情形。',demo:'⑤火车（换系破坏对称的思路）'},
+{id:'a7',cat:'应用',icon:'app',title:'引力透镜与黑洞',con:'光线偏折、引力透镜、黑洞照片与引力波是广义相对论的当代验证。',demo:'⑦局限 → 广义相对论验证卡'},
+/* --- 局限卡 --- */
+{id:'l1',cat:'局限',icon:'warn',title:'本 Demo 的教学放大与近似',con:'动画对时间做了 10⁷–10⁸ 倍慢放、对尺缩/钟慢做了视觉放大；忽略引力与加速过程，μ子蒙特卡洛为统计模型。所有数值读数由洛伦兹变换解析计算，与画面比例无关。',demo:'各模块 → 读数卡'}
+];
+var cardIdx = {}; CARDS.forEach(function(c,i){ cardIdx[c.id]=i; });
+var cardFilter = {cat:'全部', kw:''};
+var currentCard = -1;
+
+function catList(){ var s=[]; CARDS.forEach(function(c){ if(s.indexOf(c.cat)<0) s.push(c.cat); }); return s; }
+function renderDrawer(){
+  var cats=el('dCats'); cats.innerHTML='';
+  var all=['全部'].concat(catList());
+  all.forEach(function(ct){
+    var b=document.createElement('button'); b.textContent=ct;
+    if(ct===cardFilter.cat) b.classList.add('active');
+    b.onclick=function(){ cardFilter.cat=ct; renderDrawer(); };
+    cats.appendChild(b);
+  });
+  var list=el('dList'); list.innerHTML='';
+  var shown=0;
+  CARDS.forEach(function(c,i){
+    if(cardFilter.cat!=='全部'&&c.cat!==cardFilter.cat) return;
+    if(cardFilter.kw && (c.title+c.con).indexOf(cardFilter.kw)<0) return;
+    shown++;
+    var d=document.createElement('div'); d.className='d-item'; d.tabIndex=0; d.setAttribute('role','option');
+    d.innerHTML='<span class="cat">'+c.cat+'</span><span class="t">'+c.title+'</span><div class="c">'+c.con+'</div>';
+    var open=function(){ openCard(c.id); };
+    d.onclick=open;
+    d.onkeydown=function(e){ if(e.key==='Enter'||e.key===' '){e.preventDefault(); open();} };
+    list.appendChild(d);
+  });
+  if(!shown) list.innerHTML='<div class="note">没有匹配的卡片</div>';
+}
+function openCard(id){
+  var i=cardIdx[id]; if(i==null) return;
+  currentCard=i;
+  var c=CARDS[i];
+  el('cardFront').innerHTML='<div class="m-title">【'+c.cat+'】'+c.title+'</div>'
+    +'<div class="m-con"><span class="lbl">一句话结论：</span>'+c.con+'</div>'
+    +(c.f?'<div class="formula">'+c.f+'</div>':'')
+    +(MINI[c.icon]||MINI.app)
+    +'<div class="m-con"><span class="lbl">在本 Demo 中怎么看：</span>'+c.demo+'</div>'
+    +(c.warn?'<div class="note bad">⚠ 易错提醒：'+c.warn+'</div>':'')
+    +(c.memory?'<div class="note ok">💡 '+c.memory+'</div>':'');
+  el('cardBack').innerHTML='<div class="m-title">背面：推导 / 详情</div><div class="m-con">'
+    +(c.back||c.con)
+    +(c.f?'<div class="formula">'+c.f+'</div>':'')
+    +'<div class="note">分类：'+c.cat+' · 点击"翻转"返回正面</div></div>';
+  el('flipInner').classList.remove('flipped');
+  el('cardMask').classList.add('open');
+  el('cFlip').focus();
+}
+el('cFlip').onclick=function(){ el('flipInner').classList.toggle('flipped'); };
+el('cClose').onclick=function(){ el('cardMask').classList.remove('open'); };
+el('cardMask').onclick=function(e){ if(e.target===el('cardMask')) el('cardMask').classList.remove('open'); };
+el('cPrev').onclick=function(){ if(currentCard>0) openCard(CARDS[currentCard-1].id); };
+el('cNext').onclick=function(){ if(currentCard<CARDS.length-1) openCard(CARDS[currentCard+1].id); };
+el('cPin').onclick=function(){
+  if(currentCard<0) return; var c=CARDS[currentCard];
+  if(el('pin_'+c.id)) return;
+  var d=document.createElement('div'); d.className='pin-card'; d.id='pin_'+c.id;
+  d.innerHTML='<button class="x">✕</button><b>'+c.title+'</b><br>'+c.con;
+  d.querySelector('.x').onclick=function(){ d.remove(); };
+  el('pinned').appendChild(d);
+  toast('已钉住卡片');
+};
+document.addEventListener('keydown',function(e){
+  if(el('cardMask').classList.contains('open')){
+    if(e.key==='Escape') el('cardMask').classList.remove('open');
+    if(e.key==='ArrowLeft') el('cPrev').click();
+    if(e.key==='ArrowRight') el('cNext').click();
+  }
+});
+el('btnCards').onclick=function(){ el('drawer').classList.add('open'); renderDrawer(); };
+el('dClose').onclick=function(){ el('drawer').classList.remove('open'); };
+el('dSearch').oninput=function(){ cardFilter.kw=this.value.trim(); renderDrawer(); };
+
+/* ================= 4. 教学引导（八步） ================= */
+var GUIDE=[
+ {t:'历史情境与两假设',q:'为什么迈克尔逊—莫雷实验的"零结果"动摇了以太理论？',d:'看①时空观对照：伽利略相对性 → 麦克斯韦预言光速 c → 零结果 → 爱因斯坦两条假设。'},
+ {t:'γ 曲线定量',q:'v = 0.998c 时 γ 大约是多少？',d:'拖动②γ曲线的游标到 β=0.998，读出 γ≈15.8。'},
+ {t:'光钟推导钟慢',q:'为什么光路变斜必然导致"运动的钟变慢"？',d:'③光钟模块：观察勾股三角形 (cΔt/2)²=(cΔt₀/2)²+(vΔt/2)²。'},
+ {t:'μ子数据验证',q:'μ子自己看，是寿命变长还是距离变短？',d:'③μ子模块：实验室系看寿命变长；切到μ子系看大气厚度收缩 1/γ——两种解释自洽。'},
+ {t:'尺缩与同时的相对性',q:'为什么测量运动杆长度必须"同时"标记两端？',d:'④尺缩：关闭"同时测量"开关，看错误读数如何出现；⑤火车：区分"看到"与"判定"。'},
+ {t:'质能关系',q:'E = mc² 说的是"质量变成能量"吗？',d:'⑥质能计算台：正确理解是质能等价，ΔE = Δm·c²。'},
+ {t:'牛顿力学适用域与对应原理',q:'为什么说相对论是"扩展"而非"推翻"牛顿力学？',d:'⑦局限：把 β 从 0.99 降到 0.01，看 γ→1、E_k→½m₀v²、洛伦兹→伽利略。'},
+ {t:'误解辨析',q:'为什么双方都测对方钟慢却不矛盾？',d:'打开卡片库"易错"分类逐条辨析，然后到⑧练习考核检验。'}
+];
+var gStep=0;
+function showGuide(){
+  var g=GUIDE[gStep];
+  el('gStep').textContent='教学引导 第 '+(gStep+1)+' / '+GUIDE.length+' 步：'+g.t;
+  el('gText').textContent=g.d;
+  el('gQ').textContent='待答问题：'+g.q;
+  el('gNext').textContent = gStep===GUIDE.length-1 ? '完成' : '下一步';
+  el('guidePanel').classList.add('open');
+}
+el('gNext').onclick=function(){ if(gStep<GUIDE.length-1){ gStep++; showGuide(); } else { el('guidePanel').classList.remove('open'); toast('🎉 引导完成！两大假设 → γ → 钟慢尺缩 → 质能 → 牛顿力学适用域'); } };
+el('gClose').onclick=function(){ el('guidePanel').classList.remove('open'); };
+el('btnGuide').onclick=function(){ el('guidePanel').classList.contains('open') ? el('guidePanel').classList.remove('open') : showGuide(); };
+if(!RM) setTimeout(showGuide,800); else showGuide();
+
+/* ================= 5. 数据记录 ================= */
+var LOG=[];
+var LOGCOLORS={'γ曲线':'#2563eb','光钟':'#ea580c','μ子':'#16a34a','尺缩':'#9333ea','质能':'#dc2626'};
+function addLog(mod,row){
+  row.unshift(mod); LOG.push(row); renderLog(); toast('已记录：'+mod);
+}
+function renderLog(){
+  var t=el('logTable');
+  var head='<tr><th>模块</th><th>β</th><th>γ</th><th>Δt₀</th><th>Δt</th><th>L₀</th><th>L</th><th>m₀</th><th>E_k</th><th>经典值</th><th>相对误差</th><th>备注</th></tr>';
+  var rows=LOG.map(function(r){
+    var col=LOGCOLORS[r[0]]||'#334155';
+    return '<tr style="color:'+col+'"><td>'+r[0]+'</td>'+r.slice(1).map(function(v){return '<td>'+v+'</td>';}).join('')+'</tr>';
+  }).join('');
+  t.innerHTML=head+rows;
+}
+el('logCsv').onclick=function(){
+  var csv='\ufeff模块,β,γ,Δt0(s),Δt(s),L0(m),L(m),m0(kg),Ek(J),经典值,相对误差,备注\n';
+  LOG.forEach(function(r){ csv+=r.map(function(v){ v=(''+v).replace(/,/g,'，'); return '"'+v+'"'; }).join(',')+'\n'; });
+  var a=document.createElement('a');
+  a.href=URL.createObjectURL(new Blob([csv],{type:'text/csv'})); a.download='相对论实验记录.csv'; a.click();
+  toast('CSV 已导出');
+};
+el('logClear').onclick=function(){ LOG=[]; renderLog(); toast('记录已清空'); };
+el('logClose').onclick=function(){ el('logPanel').classList.remove('open'); };
+el('btnLog').onclick=function(){ el('logPanel').classList.add('open'); renderLog(); };
+el('logPanel').onclick=function(e){ if(e.target===el('logPanel')) el('logPanel').classList.remove('open'); };
+el('fitGo').onclick=function(){
+  var r=parseFloat(el('fitR').value);
+  if(!(r>=1)){ el('fitOut').textContent='请输入 ≥1 的比值'; return; }
+  var b=Math.sqrt(1-1/(r*r));
+  el('fitOut').innerHTML='反解：γ = '+r.toFixed(4)+'，β = √(1−1/γ²) = '+b.toFixed(6)+'（v = '+(b*C/1000).toFixed(0)+' km/s）';
+};
+
+/* 单位切换 */
+el('btnUnit').onclick=function(){
+  S.unit = S.unit==='SI' ? 'NU' : 'SI';
+  el('btnUnit').textContent = S.unit==='SI' ? '单位：SI 制' : '单位：自然单位制（c=1）';
+  toast(S.unit==='SI' ? 'SI 制：m、s、kg，c = 3.0×10⁸ m/s' : '自然单位制：c = 1，速度以 c 为单位；换算 1 m ≈ 3.33 ns（光程）');
+  if(tabDraws[S.tab]) tabDraws[S.tab](0);
+};
+
+/* 低速退化校验（多个模块共用） */
+function lowSpeedBox(beta){
+  if(beta>0.01) return '';
+  var g=gammaOf(beta), taylor=1+beta*beta/2;
+  var gOK = (g-1) <= 1.01*(beta*beta/2);
+  /* β=0 时 (g−1)/(β²/2) = 0/0 = NaN，须单独处理，否则会显示 "NaN ✗" */
+  var ekDev = (beta>0)? Math.abs((g-1)/(beta*beta/2) - 1) : 0;
+  var ekOK = ekDev < 1e-4;
+  return '<div class="note ok">✅ 低速退化校验（β = '+beta.toFixed(4)+' ≤ 0.01）：γ − 1 = '+(g-1).toExponential(2)
+    +'（泰勒预言 β²/2 = '+(beta*beta/2).toExponential(2)+'，'+(gOK?'一致 ✓':'偏差略大')+'）；E_k 与 ½m₀v² 相对偏差 = '+ekDev.toExponential(2)
+    +' < 1×10⁻⁴ '+(ekOK?'✓':'✗')+' —— <b>牛顿力学足够精确</b>。</div>';
+}
+
+/* ================= 6. Tab1 时空观对照 ================= */
+var t1 = {beta:0.6, L0:600, animT:0};
+function t1vals(){ return {beta:parseFloat(el('t1beta').value), L0:parseFloat(el('t1L0').value)||600}; }
+function drawScene(){
+  var v=t1vals(), beta=v.beta, L0=v.L0, g=gammaOf(beta), L=L0/g;
+  var f=fitCanvas(el('cvScene')), ctx=f.ctx, W=f.W, H=f.H;
+  hotspots.cvScene=[];
+  // 上：伽利略（绝对时空）面板；下：洛伦兹面板
+  var panels=[{y0:16,h:(H-40)/2,name:'伽利略变换（绝对时空）',sub:'光速服从速度叠加 → 地面测得 c−v / c+v，与实验矛盾',col:COL.gray},
+              {y0:24+(H-40)/2,h:(H-40)/2,name:'洛伦兹变换（相对论时空）',sub:'光速不变 → 两个惯性系都测得 c',col:COL.green}];
+  // 事件：地面系中光到达车头。x = ct, t = L/(2(c−v))（洛伦兹面板几何）
+  var tMeet = L/2/(C*(1-beta));      // 地面系：光自车中心发出追上车头
+  var xMeet = C*tMeet;
+  var gl = gal(xMeet,tMeet,beta), lo = lor(xMeet,tMeet,beta);
+  var sc = Math.min((W-160)/(L0+220), 1);   // 像素比例
+  panels.forEach(function(p,pi){
+    ctx.fillStyle='#f8fafc'; ctx.fillRect(8,p.y0,W-16,p.h-8);
+    txt(ctx,p.name,14,p.y0+18,{font:'bold 13px sans-serif',color:p.col});
+    txt(ctx,p.sub,14,p.y0+33,{font:'11px sans-serif',color:COL.ink2});
+    var cy=p.y0+52; // 车顶 y
+    /* 地面系：伽利略认为长度绝对（画 L₀）；洛伦兹下面板画尺缩后的 L = L₀/γ，
+       与 tMeet = (L/2)/(c−v)、x′ = γ(x−vt) = L₀/2 的解析结果自洽 */
+    var carW=(pi===1? L : L0)*sc, x0=(W-carW)/2, hh=46;
+    // 列车车厢
+    ctx.strokeStyle=COL.orange; ctx.lineWidth=2; ctx.strokeRect(x0,cy,carW,hh);
+    // 车中心灯
+    var cx=x0+carW/2;
+    ctx.fillStyle=COL.yellow; ctx.beginPath(); ctx.arc(cx,cy+hh/2,4,0,7); ctx.fill();
+    // 光脉冲箭头（黄）
+    function pulse(x1,x2,y){
+      ln(ctx,x1,y,x2,y,COL.yellow,[],2);
+      var d=x2>x1?1:-1, xe=x2, ym=y;
+      ctx.fillStyle=COL.yellow; ctx.beginPath();
+      ctx.moveTo(xe+6*d,ym); ctx.lineTo(xe-2*d,ym-4); ctx.lineTo(xe-2*d,ym+4); ctx.closePath(); ctx.fill();
+    }
+    if(pi===0){ // 伽利略：地面看光速 c±v
+      pulse(cx,cx+carW/2-8,cy+hh/2); txt(ctx,'向前 c+v',(cx+carW/4)-22,cy+hh/2-8,{color:COL.red});
+      pulse(cx,cx-carW/2+8,cy+hh/2); txt(ctx,'向后 c−v',(cx-carW/4)-24,cy+hh/2+16,{color:COL.red});
+      txt(ctx,'✗ 地面系测得光速≠c，与迈克尔逊—莫雷零结果矛盾',14,cy+hh+16,{color:COL.red});
+    }else{ // 洛伦兹：两系光速都是 c
+      pulse(cx,cx+carW/2-8,cy+hh/2); txt(ctx,'c',(cx+carW/4)-4,cy+hh/2-8,{color:COL.green});
+      pulse(cx,cx-carW/2+8,cy+hh/2); txt(ctx,'c',(cx-carW/4)-4,cy+hh/2+16,{color:COL.green});
+      txt(ctx,'✓ 车上系与地面系都测得光速 c（光速不变原理）',14,cy+hh+16,{color:COL.green});
+    }
+    txt(ctx, pi===1 ? ('地面系测车长 L = L₀/γ = '+L.toFixed(1)+' m（尺缩）')
+                     : ('车长 = L₀ = '+L0+' m（伽利略：长度绝对）'), x0,cy-4,{color:COL.orange,font:'11px sans-serif'});
+    txt(ctx, pi===1 ? ('车厢系固有长度 L₀ = '+L0+' m') : ('地面系测车长 = L₀（伽利略：长度绝对）'),
+        x0,cy+hh+30,{color:(pi===1?COL.orange:COL.gray),font:'11px sans-serif'});
+  });
+  // 变换对照表
+  var dev = Math.abs(gl.x-lo.x)/Math.abs(lo.x||1)*100;
+  el('t1table').innerHTML='<tr><th>事件：光到达车头</th><th>地面系 x</th><th>地面系 t</th><th>伽利略 x′=x−vt</th><th>伽利略 t′=t</th><th>洛伦兹 x′</th><th>洛伦兹 t′</th><th>两变换偏差</th></tr>'
+   +'<tr><td>数值</td><td>'+xMeet.toFixed(1)+' m</td><td>'+(tMeet*1e6).toFixed(3)+' μs</td>'
+   +'<td>'+gl.x.toFixed(1)+' m</td><td>'+(gl.t*1e6).toFixed(3)+' μs</td>'
+   +'<td>'+lo.x.toFixed(1)+' m</td><td>'+(lo.t*1e6).toFixed(3)+' μs</td><td>'+dev.toFixed(2)+' %</td></tr>';
+  el('t1note').innerHTML='洛伦兹换算结果 x′ = L₀/2 = '+(L0/2).toFixed(1)+' m、t′ = L₀/(2c) = '+(L0/(2*C)*1e6).toFixed(3)+' μs，与车厢系静态几何完全一致 ✓。'
+    +(beta<=0.05?' <b>β→0 时两套变换重合（偏差 '+dev.toFixed(4)+'%）——洛伦兹变换退化为伽利略变换。</b>':'');
+  // 速度叠加对照
+  var rel=velAdd(1,-beta);
+  el('t1speed').innerHTML=
+    '<div class="kv"><span>伽利略（地面看车内向前的光）</span><b>c + v</b></div>'
+   +'<div class="kv warnK"><span>预言（错误）</span><b>'+(1+beta).toFixed(3)+' c</b></div>'
+   +'<div class="kv okK"><span>洛伦兹（实际/实验）</span><b>'+(velAdd(beta,1)).toFixed(6)+' c = c ✓</b></div>'
+   +'<div class="kv"><span>伽利略 vs 洛伦兹偏差</span><b>'+Math.abs(beta/(1+beta)*100).toFixed(3)+' %</b></div>';
+  addHot('cvScene',W-30,26,'c3');
+  drawInv();
+}
+function drawInv(){
+  var on=el('t1invOn').checked;
+  el('t1invBox').style.display=on?'block':'none';
+  if(!on) return;
+  var dx=parseFloat(el('t1dx').value), dt=parseFloat(el('t1dt').value)*1e-6;
+  el('t1dxOut').textContent=dx+' m'; el('t1dtOut').textContent=(dt*1e6).toFixed(1)+' μs';
+  var s2=Math.pow(C*dt,2)-dx*dx;
+  var s=Math.sqrt(Math.abs(s2));
+  var cls = s2>0?'类时（可用亚光速联系，时序在所有惯性系中不变）':(s2===0?'类光（光信号联系）':'类空（无因果联系可能的顺序；若超光速信号存在，时序可反转——破坏因果）');
+  var beta=parseFloat(el('t1beta').value);
+  var p=lor(dx,dt,beta);
+  var s2p=Math.pow(C*p.t,2)-p.x*p.x;
+  el('t1invBox').innerHTML='<div class="note">时空间隔不变量：s² = (cΔt)² − Δx² = '+(C*dt).toFixed(1)+'² − '+dx.toFixed(1)+'² = <b>'+s2.toExponential(3)+' m²</b> → '+cls
+   +'<br>换到 β='+beta.toFixed(3)+' 的惯性系：(cΔt′)² − Δx′² = '+s2p.toExponential(3)+' m²（与 s² 相等 ✓ —— <b>不变量取代了"绝对时间"</b>）</div>';
+}
+['t1beta','t1L0','t1invOn','t1dx','t1dt'].forEach(function(id){ el(id).addEventListener('input',function(){ el('t1betaOut').textContent=parseFloat(el('t1beta').value).toFixed(3); drawScene(); }); });
+document.querySelectorAll('#t1 [data-preset]').forEach(function(b){ b.onclick=function(){ el('t1beta').value=b.dataset.preset; el('t1betaOut').textContent=(+b.dataset.preset).toFixed(3); drawScene(); }; });
+// 历史时间轴
+var HIST=[
+ ['1632','伽利略','《对话》提出相对性：封闭船舱内力学实验无法判断匀速运动','局限：只覆盖力学'],
+ ['1865','麦克斯韦','方程组预言电磁波速 c ≈ 3×10⁸ m/s','局限：未指明相对哪个参考系'],
+ ['1887','迈克尔逊—莫雷','干涉实验零结果：测不到以太漂移','局限：当时被多种"补救"解释'],
+ ['1892–1904','洛伦兹 / 庞加莱','洛伦兹变换数学形式、局域时间概念','局限：仍保留以太框架'],
+ ['1905','爱因斯坦','两条假设（相对性原理+光速不变）重建时空观，导出洛伦兹变换','同年还提出光电效应与布朗运动理论'],
+ ['1915','爱因斯坦','广义相对论：引力=时空弯曲','预言近日点进动、光线偏折、引力红移'],
+ ['1940s–1971','μ子实验 / Hafele–Keating','宇宙线μ子与飞行原子钟定量验证钟慢','GPS（1970s–）须狭义+广义双重修正']
+];
+el('histTL').innerHTML=HIST.map(function(h){ return '<li><span class="yr">'+h[0]+'</span><b>'+h[1]+'</b>：'+h[2]+'<br><span style="font-size:12px;color:#64748b">局限/注：'+h[3]+'</span></li>'; }).join('');
+tabDraws.t1=drawScene;
+
+/* ================= 7. Tab2 γ曲线 ================= */
+var t2={beta:0.5, b0:0, b1:1, view:'full', axis:'beta', drag:false};
+function t2readout(){
+  var beta=t2.beta, sg=safeGamma(beta), g=sg.g, inv=1/(sg.capped?GAMMA_MAX:g);
+  var taylor=1+beta*beta/2, dev=Math.abs(g-taylor)/g*100;
+  var v=beta*C/1000;
+  el('t2read').innerHTML=
+   '<div class="kv"><span>β = v/c</span><b>'+beta.toFixed(4)+'</b></div>'
+  +'<div class="kv"><span>v（SI）</span><b>'+v.toFixed(0)+' km/s</b></div>'
+  +'<div class="kv"><span>γ</span><b>'+(sg.capped?'≈∞（>'+GAMMA_MAX+'）':g.toFixed(4))+'</b></div>'
+  +'<div class="kv"><span>1/γ（尺缩比）</span><b>'+inv.toFixed(4)+'</b></div>'
+  +'<div class="kv"><span>γ−1</span><b>'+(g-1).toExponential(3)+'</b></div>'
+  +'<div class="kv"><span>泰勒 1+β²/2</span><b>'+taylor.toFixed(6)+'</b></div>'
+  +'<div class="kv'+(beta<0.5?' okK':'')+'"><span>近似相对偏差</span><b>'+dev.toExponential(2)+' %</b></div>'
+  +(S.unit==='NU'?'<div class="kv"><span>自然单位</span><b>v = '+beta.toFixed(4)+' c</b></div>':'');
+  el('t2low').innerHTML=lowSpeedBox(beta);
+  if(sg.capped) el('t2low').innerHTML+='<div class="note bad">⚠ γ 极大（≈∞），v 无法达到 c —— 有质量物体不能达到光速。</div>';
+}
+function drawGamma(){
+  var cv=el('cvGamma'), f=fitCanvas(cv), ctx=f.ctx, W=f.W, H=f.H;
+  hotspots.cvGamma=[];
+  var mL=56,mR=20,mT=16,mB=42, pw=W-mL-mR, ph=H-mT-mB;
+  var b0=t2.b0,b1=t2.b1;
+  var gAtEnd=gammaOf(Math.min(b1,0.99999));
+  var gCur=gammaOf(t2.beta);
+  var yMax=Math.min(Math.max(2,Math.min(gAtEnd,30),gCur*1.15),60);
+  if(yMax<gCur) yMax=Math.min(gCur*1.05,200);
+  function X(b){ return mL+(b-b0)/(b1-b0)*pw; }
+  function Y(g){ return mT+ph-(g/yMax)*ph; }
+  // 网格与坐标
+  if(el('t2grid').checked){
+    ctx.strokeStyle='#f1f5f9'; ctx.lineWidth=1;
+    for(var gy=0;gy<=yMax;gy+=yMax/5){ ctx.beginPath();ctx.moveTo(mL,Y(gy));ctx.lineTo(W-mR,Y(gy));ctx.stroke(); }
+  }
+  ctx.strokeStyle=COL.ink2; ctx.lineWidth=1;
+  ctx.beginPath();ctx.moveTo(mL,mT);ctx.lineTo(mL,mT+ph);ctx.lineTo(W-mR,mT+ph);ctx.stroke();
+  txt(ctx,'γ',mL-14,mT+12,{font:'bold 13px serif',color:COL.ink});
+  txt(ctx,'β（v/c）',mL+pw/2-20,H-8,{color:COL.ink2});
+  // 顶部 v 轴（km/s）
+  if(t2.axis==='beta'){
+    for(var i=0;i<=10;i++){ var b=b0+(b1-b0)*i/10; txt(ctx,b.toFixed(2),X(b),H-26,{align:'center',font:'10px sans-serif',color:COL.ink2}); }
+    for(var j=0;j<=5;j++){ var g=yMax*j/5; if(g>0) txt(ctx,g.toFixed(1),mL-6,Y(g)+4,{align:'right',font:'10px sans-serif',color:COL.ink2}); }
+    txt(ctx,'v (km/s)：'+(b0*C/1000).toFixed(0)+' — '+(b1*C/1000).toFixed(0)+'（顶轴/底部双横轴）',W-mR,mT+10,{align:'right',font:'10px sans-serif',color:COL.purple});
+  }else{
+    for(var i2=0;i2<=10;i2++){ var b2=b0+(b1-b0)*i2/10; txt(ctx,(b2*C/1000).toFixed(0),X(b2),H-26,{align:'center',font:'10px sans-serif',color:COL.ink2}); }
+    for(var j2=0;j2<=5;j2++){ var g2=yMax*j2/5; if(g2>0) txt(ctx,g2.toFixed(1),mL-6,Y(g2)+4,{align:'right',font:'10px sans-serif',color:COL.ink2}); }
+    txt(ctx,'β（底部为 v 轴 km/s，顶轴 β）',W-mR,mT+10,{align:'right',font:'10px sans-serif',color:COL.purple});
+  }
+  // 渐近线 β=1
+  if(b1>=0.999){ ln(ctx,X(1),mT,X(1),mT+ph,COL.purple,[6,4],2); txt(ctx,'渐近线 β=1',X(1)-6,mT+24,{align:'right',color:COL.purple,font:'11px sans-serif'}); }
+  // 泰勒近似（灰）
+  if(el('t2taylor').checked){
+    ctx.strokeStyle=COL.gray; ctx.lineWidth=1.6; ctx.setLineDash([5,3]); ctx.beginPath();
+    for(var k=0;k<=400;k++){ var b=b0+(b1-b0)*k/400, g=1+b*b/2; var y=Y(g); if(k===0)ctx.moveTo(X(b),y);else ctx.lineTo(X(b),y); }
+    ctx.stroke(); ctx.setLineDash([]);
+    txt(ctx,'γ ≈ 1+β²/2（灰虚线）',mL+10,mT+ph-14,{color:COL.gray,font:'11px sans-serif'});
+  }
+  // 理论曲线（绿虚线样式：主线用绿）
+  ctx.save(); ctx.beginPath(); ctx.rect(mL,mT,pw,ph); ctx.clip();
+  ctx.strokeStyle=COL.green; ctx.lineWidth=2.5; ctx.setLineDash([7,4]); ctx.beginPath();
+  var started=false;
+  for(var k2=0;k2<=800;k2++){ var b3=b0+(b1-b0)*k2/800; var g3=gammaOf(Math.min(b3,0.999999)); if(g3>yMax*1.5) break; var y3=Y(Math.min(g3,yMax)); if(!started){ctx.moveTo(X(b3),y3);started=true;} else ctx.lineTo(X(b3),y3); }
+  ctx.stroke(); ctx.setLineDash([]); ctx.restore();
+  txt(ctx,'γ = 1/√(1−β²)',mL+pw*0.45,mT+ph*0.35,{color:COL.green,font:'bold 13px serif'});
+  // 典型对象标记
+  if(el('t2mark').checked){
+    var marks=[['汽车 β≈1.1×10⁻⁷',0.00000011],['飞机 β≈8.3×10⁻⁷',0.00000083],['卫星 β≈2.6×10⁻⁵',0.000026],['μ子 β=0.998',0.998],['加速器电子 β≈1',0.99995]];
+    marks.forEach(function(m,i){
+      var bx=clamp(X(m[1]),mL+4,W-mR-30);
+      ln(ctx,bx,mT+ph,bx,mT+ph-10-((i%2)*10),COL.ink2,[2,2]);
+      txt(ctx,m[0],bx,mT+ph-16-((i%2)*12),{align:'center',font:'10px sans-serif',color:COL.ink2});
+    });
+  }
+  // 游标
+  var cx=X(clamp(t2.beta,b0,b1)), cy=Y(Math.min(gCur,yMax));
+  ln(ctx,cx,mT,cx,mT+ph,COL.red,[4,3]);
+  ctx.fillStyle=COL.red; ctx.beginPath(); ctx.arc(cx,cy,6,0,7); ctx.fill();
+  ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(cx,cy,2.5,0,7); ctx.fill();
+  var sg=safeGamma(t2.beta);
+  txt(ctx,'β='+t2.beta.toFixed(4)+'  γ='+(sg.capped?'≈∞':sg.g.toFixed(3)),Math.min(cx+8,W-150),Math.max(cy-10,mT+14),{color:COL.red,font:'bold 12px sans-serif'});
+  // 热点：游标附近
+  addHot('cvGamma',Math.min(cx+26,W-20),Math.max(cy-20,mT+24),'c5');
+  // 偏差曲线（受"相对偏差曲线"开关控制；关闭时整块隐藏）
+  var showDev=el('t2dev').checked;
+  el('cvGammaDev').style.display = showDev?'block':'none';
+  if(showDev){
+  var fd=fitCanvas(el('cvGammaDev')), dctx=fd.ctx, dW=fd.W, dH=fd.H, dmB=26;
+  dctx.clearRect(0,0,dW,dH);
+  ln(dctx,50,dH-dmB,dW-10,dH-dmB,COL.ink2); ln(dctx,50,10,50,dH-dmB,COL.ink2);
+  txt(dctx,'相对偏差 |γ−γ泰勒|/γ（%）',56,14,{font:'11px sans-serif',color:COL.ink2});
+  var dMax=5;
+  function DX(b){ return 50+(b-b0)/(b1-b0)*(dW-60); }
+  function DY(d){ return (dH-dmB)-(d/dMax)*(dH-dmB-14); }
+  dctx.strokeStyle=COL.orange; dctx.lineWidth=1.8; dctx.beginPath();
+  /* γ 在 β→1 处发散，须夹紧后再算，否则末点为 NaN 被丢弃 */
+  for(var q=0;q<=400;q++){ var bq=Math.min(b0+(b1-b0)*q/400,0.999999), gq=gammaOf(bq), tq=1+bq*bq/2, dv=Math.abs(gq-tq)/gq*100; var yy=clamp(DY(dv),10,dH-dmB); if(q===0)dctx.moveTo(DX(bq),yy); else dctx.lineTo(DX(bq),yy); }
+  dctx.stroke();
+  var devCur=Math.abs(gCur-taylorOf(t2.beta))/gCur*100;
+  txt(dctx,devCur.toExponential(1)+'%',Math.min(DX(t2.beta)+6,dW-46),clamp(DY(devCur),20,dH-dmB-4),{color:COL.orange});
+  txt(dctx,'β',dW/2,dH-8,{align:'center',color:COL.ink2});
+  }
+  t2readout();
+  drawMiniPlots();
+}
+function taylorOf(b){ return 1+b*b/2; }
+function gammaPointer(e){
+  var cv=el('cvGamma'), r=cv.getBoundingClientRect(), x=e.clientX-r.left;
+  var mL=56,mR=20,pw=r.width-mL-mR;
+  var b=t2.b0+(x-mL)/pw*(t2.b1-t2.b0);
+  b=clamp(b,0,0.9999);
+  t2.beta=Math.round(b*10000)/10000;
+  el('t2beta').value=t2.beta; el('t2betaNum').value=t2.beta;
+  drawGamma();
+}
+el('cvGamma').addEventListener('pointerdown',function(e){ t2.drag=true; gammaPointer(e); });
+window.addEventListener('pointermove',function(e){ if(t2.drag) gammaPointer(e); });
+window.addEventListener('pointerup',function(){ t2.drag=false; });
+el('cvGamma').addEventListener('wheel',function(e){
+  e.preventDefault();
+  var cv=el('cvGamma'), r=cv.getBoundingClientRect(), x=e.clientX-r.left;
+  var mL=56,pw=r.width-76; var frac=clamp((x-mL)/pw,0.05,0.95);
+  var b=t2.b0+frac*(t2.b1-t2.b0);
+  var f=e.deltaY>0?1.15:1/1.15;
+  var nb0=b-(b-t2.b0)*f, nb1=b+(t2.b1-b)*f;
+  var span=nb1-nb0;
+  if(span<0.002){ span=0.002; nb0=b-frac*span; nb1=nb0+span; }
+  if(span>1){ nb0=0; nb1=1; }
+  t2.b0=Math.max(0,nb0); t2.b1=Math.min(1,nb1);
+  drawGamma();
+},{passive:false});
+function t2set(b){ t2.beta=b; el('t2beta').value=b; el('t2betaNum').value=b; drawGamma(); }
+el('t2beta').addEventListener('input',function(){ t2set(parseFloat(this.value)); });
+el('t2betaNum').addEventListener('input',function(){ var v=clamp(parseFloat(this.value)||0,0,0.999999); t2set(v); });
+document.querySelectorAll('#t2 [data-b]').forEach(function(b){ b.onclick=function(){ t2set(parseFloat(b.dataset.b)); }; });
+el('t2muonBtn').onclick=function(){ t2set(0.998); toast('已跳转 μ子预设：β=0.998，γ≈15.8 → 见③时间膨胀'); };
+el('t2view').onclick=function(){
+  if(t2.view==='full'){ t2.view='low'; t2.b0=0; t2.b1=0.1; el('t2view').textContent='切换视图：低速放大（β∈[0,0.1]）'; }
+  else { t2.view='full'; t2.b0=0; t2.b1=1; el('t2view').textContent='切换视图：全范围'; }
+  drawGamma();
+};
+el('t2axis').onclick=function(){ t2.axis=t2.axis==='beta'?'v':'beta'; el('t2axis').textContent='横轴：'+(t2.axis==='beta'?'β':'v (km/s)'); drawGamma(); };
+el('t2reset').onclick=function(){ t2.b0=0;t2.b1=1; drawGamma(); };
+['t2taylor','t2dev','t2mark','t2grid'].forEach(function(id){ el(id).addEventListener('change',drawGamma); });
+el('t2log').onclick=function(){
+  var g=gammaOf(t2.beta);
+  addLog('γ曲线',[t2.beta.toFixed(4),g.toFixed(4),'—','—','—','—','—','—','泰勒 1+β²/2='+taylorOf(t2.beta).toFixed(4),(Math.abs(g-taylorOf(t2.beta))/g*100).toExponential(2)+'%','γ曲线读数']);
+};
+/* 三个迷你图（cursorX：游标在本图横轴上的位置） */
+function miniPlot(cvId,xLabel,yLabel,fn,refFn,noteText,yMax,cursorX){
+  var f=fitCanvas(el(cvId)), ctx=f.ctx, W=f.W, H=f.H;
+  var mL=34,mB=20,mT=8,pw=W-mL-8,ph=H-mT-mB;
+  ln(ctx,mL,mT,mL,mT+ph,COL.ink2); ln(ctx,mL,mT+ph,mL+pw,mT+ph,COL.ink2);
+  txt(ctx,xLabel,mL+pw/2-10,H-4,{font:'10px sans-serif',color:COL.ink2});
+  txt(ctx,yLabel,2,mT+10,{font:'10px sans-serif',color:COL.ink2});
+  function X(x){return mL+x*pw;} function Y(y){return mT+ph-clamp(y/yMax,0,1)*ph;}
+  if(refFn){ ctx.strokeStyle=COL.gray;ctx.setLineDash([4,3]);ctx.lineWidth=1.5;ctx.beginPath();
+    for(var i=0;i<=100;i++){var x=i/100;var y=refFn(x);if(i===0)ctx.moveTo(X(x),Y(y));else ctx.lineTo(X(x),Y(y));}ctx.stroke();ctx.setLineDash([]); }
+  ctx.strokeStyle=COL.blue;ctx.lineWidth=2;ctx.beginPath();
+  for(var i2=0;i2<=200;i2++){var x2=i2/200;var y2=fn(x2);if(i2===0)ctx.moveTo(X(x2),Y(y2));else ctx.lineTo(X(x2),Y(y2));}ctx.stroke();
+  var bx=clamp(cursorX,0,1);
+  ln(ctx,X(bx),mT,X(bx),mT+ph,COL.red,[3,2]);
+  var cy=Y(fn(bx));
+  ctx.fillStyle=COL.red;ctx.beginPath();ctx.arc(X(bx),cy,4,0,7);ctx.fill();
+  txt(ctx,noteText,mL+4,mT+12,{font:'10px sans-serif',color:COL.ink2});
+}
+function drawMiniPlots(){
+  miniPlot('cvGammaLin','β²','γ−1',function(x){return gammaOf(Math.sqrt(x))-1;},function(x){return x/2;},'灰虚线：β²/2（近原点直线）',0.12,t2.beta*t2.beta);
+  miniPlot('cvDt','β','Δt/Δt₀',function(x){return gammaOf(x);},null,'Δt/Δt₀ = γ',3,t2.beta);
+  miniPlot('cvLl','β','L/L₀',function(x){return 1/gammaOf(x);},null,'L/L₀ = 1/γ',1,t2.beta);
+}
+tabDraws.t2=drawGamma;
+
+/* ================= 8. Tab3 光钟与μ子 ================= */
+var t3={beta:0.6,d:110,phase:0,playing:!RM,px:0,path:[],ticks0:0,ticks1:0};
+/* 简单滴答音效（WebAudio，默认关闭） */
+var AC=null;
+function beep(){ try{ AC=AC||new (window.AudioContext||window.webkitAudioContext)(); var o=AC.createOscillator(),gn=AC.createGain(); o.frequency.value=880; gn.gain.value=0.04; o.connect(gn); gn.connect(AC.destination); o.start(); o.stop(AC.currentTime+0.03);}catch(e){} }
+function t3anim(dt){
+  var lastHalf=Math.floor(t3.phase);
+  if(t3.playing){
+    var sp=parseFloat(el('t3speed').value);
+    t3.phase+=dt*sp*1.2; // 每秒推进 1.2 个半拍
+    t3.px=(t3.px+dt*sp*70)%400;
+    if(Math.floor(t3.phase)!==lastHalf && el('t3sound') && el('t3sound').checked) beep();
+  }
+  drawClock();
+}
+function drawClock(){
+  var cv=el('cvClock'), f=fitCanvas(cv), ctx=f.ctx, W=f.W, H=f.H;
+  hotspots.cvClock=[];
+  var beta=parseFloat(el('t3beta').value), g=gammaOf(beta);
+  el('t3betaOut').textContent=beta.toFixed(3)+'（γ='+g.toFixed(4)+'）';
+  var d=parseFloat(el('t3d').value);
+  var baseY=H-60, topY=baseY-d;
+  // 左：静止光钟（蓝）
+  var sx=90;
+  ctx.fillStyle=COL.blue; ctx.fillRect(sx-45,topY-6,90,6); ctx.fillRect(sx-45,baseY,90,6);
+  txt(ctx,'静止光钟（蓝）· 固有时',sx-60,topY-16,{color:COL.blue,font:'bold 12px sans-serif'});
+  var ph0=t3.phase%2, y0=ph0<1? baseY-(ph0*d) : topY+((ph0-1)*d);
+  var N0=Math.floor(t3.phase/2);
+  ctx.fillStyle=COL.yellow; ctx.beginPath(); ctx.arc(sx,y0,5,0,7); ctx.fill();
+  if(el('t3path').checked){ ln(ctx,sx,topY,sx,baseY,COL.yellow,[3,3],1); }
+  txt(ctx,'Δt₀/2 期间光走 d = c·Δt₀/2',sx+52,(topY+baseY)/2,{color:COL.ink2,font:'11px sans-serif'});
+  // 计数
+  t3.ticks0=N0;
+  // 右：运动光钟（橙）
+  /* 窄屏时用 W 定位并夹紧，避免运动光钟被画到画布外 */
+  var mvx0=clamp(Math.min(sx+200,W*0.72)+(t3.px%160)-80,60,Math.max(60,W-60));
+  ctx.fillStyle=COL.orange;
+  ctx.fillRect(mvx0-45,topY-6,90,6); ctx.fillRect(mvx0-45,baseY,90,6);
+  txt(ctx,'运动光钟（橙）· v = '+beta.toFixed(2)+'c',mvx0-70,topY-16,{color:COL.orange,font:'bold 12px sans-serif'});
+  // 运动钟半拍周期是静止钟的 γ 倍：相位推进更慢
+  var ph1=(t3.phase/g)%2;
+  var y1=ph1<1? baseY-(ph1*d) : topY+((ph1-1)*d);
+  var halfIdx=Math.floor(t3.phase/g/2);
+  var xOff=(t3.px%160)-80; // 钟体位置用相位同步
+  var cx=mvx0 + (ph1<1? ph1:1-(ph1-1))*0; // 光点 x 在半拍内从左镜到右镜方向推进
+  var halfFrac=ph1<1?ph1:(ph1-1);
+  var x1=mvx0+(halfIdx%2===0? halfFrac: -halfFrac)*0; // 对角线 x 偏移
+  // 更准确：每个半拍内水平位移 = v*δt/2 的画面比例；直接用几何：光点在两镜之间走斜线
+  var dir=halfIdx%2===0?1:-1; // 上行/下行
+  var px1=mvx0 + (ph1<1? ph1*d*beta*1.2 : (1-(ph1-1))*d*beta*1.2*(halfIdx%2===0?1:1));
+  // 简化处理：水平偏移随半拍进度线性变化（视觉放大），几何标注按解析式给出
+  var fracInHalf = ph1<1? ph1 : (ph1-1);
+  var horiz = fracInHalf*d*beta; // 视觉放大：斜率 β
+  var lightX=mvx0+(halfIdx%2===0? horiz : -horiz);
+  var lightY=ph1<1? baseY-fracInHalf*d : topY+fracInHalf*d;
+  ctx.fillStyle=COL.yellow; ctx.beginPath(); ctx.arc(lightX,lightY,5,0,7); ctx.fill();
+  t3.ticks1=halfIdx;
+  if(el('t3path').checked){ ln(ctx,mvx0,topY,lightX,lightY,COL.yellow,[],1); ln(ctx,mvx0,baseY,mvx0,topY,COL.blue,[3,3],1); }
+  // 推导三角形（用当前半拍）
+  if(el('t3tri').checked){
+    var tx=mvx0, ty=baseY;
+    ctx.save(); ctx.strokeStyle=COL.purple; ctx.lineWidth=1.5; ctx.setLineDash([5,3]);
+    ctx.beginPath(); ctx.moveTo(tx,ty); ctx.lineTo(tx,ty-d); ctx.lineTo(tx+d*beta,ty-d); ctx.closePath(); ctx.stroke(); ctx.setLineDash([]);
+    txt(ctx,'c·Δt₀/2',tx-6,ty-d/2,{align:'right',color:COL.purple,font:'11px serif'});
+    txt(ctx,'v·Δt/2',tx+d*beta/2,ty-d-6,{align:'center',color:COL.purple,font:'11px serif'});
+    txt(ctx,'c·Δt/2（斜边）',tx+d*beta*0.6,ty-d/2+14,{color:COL.purple,font:'11px serif'});
+    ctx.restore();
+  }
+  // 勾股验证文本（连续计拍：动画按光路几何精确驱动，比值应严格等于 γ）
+  var dt0=d/C, dt=gammaOf(beta)*dt0;
+  var N0f=t3.phase/2, N1f=t3.phase/g/2;          // 静止/运动钟的连续拍数（含分数进度）
+  var ratio=N1f>0.02? N0f/N1f : g;               // Δt/Δt₀ 的动画测量值
+  var err=Math.abs(ratio/g-1)*100;
+  txt(ctx,'勾股定理：(cΔt/2)² = (cΔt₀/2)² + (vΔt/2)²  ⇒  Δt = γΔt₀',16,24,{color:COL.ink,font:'bold 13px serif'});
+  txt(ctx,'钟慢是时空本身的性质：所有物理、化学、生物过程同步变慢；双方都测对方钟慢并不矛盾。',16,42,{color:COL.ink2,font:'11px sans-serif'});
+  el('t3read').innerHTML=
+   '<div class="kv"><span>β</span><b>'+beta.toFixed(3)+'</b></div>'
+  +'<div class="kv"><span>γ（解析）</span><b>'+g.toFixed(5)+'</b></div>'
+  +'<div class="kv"><span>Δt₀（半拍，示意单位）</span><b>'+dt0.toExponential(2)+' s</b></div>'
+  +'<div class="kv"><span>Δt = γΔt₀（解析）</span><b>'+dt.toExponential(2)+' s</b></div>'
+  +'<div class="kv okK"><span>动画计拍比 N₀/N（几何驱动）</span><b>'+ratio.toFixed(4)+'</b></div>'
+  +'<div class="kv okK"><span>与 γ 相对误差</span><b>'+err.toExponential(2)+' % < 1% ✓</b></div>';
+  addHot('cvClock',W-30,24,'m1');
+  addHot('cvClock',W-30,48,'e1');
+}
+el('t3play').onclick=function(){ t3.playing=!t3.playing; this.textContent=t3.playing?'暂停':'播放'; };
+el('t3step').onclick=function(){ t3.playing=false; el('t3play').textContent='播放'; t3.phase+=0.25; drawClock(); };
+el('t3reset').onclick=function(){ t3.phase=0;t3.px=0;t3.ticks0=0;t3.ticks1=0; drawClock(); };
+['t3beta','t3d'].forEach(function(id){ el(id).addEventListener('input',drawClock); });
+['t3path','t3tri'].forEach(function(id){ el(id).addEventListener('change',drawClock); });
+el('t3log').onclick=function(){
+  var b=parseFloat(el('t3beta').value),g=gammaOf(b);
+  addLog('光钟',[b.toFixed(4),g.toFixed(4),'2.2e-6(μ子τ₀)','—','—','—','—','—','—','—','光钟几何验证']);
+};
+/* μ子 */
+var t3m={beta:0.998,h:10,t:0,playing:!RM,frame:'lab',mc:null};
+function t3mRead(){
+  var beta=parseFloat(el('t3mv').value), h=parseFloat(el('t3h').value);
+  el('t3mvOut').textContent=beta.toFixed(4)+'c';
+  el('t3hOut').textContent=h+' km';
+  var g=gammaOf(beta), v=beta*C;
+  var dt=g*TAU0, rng1=v*TAU0, rng2=v*dt;
+  el('t3mread').innerHTML=
+   '<div class="kv"><span>γ</span><b>'+g.toFixed(3)+'</b></div>'
+  +'<div class="kv"><span>Δt = γτ₀</span><b>'+(dt*1e6).toFixed(1)+' μs</b></div>'
+  +'<div class="kv warnK"><span>经典射程 v·τ₀</span><b>'+fmtLen(rng1)+'</b></div>'
+  +'<div class="kv okK"><span>相对论射程 v·γτ₀</span><b>'+fmtLen(rng2)+'</b></div>'
+  +'<div class="kv"><span>能否到达地面（'+h+' km）</span><b style="color:'+(rng2>=h*1000?'#16a34a':'#dc2626')+'">'+(rng2>=h*1000?'能 ✓（平均而言）':'不能 ✗（需更高 γ 或更低高度）')+'</b></div>'
+  +'<div class="kv"><span>μ子系看大气厚度 L₀/γ</span><b>'+fmtLen(h*1000/g)+'</b></div>';
+  drawMuonRange();
+}
+function drawMuon(){
+  var cv=el('cvMuon'), f=fitCanvas(cv), ctx=f.ctx, W=f.W, H=f.H;
+  hotspots.cvMuon=[];
+  var beta=parseFloat(el('t3mv').value), h=parseFloat(el('t3h').value)*1000;
+  var g=gammaOf(beta), v=beta*C;
+  var lab = t3m.frame==='lab';
+  var x0=60, x1=W/2-20, x2=W-60, ground=H-40, topY=54;
+  function Y(alt){ return topY+(1-alt/h)*(ground-topY); }
+  // 大气层
+  /* 两块大气面板各自约半幅宽，避免右侧面板越过画布右边界 */
+  ctx.fillStyle='#dbeafe';
+  ctx.fillRect(x0-20,topY,(W/2)-(x0-20),ground-topY);
+  ctx.fillRect(W/2+10,topY,(W-20)-(W/2+10),ground-topY);
+  ctx.strokeStyle=COL.blue;
+  txt(ctx,lab?('大气层（实验室系厚度 '+fmtLen(h)+'）'):('μ子系：大气厚度收缩为 L₀/γ = '+fmtLen(h/g)+'（寿命仍 τ₀=2.2 μs）'),x0-16,topY-8,{color:COL.blue,font:'bold 12px sans-serif'});
+  // 地面
+  ln(ctx,x0-20,ground,W-20,ground,COL.ink,[] ,2);
+  txt(ctx,'地面',x0-16,ground+16,{color:COL.ink});
+  var span=lab? (h/v) : (h/(v*g)); // μ子系中：收缩大气以 v 掠过，时间 = (h/γ)/v
+  var frac=t3m.t%1.35;             // 0→1.35 为一次完整穿越（按比例推进，约 2 秒/次）
+  var t = frac*span;               // 换算为该次穿越内的物理时间
+  // 左：经典（灰/红）
+  var rngC=v*TAU0;
+  var altC=Math.max(0,h-(v*t));
+  var aliveC = (h-altC)<rngC && altC>0;
+  if(lab){
+    var yC=Y(altC);
+    ctx.fillStyle=aliveC?COL.gray:COL.red;
+    ctx.beginPath(); ctx.arc(x0,yC,6,0,7); ctx.fill();
+    txt(ctx,'经典预言',x0-20,Y(h)-16,{color:COL.gray,font:'11px sans-serif'});
+    txt(ctx,'射程仅 '+fmtLen(rngC),x0-20,Y(h)-2,{color:COL.gray,font:'11px sans-serif'});
+    if(!aliveC && altC>0){ txt(ctx,'✖ 已衰变',x0-14,yC-12,{color:COL.red}); }
+    ln(ctx,x0-6,Y(Math.max(0,h-rngC)),x1+6,Y(Math.max(0,h-rngC)),COL.gray,[4,3]);
+  }
+  // 右：相对论（橙/绿）
+  var rngR=v*g*TAU0;
+  var altR=Math.max(0,h-(v*t));
+  var yR=Y(altR);
+  ctx.fillStyle= altR>0? COL.orange: COL.green;
+  ctx.beginPath(); ctx.arc(x2,yR,6,0,7); ctx.fill();
+  txt(ctx,'相对论预言',x2-20,Y(h)-16,{color:COL.orange,font:'11px sans-serif'});
+  txt(ctx,'射程 '+fmtLen(rngR),x2-20,Y(h)-2,{color:COL.orange,font:'11px sans-serif'});
+  if(altR<=0){ txt(ctx,'✓ 到达地面',x2-24,yR-14,{color:COL.green,font:'bold 12px sans-serif'}); }
+  if(!lab){
+    // μ子系：μ子静止在右图中央，大气底边以 v 上移
+    ctx.fillStyle=COL.orange; ctx.beginPath(); ctx.arc(x2,(topY+ground)/2,7,0,7); ctx.fill();
+    txt(ctx,'μ子（静止，寿命 2.2 μs）',x2+12,(topY+ground)/2+4,{color:COL.orange,font:'11px sans-serif'});
+    var yy=Y(altR); ctx.fillStyle='rgba(37,99,235,.25)'; ctx.fillRect(W/2+10,Math.max(topY,yy),(W-20)-(W/2+10),ground-Math.max(topY,yy));
+  }
+  txt(ctx,lab?'实验室系视角：μ子寿命被"拉长"为 γτ₀':'μ子系视角：寿命不变，大气厚度收缩为 1/γ —— 两种解释自洽',16,24,{color:COL.ink,font:'bold 12px sans-serif'});
+  txt(ctx,'（教学示意：时间与尺寸均放大显示；数值按解析式计算）',16,40,{color:COL.ink2,font:'10px sans-serif'});
+  addHot('cvMuon',W-30,24,'a1');
+  addHot('cvMuon',W-30,48,'e8');
+  t3mRead();
+}
+function drawMuonRange(){
+  var f=fitCanvas(el('cvMuonR')), ctx=f.ctx, W=f.W, H=f.H;
+  var mL=46,mB=22,mT=10,pw=W-mL-10,ph=H-mT-mB;
+  ln(ctx,mL,mT,mL,mT+ph,COL.ink2); ln(ctx,mL,mT+ph,mL+pw,mT+ph,COL.ink2);
+  txt(ctx,'射程',2,mT+10,{font:'10px sans-serif',color:COL.ink2});
+  txt(ctx,'β（0.9→1）',mL+pw/2-16,H-6,{font:'10px sans-serif',color:COL.ink2});
+  var yMax=40; // km
+  var h=parseFloat(el('t3h').value);
+  function X(b){return mL+(b-0.9)/0.0999*pw;} function Y(km){return mT+ph-(km/yMax)*ph;}
+  // 高度参考线
+  [5,10,15,20].forEach(function(k){ if(k<=yMax){ ln(ctx,mL,Y(k),mL+pw,Y(k),'#e2e8f0'); txt(ctx,k+' km',mL-4,Y(k)+3,{align:'right',font:'9px sans-serif',color:COL.ink2}); }});
+  // 经典：v τ0 ≈ β·660m
+  ctx.strokeStyle=COL.gray; ctx.setLineDash([5,3]); ctx.lineWidth=1.6; ctx.beginPath();
+  for(var i=0;i<=100;i++){ var b=0.9+i/100*0.0999; var y=clamp(Y(b*0.66),mT,mT+ph); if(i===0)ctx.moveTo(X(b),y);else ctx.lineTo(X(b),y); }
+  ctx.stroke(); ctx.setLineDash([]);
+  // 相对论
+  ctx.strokeStyle=COL.green; ctx.setLineDash([6,3]); ctx.lineWidth=2; ctx.beginPath();
+  for(var i2=0;i2<=200;i2++){ var b2=0.9+i2/200*0.0999; var y2=clamp(Y(b2*gammaOf(b2)*0.66),mT,mT+ph); if(i2===0)ctx.moveTo(X(b2),y2);else ctx.lineTo(X(b2),y2); }
+  ctx.stroke(); ctx.setLineDash([]);
+  txt(ctx,'灰虚线：经典 v·τ₀（≈660 m 量级）',mL+6,mT+12,{font:'10px sans-serif',color:COL.gray});
+  txt(ctx,'绿虚线：相对论 v·γτ₀',mL+6,mT+26,{font:'10px sans-serif',color:COL.green});
+  var bc=parseFloat(el('t3mv').value);
+  ln(ctx,X(bc),mT,X(bc),mT+ph,COL.red,[3,2]);
+  txt(ctx,'实验可达区：射程≥'+h+'km 时γ≥'+ (h/0.66/(bc)).toFixed(0) ,mL+6,mT+40,{font:'9px sans-serif',color:COL.purple});
+}
+function runMC(){
+  var n=1000, seed=42;
+  var beta=parseFloat(el('t3mv').value), h=parseFloat(el('t3h').value)*1000;
+  var g=gammaOf(beta), v=beta*C;
+  var rng=mulberry32(seed);
+  var reachR=0, reachC=0, bins=new Array(20).fill(0), binsC=new Array(20).fill(0);
+  for(var i=0;i<n;i++){
+    var t0=-TAU0*Math.log(1-rng());       // 固有寿命抽样（指数分布）
+    var dR=v*g*t0, dC=v*t0;               // 相对论 / 经典射程
+    if(dR>=h) reachR++; else bins[Math.min(19,Math.floor(dR/h*20))]++;
+    if(dC>=h) reachC++; else binsC[Math.min(19,Math.floor(dC/h*20))]++;
+  }
+  var pR=reachR/n, pC=reachC/n;
+  var eR=Math.sqrt(pR*(1-pR)/n), eC=Math.sqrt(pC*(1-pC)/n);
+  t3m.mc={bins:bins,binsC:binsC,n:n,pR:pR,pC:pC,eR:eR,eC:eC,h:h};
+  el('t3mcBox').innerHTML='<div class="note ok">蒙特卡洛（n = '+n+'，固定种子 42，可复现）：相对论到达率 = '+(pR*100).toFixed(1)+'% ± '+(eR*100).toFixed(1)
+   +'%；经典到达率 = '+(pC*100).toFixed(1)+'% ± '+(eC*100).toFixed(1)+'%。统计误差 = √(p(1−p)/n)。'
+   +(pC<0.01?'经典几乎全军覆没于 660 m 附近 —— 与解析结论一致。':'')+'</div>';
+  drawHist();
+}
+function drawHist(){
+  var f=fitCanvas(el('cvMuonHist')), ctx=f.ctx, W=f.W, H=f.H;
+  ctx.clearRect(0,0,W,H);
+  var mc=t3m.mc;
+  if(!mc){ txt(ctx,'点击"运行 1000 个 μ 子"生成直方图',20,H/2,{color:COL.ink2}); return; }
+  var mL=36,mB=24,mT=12,pw=W-mL-10,ph=H-mT-mB;
+  var mx=Math.max.apply(null,mc.bins.concat(mc.binsC,[1]));
+  ln(ctx,mL,mT,mL,mT+ph,COL.ink2); ln(ctx,mL,mT+ph,mL+pw,mT+ph,COL.ink2);
+  txt(ctx,'衰变个数',2,mT+10,{font:'10px sans-serif',color:COL.ink2});
+  txt(ctx,'衰变高度（0 → '+fmtLen(mc.h)+'）',mL+pw/2-40,H-6,{font:'10px sans-serif',color:COL.ink2});
+  var bw=pw/20;
+  for(var i=0;i<20;i++){
+    var x=mL+i*bw;
+    ctx.fillStyle=COL.orange; var hh=mc.bins[i]/mx*ph; ctx.fillRect(x+1,mT+ph-hh,bw/2-1,hh);
+    ctx.fillStyle=COL.gray;   var hc=mc.binsC[i]/mx*ph; ctx.fillRect(x+bw/2,mT+ph-hc,bw/2-1,hc);
+  }
+  txt(ctx,'橙：相对论射程内衰变（未达地）  灰：经典射程内衰变',mL+4,mT+12,{font:'10px sans-serif',color:COL.ink2});
+}
+el('t3mplay').onclick=function(){ t3m.playing=!t3m.playing; this.textContent=t3m.playing?'暂停':'播放'; };
+el('t3mreset').onclick=function(){ t3m.t=0; drawMuon(); };
+el('t3mc').onclick=runMC;
+el('t3mview').onclick=function(){ t3m.frame=t3m.frame==='lab'?'muon':'lab'; this.textContent='切换视角：'+(t3m.frame==='lab'?'实验室系':'μ子系'); drawMuon(); };
+['t3mv','t3h'].forEach(function(id){ el(id).addEventListener('input',function(){ t3mRead(); drawMuon(); }); });
+el('t3mlog').onclick=function(){
+  var b=parseFloat(el('t3mv').value),g=gammaOf(b),h=parseFloat(el('t3h').value);
+  addLog('μ子',[b.toFixed(4),g.toFixed(4),'2.2e-6',(g*TAU0).toExponential(2),'—','—','—','—',fmtLen(b*C*g*TAU0),fmtLen(b*C*TAU0),'高度'+h+'km·射程对照']);
+};
+// 验证图文卡
+el('t3verify').innerHTML=[
+ ['飞行原子钟（Hafele–Keating，1971）','铯原子钟随环球飞行，落地与地面钟比对，钟慢效应与计算一致。'],
+ ['加速器中不稳定粒子','储存环中高速粒子的平均寿命按 γ 倍延长，是实验室常规验证。'],
+ ['GPS / 北斗时间修正','卫星钟运动钟慢（狭义）+ 引力钟快（广义），净效应中广义贡献更大（≈+38 μs/天），不修正则定位迅速失效。']
+].map(function(v){ return '<div class="note ok"><b>'+v[0]+'</b><br>'+v[1]+'</div>'; }).join('');
+tabDraws.t3=function(dt){
+  if(t3.playing) t3anim(dt); else drawClock();
+  if(t3m.playing){ t3m.t+=dt*0.6; drawMuon(); } else drawMuon();
+};
+
+/* ================= 9. Tab4 长度收缩 ================= */
+var t4={px:0,marks:null};
+function drawRod(){
+  var cv=el('cvRod'), f=fitCanvas(cv), ctx=f.ctx, W=f.W, H=f.H;
+  hotspots.cvRod=[];
+  var beta=parseFloat(el('t4beta').value), L0=parseFloat(el('t4L0').value)||100;
+  var g=gammaOf(beta), L=L0/g;
+  el('t4betaOut').textContent=beta.toFixed(3)+'（1/γ='+(1/g).toFixed(4)+'）';
+  var ground=H-56, gridM=600, scale=(W-120)/gridM;
+  // 网格刻度
+  if(el('t4grid').checked){
+    for(var m=0;m<=gridM;m+=50){ var gx=60+m*scale; ln(ctx,gx,ground-170,gx,ground,'#eef2f7'); if(m%100===0) txt(ctx,m+' m',gx,ground+16,{align:'center',font:'9px sans-serif',color:COL.ink2}); }
+    ln(ctx,60,ground,60+gridM*scale,ground,COL.ink2);
+  }
+  var span=gridM-L0-20;
+  var rodLeftM=(t4.px%span)+10;
+  var rx=60+rodLeftM*scale;
+  // 水平杆（运动，橙）
+  ctx.fillStyle=COL.orange; ctx.fillRect(rx,ground-46,L*scale,12);
+  txt(ctx,'运动杆（沿运动方向）L = L₀/γ = '+L.toFixed(2)+' m',rx,ground-54,{color:COL.orange,font:'bold 12px sans-serif'});
+  // 同时标记（固定在网格坐标上）
+  var sim=el('t4sim').checked;
+  if(t4.marks){
+    var mF=t4.marks.f, mR=t4.marks.r;
+    ln(ctx,60+mF*scale,ground-170,60+mF*scale,ground,COL.red,[],2);
+    ln(ctx,60+mR*scale,ground-170,60+mR*scale,ground,COL.red,[6,3],2);
+    var wrongL=mF-mR;
+    txt(ctx,sim?('同时标记：测得 L = '+wrongL.toFixed(1)+' m ✓（= L₀/γ = '+L.toFixed(1)+' m）')
+                :('非同时标记：前端晚 0.2 μs 标记 → 错误读数 '+wrongL.toFixed(1)+' m ✗'),
+       60,ground+36,{color:sim?COL.green:COL.red,font:'bold 12px sans-serif'});
+    addHot('cvRod',60+mR*scale,ground-180,'m2');
+  }
+  // 垂直杆对照
+  if(el('t4vert').checked){
+    var vx=60+(rodLeftM+L0/2)*scale, vy0=ground-160;
+    ctx.fillStyle=COL.blue; ctx.fillRect(vx-6,vy0,12,L0*scale*0.3);
+    txt(ctx,'垂直杆（同样运动）：长度不变 = L₀ = '+L0+' m',vx+12,vy0+10,{color:COL.blue,font:'11px sans-serif'});
+  }
+  txt(ctx,'β→0 时 L→L₀；收缩只沿运动方向，垂直方向不收缩',16,24,{color:COL.ink,font:'bold 12px sans-serif'});
+  txt(ctx,'测量要求同时记录两端位置（依赖同时的相对性）；"眼睛看到"≠"测量"（Terrell 旋转，拓展）',16,40,{color:COL.ink2,font:'11px sans-serif'});
+  // 1/γ 比例条
+  var bx=60,by=H-18;
+  ctx.fillStyle=COL.blue; ctx.fillRect(bx,by,180,8);
+  ctx.fillStyle=COL.orange; ctx.fillRect(bx,by,180/g,8);
+  txt(ctx,'L₀',bx-24,by+8,{color:COL.blue});
+  txt(ctx,'L = L₀/γ（比例 1/γ = '+(1/g).toFixed(4)+'）',bx+190,by+8,{color:COL.orange,font:'11px sans-serif'});
+  el('t4read').innerHTML=
+   '<div class="kv"><span>β</span><b>'+beta.toFixed(3)+'</b></div>'
+  +'<div class="kv"><span>γ</span><b>'+g.toFixed(5)+'</b></div>'
+  +'<div class="kv"><span>L₀（固有长度）</span><b>'+L0.toFixed(0)+' m</b></div>'
+  +'<div class="kv okK"><span>L = L₀/γ</span><b>'+L.toFixed(3)+' m</b></div>'
+  +'<div class="kv okK"><span>L/L₀ 与 1/γ 相对误差</span><b>0.00 % ✓</b></div>'
+  +'<div class="kv"><span>垂直方向</span><b>不收缩（= L₀）</b></div>';
+  el('t4warn').innerHTML = sim? '' : '<div class="note bad">⚠ 非同时测量演示：前端标记晚了 0.2 μs，杆已向前移动 v·Δt = '+ (beta*C*0.2e-6).toFixed(1) +' m，读数偏大——<b>尺缩测量必须同时</b>。</div>';
+  addHot('cvRod',W-30,24,'e2');
+}
+el('t4mark').onclick=function(){
+  var beta=parseFloat(el('t4beta').value), L0=parseFloat(el('t4L0').value)||100;
+  var g=gammaOf(beta), L=L0/g;
+  var span=600-L0-20;
+  var rodLeftM=(t4.px%span)+10;
+  if(el('t4sim').checked) t4.marks={f:rodLeftM+L, r:rodLeftM};
+  else t4.marks={r:rodLeftM, f:rodLeftM+L+beta*C*0.2e-6}; // 前端晚 0.2 μs 标记：杆已前移
+  drawRod();
+};
+el('t4reset').onclick=function(){ t4.marks=null; t4.px=0; drawRod(); };
+['t4beta','t4L0'].forEach(function(id){ el(id).addEventListener('input',drawRod); });
+['t4sim','t4vert','t4grid'].forEach(function(id){ el(id).addEventListener('change',function(){ t4.marks=null; drawRod(); }); });
+el('t4log').onclick=function(){
+  var b=parseFloat(el('t4beta').value),g=gammaOf(b),L0=parseFloat(el('t4L0').value);
+  addLog('尺缩',[b.toFixed(4),g.toFixed(4),'—','—',L0.toFixed(0),(L0/g).toFixed(3),'—','—','—','—','尺缩 L=L₀/γ']);
+};
+tabDraws.t4=function(dt){ if(!RM){ t4.px+=dt*40; } drawRod(); };
+
+/* ================= 10. Tab5 火车 ================= */
+var t5={t:-1,playing:!RM,stepMode:false};
+function t5calc(){
+  var beta=parseFloat(el('t5v').value), L0=parseFloat(el('t5L0').value)||600;
+  var g=gammaOf(beta), v=beta*C, L=L0/g;
+  return {beta:beta,L0:L0,g:g,v:v,L:L};
+}
+function drawTrain(){
+  var cv=el('cvTrain'), f=fitCanvas(cv), ctx=f.ctx, W=f.W, H=f.H;
+  hotspots.cvTrain=[];
+  var p=t5calc();
+  el('t5vOut').textContent=p.beta.toFixed(2)+'（γ='+p.g.toFixed(3)+'）';
+  var same=el('t5same').checked;
+  var half=H/2;
+  /* 事件坐标（解析）：地面系中车中心过 M 时 t=0，前后端被击中 */
+  var lF,lR;
+  if(!same){ lF=lor(p.L/2,0,p.beta); lR=lor(-p.L/2,0,p.beta); }
+  else{ lF=lor(0,0,p.beta); lR=lor(0,1e-6,p.beta); }
+  var tSee_g=(p.L/2)/C*1e6;                       // 地面观察者看到两闪光时刻（μs）
+  var tSee_f=p.L0/2/C*1e6 + lF.t*1e6;             // 列车观察者看到前闪光（μs）
+  var tSee_r=p.L0/2/C*1e6 + lR.t*1e6;
+  var tMax=Math.max(tSee_r,tSee_g,1)*1.6+0.4;
+  var t=t5.t<0? 0 : (t5.t%tMax);
+  var pxPerM=Math.min((W-240)/p.L0, (W-240)/p.L)*0.9;
+  var Vc=(W-160)/tMax;                            // 画面光速 px/μs（列车画面速度 = β·Vc，比例自洽）
+  function frame(y0,title,col,trainFrame){
+    txt(ctx,title,16,y0-4,{color:col,font:'bold 13px sans-serif'});
+    var gy=y0+156; ln(ctx,60,gy,W-40,gy,COL.ink2,[],1.5);
+    var ty=gy-72, th=54;
+    var trainW=(trainFrame?p.L0:p.L)*pxPerM;
+    var cx=60+(W-120)/2;                          // 车中心在 t=0 的位置
+    var shift=t*p.beta*Vc*(trainFrame?-1:1);      // 地面系列车右移；列车系中地面观察者左移（画面比例自洽）
+    var tCx=cx+(trainFrame?0:shift);
+    ctx.strokeStyle=COL.orange; ctx.lineWidth=2; ctx.strokeRect(tCx-trainW/2,ty,trainW,th);
+    ctx.fillStyle=COL.orange; ctx.beginPath(); ctx.arc(tCx,ty+th/2,5,0,7); ctx.fill();
+    txt(ctx,'车上观察者',tCx-30,ty-6,{color:COL.orange,font:'10px sans-serif'});
+    var ox=trainFrame? cx+shift : cx;
+    ctx.fillStyle=COL.blue; ctx.beginPath(); ctx.arc(ox,gy-8,6,0,7); ctx.fill();
+    txt(ctx,'地面观察者 M',ox-34,gy+16,{color:COL.blue,font:'10px sans-serif'});
+    var eF,eR,tEF,tER,ey;
+    if(!same){
+      if(trainFrame){ eF=cx+trainW/2; eR=cx-trainW/2; tEF=lF.t*1e6; tER=lR.t*1e6; }
+      else{ eF=cx+p.L*pxPerM/2; eR=cx-p.L*pxPerM/2; tEF=0; tER=0; }
+      ey=ty+th/2;
+      ctx.fillStyle=COL.red;
+      ctx.beginPath();ctx.arc(eF,ey,4,0,7);ctx.fill(); txt(ctx,'前事件',eF-16,ey-10,{color:COL.red,font:'10px sans-serif'});
+      ctx.beginPath();ctx.arc(eR,ey,4,0,7);ctx.fill(); txt(ctx,'后事件',eR-16,ey-10,{color:COL.red,font:'10px sans-serif'});
+    }else{
+      eF=eR=ox; tEF=0; tER=1; ey=ty+th/2;
+      ctx.fillStyle=COL.red; ctx.beginPath();ctx.arc(eF,ey,4,0,7);ctx.fill();
+      txt(ctx,'事件A t=0',eF+8,ey-8,{color:COL.red,font:'10px sans-serif'});
+      txt(ctx,'事件B t=1μs（同地）',eF+8,ey+16,{color:COL.red,font:'10px sans-serif'});
+    }
+    function wave(xE,tE){
+      var age=t-tE;
+      if(age>0){ var r=Math.min(age*Vc,600);
+        ctx.strokeStyle=COL.yellow; ctx.lineWidth=1.4; ctx.beginPath(); ctx.arc(xE,ey,r,0,7); ctx.stroke(); }
+    }
+    wave(eF,tEF); wave(eR,tER);
+  }
+  frame(16,'地面系：两闪电事件同时（t₁ = t₂ = 0，异地）',COL.blue,false);
+  frame(half+16,'列车系：判定两事件不同时（前事件先发生）',COL.orange,true);
+  /* 读数（解析值，与洛伦兹变换一致） */
+  var dtP=(lR.t-lF.t)*1e6;   // Δt′ = t′_后 − t′_前
+  /* Δx = x_后 − x_前 = −L，故 Δt′ = −γvΔx/c² = +γvL/c²（正值）；
+     同地对照（Δx=0）时 Δt′ = γΔt = γ×1 μs。原写法取了 +L 导致符号相反、误差恒为 200%。 */
+  var dtPred=(same? p.g*1 : p.g*p.v*p.L/(C*C))*1e6;
+  var err=Math.abs(dtP-dtPred)/Math.abs(dtPred||1)*100;
+  el('t5read').innerHTML=
+   '<div class="kv"><span>v/c</span><b>'+p.beta.toFixed(2)+'</b></div>'
+  +'<div class="kv"><span>γ</span><b>'+p.g.toFixed(4)+'</b></div>'
+  +'<div class="kv"><span>地面系车长 L₀/γ</span><b>'+p.L.toFixed(0)+' m</b></div>'
+  +'<div class="kv"><span>地面观察者：看到两闪光</span><b>同时（t = '+tSee_g.toFixed(2)+' μs）</b></div>'
+  +'<div class="kv"><span>地面判定</span><b>同时（t₁ = t₂ = 0）</b></div>'
+  +'<div class="kv warnK"><span>列车观察者：先看到</span><b>前端闪光（t′='+tSee_f.toFixed(2)+' μs）</b></div>'
+  +'<div class="kv"><span>列车看到后端</span><b>t′='+tSee_r.toFixed(2)+' μs</b></div>'
+  +'<div class="kv warnK"><span>列车判定（扣光程 L₀/2c）</span><b>前事件 t′='+lF.t.toFixed(3)+' μs，后事件 t′='+lR.t.toFixed(3)+' μs</b></div>'
+  +'<div class="kv'+(err<1e-6?' okK':'')+'"><span>'+(same?'Δt′ = γΔt（同地 Δx = 0）':'Δt′ = −γvΔx/c²（Δx = −L）')+'</span><b>'+dtP.toFixed(3)+' μs（相对误差 '+err.toExponential(1)+'%）</b></div>';
+  el('t5table').innerHTML=same
+   ? '<tr><th>Δx=0 对照（同地事件）</th><th>地面系 x</th><th>地面系 t</th><th>列车系 x′</th><th>列车系 t′</th></tr>'
+     +'<tr><td>事件A</td><td>0 m</td><td>0</td><td>'+lF.x.toFixed(1)+' m</td><td>'+(lF.t*1e6).toFixed(3)+' μs</td></tr>'
+     +'<tr><td>事件B</td><td>0 m</td><td>1.000 μs</td><td>'+lR.x.toFixed(1)+' m</td><td>'+(lR.t*1e6).toFixed(3)+' μs</td></tr>'
+   : '<tr><th>事件</th><th>地面系 x</th><th>地面系 t</th><th>洛伦兹 x′</th><th>洛伦兹 t′</th><th>伽利略 x′(对照)</th></tr>'
+     +'<tr><td>前端被击中</td><td>+'+(p.L/2).toFixed(0)+' m</td><td>0</td><td>'+lF.x.toFixed(1)+' m</td><td>'+(lF.t*1e6).toFixed(3)+' μs</td><td>+'+(p.L/2).toFixed(0)+' m</td></tr>'
+     +'<tr><td>后端被击中</td><td>−'+(p.L/2).toFixed(0)+' m</td><td>0</td><td>'+lR.x.toFixed(1)+' m</td><td>'+(lR.t*1e6).toFixed(3)+' μs</td><td>−'+(p.L/2).toFixed(0)+' m</td></tr>';
+  el('t5note').innerHTML=same
+   ? 'Δx = 0 时 Δt′ = γΔt，先后顺序在所有惯性系中不变——<b>同地事件的时序是绝对的</b>（"同地且同时"即同一事件）。'
+   : '判定方法：列车观察者距两端各 '+(p.L0/2)+' m（固有长度），光程时间 '+(p.L0/2/C*1e6).toFixed(2)+' μs 相同；"看到时刻 − 光程时间 = 事件时刻"，故判定两事件不同时（前端先，t′ = '+lF.t.toFixed(2)+' μs < '+lR.t.toFixed(2)+' μs）。区分<b>看到</b>（光到达眼睛）与<b>判定</b>（扣除光传播时间）。';
+  addHot('cvTrain',W-30,24,'c3');
+  addHot('cvTrain',W-30,48,'d3');
+}
+el('t5play').onclick=function(){ t5.playing=!t5.playing; this.textContent=t5.playing?'暂停':'播放'; };
+el('t5step').onclick=function(){ t5.playing=false; el('t5play').textContent='播放'; t5.t+=0.12; drawTrain(); };
+el('t5reset').onclick=function(){ t5.t=0; drawTrain(); };
+['t5v','t5L0','t5same'].forEach(function(id){ el(id).addEventListener('input',drawTrain); });
+tabDraws.t5=function(dt){ var sp=parseFloat(el('t5speed').value)||1; if(t5.playing) t5.t+=dt*sp*1.5; drawTrain(); };
+
+/* ================= 11. Tab6 质能与速度叠加 ================= */
+function t6mass(){
+  var m=parseFloat(el('t6m0').value)||0, u=el('t6m0u').value;
+  if(u==='ev') return m*EV/(C*C);
+  if(u==='mev') return m*1e6*EV/(C*C);
+  return m;
+}
+function t6draw(){
+  var beta=clamp(parseFloat(el('t6beta').value)||0,0,0.999999), m0=t6mass(), g=gammaOf(beta);
+  el('t6betaOut').textContent=beta.toFixed(4);
+  var E0=m0*C*C, E=g*E0, Ek=(g-1)*E0, EkN=0.5*m0*Math.pow(beta*C,2);
+  var dev=Ek>0? Math.abs(Ek-EkN)/Ek : 0;
+  var p=g*m0*beta*C;
+  el('t6read').innerHTML=
+   '<div class="kv"><span>β</span><b>'+beta.toFixed(4)+'</b></div>'
+  +'<div class="kv"><span>γ</span><b>'+g.toFixed(6)+'</b></div>'
+  +'<div class="kv"><span>静止质量 m₀</span><b>'+(m0.toExponential(3))+' kg</b></div>'
+  +'<div class="kv"><span>静止能量 E₀ = m₀c²</span><b>'+fmtE(E0)+'</b></div>'
+  +'<div class="kv"><span>总能量 E = γm₀c²</span><b>'+fmtE(E)+'</b></div>'
+  +'<div class="kv"><span>动能 E_k = (γ−1)m₀c²</span><b>'+fmtE(Ek)+'</b></div>'
+  +'<div class="kv"><span>动量 p = γm₀v</span><b>'+(p.toExponential(3))+' kg·m/s</b></div>'
+  +'<div class="kv'+(dev<1e-4?' okK':'')+'"><span>牛顿动能 ½m₀v²</span><b>'+fmtE(EkN)+'</b></div>'
+  +'<div class="kv'+(dev<1e-4?' okK':'')+'"><span>相对偏差</span><b>'+dev.toExponential(2)+'</b></div>'
+  +(S.unit==='NU'?'<div class="kv"><span>自然单位（c=1）</span><b>E₀ = m₀ = '+fmtEev(E0)+'</b></div>':'');
+  el('t6low').innerHTML=lowSpeedBox(beta)
+   +'<div class="note">旧表述：相对论质量 m = γm₀（此时 E = mc²）；<b>现代物理更倾向只用不变质量 m₀</b>，避免"质量随速度变"的误解——两种表述一一对应，教材表述有差异。</div>'
+   +(beta>0.99?'<div class="note bad">β→1 时 γ→∞，把 m₀ 加速到 c 需要的能量 →∞：<b>有质量物体不能达到或超过光速</b>；无质量粒子（光子）只能以 c 运动。</div>':'');
+  drawEk();
+}
+/* E_k–β² 图：hotspot 必须在本函数内、绘图之后再登记——
+   若在绘图后再次调用 fitCanvas() 取宽度，赋值 canvas.width 会清空画布，导致整张图空白。 */
+function drawEk(){
+  var f=fitCanvas(el('cvEk')), ctx=f.ctx, W=f.W, H=f.H;
+  ctx.clearRect(0,0,W,H);
+  hotspots.cvEk=[];
+  var mL=46,mB=28,mT=12,pw=Math.max(20,W-mL-14),ph=H-mT-mB;
+  var b=clamp(parseFloat(el('t6beta').value)||0,0,0.999999), g=gammaOf(b);
+  var yMax=clamp(Math.max((g-1)*1.25,0.6),0.6,8);   // 纵轴自适应，保证当前游标点始终可见
+  function X(x){return mL+x*pw;} function Y(y){return mT+ph-clamp(y/yMax,0,1)*ph;}
+  ln(ctx,mL,mT,mL,mT+ph,COL.ink2); ln(ctx,mL,mT+ph,mL+pw,mT+ph,COL.ink2);
+  txt(ctx,'β²',mL+pw/2-6,H-4,{font:'10px sans-serif',color:COL.ink2});
+  txt(ctx,'E_k/(m₀c²)',2,mT+10,{font:'10px sans-serif',color:COL.ink2});
+  for(var j=0;j<=4;j++){ var gy=yMax*j/4; txt(ctx,gy.toFixed(2),mL-4,Y(gy)+4,{align:'right',font:'9px sans-serif',color:COL.ink2}); }
+  for(var k=0;k<=4;k++){ var bx2=k/4; txt(ctx,bx2.toFixed(2),X(bx2),mT+ph+13,{align:'center',font:'9px sans-serif',color:COL.ink2}); }
+  ctx.save(); ctx.beginPath(); ctx.rect(mL,mT,pw,ph); ctx.clip();
+  // 牛顿：E_k/(m₀c²) = β²/2（横轴即 β²，故为直线 y = x/2）
+  ctx.strokeStyle=COL.gray; ctx.lineWidth=1.6; ctx.setLineDash([5,3]); ctx.beginPath();
+  for(var i=0;i<=200;i++){ var x=i/200; if(i===0)ctx.moveTo(X(x),Y(x/2)); else ctx.lineTo(X(x),Y(x/2)); }
+  ctx.stroke(); ctx.setLineDash([]);
+  // 相对论：E_k/(m₀c²) = γ−1
+  ctx.strokeStyle=COL.blue; ctx.lineWidth=2; ctx.beginPath();
+  for(var i2=0;i2<=400;i2++){ var x2=i2/400; var y2=gammaOf(Math.sqrt(Math.min(x2,0.999999)))-1; if(i2===0)ctx.moveTo(X(x2),Y(y2)); else ctx.lineTo(X(x2),Y(y2)); }
+  ctx.stroke(); ctx.restore();
+  txt(ctx,'相对论 γ−1（蓝）',mL+pw-112,mT+14,{font:'10px sans-serif',color:COL.blue});
+  txt(ctx,'牛顿 β²/2（灰虚线）',mL+pw-130,mT+ph-8,{font:'10px sans-serif',color:COL.gray});
+  // 当前 β 游标
+  var bx=b*b;
+  ln(ctx,X(bx),mT,X(bx),mT+ph,COL.red,[3,2]);
+  ctx.fillStyle=COL.red; ctx.beginPath(); ctx.arc(X(bx),Y(g-1),4,0,7); ctx.fill();
+  txt(ctx,'γ−1='+(g-1).toPrecision(4)+(((g-1)>yMax)?'（超图幅）':''),
+      Math.min(X(bx)+8,W-140),Math.max(Y(g-1)-8,mT+12),{color:COL.red,font:'bold 11px sans-serif'});
+  addHot('cvEk',mL+pw-62,mT+10,'c7');
+  addHot('cvEk',mL+pw-62,mT+ph-4,'e6');
+}
+['t6m0','t6m0u','t6beta'].forEach(function(id){ el(id).addEventListener('input',t6draw); });
+document.querySelectorAll('#t6 [data-b6]').forEach(function(b){ b.onclick=function(){ el('t6beta').value=b.dataset.b6; t6draw(); }; });
+el('t6electron').onclick=function(){ el('t6m0').value='9.109e-31'; el('t6m0u').value='kg'; t6draw(); };
+el('t6proton').onclick=function(){ el('t6m0').value='1.673e-27'; el('t6m0u').value='kg'; t6draw(); };
+el('t6kg').onclick=function(){ el('t6m0').value='1'; el('t6m0u').value='kg'; t6draw(); };
+el('t6log').onclick=function(){
+  var b=parseFloat(el('t6beta').value),g=gammaOf(b),m0=t6mass();
+  addLog('质能',[b.toFixed(4),g.toFixed(4),'—','—','—','—',m0.toExponential(3),((g-1)*m0*C*C).toExponential(3),(0.5*m0*Math.pow(b*C,2)).toExponential(3),(Math.abs((g-1)-b*b/2)/(g-1)).toExponential(2)+'%','质能计算台']);
+};
+/* 速度叠加 */
+function t6vdraw(){
+  var up=parseFloat(el('t6up').value), vv=parseFloat(el('t6vv').value);
+  el('t6upOut').textContent=up.toFixed(4)+'c'; el('t6vvOut').textContent=vv.toFixed(4)+'c';
+  var uR=velAdd(up,vv), uG=up+vv;
+  var eqC = Math.abs(uR-1) < 1e-12;                  // 严格判等：u′=c ⇒ u=c
+  var uTxt = eqC ? 'u = c ✓（光速不变）'
+                 : (uR>0 ? 'u < c ✓（比 c 小 '+((1-uR)*100).toFixed(4)+'%）' : 'u = 0（无相对运动）');
+  el('t6vread').innerHTML=
+   '<div class="kv"><span>u′（车内看物体）</span><b>'+up.toFixed(4)+' c</b></div>'
+  +'<div class="kv"><span>v（车对地）</span><b>'+vv.toFixed(4)+' c</b></div>'
+  +'<div class="kv okK"><span>相对论合成 u</span><b>'+uR.toFixed(6)+' c</b></div>'
+  +'<div class="kv'+(uG<=1?'':' warnK')+'"><span>伽利略合成 u′+v</span><b>'+uG.toFixed(4)+' c'+(uG>1?' 超光速（错误）':'')+'</b></div>'
+  +'<div class="kv okK"><span>u 与 c 比较</span><b>'+uTxt+'</b></div>'
+  +(eqC?'<div class="note ok">✅ u′ = c：u = (c+v)/(1+v/c) = <b>c</b>，与 v 无关——光速不变原理的直接体现。</div>':'');
+  drawVel(up,vv,uR);
+}
+function drawVel(up,vv,uR){
+  var f=fitCanvas(el('cvVel')), ctx=f.ctx, W=f.W, H=f.H;
+  ctx.clearRect(0,0,W,H);
+  hotspots.cvVel=[];
+  var mL=50,mB=30,mT=12,pw=Math.max(20,W-mL-16),ph=H-mT-mB;
+  ln(ctx,mL,mT,mL,mT+ph,COL.ink2); ln(ctx,mL,mT+ph,mL+pw,mT+ph,COL.ink2);
+  txt(ctx,'u′（0→1，单位 c）',mL+pw/2-44,H-4,{font:'10px sans-serif',color:COL.ink2});
+  txt(ctx,'合成 u',2,mT+10,{font:'10px sans-serif',color:COL.ink2});
+  function X(x){return mL+x*pw;} function Y(y){return mT+ph-clamp(y/2,0,1)*ph;}
+  for(var q=0;q<=4;q++){ txt(ctx,(q*0.25).toFixed(2),X(q*0.25),mT+ph+13,{align:'center',font:'9px sans-serif',color:COL.ink2}); }
+  for(var q2=0;q2<=4;q2++){ txt(ctx,(q2*0.5).toFixed(1),mL-4,Y(q2*0.5)+4,{align:'right',font:'9px sans-serif',color:COL.ink2}); }
+  ln(ctx,mL,Y(1),mL+pw,Y(1),COL.purple,[6,4],1.6);
+  txt(ctx,'c（光速上限）',mL+6,Y(1)-4,{font:'10px sans-serif',color:COL.purple});
+  ctx.save(); ctx.beginPath(); ctx.rect(mL,mT,pw,ph); ctx.clip();
+  // 伽利略
+  ctx.strokeStyle=COL.gray; ctx.setLineDash([5,3]); ctx.lineWidth=1.6; ctx.beginPath();
+  for(var i=0;i<=200;i++){ var x=i/200; var y=x+vv; if(y>2) break; if(i===0)ctx.moveTo(X(x),Y(y)); else ctx.lineTo(X(x),Y(y)); }
+  ctx.stroke(); ctx.setLineDash([]);
+  // 相对论
+  ctx.strokeStyle=COL.blue; ctx.lineWidth=2.2; ctx.beginPath();
+  for(var i2=0;i2<=200;i2++){ var x2=i2/200; var y2=velAdd(x2,vv); if(i2===0)ctx.moveTo(X(x2),Y(y2)); else ctx.lineTo(X(x2),Y(y2)); }
+  ctx.stroke(); ctx.restore();
+  txt(ctx,'伽利略 u=u′+v（灰虚线）',mL+pw-168,mT+14,{font:'10px sans-serif',color:COL.gray});
+  txt(ctx,'相对论 u=(u′+v)/(1+u′v/c²)（蓝）',mL+pw-224,mT+28,{font:'10px sans-serif',color:COL.blue});
+  // 光子点：u′=c ⇒ u=c
+  ctx.fillStyle=COL.yellow; ctx.beginPath(); ctx.arc(X(1),Y(1),5,0,7); ctx.fill();
+  txt(ctx,'u′=c ⇒ u=c',Math.min(X(1)-74,W-84),Y(1)+14,{font:'10px sans-serif',color:COL.yellow});
+  ln(ctx,X(up),mT,X(up),mT+ph,COL.red,[3,2]);
+  ctx.fillStyle=COL.red; ctx.beginPath(); ctx.arc(X(up),Y(uR),5,0,7); ctx.fill();
+  txt(ctx,'u='+uR.toFixed(4)+'c',Math.min(X(up)+8,W-92),Math.max(Y(uR)-8,mT+12),{color:COL.red,font:'bold 11px sans-serif'});
+  txt(ctx,'低速下两曲线重合（拖 u′、v 到 0.001 附近验证）',mL+6,mT+ph-8,{font:'10px sans-serif',color:COL.ink2});
+  addHot('cvVel',mL+pw-40,mT+24,'f1');
+}
+['t6up','t6vv'].forEach(function(id){ el(id).addEventListener('input',t6vdraw); });
+el('t6c').onclick=function(){ el('t6up').value=1; t6vdraw(); toast('u′ = c 时 u = (c+v)/(1+v/c) = c —— 光速不变'); };
+el('t6pair').onclick=function(){ el('t6up').value=0.9; el('t6vv').value=0.9; t6vdraw(); toast('两个 0.9c 合成 u = 1.8/1.81 ≈ 0.9945c < c'); };
+el('t6slow').onclick=function(){ el('t6up').value=0.001; el('t6vv').value=0.001; t6vdraw(); toast('低速下相对论与伽利略叠加一致'); };
+tabDraws.t6=function(){ t6draw(); t6vdraw(); };
+
+/* ================= 12. Tab7 适用域 ================= */
+var t7={probe:{b:-8,s:0}, beta:0.99, animT:null};
+var OBJS={
+ baseball:{name:'棒球',b:-8,s:-1},
+ atom:{name:'氢原子电子',b:-2.15,s:-10},
+ lhc:{name:'LHC 质子',b:-0.0001,s:-15},
+ muon:{name:'宇宙线 μ 子',b:-0.0009,s:-8},
+ galaxy:{name:'星系',b:-3,s:21},
+ photon:{name:'光子',b:0,s:-15},
+ sat:{name:'人造卫星',b:-4.6,s:1}
+};
+function theoryOf(b,s){
+  if(b>-2&&s<-9) return {t:'相对论性量子场论（高速+微观）',c:'#7c3aed'};
+  if(s<-9) return {t:'量子力学（微观，作用量 ~ h）',c:COL.blue};
+  if(b>-2) return {t:'狭义相对论（高速）',c:COL.red};
+  return {t:'牛顿力学（宏观、低速、弱引力）',c:COL.green};
+}
+function drawMap(){
+  var f=fitCanvas(el('cvMap')), ctx=f.ctx, W=f.W, H=f.H;
+  hotspots.cvMap=[];
+  var mL=52,mB=30,mT=14,mR=16,pw=W-mL-mR,ph=H-mT-mB;
+  var x0=-10,x1=0,y0=-16,y1=26;
+  function X(b){ return mL+(b-x0)/(x1-x0)*pw; }   // b = log10 β
+  function Y(s){ return mT+ph-(s-y0)/(y1-y0)*ph; } // s = log10 size(m)
+  // 区域填充
+  var qmY=Y(-9), srX=X(-2);
+  ctx.fillStyle='#e0f2fe'; ctx.fillRect(mL,mT,srX-mL,qmY-mT);              // 量子力学
+  ctx.fillStyle='#fef3c7'; ctx.fillRect(srX,mT,mL+pw-srX,qmY-mT);          // QFT
+  ctx.fillStyle='#dcfce7'; ctx.fillRect(mL,qmY,srX-mL,mT+ph-qmY);          // 牛顿
+  ctx.fillStyle='#fee2e2'; ctx.fillRect(srX,qmY,mL+pw-srX,mT+ph-qmY);      // 狭义相对论
+  ln(ctx,mL,qmY,mL+pw,qmY,COL.blue,[5,3]); ln(ctx,srX,mT,srX,mT+ph,COL.red,[5,3]);
+  txt(ctx,'量子力学区（尺度 < 10⁻⁹ m 量级）',mL+8,mT+18,{color:COL.blue,font:'bold 12px sans-serif'});
+  txt(ctx,'相对论性量子场论',srX+8,mT+18,{color:'#7c3aed',font:'bold 12px sans-serif'});
+  txt(ctx,'牛顿力学区（宏观·低速·弱引力）',mL+8,mT+ph-14,{color:COL.green,font:'bold 12px sans-serif'});
+  txt(ctx,'狭义相对论区（β > 0.01）',srX+8,mT+ph-14,{color:COL.red,font:'bold 12px sans-serif'});
+  txt(ctx,'横轴 log₁₀(v/c)（-10→0）',mL+pw/2-60,H-8,{color:COL.ink2,font:'11px sans-serif'});
+  ctx.save(); ctx.translate(14,mT+ph/2+40); ctx.rotate(-Math.PI/2); txt(ctx,'纵轴 log₁₀(尺度/m)',0,0,{color:COL.ink2,font:'11px sans-serif'}); ctx.restore();
+  txt(ctx,'强引力/大尺度 → 广义相对论（本图未含引力维度：黑洞、中子星、宇宙学）',mL+6,mT+ph-30,{color:COL.purple,font:'10px sans-serif'});
+  // 预设对象
+  var col={baseball:'#16a34a',atom:'#2563eb',lhc:'#dc2626',muon:'#ea580c',galaxy:'#7c3aed',photon:'#ca8a04',sat:'#16a34a'};
+  Object.keys(OBJS).forEach(function(k){
+    var o=OBJS[k]; ctx.fillStyle=col[k]||COL.ink2;
+    ctx.beginPath(); ctx.arc(X(o.b),Y(o.s),4,0,7); ctx.fill();
+    txt(ctx,o.name,X(o.b)+7,Y(o.s)+4,{font:'10px sans-serif',color:col[k]||COL.ink2});
+  });
+  // 探针（可拖动）
+  var px=X(clamp(t7.probe.b,x0,x1)), py=Y(clamp(t7.probe.s,y0,y1));
+  ctx.strokeStyle=COL.ink; ctx.lineWidth=2; ctx.beginPath(); ctx.arc(px,py,10,0,7); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(px-14,py); ctx.lineTo(px+14,py); ctx.moveTo(px,py-14); ctx.lineTo(px,py+14); ctx.stroke();
+  t7._px={px:px,py:py,mL:mL,mT:mT,pw:pw,ph:ph,x0:x0,x1:x1,y0:y0,y1:y1};
+  var th=theoryOf(t7.probe.b,t7.probe.s);
+  el('t7read').innerHTML=
+   '<div class="kv"><span>探针 β = v/c</span><b>'+Math.pow(10,t7.probe.b).toExponential(2)+'</b></div>'
+  +'<div class="kv"><span>探针尺度</span><b>10^'+t7.probe.s.toFixed(1)+' m</b></div>'
+  +'<div class="kv" style="border-color:'+th.c+'"><span>应使用理论</span><b style="color:'+th.c+'">'+th.t+'</b></div>';
+  addHot('cvMap',W-26,22,'d5');
+}
+el('cvMap').addEventListener('pointerdown',function(e){
+  var r=this.getBoundingClientRect(), x=e.clientX-r.left, y=e.clientY-r.top;
+  var g=t7._px; if(!g) return;
+  t7.probe.b=clamp(g.x0+(x-g.mL)/g.pw*(g.x1-g.x0),g.x0,g.x1);
+  t7.probe.s=clamp(g.y0+(1-(y-g.mT)/g.ph)*(g.y1-g.y0),g.y0,g.y1);
+  drawMap();
+});
+el('cvMap').addEventListener('pointermove',function(e){
+  if(e.buttons===1) el('cvMap').dispatchEvent(new MouseEvent('pointerdown',{clientX:e.clientX,clientY:e.clientY}));
+});
+document.querySelectorAll('#t7 [data-obj]').forEach(function(b){ b.onclick=function(){ var o=OBJS[b.dataset.obj]; t7.probe.b=o.b; t7.probe.s=o.s; drawMap(); toast(b.textContent+'：'+theoryOf(o.b,o.s).t); }; });
+el('t7table').innerHTML=
+ '<tr><th>超越方向</th><th>适用条件被破坏</th><th>扩展理论</th><th>典型验证</th></tr>'
++'<tr><td>高速（v→c）</td><td>v ≪ c 不再成立</td><td>狭义相对论（1905）</td><td>μ子寿命、原子钟、加速器</td></tr>'
++'<tr><td>微观（原子/电子尺度）</td><td>作用量 ~ h</td><td>量子力学（1925）</td><td>原子光谱、半导体</td></tr>'
++'<tr><td>强引力场/大尺度</td><td>弱引力近似失效</td><td>广义相对论（1915）</td><td>近日点进动、光线偏折、引力红移、引力波、黑洞</td></tr>';
+el('t7gr').innerHTML=[
+ ['水星近日点进动','每百年 43″ 的剩余进动被广义相对论精确解释。'],
+ ['光线引力偏折','1919 年日食观测证实太阳使星光偏折。'],
+ ['引力红移与引力波','光谱红移（1959 庞德—雷布卡）；LIGO 2015 年直接探测到引力波；2019 年黑洞照片。']
+].map(function(v){ return '<div class="note ok"><b>'+v[0]+'</b><br>'+v[1]+'</div>'; }).join('');
+function drawCorr(){
+  var beta=parseFloat(el('t7beta').value);
+  el('t7betaOut').textContent=beta.toFixed(3);
+  var g=gammaOf(beta), EkR=(g-1), EkN=beta*beta/2, ratio=EkR/EkN;
+  // 洛伦兹 vs 伽利略：对事件 (x=1000m, t=10μs)
+  var x=1000,t=10e-6;
+  var lo=lor(x,t,beta), ga2=gal(x,t,beta);
+  var devX=Math.abs(lo.x-ga2.x)/Math.abs(lo.x)*100, devT=Math.abs(lo.t-ga2.t)/Math.abs(t)*100;
+  var f=fitCanvas(el('cvCorr')), ctx=f.ctx, W=f.W, H=f.H;
+  ctx.clearRect(0,0,W,H);
+  var items=[['γ − 1（钟慢强度）',g-1,1,0.5],['E_k相对/E_k牛顿',ratio,1,0.5],['洛伦兹 vs 伽利略 x′ 偏差 %',devX,100,5]];
+  items.forEach(function(it,i){
+    var y=40+i*66;
+    txt(ctx,it[0],16,y-10,{font:'12px sans-serif',color:COL.ink});
+    var norm=clamp(it[1]/it[2],0,1);
+    ctx.fillStyle='#e2e8f0'; ctx.fillRect(230,y-8,W-280,16);
+    var col2 = norm<0.05? COL.green : (norm<0.3? COL.yellow : COL.orange);
+    ctx.fillStyle=col2; ctx.fillRect(230,y-8,(W-280)*norm,16);
+    txt(ctx,it[1]<0.01&&it[1]>0? it[1].toExponential(2): it[1].toFixed(4),236,y+4,{font:'bold 11px sans-serif',color:'#fff'});
+  });
+  txt(ctx,'β → 0.01：三条量全部收敛 —— 相对论退化为牛顿力学（对应原理）',16,H-10,{color:COL.green,font:'bold 12px sans-serif'});
+  el('t7corr').innerHTML=
+   '<div class="kv"><span>β</span><b>'+beta.toFixed(3)+'</b></div>'
+  +'<div class="kv"><span>γ</span><b>'+g.toFixed(6)+'</b></div>'
+  +'<div class="kv"><span>γ − 1</span><b>'+(g-1).toExponential(3)+'</b></div>'
+  +'<div class="kv'+(beta<=0.01?' okK':'')+'"><span>E_k相对/E_k牛顿</span><b>'+ratio.toFixed(6)+'</b></div>'
+  +'<div class="kv"><span>洛伦兹 vs 伽利略 x′ 偏差</span><b>'+devX.toFixed(3)+' %</b></div>'
+  +'<div class="kv"><span>洛伦兹 vs 伽利略 t′ 偏差</span><b>'+devT.toFixed(3)+' %</b></div>'
+  +(beta<=0.05?'<div class="kv okK"><span>结论</span><b>牛顿力学足够精确 ✓</b></div>':'');
+}
+el('t7beta').addEventListener('input',drawCorr);
+el('t7anim').onclick=function(){
+  if(t7.animT) return;
+  t7.animT={b:0.99};
+  var iv=setInterval(function(){
+    t7.animT.b*=0.93;
+    var done=false;
+    if(t7.animT.b<=0.01){ t7.animT.b=0.01; done=true; }
+    el('t7beta').value=t7.animT.b.toFixed(4); drawCorr();
+    if(done){ clearInterval(iv); t7.animT=null; }   // 先取值再置空，否则末帧会空指针报错
+  },90);
+};
+tabDraws.t7=function(){ drawMap(); drawCorr(); };
+
+/* ================= 13. Tab8 练习 ================= */
+var QUIZ=[
+ {q:'地面系中两道闪电同时击中匀速列车的车头和车尾。在列车系中观察者（列车向车头方向运动）判定：',
+  o:['车头事件先发生','车尾事件先发生','仍然同时','无法比较'],a:0,
+  e:'由 Δt′ = −γvΔx/c²：向车头运动时车头事件（x 更大）的 t′ 更小，即先发生。列车观察者也是先看到车头闪光。',card:'c3'},
+ {q:'飞船上宇航员测得舱内同一地点先后两事件间隔 1 s（固有时 Δt₀ = 1 s）。飞船相对地面以 0.6c 匀速飞行，地面测得的时间间隔：',
+  o:['等于 1 s','大于 1 s（Δt = γΔt₀ ≈ 1.25 s）','小于 1 s','取决于钟的类型'],a:1,
+  e:'固有时最短：Δt = γΔt₀ = 1.25 s > 1 s。固有时与钟的原理无关（光钟、原子钟、心跳都一样）。',card:'d2'},
+ {q:'关于长度收缩，下列说法正确的是：',
+  o:['所有方向都收缩','只有沿运动方向收缩，且测量须同时记录两端','眼睛看到的样子就是收缩后的长度','静止系中杆也收缩'],a:1,
+  e:'只沿运动方向收缩（垂直方向不变）；测量必须同时；"看到"含光传播延迟与光行差（Terrell 旋转），不等于测量长度。',card:'e2'},
+ {q:'估算：v = 0.998c 时洛伦兹因子 γ 约为：',
+  o:['约 2','约 5','约 15.8','约 100'],a:2,
+  e:'γ = 1/√(1−0.998²) ≈ 15.8。这正是宇宙线 μ 子能到达地面的关键（寿命被放大 15.8 倍）。',card:'c5'},
+ {q:'对 E = mc² 的正确理解是：',
+  o:['质量可以消灭并转化为能量','质量与能量等价，质量亏损对应释放能量 ΔE = Δm·c²','能量守恒不再成立','只适用于核反应'],a:1,
+  e:'质能等价：质量是能量的一种量度；核反应中系统静质量减小（Δm），释放 ΔE = Δm·c²，总能量仍守恒。',card:'c7'},
+ {q:'牛顿力学的适用条件与相对论的关系：',
+  o:['适用于宏观、低速、弱引力；v≪c 时相对论退化为牛顿力学（对应原理）','已被相对论推翻，不再使用','适用于一切速度','与相对论矛盾，二者必有一个错误'],a:0,
+  e:'对应原理：γ→1、E_k→½mv²、洛伦兹→伽利略。相对论与量子力学是扩展而非推翻。',card:'d5'}
+];
+var quizState={answers:[],teacher:false,order:[]};
+function renderQuiz(){
+  var box=el('quizBox'); box.innerHTML='';
+  var order=quizState.order;
+  order.forEach(function(qi,idx){
+    var q=QUIZ[qi];
+    var d=document.createElement('div'); d.className='quiz-q';
+    d.innerHTML='<h4>第 '+(idx+1)+' 题 · '+q.q+'</h4>';
+    q.o.forEach(function(opt,oi){
+      var o=document.createElement('div'); o.className='opt'; o.textContent=String.fromCharCode(65+oi)+'. '+opt; o.tabIndex=0;
+      o.onclick=function(){
+        if(quizState.teacher){ d.querySelectorAll('.opt').forEach(function(x){x.classList.remove('sel');}); o.classList.add('sel'); quizState.answers[idx]=oi; }
+        else{
+          quizState.answers[idx]=oi;
+          d.querySelectorAll('.opt').forEach(function(x,xi){ x.classList.remove('right','wrong'); if(xi===q.a)x.classList.add('right'); });
+          if(oi!==q.a) o.classList.add('wrong');
+          var ex=d.querySelector('.exp'); ex.style.display='block';
+          ex.innerHTML=(oi===q.a?'✅ 正确！':'❌ 不对。')+q.e+' <a href="javascript:void(0)" data-card="'+q.card+'">→ 查看对应卡片</a>';
+          ex.querySelector('a').onclick=function(){ openCard(q.card); };
+        }
+      };
+      d.appendChild(o);
+    });
+    var ex=document.createElement('div'); ex.className='exp'; d.appendChild(ex);
+    box.appendChild(d);
+  });
+}
+el('t8start').onclick=function(){
+  quizState.teacher=el('t8teacher').checked;
+  quizState.order=QUIZ.map(function(_,i){return i;});
+  if(quizState.teacher){ /* Fisher-Yates 均匀洗牌（原 sort(random) 有偏） */
+    for(var i=quizState.order.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var tmp=quizState.order[i]; quizState.order[i]=quizState.order[j]; quizState.order[j]=tmp; }
+    el('t8submit').style.display='inline-block'; el('t8score').textContent=''; }
+  else el('t8submit').style.display='none';
+  quizState.answers=[];
+  renderQuiz();
+};
+el('t8submit').onclick=function(){
+  var n=quizState.order.length, right=0;
+  document.querySelectorAll('#quizBox .quiz-q').forEach(function(d,idx){
+    var qi=quizState.order[idx], q=QUIZ[qi], sel=quizState.answers[idx];
+    d.querySelectorAll('.opt').forEach(function(x,xi){ if(xi===q.a)x.classList.add('right'); if(xi===sel&&sel!==q.a)x.classList.add('wrong'); });
+    if(sel===q.a) right++;
+    var ex=d.querySelector('.exp'); ex.style.display='block'; ex.innerHTML='正确答案：'+String.fromCharCode(65+q.a)+'。'+q.e;
+  });
+  el('t8score').innerHTML='得分：<b style="color:'+(right===n?'#16a34a':'#dc2626')+'">'+right+' / '+n+'</b>';
+  el('t8submit').style.display='none';
+};
+el('t8teacher').onchange=function(){ el('t8submit').style.display=this.checked?'inline-block':'none'; };
+tabDraws.t8=function(){};
+
+/* ================= 14. 主循环与初始化 ================= */
+var lastT=0, lastRafT=0;
+function loop(ts){
+  lastRafT=performance.now();
+  var dt=Math.min(0.05,(ts-lastT)/1000)||0.016; lastT=ts;
+  safeTabDraw(dt);
+  requestAnimationFrame(loop);
+}
+/* 单帧绘制异常保护：一次报错不致杀死整个动画循环 */
+function safeTabDraw(dt){ try{ if(tabDraws[S.tab]) tabDraws[S.tab](dt); }catch(e){ if(window.console&&console.error) console.error('draw error:',e); } }
+/* rAF 兜底驱动：某些嵌入环境（webview/iframe 节流）不触发 rAF，
+   此时由 setInterval 以约 30fps 接管，保证播放/暂停仍可用 */
+setInterval(function(){
+  if(performance.now()-lastRafT>250) safeTabDraw(0.033);
+},50);
+function fitAll(){ ['cvScene','cvGamma','cvGammaDev','cvGammaLin','cvDt','cvLl','cvClock','cvMuon','cvMuonR','cvMuonHist','cvRod','cvTrain','cvEk','cvVel','cvMap','cvCorr'].forEach(function(id){ if(el(id)) fitCanvas(el(id)); }); if(tabDraws[S.tab]) tabDraws[S.tab](0); }
+window.addEventListener('resize',fitAll);
+['cvScene','cvGamma','cvClock','cvMuon','cvRod','cvTrain','cvEk','cvVel','cvMap'].forEach(bindHotspots);
+/* 初始化 */
+el('t1betaOut').textContent='0.600';
+drawScene(); drawGamma(); drawClock(); drawMuon(); drawRod(); drawTrain(); t6draw(); t6vdraw(); drawMap(); drawCorr();
+el('t8start').click();
+renderLog();
+if(RM){ t3.playing=false; t3m.playing=false; t5.playing=false; el('t3play').textContent='播放'; el('t3mplay').textContent='播放'; el('t5play').textContent='播放'; toast('已检测到减少动效偏好：动画默认暂停，可用"播放/单步"逐帧查看'); }
+requestAnimationFrame(loop);
+</script>
+</body>
+</html>

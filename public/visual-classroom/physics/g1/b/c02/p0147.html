@@ -1,0 +1,2377 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>模型30 · 皮带齿轮传动组合（交互式演示）</title>
+<style>
+:root{
+  --bg:#f3f6fb; --panel:#ffffff; --panel2:#f8fafc; --line:#dbe3ef; --line2:#eef2f8;
+  --ink:#16233a; --ink2:#51637d; --ink3:#7c8ca4;
+  --blue:#2563eb; --blue-d:#1d4ed8; --blue-l:#dbeafe;
+  --red:#dc2626; --red-l:#fee2e2;
+  --orange:#ea8b0b; --orange-l:#fef3c7;
+  --purple:#7c3aed; --purple-l:#ede9fe;
+  --green:#0d9488; --green-l:#ccfbf1;
+  --shadow:0 2px 10px rgba(20,40,80,.08); --radius:10px;
+}
+*{box-sizing:border-box}
+html,body{margin:0;height:100%}
+body{background:var(--bg);color:var(--ink);
+  font:14px/1.55 -apple-system,BlinkMacSystemFont,"Segoe UI","Microsoft YaHei","PingFang SC",sans-serif;
+  -webkit-font-smoothing:antialiased;overflow:hidden}
+h1,h2,h3,h4{margin:0;font-weight:700}
+.num{font-family:"Cascadia Mono",Consolas,"SFMono-Regular",Menlo,monospace;font-variant-numeric:tabular-nums}
+/* ---------- 总体布局 ---------- */
+.app{display:flex;flex-direction:column;height:100%;min-height:0}
+.topbar{display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  padding:8px 14px;background:var(--panel);border-bottom:1px solid var(--line);box-shadow:var(--shadow);z-index:20}
+.topbar h1{font-size:17px;letter-spacing:.3px}
+.topbar .sub{margin:2px 0 0;font-size:12px;color:var(--ink2)}
+.topbar .tools{margin-left:auto;display:flex;gap:6px;align-items:center;flex-wrap:wrap}
+.main{display:grid;grid-template-columns:minmax(0,1fr) 392px;gap:10px;padding:10px;flex:1;min-height:0}
+.leftcol{display:flex;flex-direction:column;gap:8px;min-height:0;min-width:0}
+.stagewrap{position:relative;flex:1;min-height:0;display:flex;flex-direction:column;
+  background:var(--panel);border:1px solid var(--line);
+  border-radius:var(--radius);box-shadow:var(--shadow);overflow:hidden}
+/* .stage 原来写死 height:100%，加上方的 .presets（约 40px）后总高超出父容器，
+   被 overflow:hidden 裁掉底部 —— 直尺/比例尺/图例/轮标签都会被切掉。
+   改为 flex:1 占据剩余空间。 */
+.stage{position:relative;width:100%;flex:1 1 auto;min-height:0}
+#cv{position:absolute;inset:0;width:100%;height:100%;display:block;touch-action:none;cursor:grab}
+#cv.drag{cursor:grabbing}
+.presets{display:flex;gap:6px;flex-wrap:wrap;padding:7px 10px;background:var(--panel2);
+  border-bottom:1px solid var(--line2);align-items:center}
+.presets .lb{font-size:12px;color:var(--ink2);font-weight:700}
+.legend{position:absolute;left:10px;bottom:10px;background:rgba(255,255,255,.94);border:1px solid var(--line);
+  border-radius:8px;padding:7px 9px;font-size:11.5px;color:var(--ink2);box-shadow:var(--shadow);max-width:260px}
+.legend b{color:var(--ink)}
+.legend .row{display:flex;align-items:center;gap:6px;margin:2px 0}
+.sw{width:14px;height:9px;border-radius:2px;display:inline-block;border:1px solid rgba(0,0,0,.15)}
+.hud{position:absolute;right:10px;top:10px;max-width:330px;display:flex;flex-direction:column;gap:6px;z-index:6}
+.hudbox{background:rgba(255,255,255,.95);border:1px solid var(--line);border-radius:8px;padding:6px 9px;
+  font-size:12px;box-shadow:var(--shadow)}
+.hudbox.err{background:#fff5f5;border-color:#fca5a5;color:#991b1b;font-weight:600}
+.hudbox.ok{background:#f0fdf4;border-color:#a7f3d0;color:#065f46}
+.hotspots{position:absolute;inset:0;pointer-events:none;z-index:5}
+.hs{position:absolute;pointer-events:auto;width:19px;height:19px;margin:-9.5px 0 0 -9.5px;border-radius:50%;
+  border:2px solid #fff;background:var(--blue);color:#fff;font-size:11px;font-weight:700;line-height:1;
+  cursor:pointer;box-shadow:0 1px 4px rgba(0,0,0,.3);padding:0}
+.hs:hover,.hs:focus-visible{transform:scale(1.25);outline:2px solid #fff;z-index:9}
+.hs.b{background:var(--orange)} .hs.p{background:var(--purple)} .hs.r{background:var(--red)}
+.readouts{display:flex;gap:8px;overflow-x:auto;padding:2px 2px 4px}
+.rcard{flex:0 0 auto;min-width:158px;background:var(--panel);border:1px solid var(--line);border-radius:9px;
+  padding:6px 9px;box-shadow:var(--shadow);position:relative;border-left:4px solid var(--blue)}
+.rcard.gear{border-left-color:var(--purple)} .rcard.belt{border-left-color:var(--orange)}
+.rcard.ringW{border:1px solid var(--line);border-left:4px solid var(--red)}
+.rcard h4{font-size:12.5px;display:flex;align-items:center;gap:5px}
+.rcard .kv{display:grid;grid-template-columns:auto auto;gap:1px 8px;font-size:11.5px;color:var(--ink2);margin-top:3px}
+.rcard .kv b{color:var(--ink);font-weight:600}
+.badge{display:inline-block;font-size:10px;border-radius:20px;padding:0 6px;border:1px solid;line-height:16px}
+.badge.w{border-color:var(--blue);color:var(--blue-d);background:var(--blue-l)}
+.badge.v{border-color:var(--red);color:#b91c1c;background:var(--red-l)}
+.badge.s{border-color:var(--orange);color:#b45309;background:var(--orange-l)}
+/* ---------- 右侧面板 ---------- */
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:var(--radius);box-shadow:var(--shadow);
+  display:flex;flex-direction:column;min-height:0;overflow:hidden}
+.tabs{display:flex;gap:2px;padding:6px 6px 0;border-bottom:1px solid var(--line);background:var(--panel2);flex-wrap:wrap}
+.tab{border:1px solid transparent;border-bottom:none;background:none;padding:6px 9px;font-size:12.5px;cursor:pointer;
+  border-radius:7px 7px 0 0;color:var(--ink2);font-weight:600}
+.tab[aria-selected="true"]{background:var(--panel);border-color:var(--line);color:var(--blue-d)}
+.panes{flex:1;overflow-y:auto;padding:10px}
+.pane{display:none} .pane.on{display:block}
+.sec{border:1px solid var(--line2);border-radius:9px;padding:8px 9px;margin-bottom:9px;background:var(--panel2)}
+.sec > h3{font-size:12.5px;color:var(--blue-d);margin-bottom:6px;display:flex;align-items:center;gap:6px}
+.sec > h3 .tip{font-weight:400;color:var(--ink3);font-size:11px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.row{display:flex;align-items:center;gap:6px;margin:4px 0;flex-wrap:wrap}
+.row label{font-size:12px;color:var(--ink2);min-width:52px}
+input[type=range]{flex:1;min-width:70px;accent-color:var(--blue)}
+input[type=number],select,input[type=text]{border:1px solid var(--line);border-radius:6px;padding:3px 5px;
+  font-size:12px;background:#fff;color:var(--ink)}
+.btn{border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:7px;padding:4px 9px;font-size:12.5px;
+  cursor:pointer;font-weight:600;transition:.15s}
+.btn:hover{background:var(--blue-l);border-color:var(--blue)}
+.btn.pri{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn.pri:hover{background:var(--blue-d)}
+.btn.warn{background:#fff7ed;border-color:#fdba74;color:#9a3412}
+.btn.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+.btn.sm{padding:2px 6px;font-size:11.5px}
+.btn:focus-visible,.tab:focus-visible,.hs:focus-visible,.card:focus-visible{outline:2px solid var(--blue);outline-offset:2px}
+.chk{display:inline-flex;align-items:center;gap:4px;font-size:12px;color:var(--ink2);cursor:pointer;user-select:none}
+.chk input{accent-color:var(--blue)}
+.wheelitem{border:1px solid var(--line);border-radius:8px;padding:6px 8px;margin-bottom:6px;background:#fff}
+.wheelitem .hd{display:flex;align-items:center;gap:6px;font-size:12.5px;font-weight:700}
+.wheelitem .hd .sp{margin-left:auto;display:flex;gap:4px}
+.chip{font-size:10.5px;border-radius:20px;padding:0 6px;border:1px solid var(--line);background:var(--panel2);color:var(--ink2)}
+.chip.blue{border-color:var(--blue);color:var(--blue-d)}
+.chip.pur{border-color:var(--purple);color:#5b21b6}
+.chip.ora{border-color:var(--orange);color:#b45309}
+.linkitem{display:flex;align-items:center;gap:5px;font-size:12px;padding:4px 6px;border:1px dashed var(--line);
+  border-radius:7px;margin-bottom:5px;background:#fff;flex-wrap:wrap}
+table.mini{width:100%;border-collapse:collapse;font-size:11.5px}
+table.mini th,table.mini td{border:1px solid var(--line2);padding:2px 5px;text-align:right}
+table.mini th{background:var(--panel2);color:var(--ink2);text-align:center;font-weight:600}
+table.mini td.l{text-align:left}
+canvas.chart{width:100%;height:150px;border:1px solid var(--line2);border-radius:8px;background:#fff;display:block}
+.stepline{border-left:3px solid var(--blue);padding:5px 0 5px 9px;margin:0 0 7px 3px;position:relative}
+.stepline .st{font-size:11px;color:#fff;background:var(--blue);border-radius:4px;padding:0 5px;margin-right:5px}
+.stepline .st.b{background:var(--orange)} .stepline .st.p{background:var(--purple)} .stepline .st.g{background:var(--green)}
+.stepline .tx{font-size:12.5px}
+.stepline .num2{font-size:11.5px;color:var(--ink2);display:block;margin-top:2px}
+.fill{border:1px solid var(--line);border-radius:6px;padding:1px 4px;font-size:12px;width:78px;background:#fff}
+.fill.ok{background:#f0fdf4;border-color:#86efac} .fill.no{background:#fef2f2;border-color:#fca5a5}
+.hint{font-size:11.5px;color:#9a3412;background:#fff7ed;border:1px solid #fed7aa;border-radius:6px;padding:3px 6px;margin-top:3px}
+.qitem{border:1px solid var(--line);border-radius:8px;padding:7px 9px;margin-bottom:8px;background:#fff}
+.qitem .q{font-weight:600;font-size:13px}
+.qitem .opt{display:block;margin:4px 0;font-size:12.5px;cursor:pointer}
+.qitem .fb{font-size:12px;margin-top:4px;padding:4px 6px;border-radius:6px}
+.qitem .fb.ok{background:#f0fdf4;color:#065f46} .qitem .fb.no{background:#fef2f2;color:#991b1b}
+.flowstep{border:1px solid var(--line);border-radius:8px;padding:7px 9px;margin-bottom:7px;background:#fff}
+.flowstep.cur{border-color:var(--blue);box-shadow:0 0 0 2px var(--blue-l)}
+.flowstep h4{font-size:13px;color:var(--blue-d)}
+.flowstep p{margin:3px 0;font-size:12.5px;color:var(--ink2)}
+.flowstep .ask{background:#eff6ff;border-left:3px solid var(--blue);padding:4px 7px;border-radius:0 6px 6px 0;font-size:12.5px;margin-top:4px}
+.collapse{font-size:11.5px;color:var(--ink2)}
+details{border:1px solid var(--line);border-radius:8px;padding:5px 8px;margin-bottom:7px;background:#fff}
+details summary{cursor:pointer;font-weight:700;font-size:12.5px;color:var(--blue-d)}
+/* ---------- 知识卡片抽屉 ---------- */
+.drawer{position:fixed;right:0;top:0;bottom:0;width:min(430px,92vw);background:var(--panel);border-left:1px solid var(--line);
+  box-shadow:-6px 0 22px rgba(20,40,80,.14);transform:translateX(102%);transition:transform .25s ease;z-index:60;
+  display:flex;flex-direction:column}
+.drawer.on{transform:none}
+.drawer header{display:flex;align-items:center;gap:8px;padding:10px 12px;border-bottom:1px solid var(--line)}
+.drawer header h2{font-size:15px}
+.drawer .dbody{flex:1;overflow-y:auto;padding:10px 12px}
+.drawer .dfoot{border-top:1px solid var(--line);padding:8px 12px;display:flex;gap:6px;align-items:center}
+.catbtns{display:flex;gap:5px;flex-wrap:wrap;margin-bottom:8px}
+.catbtn{font-size:11.5px;border:1px solid var(--line);border-radius:20px;padding:2px 9px;background:#fff;cursor:pointer;color:var(--ink2)}
+.catbtn.on{background:var(--blue);color:#fff;border-color:var(--blue)}
+.cardlist{display:grid;gap:7px}
+.card{border:1px solid var(--line);border-radius:9px;padding:7px 9px;background:#fff;cursor:pointer;position:relative}
+.card:hover{border-color:var(--blue);background:#f8fbff}
+.card h4{font-size:13px;display:flex;gap:6px;align-items:flex-start}
+.card p{margin:2px 0 0;font-size:11.5px;color:var(--ink2)}
+.card .cat{font-size:10px;border-radius:4px;padding:0 5px;background:var(--blue-l);color:var(--blue-d);flex:0 0 auto}
+.card.pinned{border-color:var(--orange);box-shadow:0 0 0 2px var(--orange-l)}
+.pinb{position:absolute;right:6px;top:6px;border:none;background:none;cursor:pointer;font-size:13px;opacity:.55}
+.pinb:hover{opacity:1}
+/* ---------- 卡片详情弹窗 ---------- */
+.modal{position:fixed;inset:0;background:rgba(15,25,45,.45);display:flex;align-items:center;justify-content:center;z-index:80;padding:16px}
+.modal[hidden]{display:none}
+.dialog{background:var(--panel);border-radius:12px;box-shadow:0 12px 40px rgba(0,0,0,.28);width:min(560px,96vw);
+  max-height:88vh;display:flex;flex-direction:column;overflow:hidden}
+.dialog .dh{display:flex;align-items:center;gap:8px;padding:10px 13px;border-bottom:1px solid var(--line);
+  background:var(--panel2);cursor:move}
+.dialog .dh h3{font-size:15px}
+.dialog .db{overflow-y:auto;padding:12px 14px}
+.dialog .df{border-top:1px solid var(--line);padding:8px 13px;display:flex;gap:6px;align-items:center;background:var(--panel2)}
+.face{border:1px solid var(--line);border-radius:9px;padding:8px 10px;margin-bottom:9px;background:#fff}
+.face .k{font-size:11px;color:var(--blue-d);font-weight:700;letter-spacing:.5px}
+.face .v{font-size:13px;margin-top:2px}
+.face.fml{background:#f8fbff;font-size:14px}
+.face.demo{background:#fffbeb;border-color:#fde68a}
+.face.wrong{background:#fff5f5;border-color:#fecaca}
+.miniwrap{background:#fbfcfe;border:1px solid var(--line2);border-radius:8px;padding:4px;text-align:center}
+.miniwrap svg{width:100%;height:auto;max-height:150px}
+.toast{position:fixed;left:50%;bottom:26px;transform:translateX(-50%) translateY(20px);background:#16233a;color:#fff;
+  padding:7px 14px;border-radius:20px;font-size:12.5px;opacity:0;transition:.25s;z-index:99;pointer-events:none}
+.toast.on{opacity:1;transform:translateX(-50%)}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+@media (max-width:1080px){
+  body{overflow:auto}
+  .main{grid-template-columns:1fr}
+  .panel{max-height:none}
+  .panes{max-height:640px}
+}
+@media (prefers-reduced-motion:reduce){ *{transition:none!important;animation:none!important} }
+</style>
+</head>
+<body>
+<div class="app">
+  <header class="topbar">
+    <div>
+      <h1>模型 30 · 皮带齿轮传动组合</h1>
+      <p class="sub">两套规律对照 —— ① 同轴转动：<b>ω 相同</b>；② 皮带（不打滑）/ 齿轮啮合：<b>边缘 v 相同</b></p>
+    </div>
+    <div class="tools">
+      <button class="btn pri" id="btnPlay" aria-label="播放或暂停">⏸ 暂停</button>
+      <button class="btn" id="btnStep" aria-label="单步前进">⏭ 单步</button>
+      <select id="selSpeed" class="sel" aria-label="慢动作倍率">
+        <option value="1">1× 常速</option><option value="0.5">0.5× 慢放</option><option value="0.25">0.25× 极慢</option>
+      </select>
+      <button class="btn" id="btnDir" aria-label="电机转向">↺ 电机反转</button>
+      <button class="btn" id="btnReset">↺ 重置</button>
+      <button class="btn" id="btnDrawer" aria-expanded="false">📚 知识卡片库</button>
+      <label class="chk"><input type="checkbox" id="chkSound">音效</label>
+    </div>
+  </header>
+
+  <div class="main">
+    <div class="leftcol">
+      <div class="stagewrap">
+        <div class="presets" id="presets">
+          <span class="lb">一键拼装预设：</span>
+        </div>
+        <div class="stage" id="stage">
+          <canvas id="cv" role="img" aria-label="传动装置装配动画区"></canvas>
+          <div class="hotspots" id="hotspots" aria-label="画面锚点热点"></div>
+          <div class="hud" id="hud"></div>
+          <div class="legend">
+            <div class="row"><b>视觉编码</b></div>
+            <div class="row"><span class="sw" style="background:#93c5fd"></span>同轴组（同色系·按半径渐变）＋蓝色 <span class="badge w">ω 同</span></div>
+            <div class="row"><span class="sw" style="background:#fbbf24"></span>皮带/链组 ＋ 红色 <span class="badge v">v 同</span></div>
+            <div class="row"><span class="sw" style="background:#c4b5fd"></span>齿轮组（外/内啮合）</div>
+            <div class="row"><span class="sw" style="background:#5b6b86"></span>切线＝线速度 v　弧形＝转向</div>
+            <div class="row" style="margin-top:3px"><b>提示：</b>点击小圆标看对应卡片；拖拽轮可移动位置</div>
+          </div>
+        </div>
+      </div>
+      <div class="readouts" id="readouts" aria-label="各轮读数卡"></div>
+    </div>
+
+    <aside class="panel">
+      <div class="tabs" role="tablist" aria-label="控制面板">
+        <button class="tab" role="tab" aria-selected="true" data-pane="build">🛠 拼装</button>
+        <button class="tab" role="tab" aria-selected="false" data-pane="measure">⏱ 测量</button>
+        <button class="tab" role="tab" aria-selected="false" data-pane="graph">📈 图像</button>
+        <button class="tab" role="tab" aria-selected="false" data-pane="derive">🧮 推导</button>
+        <button class="tab" role="tab" aria-selected="false" data-pane="flow">🧭 流程</button>
+        <button class="tab" role="tab" aria-selected="false" data-pane="quiz">✅ 测验</button>
+      </div>
+      <div class="panes">
+        <div class="pane on" id="pane-build">
+          <div class="sec">
+            <h3>电机与主动轮 <span class="tip">n → ω = 2πn/60</span></h3>
+            <div class="row"><label>转速 n</label><input type="range" id="rngN" min="0" max="300" step="1" value="60">
+              <span class="num" id="vN">60 r/min</span></div>
+            <div class="row"><label>主动轮</label><select id="selDriver"></select>
+              <label style="min-width:auto">输出轮</label><select id="selOut"></select></div>
+            <div class="row"><span class="chip blue" id="chipOmega">ω_主 = 6.283 rad/s</span>
+              <span class="chip" id="chipI">总传动比 i = 1.00</span></div>
+          </div>
+          <div class="sec">
+            <h3>轮（盘 / 齿轮 / 齿圈）<span class="tip">齿轮半径 r = m·z/2（同模数 m = 10 mm）</span></h3>
+            <div id="wheelList"></div>
+            <div class="row">
+              <button class="btn sm" id="btnAddDisk">＋ 添加轮盘</button>
+              <button class="btn sm" id="btnAddGear">＋ 添加齿轮</button>
+              <button class="btn sm" id="btnAddRing">＋ 添加内齿圈</button>
+            </div>
+          </div>
+          <div class="sec">
+            <h3>连接（皮带 / 链 / 齿轮啮合）</h3>
+            <div id="linkList"></div>
+            <div class="row">
+              <select id="selLA"></select><span>—</span><select id="selLB"></select>
+              <select id="selLType">
+                <option value="belt-open">皮带·开口</option>
+                <option value="belt-cross">皮带·交叉</option>
+                <option value="chain">链条传动</option>
+                <option value="gear-ext">齿轮·外啮合</option>
+                <option value="gear-int">齿轮·内啮合</option>
+              </select>
+              <button class="btn sm" id="btnAddLink">＋ 连接</button>
+            </div>
+          </div>
+          <div class="sec">
+            <h3>频闪仪 <span class="tip">与转速同步时轮"静止"</span></h3>
+            <div class="row"><label class="chk"><input type="checkbox" id="chkStrobe">开启频闪</label>
+              <label>频率</label><input type="range" id="rngStrobe" min="0.2" max="12" step="0.05" value="2">
+              <span class="num" id="vStrobe">2.00 Hz</span></div>
+            <div class="row"><span class="chip">与哪一轮同步：</span><select id="selStrobeWheel"></select>
+              <button class="btn sm" id="btnStrobeSync">锁定同步</button></div>
+          </div>
+          <div class="sec">
+            <h3>图层开关</h3>
+            <div class="grid2" id="layers"></div>
+          </div>
+          <div class="sec">
+            <h3>打滑（非理想）演示</h3>
+            <div class="row"><label>滑移率 ε</label><input type="range" id="rngSlip" min="0" max="0.6" step="0.01" value="0">
+              <span class="num" id="vSlip">0%</span>
+              <button class="btn sm warn" id="btnApplySlip">应用到全部皮带</button></div>
+            <p class="collapse" style="margin:2px 0 0">ε &gt; 0 时 v₂ = (1−ε)v₁，<b>规律不再成立</b>，读数区显示"非理想"。</p>
+          </div>
+        </div>
+
+        <div class="pane" id="pane-measure">
+          <div class="sec">
+            <h3>秒表测周期 <span class="tip">T = t/N，ω = 2π/T，v = ωr</span></h3>
+            <div class="row"><label>被测轮</label><select id="selMeasWheel"></select>
+              <label>圈数 N</label><input type="number" id="inpN" value="5" min="1" max="50" style="width:56px"></div>
+            <div class="row"><button class="btn pri" id="btnTimer">▶ 开始计时</button>
+              <span class="num" id="vTimer">t = 0.000 s</span><span class="chip" id="chipTurns">已转 0.00 圈</span></div>
+            <table class="mini" id="tblMeas">
+              <tr><th>量</th><th>测量值</th><th>理论值</th><th>相对误差</th></tr>
+              <tr><td class="l">周期 T (s)</td><td id="mT">—</td><td id="tT">—</td><td id="eT">—</td></tr>
+              <tr><td class="l">角速度 ω (rad/s)</td><td id="mW">—</td><td id="tW">—</td><td id="eW">—</td></tr>
+              <tr><td class="l">边缘线速度 v (m/s)</td><td id="mV">—</td><td id="tV">—</td><td id="eV">—</td></tr>
+            </table>
+            <p class="collapse">计时基于仿真时间（解析式 θ = ωt + θ₀），与帧率无关；到 N 圈自动停止。</p>
+          </div>
+          <div class="sec">
+            <h3>记录表 <span class="tip">不同预设分组着色</span></h3>
+            <div class="row"><input type="text" id="inpTag" placeholder="分组标签（默认当前预设）" style="flex:1">
+              <button class="btn sm" id="btnRec">＋ 记录当前</button>
+              <button class="btn sm" id="btnCsv">导出 CSV</button>
+              <button class="btn sm warn" id="btnClearRec">清空</button></div>
+            <div style="max-height:250px;overflow:auto"><table class="mini" id="tblRec">
+              <thead><tr><th>分组</th><th>轮</th><th>r(m)</th><th>z</th><th>n</th><th>ω</th><th>v</th><th>T(s)</th></tr></thead>
+              <tbody></tbody></table></div>
+          </div>
+        </div>
+
+        <div class="pane" id="pane-graph">
+          <div class="sec"><h3>ω–r 图 <span class="tip">同轴：水平线；皮带/齿轮：双曲线一支</span></h3>
+            <canvas class="chart" id="chWR"></canvas></div>
+          <div class="sec"><h3>v–r 图 <span class="tip">同轴：过原点直线；皮带/齿轮：水平线</span></h3>
+            <canvas class="chart" id="chVR"></canvas></div>
+          <div class="sec"><h3>θ–t 图 / s–t 图 <span class="tip">同轴重合；皮带两轮斜率不同但弧长一致</span></h3>
+            <div class="row"><button class="btn sm" id="btnTS">切换 s–t（弧长）</button><span class="chip" id="chipTS">θ–t</span></div>
+            <canvas class="chart" id="chTT"></canvas></div>
+          <div class="sec"><h3>转速比验证 <span class="tip">ω₁/ω₂ = r₂/r₁ = z₂/z₁（反比关系）</span></h3>
+            <canvas class="chart" id="chRatio"></canvas></div>
+        </div>
+
+        <div class="pane" id="pane-derive">
+          <div class="sec">
+            <h3>传动比推导链 <span class="tip">逐级：同轴 ω 不变 / 同缘 v 不变</span></h3>
+            <div id="deriveBox"></div>
+            <div class="row"><span class="chip blue" id="chipTotal">i 总 = 1.00</span>
+              <button class="btn sm" id="btnCheckFill">✓ 检查填空</button>
+              <button class="btn sm" id="btnNewFill">🎲 重出一组空</button></div>
+          </div>
+          <div class="sec">
+            <h3>结论速查</h3>
+            <table class="mini">
+              <tr><th>连接</th><th>相同量</th><th>转向</th><th>关系式</th></tr>
+              <tr><td class="l">同轴</td><td>ω、T、n</td><td>相同</td><td class="l">v₁/v₂ = r₁/r₂</td></tr>
+              <tr><td class="l">皮带·开口</td><td>边缘 v</td><td>相同</td><td class="l">ω₁/ω₂ = r₂/r₁</td></tr>
+              <tr><td class="l">皮带·交叉</td><td>边缘 v</td><td>相反</td><td class="l">ω₁/ω₂ = r₂/r₁</td></tr>
+              <tr><td class="l">链条</td><td>边缘 v</td><td>相同</td><td class="l">ω₁/ω₂ = z₂/z₁</td></tr>
+              <tr><td class="l">齿轮·外啮合</td><td>节圆 v</td><td>相反</td><td class="l">ω₁/ω₂ = z₂/z₁</td></tr>
+              <tr><td class="l">齿轮·内啮合</td><td>节圆 v</td><td>相同</td><td class="l">ω₁/ω₂ = z₂/z₁</td></tr>
+            </table>
+          </div>
+        </div>
+
+        <div class="pane" id="pane-flow">
+          <div class="sec">
+            <h3>六步教学引导</h3>
+            <div class="row"><button class="btn sm" id="btnFlowPrev">← 上一步</button>
+              <span class="chip blue" id="chipFlow">第 1 / 6 步</span>
+              <button class="btn sm" id="btnFlowNext">下一步 →</button>
+              <button class="btn sm" id="btnFlowCard">📖 本步卡片</button></div>
+            <div id="flowBox"></div>
+            <label class="chk" style="margin-top:6px"><input type="checkbox" id="chkAutoCard" checked>切换步骤时自动弹出相关卡片</label>
+          </div>
+        </div>
+
+        <div class="pane" id="pane-quiz">
+          <div class="sec"><h3>即时反馈练习（4 题）</h3><div id="quizBox"></div>
+            <div class="row"><button class="btn sm" id="btnQuizReset">重做</button><span class="chip" id="chipQuiz">得分 0 / 4</span></div>
+          </div>
+        </div>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<div class="drawer" id="drawer" aria-hidden="true" role="dialog" aria-label="知识卡片库">
+  <header>
+    <h2>📚 知识卡片库</h2>
+    <span class="chip" id="chipCardCount"></span>
+    <button class="btn" style="margin-left:auto" id="btnCloseDrawer" aria-label="关闭卡片库">✕</button>
+  </header>
+  <div class="dbody">
+    <input type="text" id="inpSearch" placeholder="🔍 关键词搜索（如：同轴、v 相同、齿数、交叉）" style="width:100%;margin-bottom:8px">
+    <div class="catbtns" id="catBtns"></div>
+    <div class="cardlist" id="cardList"></div>
+  </div>
+  <div class="dfoot">
+    <button class="btn" id="btnPrevCard">← 上一张</button>
+    <span class="num" id="vCardIdx">—</span>
+    <button class="btn" id="btnNextCard">下一张 →</button>
+  </div>
+</div>
+
+<div class="modal" id="cardModal" hidden role="dialog" aria-modal="true" aria-labelledby="cmTitle">
+  <div class="dialog" id="cmDialog">
+    <div class="dh" id="cmHead"><h3 id="cmTitle">卡片</h3><span class="chip" id="cmCat"></span>
+      <button class="btn" style="margin-left:auto" id="cmFlip" aria-label="翻转卡片">🔄 翻转</button>
+      <button class="btn" id="cmPin" aria-label="钉住卡片">📌 钉住</button>
+      <button class="btn" id="cmClose" aria-label="关闭">✕</button></div>
+    <div class="db" id="cmBody"></div>
+    <div class="df"><span class="collapse">Esc 关闭 · ← → 切换上一张/下一张</span>
+      <button class="btn" style="margin-left:auto" id="cmPrev">← 上一张</button>
+      <button class="btn" id="cmNext">下一张 →</button></div>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<div class="sr" id="srLive" aria-live="polite"></div>
+
+<script>
+"use strict";
+/* =========================================================================
+   模型30 · 皮带齿轮传动组合
+   物理内核：θ(t) = ω·t + θ₀（解析式，不做数值积分）
+   约束求解：以主动轮为根的图遍历（同轴 ⇒ ω 相等；皮带/齿轮 ⇒ 边缘 v 相等）
+   ========================================================================= */
+
+/* ---------------- 全局配置 ---------------- */
+var CFG = {
+  MODULE: 0.010,      // 齿轮模数 m（m）：r = m·z / 2
+  R_MIN: 0.05, R_MAX: 0.30,
+  Z_MIN: 10, Z_MAX: 60,
+  N_MAX: 300,
+  DOT_DT: 0.10,       // 等时间点迹间隔（s）
+  DOT_KEEP: 26,
+  DT_STEP: 1/60,      // 单步时长
+  COLORS: {
+    coax:  ['#bfdbfe','#93c5fd','#60a5fa','#3b82f6','#2563eb','#1d4ed8'], // 同轴色系（按半径渐变）
+    belt:  ['#fde68a','#fcd34d','#fbbf24','#f59e0b','#d97706','#b45309'], // 皮带色系
+    gear:  ['#ede9fe','#ddd6fe','#c4b5fd','#a78bfa','#8b5cf6','#7c3aed'], // 齿轮色系
+    ring:  ['#fecdd3','#fda4af','#fb7185','#f43f5e'],
+    arrow: '#475569', vArrow: '#dc2626', shaft: '#1e293b'
+  }
+};
+var REDUCED = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------------- 迷你示意图（内联 SVG，无外部资源） ---------------- */
+function svgWrap(inner, w, h){
+  return '<svg viewBox="0 0 '+(w||160)+' '+(h||96)+'" xmlns="http://www.w3.org/2000/svg" role="img">'+
+    '<rect x="0" y="0" width="'+(w||160)+'" height="'+(h||96)+'" fill="#fbfcfe"/>'+inner+'</svg>';
+}
+var MINI = {
+  coax: function(){ return svgWrap(
+    '<circle cx="80" cy="48" r="34" fill="#dbeafe" stroke="#2563eb" stroke-width="1.5"/>'+
+    '<circle cx="80" cy="48" r="17" fill="#93c5fd" stroke="#1d4ed8" stroke-width="1.5"/>'+
+    '<line x1="80" y1="48" x2="114" y2="48" stroke="#1d4ed8" stroke-width="2"/>'+
+    '<circle cx="114" cy="48" r="3.6" fill="#1d4ed8"/><circle cx="97" cy="48" r="3.6" fill="#1e40af"/>'+
+    '<text x="80" y="14" font-size="11" fill="#1d4ed8" text-anchor="middle">ω 相同 · v ∝ r</text>'+
+    '<text x="124" y="52" font-size="10" fill="#1d4ed8">r₂</text><text x="106" y="52" font-size="10" fill="#1e40af">r₁</text>'); },
+  belt: function(){ return svgWrap(
+    '<circle cx="42" cy="48" r="16" fill="#fef3c7" stroke="#b45309" stroke-width="1.5"/>'+
+    '<circle cx="118" cy="48" r="26" fill="#fde68a" stroke="#b45309" stroke-width="1.5"/>'+
+    '<line x1="42" y1="32" x2="118" y2="22" stroke="#b45309" stroke-width="2.4"/>'+
+    '<line x1="42" y1="64" x2="118" y2="74" stroke="#b45309" stroke-width="2.4"/>'+
+    '<circle cx="42" cy="48" r="2"/><circle cx="118" cy="48" r="2"/>'+
+    '<text x="80" y="13" font-size="11" fill="#b45309" text-anchor="middle">边缘 v 相同 · ω ∝ 1/r</text>'); },
+  beltcross: function(){ return svgWrap(
+    '<circle cx="42" cy="48" r="16" fill="#fee2e2" stroke="#b91c1c" stroke-width="1.5"/>'+
+    '<circle cx="118" cy="48" r="26" fill="#fecaca" stroke="#b91c1c" stroke-width="1.5"/>'+
+    '<line x1="54" y1="38" x2="96" y2="70" stroke="#b91c1c" stroke-width="2.4"/>'+
+    '<line x1="54" y1="58" x2="96" y2="26" stroke="#b91c1c" stroke-width="2.4"/>'+
+    '<circle cx="75" cy="48" r="3" fill="#b91c1c"/>'+
+    '<text x="80" y="13" font-size="11" fill="#b91c1c" text-anchor="middle">交叉 → 转向相反</text>'); },
+  gear: function(){ var t='';
+    for(var i=0;i<16;i++){var a=i*Math.PI/8, x=52+18*Math.cos(a), y=48+18*Math.sin(a);
+      t+='<line x1="'+x+'" y1="'+y+'" x2="'+(52+23*Math.cos(a))+'" y2="'+(48+23*Math.sin(a))+'" stroke="#7c3aed" stroke-width="2.6"/>';}
+    for(var j=0;j<28;j++){var b=j*Math.PI/14, x2=104+30*Math.cos(b), y2=48+30*Math.sin(b);
+      t+='<line x1="'+x2+'" y1="'+y2+'" x2="'+(104+35*Math.cos(b))+'" y2="'+(48+35*Math.sin(b))+'" stroke="#7c3aed" stroke-width="2.6"/>';}
+    return svgWrap('<circle cx="52" cy="48" r="18" fill="#ede9fe" stroke="#7c3aed"/>'+
+      '<circle cx="104" cy="48" r="30" fill="#ddd6fe" stroke="#7c3aed"/>'+t+
+      '<circle cx="77" cy="48" r="3.4" fill="#dc2626"/>'+
+      '<text x="80" y="14" font-size="11" fill="#5b21b6" text-anchor="middle">啮合点 v 相同 · 转向相反</text>'); },
+  gearint: function(){ var t='';
+    for(var i=0;i<16;i++){var a=i*Math.PI/8;
+      t+='<line x1="'+(74+22*Math.cos(a))+'" y1="'+(48+22*Math.sin(a))+'" x2="'+(74+28*Math.cos(a))+'" y2="'+(48+28*Math.sin(a))+'" stroke="#7c3aed" stroke-width="2.6"/>';}
+    for(var j=0;j<14;j++){var b=j*Math.PI/7;
+      t+='<line x1="'+(58+12*Math.cos(b))+'" y1="'+(48+12*Math.sin(b))+'" x2="'+(58+18*Math.cos(b))+'" y2="'+(48+18*Math.sin(b))+'" stroke="#7c3aed" stroke-width="2.6"/>';}
+    return svgWrap('<circle cx="74" cy="48" r="30" fill="none" stroke="#7c3aed" stroke-width="1.6"/>'+
+      '<circle cx="74" cy="48" r="34" fill="none" stroke="#5b21b6" stroke-width="2"/>'+t+
+      '<circle cx="58" cy="48" r="14" fill="#ede9fe" stroke="#7c3aed"/>'+
+      '<text x="80" y="13" font-size="11" fill="#5b21b6" text-anchor="middle">内啮合（齿圈）→ 同向</text>'); },
+  pitch: function(){ return svgWrap(
+    '<circle cx="52" cy="50" r="20" fill="none" stroke="#7c3aed" stroke-dasharray="4 3"/>'+
+    '<circle cx="112" cy="50" r="32" fill="none" stroke="#7c3aed" stroke-dasharray="4 3"/>'+
+    '<line x1="52" y1="50" x2="112" y2="50" stroke="#94a3b8" stroke-dasharray="5 3"/>'+
+    '<circle cx="84" cy="50" r="4" fill="#dc2626"/>'+
+    '<text x="84" y="40" font-size="10" fill="#dc2626" text-anchor="middle">啮合点</text>'+
+    '<text x="80" y="16" font-size="11" fill="#5b21b6" text-anchor="middle">节圆 r = m·z/2（同模数）</text>'+
+    '<text x="52" y="80" font-size="10" fill="#7c3aed" text-anchor="middle">节圆</text>'+
+    '<text x="112" y="88" font-size="10" fill="#7c3aed" text-anchor="middle">节圆</text>'); },
+  ratio: function(){ return svgWrap(
+    '<rect x="18" y="34" width="34" height="26" rx="5" fill="#dbeafe" stroke="#2563eb"/>'+
+    '<rect x="66" y="30" width="42" height="34" rx="5" fill="#fef3c7" stroke="#b45309"/>'+
+    '<rect x="118" y="26" width="34" height="42" rx="5" fill="#ede9fe" stroke="#7c3aed"/>'+
+    '<text x="35" y="76" font-size="9" fill="#2563eb" text-anchor="middle">主</text>'+
+    '<text x="87" y="76" font-size="9" fill="#b45309" text-anchor="middle">中间</text>'+
+    '<text x="135" y="80" font-size="9" fill="#7c3aed" text-anchor="middle">从</text>'+
+    '<text x="80" y="16" font-size="11" fill="#1d4ed8" text-anchor="middle">i = i₁ · i₂ · … （连乘）</text>'); },
+  vtan: function(){ return svgWrap(
+    '<circle cx="70" cy="52" r="30" fill="#e2e8f0" fill-opacity=".5" stroke="#475569"/>'+
+    '<line x1="70" y1="52" x2="100" y2="52" stroke="#475569" stroke-width="1.5"/>'+
+    '<circle cx="100" cy="52" r="3.6" fill="#1e293b"/>'+
+    '<line x1="100" y1="52" x2="100" y2="14" stroke="#dc2626" stroke-width="3" marker-end="url(#ar)"/>'+
+    '<defs><marker id="ar" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto">'+
+    '<path d="M0,0 L6,3 L0,6 z" fill="#dc2626"/></marker></defs>'+
+    '<text x="106" y="24" font-size="12" fill="#dc2626">v</text>'+
+    '<text x="70" y="60" font-size="11" fill="#475569" text-anchor="middle">r</text>'+
+    '<text x="80" y="16" font-size="11" fill="#475569" text-anchor="middle">v = ωr，方向沿切线</text>'); },
+  flat: function(){ return svgWrap(
+    '<line x1="24" y1="78" x2="146" y2="78" stroke="#475569"/><line x1="24" y1="78" x2="24" y2="14" stroke="#475569"/>'+
+    '<line x1="30" y1="40" x2="142" y2="40" stroke="#2563eb" stroke-width="2.5"/>'+
+    '<circle cx="52" cy="40" r="4" fill="#2563eb"/><circle cx="112" cy="40" r="4" fill="#2563eb"/>'+
+    '<text x="150" y="82" font-size="10" fill="#475569">r</text><text x="8" y="16" font-size="10" fill="#475569">ω</text>'+
+    '<text x="80" y="30" font-size="11" fill="#2563eb" text-anchor="middle">ω 水平（同轴）</text>'); },
+  line0: function(){ return svgWrap(
+    '<line x1="24" y1="78" x2="146" y2="78" stroke="#475569"/><line x1="24" y1="78" x2="24" y2="14" stroke="#475569"/>'+
+    '<line x1="26" y1="76" x2="140" y2="22" stroke="#2563eb" stroke-width="2.5"/>'+
+    '<circle cx="60" cy="57" r="4" fill="#2563eb"/><circle cx="112" cy="32" r="4" fill="#2563eb"/>'+
+    '<text x="150" y="82" font-size="10" fill="#475569">r</text><text x="8" y="16" font-size="10" fill="#475569">v</text>'+
+    '<text x="90" y="66" font-size="11" fill="#2563eb" text-anchor="middle">v = ωr 过原点</text>'); },
+  hyper: function(){ var d='M30,20';
+    for(var i=1;i<=24;i++){var x=30+i*4.6, y=20+240/(i*4.6+8); d+=' L'+x.toFixed(1)+','+y.toFixed(1);}
+    return svgWrap('<line x1="24" y1="80" x2="146" y2="80" stroke="#475569"/><line x1="24" y1="80" x2="24" y2="12" stroke="#475569"/>'+
+      '<path d="'+d+'" fill="none" stroke="#b45309" stroke-width="2.5"/>'+
+      '<circle cx="60" cy="60" r="4" fill="#b45309"/><circle cx="112" cy="31" r="4" fill="#b45309"/>'+
+      '<text x="150" y="84" font-size="10" fill="#475569">r</text><text x="8" y="14" font-size="10" fill="#475569">ω</text>'+
+      '<text x="96" y="24" font-size="11" fill="#b45309" text-anchor="middle">ω ∝ 1/r</text>'); },
+  judge: function(){ return svgWrap(
+    '<text x="80" y="14" font-size="11" fill="#1d4ed8" text-anchor="middle">先判"同轴"还是"同缘"</text>'+
+    '<circle cx="42" cy="55" r="14" fill="#dbeafe" stroke="#2563eb"/><circle cx="42" cy="55" r="7" fill="#93c5fd" stroke="#2563eb"/>'+
+    '<text x="42" y="84" font-size="9" text-anchor="middle" fill="#1d4ed8">同一轴 → ω 同</text>'+
+    '<circle cx="112" cy="55" r="16" fill="#fef3c7" stroke="#b45309"/><circle cx="148" cy="55" r="10" fill="#fde68a" stroke="#b45309"/>'+
+    '<line x1="112" y1="39" x2="148" y2="45" stroke="#b45309" stroke-width="2"/>'+
+    '<text x="130" y="86" font-size="9" text-anchor="middle" fill="#b45309">同一缘 → v 同</text>'); },
+  chaind: function(){ return svgWrap(
+    '<text x="80" y="13" font-size="11" fill="#1d4ed8" text-anchor="middle">逐级推导：ω 不变 / v 不变</text>'+
+    '<rect x="14" y="34" width="30" height="24" rx="4" fill="#dbeafe" stroke="#2563eb"/>'+
+    '<rect x="62" y="34" width="30" height="24" rx="4" fill="#fef3c7" stroke="#b45309"/>'+
+    '<rect x="110" y="34" width="30" height="24" rx="4" fill="#ede9fe" stroke="#7c3aed"/>'+
+    '<path d="M46,46 L60,46" marker-end="url(#a2)" stroke="#475569" stroke-width="1.6"/>'+
+    '<path d="M94,46 L108,46" marker-end="url(#a2)" stroke="#475569" stroke-width="1.6"/>'+
+    '<defs><marker id="a2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L6,3 L0,6 z" fill="#475569"/></marker></defs>'+
+    '<text x="53" y="76" font-size="9" fill="#475569">同轴</text><text x="101" y="76" font-size="9" fill="#475569">齿轮</text>'+
+    '<text x="29" y="76" font-size="9" fill="#1d4ed8" text-anchor="middle">主 n₁</text>'+
+    '<text x="125" y="76" font-size="9" fill="#5b21b6" text-anchor="middle">从 nₙ</text>'); },
+  measure: function(){ return svgWrap(
+    '<circle cx="56" cy="48" r="26" fill="#e2e8f0" fill-opacity=".5" stroke="#475569"/>'+
+    '<line x1="56" y1="48" x2="82" y2="48" stroke="#0d9488" stroke-width="2"/>'+
+    '<circle cx="82" cy="48" r="4" fill="#0d9488"/>'+
+    '<rect x="100" y="34" width="10" height="28" fill="#0d9488" opacity=".25"/>'+
+    '<text x="105" y="76" font-size="9" fill="#0d9488" text-anchor="middle">光电门</text>'+
+    '<text x="80" y="15" font-size="11" fill="#0f766e" text-anchor="middle">数 N 圈 → T = t / N</text>'); },
+  diffov: function(){ return svgWrap(
+    '<text x="80" y="13" font-size="11" fill="#1d4ed8" text-anchor="middle">ω 相同 vs v 相同</text>'+
+    '<circle cx="46" cy="52" r="24" fill="#dbeafe" stroke="#2563eb"/><circle cx="46" cy="52" r="11" fill="#93c5fd" stroke="#2563eb"/>'+
+    '<text x="46" y="88" font-size="9" fill="#1d4ed8" text-anchor="middle">ω 同 · v 不同</text>'+
+    '<circle cx="112" cy="52" r="16" fill="#fee2e2" stroke="#b91c1c"/><circle cx="152" cy="52" r="10" fill="#fecaca" stroke="#b91c1c"/>'+
+    '<line x1="112" y1="36" x2="152" y2="42" stroke="#b91c1c" stroke-width="2"/>'+
+    '<text x="132" y="88" font-size="9" fill="#b91c1c" text-anchor="middle">v 同 · ω 不同</text>'); },
+  three: function(){ return svgWrap(
+    '<text x="80" y="12" font-size="10" fill="#475569" text-anchor="middle">皮带 / 齿轮 / 同轴 对照</text>'+
+    '<circle cx="34" cy="44" r="13" fill="#fef3c7" stroke="#b45309"/><circle cx="70" cy="44" r="13" fill="#fef3c7" stroke="#b45309"/>'+
+    '<line x1="34" y1="31" x2="70" y2="31" stroke="#b45309" stroke-width="2"/><text x="52" y="72" font-size="9" fill="#b45309" text-anchor="middle">皮带 v 同</text>'+
+    '<circle cx="104" cy="44" r="11" fill="#ede9fe" stroke="#7c3aed"/><circle cx="130" cy="44" r="15" fill="#ede9fe" stroke="#7c3aed"/>'+
+    '<text x="118" y="72" font-size="9" fill="#5b21b6" text-anchor="middle">齿轮 z 反比</text>'+
+    '<circle cx="80" cy="86" r="8" fill="#dbeafe" stroke="#2563eb"/><text x="80" y="94" font-size="8" fill="#1d4ed8" text-anchor="middle">同轴 ω 同</text>'); },
+  slip: function(){ return svgWrap(
+    '<circle cx="42" cy="48" r="16" fill="#f4f4f5" stroke="#71717a"/><circle cx="118" cy="48" r="26" fill="#f4f4f5" stroke="#71717a"/>'+
+    '<line x1="42" y1="32" x2="118" y2="22" stroke="#dc2626" stroke-width="2.4" stroke-dasharray="5 4"/>'+
+    '<line x1="42" y1="64" x2="118" y2="74" stroke="#dc2626" stroke-width="2.4" stroke-dasharray="5 4"/>'+
+    '<text x="80" y="14" font-size="11" fill="#b91c1c" text-anchor="middle">打滑：v₂ &lt; v₁，传动比失准</text>'+
+    '<text x="80" y="88" font-size="9" fill="#71717a" text-anchor="middle">非理想情形 · 规律不再成立</text>'); },
+  app: function(){ return svgWrap(
+    '<circle cx="40" cy="50" r="20" fill="none" stroke="#0d9488" stroke-width="1.6" stroke-dasharray="3 3"/>'+
+    '<circle cx="120" cy="50" r="13" fill="none" stroke="#0d9488" stroke-width="1.6" stroke-dasharray="3 3"/>'+
+    '<line x1="40" y1="30" x2="120" y2="37" stroke="#0d9488" stroke-width="2"/><line x1="40" y1="70" x2="120" y2="63" stroke="#0d9488" stroke-width="2"/>'+
+    '<text x="80" y="14" font-size="11" fill="#0f766e" text-anchor="middle">自行车链条：链速相同</text>'+
+    '<text x="80" y="90" font-size="9" fill="#0f766e" text-anchor="middle">大链轮转得慢 · 小链轮转得快</text>'); },
+  safety: function(){ return svgWrap(
+    '<rect x="20" y="26" width="120" height="46" rx="8" fill="#fff7ed" stroke="#ea8b0b"/>'+
+    '<text x="80" y="46" font-size="12" fill="#9a3412" text-anchor="middle">⚠ 旋转部件：勿伸手</text>'+
+    '<text x="80" y="62" font-size="10" fill="#9a3412" text-anchor="middle">皮带防护罩 · 装置固定 · 断电检修</text>'); },
+  formula: function(txt){ return svgWrap(
+    '<rect x="12" y="28" width="136" height="40" rx="8" fill="#eff6ff" stroke="#2563eb"/>'+
+    '<text x="80" y="54" font-size="15" fill="#1d4ed8" text-anchor="middle" font-family="monospace">'+txt+'</text>'); }
+};
+
+/* ---------------- 知识卡片库（27 张，分类齐全） ---------------- */
+var CARDS = [
+{id:'c-coax',cat:'概念',title:'同轴转动',svg:'coax',
+ concl:'同一刚体（同一转轴、固连的盘/轮/杆）上各点角速度 ω 相同。',
+ formula:'ω<sub>A</sub> = ω<sub>B</sub> ；T<sub>A</sub> = T<sub>B</sub> ；n<sub>A</sub> = n<sub>B</sub> ；v = ωr',
+ demo:'点预设「① 同轴大小盘」，打开图层「参考半径线」：两盘的标记点始终落在同一条半径线上，读数卡 ω / T / n 完全相同，而 v 与 r 成正比。',
+ back:'推导：刚体上任意两点相对方位不变 ⇒ 相同时间 Δt 内转过相同角 Δθ ⇒ ω = Δθ/Δt 相同；又 v = ωr，r 大者 v 大。',
+ wrong:'易错：以为同轴的两轮"线速度也相等"——错，v = ωr 随半径变化。'},
+{id:'c-belt',cat:'概念',title:'皮带传动（不打滑）',svg:'belt',
+ concl:'皮带与轮缘接触处线速度大小相等：v₁ = v₂。',
+ formula:'v₁ = v₂ ⇒ ω₁r₁ = ω₂r₂ ⇒ ω₁/ω₂ = r₂/r₁ = n₁/n₂',
+ demo:'点预设「② 皮带两轮」，打开「等时间点迹」：两轮轮缘点迹的弧长间隔 Δs 相同，读数 v 相同（徽标 v 同），ω 与 r 成反比。',
+ back:'前提：① 皮带不打滑（静摩擦足够）；② 皮带厚度不计、不可伸长。此时皮带各段速率相同 = 轮缘速率。',
+ wrong:'易错：以为皮带两轮"角速度相等"——错，是边缘 v 相等。'},
+{id:'c-gear',cat:'概念',title:'齿轮啮合传动',svg:'gear',
+ concl:'啮合处沿节圆相切，两轮节圆上的点线速度大小相等，靠齿数给出确定转速比。',
+ formula:'v₁ = v₂ ⇒ ω₁r₁ = ω₂r₂，且 r₁/r₂ = z₁/z₂ ⇒ ω₁/ω₂ = z₂/z₁ = n₁/n₂',
+ demo:'点预设「③ 外啮合齿轮」，啮合点有红色高亮小圆标；两轮 v 读数相同，n 与齿数成反比，转向箭头相反。',
+ back:'节圆半径 r = m·z/2（同模数 m）⇒ r ∝ z，于是 ω₁/ω₂ = r₂/r₁ = z₂/z₁。齿数越多转得越慢。',
+ wrong:'易错：把"齿轮的边缘点"当成任意点——必须是节圆上的点。'},
+{id:'c-pitch',cat:'概念',title:'节圆与啮合点',svg:'pitch',
+ concl:'齿轮的"边缘"指节圆上的点；啮合点在两轮连心线上。',
+ formula:'r = m·z / 2（m 为模数，同模数才能啮合）；啮合点处两节圆相切',
+ demo:'打开图层「节圆与啮合点」：节圆用虚线画出，啮合点标红，齿轮相位自动对齐（齿槽对齿）。',
+ back:'节圆是假想的纯滚动圆：一对齿轮的传动等价于两个节圆作无滑动的纯滚动。',
+ wrong:'易错：用齿顶圆半径代入 v = ωr 计算——必须用节圆半径。'},
+{id:'c-ratio',cat:'概念',title:'传动比 i',svg:'ratio',
+ concl:'i = ω<sub>主</sub>/ω<sub>从</sub> = n<sub>主</sub>/n<sub>从</sub>；多级传动 i = i₁·i₂·…（连乘）。',
+ formula:'i = Π i<sub>k</sub>；同轴级 i = 1；皮带/齿轮级 i = r<sub>从</sub>/r<sub>主</sub> = z<sub>从</sub>/z<sub>主</sub>',
+ demo:'点预设「⑥ 多级组合」，看「🧮 推导」页的推导链与 i 总 = 各级连乘，与读数区 n 之比一致。',
+ back:'每一级只改一次比：同轴级不改（i=1）；皮带/齿轮级按半径或齿数反比改一次；总比连乘。',
+ wrong:'易错：把各级传动比相加而不是连乘。'},
+{id:'f-omega',cat:'公式',title:'角速度 ω 的四张面孔',svg:'formula',svgArg:'ω = 2π/T',
+ concl:'ω = 2π/T = 2πf = 2πn/60，单位 rad/s。',
+ formula:'ω = 2π/T = 2πf = 2πn/60 ；T = 2π/ω ；n 单位 r/min',
+ demo:'调「电机转速 n」滑块，读 HUD 中的 ω_主 = 2πn/60；读数卡同时给出 T = 2π/ω。',
+ back:'n = 60 r/min ⇒ ω = 2π·60/60 = 6.283 rad/s，T = 1 s。',
+ wrong:'易错：忘记把 r/min 换成 r/s（要除以 60）。'},
+{id:'f-v',cat:'公式',title:'线速度 v = ωr',svg:'vtan',
+ concl:'v = 2πr/T = ωr，方向沿该点圆周的切线方向。',
+ formula:'v = ωr ；a<sub>n</sub> = v²/r = ω²r',
+ demo:'打开图层「切线速度矢量」：红色箭头长度 ∝ v，始终垂直于半径；同一轮上箭头位置随转动而变，方向沿切线。',
+ back:'向心加速度：同轴时 a ∝ r（外圈更大）；边缘 v 相同时 a ∝ 1/r（小轮更大）。',
+ wrong:'易错：把 v 的方向画成沿半径——应为切线方向。'},
+{id:'f-belt',cat:'公式',title:'皮带：v₁=v₂ ⇒ ω₁r₁=ω₂r₂',svg:'hyper',
+ concl:'边缘 v 相等推出角速度与半径成反比。',
+ formula:'ω₁/ω₂ = r₂/r₁ ；n₁/n₂ = r₂/r₁ ；ω–r 图上是一支双曲线',
+ demo:'「📈 图像」页的 ω–r 图会画出双曲线一支，并把当前两轮标成实心点；拖动半径滑块，点沿曲线滑动。',
+ back:'由 ω = v/r，v 一定 ⇒ ω ∝ 1/r。半径加倍，转速减半。',
+ wrong:'易错：写成 ω₁/ω₂ = r₁/r₂（正比）——应为反比。'},
+{id:'f-gearz',cat:'公式',title:'齿轮：ω₁/ω₂ = z₂/z₁',svg:'gear',
+ concl:'转速比等于齿数反比（同模数齿轮）。',
+ formula:'ω₁/ω₂ = n₁/n₂ = z₂/z₁ ；r₁/r₂ = z₁/z₂',
+ demo:'在「③ 外啮合齿轮」预设中把 z₂ 从 40 调到 20，可见 n₂ 由 30 变为 60 r/min。',
+ back:'同模数 m：r = mz/2 ⇒ r₂/r₁ = z₂/z₁，代入 ω₁/ω₂ = r₂/r₁ 即得。',
+ wrong:'易错：写成"转速比 = 齿数比 n₁/n₂ = z₁/z₂"——正好写反。'},
+{id:'l-coax',cat:'规律',title:'同轴：ω 同、v ∝ r',svg:'line0',
+ concl:'同轴各轮 ω 相同；半径越大，边缘线速度越大（正比）。',
+ formula:'ω 一定：v₁/v₂ = r₁/r₂（v–r 图过原点直线；ω–r 图水平线）',
+ demo:'「① 同轴大小盘」下看 v–r 图：两点落在同一条过原点直线上；ω–r 图两点同高。',
+ back:'判据：任意时刻两点始终位于同一条参考半径上（转过相同角度）。',
+ wrong:'易错：同轴两点"跑得一样快"——错，外圈跑得更快。'},
+{id:'l-belt',cat:'规律',title:'皮带：v 同、ω ∝ 1/r，开口/交叉定转向',svg:'beltcross',
+ concl:'边缘线速度相同；角速度与半径成反比；开口同向、交叉反向。',
+ formula:'v₁ = v₂；ω₁/ω₂ = r₂/r₁；开口 n₁,n₂ 同向，交叉 n₁,n₂ 反向',
+ demo:'先点「② 皮带两轮」看同向，再点「⑤ 交叉皮带」：皮带画出交叉点，两轮转向箭头相反，而 v 仍相同。',
+ back:'交叉皮带使两轮被皮带包住的方向相反，故转向相反；线速度大小仍由不打滑保证。',
+ wrong:'易错：认为交叉与不交叉没区别——转向不同。'},
+{id:'l-geardir',cat:'规律',title:'齿轮转向：外啮合反向、内啮合同向',svg:'gearint',
+ concl:'外啮合两轮转向相反；内啮合（齿圈）转向相同；链传动同向。',
+ formula:'ω₂ = −(z₁/z₂)ω₁（外啮合）；ω₂ = +(z₁/z₂)ω₁（内啮合）',
+ demo:'点「③ 外啮合齿轮」与「④ 内啮合齿圈」对比转向箭头与读数卡上的转向徽标。',
+ back:'外啮合相当于两节圆外切滚动（反向）；内啮合是小齿轮在齿圈内滚动（同向）。',
+ wrong:'易错："齿轮传动两轮转向一定相同"。'},
+{id:'m-judge',cat:'方法',title:'先判"同轴"还是"同缘"',svg:'judge',
+ concl:'看是否共用同一转轴 → ω 同；看是否由皮带/齿轮/链条连接同一"缘" → v 同。',
+ formula:'同轴 ⇒ ω 同（v 不同）；同缘 ⇒ v 同（ω 不同）',
+ demo:'装配时先看清轮是否在同一根轴（同轴标记＋共用转轴符号），再看连接类型。',
+ back:'一步错，整链错：判断类型 → 选公式 → 代入数值 → 检查转向。',
+ wrong:'易错：看到两个轮大小不同就默认 ω 不同——同轴时 ω 一定相同。'},
+{id:'m-chain',cat:'方法',title:'逐级推导传动链',svg:'chaind',
+ concl:'从主动轮出发：遇同轴 ω 不变，遇皮带/齿轮 v 不变，逐级算到从动轮。',
+ formula:'ω<sub>下一轮</sub> = ω<sub>本轮</sub> · (r<sub>本</sub>/r<sub>下</sub>) · s（s 为转向符号）',
+ demo:'「🧮 推导」页自动列出推导链，每步标注所用规律与数值，可开启「填空练习」自测。',
+ back:'同级传动比连乘：i = Π(r_从/r_主)；转向符号逐級相乘。',
+ wrong:'易错：跳级直接套公式而漏掉中间的同轴轮。'},
+{id:'m-measure',cat:'方法',title:'测周期与转速',svg:'measure',
+ concl:'T = t/N（数 N 圈总时间）；频闪仪与转速同步时轮"静止"。',
+ formula:'n = 60/T ；ω = 2π/T ；v = 2πr/T',
+ demo:'「⏱ 测量」页：选轮 → 设 N → 开始计时，到 N 圈自动停，给出 T、ω、v 与相对误差。',
+ back:'频闪法：闪光频率 f = n/60（Hz）时，每闪一次轮恰好转过整数圈，视觉静止。',
+ wrong:'易错：只数 1 圈误差大，应数多圈取平均。'},
+{id:'d-ov',cat:'辨析',title:'ω 相同 vs v 相同',svg:'diffov',
+ concl:'同轴 ⇒ ω 相同而 v 不同；同缘（皮带/齿轮）⇒ v 相同而 ω 不同。',
+ formula:'ω 同：v ∝ r；v 同：ω ∝ 1/r——两条结论的前提不能互换',
+ demo:'把「① 同轴大小盘」与「② 皮带两轮」两个预设的读数卡并排看：一组 ω 相同，一组 v 相同。',
+ back:'一句话判据："同轴看 ω，同缘看 v"。',
+ wrong:'易错：脱离前提说"ω 相等则 v 相等"或"v 相等则 ω 相等"。'},
+{id:'d-three',cat:'辨析',title:'皮带 vs 齿轮 vs 同轴',svg:'three',
+ concl:'同轴比传动比 1:1（ω 同）；皮带靠 r 反比、有滑动风险；齿轮靠 z 反比、传动比精确。',
+ formula:'同轴 i=1；皮带 i = r₂/r₁；齿轮 i = z₂/z₁',
+ demo:'依次点①②③预设，比较读数卡徽标：蓝色 ω 同、红色 v 同、紫色为齿轮组。',
+ back:'链传动兼具两者特点：像开口皮带（同向、v 同），又像齿轮（靠齿数定比、不打滑）。',
+ wrong:'易错：把皮带当成"无滑动的齿轮"——皮带在过载时会打滑。'},
+{id:'d-slip',cat:'辨析',title:'理想不打滑 vs 打滑',svg:'slip',
+ concl:'不打滑 ⇒ v₁ = v₂，传动比确定；打滑 ⇒ v₂ &lt; v₁，传动比失准。',
+ formula:'打滑：v₂ = (1−ε)v₁，ω₂ = (1−ε)ω₁r₁/r₂（ε 为滑移率）',
+ demo:'点预设「⑦ 打滑演示」或在拼装页调「滑移率 ε」：皮带变红色虚线，读数出现"非理想"告警，v 不再相等。',
+ back:'高中传动模型默认"不打滑"；打滑属非理想情形，只能用能量/摩擦定性分析。',
+ wrong:'易错："皮带传动一定有打滑"——理想模型明确假定不打滑。'},
+{id:'w1',cat:'易错',title:'❌ 同轴的两轮线速度也相等',svg:'coax',
+ concl:'错！同轴只保证 ω 相同，v = ωr 随半径增大。',
+ formula:'正确：ω₁ = ω₂，v₁/v₂ = r₁/r₂',
+ demo:'「① 同轴大小盘」：r = 0.06 与 0.18 m 两盘，ω 同为 6.283 rad/s，v 分别为 0.377 与 1.131 m/s。',
+ back:'记忆："同轴同快慢（转角），不同快慢（路程）"。',
+ wrong:'一句话记忆：同轴看角度，不同轴看路。'},
+{id:'w2',cat:'易错',title:'❌ 皮带两轮角速度相等',svg:'belt',
+ concl:'错！皮带保证的是边缘 v 相等，ω 与半径成反比。',
+ formula:'正确：ω₁/ω₂ = r₂/r₁',
+ demo:'「② 皮带两轮」r₁=0.10、r₂=0.20、n₁=60 ⇒ n₂=30 r/min，两轮 v ≈ 0.628 m/s。',
+ back:'记忆："皮带像传送带，同一条带上各处一样快"。',
+ wrong:'一句话记忆：同一条带，速度一样；轮大转得慢。'},
+{id:'w3',cat:'易错',title:'❌ 齿轮传动两轮转向一定相同',svg:'gear',
+ concl:'错！外啮合转向相反，只有内啮合（齿圈）才同向。',
+ formula:'外啮合：ω₂ = −(z₁/z₂)ω₁；内啮合：ω₂ = +(z₁/z₂)ω₁',
+ demo:'「③ 外啮合齿轮」两轮转向箭头相反；「④ 内啮合齿圈」同向。',
+ back:'记忆："外啮合像两个外切的圆，转向相反"。',
+ wrong:'一句话记忆：外反内同。'},
+{id:'w4',cat:'易错',title:'❌ 皮带交叉与不交叉没有区别',svg:'beltcross',
+ concl:'错！交叉皮带使两轮转向相反（不交叉则同向）。',
+ formula:'开口：ω₂ 与 ω₁ 同号；交叉：ω₂ 与 ω₁ 异号；|ω₂| 不变',
+ demo:'「② 皮带两轮」→「⑤ 交叉皮带」切换，只看转向箭头与交叉点，v 读数不变。',
+ back:'记忆："交叉一次，翻一次向"。',
+ wrong:'一句话记忆：交叉＝反向。'},
+{id:'w5',cat:'易错',title:'❌ 转速比等于齿数比',svg:'pitch',
+ concl:'错！转速比与齿数成反比：n₁/n₂ = z₂/z₁。',
+ formula:'正确：n₁/n₂ = z₂/z₁ = r₂/r₁（齿多者转得慢）',
+ demo:'z₁=20、z₂=40、n₁=60 ⇒ n₂ = 60×20/40 = 30 r/min。',
+ back:'记忆："齿多的那一个慢"。',
+ wrong:'一句话记忆：齿数多 → 转得慢。'},
+{id:'w6',cat:'易错',title:'❌ v 相等则 ω 相等 / ω 相等则 v 相等',svg:'diffov',
+ concl:'都错！必须先确定前提，再用 v = ωr 换算。',
+ formula:'ω 相等的前提是同轴；v 相等的前提是同缘（皮带/齿轮/链条且不打滑）',
+ demo:'分别看两种预设的读数卡徽标：蓝圈"ω 同"组的 v 不同，红圈"v 同"组的 ω 不同。',
+ back:'记忆："同 ω 不同 v（同轴）；同 v 不同 ω（同缘）"。',
+ wrong:'一句话记忆：先看前提，再谈相等。'},
+{id:'w7',cat:'易错',title:'❌ 皮带一定打滑 / 齿轮会打滑',svg:'slip',
+ concl:'都错！理想传动模型明确假定皮带不打滑；齿轮靠齿啮合，不存在打滑（只有断齿等失效）。',
+ formula:'理想模型：v₁ = v₂ 恒成立',
+ demo:'把滑移率 ε 调回 0，读数恢复 v₁ = v₂；ε &gt; 0 时才标注"非理想情形"。',
+ back:'记忆："不打滑是前提，不是巧合"。',
+ wrong:'一句话记忆：打滑是需要专门说明的例外。'},
+{id:'a-app',cat:'应用',title:'生活中的传动',svg:'app',
+ concl:'链速/带速相同，半径（齿数）不同 → 转速不同，这就是变速的原理。',
+ formula:'自行车：脚踏大链轮 z₁ → 飞轮 z₂，n₂ = n₁·z₁/z₂',
+ demo:'「⑧ 链传动」预设模拟自行车链条：链速相同，小飞轮转得快。',
+ back:'其他实例：汽车变速箱（齿轮组换挡）、钟表齿轮系（多级减速）、洗衣机/机床皮带、缝纫机、摩天轮驱动轮。',
+ wrong:'实例分析要先判类型，再选公式。'},
+{id:'s-safe',cat:'安全',title:'⚠ 机械传动操作安全',svg:'safety',
+ concl:'旋转部件勿伸手；皮带要有防护罩；装置必须固定；检修前断电。',
+ formula:'实验守则：长发束起、衣袖收紧、勿戴手套靠近旋转件',
+ demo:'本 Demo 为仿真，实际操作前请阅读本卡；真实装置建议加透明防护罩后再通电。',
+ back:'皮带与齿轮的"夹点"最危险；调整皮带张力必须先停机。',
+ wrong:'安全无小事：仿真里可以随便改参数，实物上必须先断电。'}
+];
+
+/* ---------------- 预设方案变量表 ---------------- */
+var uid = 1;
+function nid(){ return uid++; }
+function mkWheel(o){
+  return {id:nid(), label:o.label||('轮'+nid()), kind:o.kind||'disk', r:o.r||0.10, z:o.z||20,
+          shaft:o.shaft, theta0:0, omega:0, dots:[], family:o.family||'coax'};
+}
+function mkShaft(x,y){ return {id:nid(), x:x, y:y}; }
+function applyGearR(w){ if(w.kind==='gear'||w.kind==='ring'){ w.r = CFG.MODULE*w.z/2; } }
+
+var PRESETS = {
+  '① 同轴大小盘': function(){
+    var s1=mkShaft(0,0);
+    var a=mkWheel({label:'小盘 A',kind:'disk',r:0.06,shaft:s1.id,family:'coax'});
+    var b=mkWheel({label:'大盘 B',kind:'disk',r:0.18,shaft:s1.id,family:'coax'});
+    return {shafts:[s1],wheels:[a,b],links:[],driver:a.id,out:b.id,n:60,note:'同轴：ω 相同，v 与 r 成正比'};
+  },
+  '② 皮带两轮': function(){
+    var s1=mkShaft(-0.28,0), s2=mkShaft(0.30,0);
+    var a=mkWheel({label:'主动小轮',kind:'disk',r:0.10,shaft:s1.id,family:'belt'});
+    var b=mkWheel({label:'从动大轮',kind:'disk',r:0.20,shaft:s2.id,family:'belt'});
+    return {shafts:[s1,s2],wheels:[a,b],links:[{id:nid(),type:'belt',mode:'open',a:a.id,b:b.id,slip:0}],
+            driver:a.id,out:b.id,n:60,note:'开口皮带：边缘 v 相同，同向，n 与 r 成反比'};
+  },
+  '③ 外啮合齿轮': function(){
+    var s1=mkShaft(-0.16,0), s2=mkShaft(0.14,0);
+    var a=mkWheel({label:'齿轮 z₁',kind:'gear',z:20,shaft:s1.id,family:'gear'}); applyGearR(a);
+    var b=mkWheel({label:'齿轮 z₂',kind:'gear',z:40,shaft:s2.id,family:'gear'}); applyGearR(b);
+    s2.x = s1.x + a.r + b.r;
+    return {shafts:[s1,s2],wheels:[a,b],links:[{id:nid(),type:'gear',mode:'ext',a:a.id,b:b.id,slip:0}],
+            driver:a.id,out:b.id,n:60,note:'外啮合：v 相同，转向相反，n₁/n₂ = z₂/z₁'};
+  },
+  '④ 内啮合齿圈': function(){
+    var s1=mkShaft(0,0);
+    var b=mkWheel({label:'内齿圈 z₂',kind:'ring',z:60,shaft:s1.id,family:'gear'}); applyGearR(b);
+    var s2=mkShaft(b.r-CFG.MODULE*20/2,0);
+    var a=mkWheel({label:'小齿轮 z₁',kind:'gear',z:20,shaft:s2.id,family:'gear'}); applyGearR(a);
+    return {shafts:[s1,s2],wheels:[b,a],links:[{id:nid(),type:'gear',mode:'int',a:a.id,b:b.id,slip:0}],
+            driver:a.id,out:b.id,n:120,note:'内啮合：v 相同，转向相同，n₂ = n₁·z₁/z₂'};
+  },
+  '⑤ 交叉皮带': function(){
+    var s1=mkShaft(-0.32,0), s2=mkShaft(0.34,0);
+    var a=mkWheel({label:'主动轮',kind:'disk',r:0.10,shaft:s1.id,family:'belt'});
+    var b=mkWheel({label:'从动轮',kind:'disk',r:0.20,shaft:s2.id,family:'belt'});
+    return {shafts:[s1,s2],wheels:[a,b],links:[{id:nid(),type:'belt',mode:'cross',a:a.id,b:b.id,slip:0}],
+            driver:a.id,out:b.id,n:60,note:'交叉皮带：v 仍相同，但两轮转向相反'};
+  },
+  '⑥ 多级组合': function(){
+    var s1=mkShaft(-0.42,0.02), s2=mkShaft(0.06,0.02), s3=mkShaft(0.06,-0.33);
+    var w1=mkWheel({label:'电机轮',kind:'disk',r:0.05,shaft:s1.id,family:'belt'});
+    var w2=mkWheel({label:'大带轮',kind:'disk',r:0.20,shaft:s2.id,family:'belt'});
+    var w3=mkWheel({label:'同轴小齿轮',kind:'gear',z:20,shaft:s2.id,family:'gear'}); applyGearR(w3);
+    var w4=mkWheel({label:'从动大齿轮',kind:'gear',z:50,shaft:s3.id,family:'gear'}); applyGearR(w4);
+    s3.y = s2.y - (w3.r + w4.r);
+    return {shafts:[s1,s2,s3],wheels:[w1,w2,w3,w4],
+      links:[{id:nid(),type:'belt',mode:'open',a:w1.id,b:w2.id,slip:0},
+             {id:nid(),type:'gear',mode:'ext',a:w3.id,b:w4.id,slip:0}],
+      driver:w1.id,out:w4.id,n:120,note:'电机轮→皮带→同轴大小轮→齿轮→从动轮：i 总 = 各级连乘'};
+  },
+  '⑦ 打滑演示': function(){
+    var s1=mkShaft(-0.28,0), s2=mkShaft(0.30,0);
+    var a=mkWheel({label:'主动轮',kind:'disk',r:0.10,shaft:s1.id,family:'belt'});
+    var b=mkWheel({label:'从动轮',kind:'disk',r:0.20,shaft:s2.id,family:'belt'});
+    return {shafts:[s1,s2],wheels:[a,b],links:[{id:nid(),type:'belt',mode:'open',a:a.id,b:b.id,slip:0.35}],
+            driver:a.id,out:b.id,n:90,note:'打滑（ε=35%）：v₂ < v₁，规律不再成立'};
+  },
+  '⑧ 链传动': function(){
+    var s1=mkShaft(-0.22,0), s2=mkShaft(0.14,0);
+    var a=mkWheel({label:'大链轮 z₁',kind:'gear',z:36,shaft:s1.id,family:'gear'}); applyGearR(a);
+    var b=mkWheel({label:'小飞轮 z₂',kind:'gear',z:18,shaft:s2.id,family:'gear'}); applyGearR(b);
+    s2.x = s1.x + a.r + b.r + 0.12;
+    return {shafts:[s1,s2],wheels:[a,b],links:[{id:nid(),type:'chain',mode:'open',a:a.id,b:b.id,slip:0}],
+            driver:a.id,out:b.id,n:60,note:'链传动：链速相同、同向，n₁/n₂ = z₂/z₁（自行车）'};
+  },
+  '⑨ 摩擦轮传动': function(){
+    var s1=mkShaft(-0.12,0), s2=mkShaft(0.15,0);
+    var a=mkWheel({label:'主动摩擦轮',kind:'disk',r:0.09,shaft:s1.id,family:'belt'});
+    var b=mkWheel({label:'从动摩擦轮',kind:'disk',r:0.18,shaft:s2.id,family:'belt'});
+    s2.x = s1.x + a.r + b.r + 0.06;
+    return {shafts:[s1,s2],wheels:[a,b],links:[{id:nid(),type:'belt',mode:'cross',a:a.id,b:b.id,slip:0,friction:true}],
+            driver:a.id,out:b.id,n:60,note:'外切摩擦轮：靠静摩擦，不打滑时接触点 v 相同；外切滚动 ⇒ 转向相反（等效交叉皮带）'};
+  }
+};
+
+/* ---------------- 运行时状态 ---------------- */
+var state = {
+  shafts:[], wheels:[], links:[], driverId:null, outId:null,
+  n:60, motorDir:1, playing:!REDUCED, speed:1, t:0,
+  strobe:false, strobeHz:2, strobeWheel:null,
+  slipNew:0, sound:false,
+  layers:{refLine:true, vArrow:true, dirArrow:true, dots:true, pitch:true, beltDir:true, signboard:true, dims:false, ruler:true},
+  presetName:'① 同轴大小盘', error:null, steps:[], groupsW:[], groupsV:[], iTotal:1,
+  drag:null, view:{scale:200, ox:0, oy:0}, showST:false, records:[], meas:null
+};
+
+/* =========================================================================
+   二、工具函数 / 传动约束求解（图遍历 + 矛盾检测）
+   ========================================================================= */
+var TAU = Math.PI*2;
+function fmt(x,d){ if(!isFinite(x)) return '∞'; return Number(x).toFixed(d===undefined?2:d); }
+function norm(a){ a = a % TAU; return a<0 ? a+TAU : a; }
+function rpm(om){ return Math.abs(om)*60/TAU; }          // rad/s → r/min
+function per(om){ return Math.abs(om)>1e-12 ? TAU/Math.abs(om) : Infinity; } // 周期 T
+/* 注意：<select>.value 取出的是字符串，而 wheel.id 是数字。
+   这里统一转成数字再比较；否则从下拉框取到的 id 永远匹配不上轮子
+   （曾导致「秒表测周期」和「频闪锁定同步」两个功能完全失效）。 */
+function wheelById(id){
+  if(id===null||id===undefined||id==='') return null;
+  var k=Number(id);
+  if(!isFinite(k)) return null;
+  for(var i=0;i<state.wheels.length;i++) if(state.wheels[i].id===k) return state.wheels[i];
+  return null;
+}
+function shaftById(id){ for(var i=0;i<state.shafts.length;i++) if(state.shafts[i].id===id) return state.shafts[i]; return null; }
+function shaftOf(w){ return shaftById(w.shaft); }
+function shaftWheels(sid){ return state.wheels.filter(function(w){ return w.shaft===sid; }); }
+function linksOf(id){ return state.links.filter(function(l){ return l.a===id||l.b===id; }); }
+function linkSign(lk){ return (lk.mode==='cross'||lk.mode==='ext') ? -1 : 1; }   // 转向符号
+function linkName(lk){
+  if(lk.type==='gear') return lk.mode==='int' ? '齿轮·内啮合' : '齿轮·外啮合';
+  if(lk.type==='chain') return '链条传动';
+  return lk.mode==='cross' ? '皮带·交叉' : '皮带·开口';
+}
+function ruleOf(lk){
+  if(lk.type==='gear') return '齿轮边缘 v 相同（齿数反比）';
+  if(lk.type==='chain') return '链传动边缘 v 相同';
+  return '皮带边缘 v 相同';
+}
+
+/* 齿轮啮合相位：使啮合点处"齿槽对齿"（装配时求一次，之后由 ω 关系自动保持） */
+function gearTheta0(lk, a, b){
+  if(lk.type!=='gear') return (a.theta0===null?0:a.theta0);
+  var A = shaftOf(a), B = shaftOf(b);
+  var p = Math.PI*CFG.MODULE;                 // 齿距 p = πm
+  if(lk.mode==='int'){
+    // ψ：由齿圈中心指向小齿轮中心的方向
+    var psi = Math.atan2(A.y-B.y, A.x-B.x);
+    return psi + (a.r*(a.theta0-psi) - 0.5*p)/b.r;
+  }else{
+    var ps = Math.atan2(B.y-A.y, B.x-A.x);    // 由 a 指向 b
+    return ps + Math.PI + (0.5*p - a.r*(a.theta0-ps))/b.r;
+  }
+}
+
+/* ---------- 核心：以主动轮为根的图遍历求解 ---------- */
+function solveAssembly(){
+  var W = state.wheels, L = state.links;
+  W.forEach(function(w){ w.omega=null; w.theta0=null; w.seen=false; w.depth=0; w.dotT=0; w.dots=[]; });
+  state.error=null; state.steps=[]; state.groupsW=[]; state.groupsV=[]; state.iTotal=1;
+
+  var drv = wheelById(state.driverId) || W[0];
+  if(!drv){ state.error='没有可驱动的轮，请先添加轮盘。'; return; }
+  drv.omega = state.motorDir*TAU*state.n/60;
+  drv.theta0 = 0; drv.seen = true; drv.depth = 0;
+  state.steps.push({cls:'g', rule:'电机驱动',
+    text:'主动轮「'+drv.label+'」n₁ = '+fmt(state.n,1)+' r/min',
+    num:'ω₁ = 2πn₁/60 = '+fmt(Math.abs(drv.omega),3)+' rad/s　T₁ = '+fmt(per(drv.omega),3)+' s　v₁ = ω₁r₁ = '+fmt(Math.abs(drv.omega)*drv.r,3)+' m/s'});
+
+  var q=[drv], guard=0;
+  while(q.length && guard++ < 500){
+    var a = q.shift();
+    /* ① 同轴 ⇒ ω 相等、θ₀ 相等 */
+    shaftWheels(a.shaft).forEach(function(b){
+      if(b.id===a.id) return;
+      if(b.seen){
+        if(Math.abs(b.omega-a.omega)>1e-9) addConflict('「'+a.label+'」与「'+b.label+'」同轴却要求不同 ω（'+fmt(rpm(a.omega),2)+' 与 '+fmt(rpm(b.omega),2)+' r/min），装配矛盾。');
+        return;
+      }
+      b.omega=a.omega; b.theta0=a.theta0; b.seen=true; b.depth=a.depth+1; q.push(b);
+      state.steps.push({cls:'', rule:'同轴 ⇒ ω 相同', wid:b.id, val:rpm(b.omega),
+        text:'「'+a.label+'」与「'+b.label+'」同轴固连 ⇒ ω、T、n 全相同',
+        num:'ω = '+fmt(Math.abs(b.omega),3)+' rad/s　n = '+fmt(rpm(b.omega),2)+' r/min　v = ωr ⇒ v₁/v₂ = r₁/r₂ = '+fmt(a.r/b.r,3)});
+    });
+    /* ② 皮带 / 链 / 齿轮 ⇒ 边缘 v 相等 */
+    L.forEach(function(lk){
+      if(lk.a!==a.id && lk.b!==a.id) return;
+      var b = (lk.a===a.id) ? wheelById(lk.b) : wheelById(lk.a);
+      if(!b || b.id===a.id) return;
+      var s = linkSign(lk), sl = (lk.slip||0);
+      /* 打滑关系不对称：正向 ω_b = ω_a(r_a/r_b)(1−ε)，反向遍历须除以 (1−ε) */
+      var forward = (lk.a===a.id);
+      var f = forward ? (1-sl) : (sl<0.98 ? 1/(1-sl) : 1);
+      var om = a.omega * s * (a.r/b.r) * f;
+      if(b.seen){
+        if(Math.abs(b.omega-om) > 1e-9*Math.max(1,Math.abs(om)))
+          addConflict('「'+a.label+'」→「'+b.label+'」的'+linkName(lk)+'要求 n = '+fmt(rpm(om),2)+' r/min，但该轮已被其它支路确定为 '+fmt(rpm(b.omega),2)+' r/min（闭环传动比 ≠ 1），装配矛盾。');
+        return;
+      }
+      b.omega=om; b.seen=true; b.depth=a.depth+1; b.theta0=gearTheta0(lk,a,b); q.push(b);
+      var extra = (lk.type==='gear') ? ('z₁/z₂ = '+a.z+'/'+b.z+' = '+fmt(a.z/b.z,3)) : ('r₁/r₂ = '+fmt(a.r,3)+'/'+fmt(b.r,3));
+      state.steps.push({cls:(lk.type==='gear'?'p':'b'), rule:ruleOf(lk), wid:b.id, val:rpm(om),
+        text:linkName(lk)+'：「'+a.label+'」→「'+b.label+'」边缘 v 相同'+(sl>0?('（打滑 ε='+fmt(sl*100,0)+'%，非理想）'):''),
+        num:'ω₂ = '+(s<0?'−':'+')+'ω₁·(r₁/r₂)'+(sl>0?'·(1−ε)':'')+' ⇒ n₂ = '+fmt(rpm(om),2)+' r/min　'+extra+'，转向'+(s<0?'相反':'相同')});
+    });
+  }
+  /* 未连接到的轮 */
+  var lost = W.filter(function(w){ return !w.seen; });
+  if(lost.length) addConflict('「'+lost.map(function(w){return w.label;}).join('、')+'」未与主动轮连通，无法求解（请添加皮带/齿轮连接或设为同轴）。');
+  /* 闭环一致性复检 */
+  L.forEach(function(lk){
+    var a=wheelById(lk.a), b=wheelById(lk.b);
+    if(!a||!b||!a.seen||!b.seen) return;
+    var s=linkSign(lk), sl=(lk.slip||0);
+    var expect = a.omega*s*(a.r/b.r)*(1-sl);
+    if(Math.abs(b.omega-expect) > 1e-9*Math.max(1,Math.abs(expect)))
+      addConflict(linkName(lk)+'（'+a.label+' ↔ '+b.label+'）的约束被破坏：该闭环传动比不为 1。');
+    /* 几何检查 */
+    var A=shaftOf(a), B=shaftOf(b), d=Math.hypot(B.x-A.x,B.y-A.y);
+    if(lk.type==='gear'){
+      var need = (lk.mode==='int') ? Math.abs(b.r-a.r) : (a.r+b.r);
+      if(Math.abs(d-need) > 1e-4) addConflict('齿轮啮合几何不满足：中心距 '+fmt(d,3)+' m ≠ '+(lk.mode==='int'?'|r₂−r₁|':'r₁+r₂')+' = '+fmt(need,3)+' m（已自动对齐）。');
+      snapGear(lk);
+    }else if(lk.mode==='cross' && d <= a.r+b.r+0.02){
+      addConflict('交叉皮带要求中心距 > r₁+r₂ = '+fmt(a.r+b.r,3)+' m（当前 '+fmt(d,3)+' m），请拖动分开。');
+    }else if(d < a.r+b.r-1e-9){
+      addConflict('两轮重叠：中心距 '+fmt(d,3)+' m < r₁+r₂ = '+fmt(a.r+b.r,3)+' m，请拖动分开。');
+    }
+  });
+  /* 分组（用于徽标） */
+  state.shafts.forEach(function(s){
+    var ws = shaftWheels(s.id);
+    if(ws.length>1) state.groupsW.push(ws.map(function(w){return w.id;}));
+  });
+  state.links.forEach(function(lk, i){
+    var a=wheelById(lk.a), b=wheelById(lk.b);
+    if(a&&b&&a.seen&&b.seen) state.groupsV.push({ids:[a.id,b.id], kind:lk.type, slip:lk.slip||0, idx:state.groupsV.length+1});
+  });
+  /* 总传动比 */
+  var out = wheelById(state.outId) || W[W.length-1];
+  if(out && out.seen && Math.abs(out.omega)>1e-12) state.iTotal = Math.abs(drv.omega)/Math.abs(out.omega);
+  else state.iTotal = NaN;
+}
+function addConflict(msg){ if(!state.error) state.error = msg; }
+
+/* 齿轮啮合几何自动对齐 */
+function snapGear(lk){
+  var a=wheelById(lk.a), b=wheelById(lk.b); if(!a||!b) return;
+  var A=shaftOf(a), B=shaftOf(b); if(!A||!B) return;
+  var dx=B.x-A.x, dy=B.y-A.y, d=Math.hypot(dx,dy);
+  if(d<1e-6){ dx=1; dy=0; d=1; }
+  var need = (lk.mode==='int') ? Math.abs(b.r-a.r) : (a.r+b.r);
+  if(Math.abs(d-need)<1e-6) return;
+  B.x = A.x + dx/d*need; B.y = A.y + dy/d*need;
+}
+function snapAllGears(){ state.links.forEach(function(lk){ if(lk.type==='gear') snapGear(lk); }); }
+
+/* =========================================================================
+   三、几何：皮带切线 / 齿轮啮合点 / 坐标变换
+   ========================================================================= */
+function w2sx(wx){ return state.view.ox + wx*state.view.scale; }
+function w2sy(wy){ return state.view.oy - wy*state.view.scale; }
+function s2wx(sx){ return (sx-state.view.ox)/state.view.scale; }
+function s2wy(sy){ return (state.view.oy-sy)/state.view.scale; }
+/* 世界极坐标 → 屏幕点（世界角 θ 逆时针为正，屏幕 y 向下） */
+function wpt(cx,cy,R,th){ return [cx+R*Math.cos(th), cy-R*Math.sin(th)]; }
+
+/* 皮带几何：返回两条切线 + 包角弧 */
+function beltGeom(A,B,mode){
+  var dx=B.x-A.x, dy=B.y-A.y, d=Math.hypot(dx,dy);
+  if(d<1e-6) return null;
+  var ux=dx/d, uy=dy/d, cross=(mode==='cross');
+  var c = cross ? (A.r+B.r)/d : (A.r-B.r)/d;
+  if(Math.abs(c)>1) return null;
+  var beta=Math.acos(c), cb=Math.cos(beta), sb=Math.sin(beta);
+  var n1=[ux*cb-uy*sb, ux*sb+uy*cb];   // 旋转 +β
+  var n2=[ux*cb+uy*sb, -ux*sb+uy*cb];  // 旋转 −β
+  var out=[];
+  [n1,n2].forEach(function(n){
+    var pA=[A.x+A.r*n[0], A.y+A.r*n[1]];
+    var pB = cross ? [B.x-B.r*n[0], B.y-B.r*n[1]] : [B.x+B.r*n[0], B.y+B.r*n[1]];
+    out.push({pA:pA, pB:pB});
+  });
+  /* 包角：过"背离另一轮"的方向 */
+  function sweep(th1,th2,through){
+    var s1=norm(th2-th1), s2=s1-TAU;
+    function has(st,sw){ var dd=norm(through-st); return sw>=0 ? (dd<=sw) : (dd>=TAU+sw); }
+    return has(th1,s1)?s1:s2;
+  }
+  var angA1=Math.atan2(out[0].pA[1]-A.y, out[0].pA[0]-A.x);
+  var angA2=Math.atan2(out[1].pA[1]-A.y, out[1].pA[0]-A.x);
+  var angB1=Math.atan2(out[0].pB[1]-B.y, out[0].pB[0]-B.x);
+  var angB2=Math.atan2(out[1].pB[1]-B.y, out[1].pB[0]-B.x);
+  var awayA=Math.atan2(A.y-B.y, A.x-B.x), awayB=Math.atan2(B.y-A.y, B.x-A.x);
+  return {A:A,B:B,t1:out[0],t2:out[1],
+    arcA:{s:angA1, sw:sweep(angA1,angA2,awayA)},
+    arcB:{s:angB1, sw:sweep(angB1,angB2,awayB)},
+    cross:cross, d:d,
+    lenStraight: Math.hypot(out[0].pB[0]-out[0].pA[0], out[0].pB[1]-out[0].pA[1])};
+}
+/* 齿轮啮合点 */
+function meshPoint(lk){
+  var a=wheelById(lk.a), b=wheelById(lk.b); if(!a||!b) return null;
+  var A=shaftOf(a), B=shaftOf(b);
+  if(lk.mode==='int'){
+    var ux=B.x-A.x, uy=B.y-A.y, d=Math.hypot(ux,uy)||1;
+    return [B.x+ux/d*b.r, B.y+uy/d*b.r];
+  }
+  var vx=A.x-B.x, vy=A.y-B.y, e=Math.hypot(vx,vy)||1;
+  return [B.x+vx/e*b.r, B.y+vy/e*b.r];
+}
+
+/* =========================================================================
+   四、Canvas 渲染
+   ========================================================================= */
+var cv = document.getElementById('cv'), ctx = cv.getContext('2d'), cw=800, ch=480;
+function fitCanvas(){
+  var r = cv.getBoundingClientRect();
+  var dpr = Math.min(2, window.devicePixelRatio||1);
+  cw = Math.max(240, r.width); ch = Math.max(200, r.height);
+  cv.width = Math.round(cw*dpr); cv.height = Math.round(ch*dpr);
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+}
+function computeView(){
+  var minX=1e9,maxX=-1e9,minY=1e9,maxY=-1e9;
+  state.wheels.forEach(function(w){
+    var s=shaftOf(w); if(!s) return;
+    var rr=w.r+(w.kind==='gear'?CFG.MODULE:0)+0.012;
+    minX=Math.min(minX,s.x-rr); maxX=Math.max(maxX,s.x+rr);
+    minY=Math.min(minY,s.y-rr); maxY=Math.max(maxY,s.y+rr);
+  });
+  if(!state.wheels.length){ minX=-0.3;maxX=0.3;minY=-0.2;maxY=0.2; }
+  var padX=64, padY=58;
+  var bw=Math.max(maxX-minX,0.06), bh=Math.max(maxY-minY,0.06);
+  var sc=Math.min((cw-padX*2)/bw,(ch-padY*2)/bh);
+  sc=Math.max(20, Math.min(sc, 2600));
+  state.view.scale=sc;
+  state.view.ox = cw/2 - (minX+maxX)/2*sc;
+  state.view.oy = ch/2 + (minY+maxY)/2*sc;
+}
+function arrow(x1,y1,x2,y2,color,w){
+  var a=Math.atan2(y2-y1,x2-x1), h=Math.max(5,(w||2)*3.2);
+  ctx.strokeStyle=color; ctx.lineWidth=w||2; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+  ctx.beginPath(); ctx.fillStyle=color;
+  ctx.moveTo(x2,y2);
+  ctx.lineTo(x2-h*Math.cos(a-0.42), y2-h*Math.sin(a-0.42));
+  ctx.lineTo(x2-h*Math.cos(a+0.42), y2-h*Math.sin(a+0.42));
+  ctx.closePath(); ctx.fill();
+}
+function arcArrow(cx,cy,R,a0,a1,color,w){
+  var steps=Math.max(6,Math.ceil(Math.abs(a1-a0)/0.12));
+  ctx.strokeStyle=color; ctx.lineWidth=w||2; ctx.lineCap='round';
+  ctx.beginPath();
+  for(var i=0;i<=steps;i++){ var t=a0+(a1-a0)*i/steps, p=wpt(cx,cy,R,t); i?ctx.lineTo(p[0],p[1]):ctx.moveTo(p[0],p[1]); }
+  ctx.stroke();
+  var pe=wpt(cx,cy,R,a1), pb=wpt(cx,cy,R,a1-Math.sign(a1-a0)*0.14);
+  arrow(pb[0],pb[1],pe[0],pe[1],color,w||2);
+}
+function familyColor(w){
+  var C=CFG.COLORS, fam = w.family||'coax';
+  var arr = (w.kind==='ring') ? C.ring : (fam==='gear'?C.gear:(fam==='belt'?C.belt:C.coax));
+  var t = (w.r-CFG.R_MIN)/(CFG.R_MAX-CFG.R_MIN);
+  return arr[Math.max(0,Math.min(arr.length-1, Math.round(t*(arr.length-1))))];
+}
+function wheelOmegaGroup(w){
+  for(var i=0;i<state.groupsW.length;i++) if(state.groupsW[i].indexOf(w.id)>=0) return i+1;
+  return 0;
+}
+function wheelVGroups(w){
+  var res=[]; state.groupsV.forEach(function(g){ if(g.ids.indexOf(w.id)>=0) res.push(g); }); return res;
+}
+function dispTheta(w){
+  if(state.strobe && state.strobeHz>0){ var f=state.strobeHz, tf=Math.floor(state.t*f)/f; return w.omega*tf + w.theta0; }
+  return w.omega*state.t + w.theta0;
+}
+
+/* ---------- 主绘制 ---------- */
+function draw(){
+  ctx.clearRect(0,0,cw,ch);
+  drawBackdrop();
+  state.links.forEach(drawLinkBody);
+  state.shafts.forEach(drawShaft);
+  state.wheels.forEach(drawWheel);
+  state.wheels.forEach(drawLabel);
+  drawGroupLines();
+  drawScaleBar();
+}
+function drawBackdrop(){
+  ctx.fillStyle='#fbfdff'; ctx.fillRect(0,0,cw,ch);
+  /* 淡淡网格：0.05 m */
+  var g=0.05*state.view.scale;
+  if(g>12){
+    ctx.strokeStyle='#eef3f9'; ctx.lineWidth=1;
+    var x0=state.view.ox % g, y0=state.view.oy % g;
+    ctx.beginPath();
+    for(var x=x0;x<cw;x+=g){ ctx.moveTo(x,0); ctx.lineTo(x,ch); }
+    for(var y=y0;y<ch;y+=g){ ctx.moveTo(0,y); ctx.lineTo(cw,y); }
+    ctx.stroke();
+  }
+  /* 底部直尺 */
+  if(state.layers.ruler){
+    var yy=ch-16, x1=20, x2=Math.min(cw-20, x1+0.4*state.view.scale);
+    ctx.strokeStyle='#94a3b8'; ctx.fillStyle='#64748b'; ctx.lineWidth=1;
+    ctx.beginPath(); ctx.moveTo(x1,yy); ctx.lineTo(x2,yy); ctx.stroke();
+    ctx.font='9px sans-serif'; ctx.textAlign='center';
+    for(var k=0;k<=8;k++){
+      var xx=x1+(x2-x1)*k/8, big=(k%2===0);
+      ctx.beginPath(); ctx.moveTo(xx,yy); ctx.lineTo(xx,yy-(big?7:4)); ctx.stroke();
+      if(big) ctx.fillText((k*5)+' cm', xx, yy+11);
+    }
+    ctx.textAlign='left'; ctx.fillStyle='#94a3b8'; ctx.fillText('直尺', x2+4, yy+4);
+  }
+  /* 视角标注 */
+  ctx.font='11px sans-serif'; ctx.fillStyle='#94a3b8'; ctx.textAlign='right';
+  ctx.fillText('视角：正视图（固定）· 逆时针为正 · 单位 m / rad·s⁻¹ / m·s⁻¹', cw-8, 16);
+  ctx.textAlign='left';
+}
+function drawScaleBar(){
+  var target=90, raw=target/state.view.scale;
+  var pow=Math.pow(10,Math.floor(Math.log10(raw)));
+  var nice=[1,2,5,10].map(function(m){return m*pow;}).filter(function(v){return v<=raw*1.6;}).pop()||pow;
+  var px=nice*state.view.scale, x=18, y=ch-40;
+  ctx.strokeStyle='#334155'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x+px,y);
+  ctx.moveTo(x,y-4); ctx.lineTo(x,y+4); ctx.moveTo(x+px,y-4); ctx.lineTo(x+px,y+4); ctx.stroke();
+  ctx.font='11px sans-serif'; ctx.fillStyle='#334155'; ctx.textAlign='left';
+  ctx.fillText((nice>=1? nice+' m' : (nice*100).toFixed(0)+' cm'), x, y-8);
+  ctx.fillStyle='#64748b'; ctx.fillText('比例：1 cm ≈ '+fmt(0.01*state.view.scale,1)+' px（按装置包围盒自动定标）', x, y+15);
+}
+function drawShaft(s){
+  var x=w2sx(s.x), y=w2sy(s.y), R=5;
+  ctx.fillStyle=CFG.COLORS.shaft;
+  ctx.beginPath(); ctx.arc(x,y,R,0,TAU); ctx.fill();
+  ctx.strokeStyle='#fff'; ctx.lineWidth=1.4;
+  ctx.beginPath(); ctx.moveTo(x-R,y); ctx.lineTo(x+R,y); ctx.moveTo(x,y-R); ctx.lineTo(x,y+R); ctx.stroke();
+}
+/* 皮带 / 链条本体（画在轮之下） */
+function drawLinkBody(lk){
+  var a=wheelById(lk.a), b=wheelById(lk.b); if(!a||!b||!a.seen||!b.seen) return;
+  var A=shaftOf(a), B=shaftOf(b);
+  if(lk.type==='gear'){ drawMeshMark(lk); return; }
+  var g=beltGeom({x:A.x,y:A.y,r:a.r},{x:B.x,y:B.y,r:b.r}, lk.mode);
+  if(!g) return;
+  var bad=(lk.slip||0)>0;
+  var col = bad ? '#dc2626' : (lk.type==='chain' ? '#0d9488' : '#b45309');
+  /* 路径构建（世界坐标折线近似） */
+  function path(){
+    ctx.beginPath();
+    var p=wpt(w2sx(A.x),w2sy(A.y),a.r*state.view.scale, g.arcA.s);
+    ctx.moveTo(p[0],p[1]);
+    var N=48, i, th, q;
+    for(i=1;i<=N;i++){ th=g.arcA.s+g.arcA.sw*i/N; q=wpt(w2sx(A.x),w2sy(A.y),a.r*state.view.scale,th); ctx.lineTo(q[0],q[1]); }
+    var s1=[w2sx(g.t1.pA[0]), w2sy(g.t1.pA[1])], e1=[w2sx(g.t1.pB[0]), w2sy(g.t1.pB[1])];
+    ctx.lineTo(s1[0],s1[1]); ctx.lineTo(e1[0],e1[1]);
+    for(i=0;i<=N;i++){ th=g.arcB.s+g.arcB.sw*i/N; q=wpt(w2sx(B.x),w2sy(B.y),b.r*state.view.scale,th); ctx.lineTo(q[0],q[1]); }
+    var s2=[w2sx(g.t2.pB[0]), w2sy(g.t2.pB[1])], e2=[w2sx(g.t2.pA[0]), w2sy(g.t2.pA[1])];
+    ctx.lineTo(s2[0],s2[1]); ctx.lineTo(e2[0],e2[1]);
+    ctx.closePath();
+  }
+  /* 皮带底衬 */
+  path(); ctx.strokeStyle=col; ctx.lineWidth=5; ctx.globalAlpha=.9; ctx.stroke(); ctx.globalAlpha=1;
+  /* 走向：虚线动画，虚线偏移 ∝ 皮带线速度
+     说明：path() 的描画顺序（上段 A→B、下段 B→A）与皮带实际循环方向
+     （上段 B→A、下段 A→B）相反，故取正偏移使虚线沿路径反向流动，
+     视觉上才与皮带真实运动方向一致（原本取负号导致 v 方向显示反了） */
+  if(state.layers.beltDir){
+    var v = Math.abs(a.omega)*a.r*(1-(lk.slip||0));
+    var off = state.t*v*state.view.scale*0.55;
+    ctx.save();
+    path();
+    ctx.setLineDash([9,7]); ctx.lineDashOffset=off; ctx.strokeStyle='#fff'; ctx.lineWidth=2.2; ctx.stroke();
+    ctx.restore();
+  }
+  if(bad){ ctx.save(); path(); ctx.setLineDash([4,4]); ctx.strokeStyle='#fff'; ctx.lineWidth=1.2; ctx.stroke(); ctx.restore(); }
+  /* 接触点（进入/离开） */
+  var tp=[g.t1.pA, g.t1.pB];
+  tp.forEach(function(pt){
+    var x=w2sx(pt[0]), y=w2sy(pt[1]);
+    ctx.fillStyle=bad?'#dc2626':'#0f172a';
+    ctx.beginPath(); ctx.arc(x,y,3.4,0,TAU); ctx.fill();
+    ctx.strokeStyle='#fff'; ctx.lineWidth=1.2; ctx.stroke();
+  });
+  /* 交叉点 */
+  if(g.cross){
+    var mx=(g.t1.pA[0]+g.t1.pB[0])/2, my=(g.t1.pA[1]+g.t1.pB[1])/2;
+    var X=w2sx(mx), Y=w2sy(my);
+    ctx.strokeStyle='#dc2626'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.arc(X,Y,7,0,TAU); ctx.stroke();
+    ctx.font='10px sans-serif'; ctx.fillStyle='#b91c1c'; ctx.textAlign='left';
+    ctx.fillText('交叉点', X+10, Y-4);
+  }
+  /* 标注 */
+  var lx=w2sx((A.x+B.x)/2), ly=w2sy((A.y+B.y)/2);
+  ctx.font='11px sans-serif'; ctx.textAlign='center';
+  var tag = lk.type==='chain' ? '链条（同向·v 相同）'
+    : (lk.friction ? '摩擦轮外切（反向·接触点 v 相同）'
+    : (lk.mode==='cross' ? '交叉皮带（反向·v 相同）' : '开口皮带（同向·v 相同）'));
+  ctx.fillStyle=bad?'#b91c1c':'#475569';
+  ctx.fillText(tag + (bad? '　打滑 ε='+fmt((lk.slip||0)*100,0)+'%':''), lx, ly);
+  ctx.textAlign='left';
+}
+function drawMeshMark(lk){
+  var pt=meshPoint(lk); if(!pt) return;
+  var x=w2sx(pt[0]), y=w2sy(pt[1]);
+  ctx.save();
+  ctx.strokeStyle='#dc2626'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.arc(x,y,8,0,TAU); ctx.stroke();
+  ctx.fillStyle='#dc2626'; ctx.beginPath(); ctx.arc(x,y,3,0,TAU); ctx.fill();
+  ctx.font='10px sans-serif'; ctx.fillStyle='#b91c1c'; ctx.textAlign='left';
+  ctx.fillText('啮合点 v 相同', x+11, y-6);
+  ctx.restore();
+}
+/* 单轮绘制 */
+function drawWheel(w){
+  var s=shaftOf(w); if(!s) return;
+  var cx=w2sx(s.x), cy=w2sy(s.y), R=w.r*state.view.scale;
+  var col=familyColor(w), th=dispTheta(w);
+  var mpx=CFG.MODULE*state.view.scale;
+  /* 齿轮齿形 */
+  if(w.kind==='gear'){
+    ctx.beginPath();
+    var pitch=TAU/w.z;
+    for(var k=0;k<w.z;k++){
+      var a0=th+k*pitch, tipR=R+mpx, rootR=R-1.25*mpx;
+      var p1=wpt(cx,cy,rootR,a0-pitch*0.30), p2=wpt(cx,cy,tipR,a0-pitch*0.15),
+          p3=wpt(cx,cy,tipR,a0+pitch*0.15), p4=wpt(cx,cy,rootR,a0+pitch*0.30);
+      if(k===0) ctx.moveTo(p1[0],p1[1]); else ctx.lineTo(p1[0],p1[1]);
+      ctx.lineTo(p2[0],p2[1]); ctx.lineTo(p3[0],p3[1]); ctx.lineTo(p4[0],p4[1]);
+    }
+    ctx.closePath(); ctx.fillStyle=col; ctx.fill();
+    ctx.strokeStyle='#5b21b6'; ctx.lineWidth=1.2; ctx.stroke();
+  }else if(w.kind==='ring'){
+    var bodyR=R+1.25*mpx+Math.max(4,mpx*0.9);
+    ctx.beginPath(); ctx.arc(cx,cy,(bodyR+R+1.25*mpx)/2,0,TAU);
+    ctx.strokeStyle='#9f1239'; ctx.lineWidth=bodyR-(R+1.25*mpx); ctx.stroke();
+    ctx.beginPath();
+    var pitchR=TAU/w.z;
+    for(var j=0;j<w.z;j++){
+      var b0=th+j*pitchR, tipR2=R-mpx, rootR2=R+1.25*mpx;
+      var q1=wpt(cx,cy,rootR2,b0-pitchR*0.30), q2=wpt(cx,cy,tipR2,b0-pitchR*0.15),
+          q3=wpt(cx,cy,tipR2,b0+pitchR*0.15), q4=wpt(cx,cy,rootR2,b0+pitchR*0.30);
+      if(j===0) ctx.moveTo(q1[0],q1[1]); else ctx.lineTo(q1[0],q1[1]);
+      ctx.lineTo(q2[0],q2[1]); ctx.lineTo(q3[0],q3[1]); ctx.lineTo(q4[0],q4[1]);
+    }
+    ctx.closePath(); ctx.fillStyle='#fda4af'; ctx.fill(); ctx.strokeStyle='#9f1239'; ctx.lineWidth=1.1; ctx.stroke();
+  }else{
+    ctx.beginPath(); ctx.arc(cx,cy,R,0,TAU);
+    ctx.fillStyle=col; ctx.fill();
+    ctx.strokeStyle='rgba(30,41,59,.55)'; ctx.lineWidth=1.3; ctx.stroke();
+    ctx.beginPath(); ctx.arc(cx,cy,Math.max(3,R*0.13),0,TAU);
+    ctx.fillStyle='rgba(255,255,255,.85)'; ctx.fill(); ctx.strokeStyle='rgba(30,41,59,.4)'; ctx.stroke();
+  }
+  /* 节圆 */
+  if(state.layers.pitch && (w.kind==='gear'||w.kind==='ring')){
+    ctx.save(); ctx.setLineDash([5,4]); ctx.strokeStyle='#7c3aed'; ctx.lineWidth=1.2;
+    ctx.beginPath(); ctx.arc(cx,cy,R,0,TAU); ctx.stroke(); ctx.restore();
+  }
+  /* 同轴组：蓝色描边环 + ω 同徽标 */
+  var gw=wheelOmegaGroup(w);
+  if(gw){
+    ctx.save(); ctx.setLineDash([]); ctx.strokeStyle='#2563eb'; ctx.lineWidth=3;
+    ctx.beginPath(); ctx.arc(cx,cy,R+5,0,TAU); ctx.stroke(); ctx.restore();
+  }
+  /* v 同组：红色描边环 */
+  var vgs=wheelVGroups(w);
+  vgs.forEach(function(g, i){
+    ctx.save(); ctx.strokeStyle = g.slip>0 ? '#f59e0b' : '#dc2626'; ctx.lineWidth=2.4;
+    ctx.setLineDash(g.slip>0?[4,3]:[]);
+    ctx.beginPath(); ctx.arc(cx,cy,R+ (gw?9:5) + i*4,0,TAU); ctx.stroke(); ctx.restore();
+  });
+  /* 等时间间隔点迹（随轮转动） */
+  if(state.layers.dots && w.dots && w.dots.length>1){
+    var now=dispTheta(w);
+    for(var d=0; d<w.dots.length; d++){
+      var ang=now-w.dots[d], p=wpt(cx,cy,R,ang);
+      ctx.beginPath(); ctx.arc(p[0],p[1],2.6,0,TAU);
+      ctx.fillStyle= d===w.dots.length-1 ? '#dc2626' : 'rgba(30,41,59,.72)'; ctx.fill();
+    }
+    /* Δs 弧长括号：相邻两点之间的弧 = v·Δt */
+    if(w.dots.length>2){
+      var a1=now-w.dots[w.dots.length-1], a2=now-w.dots[w.dots.length-2];
+      ctx.save(); ctx.strokeStyle='#0d9488'; ctx.lineWidth=3;
+      ctx.beginPath();
+      var NN=20;
+      for(var t2=0;t2<=NN;t2++){ var tt=a1+(a2-a1)*t2/NN, pp=wpt(cx,cy,R+7,tt); t2?ctx.lineTo(pp[0],pp[1]):ctx.moveTo(pp[0],pp[1]); }
+      ctx.stroke();
+      var mid=wpt(cx,cy,R+16,(a1+a2)/2);
+      ctx.font='10px sans-serif'; ctx.fillStyle='#0f766e'; ctx.textAlign='center';
+      ctx.fillText('Δs='+fmt(Math.abs(w.omega)*w.r*CFG.DOT_DT*100,1)+'cm', mid[0], mid[1]);
+      ctx.restore(); ctx.textAlign='left';
+    }
+  }
+  /* 参考半径线 + 边缘标记点 */
+  if(state.layers.refLine){
+    var pe=wpt(cx,cy,R,th);
+    ctx.strokeStyle= gw? '#1d4ed8' : 'rgba(51,65,85,.75)'; ctx.lineWidth= gw?2.4:1.6;
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(pe[0],pe[1]); ctx.stroke();
+    ctx.beginPath(); ctx.arc(pe[0],pe[1],4.6,0,TAU); ctx.fillStyle='#0f172a'; ctx.fill();
+    ctx.strokeStyle='#fff'; ctx.lineWidth=1.4; ctx.stroke();
+    if(state.layers.dims){
+      ctx.save(); ctx.strokeStyle='#64748b'; ctx.lineWidth=1; ctx.setLineDash([3,3]);
+      ctx.beginPath(); ctx.moveTo(cx,cy-R-10); ctx.lineTo(pe[0],pe[1]-0); ctx.stroke(); ctx.restore();
+    }
+  }
+  /* 切线速度矢量 */
+  if(state.layers.vArrow && Math.abs(w.omega)>1e-9){
+    var pe2=wpt(cx,cy,R,th);
+    var dir = w.omega>0 ? 1 : -1;
+    var tx = -Math.sin(th)*dir, ty = Math.cos(th)*dir;  // 世界切向（ω>0 逆时针）：d/dθ(cx+Rcosθ, cy-Rsinθ)
+    var vlen = Math.abs(w.omega)*w.r;
+    var L = Math.max(14, Math.min(72, vlen*state.view.scale*0.26));
+    arrow(pe2[0],pe2[1], pe2[0]+tx*L, pe2[1]-ty*L, CFG.COLORS.vArrow, 3);
+    ctx.font='11px sans-serif'; ctx.fillStyle='#b91c1c'; ctx.textAlign='left';
+    ctx.fillText('v='+fmt(vlen,3), pe2[0]+tx*L+4, pe2[1]-ty*L);
+  }
+  /* 转向弧形箭头 */
+  if(state.layers.dirArrow && Math.abs(w.omega)>1e-9){
+    var RR = R*0.62, sgn = w.omega>0?1:-1;
+    arcArrow(cx,cy,RR, th, th+sgn*0.85, CFG.COLORS.arrow, 2.2);
+  }
+}
+/* 轮旁常驻参数标签 + 转速标识牌 */
+function drawLabel(w){
+  var s=shaftOf(w); if(!s) return;
+  var cx=w2sx(s.x), cy=w2sy(s.y), R=w.r*state.view.scale;
+  var v=Math.abs(w.omega)*w.r, T=per(w.omega), n=rpm(w.omega);
+  var lines=[];
+  lines.push(w.label);
+  lines.push('r='+fmt(w.r,3)+' m'+(w.kind==='gear'||w.kind==='ring'?'  z='+w.z:''));
+  lines.push('v='+fmt(v,3)+' m/s');
+  ctx.font='11.5px sans-serif'; ctx.textAlign='center';
+  var wid=0; lines.forEach(function(t){ wid=Math.max(wid, ctx.measureText(t).width); });
+  var bx=cx, by=cy+R+16;
+  ctx.fillStyle='rgba(255,255,255,.92)'; ctx.strokeStyle='#dbe3ef'; ctx.lineWidth=1;
+  roundRect(bx-wid/2-5, by-2, wid+10, lines.length*14+6, 6); ctx.fill(); ctx.stroke();
+  lines.forEach(function(t,i){ ctx.fillStyle= i? '#475569':'#16233a'; ctx.fillText(t, bx, by+12+i*14); });
+  /* 转速标识牌 */
+  if(state.layers.signboard){
+    var sy2=cy-R-24;
+    var t1='n='+fmt(n,1)+' r/min', t2='ω='+fmt(Math.abs(w.omega),3)+' rad/s';
+    ctx.font='11px sans-serif';
+    var w2=Math.max(ctx.measureText(t1).width, ctx.measureText(t2).width)+12;
+    ctx.fillStyle='#1e293b'; roundRect(cx-w2/2, sy2-4, w2, 32, 5); ctx.fill();
+    ctx.fillStyle='#fff'; ctx.textAlign='center';
+    ctx.fillText(t1, cx, sy2+9); ctx.fillText(t2, cx, sy2+22);
+    if(w.id===state.driverId){ ctx.fillStyle='#fbbf24'; ctx.fillText('★ 主动', cx, sy2-7); }
+    else if(w.id===state.outId){ ctx.fillStyle='#7dd3fc'; ctx.fillText('◎ 输出', cx, sy2-7); }
+  }
+  ctx.textAlign='left';
+}
+function roundRect(x,y,w,h,r){
+  ctx.beginPath();
+  ctx.moveTo(x+r,y); ctx.lineTo(x+w-r,y); ctx.quadraticCurveTo(x+w,y,x+w,y+r);
+  ctx.lineTo(x+w,y+h-r); ctx.quadraticCurveTo(x+w,y+h,x+w-r,y+h);
+  ctx.lineTo(x+r,y+h); ctx.quadraticCurveTo(x,y+h,x,y+h-r);
+  ctx.lineTo(x,y+r); ctx.quadraticCurveTo(x,y,x+r,y); ctx.closePath();
+}
+/* 同轴组共用参考半径线（贯穿同轴各轮） */
+function drawGroupLines(){
+  state.groupsW.forEach(function(g, gi){
+    var ws=g.map(wheelById).filter(Boolean);
+    if(ws.length<2) return;
+    var s=shaftOf(ws[0]); if(!s) return;
+    var maxR=Math.max.apply(null, ws.map(function(w){return w.r;}));
+    var cx=w2sx(s.x), cy=w2sy(s.y), th=dispTheta(ws[0]);
+    var pe=wpt(cx,cy,maxR*state.view.scale,th);
+    ctx.save();
+    ctx.strokeStyle='#2563eb'; ctx.lineWidth=1.6; ctx.setLineDash([7,4]);
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(pe[0],pe[1]); ctx.stroke();
+    ctx.restore();
+    var mid=wpt(cx,cy,maxR*state.view.scale*0.55,th+0.16);
+    ctx.font='11px sans-serif'; ctx.fillStyle='#1d4ed8'; ctx.textAlign='left';
+    ctx.fillText('同轴组'+(gi+1)+'：同一参考半径线（ω 相同）', mid[0]+6, mid[1]);
+  });
+}
+
+/* =========================================================================
+   五、图表（ω–r / v–r / θ–t / 传动比）
+   ========================================================================= */
+function chartBase(c, opt){
+  var r=c.getBoundingClientRect(), dpr=Math.min(2,window.devicePixelRatio||1);
+  c.width=Math.round(r.width*dpr); c.height=Math.round(r.height*dpr);
+  var g=c.getContext('2d'); g.setTransform(dpr,0,0,dpr,0,0);
+  var W=r.width, H=r.height, L=44, Rp=12, Tp=14, B=26;
+  g.clearRect(0,0,W,H); g.fillStyle='#fff'; g.fillRect(0,0,W,H);
+  var xmin=opt.xmin||0, xmax=opt.xmax||1, ymin=opt.ymin||0, ymax=opt.ymax||1;
+  var span=(ymax-ymin)||1;
+  function X(v){ return L+(W-L-Rp)*(v-xmin)/((xmax-xmin)||1); }
+  function Y(v){ return H-B-(H-B-Tp)*(v-ymin)/span; }
+  /* 网格 */
+  g.strokeStyle='#eef2f8'; g.lineWidth=1; g.font='9px sans-serif'; g.fillStyle='#94a3b8';
+  for(var i=0;i<=4;i++){
+    var yv=ymin+(ymax-ymin)*i/4, yy=Y(yv);
+    g.beginPath(); g.moveTo(L,yy); g.lineTo(W-Rp,yy); g.stroke();
+    g.textAlign='right'; g.fillText(fmt(yv, opt.yfix===undefined?2:opt.yfix), L-4, yy+3);
+    var xv=xmin+(xmax-xmin)*i/4, xx=X(xv);
+    g.beginPath(); g.moveTo(xx,Tp); g.lineTo(xx,H-B); g.stroke();
+    g.textAlign='center'; g.fillText(fmt(xv, opt.xfix===undefined?2:opt.xfix), xx, H-B+12);
+  }
+  g.strokeStyle='#64748b'; g.lineWidth=1.2;
+  g.beginPath(); g.moveTo(L,Tp); g.lineTo(L,H-B); g.lineTo(W-Rp,H-B); g.stroke();
+  g.fillStyle='#475569'; g.font='10px sans-serif'; g.textAlign='center';
+  g.fillText(opt.xl||'', (L+W-Rp)/2, H-3);
+  g.save(); g.translate(11,(Tp+H-B)/2); g.rotate(-Math.PI/2); g.fillText(opt.yl||'',0,0); g.restore();
+  return {g:g, X:X, Y:Y, W:W, H:H, L:L, Tp:Tp, B:B, Rp:Rp};
+}
+function drawCharts(){
+  drawWR(); drawVR(); drawTT(); drawRatio();
+}
+function drawWR(){
+  var maxOm=0, maxR=0, maxV=0;
+  state.wheels.forEach(function(w){ if(!w.seen) return;
+    maxOm=Math.max(maxOm,Math.abs(w.omega)); maxR=Math.max(maxR,w.r); maxV=Math.max(maxV,Math.abs(w.omega)*w.r); });
+  var c=document.getElementById('chWR');
+  var b=chartBase(c,{xl:'半径 r / m',yl:'角速度 ω / (rad·s⁻¹)',xmin:0,xmax:Math.max(0.34,maxR*1.3),
+    ymin:0,ymax:Math.max(14,maxOm*1.15),yfix:1});
+  var g=b.g, XR=Math.max(0.34,maxR*1.3), YM=Math.max(14,maxOm*1.15);
+  /* 同轴：水平线 */
+  state.groupsW.forEach(function(gr,gi){
+    var ws=gr.map(wheelById).filter(Boolean).filter(function(w){return w.seen;});
+    if(ws.length<2) return;
+    var om=Math.abs(ws[0].omega);
+    var rs=ws.map(function(w){return w.r;});
+    g.strokeStyle='#2563eb'; g.lineWidth=2;
+    g.beginPath(); g.moveTo(b.X(Math.min.apply(null,rs)-0.02), b.Y(om)); g.lineTo(b.X(Math.max.apply(null,rs)+0.02), b.Y(om)); g.stroke();
+    g.fillStyle='#2563eb'; g.font='9px sans-serif'; g.textAlign='left';
+    g.fillText('同轴组'+(gi+1)+' ω 恒定', b.X(Math.max.apply(null,rs)+0.02)+3, b.Y(om)-3);
+  });
+  /* 皮带/齿轮：双曲线 ω = v/r */
+  state.groupsV.forEach(function(gp){
+    var a=wheelById(gp.ids[0]), w2=wheelById(gp.ids[1]);
+    if(!a||!w2||!a.seen||!w2.seen) return;
+    var v=Math.abs(a.omega)*a.r;
+    var col = gp.slip>0 ? '#f59e0b' : (gp.kind==='gear'?'#7c3aed':'#ea8b0b');
+    g.strokeStyle=col; g.lineWidth=2; g.setLineDash(gp.slip>0?[5,3]:[]);
+    g.beginPath();
+    for(var i=1;i<=90;i++){ var rr=0.02+ i*(XR*0.95/90); var yy=v/rr; if(yy>YM) continue;
+      var px=b.X(rr), py=b.Y(yy); i===1?g.moveTo(px,py):g.lineTo(px,py); }
+    g.stroke(); g.setLineDash([]);
+    g.fillStyle=col; g.font='9px sans-serif';
+    g.fillText('v 同组'+(gp.idx)+'：ω=v/r', b.X(XR*0.86), b.Y(v/(XR*0.86))-4);
+  });
+  /* 数据点 */
+  state.wheels.forEach(function(w){
+    if(!w.seen) return;
+    g.beginPath(); g.arc(b.X(w.r), b.Y(Math.abs(w.omega)), 4.5, 0, TAU);
+    g.fillStyle= familyColor(w); g.fill(); g.strokeStyle='#1e293b'; g.lineWidth=1.2; g.stroke();
+  });
+}
+function drawVR(){
+  var maxR=0, maxV=0;
+  state.wheels.forEach(function(w){ if(!w.seen) return; maxR=Math.max(maxR,w.r); maxV=Math.max(maxV,Math.abs(w.omega)*w.r); });
+  var XR2=Math.max(0.34,maxR*1.3), YV=Math.max(2.4,maxV*1.25);
+  var c=document.getElementById('chVR'); var b=chartBase(c,{xl:'半径 r / m',yl:'线速度 v / (m·s⁻¹)',xmin:0,xmax:XR2,ymin:0,ymax:YV,yfix:2});
+  var g=b.g;
+  state.groupsW.forEach(function(gr,gi){
+    var ws=gr.map(wheelById).filter(Boolean).filter(function(w){return w.seen;});
+    if(ws.length<2) return;
+    var om=Math.abs(ws[0].omega);
+    g.strokeStyle='#2563eb'; g.lineWidth=2;
+    g.beginPath(); g.moveTo(b.X(0), b.Y(0)); g.lineTo(b.X(XR2), b.Y(om*XR2)); g.stroke();
+    g.fillStyle='#2563eb'; g.font='9px sans-serif'; g.textAlign='left';
+    g.fillText('同轴组'+(gi+1)+'：v = ωr（过原点）', b.X(XR2*0.48), b.Y(om*XR2*0.48)-4);
+  });
+  state.groupsV.forEach(function(gp){
+    var a=wheelById(gp.ids[0]), w2=wheelById(gp.ids[1]);
+    if(!a||!w2||!a.seen||!w2.seen) return;
+    var v=Math.abs(a.omega)*a.r;
+    var col = gp.slip>0 ? '#f59e0b' : (gp.kind==='gear'?'#7c3aed':'#ea8b0b');
+    g.strokeStyle=col; g.lineWidth=2; g.setLineDash(gp.slip>0?[5,3]:[]);
+    g.beginPath(); g.moveTo(b.X(0.02), b.Y(v)); g.lineTo(b.X(XR2), b.Y(Math.abs(w2.omega)*w2.r)); g.stroke(); g.setLineDash([]);
+    g.fillStyle=col; g.font='9px sans-serif'; g.fillText('v 同组'+gp.idx+'：v 恒定', b.X(XR2*0.72), b.Y(v)-4);
+  });
+  state.wheels.forEach(function(w){
+    if(!w.seen) return;
+    g.beginPath(); g.arc(b.X(w.r), b.Y(Math.abs(w.omega)*w.r), 4.5, 0, TAU);
+    g.fillStyle= familyColor(w); g.fill(); g.strokeStyle='#1e293b'; g.lineWidth=1.2; g.stroke();
+  });
+}
+function drawTT(){
+  var c=document.getElementById('chTT');
+  var isS=state.showST;
+  var kmax=0; state.wheels.forEach(function(w){ if(w.seen) kmax=Math.max(kmax, isS?Math.abs(w.omega)*w.r:Math.abs(w.omega)); });
+  var YT = Math.max(isS?1.6:26, kmax*4*1.12);
+  var b=chartBase(c,{xl:'时间 t / s', yl: isS? '弧长 s = rθ / m' : '转角 θ / rad',
+    xmin:0, xmax:4, ymin:0, ymax: YT, yfix:1});
+  var g=b.g;
+  state.wheels.forEach(function(w, i){
+    if(!w.seen) return;
+    var k = isS ? Math.abs(w.omega)*w.r : Math.abs(w.omega);
+    var col = familyColor(w);
+    g.strokeStyle=col; g.lineWidth=2.4;
+    var tmax=4;
+    /* 找 ymax 内可见段 */
+    var tEnd=Math.min(tmax, YT/Math.max(k,1e-6));
+    g.beginPath(); g.moveTo(b.X(0), b.Y(0)); g.lineTo(b.X(tEnd), b.Y(k*tEnd)); g.stroke();
+    var ly = b.Y(k*tEnd*0.72);
+    g.fillStyle=col; g.font='9px sans-serif'; g.textAlign='left';
+    g.fillText(w.label+(isS?(' s=vt'):(' θ=ωt')), b.X(tEnd*0.5), ly);
+  });
+  g.fillStyle='#64748b'; g.font='9px sans-serif'; g.textAlign='right';
+  g.fillText(isS? '皮带/齿轮两轮：s–t 线重合（Δs 相同）':'同轴各轮：θ–t 线重合（ω 相同）', b.W-b.Rp-2, b.Tp+10);
+}
+function drawRatio(){
+  var c=document.getElementById('chRatio');
+  var b=chartBase(c,{xl:'r₂/r₁ 或 z₂/z₁', yl:'转速比', xmin:0, xmax:5, ymin:0, ymax:5, xfix:1, yfix:1});
+  var g=b.g;
+  /* y = x ：ω₁/ω₂ = r₂/r₁ */
+  g.strokeStyle='#2563eb'; g.lineWidth=2.2; g.beginPath();
+  for(var i=0;i<=50;i++){ var x=i*0.1; var px=b.X(x), py=b.Y(x); i?g.lineTo(px,py):g.moveTo(px,py); }
+  g.stroke();
+  g.fillStyle='#2563eb'; g.font='9px sans-serif'; g.textAlign='left';
+  g.fillText('ω₁/ω₂ = r₂/r₁', b.X(3.2), b.Y(3.4));
+  /* y = 1/x ：ω₂/ω₁ */
+  g.strokeStyle='#ea8b0b'; g.lineWidth=2.2; g.beginPath();
+  for(var j=1;j<=50;j++){ var x2=j*0.1, y2=1/x2; if(y2>5) continue; var px2=b.X(x2), py2=b.Y(y2); j===1?g.moveTo(px2,py2):g.lineTo(px2,py2); }
+  g.stroke();
+  g.fillStyle='#b45309'; g.fillText('ω₂/ω₁ = r₁/r₂（反比）', b.X(1.6), b.Y(0.72));
+  /* 当前工作点 */
+  var drv=wheelById(state.driverId), out=wheelById(state.outId);
+  if(drv&&out&&drv.seen&&out.seen&&isFinite(state.iTotal)){
+    var x=Math.min(4.9, state.iTotal), y=Math.min(4.9, state.iTotal);
+    g.beginPath(); g.arc(b.X(x), b.Y(y), 6, 0, TAU); g.fillStyle='#dc2626'; g.fill();
+    g.strokeStyle='#fff'; g.lineWidth=1.6; g.stroke();
+    g.fillStyle='#b91c1c'; g.font='10px sans-serif'; g.textAlign='left';
+    g.fillText('当前 i = '+fmt(state.iTotal,3), b.X(x)+8, b.Y(y)-4);
+  }
+}
+
+/* =========================================================================
+   六、装配 / 主循环
+   ========================================================================= */
+function applyPreset(name){
+  var f=PRESETS[name]; if(!f) return;
+  var st=f();
+  state.shafts=st.shafts; state.wheels=st.wheels; state.links=st.links;
+  state.driverId=st.driver; state.outId=st.out||null;
+  state.n=st.n===undefined?60:st.n; state.t=0; state.presetName=name;
+  state.wheels.forEach(function(w){ w.dots=[]; });
+  document.getElementById('rngN').value=state.n;
+  snapAllGears(); rebuild(true);
+  resetTimer();   // 换了工况，旧的秒表读数必须作废
+  toast('已载入预设：'+name+'　—　'+st.note, 3200);
+}
+function rebuild(full){
+  state.wheels.forEach(function(w){ if(w.kind==='gear'||w.kind==='ring') applyGearR(w); });
+  snapAllGears();
+  solveAssembly();
+  if(full){ computeView(); }
+  renderReadouts(); renderWheelList(); renderLinkList(); renderDerive();
+  renderSelects(); layoutHotspots(); renderHUD();
+}
+/* 主循环：解析式 θ(t)=ωt+θ₀，与帧率无关 */
+var lastTs=0, lastDotT=0, lastRev=-1, lastChartT=0;
+/* 轻量刷新：只重解 + 重绘画面相关部分（用于拖动、滑块连续变化）
+   refit=false（默认）时不重算视图比例：拖动某轮时包围盒一变再看就会
+   改变映射，指针靠近边缘会出现"越拖越飞"的正反馈，故拖动/拖动滑块期间保持视图不变。 */
+function refresh(refit){
+  state.wheels.forEach(function(w){ if(w.kind==='gear'||w.kind==='ring') applyGearR(w); });
+  snapAllGears(); solveAssembly();
+  if(refit) computeView();
+  renderReadouts(); layoutHotspots(); renderHUD(); renderDerive();
+}
+function frame(ts){
+  /* dt 双向夹紧：上界防止切后台回来时"跳一大步"，下界防止时间戳异常导致仿真时间倒退 */
+  var dt = lastTs ? Math.max(0, Math.min(0.05,(ts-lastTs)/1000)) : 0;
+  lastTs=ts;
+  if(state.playing && !state.error){
+    var sim = dt*state.speed;
+    state.t += sim;
+    /* 等时间间隔点迹 */
+    while(state.t - lastDotT >= CFG.DOT_DT){
+      lastDotT += CFG.DOT_DT;
+      state.wheels.forEach(function(w){
+        if(!w.seen || Math.abs(w.omega)<1e-9) return;
+        w.dots.push(w.omega*lastDotT + w.theta0);
+        if(w.dots.length>CFG.DOT_KEEP) w.dots.shift();
+      });
+    }
+    /* 秒表：时间与圈数用同一份仿真步长增量累计（中途改半径/转速也按真实转角累计） */
+    if(state.meas && state.meas.on){
+      var mw=wheelById(state.meas.wheelId);
+      if(mw && mw.seen){
+        state.meas.t += sim;
+        state.meas.turns += Math.abs(mw.omega)*sim/TAU;
+        if(state.meas.turns >= state.meas.N){ stopTimer(true); }
+      }else{ resetTimer(); toast('被测轮已不存在，本次计时已取消。'); }
+    }
+    /* 音效：主动轮每转一圈 */
+    if(state.sound){
+      var d2=wheelById(state.driverId);
+      if(d2&&d2.seen&&Math.abs(d2.omega)>1e-9){
+        var rev=Math.floor(Math.abs(d2.omega)*state.t/TAU);
+        if(rev!==lastRev){ lastRev=rev; beep(660,0.05,0.05); }
+      }
+    }
+  }
+  draw();
+  if(state.tickCount===undefined) state.tickCount=0;
+  if(++state.tickCount % 6 === 0){ renderReadouts(); renderTimer(); }
+  /* 图表节流：仅在"图像"页可见时约 7 fps 重绘 */
+  if(ts - lastChartT > 140){
+    lastChartT = ts;
+    var gp = document.getElementById('pane-graph');
+    if(gp && gp.classList.contains('on')) drawCharts();
+  }
+  requestAnimationFrame(frame);
+}
+function pickWheel(mx,my){
+  var wx=s2wx(mx), wy=s2wy(my);
+  for(var i=state.wheels.length-1;i>=0;i--){
+    var w=state.wheels[i], s=shaftOf(w); if(!s) continue;
+    if(Math.hypot(wx-s.x, wy-s.y) <= w.r+0.012) return w;
+  }
+  return null;
+}
+
+/* =========================================================================
+   七、DOM 渲染：读数卡 / 装配列表 / HUD / 热点
+   ========================================================================= */
+function $(id){ return document.getElementById(id); }
+function toast(msg, ms){
+  var t=$('toast'); t.textContent=msg; t.classList.add('on');
+  clearTimeout(t._h); t._h=setTimeout(function(){ t.classList.remove('on'); }, ms||2200);
+  $('srLive').textContent=msg;
+}
+function beep(freq,dur,vol){
+  try{
+    if(!beep._c) beep._c=new (window.AudioContext||window.webkitAudioContext)();
+    var c=beep._c, o=c.createOscillator(), g=c.createGain();
+    o.frequency.value=freq; o.type='sine'; g.gain.value=vol||0.05;
+    o.connect(g); g.connect(c.destination); o.start();
+    g.gain.exponentialRampToValueAtTime(0.0001, c.currentTime+(dur||0.05));
+    o.stop(c.currentTime+(dur||0.05)+0.02);
+  }catch(e){}
+}
+function renderHUD(){
+  var h=$('hud'); var html='';
+  html += '<div class="hudbox"><b>当前：</b>'+state.presetName+
+    '　ω_主 = '+fmt(TAU*state.n/60,3)+' rad/s　i 总 = '+(isFinite(state.iTotal)?fmt(state.iTotal,3):'—')+'</div>';
+  if(state.error) html += '<div class="hudbox err">⚠ '+state.error+'</div>';
+  else html += '<div class="hudbox ok">✔ 约束求解成功：'+state.wheels.length+' 个轮 / '+state.links.length+' 条连接'+
+    (state.groupsW.length?('　同轴组 '+state.groupsW.length):'')+(state.groupsV.length?('　v 同组 '+state.groupsV.length):'')+'</div>';
+  if(REDUCED) html += '<div class="hudbox">已检测到"减少动效"偏好：默认静止呈现，可点播放查看运动，卡片与图表均可正常浏览。</div>';
+  h.innerHTML=html;
+  $('chipOmega').textContent='ω_主 = '+fmt(TAU*state.n/60,3)+' rad/s';
+  $('chipI').textContent='总传动比 i = '+(isFinite(state.iTotal)?fmt(state.iTotal,3):'—');
+  $('vN').textContent=fmt(state.n,0)+' r/min';
+}
+function renderReadouts(){
+  var el=$('readouts'); if(!el) return;
+  el.innerHTML = state.wheels.map(function(w){
+    var v=Math.abs(w.omega||0)*w.r, T=per(w.omega||0), n=rpm(w.omega||0);
+    var gw=wheelOmegaGroup(w), vgs=wheelVGroups(w);
+    var cls = (w.kind==='ring')?'rcard ringW':(w.family==='gear'?'rcard gear':(w.family==='belt'?'rcard belt':'rcard'));
+    var dirTxt = (w.omega||0)>0?'逆时针 ↺':((w.omega||0)<0?'顺时针 ↻':'静止');
+    var badges='';
+    if(gw) badges+='<span class="badge w">ω 同组'+gw+'</span> ';
+    vgs.forEach(function(g){ badges+='<span class="badge '+(g.slip>0?'s':'v')+'">v 同组'+g.idx+(g.slip>0?'·打滑':'')+'</span> '; });
+    if(w.id===state.driverId) badges+='<span class="badge w">主动</span>';
+    if(w.id===state.outId) badges+='<span class="badge v">输出</span>';
+    return '<div class="'+cls+'"><h4>'+w.label+' '+
+      (w.kind==='disk'?'<span class="chip">轮盘</span>':(w.kind==='ring'?'<span class="chip pur">内齿圈</span>':'<span class="chip pur">齿轮</span>'))+
+      '</h4><div style="margin:2px 0">'+badges+'</div>'+
+      '<div class="kv">'+
+      '<span>r</span><b>'+fmt(w.r,3)+' m</b>'+
+      ((w.kind==='disk')?'':'<span>z</span><b>'+w.z+'</b>')+
+      '<span>n</span><b>'+fmt(n,2)+' r/min</b>'+
+      '<span>ω</span><b>'+fmt(Math.abs(w.omega||0),3)+' rad/s</b>'+
+      '<span>v</span><b>'+fmt(v,3)+' m/s</b>'+
+      '<span>T</span><b>'+fmt(T,3)+' s</b>'+
+      '<span>转向</span><b>'+dirTxt+'</b>'+
+      '</div></div>';
+  }).join('');
+}
+function renderSelects(){
+  var opts = state.wheels.map(function(w){ return '<option value="'+w.id+'">'+w.label+'</option>'; }).join('');
+  ['selDriver','selOut','selMeasWheel','selStrobeWheel','selLA','selLB'].forEach(function(id){
+    var el=$(id); if(!el) return;
+    var keep = el.value; el.innerHTML=opts; if(keep) el.value=keep;
+  });
+  if(state.driverId) $('selDriver').value=state.driverId;
+  if(state.outId) $('selOut').value=state.outId;
+  if(!$('selMeasWheel').value && state.wheels.length) $('selMeasWheel').value=state.outId||state.wheels[state.wheels.length-1].id;
+  if(!$('selStrobeWheel').value && state.wheels.length) $('selStrobeWheel').value=state.driverId;
+  if(state.wheels.length>1){ if(!$('selLA').value) $('selLA').value=state.wheels[0].id; $('selLB').value=state.wheels[1].id; }
+}
+function renderWheelList(){
+  var el=$('wheelList');
+  el.innerHTML = state.wheels.map(function(w){
+    var isGear=(w.kind!=='disk');
+    var slider = isGear
+      ? '<div class="row"><label>齿数 z</label><input type="range" min="'+CFG.Z_MIN+'" max="'+CFG.Z_MAX+'" step="1" value="'+w.z+'" data-z="'+w.id+'"><span class="num">z='+w.z+' → r='+fmt(w.r,3)+' m</span></div>'
+      : '<div class="row"><label>半径 r</label><input type="range" min="'+CFG.R_MIN+'" max="'+CFG.R_MAX+'" step="0.005" value="'+w.r+'" data-r="'+w.id+'"><span class="num">r='+fmt(w.r,3)+' m</span></div>';
+    var shaftOpts = state.shafts.map(function(s){
+      return '<option value="'+s.id+'"'+(s.id===w.shaft?' selected':'')+'>轴#'+s.id+'（'+fmt(s.x,2)+','+fmt(s.y,2)+'）</option>';
+    }).join('') + '<option value="new">＋ 新建一根轴</option>';
+    return '<div class="wheelitem"><div class="hd"><span>'+w.label+'</span>'+
+      '<span class="chip '+(isGear?'pur':'blue')+'">'+(w.kind==='disk'?'轮盘':(w.kind==='ring'?'内齿圈':'齿轮'))+'</span>'+
+      '<span class="sp"><button class="btn sm" data-drv="'+w.id+'">设主动</button>'+
+      '<button class="btn sm" data-out="'+w.id+'">设输出</button>'+
+      '<button class="btn sm warn" data-del="'+w.id+'">删除</button></span></div>'+
+      slider+
+      '<div class="row"><label>所属轴</label><select data-shaft="'+w.id+'">'+shaftOpts+'</select>'+
+      '<span class="chip">'+(shaftWheels(w.shaft).length>1?'同轴 '+shaftWheels(w.shaft).length+' 轮':'单轮')+'</span></div></div>';
+  }).join('');
+}
+function renderLinkList(){
+  var el=$('linkList');
+  if(!state.links.length){ el.innerHTML='<p class="collapse">暂无连接。下面选两个轮 → 选类型 → 点「＋ 连接」。</p>'; return; }
+  el.innerHTML = state.links.map(function(lk){
+    var a=wheelById(lk.a), b=wheelById(lk.b);
+    var modes = '<select data-lmode="'+lk.id+'">'+
+      '<option value="belt-open"'+(lk.type==='belt'&&lk.mode==='open'?' selected':'')+'>皮带·开口（同向）</option>'+
+      '<option value="belt-cross"'+(lk.type==='belt'&&lk.mode==='cross'?' selected':'')+'>皮带·交叉（反向）</option>'+
+      '<option value="chain"'+(lk.type==='chain'?' selected':'')+'>链条（同向）</option>'+
+      '<option value="gear-ext"'+(lk.type==='gear'&&lk.mode==='ext'?' selected':'')+'>齿轮·外啮合（反向）</option>'+
+      '<option value="gear-int"'+(lk.type==='gear'&&lk.mode==='int'?' selected':'')+'>齿轮·内啮合（同向）</option></select>';
+    return '<div class="linkitem"><b>'+(a?a.label:'?')+' → '+(b?b.label:'?')+'</b>'+modes+
+      '<label class="chk">滑移 ε<input type="range" min="0" max="0.6" step="0.01" value="'+(lk.slip||0)+'" data-lslip="'+lk.id+'" style="width:72px"></label>'+
+      '<span class="num">'+fmt((lk.slip||0)*100,0)+'%</span>'+
+      '<button class="btn sm warn" data-ldel="'+lk.id+'">断开</button></div>';
+  }).join('');
+}
+/* 热点锚点 */
+function layoutHotspots(){
+  var el=$('hotspots'); if(!el) return;
+  var h=[];
+  state.shafts.forEach(function(s){
+    if(shaftWheels(s.id).length<2) return;
+    h.push({x:w2sx(s.x), y:w2sy(s.y), card:'c-coax', cls:'', tip:'同轴标记：点看「同轴转动」卡片'});
+  });
+  state.links.forEach(function(lk){
+    var a=wheelById(lk.a), b=wheelById(lk.b); if(!a||!b) return;
+    var A=shaftOf(a), B=shaftOf(b);
+    if(lk.type==='gear'){
+      var mp=meshPoint(lk);
+      if(mp) h.push({x:w2sx(mp[0]), y:w2sy(mp[1]), card: lk.mode==='int'?'l-geardir':'c-gear', cls:'p',
+        tip: lk.mode==='int'?'内啮合点：点看「齿轮转向」卡片':'啮合点：点看「齿轮啮合传动」卡片'});
+    }else{
+      var g=beltGeom({x:A.x,y:A.y,r:a.r},{x:B.x,y:B.y,r:b.r},lk.mode);
+      if(g){
+        var bad=(lk.slip||0)>0;
+        h.push({x:w2sx(g.t1.pA[0]), y:w2sy(g.t1.pA[1]), card: bad?'d-slip':(lk.mode==='cross'?'l-belt':'c-belt'), cls:'b',
+          tip: bad?'打滑接触点：点看「打滑辨析」卡片':'皮带接触点：点看「皮带传动」卡片'});
+        h.push({x:w2sx(g.t1.pB[0]), y:w2sy(g.t1.pB[1]), card:'f-belt', cls:'b', tip:'皮带接触点：点看 ω∝1/r 公式卡'});
+      }
+    }
+  });
+  var dv=wheelById(state.driverId);
+  if(dv){ var s1=shaftOf(dv); if(s1) h.push({x:w2sx(s1.x), y:w2sy(s1.y)-dv.r*state.view.scale-24, card:'f-omega', cls:'r', tip:'转速标识牌：ω = 2πn/60'}); }
+  var ot=wheelById(state.outId);
+  if(ot){ var s2=shaftOf(ot); if(s2) h.push({x:w2sx(s2.x), y:w2sy(s2.y)-ot.r*state.view.scale-24, card:'c-ratio', cls:'', tip:'输出轮：点看「传动比」卡片'}); }
+  el.innerHTML = h.map(function(o,i){
+    return '<button class="hs '+o.cls+'" style="left:'+o.x.toFixed(1)+'px;top:'+o.y.toFixed(1)+'px" data-card="'+o.card+'" '+
+      'data-i="'+i+'" aria-label="'+o.tip+'" title="'+o.tip+'">?</button>';
+  }).join('');
+}
+
+/* =========================================================================
+   八、传动比推导链（含填空练习）
+   ========================================================================= */
+var fillAnswers = {};
+function renderDerive(){
+  var box=$('deriveBox');
+  if(!state.steps.length){ box.innerHTML='<p class="collapse">请先装配装置。</p>'; return; }
+  box.innerHTML = state.steps.map(function(st,i){
+    var has = st.wid!==undefined;
+    var inp = has ? ('<div class="row">该轮转速 n = <input class="fill" type="text" data-fill="'+i+'" placeholder="? r/min" value="'+(fillAnswers[i]!==undefined?fillAnswers[i]:'')+'"> r/min'+
+      '<span class="collapse" id="fb'+i+'"></span></div>') : '';
+    return '<div class="stepline"><span class="st '+st.cls+'">'+(i+1)+'· '+st.rule+'</span>'+
+      '<span class="tx">'+st.text+'</span><span class="num2">'+st.num+'</span>'+inp+'</div>';
+  }).join('');
+  $('chipTotal').textContent='i 总 = ω_主/ω_从 = '+(isFinite(state.iTotal)?fmt(state.iTotal,3):'—')+'（= 各级传动比连乘）';
+  $('deriveBox').querySelectorAll('input[data-fill]').forEach(function(inp){
+    inp.addEventListener('change', function(){ fillAnswers[inp.getAttribute('data-fill')]=inp.value; });
+    inp.addEventListener('keydown', function(e){ if(e.key==='Enter') checkFill(); });
+  });
+}
+function checkFill(){
+  var ok=0, tot=0;
+  state.steps.forEach(function(st,i){
+    if(st.wid===undefined) return;
+    tot++;
+    var inp=$('deriveBox').querySelector('input[data-fill="'+i+'"]');
+    var fb=$('fb'+i); if(!inp) return;
+    var val=parseFloat(String(inp.value).replace(/[^0-9.\-]/g,''));
+    var good = isFinite(val) && Math.abs(val-st.val) <= Math.max(0.05, Math.abs(st.val)*0.02);
+    inp.classList.remove('ok','no'); inp.classList.add(good?'ok':'no');
+    if(good){ ok++; fb.textContent=''; fb.className='collapse'; }
+    else{
+      fb.className='hint';
+      fb.innerHTML='✗ 提示：这一步用「'+st.rule+'」。'+
+        (st.rule.indexOf('同轴')>=0 ? '同轴不改变转速，n 与上一轮相同。' :
+         (st.rule.indexOf('齿轮')>=0 ? '转速与齿数成反比：n₂ = n₁·z₁/z₂。' : '转速与半径成反比：n₂ = n₁·r₁/r₂。'))+
+        ' 正确值 ≈ '+fmt(st.val,2)+' r/min　📖 <a href="#" data-card="'+(st.rule.indexOf('同轴')>=0?'l-coax':(st.rule.indexOf('齿轮')>=0?'f-gearz':'f-belt'))+'">看卡片</a>';
+    }
+  });
+  toast('填空自测：'+ok+' / '+tot+' 正确'+(ok===tot?'　👍 全对！':''), 2600);
+}
+function newFill(){ fillAnswers={}; renderDerive(); toast('已清空填空，试试自己算一遍：记住"同轴 ω 不变 / 同缘 v 不变"。',3000); }
+
+/* =========================================================================
+   九、知识卡片库 / 详情弹窗（键盘可达）
+   ========================================================================= */
+var curCat='全部', curIdx=0, flipped=false, viewCards=CARDS.slice();
+function cardById(id){ for(var i=0;i<CARDS.length;i++) if(CARDS[i].id===id) return CARDS[i]; return null; }
+function cardIndex(id){ for(var i=0;i<viewCards.length;i++) if(viewCards[i].id===id) return i; return -1; }
+function renderCats(){
+  var cats=['全部']; CARDS.forEach(function(c){ if(cats.indexOf(c.cat)<0) cats.push(c.cat); });
+  $('catBtns').innerHTML = cats.map(function(c){
+    return '<button class="catbtn'+(c===curCat?' on':'')+'" data-cat="'+c+'">'+c+'（'+ (c==='全部'?CARDS.length:CARDS.filter(function(x){return x.cat===c;}).length) +'）</button>';
+  }).join('');
+}
+function filterCards(){
+  var q=($('inpSearch').value||'').trim().toLowerCase();
+  viewCards = CARDS.filter(function(c){
+    var okc = (curCat==='全部'||c.cat===curCat);
+    if(!okc) return false;
+    if(!q) return true;
+    return (c.title+c.concl+c.formula+c.demo+c.cat).toLowerCase().indexOf(q)>=0;
+  });
+  renderCardList();
+}
+function renderCardList(){
+  $('chipCardCount').textContent='共 '+CARDS.length+' 张（概念/公式/规律/方法/辨析/易错/应用/安全）';
+  $('cardList').innerHTML = viewCards.map(function(c,i){
+    return '<div class="card'+(c.pinned?' pinned':'')+'" tabindex="0" role="button" data-i="'+i+'" aria-label="打开卡片：'+c.title+'">'+
+      '<button class="pinb" data-pin="'+c.id+'" aria-label="钉住">📌</button>'+
+      '<h4><span class="cat">'+c.cat+'</span><span>'+c.title+'</span></h4>'+
+      '<p>'+c.concl+'</p></div>';
+  }).join('') || '<p class="collapse">没有匹配的卡片，换个关键词试试。</p>';
+  $('vCardIdx').textContent = viewCards.length? (curIdx+1)+' / '+viewCards.length : '—';
+}
+function openCardById(id){
+  var i=cardIndex(id);
+  if(i<0){ curCat='全部'; $('inpSearch').value=''; filterCards(); i=cardIndex(id); }
+  if(i<0) return;
+  curIdx=i; openCard(i);
+}
+function openCard(i){
+  curIdx=(i+viewCards.length)%viewCards.length;
+  var c=viewCards[curIdx]; if(!c) return;
+  flipped=false;
+  renderCardBody(c);
+  $('cardModal').hidden=false;
+  $('vCardIdx').textContent=(curIdx+1)+' / '+viewCards.length;
+  $('cmClose').focus();
+}
+function renderCardBody(c){
+  $('cmTitle').textContent=c.title;
+  $('cmCat').textContent=c.cat+'卡';
+  var svg = (c.svg==='formula') ? MINI.formula(c.svgArg||'ω = 2π/T') : (MINI[c.svg]?MINI[c.svg]():'');
+  if(flipped){
+    $('cmBody').innerHTML =
+      '<div class="face"><div class="k">背面 · 推导 / 理由</div><div class="v">'+c.back+'</div></div>'+
+      '<div class="face fml">'+c.formula+'</div>'+
+      '<div class="miniwrap">'+svg+'</div>';
+  }else{
+    $('cmBody').innerHTML =
+      '<div class="face"><div class="k">一句话结论</div><div class="v">'+c.concl+'</div></div>'+
+      '<div class="face fml"><div class="k">公式 / 判据（规范符号与单位）</div>'+c.formula+'</div>'+
+      '<div class="miniwrap">'+svg+'</div>'+
+      '<div class="face demo"><div class="k">在本 Demo 中怎么看</div><div class="v">'+c.demo+'</div></div>'+
+      (c.wrong? '<div class="face wrong"><div class="k">易错提醒</div><div class="v">'+c.wrong+'</div></div>':'');
+  }
+  $('cmPin').textContent = c.pinned?'📍 已钉住':'📌 钉住';
+}
+function closeCard(){ $('cardModal').hidden=true; }
+
+/* =========================================================================
+   十、教学流程 / 测验
+   ========================================================================= */
+var FLOW=[
+ {t:'① 拼装与观察', preset:'① 同轴大小盘', card:'c-coax',
+  p:'先拼一套最简单的：大小两个盘装在同一根轴上（同轴）。打开图层「参考半径线」和「等时间点迹」，观察两盘的标记点是否始终落在同一条半径线上。',
+  ask:'同轴两盘：它们的 ω 相同吗？v 相同吗？谁的边缘跑得更快？'},
+ {t:'② 猜想', preset:'② 皮带两轮', card:'c-belt',
+  p:'换成皮带连接两个半径不同的轮。观察两轮边缘点迹的"弧长间隔"，并用读数卡比较 v 与 ω。',
+  ask:'判断"同轴"还是"同缘"，你用什么量作为判据？皮带两轮到底谁转得快、谁边缘跑得快？'},
+ {t:'③ 测量', preset:'② 皮带两轮', card:'m-measure',
+  p:'打开「⏱ 测量」页：选定被测轮、设 N=5 圈、开始计时，读出 T、ω、v 并与理论值对照（相对误差应 < 2%）。也可以打开频闪仪，调频率到与转速同步，看轮子"静止"。',
+  ask:'为什么数 N 圈再除以 N 比只数 1 圈更准？频闪频率 f 与转速 n 满足什么关系时轮子看起来静止？'},
+ {t:'④ 图像分析', preset:'② 皮带两轮', card:'f-belt',
+  p:'打开「📈 图像」页：同轴组在 ω–r 图上是一条水平线、在 v–r 图上是一条过原点的直线；皮带组则相反 —— v–r 水平、ω–r 是一支双曲线。',
+  ask:'皮带组在 ω–r 图上是什么曲线？它验证了"ω 与 r 成反比"还是"成正比"？'},
+ {t:'⑤ 结论', preset:'③ 外啮合齿轮', card:'d-ov',
+  p:'两套规律的成立前提不同：同轴 → 刚体不形变（ω 相同）；皮带/齿轮 → 不打滑、节圆相切（边缘 v 相同）。再对比外啮合齿轮的转向。',
+  ask:'"ω 相同"与"v 相同"各需要什么前提？外啮合两轮的转向是相同还是相反？'},
+ {t:'⑥ 组合应用', preset:'⑥ 多级组合', card:'m-chain',
+  p:'看「🧮 推导」页的推导链：电机轮 →（皮带）→ 同轴大小轮 →（齿轮）→ 从动轮。每一级只改一次比，总传动比 i = 各级连乘。',
+  ask:'若第一级 i₁ = r₂/r₁、第二级 i₂ = z₄/z₃，总传动比怎么算？输出轮转向如何判断？'}
+];
+var flowStep=0;
+function renderFlow(){
+  var f=FLOW[flowStep];
+  $('chipFlow').textContent='第 '+(flowStep+1)+' / '+FLOW.length+' 步';
+  $('flowBox').innerHTML = FLOW.map(function(x,i){
+    return '<div class="flowstep'+(i===flowStep?' cur':'')+'"><h4>'+x.t+'</h4><p>'+x.p+'</p><div class="ask">🙋 待答问题：'+x.ask+'</div></div>';
+  }).join('');
+  if(flowStep===FLOW.length-1){
+    $('flowBox').insertAdjacentHTML('beforeend',
+      '<div class="flowstep cur"><h4>✅ 结论页</h4><p><b>规律一（同轴）</b>：ω 相同、T 相同、n 相同，v = ωr ∝ r（前提：同一刚体/同一转轴）。'+
+      '<br><b>规律二（同缘）</b>：皮带不打滑、齿轮节圆啮合 ⇒ 边缘 v 相同，ω ∝ 1/r（或 z 反比）（前提：不打滑、节圆相切）。'+
+      '<br><b>转向</b>：开口皮带/链/内啮合同向；交叉皮带/外啮合反向。'+
+      '<br><b>组合</b>：i = Π i<sub>k</sub>，同轴级 i = 1。</p></div>');
+  }
+}
+function gotoFlow(i){
+  flowStep=Math.max(0,Math.min(FLOW.length-1,i));
+  var f=FLOW[flowStep];
+  if(f.preset && state.presetName!==f.preset) applyPreset(f.preset);
+  renderFlow();
+  if($('chkAutoCard').checked) setTimeout(function(){ openCardById(f.card); },120);
+}
+var QUIZ=[
+ {q:'同轴大小盘：小盘 r₁=0.06 m、大盘 r₂=0.18 m，小盘 n₁=60 r/min。下列判断正确的是？',
+  o:[{t:'两盘 ω 相同，v 之比 v₁:v₂ = 1:3', ok:true, fb:'对！同轴 ⇒ ω 相同（都是 6.283 rad/s），v = ωr ⇒ v 与 r 成正比，v₁=0.377、v₂=1.131 m/s。', c:'l-coax'},
+     {t:'两盘 v 相同，ω 之比为 1:3', ok:false, fb:'错。这是"同缘"的结论。同轴是 ω 相同、v 不同 —— 别把前提弄反。', c:'d-ov'},
+     {t:'两盘 ω 与 v 都相同', ok:false, fb:'错。同轴只保证 ω 相同；v = ωr 随半径变化。', c:'w1'},
+     {t:'大盘转得更快', ok:false, fb:'错。同轴两盘"转得一样快"（角速度相同），只是大盘边缘跑得远。', c:'c-coax'}]},
+ {q:'皮带（开口、不打滑）连接 r₁=0.10 m 与 r₂=0.20 m 两轮，主动轮 n₁=60 r/min。从动轮 n₂ 与两轮边缘 v 分别为？',
+  o:[{t:'n₂=30 r/min，v₁=v₂≈0.628 m/s', ok:true, fb:'对！ω₁r₁=ω₂r₂ ⇒ n₂ = n₁·r₁/r₂ = 30 r/min；v = ω₁r₁ = 6.283×0.10 = 0.628 m/s。', c:'f-belt'},
+     {t:'n₂=120 r/min，v₁=v₂≈0.628 m/s', ok:false, fb:'错。皮带是"大轮转得慢"，n 与 r 成反比不是正比。', c:'w5'},
+     {t:'n₂=60 r/min，v₁=v₂≈0.628 m/s', ok:false, fb:'错。这是"同轴"的结论；皮带两轮 ω 不同。', c:'w2'},
+     {t:'n₂=30 r/min，v₂ 只有 v₁ 的一半', ok:false, fb:'错。不打滑时皮带各处速率相同 ⇒ 两轮边缘 v 相等。', c:'c-belt'}]},
+ {q:'一对齿轮外啮合，z₁=20、z₂=40，主动轮 n₁=60 r/min。从动轮的转速与转向是？',
+  o:[{t:'n₂=30 r/min，与主动轮转向相反', ok:true, fb:'对！ω₁/ω₂ = z₂/z₁ ⇒ n₂ = 60×20/40 = 30 r/min；外啮合转向相反。', c:'f-gearz'},
+     {t:'n₂=120 r/min，与主动轮转向相反', ok:false, fb:'错。齿数多者转得慢，转速比是齿数的反比。', c:'w5'},
+     {t:'n₂=30 r/min，与主动轮转向相同', ok:false, fb:'转速对了，但外啮合转向一定相反（内啮合才同向）。', c:'w3'},
+     {t:'n₂=30 r/min，无法判断转向', ok:false, fb:'错。外啮合转向必相反，这是确定的。', c:'l-geardir'}]},
+ {q:'把同一对皮带轮的连接由"不交叉"改成"交叉"，下列说法正确的是？',
+  o:[{t:'两轮边缘 v 仍相等，但转向由同向变为相反', ok:true, fb:'对！交叉只改变转向，不改变"边缘 v 相同"这一规律。', c:'l-belt'},
+     {t:'两轮边缘 v 不再相等', ok:false, fb:'错。不打滑时 v 仍相等，变的只是转向。', c:'w4'},
+     {t:'两轮转向不变，只是皮带变长', ok:false, fb:'错。交叉皮带使两轮转向相反，这是它唯一的用途。', c:'w4'},
+     {t:'两轮 ω 变得相同', ok:false, fb:'错。ω 与半径的反比关系不变，只有转向翻转。', c:'w2'}]}
+];
+function renderQuiz(){
+  $('quizBox').innerHTML = QUIZ.map(function(q,qi){
+    return '<div class="qitem" data-q="'+qi+'"><div class="q">'+(qi+1)+'. '+q.q+'</div>'+
+      q.o.map(function(o,oi){ return '<label class="opt"><input type="radio" name="q'+qi+'" data-oi="'+oi+'"> '+o.t+'</label>'; }).join('')+
+      '<div class="fb" id="qf'+qi+'" style="display:none"></div></div>';
+  }).join('');
+  $('quizBox').querySelectorAll('input[type=radio]').forEach(function(r){
+    r.addEventListener('change', function(){
+      var qi=parseInt(r.closest('.qitem').getAttribute('data-q'),10), oi=parseInt(r.getAttribute('data-oi'),10);
+      var o=QUIZ[qi].o[oi], fb=$('qf'+qi);
+      fb.style.display='block'; fb.className='fb '+(o.ok?'ok':'no');
+      fb.innerHTML=(o.ok?'✔ ':'✗ ')+o.fb+'　📖 <a href="#" data-card="'+o.c+'">打开对应卡片</a>';
+      scoreQuiz();
+    });
+  });
+  scoreQuiz();
+}
+function scoreQuiz(){
+  var s=0; QUIZ.forEach(function(q,qi){
+    var r=$('quizBox').querySelector('input[name=q'+qi+']:checked');
+    if(!r) return;
+    var oi=parseInt(r.getAttribute('data-oi'),10);
+    if(q.o[oi] && q.o[oi].ok) s++;
+  });
+  $('chipQuiz').textContent='得分 '+s+' / '+QUIZ.length;
+}
+
+/* =========================================================================
+   十一、测量 / 记录 / CSV
+   ========================================================================= */
+function resetTimer(){
+  if(state.meas && state.meas.on){
+    $('btnTimer').textContent='▶ 开始计时'; $('btnTimer').classList.remove('warn');
+  }
+  state.meas=null; renderTimer();
+}
+function startTimer(){
+  var w=wheelById($('selMeasWheel').value);
+  if(!w||!w.seen){ toast('请先选一个已连通的轮。'); return; }
+  if(!(Math.abs(w.omega)>1e-9)){ toast('该轮 ω = 0（转速 n = 0），无法计时，请先把电机转速调大于 0。'); return; }
+  var N=Math.max(1, parseInt($('inpN').value||'5',10)||5);
+  state.meas={on:true, wheelId:w.id, N:N, t:0, t0turns:Math.abs(w.omega)*state.t/TAU, turns:0, res:null};
+  $('btnTimer').textContent='■ 停止计时'; $('btnTimer').classList.add('warn');
+  if(!state.playing){ state.playing=true; syncPlayBtn(); }
+  renderTimer();
+  toast('开始计时：「'+w.label+'」转满 '+N+' 圈自动停止。');
+}
+function stopTimer(auto){
+  if(!state.meas) return;
+  var m=state.meas;
+  m.on=false;
+  $('btnTimer').textContent='▶ 开始计时'; $('btnTimer').classList.remove('warn');
+  var w=wheelById(m.wheelId);
+  /* 无效计时：被测轮已被删除 / 未累计到仿真时间 / 没转够可辨识的一点点转角 */
+  if(!w||!w.seen||!(m.t>0)||!(m.turns>1e-6)){
+    m.res=null; renderTimer();
+    toast(auto? '本次计时无效：未记录到有效转动。' : '未记录到有效转动，请让机构先转起来再计时。');
+    return;
+  }
+  /* T = t / 实际转过的圈数（t 与圈数按同一份仿真步长增量累计，因此结果与帧率无关） */
+  var T=m.t/m.turns, om=TAU/T, v=om*w.r;
+  var tT=per(w.omega), tW=Math.abs(w.omega), tV=Math.abs(w.omega)*w.r;
+  m.res={T:T, om:om, v:v, tT:tT, tW:tW, tV:tV, N:m.turns};
+  renderTimer();
+  if(auto){
+    var e = (isFinite(tT)&&tT>0&&tT!==Infinity) ? ('　相对误差 '+fmt(Math.abs(T-tT)/tT*100,2)+'%') : '';
+    toast('已转满 '+fmt(m.turns,2)+' 圈自动停止：T = '+fmt(T,3)+' s'+e, 3000);
+  }
+}
+function renderTimer(){
+  if(state.meas){
+    $('vTimer').textContent='t = '+fmt(state.meas.t,3)+' s';
+    $('chipTurns').textContent='已转 '+fmt(state.meas.turns||0,2)+' 圈';
+  }else{ $('vTimer').textContent='t = 0.000 s'; $('chipTurns').textContent='已转 0.00 圈'; }
+  var r=state.meas&&state.meas.res;
+  function err(a,b){ return (isFinite(a)&&isFinite(b)&&b!==0)? fmt(Math.abs(a-b)/Math.abs(b)*100,2)+'%' : '—'; }
+  $('mT').textContent = r? fmt(r.T,3):'—';   $('tT').textContent = r? fmt(r.tT,3):'—';  $('eT').textContent = r? err(r.T,r.tT):'—';
+  $('mW').textContent = r? fmt(r.om,3):'—';  $('tW').textContent = r? fmt(r.tW,3):'—';  $('eW').textContent = r? err(r.om,r.tW):'—';
+  $('mV').textContent = r? fmt(r.v,3):'—';   $('tV').textContent = r? fmt(r.tV,3):'—';  $('eV').textContent = r? err(r.v,r.tV):'—';
+}
+function recColor(name){
+  var map={'① 同轴大小盘':'#dbeafe','② 皮带两轮':'#fef3c7','③ 外啮合齿轮':'#ede9fe','④ 内啮合齿圈':'#fce7f3',
+    '⑤ 交叉皮带':'#fee2e2','⑥ 多级组合':'#ccfbf1','⑦ 打滑演示':'#ffedd5','⑧ 链传动':'#e0f2fe','⑨ 摩擦轮传动':'#f1f5f9'};
+  return map[name]||'#ffffff';
+}
+function addRecord(){
+  var tag=$('inpTag').value.trim()||state.presetName;
+  state.wheels.forEach(function(w){
+    if(!w.seen) return;
+    state.records.push({tag:tag, label:w.label, r:w.r, z:(w.kind==='disk'?'':w.z), n:rpm(w.omega), om:Math.abs(w.omega), v:Math.abs(w.omega)*w.r, T:per(w.omega)});
+  });
+  renderRecords(); toast('已记录 '+state.wheels.length+' 行（分组：'+tag+'）');
+}
+function renderRecords(){
+  var tb=$('tblRec').querySelector('tbody');
+  tb.innerHTML = state.records.map(function(r){
+    return '<tr style="background:'+recColor(r.tag)+'"><td class="l">'+r.tag+'</td><td class="l">'+r.label+'</td><td>'+fmt(r.r,3)+'</td><td>'+(r.z===''?'—':r.z)+
+      '</td><td>'+fmt(r.n,2)+'</td><td>'+fmt(r.om,3)+'</td><td>'+fmt(r.v,3)+'</td><td>'+fmt(r.T,3)+'</td></tr>';
+  }).join('') || '<tr><td colspan="8" style="text-align:center;color:#94a3b8">暂无记录</td></tr>';
+}
+function exportCSV(){
+  if(!state.records.length){ toast('记录表为空。'); return; }
+  var rows=[['分组','轮','类型','r(m)','z','n(r/min)','ω(rad/s)','v(m/s)','T(s)']];
+  state.records.forEach(function(r){ rows.push([r.tag,r.label,'',r.r,r.z,r.n.toFixed(3),r.om.toFixed(4),r.v.toFixed(4),r.T.toFixed(4)]); });
+  var csv='\ufeff'+rows.map(function(a){ return a.join(','); }).join('\r\n');
+  var blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  var a=document.createElement('a'); a.href=URL.createObjectURL(blob);
+  a.download='模型30_传动记录.csv'; document.body.appendChild(a); a.click();
+  setTimeout(function(){ URL.revokeObjectURL(a.href); a.remove(); },500);
+  toast('已导出 CSV（'+state.records.length+' 行）');
+}
+
+/* =========================================================================
+   十二、事件绑定与初始化
+   ========================================================================= */
+function syncPlayBtn(){
+  $('btnPlay').textContent = state.playing?'⏸ 暂停':'▶ 播放';
+  $('btnPlay').setAttribute('aria-pressed', state.playing?'true':'false');
+}
+function buildPresetButtons(){
+  var box=$('presets');
+  Object.keys(PRESETS).forEach(function(k){
+    var b=document.createElement('button');
+    b.className='btn'+(k===state.presetName?' pri':''); b.textContent=k; b.dataset.preset=k;
+    box.appendChild(b);
+  });
+  box.addEventListener('click', function(e){
+    var b=e.target.closest('button[data-preset]'); if(!b) return;
+    box.querySelectorAll('button[data-preset]').forEach(function(x){ x.classList.remove('pri'); });
+    b.classList.add('pri');
+    applyPreset(b.dataset.preset);
+  });
+}
+function buildLayers(){
+  var names={refLine:'参考半径线',vArrow:'切线速度矢量',dirArrow:'转向箭头',dots:'等时间点迹',
+    pitch:'节圆与啮合点',beltDir:'皮带走向',signboard:'转速标识牌',dims:'半径标注线',ruler:'直尺与比例尺'};
+  var box=$('layers');
+  box.innerHTML = Object.keys(names).map(function(k){
+    return '<label class="chk"><input type="checkbox" data-layer="'+k+'"'+(state.layers[k]?' checked':'')+'>'+names[k]+'</label>';
+  }).join('');
+  box.addEventListener('change', function(e){
+    var k=e.target.getAttribute('data-layer'); if(!k) return;
+    state.layers[k]=e.target.checked; layoutHotspots();
+  });
+}
+function bindTabs(){
+  document.querySelectorAll('.tab').forEach(function(t){
+    t.addEventListener('click', function(){
+      document.querySelectorAll('.tab').forEach(function(x){ x.setAttribute('aria-selected','false'); });
+      t.setAttribute('aria-selected','true');
+      document.querySelectorAll('.pane').forEach(function(p){ p.classList.remove('on'); });
+      var p=$('pane-'+t.getAttribute('data-pane')); if(p) p.classList.add('on');
+      if(t.getAttribute('data-pane')==='graph') drawCharts();
+      if(t.getAttribute('data-pane')==='derive') renderDerive();
+    });
+  });
+}
+function bindUI(){
+  /* 顶部工具 */
+  $('btnPlay').addEventListener('click', function(){ state.playing=!state.playing; syncPlayBtn(); });
+  $('btnStep').addEventListener('click', function(){ state.t+=CFG.DT_STEP*state.speed; state.playing=false; syncPlayBtn(); dotCatchUp(); });
+  $('selSpeed').addEventListener('change', function(){ state.speed=parseFloat(this.value); });
+  $('btnDir').addEventListener('click', function(){ state.motorDir*=-1; rebuild(true); toast('电机已'+(state.motorDir>0?'逆时针':'顺时针')+'转动'); });
+  $('btnReset').addEventListener('click', function(){ state.t=0; lastDotT=0; state.wheels.forEach(function(w){ w.dots=[]; }); state.meas=null; renderTimer(); rebuild(true); toast('已重置时间与点迹'); });
+  $('chkSound').addEventListener('change', function(){ state.sound=this.checked; if(this.checked) beep(880,0.05,0.05); });
+  /* 电机 */
+  function setNum(el,t){ var row=el.closest('.row'); var s=row&&row.querySelector('.num'); if(s) s.textContent=t; }
+  $('rngN').addEventListener('input', function(){ state.n=parseFloat(this.value); refresh(); });
+  $('selDriver').addEventListener('change', function(){ state.driverId=parseInt(this.value,10); refresh(); });
+  $('selOut').addEventListener('change', function(){ state.outId=parseInt(this.value,10); refresh(); });
+  /* 轮列表（事件委托） */
+  $('wheelList').addEventListener('input', function(e){
+    var id=parseInt(e.target.getAttribute('data-r')||e.target.getAttribute('data-z'),10);
+    if(!id) return;
+    var w=wheelById(id); if(!w) return;
+    if(e.target.hasAttribute('data-r')){ w.r=parseFloat(e.target.value); setNum(e.target,'r='+fmt(w.r,3)+' m'); }
+    else { w.z=parseInt(e.target.value,10); applyGearR(w); setNum(e.target,'z='+w.z+' → r='+fmt(w.r,3)+' m'); }
+    refresh();
+  });
+  $('wheelList').addEventListener('click', function(e){
+    var t=e.target.closest('button'); if(!t) return;
+    if(t.dataset.drv){ state.driverId=parseInt(t.dataset.drv,10); rebuild(false); toast('已设为主动轮'); }
+    else if(t.dataset.out){ state.outId=parseInt(t.dataset.out,10); rebuild(false); toast('已设为输出轮'); }
+    else if(t.dataset.del){
+      var id=parseInt(t.dataset.del,10);
+      if(state.wheels.length<=1){ toast('至少保留一个轮。'); return; }
+      state.wheels=state.wheels.filter(function(w){ return w.id!==id; });
+      state.links=state.links.filter(function(l){ return l.a!==id&&l.b!==id; });
+      if(state.driverId===id) state.driverId=state.wheels[0].id;
+      if(state.outId===id) state.outId=state.wheels[state.wheels.length-1].id;
+      if(state.meas && state.meas.wheelId===id) resetTimer();
+      rebuild(true);
+    }
+  });
+  $('wheelList').addEventListener('change', function(e){
+    /* 半径/齿数滑块松手后再重新取景，避免连续拖动时不断重缩放 */
+    if(e.target.hasAttribute('data-r')||e.target.hasAttribute('data-z')){ refresh(true); return; }
+    if(!e.target.hasAttribute('data-shaft')) return;
+    var id=parseInt(e.target.getAttribute('data-shaft'),10), w=wheelById(id); if(!w) return;
+    var v=e.target.value;
+    if(v==='new'){
+      var s=mkShaft(shaftOf(w).x+0.30, shaftOf(w).y); state.shafts.push(s); w.shaft=s.id;
+    }else w.shaft=parseInt(v,10);
+    rebuild(true);
+  });
+  $('btnAddDisk').addEventListener('click', function(){ addWheel('disk'); });
+  $('btnAddGear').addEventListener('click', function(){ addWheel('gear'); });
+  $('btnAddRing').addEventListener('click', function(){ addWheel('ring'); });
+  /* 连接 */
+  $('btnAddLink').addEventListener('click', function(){
+    var a=parseInt($('selLA').value,10), b=parseInt($('selLB').value,10);
+    if(a===b){ toast('请选择两个不同的轮。'); return; }
+    var v=$('selLType').value, lk={id:nid(), slip:0};
+    if(v==='belt-open'){ lk.type='belt'; lk.mode='open'; }
+    else if(v==='belt-cross'){ lk.type='belt'; lk.mode='cross'; }
+    else if(v==='chain'){ lk.type='chain'; lk.mode='open'; }
+    else if(v==='gear-ext'){ lk.type='gear'; lk.mode='ext'; }
+    else { lk.type='gear'; lk.mode='int'; }
+    var A=wheelById(a), B=wheelById(b);
+    if(lk.type==='gear' && lk.mode==='int'){ if(B.kind!=='ring'){ toast('内啮合需要「内齿圈」作为从动件。'); return; } lk.a=a; lk.b=b; }
+    else { lk.a=a; lk.b=b; }
+    if(linksOf(a).concat(linksOf(b)).length>0 && lk.type==='gear'){ /* 允许多连接 */ }
+    state.links.push(lk);
+    rebuild(true); toast('已添加：'+linkName(lk));
+  });
+  $('linkList').addEventListener('change', function(e){
+    var el=e.target;
+    if(el.hasAttribute('data-lmode')){
+      var id=parseInt(el.getAttribute('data-lmode'),10);
+      var lk=state.links.filter(function(l){ return l.id===id; })[0]; if(!lk) return;
+      var v=el.value;
+      if(v==='belt-open'){ lk.type='belt'; lk.mode='open'; }
+      else if(v==='belt-cross'){ lk.type='belt'; lk.mode='cross'; }
+      else if(v==='chain'){ lk.type='chain'; lk.mode='open'; }
+      else if(v==='gear-ext'){ lk.type='gear'; lk.mode='ext'; }
+      else { lk.type='gear'; lk.mode='int'; }
+      rebuild(true);
+    }
+  });
+  $('linkList').addEventListener('input', function(e){
+    if(!e.target.hasAttribute('data-lslip')) return;
+    var id=parseInt(e.target.getAttribute('data-lslip'),10);
+    var lk=state.links.filter(function(l){ return l.id===id; })[0]; if(!lk) return;
+    lk.slip=parseFloat(e.target.value); setNum(e.target, fmt(parseFloat(e.target.value)*100,0)+'%'); refresh();
+  });
+  $('linkList').addEventListener('click', function(e){
+    var t=e.target.closest('button[data-ldel]'); if(!t) return;
+    var id=parseInt(t.getAttribute('data-ldel'),10);
+    state.links=state.links.filter(function(l){ return l.id!==id; });
+    rebuild(true); toast('已断开连接');
+  });
+  /* 频闪 */
+  $('chkStrobe').addEventListener('change', function(){ state.strobe=this.checked; });
+  $('rngStrobe').addEventListener('input', function(){ state.strobeHz=parseFloat(this.value); $('vStrobe').textContent=fmt(state.strobeHz,2)+' Hz'; });
+  $('btnStrobeSync').addEventListener('click', function(){
+    var w=wheelById($('selStrobeWheel').value); if(!w||!w.seen){ toast('请先选一个已连通的轮。'); return; }
+    var f=rpm(w.omega)/60;
+    state.strobeHz=Math.max(0.2,Math.min(12,f)); $('rngStrobe').value=state.strobeHz;
+    $('vStrobe').textContent=fmt(state.strobeHz,2)+' Hz';
+    state.strobe=true; $('chkStrobe').checked=true;
+    toast('频闪锁定：f = n/60 = '+fmt(state.strobeHz,3)+' Hz（'+w.label+' 看起来静止）');
+  });
+  /* 滑移 */
+  $('rngSlip').addEventListener('input', function(){ $('vSlip').textContent=fmt(parseFloat(this.value)*100,0)+'%'; });
+  $('btnApplySlip').addEventListener('click', function(){
+    var s=parseFloat($('rngSlip').value);
+    var cnt=0;
+    state.links.forEach(function(l){ if(l.type!=='gear'){ l.slip=s; cnt++; } });
+    refresh(); renderLinkList();
+    toast(cnt? ('已将 ε='+fmt(s*100,0)+'% 应用于 '+cnt+' 条皮带/链：规律不再成立。') : '当前没有皮带/链连接。');
+  });
+  /* 测量与记录 */
+  $('btnTimer').addEventListener('click', function(){ state.meas&&state.meas.on ? stopTimer(false) : startTimer(); });
+  $('btnRec').addEventListener('click', addRecord);
+  $('btnCsv').addEventListener('click', exportCSV);
+  $('btnClearRec').addEventListener('click', function(){ state.records=[]; renderRecords(); toast('记录表已清空'); });
+  $('btnTS').addEventListener('click', function(){ state.showST=!state.showST; $('chipTS').textContent=state.showST?'s–t':'θ–t'; drawCharts(); });
+  /* 推导 */
+  $('btnCheckFill').addEventListener('click', checkFill);
+  $('btnNewFill').addEventListener('click', newFill);
+  /* 流程 */
+  $('btnFlowPrev').addEventListener('click', function(){ gotoFlow(flowStep-1); });
+  $('btnFlowNext').addEventListener('click', function(){ gotoFlow(flowStep+1); });
+  $('btnFlowCard').addEventListener('click', function(){ openCardById(FLOW[flowStep].card); });
+  $('btnQuizReset').addEventListener('click', function(){ renderQuiz(); });
+  /* 卡片抽屉 */
+  $('btnDrawer').addEventListener('click', function(){ toggleDrawer(true); });
+  $('btnCloseDrawer').addEventListener('click', function(){ toggleDrawer(false); });
+  $('inpSearch').addEventListener('input', filterCards);
+  $('catBtns').addEventListener('click', function(e){
+    var b=e.target.closest('button[data-cat]'); if(!b) return;
+    curCat=b.getAttribute('data-cat'); renderCats(); filterCards();
+  });
+  $('cardList').addEventListener('click', function(e){
+    var p=e.target.closest('button[data-pin]');
+    if(p){ var c=cardById(p.getAttribute('data-pin')); if(c){ c.pinned=!c.pinned; renderCardList(); } return; }
+    var d=e.target.closest('.card'); if(!d) return;
+    openCard(parseInt(d.getAttribute('data-i'),10));
+  });
+  $('cardList').addEventListener('keydown', function(e){
+    if(e.key==='Enter'||e.key===' '){ var d=e.target.closest('.card'); if(d){ e.preventDefault(); openCard(parseInt(d.getAttribute('data-i'),10)); } }
+  });
+  $('btnPrevCard').addEventListener('click', function(){ openCard(curIdx-1); });
+  $('btnNextCard').addEventListener('click', function(){ openCard(curIdx+1); });
+  $('cmClose').addEventListener('click', closeCard);
+  $('cmFlip').addEventListener('click', function(){ flipped=!flipped; renderCardBody(viewCards[curIdx]); });
+  $('cmPin').addEventListener('click', function(){ var c=viewCards[curIdx]; if(c){ c.pinned=!c.pinned; renderCardBody(c); renderCardList(); } });
+  $('cmPrev').addEventListener('click', function(){ openCard(curIdx-1); });
+  $('cmNext').addEventListener('click', function(){ openCard(curIdx+1); });
+  /* 卡片内跳转链接 */
+  document.addEventListener('click', function(e){
+    var a=e.target.closest('a[data-card]'); if(!a) return;
+    e.preventDefault(); openCardById(a.getAttribute('data-card'));
+  });
+  /* 热点 */
+  $('hotspots').addEventListener('click', function(e){
+    var b=e.target.closest('.hs'); if(!b) return;
+    openCardById(b.getAttribute('data-card'));
+  });
+  /* 画布拖拽 */
+  cv.addEventListener('pointerdown', function(e){
+    var r=cv.getBoundingClientRect(), mx=e.clientX-r.left, my=e.clientY-r.top;
+    var w=pickWheel(mx,my);
+    if(w){ state.drag={id:w.id}; cv.classList.add('drag'); cv.setPointerCapture(e.pointerId); }
+  });
+  cv.addEventListener('pointermove', function(e){
+    if(!state.drag) return;
+    var r=cv.getBoundingClientRect();
+    var s=shaftOf(wheelById(state.drag.id)); if(!s) return;
+    s.x=s2wx(e.clientX-r.left); s.y=s2wy(e.clientY-r.top);
+    refresh();
+  });
+  cv.addEventListener('pointerup', function(e){
+    if(state.drag){ state.drag=null; cv.classList.remove('drag'); snapAllGears(); rebuild(true); }
+  });
+  /* 键盘 */
+  document.addEventListener('keydown', function(e){
+    if(e.key==='Escape'){ if(!$('cardModal').hidden) closeCard(); else if($('drawer').classList.contains('on')) toggleDrawer(false); }
+    if(!$('cardModal').hidden){
+      if(e.key==='ArrowRight'){ e.preventDefault(); openCard(curIdx+1); }
+      if(e.key==='ArrowLeft'){ e.preventDefault(); openCard(curIdx-1); }
+      if(e.key==='f'||e.key==='F'){ flipped=!flipped; renderCardBody(viewCards[curIdx]); }
+    }
+    if(e.target===document.body){
+      if(e.key===' '){ e.preventDefault(); state.playing=!state.playing; syncPlayBtn(); }
+      if(e.key==='.'){ state.t+=CFG.DT_STEP; dotCatchUp(); }
+    }
+  });
+}
+function dotCatchUp(){
+  while(state.t-lastDotT>=CFG.DOT_DT){
+    lastDotT+=CFG.DOT_DT;
+    state.wheels.forEach(function(w){ if(w.seen&&Math.abs(w.omega)>1e-9){ w.dots.push(w.omega*lastDotT+w.theta0); if(w.dots.length>CFG.DOT_KEEP) w.dots.shift(); } });
+  }
+}
+function addWheel(kind){
+  var last=state.wheels[state.wheels.length-1];
+  var base=last?shaftOf(last):{x:0,y:0};
+  var s=mkShaft(base.x+0.34, base.y);
+  state.shafts.push(s);
+  var w=mkWheel({label:(kind==='disk'?'轮盘':(kind==='ring'?'齿圈':'齿轮'))+nid(), kind:kind, r:kind==='disk'?0.12:0, z:kind==='disk'?20:24, shaft:s.id,
+    family: kind==='disk'?'coax':'gear'});
+  applyGearR(w); state.wheels.push(w);
+  rebuild(true); toast('已添加'+(kind==='disk'?'轮盘':(kind==='ring'?'内齿圈':'齿轮'))+'，可拖动摆位后再连接。');
+}
+function toggleDrawer(on){
+  var d=$('drawer');
+  if(on===undefined) on=!d.classList.contains('on');
+  d.classList.toggle('on', on);
+  d.setAttribute('aria-hidden', on?'false':'true');
+  $('btnDrawer').setAttribute('aria-expanded', on?'true':'false');
+  if(on){ renderCats(); filterCards(); $('inpSearch').focus(); }
+}
+
+/* ---------- 启动 ---------- */
+function init(){
+  fitCanvas();
+  buildPresetButtons(); buildLayers(); bindTabs(); bindUI();
+  renderCats(); filterCards(); renderQuiz(); renderFlow(); renderRecords(); renderTimer();
+  applyPreset('① 同轴大小盘');
+  syncPlayBtn();
+  $('vStrobe').textContent=fmt(state.strobeHz,2)+' Hz';
+  $('vSlip').textContent='0%';
+  if(window.ResizeObserver){
+    new ResizeObserver(function(){ fitCanvas(); computeView(); layoutHotspots(); }).observe($('stage'));
+  }
+  window.addEventListener('resize', function(){ fitCanvas(); computeView(); layoutHotspots(); });
+  requestAnimationFrame(frame);
+}
+init();
+</script>
+</body>
+</html>

@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>探究杠杆平衡条件</title>
+<style>
+  :root{
+    --bg:#eef2f7; --card:#ffffff; --ink:#1f2d3d; --muted:#6b7a90;
+    --line:#e3e9f2; --blue:#2f6fed; --red:#e23c3c; --green:#1faa6b;
+    --amber:#d98300; --fulcrum:#8a4bff; --paper:#f3f7fc;
+  }
+  *{box-sizing:border-box;}
+  body{margin:0;background:var(--bg);color:var(--ink);
+    font-family:"PingFang SC","Microsoft YaHei",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;line-height:1.6;}
+  .wrap{max-width:1200px;margin:0 auto;padding:22px 18px 60px;}
+  h1{font-size:23px;margin:0 0 4px;}
+  .sub{color:var(--muted);font-size:14px;margin-bottom:18px;}
+  .grid{display:grid;grid-template-columns:350px 1fr;gap:18px;align-items:stretch;}
+  @media(max-width:900px){.grid{grid-template-columns:1fr;}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;box-shadow:0 2px 10px rgba(30,50,90,.05);}
+  .card h2{font-size:15px;margin:2px 0 12px;display:flex;align-items:center;gap:8px;}
+  .card h2 .tag{font-size:11px;color:#fff;background:var(--blue);border-radius:6px;padding:1px 7px;}
+  .card h2 .tag.p{background:var(--fulcrum);}
+  .card h2 .tag.g{background:var(--green);}
+  .col{display:flex;flex-direction:column;gap:18px;}
+  .col > .card{flex:1 1 auto;display:flex;flex-direction:column;}
+
+  .ctrl{margin-bottom:13px;}
+  .ctrl label{display:flex;justify-content:space-between;font-size:13px;color:var(--muted);margin-bottom:5px;}
+  .ctrl label b{color:var(--ink);font-variant-numeric:tabular-nums;}
+  input[type=range]{width:100%;accent-color:var(--blue);}
+  .presets{display:flex;flex-wrap:wrap;gap:8px;margin-top:4px;}
+  .presets button{border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:9px;padding:7px 10px;font-size:12px;cursor:pointer;transition:.15s;}
+  .presets button:hover{border-color:var(--blue);color:var(--blue);}
+  .divider{height:1px;background:var(--line);margin:14px 0;}
+
+  .clsbox{background:linear-gradient(135deg,#f6f9ff,#eef3ff);border:1px solid #d7e3fb;border-radius:10px;padding:10px 12px;}
+  .clsbox .t{font-size:13px;color:var(--muted);}
+  .clsbox .v{font-size:18px;font-weight:700;}
+  .gear{font-size:13px;color:var(--muted);margin-top:10px;}
+  .gear li{margin:3px 0;}
+
+  canvas{width:100%;height:auto;display:block;border-radius:10px;background:var(--paper);border:1px solid #dde6f1;}
+  .verdict{margin-top:12px;text-align:center;font-size:17px;font-weight:700;padding:12px;border-radius:10px;}
+  .verdict.ok{background:#e7f8ef;color:var(--green);border:1px solid #b6e7cd;}
+  .verdict.no{background:#fdeee0;color:var(--amber);border:1px solid #f3d3a3;}
+  .readout{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px;}
+  .stat{background:#f7f9fc;border:1px solid var(--line);border-radius:10px;padding:9px 11px;}
+  .stat .k{font-size:12px;color:var(--muted);}
+  .stat .v{font-size:19px;font-weight:700;font-variant-numeric:tabular-nums;}
+  .stat.e .v{color:var(--red);} .stat.l .v{color:var(--blue);}
+  .hint{font-size:13px;color:var(--muted);margin-top:8px;}
+  .err{color:var(--red);font-weight:600;}
+  .calc{margin-top:12px;background:#f7f9fc;border:1px solid var(--line);border-radius:10px;padding:10px 12px;}
+  .calctitle{font-size:12px;color:var(--muted);margin-bottom:6px;font-weight:600;}
+  .calcrow{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;padding:4px 0;border-bottom:1px dashed #e8edf4;}
+  .calcrow:last-child{border-bottom:none;}
+  .calcrow span{color:var(--muted);font-family:ui-monospace,Menlo,Consolas,monospace;}
+  .calcrow b{font-variant-numeric:tabular-nums;}
+  .calcrow.e b{color:var(--red);} .calcrow.l b{color:var(--blue);}
+  .pheno{margin-top:10px;font-size:13px;background:#fff6f0;border:1px solid #ffd8c2;color:#a8430c;border-radius:10px;padding:9px 12px;line-height:1.55;}
+  .pheno b{color:#8a3208;}
+  .pheno.ok{background:#e7f8ef;border-color:#b6e7cd;color:var(--green);}
+  .pheno.ok b{color:var(--green);}
+
+  table{width:100%;border-collapse:collapse;font-size:12.5px;margin-top:4px;}
+  th,td{border:1px solid var(--line);padding:5px 6px;text-align:center;font-variant-numeric:tabular-nums;}
+  th{background:#f3f7fc;color:var(--muted);font-weight:600;}
+  .logwrap{max-height:230px;overflow:auto;margin-top:8px;border:1px solid var(--line);border-radius:8px;}
+  .logbtns{display:flex;gap:8px;margin-top:10px;}
+  .logbtns button{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 12px;font-size:12.5px;cursor:pointer;}
+  .logbtns button.primary{background:var(--blue);color:#fff;border-color:var(--blue);}
+  .logbtns button:hover{opacity:.9;}
+
+  .know{font-size:14px;}
+  .know h3{font-size:15px;margin:18px 0 8px;padding-left:10px;border-left:4px solid var(--blue);}
+  .know ul{margin:6px 0;padding-left:22px;} .know li{margin:5px 0;}
+  .know .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;}
+  @media(max-width:700px){.know .grid2{grid-template-columns:1fr;}}
+  .formula{background:#0f1b33;color:#eaf2ff;border-radius:10px;padding:12px 14px;font-size:16px;text-align:center;letter-spacing:.5px;margin:10px 0;}
+  .note{background:#fff6f0;border:1px solid #ffd8c2;color:#a8430c;border-radius:10px;padding:10px 12px;font-size:13px;margin:10px 0;}
+  .eq{background:#eef4ff;border:1px solid #d4e2ff;border-radius:10px;padding:10px 12px;font-size:13.5px;margin:10px 0;}
+  .eq b{color:var(--blue);}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>探究杠杆平衡条件</h1>
+  <div class="sub">按真实实验装置绘制：刻度杠杆、支点支架、左侧钩码（阻力）、右侧弹簧测力计斜拉（动力）。可调节钩码数量、悬挂位置与动力方向，自动计算 F₁L₁ 与 F₂L₂ 并判定平衡；未平衡时杠杆会真实倾斜并标出转动方向与两端升降。可填写实验数据记录表。</div>
+
+  <div class="grid">
+    <!-- 左列：控制 + 结论 + 器材 -->
+    <div class="col">
+      <div class="card">
+        <h2><span class="tag p">调节</span>实验参数</h2>
+        <div class="ctrl">
+          <label>阻力：左侧钩码数 n₂ <b id="vRes">2</b></label>
+          <input type="range" id="res" min="1" max="8" step="1" value="2">
+        </div>
+        <div class="ctrl">
+          <label>阻力悬挂位置 d₂（距支点 / 格）<b id="vResPos">3</b></label>
+          <input type="range" id="resPos" min="1" max="8" step="1" value="3">
+        </div>
+        <div class="ctrl">
+          <label>动力：右侧等效钩码数 n₁ <b id="vDri">3</b></label>
+          <input type="range" id="dri" min="1" max="8" step="1" value="3">
+        </div>
+        <div class="ctrl">
+          <label>动力作用位置 d₁（距支点 / 格）<b id="vDriPos">2</b></label>
+          <input type="range" id="driPos" min="1" max="8" step="1" value="2">
+        </div>
+        <div class="ctrl">
+          <label>动力方向 θ（与杠杆夹角）<b id="vAng">90°</b></label>
+          <input type="range" id="ang" min="0" max="90" step="1" value="90">
+        </div>
+        <div class="ctrl">
+          <label>每个钩码重力 G₀（N）<b id="vG">0.5</b></label>
+          <input type="range" id="g0" min="0.1" max="1" step="0.1" value="0.5">
+        </div>
+        <div class="presets">
+          <button data-p="balance">✔ 平衡示例</button>
+          <button data-p="zero">⚠ 力臂为零</button>
+          <button data-p="save">省力费距离</button>
+          <button data-p="reset">↺ 重置</button>
+        </div>
+
+        <div class="divider"></div>
+        <div class="clsbox">
+          <div class="t">杠杆类型（按力臂关系）</div>
+          <div class="v" id="clsLabel">等臂杠杆</div>
+          <div class="t" id="clsDesc" style="margin-top:4px;"></div>
+        </div>
+
+        <div class="divider"></div>
+        <div class="t" style="font-size:13px;color:var(--muted);font-weight:600;">实验器材</div>
+        <ul class="gear">
+          <li>带刻度杠杆（铁架台附）1 套</li>
+          <li>弹簧测力计 1 只</li>
+          <li>钩码（每枚 0.5 N）若干</li>
+          <li>细绳、支架、刻度尺</li>
+        </ul>
+      </div>
+
+      <div class="card">
+        <h2><span class="tag p">原理</span>实验原理</h2>
+        <div class="formula">F₁ · L₁ = F₂ · L₂</div>
+        <ul class="gear" style="margin-top:6px;">
+          <li>杠杆平衡：静止或匀速转动，此时两侧力矩相等、方向相反。</li>
+          <li>力臂 L 是支点到<b>力的作用线</b>的垂直距离，不是杆身长度。</li>
+          <li>动力斜拉时 L₁ = d₁·sinθ：θ 越小力臂越小；θ=0° 时 L₁=0，再大的力也扳不动。</li>
+          <li>省力必费距离：L₁ 越大，所需 F₁ 越小。</li>
+        </ul>
+        <div class="t" style="font-size:13px;color:var(--muted);font-weight:600;margin-top:10px;">杠杆的三类（由 L₁ 与 L₂ 决定）</div>
+        <ul class="gear" style="margin-top:6px;">
+          <li><b>省力杠杆：</b>L₁ &gt; L₂，撬棍、钳子、起子。</li>
+          <li><b>费力杠杆：</b>L₁ &lt; L₂，镊子、钓鱼竿、筷子。</li>
+          <li><b>等臂杠杆：</b>L₁ = L₂，天平、定滑轮。</li>
+        </ul>
+      </div>
+    </div>
+
+    <!-- 右列：仿真 + 判定 + 提示 -->
+    <div class="col">
+      <div class="card">
+        <h2><span class="tag p">装置</span>杠杆受力示意图</h2>
+        <canvas id="cv" width="980" height="600"></canvas>
+        <div class="readout">
+          <div class="stat e"><div class="k">动力侧 F₁L₁</div><div class="v"><span id="m1">15.0</span> N·cm</div></div>
+          <div class="stat l"><div class="k">阻力侧 F₂L₂</div><div class="v"><span id="m2">15.0</span> N·cm</div></div>
+        </div>
+        <div class="calc">
+          <div class="calctitle">力臂与力矩计算（刻度：每格 = 5 cm）</div>
+          <div class="calcrow e"><span>L₁ = d₁ × sinθ × 5</span><b id="fL1">10.0 cm</b></div>
+          <div class="calcrow l"><span>L₂ = d₂ × 5</span><b id="fL2">15.0 cm</b></div>
+          <div class="calcrow e"><span>F₁L₁ = F₁ × L₁</span><b id="fF1L1">15.0 N·cm</b></div>
+          <div class="calcrow l"><span>F₂L₂ = F₂ × L₂</span><b id="fF2L2">15.0 N·cm</b></div>
+        </div>
+        <div class="verdict ok" id="verdict">已平衡 ✓（F₁L₁ = F₂L₂）</div>
+        <div class="pheno ok" id="pheno"></div>
+      </div>
+
+      <div class="card">
+        <h2><span class="tag">提示</span>操作与读图提示</h2>
+        <ul class="gear" style="margin-top:6px;">
+          <li>拖动左侧滑块改变钩码数量、悬挂位置与动力方向 θ。</li>
+          <li>蓝色虚线为<b>阻力臂 L₂</b>，红色虚线为<b>动力臂 L₁</b>（均垂直于各自作用线）。</li>
+          <li>不平衡时杠杆会真实倾斜：力矩大的一侧下沉，并标有“下沉↓ / 抬起↑”与转动方向。</li>
+          <li>预设按钮可一键演示“平衡 / 力臂为零 / 省力费距离”三种情形。</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- 数据记录表（整宽） -->
+  <div class="card" style="margin-top:18px;">
+    <h2><span class="tag g">记录</span>实验数据记录表</h2>
+    <div class="logwrap">
+      <table>
+        <thead><tr>
+          <th>次数</th><th>F₁(N)</th><th>L₁(cm)</th><th>F₂(N)</th><th>L₂(cm)</th>
+          <th>F₁L₁</th><th>F₂L₂</th><th>结论</th>
+        </tr></thead>
+        <tbody id="logBody"><tr><td colspan="8" style="color:var(--muted)">点击“记录本次”将当前数据填入表格</td></tr></tbody>
+      </table>
+    </div>
+    <div class="logbtns">
+      <button class="primary" id="btnLog">＋ 记录本次数据</button>
+      <button id="btnClear">清空记录</button>
+    </div>
+  </div>
+
+  <!-- 知识点 -->
+  <div class="card know" style="margin-top:18px;">
+    <h2><span class="tag">知识</span>知识点梳理</h2>
+
+    <h3>一、实验目的与原理</h3>
+    <ul>
+      <li><b>目的：</b>探究杠杆平衡时，动力、动力臂与阻力、阻力臂之间的定量关系。</li>
+      <li><b>原理：</b>杠杆静止（或匀速转动）即处于平衡状态，此时两侧力矩大小相等、方向相反。</li>
+    </ul>
+
+    <h3>二、杠杆五要素</h3>
+    <ul>
+      <li><b>支点 O</b>：杠杆绕其转动的固定点（本实验为支架刀口）。</li>
+      <li><b>动力 F₁</b>：使杠杆转动的力（右侧，由弹簧测力计斜拉提供）。</li>
+      <li><b>阻力 F₂</b>：阻碍杠杆转动的力（左侧，钩码重力）。</li>
+      <li><b>动力臂 L₁</b>：支点到<b>动力作用线</b>的<b>垂直距离</b>。</li>
+      <li><b>阻力臂 L₂</b>：支点到<b>阻力作用线</b>的<b>垂直距离</b>。</li>
+    </ul>
+    <div class="note"><b>易错点（考试高频）：</b>力臂是“支点到力的作用线的<b>垂直距离</b>”，<b>绝不是杠杆的杆身长度</b>！作用线是一条直线，力臂一定是从支点向该直线所作的垂线段。</div>
+
+    <h3>三、杠杆平衡条件</h3>
+    <div class="formula">F₁ · L₁ = F₂ · L₂</div>
+    <div class="eq">
+      推导：以支点 O 为转轴，平衡时<b>顺时针力矩 = 逆时针力矩</b>。
+      左侧阻力产生顺时针力矩 M₂ = F₂·L₂，右侧动力产生逆时针力矩 M₁ = F₁·L₁，
+      故 <b>F₁L₁ = F₂L₂</b>。当动力斜拉时，L₁ = d₁·sinθ（θ 为动力与杠杆夹角），可见 θ 越小力臂越小。
+    </div>
+    <ul>
+      <li>θ = 0° 时动力沿杠杆方向，L₁ = 0，无论动力多大都<b>无法</b>使杠杆平衡——这正是“力臂为零则无力矩”。</li>
+      <li>省力必然费距离：L₁ 越大（动力作用点越远），所需 F₁ 越小。</li>
+    </ul>
+
+    <h3>四、实验步骤（探究杠杆平衡条件）</h3>
+    <ul>
+      <li>① 调节杠杆两端平衡螺母，使杠杆在<b>水平位置</b>平衡（便于直接从刻度读出力臂）。</li>
+      <li>② 左侧挂 n₂ 枚钩码，记录阻力 F₂ 与阻力臂 L₂。</li>
+      <li>③ 右侧用弹簧测力计斜拉，使杠杆再次水平平衡，记录 F₁、L₁（及夹角 θ）。</li>
+      <li>④ 改变钩码数量或位置，多次实验，将数据填入记录表。</li>
+      <li>⑤ 比较各组 F₁L₁ 与 F₂L₂，归纳结论。</li>
+    </ul>
+
+    <h3>五、杠杆的分类（由 L₁ 与 L₂ 决定）</h3>
+    <div class="grid2">
+      <div>
+        <ul>
+          <li><b>省力杠杆：</b>L₁ &gt; L₂，动力 &lt; 阻力（费距离）。例：撬棍、钳子、起子。</li>
+          <li><b>费力杠杆：</b>L₁ &lt; L₂，动力 &gt; 阻力（省距离）。例：镊子、钓鱼竿、筷子。</li>
+          <li><b>等臂杠杆：</b>L₁ = L₂，动力 = 阻力。例：天平、定滑轮。</li>
+        </ul>
+      </div>
+      <div>
+        <div class="eq" style="margin-top:0;">
+          <b>判定口诀：</b><br>
+          看力臂：谁离支点远，谁就“占便宜”。<br>
+          动力臂长 → 省力；阻力臂长 → 费力。<br>
+          平衡的本质是 <b>力矩相等</b>，而非力相等。
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const cv=document.getElementById('cv'), ctx=cv.getContext('2d');
+  const W=980,H=600, dpr=window.devicePixelRatio||1;
+  cv.width=W*dpr; cv.height=H*dpr; cv.style.aspectRatio=W+' / '+H; ctx.scale(dpr,dpr);
+
+  const centerX=W/2, GP=55, rulerL=centerX-8*GP, rulerR=centerX+8*GP, leverY=285;
+
+  const els={res:res,resPos:resPos,dri:dri,driPos:driPos,ang:ang,g0:g0};
+  const out={vRes:vRes,vResPos:vResPos,vDri:vDri,vDriPos:vDriPos,vAng:vAng,vG:vG,
+    m1:m1,m2:m2,verdict:verdict,pheno:pheno,clsLabel:clsLabel,clsDesc:clsDesc,
+    logBody:logBody,fL1:fL1,fL2:fL2,fF1L1:fF1L1,fF2L2:fF2L2};
+
+  function roundRect(x,y,w,h,r){ctx.beginPath();ctx.moveTo(x+r,y);ctx.arcTo(x+w,y,x+w,y+h,r);
+    ctx.arcTo(x+w,y+h,x,y+h,r);ctx.arcTo(x,y+h,x,y,r);ctx.arcTo(x,y,x+w,y,r);ctx.closePath();}
+  function arrow(x1,y1,x2,y2,color,w){ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=w;
+    ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();
+    const a=Math.atan2(y2-y1,x2-x1),s=9;
+    ctx.beginPath();ctx.moveTo(x2,y2);
+    ctx.lineTo(x2-s*Math.cos(a-Math.PI/7),y2-s*Math.sin(a-Math.PI/7));
+    ctx.lineTo(x2-s*Math.cos(a+Math.PI/7),y2-s*Math.sin(a+Math.PI/7));
+    ctx.closePath();ctx.fill();}
+  function dashed(x1,y1,x2,y2,color,w,dash){ctx.save();ctx.strokeStyle=color;ctx.lineWidth=w;
+    ctx.setLineDash(dash||[6,5]);ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(x2,y2);ctx.stroke();ctx.restore();}
+  function perpFoot(O,P,u){const wx=O.x-P.x,wy=O.y-P.y,proj=wx*u.x+wy*u.y;
+    return{x:P.x+proj*u.x,y:P.y+proj*u.y};}
+  function dimH(x1,x2,y,color,label){
+    ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=1.5;
+    ctx.beginPath();ctx.moveTo(x1,y);ctx.lineTo(x2,y);ctx.stroke();
+    [x1,x2].forEach(x=>{const d=x<x2?1:-1;ctx.beginPath();ctx.moveTo(x,y);
+      ctx.lineTo(x+6*d,y-3);ctx.lineTo(x+6*d,y+3);ctx.closePath();ctx.fill();});
+    ctx.font='bold 12px sans-serif';ctx.textAlign='center';ctx.fillText(label,(x1+x2)/2,y-6);}
+
+  function drawGraph(){
+    ctx.save();
+    ctx.strokeStyle='rgba(90,130,180,.08)';ctx.lineWidth=1;
+    for(let x=0;x<=W;x+=20){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+    for(let y=0;y<=H;y+=20){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+    ctx.strokeStyle='rgba(90,130,180,.16)';
+    for(let x=0;x<=W;x+=100){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+    for(let y=0;y<=H;y+=100){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+    ctx.restore();
+  }
+
+  // 当前视觉倾角（弧度）：+ 表示右端下沉（顺时针）
+  let tilt=0;
+
+  function computeState(){
+    const n2=+els.res.value,d2=+els.resPos.value,n1=+els.dri.value,
+          d1=+els.driPos.value,theta=+els.ang.value,G0=+els.g0.value;
+    const deg=theta*Math.PI/180;
+    const F2=n2*G0,F1=n1*G0, L2=d2*5, L1=d1*5*Math.sin(deg), M2=F2*L2, M1=F1*L1;
+    const diff=M1-M2;                              // >0：动力矩大 → 右端下沉
+    const MAXTILT=0.20, mag=Math.min(1,Math.abs(diff)/8);
+    const target=(Math.abs(diff)<0.05)?0:(diff>0?1:-1)*MAXTILT*mag;
+    return {n2,d2,n1,d1,theta,deg,G0,F1,F2,L1,L2,M1,M2,diff,target};
+  }
+
+  // 支点旋转方向弧箭头（视觉提示）
+  function rotIndicator(dir,Ox,Oy){
+    const r=27, start=dir>0?Math.PI*0.5:Math.PI*1.5, end=dir>0?Math.PI*1.5:Math.PI*0.5;
+    ctx.save();
+    ctx.strokeStyle='rgba(192,50,47,.9)';ctx.fillStyle='rgba(192,50,47,.9)';ctx.lineWidth=3;
+    ctx.beginPath();ctx.arc(Ox,Oy,r,start,end,dir<0);ctx.stroke();
+    const ex=Ox+r*Math.cos(end), ey=Oy+r*Math.sin(end);
+    const tangent = dir>0 ? (end+Math.PI/2) : (end-Math.PI/2);
+    const s=9;
+    ctx.beginPath();ctx.moveTo(ex,ey);
+    ctx.lineTo(ex - s*Math.cos(tangent-Math.PI/7), ey - s*Math.sin(tangent-Math.PI/7));
+    ctx.lineTo(ex - s*Math.cos(tangent+Math.PI/7), ey - s*Math.sin(tangent+Math.PI/7));
+    ctx.closePath();ctx.fill();
+    ctx.restore();
+  }
+  // 杠杆端部升降箭头
+  function endArrow(x,y,kind,color){
+    ctx.save();ctx.fillStyle=color;ctx.strokeStyle=color;ctx.font='bold 12px sans-serif';ctx.textAlign='center';
+    const s=10;
+    ctx.beginPath();
+    if(kind==='down'){ctx.moveTo(x,y);ctx.lineTo(x-s,y-s);ctx.lineTo(x+s,y-s);}
+    else{ctx.moveTo(x,y);ctx.lineTo(x-s,y+s);ctx.lineTo(x+s,y+s);}
+    ctx.closePath();ctx.fill();
+    ctx.fillText(kind==='down'?'下沉 ↓':'抬起 ↑', x, kind==='down'? y+20 : y-12);
+    ctx.restore();
+  }
+
+  function drawScene(tilt,st){
+    const Ox=centerX,Oy=leverY;
+    ctx.clearRect(0,0,W,H); drawGraph();
+
+    const ld={x:Math.cos(tilt),y:Math.sin(tilt)};          // 杠杆方向单位向量
+    const lp=(lx)=>({x:Ox+lx*ld.x,y:Oy+lx*ld.y});          // 沿杠杆距离 lx 的世界坐标
+    const hang=lp(-st.d2*GP), att=lp(st.d1*GP);            // 阻力/动力悬挂点（随杆转动）
+    const u={x:Math.cos(st.deg+tilt),y:Math.sin(st.deg+tilt)}; // 动力方向（相对杠杆 + θ）
+
+    // 支架（固定，不随杠杆转动）
+    ctx.fillStyle='#9aa6b6';ctx.fillRect(Ox-70,leverY+95,140,12);
+    ctx.fillStyle='#b6c0cd';ctx.fillRect(Ox-7,leverY+8,14,90);
+
+    // 杠杆刻度尺（随杆转动）
+    const a=lp(-8*GP), b=lp(8*GP);
+    ctx.strokeStyle='#7a8799';ctx.lineWidth=8;ctx.lineCap='round';
+    ctx.beginPath();ctx.moveTo(a.x,a.y);ctx.lineTo(b.x,b.y);ctx.stroke();ctx.lineCap='butt';
+    for(let i=-8;i<=8;i++){const p=lp(i*GP);
+      ctx.fillStyle='#5a6b80';ctx.fillRect(p.x-1,p.y-9,2,18);
+      ctx.fillStyle='#3f4a5a';ctx.font='11px sans-serif';ctx.textAlign='center';ctx.textBaseline='middle';
+      ctx.fillText(i===0?'0':Math.abs(i),p.x,p.y+(i===0?-16:22));}
+    ctx.textBaseline='alphabetic';
+
+    // 支点 O（三角，固定）
+    ctx.fillStyle='#8a4bff';
+    ctx.beginPath();ctx.moveTo(Ox,leverY+2);ctx.lineTo(Ox-16,leverY+18);ctx.lineTo(Ox+16,leverY+18);ctx.closePath();ctx.fill();
+    ctx.fillStyle='#5a2bb0';ctx.font='bold 12px sans-serif';ctx.textAlign='center';
+    ctx.fillText('支点 O',Ox,leverY+118);
+
+    // ===== 阻力：左侧钩码（竖直向下）=====
+    ctx.strokeStyle='#2f6fed';ctx.lineWidth=2;
+    ctx.beginPath();ctx.moveTo(hang.x,hang.y);ctx.lineTo(hang.x,hang.y+16);ctx.stroke();
+    ctx.beginPath();ctx.arc(hang.x,hang.y+20,4,0,Math.PI*2);ctx.stroke();
+    let by=hang.y+26;
+    for(let k=0;k<st.n2;k++){
+      ctx.fillStyle='#2f6fed';roundRect(hang.x-15,by,30,14,3);ctx.fill();
+      ctx.strokeStyle='#1c4fae';ctx.lineWidth=1.3;ctx.stroke();
+      ctx.fillStyle='#1c4fae';ctx.beginPath();ctx.arc(hang.x,by+7,2.4,0,Math.PI*2);ctx.fill();
+      by+=16;}
+    arrow(hang.x,by+2,hang.x,by+30,'#2f6fed',3);
+    ctx.fillStyle='#1c4fae';ctx.font='bold 13px sans-serif';ctx.textAlign='center';
+    ctx.fillText('钩码×'+st.n2+'  F₂='+st.F2.toFixed(2)+'N',hang.x,by+48);
+
+    // ===== 动力：右侧弹簧测力计（沿 u 方向）=====
+    const len=Math.max(Math.min(st.F1*22,170),100);
+    const tip={x:att.x+u.x*len,y:att.y+u.y*len};
+    const ext=200;
+    dashed(att.x-u.x*ext,att.y-u.y*ext,att.x+u.x*ext,att.y+u.y*ext,'rgba(226,60,60,.4)',1.5,[4,4]);
+    // 角度弧 θ（相对杠杆方向）
+    ctx.save();ctx.strokeStyle='rgba(226,60,60,.55)';ctx.setLineDash([3,3]);ctx.lineWidth=1.2;
+    ctx.beginPath();ctx.arc(att.x,att.y,30,tilt,st.deg+tilt,false);ctx.stroke();ctx.restore();
+    ctx.fillStyle='#c0322f';ctx.font='12px sans-serif';ctx.textAlign='left';
+    const midA=tilt+st.deg/2;
+    ctx.fillText('θ='+st.theta+'°',att.x+34*Math.cos(midA),att.y+34*Math.sin(midA)+4);
+    // 测力计本体
+    const ang=Math.atan2(u.y,u.x);
+    ctx.save();ctx.translate(att.x,att.y);ctx.rotate(ang);
+    ctx.strokeStyle='#b0b8c4';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(0,0);ctx.lineTo(16,0);ctx.stroke();
+    roundRect(16,-9,66,18,6);ctx.fillStyle='#fbfdff';ctx.fill();ctx.strokeStyle='#e23c3c';ctx.lineWidth=2;ctx.stroke();
+    ctx.strokeStyle='#e23c3c';ctx.lineWidth=1;
+    for(let t=0;t<=5;t++){const x=22+t*11;ctx.beginPath();ctx.moveTo(x,-9);ctx.lineTo(x,-3);ctx.stroke();}
+    const ptr=22+Math.min(st.F1/8,1)*50;
+    ctx.fillStyle='#e23c3c';ctx.beginPath();ctx.moveTo(ptr,-9);ctx.lineTo(ptr-4,-14);ctx.lineTo(ptr+4,-14);ctx.closePath();ctx.fill();
+    ctx.strokeStyle='#b0b8c4';ctx.beginPath();ctx.arc(16+72,0,5,Math.PI*0.15,Math.PI*1.85);ctx.stroke();
+    ctx.restore();
+    // 动力箭头
+    arrow(att.x,att.y,tip.x,tip.y,'#e23c3c',3);
+    ctx.fillStyle='#b81f1f';ctx.font='bold 13px sans-serif';ctx.textAlign='left';
+    ctx.fillText('动力 F₁='+st.F1.toFixed(2)+'N',tip.x+8,tip.y+(u.y>=0?16:-6));
+
+    // ===== 力臂标注 / 不平衡现象 =====
+    if(Math.abs(tilt)<0.02){
+      // 平衡（或接近水平）：精确标注 L₁、L₂
+      dashed(hang.x,leverY-46,hang.x,by+34,'rgba(47,111,237,.45)',1.5,[4,4]);
+      const dY=leverY-30;
+      dashed(Ox,dY,hang.x,dY,'#2f6fed',2,[7,5]);
+      ctx.strokeStyle='#2f6fed';ctx.lineWidth=1.3;
+      ctx.beginPath();ctx.moveTo(Ox,dY-4);ctx.lineTo(Ox,dY+4);ctx.moveTo(hang.x,dY-4);ctx.lineTo(hang.x,dY+4);ctx.stroke();
+      dimH(Ox,hang.x,dY-10,'#2f6fed','L₂='+st.L2.toFixed(1)+'cm');
+      // 动力臂（垂距）
+      const foot=perpFoot({x:Ox,y:Oy},att,u);
+      dashed(Ox,Oy,foot.x,foot.y,'#e23c3c',2,[7,5]);
+      ctx.save();ctx.strokeStyle='#e23c3c';ctx.lineWidth=1.4;
+      const a2=Math.atan2(u.y,u.x);
+      ctx.beginPath();ctx.moveTo(foot.x-Math.cos(a2)*9,foot.y-Math.sin(a2)*9);
+      ctx.lineTo(foot.x-Math.cos(a2)*9+9,foot.y-Math.sin(a2)*9-9);ctx.stroke();ctx.restore();
+      ctx.fillStyle='#e23c3c';ctx.font='bold 12px sans-serif';ctx.textAlign='center';
+      ctx.fillText('L₁='+st.L1.toFixed(1)+'cm',(Ox+foot.x)/2-6,(Oy+foot.y)/2-8);
+    } else {
+      // 不平衡：标出转动方向与两端升降
+      const dir = st.diff>0 ? 1 : -1;            // +1 右端下沉 / -1 左端下沉
+      rotIndicator(dir,Ox,Oy);
+      const le=lp(-8.6*GP), re=lp(8.6*GP);
+      if(dir>0){ endArrow(re.x,re.y,'down','#e23c3c'); endArrow(le.x,le.y,'up','#2f6fed'); }
+      else     { endArrow(le.x,le.y,'down','#2f6fed'); endArrow(re.x,re.y,'up','#e23c3c'); }
+    }
+
+    // 比例尺注记
+    ctx.fillStyle='#7a8799';ctx.font='11px sans-serif';ctx.textAlign='left';
+    ctx.fillText('刻度：每格 = 5 cm',rulerL,leverY-58);
+
+    // 数值面板
+    out.m1.textContent=st.M1.toFixed(1); out.m2.textContent=st.M2.toFixed(1);
+    out.fL1.textContent = st.d1+' × sin'+st.theta+'° × 5 = '+st.L1.toFixed(1)+' cm';
+    out.fL2.textContent = st.d2+' × 5 = '+st.L2.toFixed(1)+' cm';
+    out.fF1L1.textContent = st.F1.toFixed(2)+' × '+st.L1.toFixed(1)+' = '+st.M1.toFixed(1)+' N·cm';
+    out.fF2L2.textContent = st.F2.toFixed(2)+' × '+st.L2.toFixed(1)+' = '+st.M2.toFixed(1)+' N·cm';
+    const diff=st.diff;
+    if(Math.abs(diff)<0.05){out.verdict.className='verdict ok';
+      out.verdict.textContent='已平衡 ✓（F₁L₁ = F₂L₂）';
+      out.pheno.className='pheno ok';
+      out.pheno.innerHTML='✅ 两侧力矩相等（F₁L₁ = F₂L₂ = '+st.M1.toFixed(1)+' N·cm），杠杆保持<b>水平静止</b>，不发生转动。';}
+    else{out.verdict.className='verdict no';
+      out.verdict.textContent='未平衡 ✗（差值 '+Math.abs(diff).toFixed(1)+' N·cm）';
+      out.pheno.className='pheno';
+      if(st.L1<0.05) out.pheno.innerHTML='⚠ <b>动力臂 L₁ = 0</b>：动力沿杠杆方向（θ=0°），F₁L₁ 恒为 0，无论动力多大都<b>无法平衡</b>，阻力侧（左）必然下沉——这正是“力臂是垂直距离”的关键演示。';
+      else if(diff>0) out.pheno.innerHTML='⚠ <b>不平衡现象</b>：F₁L₁ ('+st.M1.toFixed(1)+') &gt; F₂L₂ ('+st.M2.toFixed(1)+')，动力矩更大 → 杠杆<b>顺时针</b>转动（右端下沉、左端抬起），见装置图标注。';
+      else out.pheno.innerHTML='⚠ <b>不平衡现象</b>：F₂L₂ ('+st.M2.toFixed(1)+') &gt; F₁L₁ ('+st.M1.toFixed(1)+')，阻力矩更大 → 杠杆<b>逆时针</b>转动（左端下沉、右端抬起），见装置图标注。';}
+
+    // 杠杆分类
+    if(st.L1>st.L2+0.05){out.clsLabel.textContent='省力杠杆';out.clsLabel.style.color='var(--green)';
+      out.clsDesc.textContent='L₁ > L₂，动力小于阻力，但动力作用点移动距离更大（费距离）。';}
+    else if(st.L1<st.L2-0.05){out.clsLabel.textContent='费力杠杆';out.clsLabel.style.color='var(--amber)';
+      out.clsDesc.textContent='L₁ < L₂，动力大于阻力，但动力作用点移动距离更小（省距离）。';}
+    else{out.clsLabel.textContent='等臂杠杆';out.clsLabel.style.color='var(--blue)';
+      out.clsDesc.textContent='L₁ = L₂，动力等于阻力，不省力也不费力（如天平）。';}
+  }
+
+  function loop(){
+    const st=computeState();
+    tilt += (st.target - tilt)*0.12;
+    if(Math.abs(st.target-tilt)<0.0008) tilt=st.target;
+    drawScene(tilt,st);
+    requestAnimationFrame(loop);
+  }
+
+  function sync(){out.vRes.textContent=els.res.value;out.vResPos.textContent=els.resPos.value;
+    out.vDri.textContent=els.dri.value;out.vDriPos.textContent=els.driPos.value;
+    out.vAng.textContent=els.ang.value+'°';out.vG.textContent=(+els.g0.value).toFixed(1);}
+  ['res','resPos','dri','driPos','ang','g0'].forEach(id=>els[id].addEventListener('input',()=>{sync();}));
+
+  const presets={balance:{res:2,resPos:3,dri:3,driPos:2,ang:90,g0:0.5},
+    zero:{res:3,resPos:4,dri:8,driPos:3,ang:0,g0:0.5},
+    save:{res:1,resPos:6,dri:6,driPos:2,ang:90,g0:0.5},
+    reset:{res:2,resPos:3,dri:3,driPos:2,ang:90,g0:0.5}};
+  document.querySelectorAll('.presets button').forEach(b=>b.addEventListener('click',()=>{
+    const p=presets[b.dataset.p];if(!p)return;
+    els.res.value=p.res;els.resPos.value=p.resPos;els.dri.value=p.dri;
+    els.driPos.value=p.driPos;els.ang.value=p.ang;els.g0.value=p.g0;sync();}));
+
+  // 数据记录表
+  let log=[],cnt=0;
+  function curData(){const n2=+els.res.value,d2=+els.resPos.value,n1=+els.dri.value,
+    d1=+els.driPos.value,theta=+els.ang.value,G0=+els.g0.value;
+    const deg=theta*Math.PI/180,F2=n2*G0,F1=n1*G0,L2=d2*5,L1=d1*5*Math.sin(deg);
+    return{F1,F2,L1,L2,M1:F1*L1,M2:F2*L2};}
+  document.getElementById('btnLog').addEventListener('click',()=>{
+    const d=curData();cnt++;
+    const ok=Math.abs(d.M1-d.M2)<0.05;
+    log.push(`<tr><td>${cnt}</td><td>${d.F1.toFixed(2)}</td><td>${d.L1.toFixed(1)}</td><td>${d.F2.toFixed(2)}</td><td>${d.L2.toFixed(1)}</td><td>${d.M1.toFixed(1)}</td><td>${d.M2.toFixed(1)}</td><td style="color:${ok?'var(--green)':'var(--amber)'};font-weight:600;">${ok?'平衡':'不平衡'}</td></tr>`);
+    out.logBody.innerHTML=log.join('');});
+  document.getElementById('btnClear').addEventListener('click',()=>{log=[];cnt=0;
+    out.logBody.innerHTML='<tr><td colspan="8" style="color:var(--muted)">点击“记录本次”将当前数据填入表格</td></tr>';});
+
+  sync(); loop();
+})();
+</script>
+</body>
+</html>

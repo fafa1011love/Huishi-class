@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>14.3 角的平分线 · 尺规作图与性质判定 演示</title>
+<style>
+  :root{
+    --ink:#1e293b; --sub:#64748b; --line:#e2e8f0; --paper:#f8fafc;
+    --accent:#2563eb; --accent-soft:#dbeafe; --red:#dc2626; --teal:#0d9488;
+    --green:#16a34a; --amber:#d97706;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif; background:var(--paper); color:var(--ink); padding:24px 16px 48px;}
+  .wrap{max-width:1000px; margin:0 auto;}
+  header{text-align:center; margin-bottom:20px;}
+  header h1{font-size:26px; font-weight:800;}
+  header p{color:var(--sub); margin-top:6px; font-size:14px;}
+  .tabs{display:flex; gap:8px; justify-content:center; margin:18px 0;}
+  .tab-btn{padding:10px 22px; border:1.5px solid var(--line); background:#fff; border-radius:999px; font-size:15px; font-weight:600; color:var(--sub); cursor:pointer; transition:.15s;}
+  .tab-btn.active{background:var(--accent); border-color:var(--accent); color:#fff;}
+  .card{background:#fff; border:1px solid var(--line); border-radius:16px; padding:18px 20px; box-shadow:0 1px 3px rgba(15,23,42,.05);}
+  section{display:none;} section.active{display:block;}
+  .stage{display:flex; gap:18px; flex-wrap:wrap;}
+  .stage svg{flex:1 1 460px; min-width:340px; border:1px solid var(--line); border-radius:12px; background:#fff;}
+  .side{flex:1 1 280px; min-width:260px; display:flex; flex-direction:column; gap:12px;}
+  .steps li{list-style:none; padding:9px 12px; border-radius:10px; font-size:14px; color:var(--sub); border:1px solid transparent; margin-bottom:6px; transition:.15s;}
+  .steps li.current{background:var(--accent-soft); color:var(--accent); border-color:#bfdbfe; font-weight:700;}
+  .steps li.done{color:var(--green);}
+  .steps li.done::after{content:" ✓";}
+  .ctrl{display:flex; gap:8px; flex-wrap:wrap;}
+  .ctrl button{padding:9px 16px; border-radius:10px; border:1.5px solid var(--line); background:#fff; font-size:14px; font-weight:600; cursor:pointer; color:var(--ink);}
+  .ctrl button.primary{background:var(--accent); border-color:var(--accent); color:#fff;}
+  .ctrl button:hover{filter:brightness(.96);}
+  .slider-row{font-size:14px; color:var(--sub); display:flex; align-items:center; gap:10px;}
+  .slider-row input{flex:1; accent-color:var(--accent);}
+  .slider-row b{color:var(--ink); min-width:64px; text-align:right;}
+  .badge{padding:12px 14px; border-radius:12px; font-size:15px; font-weight:700; line-height:1.5;}
+  .badge.blue{background:#eff6ff; color:var(--accent); border:1px solid #bfdbfe;}
+  .badge.green{background:#f0fdf4; color:var(--green); border:1px solid #bbf7d0;}
+  .badge.amber{background:#fffbeb; color:var(--amber); border:1px solid #fde68a;}
+  .note{font-size:13px; color:var(--sub); line-height:1.7; background:var(--paper); border:1px dashed var(--line); border-radius:10px; padding:10px 12px;}
+  .theorem{font-size:14px; line-height:1.8; color:var(--ink); background:#f0fdf4; border-left:4px solid var(--green); padding:10px 12px; border-radius:0 10px 10px 0;}
+  .hint{font-size:13px; color:var(--sub); text-align:center; margin-top:8px;}
+  footer{text-align:center; color:#94a3b8; font-size:12px; margin-top:28px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>14.3 角的平分线 · 演示动画</h1>
+    <p>人教版八年级上册 · 尺规作角平分线 ＋ 性质定理 ＋ 判定定理</p>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="t1">① 尺规作角平分线</button>
+    <button class="tab-btn" data-tab="t2">② 性质：距离相等</button>
+    <button class="tab-btn" data-tab="t3">③ 判定：在平分线上</button>
+  </div>
+
+  <!-- ============ Tab 1 尺规作图 ============ -->
+  <section id="t1" class="active">
+    <div class="card">
+      <div class="stage">
+        <svg id="svg1" viewBox="0 0 720 460"></svg>
+        <div class="side">
+          <ol class="steps" id="steps1">
+            <li>已知：∠AOB</li>
+            <li>以点 O 为圆心、适当长为半径作弧，交 OA 于 M，交 OB 于 N</li>
+            <li>分别以 M、N 为圆心，大于 ½MN 的长为半径作弧</li>
+            <li>两弧在 ∠AOB 内部交于点 C</li>
+            <li>作射线 OC —— 即为 ∠AOB 的平分线</li>
+          </ol>
+          <div class="ctrl">
+            <button id="btnReplay">🔁 重播全部</button>
+            <button id="btnPrev">⏮ 上一步</button>
+            <button id="btnNext" class="primary">下一步 ▶</button>
+          </div>
+          <div class="slider-row"><span>∠AOB</span><input id="half1" type="range" min="20" max="45" value="32"><b id="half1v">64°</b></div>
+          <div class="note">作图依据：三边对应相等的两个三角形全等（SSS）。由 OM=ON、MC=NC、OC=OC 得 △OMC≌△ONC，故 ∠AOC=∠BOC。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ Tab 2 性质 ============ -->
+  <section id="t2">
+    <div class="card">
+      <div class="stage">
+        <svg id="svg2" viewBox="0 0 720 460"></svg>
+        <div class="side">
+          <div class="theorem"><b>性质定理：</b>角平分线上的点到这个角两边的<b>距离相等</b>。</div>
+          <div class="badge blue" id="badge2">PD = PE = ——</div>
+          <div class="slider-row"><span>∠AOB</span><input id="half2" type="range" min="15" max="45" value="30"><b id="half2v">60°</b></div>
+          <div class="slider-row"><span>OP</span><input id="tp" type="range" min="60" max="280" value="180"><b id="tpv">180</b></div>
+          <label class="slider-row"><input id="chkTri" type="checkbox" style="flex:0"> 显示全等三角形 △OPD≌△OPE（HL）</label>
+          <div class="note">证明思路：PD⊥OA、PE⊥OB，∠ODP=∠OEP=90°；OP 为公共斜边（H），∠AOC=∠BOC ⇒ OD=OE（L）…… 由 HL 得 △OPD≌△OPE，所以 PD=PE。<br><br>🖱 <b>拖动点 P</b> 或拖动滑块观察：无论 P 在平分线上何处，PD 始终等于 PE。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ Tab 3 判定 ============ -->
+  <section id="t3">
+    <div class="card">
+      <div class="stage">
+        <svg id="svg3" viewBox="0 0 720 460"></svg>
+        <div class="side">
+          <div class="theorem"><b>判定定理：</b>角的内部到角两边<b>距离相等</b>的点在<b>角平分线</b>上。</div>
+          <div class="badge amber" id="badge3">拖动点 Q，观察 D₁ 与 D₂ 的变化……</div>
+          <div class="slider-row"><span>∠AOB</span><input id="half3" type="range" min="15" max="45" value="30"><b id="half3v">60°</b></div>
+          <div class="note">证明思路：D₁=D₂ ⇒ △OQD≌△OQE（HL）⇒ ∠QOD=∠QOE，即 OQ 平分 ∠AOB。<br><br>🖱 <b>拖动点 Q</b>：当 Q 到两边距离相等时，Q 会被"吸附"到角平分线上并变绿。这个定理是画角平分线、确定交点位置的重要依据（如：到两边距离相等的点的轨迹）。</div>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>教学演示用 · 尺规作图 / 性质定理 / 判定定理 · 可直接投影课堂使用</footer>
+</div>
+
+<script>
+"use strict";
+const NS='http://www.w3.org/2000/svg';
+const O={x:170,y:400}, RAY=360, BIS=-62;
+const dir=d=>{const a=d*Math.PI/180;return{x:Math.cos(a),y:Math.sin(a)};};
+const pol=(c,r,d)=>{const a=d*Math.PI/180;return{x:c.x+r*Math.cos(a),y:c.y+r*Math.sin(a)};};
+const sub=(a,b)=>({x:a.x-b.x,y:a.y-b.y});
+const add=(a,b)=>({x:a.x+b.x,y:a.y+b.y});
+const mul=(a,s)=>({x:a.x*s,y:a.y*s});
+const nrm=v=>{const l=Math.hypot(v.x,v.y)||1;return{x:v.x/l,y:v.y/l};};
+const dot=(a,b)=>a.x*b.x+a.y*b.y;
+const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+
+function el(n,at,p){const e=document.createElementNS(NS,n);for(const k in at)e.setAttribute(k,at[k]);if(p)p.appendChild(e);return e;}
+function ln(p,x1,y1,x2,y2,st,w,dash){return el('line',{x1,y1,x2,y2,stroke:st,'stroke-width':w,...(dash?{'stroke-dasharray':dash}:{})},p);}
+function txt(p,x,y,s,o={}){const t=el('text',{x,y,'text-anchor':o.anchor||'middle','font-size':o.size||14,fill:o.fill||'#334155','font-weight':o.w||600,'font-family':'inherit',...(o.italic?{'font-style':'italic'}:{})},p);t.textContent=s;return t;}
+function dotC(p,x,y,r,f){return el('circle',{cx:x,cy:y,r:r||4.5,fill:f||'#1e293b'},p);}
+function arcPath(cx,cy,r,a0,a1){
+  const p0=pol({x:cx,y:cy},r,a0),p1=pol({x:cx,y:cy},r,a1);
+  const large=Math.abs(a1-a0)>180?1:0, sweep=a1>a0?1:0;
+  return `M ${p0.x.toFixed(1)} ${p0.y.toFixed(1)} A ${r} ${r} 0 ${large} ${sweep} ${p1.x.toFixed(1)} ${p1.y.toFixed(1)}`;
+}
+function raMark(p,F,u,n,s=10){
+  const a=add(F,mul(u,s)),b=add(add(F,mul(u,s)),mul(n,s)),c=add(F,mul(n,s));
+  el('path',{d:`M ${a.x} ${a.y} L ${b.x} ${b.y} L ${c.x} ${c.y}`,fill:'none',stroke:'#64748b','stroke-width':1.6},p);
+}
+
+/* ---------- tabs ---------- */
+document.querySelectorAll('.tab-btn').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.tab-btn').forEach(x=>x.classList.toggle('active',x===b));
+  document.querySelectorAll('section').forEach(s=>s.classList.toggle('active',s.id===b.dataset.tab));
+});
+
+/* ==================== Tab 1: 尺规作图动画 ==================== */
+const svg1=document.getElementById('svg1');
+const T1={step:0,p:0,playing:false,playAll:false};
+const durs1=[900,1500,1800,700,1300];
+function geo1(){
+  const half=+document.getElementById('half1').value;
+  const sA=BIS+half,sB=BIS-half,r=150;
+  const s=r*Math.sin(half*Math.PI/180);
+  const Rr=s+32;
+  const tC=r*Math.cos(half*Math.PI/180)+Math.sqrt(Math.max(Rr*Rr-s*s,0));
+  return{half,sA,sB,r,M:pol(O,r,sA),N:pol(O,r,sB),C:pol(O,tC,BIS),tC};
+}
+function angle1(){} /* deprecated */
+function drawRays(g,gm,p){
+  if(p<=0)return;
+  const A=pol(O,RAY*p,gm.sA),B=pol(O,RAY*p,gm.sB);
+  ln(g,O.x,O.y,A.x,A.y,'#1e293b',2.5);
+  ln(g,O.x,O.y,B.x,B.y,'#1e293b',2.5);
+  if(p>0.85){
+    const Ae=pol(O,RAY+16,gm.sA),Be=pol(O,RAY+16,gm.sB);
+    txt(g,Ae.x,Ae.y+5,'A',{size:17,italic:true});
+    txt(g,Be.x,Be.y+5,'B',{size:17,italic:true});
+    dotC(g,O.x,O.y,4.5,'#1e293b');
+    txt(g,O.x-16,O.y+20,'O',{size:17,italic:true});
+  }
+}
+function drawStep1(g,gm,p){
+  if(p<=0)return;
+  const a0=gm.sB,a1=gm.sA;
+  el('path',{d:arcPath(O.x,O.y,gm.r,a0,a0+(a1-a0)*p),fill:'none',stroke:'#2563eb','stroke-width':2.2},g);
+  if(p>0.8){
+    dotC(g,gm.M.x,gm.M.y,4.5,'#dc2626');
+    dotC(g,gm.N.x,gm.N.y,4.5,'#dc2626');
+    const mL=add(gm.M,mul(dir(gm.sA),18)),nL=add(gm.N,mul(dir(gm.sB),18));
+    txt(g,mL.x+6,mL.y+4,'M',{size:16,italic:true,fill:'#dc2626'});
+    txt(g,nL.x-6,nL.y+4,'N',{size:16,italic:true,fill:'#dc2626'});
+  }
+}
+function arcTowards(g,c,r,from,to,p,color){
+  let d=to-from; while(d>180)d-=360; while(d<=-180)d+=360;
+  el('path',{d:arcPath(c.x,c.y,r,from,from+d*p),fill:'none',stroke:color,'stroke-width':2.2},g);
+}
+function drawStep2(g,gm,p){
+  const pm=clamp(p/0.5,0,1),pn=clamp((p-0.45)/0.55,0,1);
+  if(pm>0)arcTowards(g,gm.M,gm.R,gm.M.a0,gm.M.a1,pm,'#0d9488');
+  if(pn>0)arcTowards(g,gm.N,gm.R,gm.N.a0,gm.N.a1,pn,'#0d9488');
+}
+function drawStep3(g,gm,p){
+  if(p<0.3)return;
+  const k=(p-0.3)/0.7, pulse=1+0.5*Math.sin(k*Math.PI*2);
+  el('circle',{cx:gm.C.x,cy:gm.C.y,r:5+3*pulse,fill:'#dc2626',opacity:0.35},g);
+  dotC(g,gm.C.x,gm.C.y,5,'#dc2626');
+  const cL=add(gm.C,mul(dir(BIS),20));
+  txt(g,cL.x+10,cL.y,'C',{size:17,italic:true,fill:'#dc2626'});
+}
+function drawStep4(g,gm,p){
+  if(p<=0)return;
+  const L=gm.tC+95,E=pol(O,L*p,BIS);
+  ln(g,O.x,O.y,E.x,E.y,'#2563eb',3);
+  if(p>0.75){
+    // 两段等弧 + 刻划线
+    [[gm.sB,BIS],[BIS,gm.sA]].forEach(([a,b])=>{
+      el('path',{d:arcPath(O.x,O.y,58,a,b),fill:'none',stroke:'#16a34a','stroke-width':2},g);
+      const m=(a+b)/2,u=dir(m);
+      ln(g,O.x+u.x*52,O.y+u.y*52,O.x+u.x*64,O.y+u.y*64,'#16a34a',2);
+    });
+    txt(g,470,52,'∠AOC = ∠BOC',{size:18,fill:'#16a34a',w:800});
+    txt(g,470,80,'射线 OC 就是 ∠AOB 的平分线',{size:14,fill:'#16a34a',w:600});
+  }
+}
+function render1(){
+  const g=svg1; g.innerHTML='';
+  const gm=geo1();
+  // 预计算以 M、N 为圆心的弧参数
+  const aOM=Math.atan2(O.y-gm.M.y,O.x-gm.M.x)*180/Math.PI;
+  const aCM=Math.atan2(gm.C.y-gm.M.y,gm.C.x-gm.M.x)*180/Math.PI;
+  const aON=Math.atan2(O.y-gm.N.y,O.x-gm.N.x)*180/Math.PI;
+  const aCN=Math.atan2(gm.C.y-gm.N.y,gm.C.x-gm.N.x)*180/Math.PI;
+  gm.M.a0=aOM; gm.M.a1=aOM+((aCM-aOM+540)%360-180);
+  gm.N.a0=aON; gm.N.a1=aON+((aCN-aON+540)%360-180);
+  gm.R=Math.hypot(gm.C.x-gm.M.x,gm.C.y-gm.M.y);
+  for(let k=0;k<=T1.step;k++){
+    const p=k<T1.step?1:T1.p;
+    if(k===0)drawRays(g,gm,p);
+    else if(k===1)drawStep1(g,gm,p);
+    else if(k===2)drawStep2(g,gm,p);
+    else if(k===3)drawStep3(g,gm,p);
+    else if(k===4){drawStep3(g,gm,1);drawStep4(g,gm,p);}
+  }
+  document.getElementById('half1v').textContent=(gm.half*2)+'°';
+}
+function play1(){
+  if(T1.playing)return; T1.playing=true;
+  const dur=durs1[T1.step],t0=performance.now();
+  (function fr(t){
+    T1.p=Math.min((t-t0)/dur,1); render1(); ui1();
+    if(T1.p<1)requestAnimationFrame(fr);
+    else{T1.playing=false;
+      if(T1.playAll&&T1.step<4){T1.step++;T1.p=0;play1();}}
+  })(t0);
+}
+function ui1(){
+  document.querySelectorAll('#steps1 li').forEach((li,i)=>{
+    li.classList.toggle('current',i===T1.step);
+    li.classList.toggle('done',i<T1.step);
+  });
+}
+document.getElementById('btnNext').onclick=()=>{if(T1.playing||T1.step>=4)return;T1.step++;T1.p=0;T1.playAll=false;play1();};
+document.getElementById('btnPrev').onclick=()=>{if(T1.playing||T1.step<=0)return;T1.step--;T1.p=0;T1.playAll=false;play1();};
+document.getElementById('btnReplay').onclick=()=>{if(T1.playing)return;T1.step=0;T1.p=0;T1.playAll=true;play1();};
+document.getElementById('half1').oninput=()=>{if(!T1.playing){T1.p=1;render1();}};
+T1.p=0;T1.playAll=true;play1();
+
+/* ==================== Tab 2: 性质定理 ==================== */
+const svg2=document.getElementById('svg2');
+function geo2(){
+  const half=+document.getElementById('half2').value,tP=+document.getElementById('tp').value;
+  const sA=BIS+half,sB=BIS-half,uA=dir(sA),uB=dir(sB),uBis=dir(BIS);
+  const P=pol(O,tP,BIS);
+  const D=add(O,mul(uA,dot(sub(P,O),uA)));
+  const E=add(O,mul(uB,dot(sub(P,O),uB)));
+  return{half,sA,sB,uA,uB,uBis,P,D,E,d1:Math.hypot(P.x-D.x,P.y-D.y),d2:Math.hypot(P.x-E.x,P.y-E.y)};
+}
+function render2(){
+  const g=svg2; g.innerHTML='';
+  const gm=geo2(),showTri=document.getElementById('chkTri').checked;
+  const A=pol(O,RAY,gm.sA),B=pol(O,RAY,gm.sB),Ae=pol(O,RAY+16,gm.sA),Be=pol(O,RAY+16,gm.sB);
+  // 全等三角形
+  if(showTri){
+    el('polygon',{points:`${O.x},${O.y} ${gm.P.x},${gm.P.y} ${gm.D.x},${gm.D.y}`,fill:'#dc2626',opacity:.10},g);
+    el('polygon',{points:`${O.x},${O.y} ${gm.P.x},${gm.P.y} ${gm.E.x},${gm.E.y}`,fill:'#0d9488',opacity:.10},g);
+  }
+  // 角平分线（虚线）
+  const Bz=pol(O,330,BIS);
+  ln(g,O.x,O.y,Bz.x,Bz.y,'#2563eb',1.8,'7 6');
+  // 两边
+  ln(g,O.x,O.y,A.x,A.y,'#1e293b',2.5);
+  ln(g,O.x,O.y,B.x,B.y,'#1e293b',2.5);
+  txt(g,Ae.x,Ae.y+5,'A',{size:17,italic:true});
+  txt(g,Be.x,Be.y+5,'B',{size:17,italic:true});
+  txt(g,Bz.x+14,Bz.y,'C',{size:15,italic:true,fill:'#2563eb'});
+  dotC(g,O.x,O.y,4.5,'#1e293b');
+  txt(g,O.x-16,O.y+20,'O',{size:17,italic:true});
+  txt(g,O.x+34,O.y-16,showTri?'H':'',{size:12,fill:'#64748b'});
+  // 垂线段
+  ln(g,gm.P.x,gm.P.y,gm.D.x,gm.D.y,'#dc2626',3);
+  ln(g,gm.P.x,gm.P.y,gm.E.x,gm.E.y,'#0d9488',3);
+  raMark(g,gm.D,gm.uA,nrm(sub(gm.P,gm.D)));
+  raMark(g,gm.E,gm.uB,nrm(sub(gm.P,gm.E)));
+  dotC(g,gm.D.x,gm.D.y,4,'#dc2626');
+  dotC(g,gm.E.x,gm.E.y,4,'#0d9488');
+  txt(g,gm.D.x-4,gm.D.y+22,'D',{size:15,italic:true,fill:'#dc2626'});
+  txt(g,gm.E.x-14,gm.E.y-8,'E',{size:15,italic:true,fill:'#0d9488'});
+  // P（可拖动）
+  dotC(g,gm.P.x,gm.P.y,7,'#2563eb');
+  el('circle',{cx:gm.P.x,cy:gm.P.y,r:16,fill:'transparent',cursor:'grab',id:'handleP'},g);
+  txt(g,gm.P.x+16,gm.P.y-10,'P',{size:17,italic:true,fill:'#2563eb',w:800});
+  // 距离标注
+  const mD=add(mul(add(gm.P,gm.D),.5),mul(nrm(sub(gm.P,gm.D)),16));
+  const mE=add(mul(add(gm.P,gm.E),.5),mul(nrm(sub(gm.P,gm.E)),16));
+  txt(g,mD.x,mD.y,`PD=${Math.round(gm.d1)}`,{size:13,fill:'#dc2626'});
+  txt(g,mE.x,mE.y,`PE=${Math.round(gm.d2)}`,{size:13,fill:'#0d9488'});
+  document.getElementById('half2v').textContent=(gm.half*2)+'°';
+  document.getElementById('tpv').textContent=+document.getElementById('tp').value;
+  const b=document.getElementById('badge2');
+  b.textContent=`PD = PE = ${Math.round(gm.d1)}  ⇒  角平分线上的点到两边距离相等`+(showTri?`（△OPD≌△OPE，HL）`:'');
+  // 拖动 P（监听器挂在持久的 svg 元素上，避免重绘后失效）
+  const h=document.getElementById('handleP');
+  h.addEventListener('pointerdown',e=>{
+    svg2.setPointerCapture(e.pointerId);
+    const move=ev=>{
+      const r=svg2.getBoundingClientRect();
+      const x=(ev.clientX-r.left)*720/r.width, y=(ev.clientY-r.top)*460/r.height;
+      const t=clamp(dot({x:x-O.x,y:y-O.y},gm.uBis),60,280);
+      document.getElementById('tp').value=Math.round(t);
+      render2();
+    };
+    const up=()=>{svg2.removeEventListener('pointermove',move);svg2.removeEventListener('pointerup',up);};
+    svg2.addEventListener('pointermove',move); svg2.addEventListener('pointerup',up);
+  });
+}
+document.getElementById('half2').oninput=render2;
+document.getElementById('tp').oninput=render2;
+document.getElementById('chkTri').onchange=render2;
+render2();
+
+/* ==================== Tab 3: 判定定理 ==================== */
+const svg3=document.getElementById('svg3');
+const Q3={r:210,ang:BIS-13};
+function geo3(){
+  const half=+document.getElementById('half3').value;
+  const sA=BIS+half,sB=BIS-half,uA=dir(sA),uB=dir(sB),uBis=dir(BIS);
+  const Q=pol(O,Q3.r,Q3.ang);
+  const D=add(O,mul(uA,dot(sub(Q,O),uA)));
+  const E=add(O,mul(uB,dot(sub(Q,O),uB)));
+  const d1=Math.hypot(Q.x-D.x,Q.y-D.y),d2=Math.hypot(Q.x-E.x,Q.y-E.y);
+  const snap=Math.abs(d1-d2)<2.5;
+  return{half,sA,sB,uA,uB,uBis,Q,D,E,d1,d2,snap};
+}
+function render3(){
+  const g=svg3; g.innerHTML='';
+  if(geo3().snap)Q3.ang=BIS;      // 吸附到角平分线
+  const gm=geo3();
+  const A=pol(O,RAY,gm.sA),B=pol(O,RAY,gm.sB),Ae=pol(O,RAY+16,gm.sA),Be=pol(O,RAY+16,gm.sB);
+  const Bz=pol(O,340,BIS);
+  ln(g,O.x,O.y,Bz.x,Bz.y,gm.snap?'#16a34a':'#94a3b8',1.8,'7 6');
+  txt(g,Bz.x+14,Bz.y,'角平分线',{size:13,fill:gm.snap?'#16a34a':'#94a3b8',anchor:'start',w:600});
+  ln(g,O.x,O.y,A.x,A.y,'#1e293b',2.5);
+  ln(g,O.x,O.y,B.x,B.y,'#1e293b',2.5);
+  txt(g,Ae.x,Ae.y+5,'A',{size:17,italic:true});
+  txt(g,Be.x,Be.y+5,'B',{size:17,italic:true});
+  dotC(g,O.x,O.y,4.5,'#1e293b');
+  txt(g,O.x-16,O.y+20,'O',{size:17,italic:true});
+  // 距离线段
+  ln(g,gm.Q.x,gm.Q.y,gm.D.x,gm.D.y,'#dc2626',3);
+  ln(g,gm.Q.x,gm.Q.y,gm.E.x,gm.E.y,'#0d9488',3);
+  raMark(g,gm.D,gm.uA,nrm(sub(gm.Q,gm.D)));
+  raMark(g,gm.E,gm.uB,nrm(sub(gm.Q,gm.E)));
+  dotC(g,gm.D.x,gm.D.y,4,'#dc2626');
+  dotC(g,gm.E.x,gm.E.y,4,'#0d9488');
+  txt(g,gm.D.x-4,gm.D.y+22,`D₁=${Math.round(gm.d1)}`,{size:13,fill:'#dc2626'});
+  txt(g,gm.E.x-20,gm.E.y-8,`D₂=${Math.round(gm.d2)}`,{size:13,fill:'#0d9488'});
+  // Q
+  dotC(g,gm.Q.x,gm.Q.y,8,gm.snap?'#16a34a':'#d97706');
+  if(gm.snap)el('circle',{cx:gm.Q.x,cy:gm.Q.y,r:14,fill:'none',stroke:'#16a34a','stroke-width':2,opacity:.6},g);
+  el('circle',{cx:gm.Q.x,cy:gm.Q.y,r:18,fill:'transparent',cursor:'grab',id:'handleQ'},g);
+  txt(g,gm.Q.x+18,gm.Q.y-12,'Q',{size:17,italic:true,fill:gm.snap?'#16a34a':'#d97706',w:800});
+  const b=document.getElementById('badge3');
+  if(gm.snap){b.className='badge green';b.textContent=`✔ D₁ = D₂ = ${Math.round(gm.d1)}，点 Q 落在角平分线上！—— 到两边距离相等的点在角平分线上（判定定理）`;}
+  else{b.className='badge amber';b.textContent=`D₁ = ${Math.round(gm.d1)}，D₂ = ${Math.round(gm.d2)}，不相等 ⇒ Q 不在平分线上。继续拖动试试……`;}
+  document.getElementById('half3v').textContent=(gm.half*2)+'°';
+  // 拖动 Q（监听器挂在持久的 svg 元素上）
+  const h=document.getElementById('handleQ');
+  h.addEventListener('pointerdown',e=>{
+    svg3.setPointerCapture(e.pointerId);
+    const move=ev=>{
+      const r=svg3.getBoundingClientRect();
+      let x=(ev.clientX-r.left)*720/r.width, y=(ev.clientY-r.top)*460/r.height;
+      const rad=clamp(Math.hypot(x-O.x,y-O.y),60,300);
+      const gnow=geo3();
+      const ang=clamp(Math.atan2(y-O.y,x-O.x)*180/Math.PI,gnow.sB+4,gnow.sA-4);
+      Q3.r=rad; Q3.ang=ang; render3();
+    };
+    const up=()=>{svg3.removeEventListener('pointermove',move);svg3.removeEventListener('pointerup',up);};
+    svg3.addEventListener('pointermove',move); svg3.addEventListener('pointerup',up);
+  });
+}
+document.getElementById('half3').oninput=render3;
+render3();
+
+/* 支持网址锚点直达页签，如 angle-bisector-demo.html#t2 */
+if(location.hash){
+  const b=document.querySelector(`.tab-btn[data-tab="${location.hash.slice(1)}"]`);
+  if(b)b.click();
+}
+</script>
+</body>
+</html>

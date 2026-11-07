@@ -439,7 +439,7 @@ export default function IntegratedModelingStudio({ onBack: _onBack, onUseModel, 
 
           {mode === 'multiview' && <p className="modeling-local-note">使用混元 3D 3.1 四视角输入：正面、左侧、右侧和背面。模型支持更多视角时，本页面仍只提交这四张。</p>}
           {error && <div className="modeling-error">{error}</div>}
-          {!isAdmin && <div className={`modeling-quota${quota?.remaining === 0 ? ' exhausted' : ''}`} aria-live="polite"><AlertTriangle size={19} aria-hidden="true" /><span><strong>{quota?.remaining === 0 ? '免费生成次数已用完' : '免费模型生成额度'}</strong><small>{quota?.remaining === 0 ? '请联系管理员' : '单图、四视图和重新处理各计 1 次'}</small></span>{quota ? <b className="modeling-quota-count">{quota.remaining}<i>/{quota.total} 次</i></b> : <b className="modeling-quota-count">3<i> 次</i></b>}</div>}
+          {!isAdmin && <div className={`modeling-quota${quota?.remaining === 0 ? ' exhausted' : ''}`} aria-live="polite"><AlertTriangle size={19} aria-hidden="true" /><span><strong>{quota?.remaining === 0 ? '免费生成次数已用完' : '免费模型生成额度'}</strong><small>{quota?.remaining === 0 ? '请联系管理员' : quota ? '单图、四视图和重新处理各计 1 次' : '额度状态暂不可用，提交时由服务端校验'}</small></span><b className="modeling-quota-count">{quota ? <>{quota.remaining}<i>/{quota.total} 次</i></> : <>--<i> 次</i></>}</b></div>}
           <button type="button" className="modeling-generate" disabled={busy || !ready || (!isAdmin && quota?.remaining === 0)} onClick={() => void submit()}>{busy ? <Loader2 className="spin" size={17} /> : <Box size={17} />}{busy ? stage : '开始生成'}</button>
         </section>
       </aside>

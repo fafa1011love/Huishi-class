@@ -68,3 +68,20 @@ versions/
 # 临时截图（排查视觉问题时手动生成，非项目资源）
 pw_zoom*.png
 codex-clipboard-resized.png
+
+# 已清理的历史交接文档 / 版本截图 / 模型备份（不再纳入仓库）
+docs/
+models_backup/
+shot_*.png
+public/images/cases-full-mockup.png
+public/images/classroom-full-view.png
+public/tech-landing-bg.png
+肝、肾、眼球三个拆解模型
+
+# 已删除的旧版模型（不再纳入仓库，避免被重新 add 进来）
+public/models/sio2-crystal.glb
+public/models/terrain-topography.glb
+public/models/heart-optimized.glb
+
+# 运行时上传附件（本地保留，不进仓库）
+server/storage/feedback-attachments/

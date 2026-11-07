@@ -83,26 +83,45 @@ def _output_text(response):
     return text
 
 
+def repair_prompt(user_prompt, previous, error):
+    """Ask for a targeted fix of the last output instead of a fresh rewrite."""
+    return (
+        user_prompt
+        + "\n\n上次输出：\n" + json.dumps(previous, ensure_ascii=False)
+        + f"\n上次输出未通过校验：{error}。请在上次输出基础上只修正不合格的部分，其余内容原样保留，返回完整 JSON。"
+    )
+
+
 def generate_json(system_prompt, user_prompt, validator=None, timeout=120, format_schema=None):
-    if not status()["configured"]:
-        return None, status()["message"]
+    current = status()
+    if not current.get("configured"):
+        return None, current.get("message") or "云端 AI 未配置"
     last_error = None
     prompt = user_prompt
     for attempt in range(3):
         try:
-            response = _request(
-                "/responses",
-                {
-                    "model": DEFAULT_MODEL,
-                    "instructions": system_prompt + "\n只返回 JSON 对象。",
-                    "input": [{"role": "user", "content": prompt}],
-                    "stream": False,
-                    "store": False,
-                    "reasoning": {"effort": _env("LESSON_AI_REASONING_EFFORT", "low")},
-                    "text": {"format": {"type": "json_schema", "name": "lesson_content", "strict": True, "schema": format_schema} if format_schema else {"type": "json_object"}},
-                },
-                timeout=timeout,
-            )
+            payload = {
+                "model": DEFAULT_MODEL,
+                "instructions": system_prompt + "\n只返回 JSON 对象。",
+                "input": [{"role": "user", "content": prompt}],
+                "stream": False,
+                "store": False,
+                "reasoning": {"effort": _env("LESSON_AI_REASONING_EFFORT", "low")},
+            }
+            # 网关只接受完整的 json_schema 结构。此前在无 schema 时发送
+            # {"type": "json_object"} 会被网关直接打成 502（实测），
+            # 因此这里在没有 schema 时完全省略 text.format，改由
+            # instructions 里的「只返回 JSON 对象」约束输出格式。
+            if format_schema:
+                payload["text"] = {
+                    "format": {
+                        "type": "json_schema",
+                        "name": "lesson_content",
+                        "strict": True,
+                        "schema": format_schema,
+                    }
+                }
+            response = _request("/responses", payload, timeout=timeout)
             raw = _output_text(response)
             if raw.startswith("```"):
                 raw = raw.split("\n", 1)[1] if "\n" in raw else raw
@@ -114,7 +133,7 @@ def generate_json(system_prompt, user_prompt, validator=None, timeout=120, forma
                 error = validator(result)
                 if error:
                     last_error = error
-                    prompt = user_prompt + f"\n上次输出未通过校验：{error}。只返回修正后的 JSON。"
+                    prompt = repair_prompt(user_prompt, result, error)
                     continue
             return result, None
         except HTTPError as exc:
@@ -132,8 +151,8 @@ def generate_json(system_prompt, user_prompt, validator=None, timeout=120, forma
 def generate_lesson_content(request, scaffold, duration, activity_count):
     """Generate the topic-specific lesson content used to build the workflow."""
     current = status()
-    if not current["available"]:
-        return None, {"engine": "builtin-template", "model": DEFAULT_MODEL, "message": current["message"]}
+    if not current.get("available"):
+        return None, {"engine": "builtin-template", "model": DEFAULT_MODEL, "message": current.get("message") or "云端 AI 不可用"}
 
     source_text = str(request.get("materialText") or "").strip()[:8000]
     prompt = {
@@ -223,8 +242,8 @@ def generate_lesson_content(request, scaffold, duration, activity_count):
 
 def enhance_lesson_language(request, lesson_context):
     current = status()
-    if not current["available"]:
-        return None, {"engine": "builtin-template", "model": DEFAULT_MODEL, "message": current["message"]}
+    if not current.get("available"):
+        return None, {"engine": "builtin-template", "model": DEFAULT_MODEL, "message": current.get("message") or "云端 AI 不可用"}
 
     source_text = str(request.get("materialText") or "").strip()[:6000]
     prompt = {
@@ -283,8 +302,8 @@ def _json_schema_for(value):
 def revise_lesson_step(request, step, instruction, context, validator=None):
     """Revise one seven-step lesson section without changing its JSON contract."""
     current = status()
-    if not current["available"]:
-        return None, {"engine": "builtin-template", "model": DEFAULT_MODEL, "message": current["message"]}
+    if not current.get("available"):
+        return None, {"engine": "builtin-template", "model": DEFAULT_MODEL, "message": current.get("message") or "云端 AI 不可用"}
 
     source_text = str(request.get("materialText") or "").strip()[:6000]
     prompt = {

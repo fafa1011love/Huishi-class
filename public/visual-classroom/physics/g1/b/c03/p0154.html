@@ -1,0 +1,2169 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>模型38 · 万有引力定律（卡文迪什扭秤微小量放大）</title>
+<style>
+:root{
+  --ball1:#3b7dd8; --ball2:#e8862a; --grav:#e23b3b; --torq:#8a4fd3;
+  --ray:#d4a017; --spot:#ff3b3b; --zero:#333; --anno:#8a8f98;
+  --bg:#f7f8fa; --panel:#ffffff; --line:#dfe3ea; --txt:#2b2f36; --sub:#6b7280;
+  --accent:#2f6fed; --warnbg:#fdeaea; --warn:#c0392b; --okbg:#e8f6ec; --ok:#1e7e34;
+}
+*{box-sizing:border-box; margin:0; padding:0}
+html,body{height:100%}
+body{font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif; background:var(--bg); color:var(--txt); font-size:14px; display:flex; flex-direction:column; overflow:hidden}
+button{font-family:inherit; font-size:13px; padding:5px 10px; border:1px solid var(--line); background:#fff; border-radius:6px; cursor:pointer; color:var(--txt)}
+button:hover{border-color:var(--accent); color:var(--accent)}
+button.on{background:var(--accent); color:#fff; border-color:var(--accent)}
+button:focus-visible,input:focus-visible,select:focus-visible{outline:2px solid var(--accent); outline-offset:1px}
+input[type=range]{width:100%; accent-color:var(--accent)}
+input[type=checkbox]{accent-color:var(--accent)}
+select{padding:4px; border:1px solid var(--line); border-radius:5px; background:#fff}
+
+/* ===== 顶栏 ===== */
+header{display:flex; align-items:center; gap:14px; padding:8px 14px; background:var(--panel); border-bottom:1px solid var(--line); flex-wrap:wrap}
+header h1{font-size:16px; font-weight:600}
+header h1 small{color:var(--sub); font-weight:400; margin-left:8px; font-size:12px}
+#tabs{display:flex; gap:6px; flex-wrap:wrap; margin-left:auto}
+#tabs button{border-radius:16px}
+#tabs button.active{background:var(--accent); color:#fff; border-color:var(--accent)}
+.hbtns{display:flex; gap:6px}
+
+/* ===== 实验区三栏 ===== */
+#labView{flex:1; display:grid; grid-template-columns:288px 1fr 332px; gap:10px; padding:10px; min-height:0; overflow:hidden}
+.panel{background:var(--panel); border:1px solid var(--line); border-radius:10px; overflow-y:auto; padding:10px}
+#ctrl details{border:1px solid var(--line); border-radius:8px; margin-bottom:8px; padding:6px 8px; background:#fbfcfe}
+#ctrl summary{cursor:pointer; font-weight:600; font-size:13px; user-select:none; padding:2px 0}
+#ctrl details[open] summary{margin-bottom:6px}
+.ctlrow{display:flex; align-items:center; gap:6px; margin:5px 0}
+.ctlrow label{flex:0 0 92px; font-size:12px; color:var(--sub)}
+.ctlrow .lval{flex:0 0 84px; text-align:right; font-size:12px; font-variant-numeric:tabular-nums; color:var(--txt)}
+.btnrow{display:flex; gap:6px; flex-wrap:wrap; margin:5px 0}
+.hint{font-size:11px; color:var(--sub); line-height:1.5; margin:4px 0}
+.tag{display:inline-block; font-size:11px; padding:1px 7px; border-radius:10px; background:#eef2fb; color:#3450a0; margin:2px 2px 0 0}
+
+#canvasWrap{position:relative; background:var(--panel); border:1px solid var(--line); border-radius:10px; min-height:0; display:flex; flex-direction:column}
+#cv{flex:1; width:100%; min-height:220px; display:block; cursor:grab; touch-action:none}
+#cv:active{cursor:grabbing}
+#banner{position:absolute; top:8px; left:50%; transform:translateX(-50%); z-index:5; display:none; padding:6px 14px; border-radius:8px; font-weight:600; font-size:13px; text-align:center; max-width:90%}
+#banner.fail{display:block; background:var(--warnbg); color:var(--warn); border:1px solid var(--warn)}
+#banner.info{display:block; background:#eaf1fd; color:#1d4fa8; border:1px solid #1d4fa8}
+#viewbar{position:relative; z-index:75; background:var(--panel); display:flex; gap:6px; align-items:center; padding:6px 10px; border-top:1px solid var(--line); flex-wrap:wrap}
+
+/* ===== 数据面板 ===== */
+#dataPanel table{width:100%; border-collapse:collapse; font-size:12px; margin:4px 0}
+#dataPanel td{padding:3px 4px; border-bottom:1px dashed var(--line)}
+#dataPanel td:first-child{color:var(--sub)}
+#dataPanel td:last-child{text-align:right; font-variant-numeric:tabular-nums}
+.box{border:1px solid var(--line); border-radius:8px; padding:8px; margin:8px 0; background:#fbfcfe}
+.box h4{font-size:12.5px; margin-bottom:6px; color:#3450a0}
+.amp{display:flex; flex-direction:column; gap:3px}
+.amp .step{display:flex; align-items:center; gap:6px; font-size:12px; flex-wrap:wrap}
+.amp .arr{color:var(--sub)}
+.amp b{font-variant-numeric:tabular-nums}
+.stat-ok{color:var(--ok)} .stat-bad{color:var(--warn)}
+canvas.chart{width:100%; height:170px; display:block; background:#fff; border:1px solid var(--line); border-radius:6px}
+
+/* ===== 其他标签页 ===== */
+.tabpage{flex:1; overflow-y:auto; padding:14px; display:none}
+.tabpage.show{display:block}
+.pageTitle{font-size:16px; font-weight:700; margin-bottom:10px; border-left:4px solid var(--accent); padding-left:8px}
+.cols{display:grid; grid-template-columns:1fr 1fr; gap:12px}
+.cardbox{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:12px}
+.cardbox h3{font-size:14px; margin-bottom:8px; color:#3450a0}
+.formula{font-family:"Cambria Math",Georgia,serif; font-size:15px; background:#f4f6ff; padding:6px 10px; border-radius:6px; text-align:center; margin:6px 0}
+.num{font-variant-numeric:tabular-nums; font-weight:600}
+.note{font-size:12px; color:var(--sub); line-height:1.6}
+.formulaNote{font-size:12px; color:var(--sub); text-align:center; margin-top:-2px}
+ul.dot{padding-left:18px; line-height:1.7; font-size:13px}
+/* 时间轴 */
+#timeline{display:flex; align-items:stretch; gap:0; overflow-x:auto; padding:14px 4px 18px; position:relative; min-width:640px}
+.tlnode{flex:1; min-width:110px; text-align:center; cursor:pointer; position:relative; padding-top:16px}
+.tlnode::before{content:""; width:14px; height:14px; border-radius:50%; background:#fff; border:3px solid var(--accent); position:absolute; top:0; left:50%; transform:translateX(-50%); z-index:2}
+#timeline::before{content:""; position:absolute; top:6px; left:2%; right:2%; height:3px; background:var(--accent); border-radius:2px}
+.tlnode .yr{font-weight:700; font-size:14px; color:#3450a0}
+.tlnode .nm{font-size:12px; color:var(--sub); margin-top:2px}
+.tlnode:hover .nm,.tlnode.sel .nm{color:var(--accent)}
+.tlnode.sel::before{background:var(--accent)}
+#tlDetail{min-height:70px}
+/* 测验 */
+.qitem{background:var(--panel); border:1px solid var(--line); border-radius:10px; padding:12px; margin:10px 0}
+.qitem .qtxt{font-weight:600; margin-bottom:8px}
+.opt{display:block; width:100%; text-align:left; margin:4px 0; padding:7px 10px}
+.opt.right{background:var(--okbg); border-color:var(--ok); color:var(--ok)}
+.opt.wrong{background:var(--warnbg); border-color:var(--warn); color:var(--warn)}
+.explain{font-size:12.5px; background:#f4f6ff; padding:8px 10px; border-radius:6px; margin-top:6px; line-height:1.6; display:none}
+.explain.show{display:block}
+.jumpcard{color:var(--accent); cursor:pointer; text-decoration:underline; font-size:12px}
+
+/* ===== 卡片抽屉 / 弹窗 / 引导 ===== */
+#drawer{position:fixed; top:0; right:-388px; width:378px; height:100%; background:#fff; border-left:1px solid var(--line); box-shadow:-4px 0 16px rgba(0,0,0,.08); z-index:60; transition:right .25s; display:flex; flex-direction:column}
+#drawer.open{right:0}
+#drawer .dhead{padding:10px 12px; border-bottom:1px solid var(--line); display:flex; align-items:center; gap:8px}
+#drawer .dhead b{font-size:14px}
+#drawerSearch{flex:1; padding:5px 8px; border:1px solid var(--line); border-radius:6px}
+#catChips{display:flex; flex-wrap:wrap; gap:4px; padding:8px 12px; border-bottom:1px solid var(--line)}
+#catChips button{font-size:11px; padding:2px 8px; border-radius:10px}
+#cardList{flex:1; overflow-y:auto; padding:8px 12px}
+#cardList .item{padding:6px 8px; border-radius:6px; cursor:pointer; font-size:13px; display:flex; gap:6px; align-items:center}
+#cardList .item:hover{background:#f0f4ff}
+#cardList .item.sel{background:#e8effd}
+#cardList .catTag{font-size:10px; padding:1px 6px; border-radius:8px; background:#eef2fb; color:#3450a0; flex:0 0 auto}
+#cardDetailWrap{border-top:1px solid var(--line); padding:10px 12px; max-height:46%; overflow-y:auto}
+#cardDetail{border:1px solid var(--line); border-radius:8px; padding:10px; background:#fbfcfe; position:relative}
+#cardDetail h3{font-size:14px; color:#3450a0; margin-bottom:4px}
+#cardDetail .concl{font-size:13px; line-height:1.6; margin:4px 0}
+#cardDetail .formula{margin:6px 0}
+#cardDetail .guide{font-size:12px; color:#1d4fa8; background:#eaf1fd; border-radius:6px; padding:5px 8px; margin-top:6px; line-height:1.5}
+#cardDetail .warnTxt{font-size:12px; color:var(--warn); background:var(--warnbg); border-radius:6px; padding:5px 8px; margin-top:6px; line-height:1.5}
+#cardDetail .back{display:none; font-size:12.5px; line-height:1.7}
+#cardDetail.flip .front{display:none}
+#cardDetail.flip .back{display:block}
+#cardDetail svg{display:block; margin:6px auto}
+.dbtns{display:flex; gap:6px; margin-top:8px}
+.pinnedChip{display:inline-flex; gap:4px; align-items:center; background:#fff; border:1px solid var(--line); border-radius:14px; padding:3px 10px; font-size:12px; cursor:pointer; margin:3px}
+#modal{position:fixed; inset:0; background:rgba(20,25,40,.45); z-index:80; display:none; align-items:center; justify-content:center}
+#modal.open{display:flex}
+#modal .mbox{background:#fff; border-radius:12px; max-width:480px; width:92%; max-height:84%; overflow-y:auto; padding:16px; position:relative}
+#modal .mbox #modalBody{margin-top:6px}
+#modalClose{position:absolute; top:8px; right:10px}
+#tour{position:fixed; bottom:18px; left:50%; transform:translateX(-50%); width:min(620px,94vw); background:#fff; border:1px solid var(--line); border-radius:12px; box-shadow:0 6px 24px rgba(0,0,0,.12); z-index:70; padding:12px 16px; display:none}
+#tour.open{display:block}
+#tour .tq{background:#f4f6ff; border-radius:6px; padding:6px 10px; margin:6px 0; font-size:13px}
+#tour .ta{display:none; color:var(--ok); font-size:13px; padding:6px 10px; background:var(--okbg); border-radius:6px}
+#tour .ta.show{display:block}
+#pinnedBox{position:fixed; right:12px; bottom:12px; z-index:55; display:flex; flex-direction:column; align-items:flex-end}
+#toast{position:fixed; top:56px; left:50%; transform:translateX(-50%); background:#2b2f36; color:#fff; padding:6px 16px; border-radius:18px; font-size:13px; z-index:99; opacity:0; transition:opacity .3s; pointer-events:none}
+#toast.show{opacity:1}
+
+/* 数据表 */
+#recTable{width:100%; border-collapse:collapse; font-size:11.5px}
+#recTable th,#recTable td{border:1px solid var(--line); padding:3px 5px; text-align:center; white-space:nowrap}
+#recTable th{background:#f0f3f9; position:sticky; top:0}
+#recWrap{max-height:220px; overflow:auto; border:1px solid var(--line); border-radius:6px; margin-top:6px}
+
+@media (max-width:1150px){
+  #labView{grid-template-columns:1fr; overflow-y:auto}
+  #ctrl{max-height:300px}
+  .cols{grid-template-columns:1fr}
+  #canvasWrap{height:52vh}
+}
+@media (prefers-reduced-motion:reduce){ #tour,#drawer{transition:none} }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>万有引力定律 · 卡文迪什扭秤（微小量放大）<small>模型 38</small></h1>
+  <div class="hbtns">
+    <button id="btnTour" aria-label="打开教学引导流程">教学引导</button>
+    <button id="btnCards" aria-label="打开知识卡片库">知识卡片库</button>
+  </div>
+  <nav id="tabs" aria-label="标签页">
+    <button data-tab="history">① 历史与月—地检验</button>
+    <button data-tab="lab" class="active">② 扭秤沙盘</button>
+    <button data-tab="sensor">③ 力传感器直测</button>
+    <button data-tab="es">④ 静电类比</button>
+    <button data-tab="verify">⑤ 定律验证</button>
+    <button data-tab="quiz">⑥ 练习考核</button>
+  </nav>
+</header>
+
+<!-- ============ 实验区（②③④共用） ============ -->
+<main id="labView">
+  <aside class="panel" id="ctrl" aria-label="控制面板">
+    <details open><summary>大球位置（扭秤）</summary>
+      <div class="btnrow">
+        <button id="btn-pos-attract" class="on">吸引位</button>
+        <button id="btn-pos-repel">排斥位</button>
+        <button id="btn-pos-far">远离位</button>
+      </div>
+      <div class="hint">大球绕竖轴缓慢转位：吸引位与排斥位各得一个平衡光斑，用于双位置定零点。</div>
+    </details>
+    <details open><summary>物理参数</summary>
+      <div class="ctlrow"><label>球心距 r</label><input type="range" id="in-r" min="0.10" max="0.60" step="0.005" value="0.23"><span class="lval" id="lb-r">0.230 m</span></div>
+      <div class="ctlrow"><label>小球质量 m₁</label><input type="range" id="in-m1" min="0.1" max="5" step="0.01" value="0.73"><span class="lval" id="lb-m1">0.73 kg</span></div>
+      <div class="ctlrow"><label>大球质量 m₂</label><input type="range" id="in-m2" min="10" max="300" step="1" value="158"><span class="lval" id="lb-m2">158 kg</span></div>
+      <div class="ctlrow"><label>小球半径 R₁</label><span class="lval" style="text-align:left">0.030 m（固定）</span></div>
+      <div class="ctlrow"><label>大球半径 R₂</label><input type="range" id="in-R2" min="0.05" max="0.20" step="0.005" value="0.15"><span class="lval" id="lb-R2">0.150 m</span></div>
+      <div class="ctlrow"><label>力臂 d</label><input type="range" id="in-d" min="0.30" max="1.20" step="0.005" value="0.915"><span class="lval" id="lb-d">0.915 m</span></div>
+      <div class="ctlrow"><label>镜—尺距离 D</label><input type="range" id="in-D" min="2" max="10" step="0.1" value="5"><span class="lval" id="lb-D">5.0 m</span></div>
+      <div class="ctlrow"><label>扭转系数 κ</label><input type="range" id="in-kappa" min="0" max="1000" step="1" value="410"><span class="lval" id="lb-kappa">6.6×10⁻⁶</span></div>
+      <div class="ctlrow"><label>阻尼比 ζ</label><input type="range" id="in-zeta" min="0.05" max="1.2" step="0.05" value="0.25"><span class="lval" id="lb-zeta">0.25</span></div>
+      <div class="hint">r ≤ R₁+R₂ 时球接触，平方反比公式失效（r 应取球心距且需球对称条件）。</div>
+    </details>
+    <details id="esPanel" style="display:none"><summary>静电参数（类比模式）</summary>
+      <div class="ctlrow"><label>电荷 q₁</label><input type="range" id="in-q1" min="0.1" max="10" step="0.1" value="1"><span class="lval" id="lb-q1">1.0 nC</span></div>
+      <div class="ctlrow"><label>电荷 q₂</label><input type="range" id="in-q2" min="0.1" max="10" step="0.1" value="1"><span class="lval" id="lb-q2">1.0 nC</span></div>
+      <div class="btnrow">
+        <button id="btn-half1">q₁ 接触等量平分</button>
+        <button id="btn-half2">q₂ 接触等量平分</button>
+      </div>
+      <div class="ctlrow"><label>介质</label>
+        <select id="sel-medium"><option value="1">空气（εr=1）</option><option value="80">水（εr=80）</option></select>
+        <span class="hint">介质仅影响静电力；万有引力与介质无关。</span>
+      </div>
+      <div class="hint">相同金属球接触后电量等分：q→q/2（再接触→q/4），用于类比"改变质量"。</div>
+    </details>
+    <details open><summary>运行控制</summary>
+      <div class="btnrow">
+        <button id="btn-play" class="on">⏸ 暂停</button>
+        <button id="btn-reset">重置</button>
+        <button id="btn-step">单步</button>
+        <button id="btn-settle">快速平衡</button>
+      </div>
+      <div class="ctlrow"><label>时间倍率</label><input type="range" id="in-speed" min="0" max="1000" step="1" value="988"><span class="lval" id="lb-speed">900×</span></div>
+      <div class="btnrow">
+        <button data-speed="0.1">0.1×慢放</button><button data-speed="1">1×</button>
+        <button data-speed="5">5×</button><button data-speed="100">100×</button><button data-speed="900">900×常速</button>
+      </div>
+      <div class="hint">真实扭秤周期约 45 min，默认 900× 加速观看阻尼振荡；慢放用于观察细节。</div>
+    </details>
+    <details><summary>环境条件</summary>
+      <div class="ctlrow"><label>真空罩</label><input type="checkbox" id="ck-vac" checked><span class="hint">关闭后出现气流噪声</span></div>
+      <div class="ctlrow"><label>恒温</label><input type="checkbox" id="ck-thermo" checked><span class="hint">关闭后 κ 漂移、零点缓变</span></div>
+      <div class="ctlrow"><label>静电屏蔽</label><input type="checkbox" id="ck-shield" checked><span class="hint">关闭后（尤其静电模式）出现干扰跳变</span></div>
+      <div class="ctlrow"><label>注入系统误差</label><input type="checkbox" id="ck-bias"><span class="hint">模拟悬丝历史扭转造成的零点偏移</span></div>
+      <div class="ctlrow"><label>无光杠杆对照</label><input type="checkbox" id="ck-nolever"></div>
+    </details>
+    <details open><summary>显示图层</summary>
+      <div class="btnrow" style="font-size:12px">
+        <label><input type="checkbox" id="ly-vectors" checked> 引力矢量</label>
+        <label><input type="checkbox" id="ly-light" checked> 光路</label>
+        <label><input type="checkbox" id="ly-torque" checked> 力矩箭头</label>
+        <label><input type="checkbox" id="ly-zero" checked> 零点标记</label>
+        <label><input type="checkbox" id="ly-grid" checked> 网格</label>
+        <label><input type="checkbox" id="ly-trail" checked> 光斑残影</label>
+        <label><input type="checkbox" id="ly-hot" checked> 热点</label>
+        <label><input type="checkbox" id="ck-sound"> 音效</label>
+      </div>
+    </details>
+    <details open><summary>预设方案</summary>
+      <div class="btnrow">
+        <button class="preset" data-preset="typical">典型卡文迪什参数</button>
+        <button class="preset" data-preset="rscan">r 扫描</button>
+        <button class="preset" data-preset="mscan">质量扫描</button>
+        <button class="preset" data-preset="dual">双位置测量</button>
+        <button class="preset" data-preset="amp">放大链条演示</button>
+        <button class="preset" data-preset="fail">r 过小失效</button>
+        <button class="preset" data-preset="es">静电类比对比</button>
+      </div>
+    </details>
+    <details open><summary>双位置定零点</summary>
+      <div class="btnrow">
+        <button id="btn-zeroA">记录吸引位 A</button>
+        <button id="btn-zeroB">记录排斥位 B</button>
+        <button id="btn-zeroMid">取中点定零点</button>
+      </div>
+      <div id="zeroOut" class="hint">分别在吸引位/排斥位达到平衡后记录 A、B，再取中点消除系统误差。</div>
+      <div class="ctlrow" style="margin-top:4px"><label>启用零点校正</label><input type="checkbox" id="ck-correct"></div>
+    </details>
+    <details><summary>⚠ 安全须知</summary>
+      <ul class="dot">
+        <li>大质量铅球（可达 200 kg）搬运需双人 + 夹具，谨防挤压手指。</li>
+        <li>激光勿直视光束，勿将反射镜对人眼，实验佩戴护目镜。</li>
+        <li>石英悬丝极脆，勿触碰横杆；调零由指导教师操作。</li>
+        <li>静电类比模式涉及高压起电，先放电再操作。</li>
+        <li>装置须固定于隔振平台，防止倾倒。</li>
+      </ul>
+    </details>
+  </aside>
+
+  <section id="canvasWrap">
+    <canvas id="cv" role="img" aria-label="扭秤实验装置可视化主画布，支持滚轮缩放与拖拽平移"></canvas>
+    <div id="banner"></div>
+    <div id="viewbar">
+      <button id="btn-viewTop" class="on">俯视图</button>
+      <button id="btn-viewSide">正视图</button>
+      <button id="btn-fitview">自适应视野</button>
+      <span class="hint" id="viewHint">拖拽平移 · 滚轮缩放 · 点击 ⓘ 热点看卡片</span>
+    </div>
+  </section>
+
+  <aside class="panel" id="dataPanel" aria-label="数据面板">
+    <div class="box" id="statusBox">
+      <h4>实时读数</h4>
+      <table>
+        <tr><td>球心距 L（=r）</td><td><span id="v-L">—</span></td></tr>
+        <tr><td>小球 m₁ / 大球 m₂</td><td><span id="v-m">—</span></td></tr>
+        <tr><td>偏转角 θ</td><td><span id="v-th">—</span></td></tr>
+        <tr><td>光斑偏移 x</td><td><span id="v-x">—</span></td></tr>
+        <tr><td>F（由 x 换算）</td><td><span id="v-F">—</span></td></tr>
+        <tr><td>F 理论 = Gm₁m₂/r²</td><td><span id="v-Fth">—</span></td></tr>
+        <tr><td>相对偏差</td><td><span id="v-dev">—</span></td></tr>
+        <tr><td>κ / d / D</td><td><span id="v-kdd">—</span></td></tr>
+        <tr><td>转动惯量 I=2m₁d²</td><td><span id="v-I">—</span></td></tr>
+        <tr><td>固有周期 T₀</td><td><span id="v-T0">—</span></td></tr>
+        <tr><td>状态</td><td><span id="v-status">—</span></td></tr>
+      </table>
+      <div class="hint" id="noLeverNote" style="display:none"></div>
+    </div>
+    <div class="box">
+      <h4>微小量放大链条</h4>
+      <div class="amp">
+        <div class="step">引力 <b id="ampF">—</b></div>
+        <div class="step"><span class="arr">─×d（力矩放大）→</span> 力矩 <b id="ampTau">—</b></div>
+        <div class="step"><span class="arr">─÷κ（极小扭转系数）→</span> 偏转角 <b id="ampTheta">—</b></div>
+        <div class="step"><span class="arr">─×2D（光杠杆角放大）→</span> 光斑 <b id="ampX">—</b></div>
+        <div class="step">总放大 x/F = 2Dd/κ ≈ <b id="ampTot">—</b> m/N</div>
+      </div>
+      <div class="hint">极小力 F（~10⁻⁷ N）→ 长力臂力矩 → 极小 κ 使 θ 可测 → 光杠杆 2 倍角放大 → 长距离 D 使光斑位移达数十厘米。</div>
+    </div>
+    <div class="box">
+      <h4>光斑位移—时间（阻尼振荡）</h4>
+      <canvas id="cvXt" class="chart" aria-label="光斑位移随时间变化曲线"></canvas>
+    </div>
+    <div class="btnrow">
+      <button id="btnRec">记录当前读数</button>
+      <button id="btnNewRun">新建实验组</button>
+    </div>
+    <div class="hint" id="recCount">暂无记录</div>
+  </aside>
+</main>
+
+<!-- ============ ① 历史与月—地检验 ============ -->
+<section class="tabpage" id="page-history" aria-label="历史与月地检验">
+  <div class="pageTitle">从开普勒到卡文迪什：万有引力定律的确立与"称量地球"</div>
+  <div class="cardbox">
+    <h3>科学方法时间轴（点击节点查看史实）</h3>
+    <div id="timeline"></div>
+    <div id="tlDetail" class="note">点击上方任一节点查看细节。</div>
+  </div>
+  <div class="cols" style="margin-top:12px">
+    <div class="cardbox">
+      <h3>月—地检验：两条独立路径对照（天上与地上的力同性质）</h3>
+      <div class="formula">路径一（由平方反比推论）：a<sub>m</sub> = g·(R/r<sub>m</sub>)²</div>
+      <div class="note">g ≈ <span class="num">9.8</span> m/s²，r<sub>m</sub> ≈ 3.84×10⁸ m ≈ <span class="num" id="me-ratio">60</span>R<br>
+      a<sub>m</sub>(路径一) = <span class="num" id="me-a1">—</span> m/s²</div>
+      <div class="formula">路径二（由月球周期独立算出）：a<sub>m</sub> = 4π²r<sub>m</sub>/T²</div>
+      <div class="note">T = 27.32 d = 2.36×10⁶ s<br>
+      a<sub>m</sub>(路径二) = <span class="num" id="me-a2">—</span> m/s²</div>
+      <div class="formula" style="background:var(--okbg); color:var(--ok)">相对偏差：<span class="num" id="me-dev">—</span> ＜ 2% ✔</div>
+      <div class="note"><b>结论：</b>使月球绕地球运动的力与使苹果下落的力是<b>同一种性质的力</b>，遵从平方反比规律。<br>
+      近似说明：忽略太阳摄动、月球轨道偏心率与地球非球形。</div>
+      <div class="btnrow"><button id="btn-me">重新计算并对照</button></div>
+    </div>
+    <div class="cardbox">
+      <h3>示意动画：苹果下落与月球绕地——同一种力</h3>
+      <canvas id="cvMoon" style="width:100%; height:230px; background:#0d1b2a; border-radius:8px" aria-label="月球绕地球与苹果下落动画"></canvas>
+      <div class="note">红色引力矢量沿连线相互吸引：无论"天上"（月球）还是"地上"（苹果），都指向地心。</div>
+    </div>
+  </div>
+  <div class="cols" style="margin-top:12px">
+    <div class="cardbox">
+      <h3>拓展小图：g 随纬度 / 高度变化</h3>
+      <div class="note">重力是万有引力的分力（另一分力提供自转向心力），故 g 随纬度增大而略增大；随高度增大而减小（g′ = GM/(R+h)²）。</div>
+      <canvas id="cvLat" class="chart" aria-label="g随纬度变化曲线"></canvas>
+      <canvas id="cvH" class="chart" aria-label="g随高度变化曲线"></canvas>
+    </div>
+    <div class="cardbox">
+      <h3>史实要点（易考！）</h3>
+      <ul class="dot">
+        <li>开普勒三定律（1609/1619）描述行星<b>运动学</b>规律，未解释原因。</li>
+        <li>牛顿 1687 年《自然哲学的数学原理》提出万有引力定律，并用"月—地检验"验证。</li>
+        <li><b>先有定律、后有 G 的精确测量</b>：G 直到一百多年后才被测出。</li>
+        <li>米切尔（1783）设计扭秤，未完成即去世；卡文迪什改进并完成实验（1798）。</li>
+        <li><b>卡文迪什实验的原始目标是测定地球密度（"称量地球"）</b>，引力常量 G 的数值是后人依据其数据推算得到的。</li>
+        <li>库仑（1785）用同类扭秤测静电力平方反比——"微小量放大"思想一脉相承。</li>
+      </ul>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ⑤ 定律验证 ============ -->
+<section class="tabpage" id="page-verify" aria-label="定律验证">
+  <div class="pageTitle">定量验证：F ∝ m₁m₂ / r²，由斜率反推 G</div>
+  <div class="cols">
+    <div class="cardbox">
+      <h3>① r 扫描（验证 F ∝ 1/r²，拟合 G）</h3>
+      <div class="note">固定 m₁=<span id="vf-m1">0.73</span> kg、m₂=<span id="vf-m2">158</span> kg，球心距从 <span id="vf-r0">—</span> 扫到 0.60 m，逐点记录平衡光斑并换算 F。</div>
+      <div class="btnrow"><button id="btn-rsweep" class="on">▶ 开始 r 扫描</button></div>
+      <canvas id="cvF1" class="chart" style="height:220px" aria-label="F对1/r平方图"></canvas>
+      <div class="note">F–1/r² 图：<b>过原点直线</b>，斜率 = Gm₁m₂。<br>
+      拟合斜率 = <span class="num" id="fit-slope">—</span> N·m²/kg²·kg⁻²　
+      G<sub>拟合</sub> = <span class="num" id="fit-g">—</span> N·m²/kg²　
+      与标准值 6.67×10⁻¹¹ 相对误差 = <span class="num" id="fit-err">—</span><br>
+      幂律拟合指数 n（F ∝ r<sup>−n</sup>）= <span class="num" id="fit-n">—</span>（应在 1.9–2.1）</div>
+    </div>
+    <div class="cardbox">
+      <h3>② F–r 曲线与错误拟合对照</h3>
+      <canvas id="cvFr" class="chart" style="height:220px" aria-label="F对r曲线"></canvas>
+      <div class="ctlrow"><label>错误拟合对照</label><input type="checkbox" id="ck-wrongfit"></div>
+      <div class="note">勾选后叠加 F∝1/r（灰虚）与 F∝1/r³（灰点）对照曲线——均明显偏离数据，只有 1/r² 通过原点直线检验。</div>
+    </div>
+  </div>
+  <div class="cardbox" style="margin-top:12px">
+    <h3>③ 质量扫描（验证 F ∝ m₁m₂）</h3>
+    <div class="cols">
+      <div>
+        <div class="btnrow"><button id="btn-msweep" class="on">▶ 开始 m₁ 扫描</button></div>
+        <canvas id="cvM" class="chart" style="height:220px" aria-label="F对m1m2图"></canvas>
+      </div>
+      <div>
+        <div class="note">固定 r=<span id="vf-r">0.230</span> m、m₂，改变 m₁（0.3→5 kg）。<br>
+        F–m₁m₂ 图：<b>过原点直线</b>，斜率 = G/r²。<br>
+        斜率 = <span class="num" id="fit2-slope">—</span>　G<sub>拟合</sub> = <span class="num" id="fit2-g">—</span>　
+        相对误差 = <span class="num" id="fit2-err">—</span></div>
+        <div class="note" style="margin-top:8px"><b>实验思想：</b>控制变量法——固定 κ 与介质，只变 r（或只变 m）；图像线性化（F–1/r²、F–m₁m₂）把"验证曲线关系"化为"验证过原点直线"，再由斜率间接测出 G。</div>
+        <div class="note" style="margin-top:8px"><b>失效提示：</b>当 r 减小到与球半径同量级（r ≲ R₁+R₂ 或 1.5×(R₁+R₂)）时公式失效——球不再是质点、不能再按球心距直接套用。可到②扭秤沙盘把 r 拉到最小观察。</div>
+      </div>
+    </div>
+  </div>
+  <div class="cardbox" style="margin-top:12px">
+    <h3>数据记录（各实验组着色区分 · 可导出 CSV）</h3>
+    <div class="btnrow">
+      <button id="btnCSV">导出 CSV</button>
+      <button id="btnClearRec">清空记录</button>
+      <button id="btnGotoLab">回沙盘记录当前读数</button>
+    </div>
+    <div id="recWrap"><table id="recTable"><thead><tr>
+      <th>组</th><th>模式</th><th>r/m</th><th>m₁/kg</th><th>m₂/kg</th><th>x/m</th><th>θ/rad</th><th>F测量/N</th><th>F理论/N</th><th>误差</th><th>G拟合</th><th>备注</th>
+    </tr></thead><tbody id="recBody"></tbody></table></div>
+  </div>
+</section>
+
+<!-- ============ ⑥ 练习考核 ============ -->
+<section class="tabpage" id="page-quiz" aria-label="练习考核">
+  <div class="pageTitle">练习考核（6 题 · 即时反馈 · 答错自动跳转对应卡片）</div>
+  <div class="cardbox" style="display:flex; gap:14px; align-items:center; flex-wrap:wrap">
+    <label><input type="checkbox" id="ck-teacher"> 教师考核模式（随机出题、隐藏即时解析、交卷后统一评分）</label>
+    <button id="btn-reshuffle">重新出题</button>
+    <button id="btn-submit" style="display:none">交卷</button>
+    <span class="note" id="scoreOut"></span>
+  </div>
+  <div id="quizBox"></div>
+</section>
+
+<!-- 卡片抽屉 -->
+<aside id="drawer" aria-label="知识卡片库">
+  <div class="dhead"><b>知识卡片库</b>
+    <input id="drawerSearch" type="search" placeholder="搜索关键词…" aria-label="搜索卡片">
+    <button id="drawerClose" aria-label="关闭抽屉">✕</button>
+  </div>
+  <div id="catChips"></div>
+  <div id="cardList" role="listbox" aria-label="卡片列表"></div>
+  <div id="cardDetailWrap">
+    <div id="cardDetail" tabindex="0" role="dialog" aria-label="卡片详情">
+      <div class="front"></div>
+      <div class="back"></div>
+    </div>
+    <div class="dbtns">
+      <button id="cPrev">上一张</button>
+      <button id="cNext">下一张</button>
+      <button id="cFlip">翻转(推导)</button>
+      <button id="cPin">钉住</button>
+    </div>
+  </div>
+</aside>
+
+<!-- 卡片弹窗 -->
+<div id="modal" role="dialog" aria-modal="true" aria-label="知识卡片弹窗">
+  <div class="mbox">
+    <button id="modalClose" aria-label="关闭">✕ 关闭</button>
+    <div id="modalBody"></div>
+  </div>
+</div>
+
+<!-- 教学引导 -->
+<div id="tour" role="dialog" aria-label="教学引导流程">
+  <b id="tourTitle" style="color:#3450a0"></b>　<span class="note" id="tourStep"></span>
+  <div id="tourText" class="note" style="font-size:13px"></div>
+  <div class="tq" id="tourQ"></div>
+  <div class="ta" id="tourA"></div>
+  <div class="btnrow" style="margin-top:8px">
+    <button id="tourPrev">上一页</button>
+    <button id="tourNext">下一页</button>
+    <button id="tourAns">显示答案</button>
+    <button id="tourClose">关闭引导</button>
+  </div>
+</div>
+
+<div id="pinnedBox"></div>
+<div id="toast"></div>
+
+<script>
+"use strict";
+/* ================================================================
+   模型38 · 万有引力定律（卡文迪什扭秤微小量放大）
+   单文件零依赖。物理内核：二阶阻尼振子固定步长积分 + 光杠杆换算。
+   ================================================================ */
+
+/* ===== 配置与常量 ===== */
+var CFG = {
+  G: 6.67e-11,        // 引力常量 N·m²/kg²（常用近似值）
+  Gstd: 6.67e-11,
+  kE: 9.0e9,          // 静电力常量 N·m²/C²
+  g: 9.8,             // 地表重力加速度
+  R: 6.4e6,           // 地球半径
+  rm: 3.84e8,         // 月球轨道半径
+  Tm: 27.32 * 86400,  // 月球周期
+  R1: 0.03,           // 小球半径（固定）
+  sensRes: 1e-4,      // 力传感器分辨率 0.1 mN
+  sensRange: 1e-2     // 力传感器量程 10 mN
+};
+
+/* 卡片迷你示意图（内联 SVG） */
+var ICONS = {
+  force: '<svg width="120" height="44" viewBox="0 0 120 44"><circle cx="22" cy="22" r="9" fill="#3b7dd8"/><circle cx="98" cy="22" r="14" fill="#e8862a"/><line x1="34" y1="22" x2="80" y2="22" stroke="#e23b3b" stroke-width="2.5" marker-end="url(#a1)"/><line x1="86" y1="22" x2="44" y2="22" stroke="#e23b3b" stroke-width="1.6" stroke-dasharray="4 3" marker-end="url(#a1)"/><defs><marker id="a1" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#e23b3b"/></marker></defs><text x="60" y="12" font-size="10" fill="#e23b3b" text-anchor="middle">F′=F</text></svg>',
+  mirror: '<svg width="120" height="44" viewBox="0 0 120 44"><line x1="8" y1="36" x2="52" y2="10" stroke="#d4a017" stroke-width="2"/><rect x="50" y="8" width="4" height="14" fill="#555" transform="rotate(25 52 15)"/><line x1="54" y1="16" x2="112" y2="28" stroke="#d4a017" stroke-width="2"/><rect x="106" y="20" width="8" height="24" fill="#fff" stroke="#999"/><circle cx="112" cy="28" r="3.5" fill="#ff3b3b"/><text x="70" y="42" font-size="10" fill="#666">x=2Dθ</text></svg>',
+  graph: '<svg width="120" height="48" viewBox="0 0 120 48"><line x1="14" y1="40" x2="112" y2="40" stroke="#888"/><line x1="14" y1="40" x2="14" y2="6" stroke="#888"/><line x1="14" y1="40" x2="108" y2="10" stroke="#2f6fed" stroke-width="2.5"/><circle cx="40" cy="31" r="3" fill="#e8862a"/><circle cx="70" cy="22" r="3" fill="#e8862a"/><circle cx="95" cy="15" r="3" fill="#e8862a"/><text x="60" y="46" font-size="9" fill="#666" text-anchor="middle">F–1/r² 过原点直线</text></svg>',
+  history: '<svg width="120" height="44" viewBox="0 0 120 44"><line x1="8" y1="22" x2="112" y2="22" stroke="#2f6fed" stroke-width="3"/><circle cx="20" cy="22" r="6" fill="#fff" stroke="#2f6fed" stroke-width="3"/><circle cx="48" cy="22" r="6" fill="#fff" stroke="#2f6fed" stroke-width="3"/><circle cx="78" cy="22" r="6" fill="#fff" stroke="#2f6fed" stroke-width="3"/><circle cx="104" cy="22" r="6" fill="#2f6fed"/><text x="20" y="40" font-size="9" fill="#666" text-anchor="middle">1687</text><text x="78" y="40" font-size="9" fill="#666" text-anchor="middle">1798</text></svg>',
+  scale: '<svg width="120" height="44" viewBox="0 0 120 44"><line x1="10" y1="30" x2="110" y2="30" stroke="#888"/><g stroke="#888"><line x1="20" y1="26" x2="20" y2="34"/><line x1="40" y1="26" x2="40" y2="34"/><line x1="60" y1="26" x2="60" y2="34"/><line x1="80" y1="26" x2="80" y2="34"/><line x1="100" y1="26" x2="100" y2="34"/></g><circle cx="66" cy="30" r="4" fill="#ff3b3b"/><text x="60" y="14" font-size="10" fill="#666" text-anchor="middle">光斑读数 x</text></svg>',
+  globe: '<svg width="120" height="44" viewBox="0 0 120 44"><circle cx="34" cy="22" r="13" fill="#3b7dd8"/><circle cx="34" cy="22" r="13" fill="none" stroke="#24549c"/><circle cx="97" cy="22" r="5" fill="#ccc"/><ellipse cx="60" cy="22" rx="26" ry="14" fill="none" stroke="#888" stroke-dasharray="3 3"/><path d="M44 26 q4 -6 8 0" stroke="#e23b3b" fill="none" stroke-width="2"/><text x="60" y="42" font-size="9" fill="#666" text-anchor="middle">月—地检验</text></svg>',
+  warn: '<svg width="120" height="44" viewBox="0 0 120 44"><path d="M60 6 L106 38 L14 38 Z" fill="#fdeaea" stroke="#c0392b"/><text x="60" y="32" font-size="18" fill="#c0392b" text-anchor="middle" font-weight="bold">!</text></svg>',
+  vs: '<svg width="120" height="44" viewBox="0 0 120 44"><circle cx="26" cy="22" r="11" fill="#e8862a"/><circle cx="94" cy="22" r="11" fill="#3b7dd8"/><path d="M40 14 q20 -8 40 0" stroke="#e23b3b" fill="none" stroke-width="2" marker-end="url(#a2)"/><path d="M80 30 q-20 8 -40 0" stroke="#e23b3b" fill="none" stroke-width="2" marker-end="url(#a2)"/><defs><marker id="a2" markerWidth="8" markerHeight="8" refX="6" refY="3" orient="auto"><path d="M0,0 L7,3 L0,6 z" fill="#e23b3b"/></marker></defs></svg>'
+};
+
+/* ===== 知识卡片数据（字段：标题/一句话结论/公式/迷你图/指引/易错提醒/背面推导） ===== */
+var CARDS = [
+/* —— 史实 —— */
+{ id:"s1", cat:"史实", title:"牛顿与月—地检验（1687）", icon:"history",
+  concl:"牛顿在《自然哲学的数学原理》（1687）提出万有引力定律，并用\"月—地检验\"证明天上、地上的力同性质。",
+  formula:"F = G·m₁m₂/r²　（先有定律，后有 G 的精确测量）",
+  guide:"切到\"① 历史与月—地检验\"页看时间轴与两条路径数值对照。",
+  warn:"G 不是牛顿测出的——牛顿时代无人能测出如此微小的力。",
+  back:"推导链：苹果受重力 mg；假设月球受力同性质且平方反比，则 a_m = g(R/r_m)²。与天文观测的 4π²r_m/T² 对照吻合，假设成立。" },
+{ id:"s2", cat:"史实", title:"米切尔设计扭秤（1783）", icon:"history",
+  concl:"米切尔（J. Michell）设计了扭秤测微小引力，未完成实验即去世；装置思想经他人传给卡文迪什。",
+  formula:"—",
+  guide:"在\"② 扭秤沙盘\"中查看悬丝—横杆—小球结构（米切尔的设计核心）。",
+  back:"扭秤思想：用极小扭转系数 κ 的悬丝，把微小力矩转成可测偏角——与库仑（1785）测静电力的扭秤一脉相承。" },
+{ id:"s3", cat:"史实", title:"卡文迪什\"称量地球\"（1798）", icon:"history",
+  concl:"卡文迪什用扭秤完成实验，其原始目标是测定地球平均密度（\"称量地球\"），并非直接测定 G。",
+  formula:"ρ⊕ ≈ 5.5 g/cm³（由 M 与 R 得出）",
+  guide:"预设\"典型卡文迪什参数\"：m₁=0.73 kg、m₂=158 kg、r=0.23 m。",
+  warn:"常见误传\"卡文迪什测出了 G\"不准确——G 的数值是后人依据其数据推算得到的。",
+  back:"思路：扭秤测出两球引力 F → 结合 F=Gm₁m₂/r² 得 G → 由地表 mg=GMm/R² 得地球质量 M → 除以体积得密度。" },
+{ id:"s4", cat:"史实", title:"G 的推算与库仑扭秤（1785）", icon:"history",
+  concl:"G 数值由后人从卡文迪什数据推算；库仑更早（1785）用同类扭秤确认静电力平方反比。",
+  formula:"G = 6.67×10⁻¹¹ N·m²/kg²（更精确 6.674×10⁻¹¹）",
+  guide:"\"⑤ 定律验证\"页可由 r 扫描数据自己拟合出 G。",
+  warn:"G 是基本物理常量中测量精度最低者之一（相对不确定度约 10⁻⁵ 量级）。",
+  back:"现代测 G 仍用扭秤及其变体（如角加速度法），因为引力太弱且不可屏蔽。" },
+/* —— 概念 —— */
+{ id:"c1", cat:"概念", title:"万有引力", icon:"force",
+  concl:"任意两个有质量的物体之间相互吸引的力，方向沿两质点连线。",
+  formula:"F = G·m₁m₂/r²",
+  guide:"沙盘中红色矢量沿小球—大球连线相互吸引（打开\"引力矢量\"图层）。",
+  back:"\"万有\"三层含义：任何物体之间都有、只有吸引（无排斥）、不可屏蔽。" },
+{ id:"c2", cat:"概念", title:"引力常量 G", icon:"warn",
+  concl:"G = 6.67×10⁻¹¹ N·m²/kg²，普适常量、有单位、与介质无关。",
+  formula:"G 数值上等于两个 1 kg 质点相距 1 m 时的引力大小",
+  guide:"改变介质下拉框只在\"④ 静电类比\"生效——引力读数纹丝不动，说明与介质无关。",
+  warn:"G 与 g 完全不同：g 是当地重力加速度（m/s²），随纬度、高度变化。",
+  back:"量纲：由 F=Gm₁m₂/r² 得 [G] = N·m²/kg²。" },
+{ id:"c3", cat:"概念", title:"质点与球心距（壳层定理）", icon:"warn",
+  concl:"公式严格适用于质点；均匀球（球对称质量分布）可视为质量集中于球心，r 取球心间距。",
+  formula:"均匀球：F = Gm₁m₂/d²，d 为球心距（壳层定理，定性）",
+  guide:"把 r 拉到 0.18 m 以下（R₁+R₂=0.18 m）观察\"公式失效\"红牌。",
+  warn:"r→0 时不能推出 F→∞——公式在 r 与球半径同量级时已失效。",
+  back:"壳层定理（定性）：均匀球壳对外部质点的引力等效于质量集中于球心；对内部质点引力和为零。" },
+{ id:"c4", cat:"概念", title:"光杠杆与扭转系数 κ", icon:"mirror",
+  concl:"平面镜随悬丝转 θ，反射光转 2θ；κ 是悬丝扭过单位角度所需的力矩。",
+  formula:"x = 2D·θ（小角）；κ 单位 N·m/rad",
+  guide:"打开\"光路\"图层看黄色入射/反射光线与 2θ 角标注；κ 滑块越小，θ 越大。",
+  back:"光路几何：镜面法线转 θ ⇒ 反射光方向转 2θ（入射角与反射角各变 θ）。" },
+/* —— 公式 —— */
+{ id:"f1", cat:"公式", title:"万有引力定律公式", icon:"force",
+  concl:"两质点引力与质量乘积成正比、与距离平方成反比。",
+  formula:"F = G·m₁m₂/r²，方向沿连线、相互吸引",
+  guide:"\"⑤ 定律验证\"：r 扫描得 F–1/r² 直线；质量扫描得 F–m₁m₂ 直线。",
+  warn:"两物体间引力是一对作用力与反作用力：等大、反向、与质量大小无关。",
+  back:"适用条件：质点，或可等效为质点的均匀球（r 取球心距）；两球间距远大于半径时可近似。" },
+{ id:"f2", cat:"公式", title:"月—地检验两式", icon:"globe",
+  concl:"两条独立路径算出的月球向心加速度吻合，证明天上地上同一性质的力。",
+  formula:"a_m = g(R/r_m)² = 4π²r_m/T² ≈ 2.7×10⁻³ m/s²",
+  guide:"\"① 历史与月—地检验\"页点\"重新计算并对照\"，偏差 < 2%。",
+  back:"路径一只用地面 g 与平方反比假设；路径二只用天文观测（周期 T、半径 r_m）。二者独立，吻合即验证。" },
+{ id:"f3", cat:"公式", title:"黄金代换 GM = gR²", icon:"globe",
+  concl:"地表附近忽略自转时 mg ≈ GMm/R²，得 GM = gR²，可求中心天体质量。",
+  formula:"M = gR²/G ≈ 6.0×10²⁴ kg；g′ = GM/(R+h)²",
+  guide:"史实卡与练习第 5 题都用到黄金代换；g–纬度/高度小图见\"①\"页。",
+  warn:"黄金代换仅在\"地表附近、忽略自转\"条件下成立；重力严格说是引力的分力。",
+  back:"由 g=9.8、R=6.4×10⁶ m：GM=4.0×10¹⁴ m³/s²，M=GM/G≈6.0×10²⁴ kg（\"称量地球\"）。" },
+{ id:"f4", cat:"公式", title:"扭秤换算 F = κx/(2Dd)", icon:"scale",
+  concl:"平衡时引力力矩与悬丝恢复力矩平衡，光斑读数 x 可反推微小引力 F。",
+  formula:"F·d = κθ；x = 2D·θ ⇒ F = κx/(2D·d)",
+  guide:"\"② 扭秤沙盘\"实时读数区：F（由 x 换算）与 F 理论相对偏差 < 2%。",
+  warn:"光斑偏移大 ≠ 引力大：读数必须除以放大倍数 2Dd/κ 才是力。",
+  back:"推导：F·d=κθ（力矩平衡）＋ x=2Dθ（光杠杆小角）⇒ θ=x/(2D) ⇒ F=κθ/d=κx/(2Dd)。" },
+/* —— 规律 —— */
+{ id:"l1", cat:"规律", title:"引力等大反向", icon:"vs",
+  concl:"小球拉大球、大球拉小球，两力等大反向（牛顿第三定律），与质量大小无关。",
+  formula:"F₁₂ = −F₂₁",
+  guide:"沙盘中两侧红色矢量始终等长（\"引力矢量\"图层）。",
+  warn:"\"质量大的物体不受力\"是典型误解。",
+  back:"m₂ 拉大球同样使大球运动趋势存在，只是大球质量大、加速度小到不可见。" },
+{ id:"l2", cat:"规律", title:"F ∝ m₁m₂，F ∝ 1/r²，r→0 失效", icon:"graph",
+  concl:"乘积加倍力加倍；距离减半力变 4 倍；但 r 与球半径同量级时公式失效。",
+  formula:"F ∝ m₁m₂/r²（r ≫ 球半径或球对称时）",
+  guide:"\"⑤ 定律验证\"两个扫描；\"r 过小失效\"预设看红牌警告。",
+  back:"r→0 时两球已重叠，不能再当质点/球对称处理——物理上不存在\"无穷大引力\"。" },
+/* —— 方法 —— */
+{ id:"m1", cat:"方法", title:"微小量放大法", icon:"mirror",
+  concl:"力矩放大（×d）＋ 极小 κ（÷κ）＋ 光杠杆（×2D）逐环放大，10⁻⁷ N 变成数十厘米光斑。",
+  formula:"总放大倍数 x/F = 2Dd/κ ≈ 1.4×10⁶ m/N（典型参数）",
+  guide:"数据面板\"微小量放大链条\"框逐环显示量级与放大因子；预设\"放大链条演示\"。",
+  warn:"对照\"③ 力传感器直测\"：0.1 mN 分辨率根本测不出 10⁻⁷ N。",
+  back:"若去掉光杠杆，只能直接测 θ~0.02 rad（横杆端点位移 d·θ≈2 cm，且无法再放大）；若无长力臂/极小 κ，θ 更小到不可测。" },
+{ id:"m2", cat:"方法", title:"吸引/排斥双位置消零点", icon:"scale",
+  concl:"吸引位、排斥位各测一个平衡光斑，取中点即真零点，消除悬丝残余扭转等系统误差。",
+  formula:"x₀ = (x_A + x_B)/2；F = κ(x − x₀)/(2Dd)",
+  guide:"控制面板\"双位置定零点\"：先勾\"注入系统误差\"，再依次记录 A、B、取中点，看前后误差对比。",
+  back:"x_A = 2D(θ₀+θ_F)，x_B = 2D(θ₀−θ_F) ⇒ 中点 = 2Dθ₀ 恰为零点偏差，θ_F = (x_A−x_B)/(4D)。" },
+/* —— 辨析 —— */
+{ id:"d1", cat:"辨析", title:"万有引力 vs 静电力", icon:"vs",
+  concl:"静电力可吸可斥、可屏蔽、受介电常数影响、k≈9×10⁹；引力只有吸引、不可屏蔽、不受介质影响、G 极小。",
+  formula:"F引=Gm₁m₂/r²；F电=k·q₁q₂/(ε_r r²)",
+  guide:"\"④ 静电类比\"对比：换介质水（εr=80）静电力缩小 80 倍，引力（沙盘模式）读数不变。",
+  warn:"任何有质量的物体间都存在引力；静电只存在于带电体之间。",
+  back:"同量级质量/电荷下静电力约为引力的 10³⁰ 倍以上，故卡文迪什实验必须屏蔽静电干扰。" },
+{ id:"d2", cat:"辨析", title:"G vs g", icon:"warn",
+  concl:"G 是普适常量（N·m²/kg²，处处相同）；g 是当地重力加速度（m/s²，随纬度、高度变化）。",
+  formula:"G = 6.67×10⁻¹¹ N·m²/kg²；g ≈ 9.8 m/s²（地表平均）",
+  guide:"\"①\"页 g–纬度/高度小图直观显示 g 不是常量。",
+  back:"关系：地表 g ≈ GM/R²——g 之所以近似恒定，是因 M、R 巨大。" },
+{ id:"d3", cat:"辨析", title:"重力 vs 万有引力", icon:"globe",
+  concl:"重力严格说是万有引力的一个分力（另一分力提供地球自转向心力），故 g 随纬度增大而略增大、随高度增大而减小。",
+  formula:"重力 = 引力 − 向心力分量；g′ = GM/(R+h)²",
+  guide:"赤道 g≈9.78、两极 g≈9.83（见\"①\"页小图）；黄金代换只在地表附近、忽略自转时用。",
+  back:"纬度越高，自转向心加速度（ω²R·cosφ）越小，重力分量越大；高度越高，引力按 1/(R+h)² 减小。" },
+/* —— 易错 —— */
+{ id:"e1", cat:"易错", title:"\"G 是牛顿测出的\"", icon:"warn",
+  concl:"错。牛顿提出定律（1687）；米切尔设计、卡文迪什完成扭秤实验（1798），G 由后人依其数据推算。",
+  formula:"—", guide:"看史实卡 s1–s4 时间轴。",
+  warn:"一句话记忆：先有定律，后有 G。",
+  back:"牛顿自己估计地球密度，未能测 G；G 的精确测量晚了 111 年。" },
+{ id:"e2", cat:"易错", title:"\"大球不受小球的力\"", icon:"vs",
+  concl:"错。相互作用力等大反向，与质量大小无关，只是大球加速度极小。",
+  formula:"F₁₂ = F₂₁", guide:"沙盘矢量图层：两侧红箭头等长。",
+  warn:"一句话记忆：力等大，加速度不等大。",
+  back:"由牛顿第二、三定律：a = F/m，m₂=158 kg 时 a ≈ 10⁻⁹ m/s²，肉眼不可见。" },
+{ id:"e3", cat:"易错", title:"\"r→0 时 F→∞\"", icon:"warn",
+  concl:"错。公式失效——r 取球心距且需球对称（质点）条件，两球接触前公式已不适用。",
+  formula:"有效条件：r ≫ R球，或均匀球取球心距", guide:"预设\"r 过小失效\"看红牌。",
+  warn:"一句话记忆：数学外推 ≠ 物理适用。",
+  back:"当 r 与球半径同量级，质量分布不能再视为集中于球心，须积分处理（拓展）。" },
+{ id:"e4", cat:"易错", title:"\"G 没有单位 / G 就是 g\"", icon:"warn",
+  concl:"错。G 有单位 N·m²/kg² 且是普适常量；g 是当地重力加速度 m/s²。",
+  formula:"[G] = N·m²/kg² ≠ [g] = m/s²", guide:"概念卡 c2、辨析卡 d2。",
+  warn:"一句话记忆：一个是宇宙常量，一个是当地加速度。",
+  back:"数值检验：G≈6.67×10⁻¹¹，g≈9.8，量级与单位均不同。" },
+{ id:"e5", cat:"易错", title:"\"月球不受地球引力\"", icon:"globe",
+  concl:"错。月球绕地的向心力正是地球引力提供的；\"天上\"\"地上\"的力同性质（月—地检验）。",
+  formula:"GMm/r_m² = m·4π²r_m/T²", guide:"\"①\"页双路径对照：两法都得 2.7×10⁻³ m/s²。",
+  warn:"一句话记忆：月球在\"落向\"地球，只是同时横向飞。",
+  back:"月—地检验中 a_m≈g/3600，与 1/r² 预言一致。" },
+{ id:"e6", cat:"易错", title:"\"光斑大 = 引力大，与 D、κ 无关\"", icon:"warn",
+  concl:"错。读数必须换算：F = κx/(2Dd)。D 加倍或 κ 减半，同样的力光斑就加倍。",
+  formula:"F = κx/(2D·d)", guide:"调 D 滑块从 2→10 m，看 x 变 5 倍而 F 不变。",
+  warn:"一句话记忆：光斑是\"放大后的示数\"，不是力本身。",
+  back:"读数换算就是除以放大倍数 2Dd/κ。" },
+{ id:"e7", cat:"易错", title:"\"卡文迪什测的是小球的重力\"", icon:"warn",
+  concl:"错。测的是水平方向小球—大球间的微小引力引起的扭转，不是竖直方向的重力。",
+  formula:"水平引力 F = Gm₁m₂/r²（~10⁻⁷ N）", guide:"俯视图：引力矢量沿水平连线。",
+  warn:"一句话记忆：重力竖直、被悬丝承担；扭转来自水平引力。",
+  back:"竖直方向：悬丝张力 = mg，不产生绕竖轴的力矩；水平引力对竖轴产生力矩 F·d。" },
+{ id:"e8", cat:"易错", title:"\"引力可以屏蔽 / 受介质影响\"", icon:"warn",
+  concl:"错。引力不可屏蔽、不受介质影响、只有吸引——与静电力本质不同。",
+  formula:"—", guide:"\"④\"换介质水：静电力÷80，引力不受影响。",
+  warn:"一句话记忆：没有\"引力屏蔽材料\"。",
+  back:"这也是测 G 极难的原因：无法把干扰引力\"挡\"在装置外，只能靠对称设计与远置质量。" },
+/* —— 应用 —— */
+{ id:"a1", cat:"应用", title:"称量地球", icon:"globe",
+  concl:"由 G 与地表 g、R 得地球质量与平均密度——卡文迪什实验的原始目标。",
+  formula:"M = gR²/G ≈ 6.0×10²⁴ kg；ρ ≈ M/(4πR³/3) ≈ 5.5×10³ kg/m³",
+  guide:"史实卡 s3；验收自测：g=9.8、R=6.4×10⁶ m ⇒ GM=4.0×10¹⁴ m³/s²。",
+  warn:"黄金代换求的是中心天体质量，不是环绕天体质量。",
+  back:"地表岩层密度约 2.7×10³，平均 5.5×10³ ⇒ 内部必有大密度核（铁镍核证据）。" },
+{ id:"a2", cat:"应用", title:"卫星轨道与第一宇宙速度", icon:"globe",
+  concl:"近地卫星的引力提供向心力，得第一宇宙速度约 7.9 km/s。",
+  formula:"GMm/R² = mv²/R ⇒ v = √(GM/R) ≈ 7.9 km/s",
+  guide:"由黄金代换 GM=gR² 直接代入即可。",
+  warn:"v 与卫星质量无关。",
+  back:"v=√(gR)=√(9.8×6.4×10⁶)≈7.9×10³ m/s。更高轨道周期更长（T²∝r³）。" },
+/* —— 误差 —— */
+{ id:"q1", cat:"误差", title:"误差与实验条件", icon:"warn",
+  concl:"空气气流与浮力、温度漂移（κ 漂移）、静电干扰、地面振动、悬丝历史疲劳、大球定位误差，都需控制。",
+  formula:"—",
+  guide:"关闭\"环境条件\"中的真空/恒温/屏蔽开关，观察读数噪声与漂移。",
+  warn:"现代测 G 仍受这些因素限制，故其相对不确定度仅 ~10⁻⁵。",
+  back:"措施：真空罩（去气流与浮力）、恒温（稳 κ）、静电屏蔽（铜壳接地）、涡流阻尼（快稳）、隔振平台。" }
+];
+
+/* 教学引导七步 */
+var TOUR = [
+ {t:"① 历史情境与月—地检验", txt:"开普勒描述了行星怎么动，牛顿回答了为什么。先用两条独立路径检验\"天上的力\"与\"地上的力\"是否同一种。",
+  q:"苹果下落和月球绕地球，是同一种力吗？",
+  a:"是。路径一 g(R/r_m)² 与路径二 4π²r_m/T² 都得 a_m≈2.7×10⁻³ m/s²，偏差<2%（见\"①\"页）。"},
+ {t:"② 装置与放大思想", txt:"石英丝扭秤 + 平面镜光杠杆 + 刻度尺 + 两个大铅球。10⁻⁷ N 的力连最灵敏传感器都测不出，怎么\"看见\"它？",
+  q:"为什么光斑要跑几十厘米才说明测到了力？",
+  a:"因为放大链条：×d（力矩）、÷κ（极小扭转系数）、×2D（光杠杆），总放大 2Dd/κ≈10⁶ 倍。不放大，读数几乎不可见（见数据面板放大链条）。"},
+ {t:"③ 平衡条件推导", txt:"大球转到吸引位，横杆受引力力矩扭转，光斑移动并做阻尼振荡后停在平衡位置。",
+  q:"平衡时光斑偏移 x 与引力 F 的关系是什么？",
+  a:"F·d=κθ 且 x=2Dθ ⇒ F=κx/(2Dd)。对照实时读数：F（由 x 换算）与 F 理论偏差 <2%。"},
+ {t:"④ 变 r 实验", txt:"固定质量，改变球心距 r，逐点记录平衡光斑（\"⑤ 定律验证\"→ r 扫描）。",
+  q:"r 减半，光斑偏移变成几倍？",
+  a:"4 倍——F∝1/r²。F–1/r² 图是过原点直线。"},
+ {t:"⑤ 变 m 实验", txt:"固定 r，改变 m₁ 或 m₂（质量扫描）。",
+  q:"m₂ 加倍，光斑变成几倍？",
+  a:"2 倍——F∝m₁m₂。F–m₁m₂ 图也是过原点直线。"},
+ {t:"⑥ 图像与 G 拟合", txt:"把\"验证曲线关系\"化为\"验证过原点直线\"，再由斜率反推 G。",
+  q:"F–1/r² 直线的斜率是多少？能得出什么？",
+  a:"斜率 = Gm₁m₂，除以 m₁m₂ 得 G≈6.67×10⁻¹¹ N·m²/kg²（误差<3%，幂律指数 n≈2）。"},
+ {t:"⑦ 适用条件与误解辨析", txt:"公式适用于质点/球对称；重力是引力的分力（黄金代换有条件）；引力与静电力本质不同。",
+  q:"r→0 时 F→∞ 吗？",
+  a:"不！公式失效：r 取球心距且需球对称条件。试试预设\"r 过小失效\"。"}
+];
+
+/* 测验题 */
+var QUIZ = [
+ {q:"大铅球吸引小球的同时，小球对大球：", opts:["没有力，小球太轻","力更小，与大球质量成正比","力更大，小物体总\"吃亏\"","有等大反向的吸引力，与质量大小无关"], ans:3,
+  why:"两球间引力是一对作用力与反作用力（牛顿第三定律）：等大、反向、沿连线，与两物体质量大小无关。质量大只意味着加速度小。", card:"e2"},
+ {q:"两球球心距 r 减半（仍在有效区间内），引力变为原来的：", opts:["2 倍","4 倍","1/2","1/4"], ans:1,
+  why:"F∝1/r²：r→r/2 时 1/r²→4/r²，故引力变为 4 倍。可用\"⑤ 定律验证\"r 扫描的 F–r 曲线验证。", card:"l2"},
+ {q:"引力常量 G 的单位与意义是：", opts:["m/s²，重力加速度","N·m²/kg²，等于两个 1 kg 质点相距 1 m 时的引力","N，两球间引力大小","无单位的比例系数"], ans:1,
+  why:"由 F=Gm₁m₂/r² 得 [G]=N·m²/kg²；其数值恰等于两个 1 kg 质点相距 1 m 时的引力（6.67×10⁻¹¹ N）。G 是普适常量，g 才是当地重力加速度。", card:"d2"},
+ {q:"当两球球心距 r 减小到接近两球半径之和时：", opts:["F 无限增大","公式失效，不能再按球心距直接用 F=Gm₁m₂/r²","引力变为排斥","G 的数值改变"], ans:1,
+  why:"公式严格适用于质点；对均匀球只在\"球对称、r 取球心距\"意义下成立。r 与球半径同量级时质量分布不再能等效集中于球心，公式失效，不能外推出 F→∞。", card:"e3"},
+ {q:"关于重力与万有引力的关系，正确的是：", opts:["重力就是万有引力，完全等同","重力是万有引力的一个分力，另一分力提供自转向心力","万有引力是重力的分力","两者方向永远相同"], ans:1,
+  why:"随地球自转，引力的一部分提供向心力，重力=引力−向心力分量，故 g 随纬度增大而略增大、随高度增大而减小。黄金代换 GM=gR² 仅在地表附近、忽略自转时成立。", card:"d3"},
+ {q:"万有引力与静电力相比：", opts:["都可以吸引也可以排斥","都可以被导体屏蔽","引力只有吸引、不可屏蔽、不受介质影响","静电力不受介质影响"], ans:2,
+  why:"静电力可吸可斥、可被导体屏蔽、受介电常数影响（F/εr）；万有引力只有吸引、不可屏蔽、不受介质影响、任何有质量物体间都存在。这是两者的本质差异。", card:"d1"}
+];
+
+/* ===== 全局状态 ===== */
+var S = {
+  tab: "lab", mode: "torsion",   // torsion | sensor | es
+  view: "top",
+  posMode: "attract", psi: 0, psiTarget: 0,  // 大球转位角（0吸引/π排斥/π/2远离）
+  r: 0.23, m1: 0.73, m2: 158, R2: 0.15,
+  d: 0.915, D: 5.0, kappa: 6.6e-6, zeta: 0.25,
+  q1: 1, q2: 1, epsr: 1,
+  theta: 0, omega: 0, t: 0, running: true, timeScale: 900, frozen: false,
+  biasOn: false, thetaBias: 0.004,
+  env: {vac:true, thermo:true, shield:true},
+  layers: {vectors:true, light:true, torque:true, zero:true, grid:true, trail:true, hot:true, sound:false},
+  noLever: false, correct: false,
+  zeroA: null, zeroB: null, zero0: null,
+  xtBuf: [], lastSampleT: -1, trail: [],
+  records: [], runId: 1,
+  tf: {scale: 60, ox: -1.5, oy: 0}, fitPending: true  // 画布视图变换（缩放/平移）
+};
+var RUNCOLORS = ["#2f6fed","#e8862a","#1e7e34","#8a4fd3","#c0392b","#0e8a8a","#b05600"];
+var reduced = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+/* ===== 工具函数 ===== */
+var SUPMAP = {"0":"⁰","1":"¹","2":"²","3":"³","4":"⁴","5":"⁵","6":"⁶","7":"⁷","8":"⁸","9":"⁹","-":"⁻"};
+function sup(n){ return String(n).split("").map(function(c){return SUPMAP[c]||c;}).join(""); }
+function fmtSci(v, d){
+  if(v===null||v===undefined||!isFinite(v)) return "—";
+  if(v===0) return "0";
+  d = (d==null)?2:d;
+  var s = v<0?"-":"", av = Math.abs(v);
+  var e = Math.floor(Math.log10(av)), m = av/Math.pow(10,e);
+  if(e>=-3 && e<=4) return s+(av.toPrecision(3)*1).toString();
+  return s+m.toFixed(d)+"×10"+sup(e);
+}
+function fmtN(v,d){ return (v==null||!isFinite(v))?"—":v.toFixed(d==null?3:d); }
+function $(id){ return document.getElementById(id); }
+function toast(msg){
+  var t = $("toast"); t.textContent = msg; t.classList.add("show");
+  clearTimeout(toast._h); toast._h = setTimeout(function(){ t.classList.remove("show"); },1800);
+}
+function beep(){
+  if(!S.layers.sound) return;
+  try{
+    beep._ctx = beep._ctx || new (window.AudioContext||window.webkitAudioContext)();
+    var o = beep._ctx.createOscillator(), g = beep._ctx.createGain();
+    o.frequency.value = 660; g.gain.value = 0.05;
+    o.connect(g); g.connect(beep._ctx.destination);
+    o.start(); o.stop(beep._ctx.currentTime+0.07);
+  }catch(e){}
+}
+
+/* ===== 物理计算 ===== */
+/* 当前实际球心距 L：吸引/排斥位 L=r；远离位加大 0.4 m */
+function curL(){
+  if(S.mode==="es"||S.mode==="sensor") return S.r;
+  return S.r + 0.4*Math.pow(Math.sin(S.psi),2);
+}
+function isInvalid(){ return curL() <= CFG.R1 + S.R2 + 1e-4; }
+/* 接近接触预警：均匀球只要不重叠（L > R₁+R₂），由壳层定理即可精确按球心距计算，
+   故不再以"距离为半径的若干倍"判定失效，只在即将接触时提示。 */
+function gap(){ return curL() - (CFG.R1 + S.R2); }
+function isWarn(){ return gap() > 0 && gap() < 0.03; }
+function gravF(){ var L=curL(); return CFG.G*S.m1*S.m2/(L*L); }
+function coulombF(){ return CFG.kE*S.q1*S.q2*1e-18/(S.epsr*S.r*S.r); }
+/* 驱动力矩：教材公式 F·d（两对球按等效单侧处理，与 F=κx/(2Dd) 闭环一致） */
+function driveTorque(){
+  if(S.mode==="sensor"||S.frozen) return 0;
+  if(S.mode==="es"){ return -Math.sign(S.q1*S.q2)*coulombF()*S.d; }
+  var f = Math.cos(S.psi);
+  if(Math.abs(f)<1e-6) return 0;
+  return f*gravF()*S.d;
+}
+function biasTorque(){ return S.biasOn ? S.kappa*S.thetaBias : 0; }
+function inertia(){ return 2*S.m1*S.d*S.d; }
+function omega0(){ return Math.sqrt(S.kappa/inertia()); }
+function thetaEq(){ return (driveTorque()+biasTorque())/S.kappa; }
+/* 光杠杆：镜转 θ ⇒ 反射光 2θ ⇒ 光斑 x = D·tan2θ（小角 x≈2Dθ） */
+function spotX(th){ return S.D*Math.tan(2*th); }
+/* 统一读数口径：有光杠杆读光斑 x=2Dθ；无光杠杆读横杆端点位移 x=d·sinθ */
+function readX(th){ return S.noLever ? S.d*Math.sin(th) : spotX(th); }
+/* 读数噪声（环境开关） */
+function noiseAmp(){
+  var a = 0;
+  if(!S.env.vac) a += 0.0009;
+  if(!S.env.thermo) a += 0.0018;
+  if(!S.env.shield) a += (S.mode==="es")?0.004:0.0006;
+  return a;
+}
+function thetaRead(){
+  var th = S.theta + (Math.random()*2-1)*noiseAmp();
+  if(!S.env.thermo) th += 0.002*Math.sin(S.t*0.05);
+  return th;
+}
+/* 换算力：有光杠杆 F = κx/(2Dd)；无光杠杆 θ=arcsin(x/d)、F = κθ/d。可选零点校正 */
+function measF(x){
+  var x0 = (S.correct && S.zero0!==null)? S.zero0 : 0;
+  var xx = x - x0;
+  if(S.noLever){
+    var th = Math.asin(Math.max(-1, Math.min(1, xx/S.d)));
+    return S.kappa*th/S.d;
+  }
+  return S.kappa*xx/(2*S.D*S.d);
+}
+
+/* ===== 仿真：固定步长积分（θ̈ + 2ζω₀θ̇ + ω₀²θ = τ/I） ===== */
+function advance(simDt){
+  var h = 0.005;                       // 固定物理步长 5 ms（仿真时间）
+  var n = Math.min(60000, Math.max(1, Math.round(simDt/h)));
+  var I = inertia(), c = 2*S.zeta*omega0()*I;
+  for(var i=0;i<n;i++){
+    var acc = (driveTorque()+biasTorque()-S.kappa*S.theta-c*S.omega)/I;
+    S.omega += acc*h;
+    S.theta += S.omega*h;
+    S.t += h;
+    if(S.t - S.lastSampleT >= 0.5){    // 采样 x–t 曲线
+      S.lastSampleT = S.t;
+      S.xtBuf.push({t:S.t, x:spotX(S.theta), th:S.theta});
+      if(S.xtBuf.length>800) S.xtBuf.shift();
+    }
+  }
+}
+/* 热点：位置随几何实时计算 */
+function hotspots(){
+  if(S.mode!=="torsion") return [];
+  var L = curL();
+  var bigR = [S.d+L*Math.sin(S.psi), L*Math.cos(S.psi)];
+  return [
+    {x:0,y:0, card:"c4", label:"平面镜/光杠杆"},
+    {x:S.D,y:0.45, card:"f4", label:"刻度尺读数"},
+    {x:bigR[0],y:bigR[1], card:"c3", label:"球心距 r"},
+    {x:0,y:-0.55, card:"c4", label:"扭转系数κ"},
+    {x:S.d/2,y:-0.12, card:"f4", label:"力臂 d"},
+    {x:-S.d, y:0, card:"l1", label:"小球受力"}
+  ];
+}
+
+/* ===== 主循环 ===== */
+var lastFrame = performance.now();
+function frame(now){
+  var dt = Math.min(0.05,(now-lastFrame)/1000); lastFrame = now;
+  // 大球缓慢转位动画（真实时间）
+  var dp = S.psiTarget - S.psi;
+  if(Math.abs(dp)>1e-4){ S.psi += Math.sign(dp)*Math.min(Math.abs(dp), dt*1.1); }
+  if(isInvalid()){ S.frozen = true; } else { S.frozen = false; }
+  if(S.running && (S.tab==="lab"||S.tab==="sensor"||S.tab==="es") && !S.frozen && S.mode!=="sensor"){
+    advance(dt*S.timeScale);
+  }
+  if(S.tab==="lab"||S.tab==="sensor"||S.tab==="es"){ drawLab(); updateReadouts(); }
+  if(S.tab==="history"){ drawMoon(dt); }
+  requestAnimationFrame(frame);
+}
+
+/* ===== 渲染：主画布 ===== */
+var cv = $("cv"), cvx = cv.getContext("2d");
+function setupCanvas(c){
+  var dpr = window.devicePixelRatio||1;
+  var W = c.clientWidth, H = c.clientHeight;
+  if(c.width!==Math.round(W*dpr)||c.height!==Math.round(H*dpr)){ c.width=Math.round(W*dpr); c.height=Math.round(H*dpr); }
+  var ctx = c.getContext("2d");
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  return {ctx:ctx, W:W, H:H};
+}
+function fitView(){
+  var p = setupCanvas(cv);
+  var minX=-2.0, maxX=S.D+0.9, minY=-1.7, maxY=1.7;
+  var sc = Math.min((p.W-30)/(maxX-minX), (p.H-30)/(maxY-minY));
+  if(sc>0&&isFinite(sc)){ S.tf.scale = sc; S.tf.ox = -(minX+maxX)/2; S.tf.oy = 0; }
+  S.fitPending = false;
+}
+function w2s(x,y,p){
+  return { x: p.W/2 + (x+S.tf.ox)*S.tf.scale, y: p.H/2 - (y+S.tf.oy)*S.tf.scale };
+}
+function arrow(ctx,x1,y1,x2,y2,color,w){
+  ctx.strokeStyle=color; ctx.fillStyle=color; ctx.lineWidth=w||2;
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+  var ang = Math.atan2(y2-y1,x2-x1);
+  ctx.beginPath();
+  ctx.moveTo(x2,y2);
+  ctx.lineTo(x2-9*Math.cos(ang-0.4), y2-9*Math.sin(ang-0.4));
+  ctx.lineTo(x2-9*Math.cos(ang+0.4), y2-9*Math.sin(ang+0.4));
+  ctx.closePath(); ctx.fill();
+}
+
+function drawLab(){
+  var p = setupCanvas(cv), ctx = p.ctx;
+  ctx.clearRect(0,0,p.W,p.H);
+  ctx.fillStyle = "#fff"; ctx.fillRect(0,0,p.W,p.H);
+  if(S.mode==="sensor"){ drawSensor(ctx,p); return; }
+  if(S.view==="side"){ drawSide(ctx,p); return; }
+  if(S.fitPending) fitView();
+  drawTopView(ctx,p);
+  drawLegend(ctx,p);
+}
+
+/* —— 俯视图（扭秤 / 静电共用） —— */
+function drawTopView(ctx,p){
+  var es = S.mode==="es";
+  var L = curL(), th = S.theta;
+  var beamAng = th;
+  // 网格
+  if(S.layers.grid){
+    ctx.strokeStyle="#eef1f6"; ctx.lineWidth=1;
+    var step=0.5;
+    var x0 = -p.W/2/S.tf.scale - S.tf.ox, x1 = p.W/2/S.tf.scale - S.tf.ox;
+    for(var gx=Math.floor(x0/step)*step; gx<=x1; gx+=step){
+      var a=w2s(gx,-99,p), b=w2s(gx,99,p);
+      ctx.beginPath(); ctx.moveTo(a.x,0); ctx.lineTo(a.x,p.H); ctx.stroke();
+    }
+    var y0 = -p.H/2/S.tf.scale - S.tf.oy, y1 = p.H/2/S.tf.scale - S.tf.oy;
+    for(var gy=Math.floor(y0/step)*step; gy<=y1; gy+=step){
+      var c2=w2s(0,gy,p); if(c2.y<0||c2.y>p.H) continue;
+      ctx.beginPath(); ctx.moveTo(0,c2.y); ctx.lineTo(p.W,c2.y); ctx.stroke();
+    }
+  }
+  // 大球位置（固定于实验室坐标）
+  var psi = es?0:S.psi;
+  var offR = {x:L*Math.sin(psi), y:L*Math.cos(psi)};
+  var bigR = [S.d+offR.x, offR.y], bigL = [-S.d-offR.x, -offR.y];
+  var smallR = [S.d*Math.cos(beamAng), S.d*Math.sin(beamAng)];
+  var smallL = [-S.d*Math.cos(beamAng), -S.d*Math.sin(beamAng)];
+
+  // 刻度尺（x=D 处竖直）
+  var scTop = w2s(S.D, 0.75, p), scBot = w2s(S.D, -0.75, p);
+  ctx.strokeStyle="#555"; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(scTop.x,scTop.y); ctx.lineTo(scBot.x,scBot.y); ctx.stroke();
+  var tick = 0.05; while(tick*S.tf.scale<5 && tick<0.2) tick*=2;   // 自适应刻度间隔
+  for(var v=-0.75; v<=0.7501; v+=tick){
+    var t0=w2s(S.D,v,p), major = Math.abs(v/tick - Math.round(v/tick))<1e-6 && Math.round(v/tick)%2===0;
+    ctx.strokeStyle="#777"; ctx.lineWidth=major?1.5:0.7;
+    ctx.beginPath(); ctx.moveTo(t0.x-(major?9:5), t0.y); ctx.lineTo(t0.x, t0.y); ctx.stroke();
+    if(major){ ctx.fillStyle="#555"; ctx.font="10px sans-serif"; ctx.textAlign="left"; ctx.fillText(v.toFixed(2)+" m", t0.x+4, t0.y+3); }
+  }
+  // 零点（θ=0 参考光）
+  var z0 = w2s(S.D,0,p), m0 = w2s(0,0,p);
+  if(S.layers.zero){
+    ctx.setLineDash([6,5]); ctx.strokeStyle="#333"; ctx.lineWidth=1.2;
+    ctx.beginPath(); ctx.moveTo(m0.x,m0.y); ctx.lineTo(z0.x,z0.y); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle="#333"; ctx.font="11px sans-serif"; ctx.textAlign="center";
+    ctx.fillText("零点 0", z0.x, z0.y+26);
+    // 吸引/排斥平衡标记
+    var ta = thetaEq();
+    if(Math.abs(ta)>1e-9 && !es){
+      var pa = w2s(S.D, spotX(Math.abs(ta)), p), pb = w2s(S.D, -spotX(Math.abs(ta)), p);
+      [[pa,"吸引位平衡"],[pb,"排斥位平衡"]].forEach(function(mk){
+        ctx.fillStyle="#888"; ctx.beginPath();
+        ctx.moveTo(mk[0].x, mk[0].y-7); ctx.lineTo(mk[0].x-5, mk[0].y+3); ctx.lineTo(mk[0].x+5, mk[0].y+3); ctx.closePath(); ctx.fill();
+      });
+    }
+  }
+  // 光路：光源 → 镜 → 光斑
+  var src = w2s(-1.5,-1.05,p), mir = w2s(0,0,p);
+  if(S.layers.light){
+    ctx.strokeStyle="#d4a017"; ctx.lineWidth=1.8; ctx.setLineDash([8,4]);
+    ctx.beginPath(); ctx.moveTo(src.x,src.y); ctx.lineTo(mir.x,mir.y); ctx.stroke(); ctx.setLineDash([]);
+    var xr = S.noLever ? S.d*Math.sin(th) : spotX(thetaRead());
+    var sp = w2s(S.D, xr, p);
+    ctx.strokeStyle="#d4a017"; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(mir.x,mir.y); ctx.lineTo(sp.x,sp.y); ctx.stroke();
+    // 2θ 角标注：参考光方向与反射光方向之间的夹角
+    ctx.strokeStyle="#b08800"; ctx.lineWidth=1.2;
+    var aRef = Math.atan2(z0.y-mir.y, z0.x-mir.x), aSp = Math.atan2(sp.y-mir.y, sp.x-mir.x);
+    var ccw = ((aSp - aRef + Math.PI*3) % (Math.PI*2)) > Math.PI;
+    ctx.beginPath(); ctx.arc(mir.x, mir.y, 34, aRef, aSp, ccw); ctx.stroke();
+    ctx.fillStyle="#8a6d00"; ctx.font="12px sans-serif"; ctx.textAlign="center";
+    ctx.fillText("2θ", mir.x+46*Math.cos((aRef+aSp)/2), mir.y+46*Math.sin((aRef+aSp)/2));
+    // 光源
+    ctx.fillStyle="#666"; ctx.fillRect(src.x-9,src.y-7,18,14);
+    ctx.fillStyle="#fff"; ctx.font="9px sans-serif"; ctx.fillText("光源", src.x, src.y+24);
+    // 残影
+    if(S.layers.trail && !reduced){
+      S.trail.push({x:sp.x,y:sp.y});
+      if(S.trail.length>26) S.trail.shift();
+      for(var k=0;k<S.trail.length;k++){
+        ctx.fillStyle="rgba(255,59,59,"+(k/S.trail.length*0.35)+")";
+        ctx.beginPath(); ctx.arc(S.trail[k].x,S.trail[k].y,3.5,0,7); ctx.fill();
+      }
+    } else S.trail.length = 0;
+    // 光斑
+    ctx.fillStyle="#ff3b3b"; ctx.shadowColor="#ff3b3b"; ctx.shadowBlur=10;
+    ctx.beginPath(); ctx.arc(sp.x,sp.y,6,0,7); ctx.fill(); ctx.shadowBlur=0;
+  }
+  // 横杆与悬丝轴
+  var sA = w2s(smallR[0],smallR[1],p), sB = w2s(smallL[0],smallL[1],p);
+  ctx.strokeStyle="#444"; ctx.lineWidth=5; ctx.lineCap="round";
+  ctx.beginPath(); ctx.moveTo(sB.x,sB.y); ctx.lineTo(sA.x,sA.y); ctx.stroke();
+  // 中央立柱与镜
+  ctx.fillStyle="#333"; ctx.beginPath(); ctx.arc(mir.x,mir.y,7,0,7); ctx.fill();
+  ctx.save(); ctx.translate(mir.x,mir.y); ctx.rotate(-th);
+  ctx.fillStyle="#aeb6c2"; ctx.fillRect(3,-10,4,20); ctx.restore();
+  // 小球（蓝）
+  [[sA,"m₁="+fmtN(S.m1,2)+" kg"],[sB,"m₁="+fmtN(S.m1,2)+" kg"]].forEach(function(b){
+    var rr = Math.max(CFG.R1*S.tf.scale,5);
+    ctx.fillStyle="#3b7dd8"; ctx.beginPath(); ctx.arc(b[0].x,b[0].y,rr,0,7); ctx.fill();
+    ctx.strokeStyle="#24549c"; ctx.lineWidth=1; ctx.stroke();
+    ctx.fillStyle="#2b2f36"; ctx.font="11px sans-serif"; ctx.textAlign="center";
+    ctx.fillText(b[1], b[0].x, b[0].y-rr-6);
+  });
+  // 大球（橙 / 静电类比带电球）
+  var bigRr = Math.max(S.R2*S.tf.scale,7);
+  var sign = Math.sign(S.q1*S.q2);
+  [[bigR,es?"q₂="+fmtN(S.q2,1)+" nC":"m₂="+S.m2+" kg"],[bigL,es?"q₂′="+fmtN(S.q2,1)+" nC":"m₂′="+S.m2+" kg"]].forEach(function(b){
+    var bp = w2s(b[0][0],b[0][1],p);
+    ctx.fillStyle = es?"#d9a441":"#e8862a";
+    ctx.beginPath(); ctx.arc(bp.x,bp.y,bigRr,0,7); ctx.fill();
+    ctx.strokeStyle="#9c5a10"; ctx.lineWidth=1.5; ctx.stroke();
+    if(es){ ctx.fillStyle= sign>0?"#a00":"#03a"; ctx.font="bold 14px sans-serif"; ctx.textAlign="center";
+      ctx.fillText(sign>0?"+":"−", bp.x, bp.y+5); }
+    ctx.fillStyle="#2b2f36"; ctx.font="11px sans-serif"; ctx.textAlign="center";
+    ctx.fillText(b[1], bp.x, bp.y-bigRr-6);
+    if(es){ ctx.fillStyle="#3b7dd8"; ctx.fillText("q₁"+(S.q1*S.q2>0?"(+)":"(−)"), sA.x, sA.y+rr0()+14); }
+  });
+  function rr0(){ return Math.max(CFG.R1*S.tf.scale,5); }
+  // 引力矢量（红，沿连线相互吸引）
+  if(S.layers.vectors && !S.frozen){
+    var Fmag = es? Math.abs(coulombF()) : gravF();
+    var Fdisp = (Fmag>0)? 38 : 0;
+    [[sA,bpOf(bigR)],[bpOf(bigL),sB]].forEach(function(pair){
+      var from = pair[0], to = pair[1];
+      if(es){
+        var dir = sign>0? [to.x-from.x, to.y-from.y] : [from.x-to.x, from.y-to.y];
+        var len = Math.hypot(dir[0],dir[1])||1;
+        arrow(ctx, from.x, from.y, from.x+dir[0]/len*Fdisp, from.y+dir[1]/len*Fdisp, "#e23b3b", 2.4);
+      } else {
+        var dx = to.x-from.x, dy = to.y-from.y, ln = Math.hypot(dx,dy)||1;
+        arrow(ctx, from.x, from.y, from.x+dx/ln*Fdisp, from.y+dy/ln*Fdisp, "#e23b3b", 2.4);
+      }
+    });
+    ctx.fillStyle="#e23b3b"; ctx.font="bold 12px sans-serif"; ctx.textAlign="left";
+    ctx.fillText("F="+fmtSci(Fmag)+" N", sA.x+rr0()+8, sA.y-8);
+  }
+  function bpOf(w){ return w2s(w[0],w[1],p); }
+  // 扭转力矩箭头（紫弧）
+  if(S.layers.torque && Math.abs(S.omega)>omega0()*0.004){
+    var tq = Math.sign(S.omega);
+    ctx.strokeStyle="#8a4fd3"; ctx.lineWidth=2.5;
+    ctx.beginPath(); ctx.arc(mir.x, mir.y, 26, tq>0?-0.6:0.6, tq>0?0.6:-0.6, tq<0); ctx.stroke();
+    var ea = tq>0?0.6:-0.6;
+    arrow(ctx, mir.x+26*Math.cos(ea), mir.y+26*Math.sin(ea), mir.x+26*Math.cos(ea)+tq*6, mir.y+26*Math.sin(ea)-tq*6, "#8a4fd3", 2);
+    ctx.fillStyle="#8a4fd3"; ctx.font="11px sans-serif";
+    ctx.fillText("扭转", mir.x+30, mir.y+34);
+  }
+  // r 与 d 标尺
+  ctx.strokeStyle="#8a8f98"; ctx.lineWidth=1.2;
+  var sAp = sA, bigRp = bpOf(bigR);
+  dblArrow(ctx, sAp.x, sAp.y, bigRp.x, bigRp.y, "#8a8f98");
+  ctx.fillStyle="#555"; ctx.font="11px sans-serif"; ctx.textAlign="center";
+  ctx.fillText("r="+fmtN(curL(),3)+" m", (sAp.x+bigRp.x)/2, (sAp.y+bigRp.y)/2-8);
+  var mid = w2s(S.d/2*Math.cos(beamAng), S.d/2*Math.sin(beamAng), p);
+  dblArrow(ctx, mir.x, mir.y, sAp.x, sAp.y, "#8a8f98");
+  ctx.fillText("d="+fmtN(S.d,3)+" m", mid.x-6, mid.y+16);
+  // 热点
+  if(S.layers.hot){
+    hotspots().forEach(function(h){
+      var hp = w2s(h.x,h.y,p);
+      ctx.fillStyle="#fff"; ctx.strokeStyle="#2f6fed"; ctx.lineWidth=1.6;
+      ctx.beginPath(); ctx.arc(hp.x,hp.y,9,0,7); ctx.fill(); ctx.stroke();
+      ctx.fillStyle="#2f6fed"; ctx.font="bold 11px sans-serif"; ctx.textAlign="center";
+      ctx.fillText("i", hp.x, hp.y+4);
+    });
+  }
+  // 静电模式水印与验电器
+  if(es){
+    ctx.fillStyle="rgba(200,30,30,.85)"; ctx.font="bold 13px sans-serif"; ctx.textAlign="left";
+    ctx.fillText("⚠ 类比演示（库仑扭秤），非万有引力", 12, p.H-42);
+    ctx.fillText("介质 εr="+S.epsr+"（仅影响静电力）", 12, p.H-24);
+    // 验电器示意
+    ctx.strokeStyle="#555"; ctx.strokeRect(12,12,46,60);
+    ctx.beginPath(); ctx.moveTo(35,16); ctx.lineTo(35,44); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(28,52); ctx.lineTo(35,44); ctx.lineTo(42,52); ctx.stroke();
+    ctx.fillStyle="#555"; ctx.font="10px sans-serif"; ctx.fillText("静电计", 16, 84);
+  }
+  if(S.mode==="torsion"){
+    ctx.fillStyle="#6b7280"; ctx.font="11px sans-serif"; ctx.textAlign="left";
+    ctx.fillText("与介质无关（引力不受介质影响）", 12, p.H-24);
+  }
+  // 比例尺
+  var sb = Math.round(S.tf.scale);
+  ctx.strokeStyle="#333"; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(14,p.H-64); ctx.lineTo(14+sb,p.H-64); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(14,p.H-68); ctx.lineTo(14,p.H-60); ctx.moveTo(14+sb,p.H-68); ctx.lineTo(14+sb,p.H-60); ctx.stroke();
+  ctx.fillStyle="#333"; ctx.font="11px sans-serif"; ctx.fillText("1 m", 14, p.H-70);
+}
+function dblArrow(ctx,x1,y1,x2,y2,color){
+  var ang=Math.atan2(y2-y1,x2-x1);
+  arrow(ctx,x1,y1,x2,y2,color,1.2);
+  ctx.fillStyle=color;
+  ctx.beginPath();
+  ctx.moveTo(x1,y1);
+  ctx.lineTo(x1+9*Math.cos(ang-0.4),y1+9*Math.sin(ang-0.4));
+  ctx.lineTo(x1+9*Math.cos(ang+0.4),y1+9*Math.sin(ang+0.4));
+  ctx.closePath(); ctx.fill();
+}
+function drawLegend(ctx,p){
+  var x=12,y=14, w=178,h=92;
+  ctx.fillStyle="rgba(255,255,255,.92)"; ctx.strokeStyle="#dfe3ea";
+  ctx.fillRect(x,y,w,h); ctx.strokeRect(x,y,w,h);
+  ctx.font="12px sans-serif"; ctx.textAlign="left";
+  var items=[["#3b7dd8","小球 m₁"],["#e8862a","大球 m₂"],["#e23b3b","引力矢量"],["#8a4fd3","扭转力矩"],["#d4a017","光路"],["#ff3b3b","光斑"],["#333","零点（虚线）"]];
+  items.forEach(function(it,i){
+    ctx.fillStyle=it[0];
+    if(it[0]==="#333"){ ctx.setLineDash([4,3]); ctx.strokeStyle="#333"; ctx.beginPath(); ctx.moveTo(x+10,y+14+i*11); ctx.lineTo(x+28,y+14+i*11); ctx.stroke(); ctx.setLineDash([]); }
+    else { ctx.beginPath(); ctx.arc(x+18,y+14+i*11,5,0,7); ctx.fill(); }
+    ctx.fillStyle="#2b2f36"; ctx.fillText(it[1], x+34, y+18+i*11);
+  });
+}
+
+/* —— 正视图（示意） —— */
+function drawSide(ctx,p){
+  var W=p.W,H=p.H, cx=W*0.32, top=26, beamY=H*0.68;
+  ctx.strokeStyle="#999"; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(cx-90,top); ctx.lineTo(cx+90,top); ctx.stroke();  // 天花吊架
+  ctx.fillStyle="#6b7280"; ctx.font="11px sans-serif"; ctx.textAlign="center"; ctx.fillText("固定支架", cx, top-8);
+  // 悬丝
+  ctx.strokeStyle="#666"; ctx.lineWidth=1.4;
+  ctx.beginPath(); ctx.moveTo(cx,top); ctx.lineTo(cx,beamY); ctx.stroke();
+  ctx.fillStyle="#6b7280"; ctx.fillText("石英丝 κ="+fmtSci(S.kappa)+" N·m/rad", cx+128, (top+beamY)/2);
+  // 平面镜
+  ctx.save(); ctx.translate(cx,(top+beamY)/2); ctx.rotate(-S.theta*2);
+  ctx.fillStyle="#aeb6c2"; ctx.fillRect(-2,-12,4,24); ctx.restore();
+  ctx.fillStyle="#6b7280"; ctx.fillText("平面镜", cx-40, (top+beamY)/2+30);
+  // 横杆（微倾 θ）
+  var arm = Math.min(W*0.2, S.d*160);
+  ctx.save(); ctx.translate(cx,beamY); ctx.rotate(-S.theta*0.5);
+  ctx.strokeStyle="#444"; ctx.lineWidth=5; ctx.lineCap="round";
+  ctx.beginPath(); ctx.moveTo(-arm,0); ctx.lineTo(arm,0); ctx.stroke(); ctx.restore();
+  // 小球
+  [[-arm,"m₁"],[arm,"m₁"]].forEach(function(b){
+    var bx=cx+b[0]*Math.cos(-S.theta*0.5), by=beamY+b[0]*Math.sin(-S.theta*0.5)+16;
+    ctx.fillStyle="#3b7dd8"; ctx.beginPath(); ctx.arc(bx,by,13,0,7); ctx.fill();
+    ctx.fillStyle="#2b2f36"; ctx.fillText(b[1]+"="+fmtN(S.m1,2)+" kg", bx, by+30);
+  });
+  // 大球（两侧地面）
+  [[cx-arm-46,"m₂"],[cx+arm+46,"m₂"]].forEach(function(b){
+    ctx.fillStyle="#e8862a"; ctx.beginPath(); ctx.arc(b[0],beamY+16,20,0,7); ctx.fill();
+    ctx.fillStyle="#2b2f36"; ctx.fillText(b[1]+"="+S.m2+" kg", b[0], beamY+50);
+  });
+  // 激光与刻度尺（右侧远处，按 D 示意）
+  var sx = cx + arm + 70, dist = Math.min(W-80, (W-cx)*0.75);
+  var ly = (top+beamY)/2;
+  ctx.strokeStyle="#d4a017"; ctx.lineWidth=1.6;
+  ctx.beginPath(); ctx.moveTo(sx-10,H-30); ctx.lineTo(cx,ly); ctx.stroke();       // 入射
+  var xr = spotX(thetaRead());
+  var ky = ly - xr*80;
+  ctx.beginPath(); ctx.moveTo(cx,ly); ctx.lineTo(sx+dist,ky); ctx.stroke();       // 反射
+  // 刻度尺
+  ctx.strokeStyle="#555"; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(sx+dist,ly-120); ctx.lineTo(sx+dist,ly+120); ctx.stroke();
+  for(var v=-0.6;v<=0.61;v+=0.1){
+    ctx.strokeStyle="#777"; ctx.beginPath(); ctx.moveTo(sx+dist,ly-v*80); ctx.lineTo(sx+dist+8,ly-v*80); ctx.stroke();
+    ctx.fillStyle="#555"; ctx.font="9px sans-serif"; ctx.textAlign="left";
+    ctx.fillText(v.toFixed(1), sx+dist+10, ly-v*80+3);
+  }
+  ctx.fillStyle="#ff3b3b"; ctx.beginPath(); ctx.arc(sx+dist,ky,6,0,7); ctx.fill();
+  ctx.fillStyle="#6b7280"; ctx.font="11px sans-serif"; ctx.textAlign="left";
+  ctx.fillText("光源", sx-24, H-14);
+  ctx.fillText("刻度尺（D="+fmtN(S.D,1)+" m，示意压缩）", sx+dist-70, ly+136);
+  ctx.fillStyle="#8a6d00"; ctx.fillText("x = "+fmtN(spotX(S.theta),3)+" m", cx+40, ly-40);
+  if(S.mode==="es"){
+    ctx.fillStyle="rgba(200,30,30,.9)"; ctx.font="bold 13px sans-serif";
+    ctx.fillText("⚠ 类比演示（库仑扭秤），非万有引力", 12, 20);
+  }
+}
+
+/* —— 力传感器直测 —— */
+function drawSensor(ctx,p){
+  var W=p.W,H=p.H, cy=H*0.6;
+  // 基座
+  ctx.fillStyle="#dfe3ea"; ctx.fillRect(20,cy+70,W-40,16);
+  ctx.fillStyle="#6b7280"; ctx.font="12px sans-serif"; ctx.textAlign="left";
+  ctx.fillText("隔振平台", 24, cy+100);
+  // 传感器 + 小球
+  var sx = W*0.24;
+  ctx.fillStyle="#9aa3b2"; ctx.fillRect(sx-30,cy-14,60,86);
+  ctx.fillStyle="#fff"; ctx.font="11px sans-serif"; ctx.textAlign="center";
+  ctx.fillText("微量力传感器", sx, cy+8);
+  ctx.fillText("量程 10 mN · 分辨率 0.1 mN", sx, cy+26);
+  ctx.fillStyle="#3b7dd8"; ctx.beginPath(); ctx.arc(sx,cy-38,15,0,7); ctx.fill();
+  ctx.fillStyle="#2b2f36"; ctx.fillText("m₁="+fmtN(S.m1,2)+" kg", sx, cy-62);
+  // 位移台 + 大球
+  var bx = sx + 60 + S.r*300;
+  ctx.fillStyle="#9aa3b2"; ctx.fillRect(bx-26,cy+30,52,42);
+  ctx.fillStyle="#6b7280"; ctx.fillText("位移台", bx, cy+72);
+  ctx.fillStyle="#e8862a"; ctx.beginPath(); ctx.arc(bx,cy-38,Math.max(S.R2*300,18),0,7); ctx.fill();
+  ctx.fillStyle="#2b2f36"; ctx.fillText("m₂="+S.m2+" kg", bx, cy-38-Math.max(S.R2*300,18)-12);
+  // r 标尺
+  dblArrow(ctx, sx+15, cy-38, bx-Math.max(S.R2*300,18), cy-38, "#8a8f98");
+  ctx.fillStyle="#555"; ctx.fillText("r="+fmtN(S.r,3)+" m", (sx+bx)/2, cy-58);
+  // 力矢量（等大反向）
+  var F = gravF();
+  if(!isInvalid() && S.layers.vectors){
+    arrow(ctx, sx+16, cy-38, sx+16+44, cy-38, "#e23b3b", 2.6);
+    arrow(ctx, bx-16, cy-38, bx-16-44, cy-38, "#e23b3b", 2.6);
+    ctx.fillStyle="#e23b3b"; ctx.font="bold 12px sans-serif";
+    ctx.fillText("F′ = F（等大反向）", (sx+bx)/2, cy-110);
+  }
+  // 读数
+  var below = F < CFG.sensRes;
+  ctx.fillStyle = below? "#c0392b":"#1e7e34";
+  ctx.font="bold 26px Consolas,monospace"; ctx.textAlign="center";
+  ctx.fillText(fmtSci(F)+" N", W/2, H*0.22);
+  ctx.font="13px sans-serif";
+  if(below){
+    ctx.fillText("⚠ 低于传感器分辨率（0.1 mN = 1×10⁻⁴ N），无法分辨！", W/2, H*0.22+26);
+    ctx.fillStyle="#6b7280";
+    ctx.fillText("比分辨率还小约 "+Math.round(CFG.sensRes/F)+" 倍 —— 需要\"间接放大测量\"", W/2, H*0.22+48);
+  } else {
+    ctx.fillText("传感器可直接读出", W/2, H*0.22+26);
+  }
+  if(isInvalid()){
+    ctx.fillStyle="#c0392b"; ctx.font="bold 15px sans-serif";
+    ctx.fillText("r ≤ R₁+R₂：两球接触，公式失效（r 取球心距且需球对称条件）", W/2, H*0.42);
+  }
+  ctx.fillStyle="#6b7280"; ctx.font="12px sans-serif"; ctx.textAlign="left";
+  ctx.fillText("对照：扭秤光杠杆可测 ~10⁻⁷ N（放大 2Dd/κ ≈ 10⁶ 倍）；直测与放大的取舍", 20, 20);
+  // 图例
+  ctx.fillStyle="#3b7dd8"; ctx.beginPath(); ctx.arc(20,44,5,0,7); ctx.fill();
+  ctx.fillStyle="#2b2f36"; ctx.fillText("小球", 30, 48);
+  ctx.fillStyle="#e8862a"; ctx.beginPath(); ctx.arc(70,44,5,0,7); ctx.fill();
+  ctx.fillStyle="#2b2f36"; ctx.fillText("大球", 80, 48);
+  ctx.fillStyle="#e23b3b"; ctx.beginPath(); ctx.arc(120,44,5,0,7); ctx.fill();
+  ctx.fillStyle="#2b2f36"; ctx.fillText("引力矢量", 130, 48);
+}
+
+/* ===== 实时读数与数据面板 ===== */
+function updateReadouts(){
+  var thR = thetaRead(), x = S.noLever? S.d*Math.sin(thR) : spotX(thR);
+  $("v-L").textContent = fmtN(curL(),3)+" m";
+  $("v-m").textContent = fmtN(S.m1,2)+" / "+S.m2+" kg";
+  $("v-th").textContent = fmtSci(thR)+" rad";
+  $("v-x").textContent = fmtN(x,4)+" m"+(S.noLever?"（无光杠杆）":"");
+  var Fm = (S.mode==="sensor")? gravF() : measF(x);
+  var Fth = (S.mode==="es")? coulombF() : gravF();
+  if(S.mode==="sensor"){ Fm = Fth; }
+  $("v-F").textContent = isInvalid()&&S.mode!=="es" ? "—（失效）" : fmtSci(Fm)+" N";
+  $("v-Fth").textContent = isInvalid()&&S.mode!=="es" ? "—（失效，停止对比）" : fmtSci(Fth)+" N"+(S.mode==="es"?"（静电类比）":"");
+  var dev = (isFinite(Fm)&&isFinite(Fth)&&Fth!==0&&!(isInvalid()&&S.mode!=="es"))? Math.abs(Fm-Fth)/Math.abs(Fth)*100 : null;
+  $("v-dev").textContent = dev==null?"—":fmtN(dev,2)+" %";
+  $("v-kdd").textContent = fmtSci(S.kappa)+" / "+fmtN(S.d,3)+" / "+fmtN(S.D,1);
+  $("v-I").textContent = fmtSci(inertia())+" kg·m²";
+  var T0 = 2*Math.PI/omega0();
+  $("v-T0").textContent = fmtN(T0/60,1)+" min（仿真×"+S.timeScale+"）";
+  // 状态
+  var st;
+  if(S.mode==="sensor"){ st = isInvalid()?"公式失效":"静态直测"; }
+  else if(isInvalid()&&S.mode!=="es"){ st = "公式失效"; }
+  else {
+    var tq = Math.abs(S.omega), te = Math.abs(S.theta-thetaEq());
+    st = (tq > omega0()*0.01 || te > 0.05*Math.max(Math.abs(thetaEq()),1e-9)) ? "阻尼振荡中" : "已平衡";
+  }
+  var vst = $("v-status");
+  vst.textContent = st + (S.frozen?"（冻结）":"");
+  vst.className = (st==="已平衡"||st==="静态直测")?"stat-ok":"stat-bad";
+  // 横幅
+  var bn = $("banner");
+  if(isInvalid() && S.mode!=="es"){
+    bn.className = "fail";
+    bn.innerHTML = "⚠ 公式失效：r ≤ R₁+R₂="+fmtN(CFG.R1+S.R2,3)+" m。r 应取<b>球心距</b>且需<b>球对称（质点）</b>条件；不能外推 F→∞。已停止与 F=Gm₁m₂/r² 对比。";
+  } else if(isWarn() && S.mode!=="es"){
+    bn.className = "info";
+    bn.innerHTML = "注意：r 与球半径同量级，公式进入失效边缘（r ≳ 1.5×(R₁+R₂) 才可靠）。";
+  } else if(!S.env.vac||!S.env.thermo||!S.env.shield){
+    bn.className = "info";
+    bn.innerHTML = "环境未达标："+(!S.env.vac?"无真空（气流噪声）　":"")+(+!S.env.thermo?"无恒温（κ漂移）　":"")+(!S.env.shield?"无静电屏蔽（干扰跳变）":"");
+  } else { bn.className = ""; }
+  // 放大链条
+  var F0 = (S.mode==="es")? Math.abs(coulombF()) : gravF();
+  var tau = F0*S.d, the = tau/S.kappa, xx = 2*S.D*the;
+  $("ampF").textContent = fmtSci(F0)+" N";
+  $("ampTau").textContent = fmtSci(tau)+" N·m";
+  $("ampTheta").textContent = fmtSci(the)+" rad";
+  $("ampX").textContent = fmtN(xx*100,1)+" cm";
+  $("ampTot").textContent = fmtSci(2*S.D*S.d/S.kappa,2);
+  // 无光杠杆对照
+  var nl = $("noLeverNote");
+  if(S.noLever){
+    nl.style.display = "block";
+    nl.innerHTML = "无光杠杆对照：直接读横杆端点位移 d·θ ≈ "+fmtN(S.d*Math.sin(thetaEq()),4)+" m（约 "+fmtN(S.d*Math.sin(thetaEq())*100,1)+" cm，且无法再放大）；长力臂与光杠杆缺一不可。";
+  } else nl.style.display = "none";
+  // x–t 图
+  drawXt();
+}
+
+/* ===== x–t 曲线 ===== */
+function drawXt(){
+  var c = $("cvXt"); if(!c.clientWidth) return;
+  var p = setupCanvas(c), ctx = p.ctx;
+  ctx.clearRect(0,0,p.W,p.H);
+  var pad = {l:50,r:10,t:18,b:26}, iw = p.W-pad.l-pad.r, ih = p.H-pad.t-pad.b;
+  var buf = S.xtBuf;
+  if(buf.length<2){
+    ctx.fillStyle="#8a8f98"; ctx.font="12px sans-serif"; ctx.textAlign="center";
+    ctx.fillText("运行后显示光斑位移 x—时间 t 阻尼曲线", p.W/2, p.H/2);
+    return;
+  }
+  var tmin = buf[0].t, tmax = buf[buf.length-1].t;
+  var xmin = -0.1, xmax = 0.1;
+  buf.forEach(function(b){ xmin=Math.min(xmin,b.x); xmax=Math.max(xmax,b.x); });
+  var xr = Math.max(xmax-xmin,0.02); xmin-=xr*0.1; xmax+=xr*0.1;
+  function mx(t){ return pad.l + (t-tmin)/Math.max(tmax-tmin,1e-9)*iw; }
+  function my(x){ return pad.t + ih - (x-xmin)/(xmax-xmin)*ih; }
+  // 零线
+  ctx.strokeStyle="#c8ccd4"; ctx.setLineDash([4,4]);
+  ctx.beginPath(); ctx.moveTo(pad.l,my(0)); ctx.lineTo(pad.l+iw,my(0)); ctx.stroke(); ctx.setLineDash([]);
+  // 曲线
+  ctx.strokeStyle="#2f6fed"; ctx.lineWidth=1.8; ctx.beginPath();
+  buf.forEach(function(b,i){ var X=mx(b.t),Y=my(b.x); if(i===0)ctx.moveTo(X,Y);else ctx.lineTo(X,Y); });
+  ctx.stroke();
+  // 平衡线
+  var xe = spotX(thetaEq());
+  ctx.strokeStyle="#1e7e34"; ctx.setLineDash([6,4]);
+  ctx.beginPath(); ctx.moveTo(pad.l,my(xe)); ctx.lineTo(pad.l+iw,my(xe)); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle="#1e7e34"; ctx.font="10px sans-serif"; ctx.textAlign="left";
+  ctx.fillText("平衡 x="+fmtN(xe,3)+"m", pad.l+4, my(xe)-4);
+  // 轴
+  ctx.strokeStyle="#666"; ctx.beginPath();
+  ctx.moveTo(pad.l,pad.t); ctx.lineTo(pad.l,pad.t+ih); ctx.lineTo(pad.l+iw,pad.t+ih); ctx.stroke();
+  ctx.fillStyle="#555"; ctx.font="10px sans-serif";
+  ctx.textAlign="center"; ctx.fillText("t/s（仿真时间）", pad.l+iw/2, p.H-6);
+  ctx.save(); ctx.translate(11,pad.t+ih/2); ctx.rotate(-Math.PI/2);
+  ctx.fillText("x/m", 0, 0); ctx.restore();
+  ctx.textAlign="right";
+  ctx.fillText(fmtN(xmax,2), pad.l-4, pad.t+8);
+  ctx.fillText(fmtN(xmin,2), pad.l-4, pad.t+ih);
+  ctx.textAlign="left"; ctx.fillText(fmtSci(tmax)+"s", pad.l+iw-40, pad.t+ih-4);
+}
+
+/* ===== 画布交互：缩放 / 平移 / 热点 ===== */
+(function(){
+  var drag = null, moved = 0;
+  cv.addEventListener("mousedown", function(e){
+    drag = {x:e.clientX, y:e.clientY, ox:S.tf.ox, oy:S.tf.oy}; moved = 0;
+  });
+  window.addEventListener("mousemove", function(e){
+    if(!drag) return;
+    var dx = e.clientX-drag.x, dy = e.clientY-drag.y;
+    moved += Math.abs(dx)+Math.abs(dy);
+    if(moved>5 && S.view==="top"){
+      S.tf.ox = drag.ox - dx/S.tf.scale;
+      S.tf.oy = drag.oy + dy/S.tf.scale;
+      S.fitPending = false;
+    }
+  });
+  window.addEventListener("mouseup", function(e){
+    if(drag && moved<=5){ onCanvasClick(e); }
+    drag = null;
+  });
+  cv.addEventListener("wheel", function(e){
+    if(S.view!=="top") return;
+    e.preventDefault();
+    var f = e.deltaY<0?1.12:1/1.12;
+    S.tf.scale = Math.min(2000, Math.max(4, S.tf.scale*f));
+    S.fitPending = false;
+  }, {passive:false});
+  cv.addEventListener("touchstart", function(e){
+    if(e.touches.length===1){ drag={x:e.touches[0].clientX,y:e.touches[0].clientY,ox:S.tf.ox,oy:S.tf.oy}; moved=0; }
+  },{passive:true});
+  cv.addEventListener("touchmove", function(e){
+    if(drag&&e.touches.length===1&&S.view==="top"){
+      var dx=e.touches[0].clientX-drag.x, dy=e.touches[0].clientY-drag.y;
+      S.tf.ox = drag.ox - dx/S.tf.scale; S.tf.oy = drag.oy + dy/S.tf.scale; S.fitPending=false;
+    }
+  },{passive:true});
+  function onCanvasClick(e){
+    if(S.view!=="top"||!S.layers.hot) return;
+    var rect = cv.getBoundingClientRect();
+    var px = e.clientX-rect.left, py = e.clientY-rect.top;
+    var p = {W:rect.width, H:rect.height};
+    hotspots().forEach(function(h){
+      var hp = w2s(h.x,h.y,p);
+      if(Math.hypot(hp.x-px,hp.y-py)<14){ openCard(h.card); beep(); }
+    });
+  }
+})();
+
+/* ===== 标签页与模式 ===== */
+var TABS = ["history","lab","sensor","es","verify","quiz"];
+function setTab(tab){
+  S.tab = tab;
+  TABS.forEach(function(t){
+    var pg = (t==="history")?$("page-history"):(t==="verify")?$("page-verify"):(t==="quiz")?$("page-quiz"):null;
+    if(pg) pg.classList.toggle("show", t===tab);
+  });
+  document.querySelectorAll("#tabs button").forEach(function(b){
+    b.classList.toggle("active", b.getAttribute("data-tab")===tab);
+  });
+  $("labView").style.display = (tab==="lab"||tab==="sensor"||tab==="es")?"grid":"none";
+  if(tab==="sensor") setMode("sensor");
+  if(tab==="es") setMode("es");
+  if(tab==="lab") setMode("torsion");
+  if(tab==="lab"||tab==="sensor"||tab==="es"){ S.fitPending = true; }
+  if(tab==="history"){ drawMoon(0); drawMoonStatic(); drawGLat(); drawGH(); computeMoon(); }
+  if(tab==="verify"){ drawVerifyCharts(); }
+  beep();
+}
+function setMode(m){
+  S.mode = m;
+  $("esPanel").style.display = (m==="es")?"":"none";
+  ["btn-pos-attract","btn-pos-repel","btn-pos-far"].forEach(function(id){
+    var el=$(id); el.disabled = (m!=="torsion");
+    el.style.opacity = (m!=="torsion")?0.45:1;
+  });
+  $("viewbar").style.display = (m==="sensor")?"none":"flex";
+}
+document.querySelectorAll("#tabs button").forEach(function(b){
+  b.addEventListener("click", function(){ setTab(b.getAttribute("data-tab")); });
+});
+
+/* ===== 控件绑定 ===== */
+function bindRange(id,lab,fn,fmt){
+  var el=$(id), lb=$(lab);
+  el.addEventListener("input", function(){
+    fn(parseFloat(el.value)); lb.textContent = fmt(parseFloat(el.value)); S.fitPending=true;
+  });
+  lb.textContent = fmt(parseFloat(el.value));
+}
+/* κ 用对数刻度：0..1000 → 1e-6..1e-4 */
+function kappaFromSlider(v){ return 1e-6*Math.pow(100, v/1000); }
+bindRange("in-r","lb-r", function(v){S.r=v;}, function(v){return v.toFixed(3)+" m";});
+bindRange("in-m1","lb-m1", function(v){S.m1=v;}, function(v){return v.toFixed(2)+" kg";});
+bindRange("in-m2","lb-m2", function(v){S.m2=v;}, function(v){return Math.round(v)+" kg";});
+bindRange("in-R2","lb-R2", function(v){S.R2=v;}, function(v){return v.toFixed(3)+" m";});
+bindRange("in-d","lb-d", function(v){S.d=v;}, function(v){return v.toFixed(3)+" m";});
+bindRange("in-D","lb-D", function(v){S.D=v;}, function(v){return v.toFixed(1)+" m";});
+bindRange("in-zeta","lb-zeta", function(v){S.zeta=v;}, function(v){return v.toFixed(2);});
+$("in-kappa").addEventListener("input", function(){
+  S.kappa = kappaFromSlider(parseFloat(this.value));
+  $("lb-kappa").textContent = fmtSci(S.kappa);
+});
+$("lb-kappa").textContent = fmtSci(S.kappa);
+/* 时间倍率（对数 0.1×..1000×） */
+function setSpeed(v){
+  S.timeScale = v;
+  $("in-speed").value = Math.round(250*Math.log10(v*10));
+  $("lb-speed").textContent = v+"×";
+}
+$("in-speed").addEventListener("input", function(){
+  var v = 0.1*Math.pow(10, parseFloat(this.value)/250);
+  S.timeScale = v; $("lb-speed").textContent = (v<10? v.toFixed(1):Math.round(v))+"×";
+});
+document.querySelectorAll("[data-speed]").forEach(function(b){
+  b.addEventListener("click", function(){ setSpeed(parseFloat(b.getAttribute("data-speed"))); beep(); });
+});
+/* 大球位置 */
+function setPos(mode){
+  S.posMode = mode;
+  S.psiTarget = (mode==="attract")?0:(mode==="repel")?Math.PI:Math.PI/2;
+  ["btn-pos-attract","btn-pos-repel","btn-pos-far"].forEach(function(id){
+    $(id).classList.toggle("on", id==="btn-pos-"+mode);
+  });
+  S.xtBuf.length=0; S.lastSampleT=S.t;
+  beep();
+}
+$("btn-pos-attract").addEventListener("click",function(){setPos("attract");});
+$("btn-pos-repel").addEventListener("click",function(){setPos("repel");});
+$("btn-pos-far").addEventListener("click",function(){setPos("far");});
+/* 运行控制 */
+$("btn-play").addEventListener("click", function(){
+  S.running = !S.running;
+  this.textContent = S.running?"⏸ 暂停":"▶ 播放";
+  this.classList.toggle("on", S.running);
+});
+$("btn-reset").addEventListener("click", function(){
+  S.theta=0; S.omega=0; S.t=0; S.xtBuf.length=0; S.lastSampleT=0; S.trail.length=0;
+  toast("已重置摆动状态");
+});
+$("btn-step").addEventListener("click", function(){
+  advance(Math.max(1, 2*Math.PI/omega0()/30));
+});
+$("btn-settle").addEventListener("click", function(){
+  S.theta = thetaEq(); S.omega = 0;
+  toast("已直接置于平衡位置 θ="+fmtSci(thetaEq())+" rad");
+});
+/* 视图 */
+$("btn-viewTop").addEventListener("click", function(){ S.view="top"; this.classList.add("on"); $("btn-viewSide").classList.remove("on"); S.fitPending=true; });
+$("btn-viewSide").addEventListener("click", function(){ S.view="side"; this.classList.add("on"); $("btn-viewTop").classList.remove("on"); });
+$("btn-fitview").addEventListener("click", function(){
+  S.fitPending = true;
+  // 俯视图下由下一帧 draw() 消费 fitPending；其他视图无 fitView 绘制路径，直接执行并重绘
+  if(!(S.view==="top" && S.mode==="torsion")){ fitView(); }
+});
+/* 环境 */
+$("ck-vac").addEventListener("change", function(){ S.env.vac=this.checked; });
+$("ck-thermo").addEventListener("change", function(){ S.env.thermo=this.checked; });
+$("ck-shield").addEventListener("change", function(){ S.env.shield=this.checked; });
+$("ck-bias").addEventListener("change", function(){ S.biasOn=this.checked; toast(this.checked?"已注入系统误差（零点偏移 2D·θ₀≈"+fmtN(2*S.D*S.thetaBias,3)+" m）":"已移除系统误差"); });
+$("ck-nolever").addEventListener("change", function(){ S.noLever=this.checked; });
+$("ck-correct").addEventListener("change", function(){ S.correct=this.checked; });
+/* 图层 */
+[["ly-vectors","vectors"],["ly-light","light"],["ly-torque","torque"],["ly-zero","zero"],["ly-grid","grid"],["ly-trail","trail"],["ly-hot","hot"],["ck-sound","sound"]].forEach(function(pair){
+  $(pair[0]).addEventListener("change", function(){ S.layers[pair[1]]=this.checked; });
+});
+/* 静电 */
+bindRange("in-q1","lb-q1", function(v){S.q1=v;}, function(v){return v.toFixed(1)+" nC";});
+bindRange("in-q2","lb-q2", function(v){S.q2=v;}, function(v){return v.toFixed(1)+" nC";});
+$("btn-half1").addEventListener("click", function(){ S.q1=Math.max(0.05,S.q1/2); $("in-q1").value=S.q1; $("lb-q1").textContent=S.q1.toFixed(1)+" nC"; toast("相同球接触等量平分：q₁→"+S.q1.toFixed(2)+" nC"); });
+$("btn-half2").addEventListener("click", function(){ S.q2=Math.max(0.05,S.q2/2); $("in-q2").value=S.q2; $("lb-q2").textContent=S.q2.toFixed(1)+" nC"; toast("相同球接触等量平分：q₂→"+S.q2.toFixed(2)+" nC"); });
+$("sel-medium").addEventListener("change", function(){ S.epsr=parseFloat(this.value); toast("介质 εr="+S.epsr+"（仅影响静电类比，引力不受介质影响）"); });
+
+/* ===== 双位置定零点 ===== */
+function eqReached(){
+  if(S.mode!=="torsion") return false;
+  return Math.abs(S.omega)<omega0()*0.01 && Math.abs(S.theta-thetaEq())<0.05*Math.max(Math.abs(thetaEq()),1e-9) && !S.frozen;
+}
+$("btn-zeroA").addEventListener("click", function(){
+  if(S.posMode!=="attract"){ toast("请先转到大球\"吸引位\"并等待平衡"); return; }
+  if(!eqReached()){ toast("尚未平衡，请等待或点\"快速平衡\""); return; }
+  S.zeroA = spotX(thetaRead());
+  renderZero();
+});
+$("btn-zeroB").addEventListener("click", function(){
+  if(S.posMode!=="repel"){ toast("请先转到大球\"排斥位\"并等待平衡"); return; }
+  if(!eqReached()){ toast("尚未平衡，请等待或点\"快速平衡\""); return; }
+  S.zeroB = spotX(thetaRead());
+  renderZero();
+});
+$("btn-zeroMid").addEventListener("click", function(){
+  if(S.zeroA===null||S.zeroB===null){ toast("请先分别记录吸引位 A 与排斥位 B"); return; }
+  S.zero0 = (S.zeroA+S.zeroB)/2;
+  S.correct = true; $("ck-correct").checked = true;
+  renderZero(); beep();
+  toast("零点已定为 x₀="+fmtN(S.zero0,4)+" m，并启用校正");
+});
+function renderZero(){
+  var el = $("zeroOut"), h=[];
+  h.push("x_A = "+(S.zeroA===null?"—":fmtN(S.zeroA,4)+" m")+"　x_B = "+(S.zeroB===null?"—":fmtN(S.zeroB,4)+" m"));
+  if(S.zero0!==null){
+    var Fth = gravF();
+    var raw = S.kappa*(S.zeroA!==null?S.zeroA:0)/(2*S.D*S.d);
+    var cor = S.kappa*((S.zeroA-S.zero0)+(S.zeroB!==null?0:0))/(4*S.D*S.d);
+    var Fraw = Math.abs(S.kappa*S.zeroA/(2*S.D*S.d));
+    var Fcor = Math.abs(S.kappa*(S.zeroA-S.zero0)/(2*S.D*S.d));
+    var eRaw = Math.abs(Fraw-Fth)/Fth*100, eCor = Math.abs(Fcor-Fth)/Fth*100;
+    h.push("零点 x₀=(A+B)/2 = "+fmtN(S.zero0,4)+" m");
+    h.push("校正前 F = "+fmtSci(Fraw)+" N（误差 "+fmtN(eRaw,1)+"%）");
+    h.push("校正后 F = "+fmtSci(Fcor)+" N（误差 "+fmtN(eCor,1)+"%）——系统误差显著减小");
+  }
+  el.innerHTML = h.join("<br>");
+}
+
+/* ===== 预设 ===== */
+var PRESETS = {
+  typical: function(){
+    setTab("lab");
+    setVal("in-r",0.23); setVal("in-m1",0.73); setVal("in-m2",158); setVal("in-R2",0.15);
+    setVal("in-d",0.915); setVal("in-D",5); $("in-kappa").value=410; S.kappa=6.6e-6; $("lb-kappa").textContent=fmtSci(S.kappa);
+    setPos("attract"); setSpeed(900); S.theta=0; S.omega=0; S.t=0; S.xtBuf.length=0;
+    toast("典型卡文迪什参数：F=Gm₁m₂/r²≈1.5×10⁻⁷ N");
+  },
+  rscan: function(){ setTab("verify"); runRSweep(); },
+  mscan: function(){ setTab("verify"); runMSweep(); },
+  dual: function(){
+    setTab("lab"); PRESETS.typical();
+    S.biasOn=true; $("ck-bias").checked=true;
+    toast("双位置测量：吸引位平衡→记录A→排斥位平衡→记录B→取中点");
+  },
+  amp: function(){
+    setTab("lab"); PRESETS.typical();
+    $("btn-settle").click();
+    document.querySelector("#dataPanel .box:nth-child(2)").style.boxShadow="0 0 0 3px #2f6fed";
+    setTimeout(function(){ document.querySelector("#dataPanel .box:nth-child(2)").style.boxShadow=""; },2500);
+    toast("看数据面板\"微小量放大链条\"：10⁻⁷ N → 0.21 m 光斑");
+  },
+  fail: function(){
+    setTab("lab");
+    setVal("in-R2",0.20); setVal("in-r",0.22); setPos("attract");
+    toast("r=0.22 m ≤ R₁+R₂=0.23 m：公式失效！");
+  },
+  es: function(){
+    setTab("es");
+    setVal("in-q1",1); setVal("in-q2",1); S.epsr=1; $("sel-medium").value="1";
+    S.theta=0; S.omega=0; S.t=0; S.xtBuf.length=0;
+    toast("静电类比：q=1 nC、r=0.23 m 时 F≈1.7×10⁻⁷ N，与引力同量级——但可控可屏蔽");
+  }
+};
+function setVal(id,v){ var el=$(id); el.value=v; el.dispatchEvent(new Event("input")); }
+document.querySelectorAll(".preset").forEach(function(b){
+  b.addEventListener("click", function(){ PRESETS[b.getAttribute("data-preset")](); beep(); });
+});
+
+/* ===== 数据记录 ===== */
+function addRecord(note){
+  var thR = thetaRead(), x = spotX(thR);
+  var Fm = (S.mode==="sensor")? gravF() : measF(x);
+  var Fth = (S.mode==="es")? coulombF() : gravF();
+  var err = (Fth!==0&&isFinite(Fth)&&!(isInvalid()&&S.mode!=="es"))? Math.abs(Fm-Fth)/Math.abs(Fth)*100 : null;
+  S.records.push({run:S.runId, mode:S.mode, r:curL(), m1:S.m1, m2:S.m2, x:x, th:thR, F:Fm, Fth:(isInvalid()&&S.mode!=="es")?null:Fth, err:err, note:note||""});
+  renderRecords();
+}
+function renderRecords(){
+  var tb = $("recBody"); tb.innerHTML = "";
+  S.records.forEach(function(r){
+    var tr = document.createElement("tr");
+    var col = RUNCOLORS[(r.run-1)%RUNCOLORS.length];
+    tr.innerHTML = "<td style='color:"+col+";font-weight:700'>"+r.run+"</td><td>"+r.mode+"</td><td>"+fmtN(r.r,3)+"</td><td>"+fmtN(r.m1,2)+"</td><td>"+Math.round(r.m2)+"</td><td>"+fmtN(r.x,4)+"</td><td>"+fmtSci(r.th)+"</td><td>"+fmtSci(r.F)+"</td><td>"+(r.Fth==null?"失效":fmtSci(r.Fth))+"</td><td>"+(r.err==null?"—":fmtN(r.err,1)+"%")+"</td><td>—</td><td>"+(r.note||"")+"</td>";
+    tb.appendChild(tr);
+  });
+  $("recCount").textContent = "共 "+S.records.length+" 条记录（当前实验组 "+S.runId+"）";
+}
+$("btnRec").addEventListener("click", function(){ addRecord(S.posMode+"位"); toast("已记录一条读数"); });
+$("btnNewRun").addEventListener("click", function(){ S.runId++; toast("新建实验组 #"+S.runId); renderRecords(); });
+$("btnCSV").addEventListener("click", function(){
+  var head = "组号,模式,r/m,m1/kg,m2/kg,x/m,theta/rad,F测量/N,F理论/N,相对误差%,备注\n";
+  var rows = S.records.map(function(r){
+    return [r.run,r.mode,fmtN(r.r,3),fmtN(r.m1,2),r.m2,fmtN(r.x,4),r.th.toExponential(3),r.F.toExponential(3),(r.Fth==null?"失效":r.Fth.toExponential(3)),(r.err==null?"":fmtN(r.err,2)),r.note].join(",");
+  }).join("\n");
+  var blob = new Blob(["\uFEFF"+head+rows], {type:"text/csv;charset=utf-8"});
+  var a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = "模型38_实验数据.csv";
+  a.click(); URL.revokeObjectURL(a.href);
+});
+$("btnClearRec").addEventListener("click", function(){ S.records.length=0; renderRecords(); toast("记录已清空"); });
+$("btnGotoLab").addEventListener("click", function(){ setTab("lab"); });
+
+/* ===== 定律验证 ===== */
+var V = { rPts:[], mPts:[], fitSlope:null, fitG:null, fitN:null, fit2Slope:null, fit2G:null };
+function noiseFactor(){
+  var a=0;
+  if(!S.env.vac) a+=0.02;
+  if(!S.env.thermo) a+=0.015;
+  if(!S.env.shield) a+=0.01;
+  return 1+(Math.random()*2-1)*a;
+}
+function runRSweep(){
+  var r0 = Math.max(CFG.R1+S.R2+0.07, 0.22), r1 = 0.60, n = 10;
+  V.rPts = [];
+  for(var i=0;i<n;i++){
+    var r = r0+(r1-r0)*i/(n-1);
+    var Fth = CFG.G*S.m1*S.m2/(r*r);
+    var Fm = Fth*noiseFactor();
+    V.rPts.push({r:r, x:1/(r*r), y:Fm, Fth:Fth});
+  }
+  // 过原点直线拟合：斜率 = Σxy/Σx²
+  var sx=0, sy=0;
+  V.rPts.forEach(function(pt){ sx+=pt.x*pt.x; sy+=pt.x*pt.y; });
+  V.fitSlope = sy/sx;
+  V.fitG = V.fitSlope/(S.m1*S.m2);
+  // 幂律指数 n：log F = logC − n·log r（最小二乘）
+  var sl=0, sly=0, nl=0;
+  V.rPts.forEach(function(pt){
+    sl+=Math.log(pt.r); sly+=Math.log(pt.y); nl++;
+  });
+  var lbar = sl/nl, lybar = sly/nl, num=0, den=0;
+  V.rPts.forEach(function(pt){
+    var lx=Math.log(pt.r), ly=Math.log(pt.y);
+    num += (lx-lbar)*(ly-lybar); den += (lx-lbar)*(lx-lbar);
+  });
+  V.fitN = -num/den;
+  S.runId++;
+  V.rPts.forEach(function(pt){
+    var the = pt.y*S.d/S.kappa;   // 平衡角 θ=F·d/κ
+    S.records.push({run:S.runId, mode:"r扫描", r:pt.r, m1:S.m1, m2:S.m2, x:spotX(the), th:the, F:pt.y, Fth:pt.Fth, err:Math.abs(pt.y-pt.Fth)/pt.Fth*100, note:"F–1/r²"});
+  });
+  renderRecords(); drawVerifyCharts();
+  toast("r 扫描完成：G拟合="+fmtSci(V.fitG)+"，指数 n="+fmtN(V.fitN,2));
+}
+function runMSweep(){
+  var m0=0.3, m1=5.0, n=10;
+  V.mPts = [];
+  for(var i=0;i<n;i++){
+    var m = m0+(m1-m0)*i/(n-1);
+    var Fth = CFG.G*m*S.m2/(S.r*S.r);
+    var Fm = Fth*noiseFactor();
+    V.mPts.push({mm:m*S.m2, y:Fm, Fth:Fth});
+  }
+  var sx=0, sy=0;
+  V.mPts.forEach(function(pt){ sx+=pt.mm*pt.mm; sy+=pt.mm*pt.y; });
+  V.fit2Slope = sy/sx;
+  V.fit2G = V.fit2Slope*S.r*S.r;
+  S.runId++;
+  V.mPts.forEach(function(pt){
+    S.records.push({run:S.runId, mode:"m扫描", r:S.r, m1:pt.mm/S.m2, m2:S.m2, x:0, th:0, F:pt.y, Fth:pt.Fth, err:Math.abs(pt.y-pt.Fth)/pt.Fth*100, note:"F–m₁m₂"});
+  });
+  renderRecords(); drawVerifyCharts();
+  toast("质量扫描完成：G拟合="+fmtSci(V.fit2G));
+}
+$("btn-rsweep").addEventListener("click", runRSweep);
+$("btn-msweep").addEventListener("click", runMSweep);
+$("ck-wrongfit").addEventListener("change", drawVerifyCharts);
+
+function drawVerifyCharts(){
+  $("vf-m1").textContent = fmtN(S.m1,2); $("vf-m2").textContent = S.m2;
+  $("vf-r").textContent = fmtN(S.r,3);
+  $("vf-r0").textContent = fmtN(Math.max(CFG.R1+S.R2+0.07,0.22),2);
+  if(V.fitG){
+    $("fit-slope").textContent = fmtSci(V.fitSlope);
+    $("fit-g").textContent = fmtSci(V.fitG);
+    $("fit-err").textContent = fmtN(Math.abs(V.fitG-CFG.Gstd)/CFG.Gstd*100,2)+" %";
+    $("fit-n").textContent = V.fitN.toFixed(2);
+  }
+  if(V.fit2G){
+    $("fit2-slope").textContent = fmtSci(V.fit2Slope);
+    $("fit2-g").textContent = fmtSci(V.fit2G);
+    $("fit2-err").textContent = fmtN(Math.abs(V.fit2G-CFG.Gstd)/CFG.Gstd*100,2)+" %";
+  }
+  // 图1：F–1/r²
+  chart($("cvF1"), {
+    title:"F – 1/r²（过原点直线，斜率=Gm₁m₂）", xlabel:"1/r² / m⁻²", ylabel:"F / N",
+    series: (V.rPts.length? [
+      {type:"scatter", pts:V.rPts.map(function(p){return{x:p.x,y:p.y};}), color:"#e8862a", label:"测量点"},
+      {type:"line", pts:V.rPts.map(function(p){return{x:p.x,y:V.fitSlope*p.x};}), color:"#2f6fed", label:"过原点拟合"},
+      {type:"line", pts:V.rPts.map(function(p){return{x:p.x,y:CFG.G*S.m1*S.m2*p.x};}), color:"#1e7e34", label:"理论 G=6.67×10⁻¹¹"}
+    ]:[])
+  });
+  // 图2：F–r
+  var wrong = $("ck-wrongfit").checked;
+  var rSeries = [];
+  if(V.rPts.length){
+    rSeries.push({type:"scatter", pts:V.rPts.map(function(p){return{x:p.r,y:p.y};}), color:"#e8862a", label:"测量点"});
+    rSeries.push({type:"line", pts:V.rPts.map(function(p){return{x:p.r,y:p.Fth};}), color:"#2f6fed", label:"理论 F∝1/r²"});
+    if(wrong){
+      var mid = V.rPts[Math.floor(V.rPts.length/2)];
+      var C1 = mid.y*mid.r, C3 = mid.y*Math.pow(mid.r,3);
+      rSeries.push({type:"line", pts:V.rPts.map(function(p){return{x:p.r,y:C1/p.r};}), color:"#aaa", dash:true, label:"错误拟合 F∝1/r"});
+      rSeries.push({type:"line", pts:V.rPts.map(function(p){return{x:p.r,y:C3/Math.pow(p.r,3)};}), color:"#c8a0c8", dot:true, label:"错误拟合 F∝1/r³"});
+    }
+  }
+  chart($("cvFr"), { title:"F – r（双曲线一支）", xlabel:"r / m", ylabel:"F / N", series:rSeries });
+  // 图3：F–m₁m₂
+  chart($("cvM"), {
+    title:"F – m₁m₂（过原点直线，斜率=G/r²）", xlabel:"m₁m₂ / kg²", ylabel:"F / N",
+    series: (V.mPts.length? [
+      {type:"scatter", pts:V.mPts.map(function(p){return{x:p.mm,y:p.y};}), color:"#3b7dd8", label:"测量点"},
+      {type:"line", pts:V.mPts.map(function(p){return{x:p.mm,y:V.fit2Slope*p.mm};}), color:"#2f6fed", label:"过原点拟合"}
+    ]:[])
+  });
+}
+
+/* 通用图表 */
+function chart(c, cfg){
+  if(!c||!c.clientWidth) return;
+  var p = setupCanvas(c), ctx = p.ctx;
+  ctx.clearRect(0,0,p.W,p.H);
+  ctx.fillStyle="#fff"; ctx.fillRect(0,0,p.W,p.H);
+  var pad={l:62,r:12,t:26,b:34}, iw=p.W-pad.l-pad.r, ih=p.H-pad.t-pad.b;
+  var all=[];
+  cfg.series.forEach(function(s){ s.pts.forEach(function(pt){ all.push(pt); }); });
+  if(!all.length){
+    ctx.fillStyle="#8a8f98"; ctx.font="12px sans-serif"; ctx.textAlign="center";
+    ctx.fillText("点击\"开始扫描\"生成数据", p.W/2, p.H/2); return;
+  }
+  var xmin=Infinity,xmax=-Infinity,ymin=Infinity,ymax=-Infinity;
+  all.forEach(function(pt){
+    if(isFinite(pt.x)){ xmin=Math.min(xmin,pt.x); xmax=Math.max(xmax,pt.x); }
+    if(isFinite(pt.y)){ ymin=Math.min(ymin,pt.y); ymax=Math.max(ymax,pt.y); }
+  });
+  var xr=(xmax-xmin)||1, yr=(ymax-ymin)||1;
+  if(cfg.throughOrigin!==false){ xmin=Math.min(xmin,0); ymin=Math.min(ymin,0); }
+  xmin-=xr*0.05; xmax+=xr*0.05; ymin-=yr*0.08; ymax+=yr*0.08;
+  function mx(x){ return pad.l+(x-xmin)/(xmax-xmin)*iw; }
+  function my(y){ return pad.t+ih-(y-ymin)/(ymax-ymin)*ih; }
+  // 网格与刻度
+  function ticks(min,max){
+    var span=max-min, step=Math.pow(10,Math.floor(Math.log10(span/4)));
+    var err=span/4/step; step *= (err>=7.5?10:err>=3?5:err>=1.5?2:1);
+    var out=[]; for(var v=Math.ceil(min/step)*step; v<=max; v+=step) out.push(v);
+    return out;
+  }
+  ctx.font="10px sans-serif";
+  ticks(xmin,xmax).forEach(function(v){
+    ctx.strokeStyle="#eef1f6"; ctx.beginPath(); ctx.moveTo(mx(v),pad.t); ctx.lineTo(mx(v),pad.t+ih); ctx.stroke();
+    ctx.fillStyle="#666"; ctx.textAlign="center";
+    var lb = Math.abs(v)>=1e4||((Math.abs(v)<1e-2)&&v!==0)? v.toExponential(1): v.toPrecision(3);
+    ctx.fillText(String(lb), mx(v), p.H-18);
+  });
+  ticks(ymin,ymax).forEach(function(v){
+    ctx.strokeStyle="#eef1f6"; ctx.beginPath(); ctx.moveTo(pad.l,my(v)); ctx.lineTo(pad.l+iw,my(v)); ctx.stroke();
+    ctx.fillStyle="#666"; ctx.textAlign="right";
+    var lb = (Math.abs(v)>=1e4||((Math.abs(v)<1e-2)&&v!==0))? v.toExponential(1): v.toPrecision(3);
+    ctx.fillText(String(lb), pad.l-5, my(v)+3);
+  });
+  // 轴
+  ctx.strokeStyle="#555"; ctx.lineWidth=1.2;
+  ctx.beginPath(); ctx.moveTo(pad.l,pad.t); ctx.lineTo(pad.l,pad.t+ih); ctx.lineTo(pad.l+iw,pad.t+ih); ctx.stroke();
+  ctx.fillStyle="#333"; ctx.font="11px sans-serif";
+  ctx.textAlign="center"; ctx.fillText(cfg.xlabel, pad.l+iw/2, p.H-5);
+  ctx.save(); ctx.translate(10,pad.t+ih/2); ctx.rotate(-Math.PI/2); ctx.fillText(cfg.ylabel,0,0); ctx.restore();
+  ctx.textAlign="left"; ctx.font="bold 12px sans-serif"; ctx.fillStyle="#3450a0";
+  ctx.fillText(cfg.title, pad.l, 14);
+  // 序列
+  cfg.series.forEach(function(s){
+    if(s.type==="scatter"){
+      ctx.fillStyle=s.color;
+      s.pts.forEach(function(pt){ ctx.beginPath(); ctx.arc(mx(pt.x),my(pt.y),4,0,7); ctx.fill(); });
+    } else {
+      ctx.strokeStyle=s.color; ctx.lineWidth=1.8;
+      if(s.dash) ctx.setLineDash([6,4]);
+      ctx.beginPath();
+      var started=false;
+      s.pts.forEach(function(pt){
+        var X=mx(pt.x),Y=my(pt.y);
+        if(!started){ctx.moveTo(X,Y);started=true;}else ctx.lineTo(X,Y);
+      });
+      ctx.stroke(); ctx.setLineDash([]);
+      if(s.dot){ ctx.fillStyle=s.color; s.pts.forEach(function(pt){ ctx.beginPath(); ctx.arc(mx(pt.x),my(pt.y),2.5,0,7); ctx.fill(); }); }
+    }
+  });
+  // 图例
+  var lx=pad.l+8, ly=pad.t+16;
+  cfg.series.forEach(function(s,i){
+    if(!s.label) return;
+    ctx.fillStyle=s.color;
+    if(s.dash){ ctx.setLineDash([4,3]); ctx.strokeStyle=s.color; ctx.beginPath(); ctx.moveTo(lx,ly+i*14); ctx.lineTo(lx+16,ly+i*14); ctx.stroke(); ctx.setLineDash([]); }
+    else { ctx.fillRect(lx,ly+i*14-3,16,3); }
+    ctx.fillStyle="#333"; ctx.font="10px sans-serif"; ctx.textAlign="left";
+    ctx.fillText(s.label, lx+20, ly+i*14+1);
+  });
+}
+
+/* ===== 历史时间轴与月地检验 ===== */
+var TL = [
+ {yr:"1609/1619", nm:"开普勒三定律", txt:"开普勒整理第谷的观测数据，得到行星运动三定律（椭圆轨道、面积定律、T²∝a³），描述了行星\"怎么动\"，但没有解释\"为什么\"——为万有引力定律提供了运动学基础。"},
+ {yr:"1666", nm:"牛顿的思考", txt:"牛顿开始思考：使苹果下落的力是否也是维持月球绕地球的力？提出平方反比假说。"},
+ {yr:"1687", nm:"《自然哲学的数学原理》", txt:"牛顿发表万有引力定律 F=Gm₁m₂/r²，并用\"月—地检验\"验证：天上与地上的力同性质、同规律。注意：此时 G 尚未测出。"},
+ {yr:"1783", nm:"米切尔设计扭秤", txt:"米切尔（J. Michell）设计了用扭秤测微小引力的装置（石英丝+横杆+小球+光杠杆思想），未完成实验即去世。装置经他人传至卡文迪什手中。"},
+ {yr:"1785", nm:"库仑扭秤", txt:"库仑用同类扭秤研究电荷间作用力，确认静电力平方反比（F=kq₁q₂/r²）。\"微小量放大\"实验思想一脉相承。"},
+ {yr:"1798", nm:"卡文迪什实验", txt:"卡文迪什改进扭秤完成实验，原始目标是测定地球平均密度（\"称量地球\"）。实验测得两球间微小引力并推算地球密度 ρ≈5.5 g/cm³。"},
+ {yr:"后世", nm:"G 的推算", txt:"引力常量 G=6.67×10⁻¹¹ N·m²/kg² 的数值是后人依据卡文迪什数据推算得到的。G 至今仍是基本常量中测量精度最低者之一（相对不确定度约 10⁻⁵ 量级）。"}
+];
+(function(){
+  var tl = $("timeline");
+  TL.forEach(function(n,i){
+    var d = document.createElement("div");
+    d.className="tlnode"; d.setAttribute("tabindex","0"); d.setAttribute("role","button");
+    d.setAttribute("aria-label",n.yr+" "+n.nm);
+    d.innerHTML = "<div class='yr'>"+n.yr+"</div><div class='nm'>"+n.nm+"</div>";
+    d.addEventListener("click",function(){
+      document.querySelectorAll(".tlnode").forEach(function(x){x.classList.remove("sel");});
+      d.classList.add("sel");
+      $("tlDetail").innerHTML = "<b>"+n.yr+" · "+n.nm+"</b>： "+n.txt;
+      beep();
+    });
+    d.addEventListener("keydown",function(e){ if(e.key==="Enter"||e.key===" "){ e.preventDefault(); d.click(); } });
+    tl.appendChild(d);
+  });
+})();
+function computeMoon(){
+  var ratio = CFG.rm/CFG.R;
+  var a1 = CFG.g*Math.pow(CFG.R/CFG.rm,2);
+  var a2 = 4*Math.PI*Math.PI*CFG.rm/Math.pow(CFG.Tm,2);
+  var dev = Math.abs(a1-a2)/a2*100;
+  $("me-ratio").textContent = ratio.toFixed(1);
+  $("me-a1").textContent = fmtSci(a1);
+  $("me-a2").textContent = fmtSci(a2);
+  $("me-dev").textContent = dev.toFixed(2)+"%";
+  return {a1:a1,a2:a2,dev:dev};
+}
+$("btn-me").addEventListener("click", function(){ var r=computeMoon(); toast("两条路径偏差 "+r.dev.toFixed(2)+"%（<2%）：天上地上的力同性质"); });
+
+/* 月地动画 */
+var moonAng = 0, appleY = 0, appleDir = 1;
+function drawMoon(dt){
+  var c = $("cvMoon"); if(!c.clientWidth) return;
+  var p = setupCanvas(c), ctx = p.ctx;
+  ctx.clearRect(0,0,p.W,p.H);
+  if(!reduced){ moonAng += dt*0.6; appleY += appleDir*dt*40; if(appleY>66){appleY=0;} }
+  var ex = p.W*0.30, ey = p.H*0.55, er = Math.min(p.H*0.30, 44);
+  // 轨道
+  ctx.strokeStyle="rgba(255,255,255,.25)"; ctx.setLineDash([4,5]);
+  ctx.beginPath(); ctx.arc(ex,ey,er+34,0,7); ctx.stroke(); ctx.setLineDash([]);
+  // 地球
+  ctx.fillStyle="#3b7dd8"; ctx.beginPath(); ctx.arc(ex,ey,er,0,7); ctx.fill();
+  ctx.fillStyle="rgba(255,255,255,.8)"; ctx.font="12px sans-serif"; ctx.textAlign="center";
+  ctx.fillText("地球", ex, ey+4);
+  // 月球
+  var mAng = moonAng, mx2 = ex+(er+34)*Math.cos(mAng), my2 = ey-(er+34)*Math.sin(mAng)*0.55;
+  ctx.fillStyle="#ddd"; ctx.beginPath(); ctx.arc(mx2,my2,7,0,7); ctx.fill();
+  ctx.fillText("月球", mx2, my2-12);
+  // 月球引力矢量（红，指向地心）
+  var gx = ex-mx2, gy = ey-my2, gl = Math.hypot(gx,gy)||1;
+  arrow(ctx, mx2, my2, mx2+gx/gl*22, my2+gy/gl*22, "#ff6b6b", 2);
+  // 苹果 + 下落
+  var ax = ex-er-46;
+  ctx.fillStyle="#e23b3b"; ctx.beginPath(); ctx.arc(ax, ey-er+appleY*0.4, 6,0,7); ctx.fill();
+  ctx.fillStyle="rgba(255,255,255,.8)"; ctx.fillText("苹果", ax, ey-er-16);
+  arrow(ctx, ax, ey-er+appleY*0.4+8, ax, ey-er+appleY*0.4+26, "#ff6b6b", 2);
+  // 树
+  ctx.strokeStyle="#5a3d1e"; ctx.lineWidth=4;
+  ctx.beginPath(); ctx.moveTo(ax, ey-er-4); ctx.lineTo(ax, ey-er-26); ctx.stroke();
+  // 注释
+  ctx.fillStyle="rgba(255,255,255,.75)"; ctx.font="11px sans-serif"; ctx.textAlign="left";
+  ctx.fillText("同一种力：均沿连线指向地心、遵从平方反比", 12, p.H-10);
+  ctx.fillText("a_m = g(R/r_m)² = 4π²r_m/T² ≈ 2.7×10⁻³ m/s²", p.W-260, 16);
+}
+function drawMoonStatic(){ drawMoon(0); }
+
+/* g–纬度 / g–高度小图 */
+function drawGLat(){
+  chart($("cvLat"), { title:"g 随纬度 φ 变化（赤道 9.78 → 两极 9.83）", xlabel:"纬度 φ / (°)", ylabel:"g / m·s⁻²",
+    series:[{type:"line", color:"#2f6fed", label:"g(φ)", pts:(function(){
+      var a=[]; for(var f=0;f<=90;f+=5) a.push({x:f, y:9.7803*(1+0.0053*Math.pow(Math.sin(f*Math.PI/180),2))});
+      return a; })()}]});
+}
+function drawGH(){
+  chart($("cvH"), { title:"g 随高度 h 变化：g′ = GM/(R+h)²", xlabel:"h / km", ylabel:"g / m·s⁻²",
+    series:[{type:"line", color:"#e8862a", label:"g(h)", pts:(function(){
+      var GM = CFG.g*CFG.R*CFG.R, a=[];
+      for(var h=0;h<=30;h+=1) a.push({x:h, y:GM/Math.pow(CFG.R+h*1000,2)});
+      return a; })()}]});
+}
+
+/* ===== 练习与考核 ===== */
+var quizOrder = QUIZ.map(function(q,i){return i;});
+var teacherMode = false, answered = {};
+function shuffle(a){
+  for(var i=a.length-1;i>0;i--){ var j=Math.floor(Math.random()*(i+1)); var t=a[i]; a[i]=a[j]; a[j]=t; }
+  return a;
+}
+function renderQuiz(){
+  var box = $("quizBox"); box.innerHTML="";
+  quizOrder.forEach(function(qi, idx){
+    var q = QUIZ[qi];
+    var d = document.createElement("div"); d.className="qitem";
+    d.innerHTML = "<div class='qtxt'>"+(idx+1)+". "+q.q+"</div>";
+    q.opts.forEach(function(op,oi){
+      var b = document.createElement("button");
+      b.className="opt"; b.textContent = "ABCD"[oi]+". "+op;
+      b.addEventListener("click", function(){
+        if(teacherMode){
+          d.querySelectorAll(".opt").forEach(function(x){x.classList.remove("on");});
+          b.classList.add("on");
+          answered[qi]=oi;
+        } else revealAnswer(qi, oi, d);
+      });
+      d.appendChild(b);
+    });
+    var ex = document.createElement("div"); ex.className="explain"; ex.id="ex-"+qi;
+    ex.innerHTML = q.why+"　<span class='jumpcard' data-card='"+q.card+"'>→ 查看对应知识卡片</span>";
+    d.appendChild(ex);
+    box.appendChild(d);
+  });
+  box.querySelectorAll(".jumpcard").forEach(function(j){
+    j.addEventListener("click", function(){ openCard(j.getAttribute("data-card")); });
+  });
+}
+function revealAnswer(qi, oi, d){
+  var q = QUIZ[qi];
+  d.querySelectorAll(".opt").forEach(function(x,i){
+    x.disabled = true;
+    if(i===q.ans) x.classList.add("right");
+    else if(i===oi) x.classList.add("wrong");
+  });
+  $("ex-"+qi).classList.add("show");
+  if(oi!==q.ans) toast("答错了——已跳转解析，可点链接看对应卡片");
+}
+$("ck-teacher").addEventListener("change", function(){
+  teacherMode = this.checked;
+  $("btn-submit").style.display = teacherMode?"":"none";
+  if(!teacherMode) renderQuiz();
+  toast(teacherMode?"教师考核模式：随机出题，交卷后统一评分":"练习模式：即时反馈");
+});
+$("btn-reshuffle").addEventListener("click", function(){
+  quizOrder = shuffle(QUIZ.map(function(q,i){return i;}));
+  answered = {}; renderQuiz();
+  $("scoreOut").textContent = "";
+  toast("已重新随机出题");
+});
+$("btn-submit").addEventListener("click", function(){
+  var right=0, total=quizOrder.length, missing=0;
+  quizOrder.forEach(function(qi){
+    var q=QUIZ[qi];
+    var d = $("ex-"+qi).parentNode;
+    if(answered[qi]===undefined){ missing++; return; }
+    var sel = d.querySelectorAll(".opt")[answered[qi]];
+    if(answered[qi]===q.ans){ right++; if(sel) sel.classList.add("right"); }
+    else { if(sel) sel.classList.add("wrong"); }
+    $("ex-"+qi).classList.add("show");
+  });
+  $("scoreOut").innerHTML = missing?("还有 "+missing+" 题未作答！"):("成绩：<b>"+right+" / "+total+"</b>（"+Math.round(right/total*100)+" 分）");
+});
+
+/* ===== 知识卡片：抽屉 + 弹窗 ===== */
+var CATS = ["全部","史实","概念","公式","规律","方法","辨析","易错","应用","误差"];
+var curCat = "全部", curCard = 0, curList = CARDS.map(function(c,i){return i;}), flipped=false;
+var pinned = [];
+function cardById(id){
+  for(var i=0;i<CARDS.length;i++) if(CARDS[i].id===id) return i;
+  return -1;
+}
+function renderChips(){
+  var el = $("catChips"); el.innerHTML="";
+  CATS.forEach(function(cat){
+    var b=document.createElement("button");
+    b.textContent=cat+(cat==="全部"?("("+CARDS.length+")"):("("+CARDS.filter(function(c){return c.cat===cat;}).length+")"));
+    if(cat===curCat) b.classList.add("on");
+    b.addEventListener("click",function(){ curCat=cat; renderChips(); renderCardList(); });
+    el.appendChild(b);
+  });
+}
+function renderCardList(){
+  var kw = $("drawerSearch").value.trim();
+  curList = [];
+  CARDS.forEach(function(c,i){
+    if(curCat!=="全部"&&c.cat!==curCat) return;
+    if(kw && (c.title+c.concl+(c.formula||"")).indexOf(kw)<0) return;
+    curList.push(i);
+  });
+  var el = $("cardList"); el.innerHTML="";
+  curList.forEach(function(i){
+    var c = CARDS[i];
+    var d = document.createElement("div");
+    d.className = "item"+(i===curCard?" sel":"");
+    d.setAttribute("role","option"); d.setAttribute("tabindex","0");
+    d.innerHTML = "<span class='catTag'>"+c.cat+"</span>"+c.title+(pinned.indexOf(c.id)>=0?" 📌":"");
+    d.addEventListener("click",function(){ curCard=i; flipped=false; renderCardList(); renderCardDetail(); beep(); });
+    d.addEventListener("keydown",function(e){ if(e.key==="Enter"||e.key===" "){e.preventDefault(); d.click();} });
+    el.appendChild(d);
+  });
+}
+function cardHTML(c){
+  var h = "<h3>【"+c.cat+"】"+c.title+"</h3>";
+  if(c.icon&&ICONS[c.icon]) h += ICONS[c.icon];
+  h += "<div class='concl'>"+c.concl+"</div>";
+  if(c.formula&&c.formula!=="—") h += "<div class='formula'>"+c.formula+"</div>";
+  if(c.guide) h += "<div class='guide'>📍 在本 Demo 中怎么看："+c.guide+"</div>";
+  if(c.warn) h += "<div class='warnTxt'>⚠ "+c.warn+"</div>";
+  return h;
+}
+function renderCardDetail(){
+  var c = CARDS[curCard];
+  $("cardDetail").classList.toggle("flip", flipped);
+  $("cardDetail").querySelector(".front").innerHTML = cardHTML(c);
+  $("cardDetail").querySelector(".back").innerHTML = "<h3>背面 · 推导/拓展</h3><div class='concl'>"+(c.back||c.concl)+"</div>";
+  $("cPin").textContent = (pinned.indexOf(c.id)>=0)?"取消钉住":"钉住";
+}
+$("drawerSearch").addEventListener("input", renderCardList);
+$("cFlip").addEventListener("click", function(){ flipped=!flipped; renderCardDetail(); });
+$("cPrev").addEventListener("click", function(){
+  var pos = curList.indexOf(curCard);
+  if(pos>0){ curCard=curList[pos-1]; flipped=false; renderCardList(); renderCardDetail(); }
+});
+$("cNext").addEventListener("click", function(){
+  var pos = curList.indexOf(curCard);
+  if(pos>=0&&pos<curList.length-1){ curCard=curList[pos+1]; flipped=false; renderCardList(); renderCardDetail(); }
+});
+$("cPin").addEventListener("click", function(){
+  var c = CARDS[curCard];
+  var at = pinned.indexOf(c.id);
+  if(at>=0) pinned.splice(at,1); else pinned.push(c.id);
+  renderPinned(); renderCardDetail(); renderCardList();
+});
+function renderPinned(){
+  var el = $("pinnedBox"); el.innerHTML="";
+  pinned.forEach(function(id){
+    var i = cardById(id); if(i<0) return;
+    var c = CARDS[i];
+    var d = document.createElement("div");
+    d.className="pinnedChip"; d.textContent="📌 "+c.title;
+    d.setAttribute("tabindex","0"); d.setAttribute("role","button");
+    d.addEventListener("click",function(){ openCard(id); });
+    d.addEventListener("keydown",function(e){ if(e.key==="Enter"){ openCard(id); } });
+    el.appendChild(d);
+  });
+}
+$("btnCards").addEventListener("click", function(){ $("drawer").classList.add("open"); renderChips(); renderCardList(); renderCardDetail(); });
+$("drawerClose").addEventListener("click", function(){ $("drawer").classList.remove("open"); });
+
+/* 弹窗（热点/跳转用） */
+function openCard(id){
+  var i = cardById(id);
+  if(i<0){ toast("卡片未找到"); return; }
+  curCard = i; flipped = false;
+  var c = CARDS[i];
+  $("modalBody").innerHTML = cardHTML(c)+
+    "<div class='dbtns'><button id='mFlip'>看推导/拓展</button><button id='mPin'>"+(pinned.indexOf(c.id)>=0?"取消钉住":"钉住")+"</button></div>";
+  $("modal").classList.add("open");
+  $("modalClose").focus();
+  $("mFlip").addEventListener("click", function(){
+    $("modalBody").innerHTML = "<h3>【"+c.cat+"】"+c.title+" · 推导/拓展</h3><div class='concl' style='font-size:13px;line-height:1.8'>"+(c.back||c.concl)+"</div><div class='dbtns'><button id='mBack'>返回正面</button></div>";
+    $("mBack").addEventListener("click", function(){ openCard(id); });
+  });
+  $("mPin").addEventListener("click", function(){
+    var at = pinned.indexOf(c.id);
+    if(at>=0) pinned.splice(at,1); else pinned.push(c.id);
+    renderPinned(); openCard(id);
+  });
+}
+$("modalClose").addEventListener("click", function(){ $("modal").classList.remove("open"); });
+$("modal").addEventListener("click", function(e){ if(e.target===$("modal")) $("modal").classList.remove("open"); });
+
+/* 键盘无障碍 */
+window.addEventListener("keydown", function(e){
+  if(e.key==="Escape"){
+    if($("modal").classList.contains("open")) $("modal").classList.remove("open");
+    else if($("drawer").classList.contains("open")) $("drawer").classList.remove("open");
+    else if($("tour").classList.contains("open")) $("tour").classList.remove("open");
+  }
+  if($("modal").classList.contains("open")){
+    if(e.key==="ArrowRight"){ $("cNext").click(); openCard(CARDS[curCard].id); }
+    if(e.key==="ArrowLeft"){ $("cPrev").click(); openCard(CARDS[curCard].id); }
+  }
+});
+
+/* ===== 教学引导 ===== */
+var tourStep = 0;
+function showTour(i){
+  tourStep = Math.max(0, Math.min(TOUR.length-1, i));
+  var t = TOUR[tourStep];
+  $("tourTitle").textContent = t.t;
+  $("tourStep").textContent = "（"+(tourStep+1)+"/"+TOUR.length+"）";
+  $("tourText").textContent = t.txt;
+  $("tourQ").textContent = "❓ "+t.q;
+  $("tourA").textContent = "✅ "+t.a;
+  $("tourA").classList.remove("show");
+  $("tour").classList.add("open");
+}
+$("btnTour").addEventListener("click", function(){ showTour(0); });
+$("tourNext").addEventListener("click", function(){ showTour(tourStep+1); });
+$("tourPrev").addEventListener("click", function(){ showTour(tourStep-1); });
+$("tourAns").addEventListener("click", function(){ $("tourA").classList.add("show"); });
+$("tourClose").addEventListener("click", function(){ $("tour").classList.remove("open"); });
+
+/* ===== 初始化 ===== */
+function init(){
+  setTab("lab");
+  setPos("attract");
+  setSpeed(reduced?1500:900);
+  renderQuiz();
+  computeMoon();
+  renderChips(); renderCardList(); renderCardDetail();
+  renderRecords();
+  if(!reduced){ setTimeout(function(){ showTour(0); }, 900); }
+  else { toast("已检测到减少动效偏好：默认高倍速、无残影"); }
+  window.addEventListener("resize", function(){
+    if(S.tab==="lab"||S.tab==="sensor"||S.tab==="es") S.fitPending=true;
+    if(S.tab==="verify") drawVerifyCharts();
+    if(S.tab==="history"){ drawGLat(); drawGH(); }
+  });
+}
+init();
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

@@ -1,0 +1,445 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>滚摆的动能与重力势能相互转化 · 物理仿真</title>
+<style>
+  :root{
+    --bg:#f5f7fa; --panel:#ffffff; --ink:#1f2933; --muted:#6b7785;
+    --line:#e3e8ef; --accent:#2563eb; --ke:#f59e0b; --pe:#10b981;
+    --shadow:0 2px 10px rgba(15,23,42,.06);
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; background:var(--bg); color:var(--ink);
+    font-family:"PingFang SC","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+    line-height:1.5;
+  }
+  .wrap{max-width:980px; margin:0 auto; padding:22px 18px 40px;}
+  h1{font-size:22px; margin:0 0 4px;}
+  .sub{color:var(--muted); font-size:13px; margin:0 0 18px;}
+  .panel{background:var(--panel); border:1px solid var(--line); border-radius:14px;
+    box-shadow:var(--shadow); padding:16px; margin-bottom:16px;}
+  .controls{display:flex; flex-wrap:wrap; gap:18px 26px; align-items:center;}
+  .ctrl{display:flex; flex-direction:column; gap:6px; min-width:170px;}
+  .ctrl label{font-size:13px; color:var(--muted); display:flex; justify-content:space-between;}
+  .ctrl label b{color:var(--ink); font-variant-numeric:tabular-nums;}
+  input[type=range]{width:100%; accent-color:var(--accent); cursor:pointer;}
+  .switch{display:inline-flex; align-items:center; gap:10px; cursor:pointer; user-select:none;}
+  .switch input{display:none;}
+  .track{width:46px; height:26px; background:#cbd5e1; border-radius:20px; position:relative; transition:.2s;}
+  .track::after{content:""; position:absolute; top:3px; left:3px; width:20px; height:20px;
+    background:#fff; border-radius:50%; transition:.2s; box-shadow:0 1px 3px rgba(0,0,0,.25);}
+  .switch input:checked + .track{background:var(--pe);}
+  .switch input:checked + .track::after{transform:translateX(20px);}
+  .btns{display:flex; gap:10px;}
+  button{font:inherit; border:1px solid var(--line); background:#fff; color:var(--ink);
+    padding:9px 16px; border-radius:10px; cursor:pointer; transition:.15s;}
+  button:hover{border-color:var(--accent); color:var(--accent);}
+  button.primary{background:var(--accent); color:#fff; border-color:var(--accent);}
+  button.primary:hover{background:#1d4ed8; color:#fff;}
+  .stage{display:grid; grid-template-columns:1fr 1fr; gap:16px; align-items:start;}
+  @media(max-width:720px){ .stage{grid-template-columns:1fr;} }
+  .canvas-box{display:flex; flex-direction:column; align-items:center; min-width:0;}
+  canvas{width:100%; height:auto; background:#fbfdff; border:1px solid var(--line);
+    border-radius:12px; display:block;}
+  .readouts{display:grid; grid-template-columns:repeat(3,1fr); gap:10px 14px; margin-top:14px; width:100%;}
+  @media(max-width:560px){ .readouts{grid-template-columns:repeat(2,1fr);} }
+  .ro{background:#f1f5f9; border-radius:10px; padding:8px 10px;}
+  .ro .k{font-size:12px; color:var(--muted);}
+  .ro .v{font-size:18px; font-weight:600; font-variant-numeric:tabular-nums;}
+  .ro .v small{font-size:12px; font-weight:400; color:var(--muted);}
+  .legend{display:flex; gap:18px; justify-content:center; margin-top:10px; font-size:13px; color:var(--muted);}
+  .dot{display:inline-block; width:11px; height:11px; border-radius:3px; margin-right:6px; vertical-align:-1px;}
+  .notes{font-size:13px; color:var(--muted);}
+  .notes b{color:var(--ink);}
+  .eq{font-family:"Cambria Math",Georgia,serif; background:#eef2ff; color:#3730a3;
+    padding:2px 8px; border-radius:6px; font-size:13px;}
+  .kb-lead{font-size:13px; color:var(--ink); background:#eef2ff;
+    border-left:3px solid var(--accent); padding:9px 12px; border-radius:0 8px 8px 0; margin-bottom:12px;}
+  .kb-grid{display:grid; grid-template-columns:repeat(2,1fr); gap:12px; margin-top:2px;}
+  .kb-grid > .kb-card:last-child{grid-column:1 / -1;}
+  @media(max-width:640px){ .kb-grid{grid-template-columns:1fr;} .kb-grid > .kb-card:last-child{grid-column:auto;} }
+  .kb-card{background:#f8fafc; border:1px solid var(--line); border-radius:12px; padding:12px 14px;}
+  .kb-card h4{margin:0 0 7px; font-size:13px; color:var(--accent);}
+  .kb-card p{margin:0 0 6px; font-size:12.5px;}
+  .kb-card ul{margin:0; padding-left:18px; font-size:12.5px;}
+  .kb-card li{margin-bottom:5px;}
+  .tip{background:#fffbeb; border:1px solid #fde68a; border-radius:10px;
+    padding:9px 12px; margin-top:12px; font-size:12.5px; color:#78350f;}
+  .phase{height:8px; border-radius:6px; background:linear-gradient(90deg,var(--pe),var(--ke));
+    margin-top:6px; position:relative;}
+  .phase span{position:absolute; top:-3px; width:12px; height:12px; border-radius:50%;
+    background:#fff; border:2px solid var(--accent); transform:translateX(-50%);}
+  @media(max-width:640px){ .readouts{grid-template-columns:1fr 1fr;} }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>滚摆的动能与重力势能相互转化</h1>
+  <p class="sub">麦克斯韦滚摆 · 能量守恒交互仿真 ｜ 不计摩擦时：下降→重力势能转化为动能；上升→动能转化为重力势能</p>
+
+  <!-- 控制面板 -->
+  <div class="panel">
+    <div class="controls">
+      <div class="ctrl">
+        <label>初始释放高度 <b><span id="hVal">20</span> cm</b></label>
+        <input type="range" id="height" min="5" max="30" step="1" value="20">
+      </div>
+      <div class="ctrl">
+        <label>仿真速度（放慢观察） <b><span id="spdVal">0.4</span>×</b></label>
+        <input type="range" id="speed" min="0.1" max="2" step="0.1" value="0.4">
+      </div>
+      <div class="ctrl" style="min-width:160px;">
+        <label>摩擦损耗</label>
+        <label class="switch">
+          <input type="checkbox" id="friction">
+          <span class="track"></span>
+          <span id="fricTxt" style="font-size:13px;color:var(--muted)">关闭（理想无摩擦）</span>
+        </label>
+      </div>
+      <div class="btns">
+        <button id="play" class="primary">暂停</button>
+        <button id="reset">重置</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 仿真舞台 -->
+  <div class="panel stage">
+    <div class="canvas-box">
+      <canvas id="scene" width="380" height="440"></canvas>
+      <div class="legend">
+        <span><i class="dot" style="background:#94a3b8"></i>支架/细线</span>
+        <span><i class="dot" style="background:#2563eb"></i>滚摆轮</span>
+      </div>
+    </div>
+    <div class="canvas-box">
+      <canvas id="bars" width="380" height="440"></canvas>
+      <div class="legend">
+        <span><i class="dot" style="background:var(--ke)"></i>动能</span>
+        <span><i class="dot" style="background:var(--pe)"></i>重力势能</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- 实时数据 -->
+  <div class="panel">
+    <div class="readouts">
+      <div class="ro"><div class="k">当前高度（距最低点）</div><div class="v"><span id="oH">20.0</span> <small>cm</small></div></div>
+      <div class="ro"><div class="k">运动速度</div><div class="v"><span id="oV">0.00</span> <small>m/s</small></div></div>
+      <div class="ro"><div class="k">动能</div><div class="v"><span id="oKE">0.00</span> <small>J</small></div></div>
+      <div class="ro"><div class="k">重力势能</div><div class="v"><span id="oPE">0.00</span> <small>J</small></div></div>
+      <div class="ro"><div class="k">机械能总量</div><div class="v"><span id="oE">0.00</span> <small>J</small></div></div>
+      <div class="ro"><div class="k">运动阶段</div><div class="v" style="font-size:16px"><span id="oPhase">释放</span></div></div>
+    </div>
+    <div class="phase"><span id="phaseMark" style="left:50%"></span></div>
+  </div>
+
+  <!-- 知识点讲解 -->
+  <div class="panel notes">
+    <p style="margin:0 0 6px;font-size:15px;color:var(--ink)"><b>知识点讲解</b></p>
+    <p class="kb-lead">核心结论（不计摩擦）：滚摆<b>下降</b>时 <span class="eq">重力势能 → 动能</span>，高度降低、运动变快；<b>上升</b>时 <span class="eq">动能 → 重力势能</span>，运动变慢、高度回升。减少的那种能量，正好变成增加的那种——两者之和（机械能）保持不变。</p>
+
+    <div class="kb-grid">
+      <div class="kb-card">
+        <h4>① 什么是滚摆</h4>
+        <p>滚摆是一个带轴的轮子，两股细线绕在轴上、上端固定在支架上。松手后，轮子一边<b>下落</b>一边<b>转动</b>，细线被慢慢放出来；落到最低处后，它又会继续转动把细线重新绕起，把自己拉回上方。</p>
+        <p>于是滚摆就<b>一会儿下降、一会儿上升</b>，反复来回——这正是观察能量转化的好素材。</p>
+      </div>
+
+      <div class="kb-card">
+        <h4>② 两种能量与什么有关</h4>
+        <ul>
+          <li><b>重力势能</b>：物体<b>被举高</b>而具有的能量。质量越大、<b>高度越高</b>，重力势能越大。</li>
+          <li><b>动能</b>：物体由于<b>运动</b>而具有的能量。质量越大、<b>运动越快</b>，动能越大。</li>
+        </ul>
+        <p>同一个滚摆质量不变，所以只需记住两条：<b>越高 → 势能越大</b>；<b>越快 → 动能越大</b>。本仿真就是围绕这两条规律来观察的。</p>
+      </div>
+
+      <div class="kb-card">
+        <h4>③ 下降：势能 → 动能</h4>
+        <p>下降时，滚摆的高度越来越低（<b>重力势能减小</b>），同时它运动得越来越快（<b>动能增大</b>）。</p>
+        <p>条形图表现：<b style="color:var(--pe)">绿柱（重力势能）变矮</b>、<b style="color:var(--ke)">橙柱（动能）变高</b>。到最低点时绿柱最低、橙柱最高——重力势能几乎全变成了动能。</p>
+      </div>
+
+      <div class="kb-card">
+        <h4>④ 上升：动能 → 势能</h4>
+        <p>滚摆落到最低处后并不会马上停下，而是继续转动把细线重新绕起，于是又被拉回高处：运动越来越慢（<b>动能减小</b>），高度越来越高（<b>重力势能增大</b>）。</p>
+        <p>条形图表现：<b style="color:var(--ke)">橙柱变矮</b>、<b style="color:var(--pe)">绿柱变高</b>。到最高点时橙柱归零（速度为零）、绿柱回到最大。</p>
+      </div>
+
+      <div class="kb-card">
+        <h4>⑤ 摩擦开关对比</h4>
+        <ul>
+          <li><b>关闭摩擦（理想）</b>：机械能守恒，两根柱子高度之和恒定，滚摆能升回原来的释放高度，周而复始。</li>
+          <li><b>开启摩擦（真实）</b>：每次升降都有一部分机械能转化为内能而耗散，总量不断下降，能升回的高度越来越低，最终停在最低点。</li>
+        </ul>
+        <p>真实世界总有摩擦，所以滚摆最终会停下来——这正是能量守恒定律与"机械能减少"并不矛盾的原因。</p>
+      </div>
+    </div>
+
+    <div class="tip"><b>观察提示：</b>盯住右侧两根柱子——它们像"跷跷板"一样此消彼长，但<b>关闭摩擦时两根柱子加起来的高度始终不变</b>；开启摩擦后，总和会明显往下掉。把"仿真速度"调到 0.2× 可以更慢地观察每一次转化。</div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- 物理参数 ----------
+  const g = 9.8;          // 重力加速度 m/s^2
+  const m = 1.0;          // 质量 kg
+  const R = 0.08;         // 滚摆轮半径 m（仅用于转动惯量）
+  const rAxle = 0.012;    // 绕线轴半径 m（决定 v 与 ω 的关系）
+  const I = 0.5 * m * R * R;     // 实心圆盘转动惯量
+  const M_r = I / (rAxle * rAxle); // 等效转动惯量项
+  const kEff = m / (m + M_r);      // 加速度系数
+  const a0 = g * kEff;             // 无摩擦时的恒定加速度（向下）
+  const gamma = 0.15;              // 摩擦阻尼系数（开启摩擦时）
+
+  const L_max = 0.32;   // 最大下落位移（对应最低点）m
+  let h0 = 0.20;        // 释放高度（距最低点）m
+  let x  = L_max - h0;  // 当前下落位移（0=完全绕紧在顶部）
+  let v  = 0;           // 速度，向下为正 m/s
+  let angle = 0;        // 滚摆轮转角 rad
+  let Eref = m * g * h0;// 能量比例尺（释放时机械能）
+  let running = true;
+  let frictionOn = false;
+  let timeScale = 0.4;   // 默认放慢，便于同步观察能量变化
+
+  // ---------- 画布 ----------
+  const scene = document.getElementById('scene');
+  const sctx = scene.getContext('2d');
+  const bars = document.getElementById('bars');
+  const bctx = bars.getContext('2d');
+  const DPR = Math.max(1, window.devicePixelRatio || 1);
+  function setup(cv, ctx){
+    const w = cv.width, h = cv.height;
+    cv.width = w * DPR; cv.height = h * DPR;
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+    cv._w = w; cv._h = h;
+  }
+  setup(scene, sctx); setup(bars, bctx);
+
+  // 场景坐标（参数化：保证整段升降都在画布内、上下留边距）
+  const cx = 190;
+  const wheelR = 30;               // 轮盘半径（调小）
+  const pegY = 30;                 // 支架横梁/挂点所在高度
+  const h0max = 0.30;              // 与滑块最大值一致，决定画面最高位置
+  const xMin = L_max - h0max;      // 对应画面最高点的下落位移
+  const yTopWheel = pegY + wheelR + 14;          // 最高处轮心
+  const yBotWheel = scene._h - wheelR - 14;      // 最低处轮心（留底边距）
+  const pxPerM = (yBotWheel - yTopWheel) / (L_max - xMin);
+  const pegSpread = 64, axleHalf = 14;
+
+  // ---------- 控件 ----------
+  const $ = id => document.getElementById(id);
+  $('height').addEventListener('input', e=>{
+    h0 = (+e.target.value)/100; $('hVal').textContent = e.target.value;
+    if(!running || v===0) resetState();
+  });
+  $('speed').addEventListener('input', e=>{
+    timeScale = +e.target.value; $('spdVal').textContent = timeScale.toFixed(1);
+  });
+  $('friction').addEventListener('change', e=>{
+    frictionOn = e.target.checked;
+    $('fricTxt').textContent = frictionOn ? '开启（能量耗散）' : '关闭（理想无摩擦）';
+  });
+  $('play').addEventListener('click', ()=>{
+    running = !running; $('play').textContent = running ? '暂停' : '继续';
+  });
+  $('reset').addEventListener('click', ()=>{ resetState(); running = true; $('play').textContent='暂停'; });
+
+  function resetState(){
+    x = L_max - h0; v = 0; angle = 0;
+    Eref = m * g * h0;
+  }
+  resetState();
+
+  // ---------- 物理积分 ----------
+  function step(dt){
+    // 半隐式欧拉 + 子步
+    const sub = 4;
+    const h = dt / sub;
+    const damp = frictionOn ? gamma : 0;
+    for(let i=0;i<sub;i++){
+      const a = a0 - damp * v;   // 恒定重力分量 - 线性阻尼（始终阻碍运动）
+      v += a * h;
+      x += v * h;
+      // 底部约束（不能低于最低点，绳放尽后回转）
+      if(x >= L_max){
+        x = L_max;
+        if(v > 0) v = -v;        // 到底回弹向上（理想绳约束）
+      }
+      // 顶部自然回转由 v=0 自然处理；若越过释放高度也回转
+      if(x <= (L_max - h0) && v < 0){
+        x = L_max - h0;
+        v = -v;
+      }
+      angle += (v / rAxle) * h;
+    }
+  }
+
+  // ---------- 绘制：场景 ----------
+  function drawScene(){
+    const w = scene._w, h = scene._h;
+    sctx.clearRect(0,0,w,h);
+    // 背景参考线：释放高度 & 最低点
+    const releaseY = yTopWheel + (L_max - h0 - xMin) * pxPerM;
+    const botLineY = yBotWheel;
+    sctx.strokeStyle = '#dbe4ee'; sctx.setLineDash([5,5]); sctx.lineWidth=1;
+    sctx.beginPath(); sctx.moveTo(40,releaseY); sctx.lineTo(w-40,releaseY); sctx.stroke();
+    sctx.beginPath(); sctx.moveTo(40,botLineY); sctx.lineTo(w-40,botLineY); sctx.stroke();
+    sctx.setLineDash([]);
+    sctx.fillStyle='#9aa7b4'; sctx.font='11px sans-serif';
+    sctx.fillText('释放高度', w-86, releaseY-6);
+    sctx.fillText('最低点', w-70, botLineY-6);
+
+    // 支架横梁
+    sctx.fillStyle='#94a3b8';
+    sctx.fillRect(cx-100, pegY-14, 200, 8);
+    // 两个挂点
+    const pegL = cx - pegSpread, pegR = cx + pegSpread;
+    sctx.beginPath(); sctx.arc(pegL, pegY-10, 4, 0, 7); sctx.arc(pegR, pegY-10, 4, 0, 7);
+    sctx.fillStyle='#64748b'; sctx.fill();
+
+    // 滚摆位置
+    const wy = yTopWheel + (x - xMin) * pxPerM;
+    // 细线（从挂点到轴两端）
+    sctx.strokeStyle='#94a3b8'; sctx.lineWidth=2;
+    sctx.beginPath();
+    sctx.moveTo(pegL, pegY-10); sctx.lineTo(cx-axleHalf, wy);
+    sctx.moveTo(pegR, pegY-10); sctx.lineTo(cx+axleHalf, wy);
+    sctx.stroke();
+
+    // 轴
+    sctx.strokeStyle='#475569'; sctx.lineWidth=6;
+    sctx.beginPath(); sctx.moveTo(cx-axleHalf, wy); sctx.lineTo(cx+axleHalf, wy); sctx.stroke();
+    // 缠绕的线（量随下落减少）
+    const wound = Math.max(0, (L_max - x)) / L_max;
+    sctx.strokeStyle='#cbd5e1'; sctx.lineWidth=3;
+    for(let i=0;i<6;i++){
+      const off = (i-2.5)*1.6;
+      sctx.beginPath(); sctx.ellipse(cx+off, wy, 3.2, 7, 0, 0, 7); sctx.stroke();
+    }
+
+    // 轮盘（带旋转辐条）
+    sctx.save();
+    sctx.translate(cx, wy);
+    // 外圈
+    sctx.fillStyle='#2563eb'; sctx.beginPath(); sctx.arc(0,0,wheelR,0,7); sctx.fill();
+    sctx.fillStyle='#1d4ed8'; sctx.beginPath(); sctx.arc(0,0,wheelR,0,7); sctx.lineWidth=6; sctx.strokeStyle='#1e40af'; sctx.stroke();
+    // 内圈
+    sctx.fillStyle='#bfdbfe'; sctx.beginPath(); sctx.arc(0,0,wheelR*0.45,0,7); sctx.fill();
+    // 辐条（随转角旋转）
+    sctx.rotate(angle);
+    sctx.strokeStyle='#eff6ff'; sctx.lineWidth=4;
+    for(let i=0;i<6;i++){
+      const a = i*Math.PI/3;
+      sctx.beginPath();
+      sctx.moveTo(0,0);
+      sctx.lineTo(Math.cos(a)*wheelR*0.9, Math.sin(a)*wheelR*0.9);
+      sctx.stroke();
+    }
+    // 标记点（看清转动）
+    sctx.fillStyle='#f59e0b';
+    sctx.beginPath(); sctx.arc(wheelR*0.7, 0, 6, 0, 7); sctx.fill();
+    sctx.restore();
+  }
+
+  // ---------- 绘制：能量条形图 ----------
+  function drawBars(KE, PE){
+    const w = bars._w, h = bars._h;
+    bctx.clearRect(0,0,w,h);
+    const padL=20, padR=20, padT=40, padB=60;
+    const chartH = h - padT - padB;
+    const baseY = h - padB;
+    // 标题
+    bctx.fillStyle='#1f2933'; bctx.font='bold 14px sans-serif';
+    bctx.fillText('瞬时能量条形图 (J)', padL, 24);
+    // 比例尺线
+    const maxE = Math.max(Eref, 1e-6);
+    bctx.strokeStyle='#e3e8ef'; bctx.lineWidth=1;
+    for(let i=0;i<=4;i++){
+      const yy = padT + chartH*(i/4);
+      bctx.beginPath(); bctx.moveTo(padL, yy); bctx.lineTo(w-padR, yy); bctx.stroke();
+      bctx.fillStyle='#9aa7b4'; bctx.font='10px sans-serif';
+      bctx.fillText((maxE*(1-i/4)).toFixed(2), 2, yy+3);
+    }
+    // 柱子（居中铺满宽度）
+    const barW = Math.min(110, (w - padL - padR) * 0.30);
+    const gap  = (w - padL - padR - barW*2) / 3;
+    const x1 = padL + gap, x2 = x1 + barW + gap;
+    bctx.textAlign = 'center';
+    function bar(xc, val, color, name){
+      const bh = Math.max(0, Math.min(chartH, (val/maxE)*chartH));
+      const y = baseY - bh;
+      bctx.fillStyle = color;
+      bctx.fillRect(xc, y, barW, bh);
+      bctx.fillStyle='#1f2933'; bctx.font='bold 12px sans-serif';
+      bctx.fillText(val.toFixed(3), xc + barW/2, y-6);
+      bctx.fillStyle='#6b7785'; bctx.font='12px sans-serif';
+      bctx.fillText(name, xc + barW/2, baseY + 18);
+    }
+    bar(x1, KE, '#f59e0b', '动能');
+    bar(x2, PE, '#10b981', '重力势能');
+    bctx.textAlign = 'left';
+    // 总量提示
+    bctx.fillStyle='#6b7785'; bctx.font='11px sans-serif';
+    bctx.fillText('总量 动能+重力势能 = '+(KE+PE).toFixed(3)+' J', padL, h-14);
+    if(frictionOn){
+      bctx.fillStyle='#ef4444';
+      bctx.textAlign='right';
+      bctx.fillText('摩擦耗散中…', w-padR, h-14);
+      bctx.textAlign='left';
+    } else {
+      bctx.fillStyle='#10b981';
+      bctx.textAlign='right';
+      bctx.fillText('机械能守恒', w-padR, h-14);
+      bctx.textAlign='left';
+    }
+  }
+
+  // ---------- 主循环 ----------
+  let last = performance.now();
+  function loop(now){
+    let dt = (now - last)/1000; last = now;
+    if(dt > 0.05) dt = 0.05;       // 防止卡顿跳变
+    if(running){
+      step(dt * timeScale);
+    }
+    // 能量计算
+    let KE = 0.5 * (m + M_r) * v * v;
+    let PE = m * g * (L_max - x);
+    if(PE < 0) PE = 0;
+    drawScene();
+    drawBars(KE, PE);
+
+    // 读数
+    const heightCm = (L_max - x) * 100;
+    $('oH').textContent = heightCm.toFixed(1);
+    $('oV').textContent = Math.abs(v).toFixed(2);
+    $('oKE').textContent = KE.toFixed(3);
+    $('oPE').textContent = PE.toFixed(3);
+    $('oE').textContent = (KE+PE).toFixed(3);
+    // 阶段判断
+    let phase, frac;
+    if(Math.abs(v) < 0.02 && x >= L_max - 1e-3){ phase='最低点'; }
+    else if(v > 0){ phase='下降（Ep→Ek）'; }
+    else if(v < 0){ phase='上升（Ek→Ep）'; }
+    else { phase='顶点（Ek=0）'; }
+    $('oPhase').textContent = phase;
+    // 阶段条位置：0(顶)→1(底)
+    frac = (x - (L_max - h0)) / (h0 || 1e-6);
+    frac = Math.max(0, Math.min(1, frac));
+    $('phaseMark').style.left = (frac*100)+'%';
+
+    requestAnimationFrame(loop);
+  }
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

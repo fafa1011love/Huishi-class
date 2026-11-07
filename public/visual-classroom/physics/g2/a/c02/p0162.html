@@ -1,0 +1,821 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>10.4　电容器的电容 ｜ 人教版物理必修第三册</title>
+<style>
+  :root{
+    --blue:#1d4ed8; --blue-soft:#eff6ff; --blue-line:#bfdbfe;
+    --ink:#1e293b; --sub:#64748b; --line:#e2e8f0;
+    --amber-bg:#fffbeb; --amber-line:#fcd34d; --amber-ink:#92400e;
+    --green:#059669; --red:#dc2626;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:#f3f5f9; color:var(--ink);
+    font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif; padding:18px 12px 40px;}
+  .wrap{max-width:1060px; margin:0 auto;}
+  header{background:#fff; border:1px solid var(--line); border-left:6px solid var(--blue);
+    border-radius:12px; padding:16px 22px; box-shadow:0 1px 3px rgba(15,23,42,.06);}
+  header h1{font-size:22px; color:var(--ink);}
+  header .meta{margin-top:6px; font-size:12.5px; color:var(--sub); line-height:1.7;}
+  .mod{background:#fff; border:1px solid var(--line); border-radius:12px;
+    padding:16px 20px 18px; margin-top:16px; box-shadow:0 1px 3px rgba(15,23,42,.05);}
+  .mod-h{display:flex; align-items:center; gap:10px; margin-bottom:10px;}
+  .mod-h .no{background:var(--blue); color:#fff; font-size:12px; border-radius:6px;
+    padding:2px 8px; white-space:nowrap;}
+  .mod-h h2{font-size:16.5px;}
+  .mod-h .kp{margin-left:auto; font-size:12px; color:var(--sub); white-space:nowrap;}
+  .think{background:var(--blue-soft); border:1px solid var(--blue-line); border-radius:8px;
+    padding:8px 12px; font-size:12.5px; color:#1e40af; margin-bottom:10px; line-height:1.7;}
+  .think b{color:var(--blue);}
+  canvas.stage{display:block; width:100%; background:#fbfdff;
+    border:1px solid var(--line); border-radius:10px; touch-action:none;}
+  .ctrl{display:flex; flex-wrap:wrap; gap:8px 18px; align-items:center; margin-top:10px;}
+  .row{display:flex; align-items:center; gap:8px; font-size:13px;}
+  .row label{color:var(--sub); white-space:nowrap;}
+  .row input[type=range]{width:150px; accent-color:var(--blue);}
+  .row .val{min-width:64px; font-variant-numeric:tabular-nums; color:var(--ink); font-weight:600;}
+  .btn{border:1px solid var(--blue); color:var(--blue); background:#fff; border-radius:7px;
+    padding:4px 12px; font-size:12.5px; cursor:pointer;}
+  .btn:hover{background:var(--blue-soft);}
+  .btn.on{background:var(--blue); color:#fff;}
+  .note{margin-top:10px; background:var(--amber-bg); border:1px solid var(--amber-line);
+    border-radius:8px; padding:8px 12px; font-size:12.5px; color:var(--amber-ink); line-height:1.8;}
+  .note b{color:#b45309;}
+  footer{margin-top:20px; text-align:center; font-size:12px; color:#94a3b8;}
+  .seg{display:inline-flex; border:1px solid var(--blue); border-radius:8px; overflow:hidden;}
+  .seg button{border:none; background:#fff; color:var(--blue); padding:4px 12px;
+    font-size:12.5px; cursor:pointer;}
+  .seg button.on{background:var(--blue); color:#fff;}
+  .chkrow{display:flex; align-items:center; gap:6px; font-size:13px; color:var(--sub);}
+  .chkrow input{accent-color:var(--blue);}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>10.4　电容器的电容</h1>
+  <div class="meta">人教版《物理》必修第三册 · 第十章 静电场中的能量 · 教材 P38–P43 ｜ 覆盖知识点：充电与放电、C＝Q/U、平行板电容的决定式、接电源与断开电源两类动态分析</div>
+</header>
+
+<div class="mod">
+  <div class="mod-h">
+    <span class="no">模块 1</span>
+    <h2>电容器的充电与放电</h2>
+    <span class="kp">RC 回路动画＋i–t 曲线</span>
+  </div>
+  <div class="think"><b>先想一想：</b>充电刚开始的瞬间电流最大还是最小？电阻 R 变大，充满电要更久还是更快？</div>
+  <canvas class="stage" id="cv1" style="height:380px;"></canvas>
+  <div class="ctrl">
+    <div class="row"><label>电源电压 U₀</label><input type="range" id="u1" min="2" max="24" step="1" value="12"><span class="val" id="u1v"></span></div>
+    <div class="row"><label>电阻 R</label><input type="range" id="r1" min="1" max="100" step="1" value="10"><span class="val" id="r1v"></span></div>
+    <div class="row"><label>电容 C</label><input type="range" id="c1" min="10" max="470" step="10" value="100"><span class="val" id="c1v"></span></div>
+    <button class="btn" id="charge1">充电</button>
+    <button class="btn" id="discharge1">放电</button>
+    <button class="btn" id="pause1">暂停</button>
+    <button class="btn" id="clear1">清零</button>
+  </div>
+  <div class="note"><b>观察要点：</b>充电时电流由 U₀/R 开始按指数衰减到 0，极板电荷越积越多、U<sub>C</sub> 趋于 U₀；放电时电流反向、大小同样按指数衰减。τ＝RC 越大，衰减越慢。</div>
+</div>
+
+<div class="mod">
+  <div class="mod-h">
+    <span class="no">模块 2</span>
+    <h2>电容 C＝Q/U</h2>
+    <span class="kp">Q–U 数据图象</span>
+  </div>
+  <div class="think"><b>先想一想：</b>把电压 U 加倍，极板上的电荷 Q 会怎样？Q/U 这个比值变不变？</div>
+  <canvas class="stage" id="cv2" style="height:340px;"></canvas>
+  <div class="ctrl">
+    <div class="row"><label>电压 U</label><input type="range" id="u2" min="0" max="12" step="0.5" value="6"><span class="val" id="u2v"></span></div>
+    <div class="seg" id="capSeg">
+      <button class="on" data-c="100">100 μF</button>
+      <button data-c="220">220 μF</button>
+      <button data-c="470">470 μF</button>
+    </div>
+
+  </div>
+  <div class="note"><b>观察要点：</b>Q–U 是过原点的直线，斜率就是电容 C；换一个电容器，只是斜率变了，同一条线上的 Q/U 始终不变 —— C 由电容器本身决定。</div>
+</div>
+
+<div class="mod">
+  <div class="mod-h">
+    <span class="no">模块 3</span>
+    <h2>平行板电容的决定因素</h2>
+    <span class="kp">动态分析交互</span>
+  </div>
+  <div class="think"><b>先想一想：</b>充电后断开电源，再把两板拉远（d 变大），静电计张角会变大还是变小？先预测再验证。</div>
+  <canvas class="stage" id="cv3" style="height:400px;"></canvas>
+  <div class="ctrl">
+    <div class="row"><label>板间距 d</label><input type="range" id="d3" min="1" max="10" step="0.5" value="2"><span class="val" id="d3v"></span></div>
+    <div class="row"><label>正对面积 S</label><input type="range" id="s3" min="20" max="200" step="10" value="100"><span class="val" id="s3v"></span></div>
+    <div class="row"><label>电源电压</label><input type="range" id="u3" min="2" max="20" step="1" value="10"><span class="val" id="u3v"></span></div>
+    <div class="seg" id="epsSeg">
+      <button class="on" data-e="1">空气 εr＝1</button>
+      <button data-e="3">纸 εr＝3</button>
+      <button data-e="6">玻璃 εr＝6</button>
+    </div>
+    <div class="seg" id="swSeg">
+      <button class="on" data-s="on">始终接电源（U 不变）</button>
+      <button data-s="off">充电后断开（Q 不变）</button>
+    </div>
+    <button class="btn" id="demo3">演示：断开后拉大 d</button>
+  </div>
+  <div class="note"><b>观察要点：</b>C＝ε<sub>r</sub>S/(4πkd) —— d 越大 C 越小、S 与 ε<sub>r</sub> 越大 C 越大。断开电源后 Q 不变，拉大 d 使 C 变小，于是 U＝Q/C 升高、静电计张角变大，而板间 E＝U/d＝4πkQ/(ε<sub>r</sub>S) 保持不变。</div>
+</div>
+
+<footer>人教版高中物理必修第三册 · 可视化交互课件 ｜ 单文件离线运行，双击即可使用</footer>
+</div>
+
+<script>
+(function(){
+'use strict';
+
+/* ========== 通用工具（所有文件统一使用） ========== */
+function $(id){
+  return document.getElementById(id);
+}
+
+function fmt(x, d){
+  if (d === undefined) d = 2;
+  if (!isFinite(x)) return '—';
+  var a = Math.abs(x);
+  if (a >= 10000 || (a > 0 && a < 0.01)) return x.toExponential(2);
+  return (+x.toFixed(d)).toString();
+}
+
+function fit(cv){
+  var dpr = window.devicePixelRatio || 1;
+  var w = cv.clientWidth;
+  var h = cv.clientHeight;
+  cv.width = Math.round(w * dpr);
+  cv.height = Math.round(h * dpr);
+  var ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return ctx;
+}
+
+function bindRange(id, fn){
+  var el = $(id);
+  var v = $(id + 'v');
+  function go(){
+    if (v) v.textContent = el.value;
+    fn(parseFloat(el.value));
+  }
+  el.addEventListener('input', go);
+  go();
+  return el;
+}
+
+function arrow(ctx, x1, y1, x2, y2, color, w){
+  ctx.strokeStyle = color;
+  ctx.fillStyle = color;
+  ctx.lineWidth = w || 2;
+  ctx.beginPath();
+  ctx.moveTo(x1, y1);
+  ctx.lineTo(x2, y2);
+  ctx.stroke();
+  var a = Math.atan2(y2 - y1, x2 - x1);
+  var s = 7;
+  ctx.beginPath();
+  ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - s * Math.cos(a - 0.42), y2 - s * Math.sin(a - 0.42));
+  ctx.lineTo(x2 - s * Math.cos(a + 0.42), y2 - s * Math.sin(a + 0.42));
+  ctx.closePath();
+  ctx.fill();
+}
+
+function clamp(x, a, b){
+  return Math.max(a, Math.min(b, x));
+}
+
+function roundBox(ctx, x, y, w, h, fill, stroke){
+  ctx.beginPath();
+  ctx.roundRect(x, y, w, h, 7);
+  if (fill){
+    ctx.fillStyle = fill;
+    ctx.fill();
+  }
+  if (stroke){
+    ctx.strokeStyle = stroke;
+    ctx.lineWidth = 1;
+    ctx.stroke();
+  }
+}
+
+function label(ctx, text, x, y, color, align, size){
+  ctx.fillStyle = color || '#334155';
+  ctx.font = (size || 12) + 'px "Microsoft YaHei",sans-serif';
+  ctx.textAlign = align || 'left';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(text, x, y);
+}
+
+/* ========== 模块 1：RC 充放电 ========== */
+var cv1 = $('cv1');
+var m1 = {
+  U0:12,
+  Rk:10,
+  CuF:100,
+  uc:0,
+  uc0:0,
+  i:0,
+  t:0,
+  mode:'idle',
+  running:false,
+  last:0,
+  trace:[],
+  tmax:5
+};
+
+function tau1(){
+  return Math.max(0.001, m1.Rk * 1000 * m1.CuF * 1e-6);
+}
+
+function currentLimit1(){
+  return m1.U0 / (m1.Rk * 1000);
+}
+
+function step1(dt){
+  var tau = tau1();
+  if (m1.mode === 'charge'){
+    m1.t += dt;
+    m1.uc = m1.U0 + (m1.uc0 - m1.U0) * Math.exp(-m1.t / tau);
+    m1.i = (m1.U0 - m1.uc) / (m1.Rk * 1000);
+  } else if (m1.mode === 'discharge'){
+    m1.t += dt;
+    m1.uc = m1.uc0 * Math.exp(-m1.t / tau);
+    m1.i = -m1.uc / (m1.Rk * 1000);
+  } else {
+    m1.i = 0;
+    return;
+  }
+  m1.trace.push({t:m1.t, i:m1.i, uc:m1.uc});
+  if (m1.trace.length > 1600) m1.trace.shift();
+  if (m1.t > m1.tmax * tau || Math.abs(m1.i) < currentLimit1() * 0.002){
+    m1.running = false;
+    $('charge1').classList.remove('on');
+    $('discharge1').classList.remove('on');
+  }
+}
+
+function drawCircuit1(ctx, W, H){
+  var x0 = 40;
+  var yTop = 70;
+  var yBot = H - 110;
+  var xR = x0 + 40;
+  var xC = W * 0.40;
+
+  ctx.strokeStyle = '#475569';
+  ctx.lineWidth = 2.2;
+  ctx.beginPath();
+  ctx.moveTo(x0, yTop);
+  ctx.lineTo(x0, yBot);
+  ctx.moveTo(x0, yBot);
+  ctx.lineTo(W*0.34, yBot);
+  ctx.moveTo(W*0.34, yTop);
+  ctx.lineTo(x0, yTop);
+  ctx.stroke();
+
+  ctx.strokeStyle = '#475569';
+  ctx.lineWidth = 3;
+  ctx.beginPath();
+  ctx.moveTo(x0 - 14, yTop + 22);
+  ctx.lineTo(x0 + 14, yTop + 22);
+  ctx.moveTo(x0 - 7, yTop + 32);
+  ctx.lineTo(x0 + 7, yTop + 32);
+  ctx.stroke();
+  label(ctx, 'U₀', x0 + 20, yTop + 27, '#334155', 'left', 11);
+
+  roundBox(ctx, xR, yTop + 55, 34, 20, '#fff', '#475569');
+  label(ctx, 'R', xR + 17, yTop + 65, '#475569', 'center', 11);
+  ctx.beginPath();
+  ctx.moveTo(x0, yTop + 65);
+  ctx.lineTo(xR, yTop + 65);
+  ctx.moveTo(xR + 34, yTop + 65);
+  ctx.lineTo(x0, yTop + 65);
+  ctx.stroke();
+
+  var plateY = yBot - 78;
+  ctx.fillStyle = '#dc2626';
+  ctx.fillRect(xC, plateY, 10, 70);
+  ctx.fillStyle = '#2563eb';
+  ctx.fillRect(xC + 46, plateY, 10, 70);
+  ctx.beginPath();
+  ctx.moveTo(xC + 5, plateY + 70);
+  ctx.lineTo(xC + 5, yBot);
+  ctx.moveTo(xC + 51, plateY + 70);
+  ctx.lineTo(xC + 51, yBot);
+  ctx.stroke();
+  label(ctx, 'C', xC + 28, plateY - 14, '#334155', 'center', 12);
+
+  var ratio = clamp(m1.uc / Math.max(m1.U0, 0.001), 0, 1.2);
+  var n = Math.round(clamp(ratio * 8, 0, 8));
+  for (var i=0; i<n; i++){
+    var yy = plateY + 10 + i * 8;
+    label(ctx, '+', xC - 10, yy, '#dc2626', 'center', 12);
+    label(ctx, '−', xC + 62, yy, '#2563eb', 'center', 12);
+  }
+
+  var dir = m1.mode === 'discharge' ? -1 : 1;
+  if (Math.abs(m1.i) > 1e-9){
+    var speed = clamp(Math.abs(m1.i) / Math.max(currentLimit1(), 1e-9), 0.02, 1);
+    var dashes = 9;
+    for (var k=0; k<dashes; k++){
+      var phase = (performance.now() * 0.00012 * speed + k / dashes) % 1;
+      if (m1.mode === 'charge'){
+        var px = x0 + (W*0.34 - x0) * phase;
+        label(ctx, '·', px, yBot, '#f97316', 'center', 16);
+      } else {
+        var px2 = x0 + (W*0.34 - x0) * (1 - phase);
+        label(ctx, '·', px2, yBot, '#f97316', 'center', 16);
+      }
+    }
+    arrow(ctx, W*0.16, yBot - 22, W*0.16 + dir * 40, yBot - 22, '#f97316', 2);
+    label(ctx, 'i', W*0.16 + dir * 52, yBot - 22, '#c2410c', 'center', 11);
+  }
+}
+
+function drawGraph1(ctx, W, H){
+  var gx = W * 0.52;
+  var gy = 46;
+  var gw = W * 0.44;
+  var gh = H - 110;
+  roundBox(ctx, gx, gy, gw, gh, '#f8fafc', '#cbd5e1');
+  var tau = tau1();
+  var tmax = m1.tmax * tau;
+  var imax = Math.max(1e-9, currentLimit1() * 1.12);
+  var zeroY = gy + gh / 2;
+
+  ctx.strokeStyle = '#e2e8f0';
+  ctx.lineWidth = 1;
+  ctx.beginPath();
+  ctx.moveTo(gx + 8, zeroY);
+  ctx.lineTo(gx + gw - 8, zeroY);
+  ctx.stroke();
+  label(ctx, 't', gx + gw - 14, zeroY + 14, '#64748b', 'right', 11);
+  label(ctx, 'i', gx + 10, gy + 14, '#64748b', 'left', 11);
+
+  ctx.strokeStyle = 'rgba(148,163,184,.55)';
+  ctx.setLineDash([4, 4]);
+  for (var k=1; k<=m1.tmax; k++){
+    var tx = gx + 8 + (gw - 16) * (k * tau / tmax);
+    ctx.beginPath();
+    ctx.moveTo(tx, gy + 10);
+    ctx.lineTo(tx, gy + gh - 10);
+    ctx.stroke();
+    label(ctx, k + 'τ', tx, gy + gh - 4, '#94a3b8', 'center', 10);
+  }
+  ctx.setLineDash([]);
+
+  ctx.strokeStyle = '#1d4ed8';
+  ctx.lineWidth = 2.5;
+  ctx.beginPath();
+  for (var i=0; i<m1.trace.length; i++){
+    var p = m1.trace[i];
+    var px = gx + 8 + (gw - 16) * clamp(p.t / tmax, 0, 1);
+    var py = zeroY - (gh/2 - 12) * clamp(p.i / imax, -1, 1);
+    if (i === 0) ctx.moveTo(px, py);
+    else ctx.lineTo(px, py);
+  }
+  ctx.stroke();
+
+  if (m1.trace.length){
+    var last = m1.trace[m1.trace.length-1];
+    var lx = gx + 8 + (gw - 16) * clamp(last.t / tmax, 0, 1);
+    var ly = zeroY - (gh/2 - 12) * clamp(last.i / imax, -1, 1);
+    ctx.beginPath();
+    ctx.arc(lx, ly, 5, 0, Math.PI*2);
+    ctx.fillStyle = '#dc2626';
+    ctx.fill();
+  }
+  label(ctx, 'i–t 曲线（τ＝' + fmt(tau, 2) + ' s）', gx + gw/2, gy - 12, '#1d4ed8', 'center', 12);
+}
+
+function draw1(){
+  var ctx = fit(cv1);
+  var W = cv1.clientWidth;
+  var H = cv1.clientHeight;
+  ctx.clearRect(0, 0, W, H);
+  drawCircuit1(ctx, W, H);
+  drawGraph1(ctx, W, H);
+
+  var q = m1.CuF * 1e-6 * m1.uc;
+  roundBox(ctx, 16, 15, 262, 66, 'rgba(255,255,255,.95)', '#cbd5e1');
+  label(ctx, 'U_C＝' + fmt(m1.uc, 2) + ' V　Q＝C·U＝' + fmt(q * 1e6, 0) + ' μC', 30, 36, '#334155', 'left', 12);
+  label(ctx, 'i＝' + fmt(m1.i * 1e6, 1) + ' μA　t＝' + fmt(m1.t, 2) + ' s', 30, 61, '#c2410c', 'left', 12);
+  label(ctx, m1.mode === 'charge' ? '状态：充电中' : (m1.mode === 'discharge' ? '状态：放电中' : '状态：待命（点按钮开始）'), 30, 78, '#64748b', 'left', 10);
+}
+
+function tick1(now){
+  if (!m1.running) return;
+  if (!m1.last) m1.last = now;
+  var dt = Math.min(0.05, (now - m1.last) / 1000);
+  m1.last = now;
+  step1(dt);
+  draw1();
+  if (m1.running) requestAnimationFrame(tick1);
+}
+
+function start1(mode){
+  m1.mode = mode;
+  m1.uc0 = m1.uc;
+  m1.t = 0;
+  m1.trace.length = 0;
+  m1.running = true;
+  m1.last = 0;
+  $('charge1').classList.toggle('on', mode === 'charge');
+  $('discharge1').classList.toggle('on', mode === 'discharge');
+  requestAnimationFrame(tick1);
+}
+
+bindRange('u1', function(v){
+  m1.U0 = v;
+  $('u1v').textContent = fmt(v, 0) + ' V';
+  draw1();
+});
+
+bindRange('r1', function(v){
+  m1.Rk = v;
+  $('r1v').textContent = fmt(v, 0) + ' kΩ';
+  m1.tmax = 5;
+  draw1();
+});
+
+bindRange('c1', function(v){
+  m1.CuF = v;
+  $('c1v').textContent = fmt(v, 0) + ' μF';
+  draw1();
+});
+
+$('charge1').addEventListener('click', function(){
+  start1('charge');
+});
+
+$('discharge1').addEventListener('click', function(){
+  start1('discharge');
+});
+
+$('pause1').addEventListener('click', function(){
+  m1.running = false;
+  $('charge1').classList.remove('on');
+  $('discharge1').classList.remove('on');
+});
+
+$('clear1').addEventListener('click', function(){
+  m1.running = false;
+  m1.mode = 'idle';
+  m1.uc = 0;
+  m1.uc0 = 0;
+  m1.i = 0;
+  m1.t = 0;
+  m1.trace.length = 0;
+  $('charge1').classList.remove('on');
+  $('discharge1').classList.remove('on');
+  draw1();
+});
+
+/* ========== 模块 2：C=Q/U 图象 ========== */
+var cv2 = $('cv2');
+var m2 = {
+  U:6,
+  C:100,
+  caps:[100, 220, 470]
+};
+
+function draw2(){
+  var ctx = fit(cv2);
+  var W = cv2.clientWidth;
+  var H = cv2.clientHeight;
+  ctx.clearRect(0, 0, W, H);
+
+  var gx = 70;
+  var gy = 40;
+  var gw = W * 0.48;
+  var gh = H - 100;
+  var umax = 12;
+  var qmax = 470 * 12 * 1.15;
+
+  roundBox(ctx, gx, gy, gw, gh, '#f8fafc', '#cbd5e1');
+  ctx.strokeStyle = '#475569';
+  ctx.lineWidth = 1.6;
+  ctx.beginPath();
+  ctx.moveTo(gx, gy);
+  ctx.lineTo(gx, gy + gh);
+  ctx.lineTo(gx + gw, gy + gh);
+  ctx.stroke();
+  label(ctx, 'Q / μC', gx - 8, gy + 10, '#334155', 'right', 11);
+  label(ctx, 'U / V', gx + gw - 10, gy + gh + 18, '#334155', 'right', 11);
+
+  for (var u=2; u<=12; u+=2){
+    var ux = gx + gw * u / umax;
+    ctx.strokeStyle = 'rgba(148,163,184,.25)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(ux, gy + 6);
+    ctx.lineTo(ux, gy + gh);
+    ctx.stroke();
+    label(ctx, fmt(u, 0), ux, gy + gh + 14, '#94a3b8', 'center', 10);
+  }
+
+  for (var i=0; i<m2.caps.length; i++){
+    var cap = m2.caps[i];
+    var active = cap === m2.C;
+    var qEnd = cap * umax;
+    var ex = gx + gw;
+    var ey = gy + gh - gh * clamp(qEnd / qmax, 0, 1);
+    ctx.strokeStyle = active ? '#1d4ed8' : 'rgba(148,163,184,.55)';
+    ctx.lineWidth = active ? 3 : 1.6;
+    ctx.beginPath();
+    ctx.moveTo(gx, gy + gh);
+    ctx.lineTo(ex, ey);
+    ctx.stroke();
+    label(ctx, cap + ' μF', ex - 44, ey + 14, active ? '#1d4ed8' : '#94a3b8', 'left', 11);
+  }
+
+  var q = m2.C * m2.U;
+  var px = gx + gw * clamp(m2.U / umax, 0, 1);
+  var py = gy + gh - gh * clamp(q / qmax, 0, 1);
+  ctx.strokeStyle = 'rgba(217,119,6,.6)';
+  ctx.setLineDash([4, 4]);
+  ctx.lineWidth = 1.4;
+  ctx.beginPath();
+  ctx.moveTo(px, gy + gh);
+  ctx.lineTo(px, py);
+  ctx.lineTo(gx, py);
+  ctx.stroke();
+  ctx.setLineDash([]);
+  ctx.beginPath();
+  ctx.arc(px, py, 6, 0, Math.PI*2);
+  ctx.fillStyle = '#dc2626';
+  ctx.fill();
+  label(ctx, '(' + fmt(m2.U, 1) + ' V, ' + fmt(q, 0) + ' μC)', px + 10, py - 12, '#b91c1c', 'left', 11);
+
+  var bx = gx + gw + 40;
+  roundBox(ctx, bx, gy, W - bx - 20, 132, 'rgba(255,255,255,.95)', '#cbd5e1');
+  label(ctx, '当前电容器 C＝' + fmt(m2.C, 0) + ' μF', bx + 16, gy + 26, '#1d4ed8', 'left', 13);
+  label(ctx, 'U＝' + fmt(m2.U, 1) + ' V', bx + 16, gy + 54, '#334155', 'left', 12);
+  label(ctx, 'Q＝C·U＝' + fmt(q, 0) + ' μC', bx + 16, gy + 80, '#334155', 'left', 12);
+  label(ctx, 'Q/U＝' + fmt(m2.U > 0 ? q / m2.U : m2.C, 1) + ' μC/V ＝ C', bx + 16, gy + 110, '#c2410c', 'left', 13);
+
+}
+
+bindRange('u2', function(v){
+  m2.U = v;
+  $('u2v').textContent = fmt(v, 1) + ' V';
+  draw2();
+});
+
+$('capSeg').addEventListener('click', function(ev){
+  var btn = ev.target.closest('button');
+  if (!btn) return;
+  var buttons = this.querySelectorAll('button');
+  for (var i=0; i<buttons.length; i++) buttons[i].classList.remove('on');
+  btn.classList.add('on');
+  m2.C = parseFloat(btn.getAttribute('data-c'));
+  draw2();
+});
+
+/* ========== 模块 3：平行板电容决定因素 ========== */
+var cv3 = $('cv3');
+var m3 = {
+  d:2,
+  S:100,
+  U:10,
+  eps:1,
+  connected:true,
+  Q:0,
+  demo:false,
+  last:0
+};
+var K3 = 9e9;
+
+function capacitance3(){
+  var Sm2 = m3.S * 1e-4;
+  var dm = Math.max(1e-4, m3.d * 1e-3);
+  return m3.eps * Sm2 / (4 * Math.PI * K3 * dm);
+}
+
+function voltage3(){
+  if (m3.connected) return m3.U;
+  var C = capacitance3();
+  return m3.Q / Math.max(C, 1e-18);
+}
+
+function syncQ3(){
+  if (m3.connected) m3.Q = capacitance3() * m3.U;
+}
+
+function drawPlates3(ctx, W, H){
+  var cy = H * 0.46;
+  var gap = clamp(22 + m3.d * 9, 26, 150);
+  var width = clamp(60 + m3.S * 1.5, 70, 330);
+  var cx = W * 0.40;
+  var left = cx - width / 2;
+  var right = cx + width / 2;
+  var plateH = 16;
+
+  ctx.fillStyle = '#dc2626';
+  ctx.fillRect(left, cy - gap/2 - plateH, width, plateH);
+  ctx.fillStyle = '#2563eb';
+  ctx.fillRect(left, cy + gap/2, width, plateH);
+
+  if (m3.eps > 1){
+    ctx.fillStyle = 'rgba(5,150,105,.16)';
+    ctx.fillRect(left + 4, cy - gap/2, width - 8, gap);
+    ctx.strokeStyle = 'rgba(5,150,105,.6)';
+    ctx.lineWidth = 1.4;
+    ctx.strokeRect(left + 4, cy - gap/2, width - 8, gap);
+    label(ctx, '电介质 εr＝' + fmt(m3.eps, 0), cx, cy, '#047857', 'center', 12);
+  }
+
+  var U = voltage3();
+  var ratio = clamp(U / 20, 0, 1.4);
+  var n = Math.round(clamp(ratio * 9, 0, 9));
+  for (var i=0; i<n; i++){
+    var xx = left + width * (i + 0.5) / 9;
+    label(ctx, '+', xx, cy - gap/2 - plateH - 12, '#dc2626', 'center', 14);
+    label(ctx, '−', xx, cy + gap/2 + plateH + 12, '#2563eb', 'center', 14);
+  }
+
+  ctx.strokeStyle = '#475569';
+  ctx.lineWidth = 2;
+  ctx.beginPath();
+  ctx.moveTo(left + width/2, cy - gap/2 - plateH - 4);
+  ctx.lineTo(left + width/2, cy - gap/2 - plateH - 40);
+  ctx.moveTo(left + width/2, cy + gap/2 + plateH + 4);
+  ctx.lineTo(left + width/2, cy + gap/2 + plateH + 40);
+  ctx.stroke();
+
+  if (m3.connected){
+    ctx.strokeStyle = '#1d4ed8';
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    ctx.moveTo(left + width/2, cy - gap/2 - plateH - 40);
+    ctx.lineTo(W*0.14, cy - gap/2 - plateH - 40);
+    ctx.lineTo(W*0.14, cy + gap/2 + plateH + 40);
+    ctx.lineTo(left + width/2, cy + gap/2 + plateH + 40);
+    ctx.stroke();
+    ctx.strokeStyle = '#1d4ed8';
+    ctx.lineWidth = 3;
+    ctx.beginPath();
+    ctx.moveTo(W*0.14 - 14, cy - 14);
+    ctx.lineTo(W*0.14 + 14, cy - 14);
+    ctx.moveTo(W*0.14 - 7, cy - 4);
+    ctx.lineTo(W*0.14 + 7, cy - 4);
+    ctx.stroke();
+    label(ctx, '电源 U＝' + fmt(m3.U, 0) + ' V', W*0.14 - 22, cy + 26, '#1d4ed8', 'left', 11);
+  } else {
+    ctx.strokeStyle = '#94a3b8';
+    ctx.lineWidth = 2;
+    ctx.setLineDash([6, 5]);
+    ctx.beginPath();
+    ctx.moveTo(left + width/2, cy - gap/2 - plateH - 40);
+    ctx.lineTo(W*0.14, cy - gap/2 - plateH - 40);
+    ctx.stroke();
+    ctx.setLineDash([]);
+    label(ctx, '开关断开：Q 不变', W*0.10, cy - gap/2 - plateH - 56, '#64748b', 'left', 11);
+  }
+  return {left:left, right:right, cy:cy, gap:gap, width:width};
+}
+
+function drawElectrometer3(ctx, W, H, U){
+  var ex = W * 0.78;
+  var ey = H * 0.30;
+  ctx.beginPath();
+  ctx.arc(ex, ey, 40, 0, Math.PI*2);
+  ctx.fillStyle = '#f8fafc';
+  ctx.fill();
+  ctx.strokeStyle = '#475569';
+  ctx.lineWidth = 2;
+  ctx.stroke();
+  var angle = clamp(U / 20, 0, 1.4) * (Math.PI / 3);
+  ctx.save();
+  ctx.translate(ex, ey);
+  ctx.rotate(-Math.PI/2 + angle);
+  arrow(ctx, 0, 0, 0, 32, '#dc2626', 3);
+  ctx.restore();
+  label(ctx, '静电计', ex, ey + 58, '#334155', 'center', 12);
+  label(ctx, 'U＝' + fmt(U, 2) + ' V', ex, ey + 78, '#b91c1c', 'center', 12);
+}
+
+function draw3(){
+  var ctx = fit(cv3);
+  var W = cv3.clientWidth;
+  var H = cv3.clientHeight;
+  ctx.clearRect(0, 0, W, H);
+  syncQ3();
+  var C = capacitance3();
+  var U = voltage3();
+  var E = U / Math.max(1e-4, m3.d * 1e-3);
+  drawPlates3(ctx, W, H);
+  drawElectrometer3(ctx, W, H, U);
+
+  roundBox(ctx, 16, 15, 300, 148, 'rgba(255,255,255,.95)', '#cbd5e1');
+  label(ctx, 'C＝εrS/(4πkd)＝' + fmt(C * 1e12, 1) + ' pF', 30, 38, '#1d4ed8', 'left', 13);
+  label(ctx, 'd＝' + fmt(m3.d, 1) + ' mm　S＝' + fmt(m3.S, 0) + ' cm²　εr＝' + fmt(m3.eps, 0), 30, 63, '#334155', 'left', 12);
+  label(ctx, 'U＝' + fmt(U, 2) + ' V　E＝U/d＝' + fmt(E, 0) + ' V/m', 30, 88, '#334155', 'left', 12);
+  label(ctx, 'Q＝' + fmt(m3.Q * 1e9, 2) + ' nC', 30, 113, '#c2410c', 'left', 12);
+  label(ctx, m3.connected ? '条件：接电源 —— U 不变，Q＝CU 随 C 变' : '条件：已断开 —— Q 不变，U＝Q/C 随 C 变', 30, 138, m3.connected ? '#1d4ed8' : '#047857', 'left', 11);
+}
+
+function tick3(now){
+  if (!m3.demo) return;
+  if (!m3.last) m3.last = now;
+  var dt = Math.min(50, now - m3.last);
+  m3.last = now;
+  m3.d = Math.min(10, m3.d + dt * 0.004);
+  $('d3').value = m3.d;
+  $('d3v').textContent = fmt(m3.d, 1) + ' mm';
+  draw3();
+  if (m3.d < 10){
+    requestAnimationFrame(tick3);
+  } else {
+    m3.demo = false;
+    $('demo3').classList.remove('on');
+  }
+}
+
+bindRange('d3', function(v){
+  m3.d = v;
+  $('d3v').textContent = fmt(v, 1) + ' mm';
+  if (m3.connected) syncQ3();
+  draw3();
+});
+
+bindRange('s3', function(v){
+  m3.S = v;
+  $('s3v').textContent = fmt(v, 0) + ' cm²';
+  if (m3.connected) syncQ3();
+  draw3();
+});
+
+bindRange('u3', function(v){
+  m3.U = v;
+  $('u3v').textContent = fmt(v, 0) + ' V';
+  if (m3.connected) syncQ3();
+  draw3();
+});
+
+$('epsSeg').addEventListener('click', function(ev){
+  var btn = ev.target.closest('button');
+  if (!btn) return;
+  var buttons = this.querySelectorAll('button');
+  for (var i=0; i<buttons.length; i++) buttons[i].classList.remove('on');
+  btn.classList.add('on');
+  m3.eps = parseFloat(btn.getAttribute('data-e'));
+  if (m3.connected) syncQ3();
+  draw3();
+});
+
+$('swSeg').addEventListener('click', function(ev){
+  var btn = ev.target.closest('button');
+  if (!btn) return;
+  var buttons = this.querySelectorAll('button');
+  for (var i=0; i<buttons.length; i++) buttons[i].classList.remove('on');
+  btn.classList.add('on');
+  m3.connected = btn.getAttribute('data-s') === 'on';
+  syncQ3();
+  draw3();
+});
+
+$('demo3').addEventListener('click', function(){
+  var offBtn = $('swSeg').querySelector('button[data-s="off"]');
+  var buttons = $('swSeg').querySelectorAll('button');
+  for (var i=0; i<buttons.length; i++) buttons[i].classList.remove('on');
+  offBtn.classList.add('on');
+  m3.connected = false;
+  syncQ3();
+  m3.d = 2;
+  m3.demo = true;
+  m3.last = 0;
+  this.classList.add('on');
+  requestAnimationFrame(tick3);
+});
+
+/* ========== 生命周期 ========== */
+window.addEventListener('resize', function(){
+  draw1();
+  draw2();
+  draw3();
+});
+
+document.addEventListener('visibilitychange', function(){
+  if (document.hidden){
+    m1.running = false;
+    m3.demo = false;
+    $('charge1').classList.remove('on');
+    $('discharge1').classList.remove('on');
+    $('demo3').classList.remove('on');
+  }
+});
+
+syncQ3();
+draw1();
+draw2();
+draw3();
+})();
+</script>
+</body>
+</html>

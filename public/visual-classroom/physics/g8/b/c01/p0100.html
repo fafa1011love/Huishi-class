@@ -1,0 +1,1195 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>阻力对物体运动的影响 · 伽利略理想实验</title>
+<style>
+  :root{
+    --bg:#f4f6fa; --panel:#fff; --ink:#1c2333; --ink-2:#4a5568; --ink-3:#8a94a6;
+    --line:#e2e7f0; --accent:#2f6bff; --accent-soft:#e8efff;
+    --danger:#e5484d; --gold:#c99100; --gold-soft:#fdf5e3; --ok:#12a150;
+    --cloth:#c98f5e; --wood:#cb8b45; --glass:#5aa9d6; --ideal:#7c8aa0;
+    --shadow:0 1px 2px rgba(20,30,60,.05),0 8px 24px rgba(20,30,60,.06);
+  }
+  *{box-sizing:border-box;margin:0;padding:0}
+  body{
+    background:var(--bg); color:var(--ink); padding:20px;
+    font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1260px;margin:0 auto}
+
+  header{display:flex;align-items:flex-end;justify-content:space-between;gap:16px;margin-bottom:16px;flex-wrap:wrap}
+  h1{font-size:21px;font-weight:700;letter-spacing:-.2px}
+  h1 span{color:var(--ink-3);font-weight:500;font-size:13.5px;margin-left:10px;letter-spacing:0}
+  .subtitle{font-size:12.5px;color:var(--ink-2);margin-top:6px}
+  .badge{font-size:12px;padding:6px 12px;border-radius:999px;background:var(--accent-soft);
+    color:var(--accent);font-weight:600;border:1px solid #d3e0ff;white-space:nowrap;transition:.2s}
+
+  .grid{display:grid;grid-template-columns:minmax(0,1fr) 452px;gap:16px;align-items:start}
+  @media(max-width:1040px){.grid{grid-template-columns:1fr}}
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;margin-top:16px}
+  @media(max-width:1040px){.grid2{grid-template-columns:1fr}}
+
+  .card{background:var(--panel);border:1px solid var(--line);border-radius:16px;box-shadow:var(--shadow)}
+  .card-head{padding:13px 18px 0;display:flex;align-items:center;justify-content:space-between;gap:10px}
+  .card-title{font-size:14px;font-weight:700;display:flex;align-items:center;gap:8px}
+  .dot{width:7px;height:7px;border-radius:50%;background:var(--accent)}
+  .hint{font-size:11.5px;color:var(--ink-3)}
+
+  .stage{padding:4px 8px 0}
+  svg.stage-svg{width:100%;height:auto;display:block;user-select:none;-webkit-user-select:none}
+  svg.stage-svg text{font-family:-apple-system,BlinkMacSystemFont,"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif}
+
+  .readouts{display:grid;grid-template-columns:repeat(4,1fr);gap:9px;padding:0 16px 16px}
+  .ro{background:#f8fafd;border:1px solid var(--line);border-radius:11px;padding:9px 11px;transition:.2s}
+  .ro .k{font-size:11px;color:var(--ink-3);margin-bottom:5px;white-space:nowrap}
+  .ro .v{font-size:19px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.4px}
+  .ro .v i{font-size:11.5px;font-weight:500;color:var(--ink-2);font-style:normal;margin-left:2px}
+  .ro.hl{border-color:#d3e0ff;background:linear-gradient(180deg,#f3f7ff,#fff)}
+  .ro.hl .v{color:var(--accent)}
+  .ro.dim .v{color:var(--ink-3)}
+
+  /* 材质选择 */
+  .mats{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:12px}
+  .mat{
+    font:inherit;text-align:left;display:flex;align-items:center;gap:9px;padding:9px 10px;
+    border:1px solid var(--line);border-radius:11px;background:#fff;cursor:pointer;transition:.15s
+  }
+  .mat:hover{border-color:#c3d4f8;background:#f6f9ff}
+  .mat .sw{width:26px;height:26px;border-radius:7px;flex:none;position:relative;overflow:hidden}
+  .mat .sw i{position:absolute;inset:0;display:block;opacity:.55;
+    background-image:repeating-linear-gradient(45deg,rgba(255,255,255,.55) 0 3px,transparent 3px 7px)}
+  .mat .tx{flex:1;min-width:0}
+  .mat .tx b{display:block;font-size:12.5px;font-weight:700}
+  .mat .tx small{display:block;font-size:10.5px;color:var(--ink-3);margin-top:1px}
+  .mat.on{border-color:var(--accent);background:var(--accent-soft)}
+  .mat.on .tx b{color:var(--accent)}
+  .mat.on[data-m=ideal]{border-color:var(--ideal);background:#eef1f6}
+  .mat.on[data-m=ideal] .tx b{color:var(--ideal)}
+
+  .fixbar{margin-top:12px;padding:9px 12px;border:1px dashed #d3dced;border-radius:11px;
+    background:#fbfcfe;font-size:11.5px;color:var(--ink-2);line-height:1.6}
+  .fixbar b{color:var(--accent);font-variant-numeric:tabular-nums}
+  .fixbar .g{color:var(--ok);font-weight:600}
+
+  /* 高度控制 */
+  .hctrl{margin:0 16px 16px;padding:11px 13px;border:1px solid var(--line);border-radius:12px;background:#fbfcfe}
+  .hctrl-head{font-size:12.5px;font-weight:700;display:flex;align-items:center;gap:8px;margin-bottom:9px}
+  .hctrl-row{display:flex;align-items:center;gap:12px}
+  .hctrl-row input[type=range]{flex:1;accent-color:var(--ok);height:4px}
+  .hval{font-size:13px;white-space:nowrap}
+  .hval b{font-size:17px;font-weight:700;color:var(--ok);font-variant-numeric:tabular-nums}
+  .hquick{display:flex;gap:7px;margin-top:10px}
+  .hquick button{flex:1;font:inherit;font-size:12px;font-weight:600;padding:7px 0;border-radius:9px;
+    cursor:pointer;border:1px solid var(--line);background:#fff;color:var(--ink-2);transition:.15s}
+  .hquick button:hover{border-color:#bfe6d0;background:#eef8f1}
+  .hquick button.on{border-color:var(--ok);background:#e7f7ee;color:var(--ok)}
+
+  .sceneTip{margin:0 16px 16px;padding:9px 12px;border-radius:11px;background:#f3f7ff;border:1px solid #e1eaff;
+    font-size:11.5px;line-height:1.7;color:var(--ink-2)}
+  .sceneTip b{color:var(--accent)}
+
+  .groundsel{margin:0 16px 16px;padding:11px 13px;border:1px solid var(--line);border-radius:12px;background:#fbfcfe}
+  .gs-head{font-size:12.5px;font-weight:700;display:flex;align-items:center;gap:8px;margin-bottom:10px}
+
+  .btns{display:flex;gap:8px;margin-top:12px}
+  .btn{flex:1;font:inherit;font-size:12.5px;font-weight:600;padding:11px 0;border-radius:10px;
+    cursor:pointer;border:1px solid var(--line);background:#fff;color:var(--ink-2);transition:.15s}
+  .btn:hover{border-color:#c3d4f8;background:#f6f9ff;color:var(--accent)}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff;flex:1.6}
+  .btn.primary:hover{background:#1f57e0;color:#fff}
+  .btn:disabled{opacity:.45;cursor:not-allowed}
+
+  .chart-box{padding:8px 10px 0}
+  canvas{width:100%;height:auto;display:block}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;padding:2px 18px 14px}
+  .lg{display:flex;align-items:center;gap:6px;font-size:11.5px;color:var(--ink-2)}
+  .lg .bar{width:16px;height:3px;border-radius:2px}
+  .sub{font-size:11.5px;color:var(--ink-3);padding:0 18px 12px;line-height:1.6}
+  .sub b{color:var(--ink-2)}
+
+  .note{margin-top:16px;display:grid;grid-template-columns:repeat(3,1fr);gap:12px}
+  @media(max-width:1040px){.note{grid-template-columns:1fr}}
+  .note .card{padding:13px 15px}
+  .note h3{font-size:12.5px;margin-bottom:6px;display:flex;align-items:center;gap:7px}
+  .note p{font-size:12px;line-height:1.7;color:var(--ink-2)}
+  .note b{color:var(--ink)}
+  .ico{width:19px;height:19px;border-radius:6px;display:grid;place-items:center;font-size:10.5px;
+    font-weight:800;flex:none}
+  .ico.blue{background:var(--accent-soft);color:var(--accent)}
+  .ico.gold{background:var(--gold-soft);color:var(--gold)}
+  .ico.red{background:#fdecec;color:var(--danger)}
+  .ico.green{background:#e7f7ee;color:var(--ok)}
+
+  .quote{margin-top:12px;padding:11px 13px;border-radius:11px;font-size:12.5px;line-height:1.75;
+    background:linear-gradient(90deg,#f3f7ff,#fbfcfe);border:1px solid #dbe6ff;color:var(--ink-2)}
+  .quote b{color:var(--accent)}
+  .quote .src{display:block;margin-top:5px;font-size:11px;color:var(--ink-3)}
+
+  /* 顶部实验说明 */
+  .intro{margin-bottom:16px;padding:15px 20px 15px 22px;border-radius:16px;background:linear-gradient(96deg,#eef4ff,#f7fafe);
+    border:1px solid #dbe6ff;position:relative;overflow:hidden}
+  .intro::before{content:"";position:absolute;left:0;top:0;bottom:0;width:5px;
+    background:linear-gradient(180deg,#2f6bff,#5aa9d6)}
+  .intro h2{font-size:14px;font-weight:800;color:#1c2333;margin-bottom:8px;display:flex;align-items:center;gap:9px}
+  .intro h2 .tag{font-size:11px;font-weight:700;color:#2f6bff;background:#e8efff;border:1px solid #d3e0ff;
+    padding:2px 9px;border-radius:999px;white-space:nowrap}
+  .intro p{font-size:13px;line-height:1.9;color:#33405a}
+  .intro p b{color:#1c2333}
+  .intro .src{display:block;margin-top:9px;font-size:12.5px;color:#4a5568;font-weight:600;border-top:1px dashed #cdd9f0;padding-top:8px}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header>
+    <div>
+      <h1>阻力对物体运动的影响<span>伽利略理想实验 · 牛顿第一定律</span></h1>
+      <div class="subtitle">小车从同一高度释放 → 水平面阻力越小，滑行越远；推理：阻力为零时，小车将保持匀速直线运动</div>
+    </div>
+    <div class="badge" id="statusBadge">待释放</div>
+  </header>
+
+  <!-- ===== 实验说明：伽利略理想实验 · 牛顿第一定律来源（置于实验上方）===== -->
+  <div class="intro">
+    <h2><span class="tag">实验与推理</span>伽利略的理想实验（牛顿第一定律的来源）</h2>
+    <p>让同一小车从同一斜面的同一高度滑下，再滑上粗糙程度不同的水平面。我们会看到：<b>水平面越粗糙，小车受到的阻力越大，很快就停下、滑得很近；水平面越光滑，阻力越小，小车就能滑得很远。</b>进一步推理：如果水平面绝对光滑、完全没有阻力，小车的速度将永远不会变小，它会以不变的速度一直运动下去——这就是"匀速直线运动"。现实中做不到完全没有阻力，所以这是一个"理想实验"，是靠科学推理得出的结论。</p>
+    <span class="src">—— 在实验基础上进行科学推理，是物理学研究的重要方法，也是牛顿第一定律（惯性定律）的重要来源。</span>
+  </div>
+
+  <div class="grid">
+    <!-- ============ 左：场景 ============ -->
+    <div>
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title"><span class="dot"></span>斜面 · 小车实验</div>
+          <div class="hint">选一种地面 → 释放小车，看看滑多远</div>
+        </div>
+        <div class="stage">
+          <svg class="stage-svg" id="stage" viewBox="0 0 760 380">
+            <defs>
+              <pattern id="patCloth" width="26" height="26" patternUnits="userSpaceOnUse">
+                <rect width="26" height="26" fill="#d9a97c"/>
+                <path d="M0 6H26M0 19H26" stroke="#c4925f" stroke-width="2.5"/>
+                <path d="M6 0V26M19 0V26" stroke="#c4925f" stroke-width="1.2"/>
+              </pattern>
+              <pattern id="patWood" width="34" height="26" patternUnits="userSpaceOnUse">
+                <rect width="34" height="26" fill="#cb8b45"/>
+                <path d="M0 0V26M17 0V26" stroke="#b5772f" stroke-width="1.6"/>
+                <path d="M0 13H34" stroke="#d99a55" stroke-width="1"/>
+              </pattern>
+              <pattern id="patGlass" width="40" height="30" patternUnits="userSpaceOnUse">
+                <rect width="40" height="30" fill="#a5d7ef"/>
+                <path d="M-6 22L22 -6M6 38L34 6" stroke="#ffffff" stroke-width="3" opacity=".45"/>
+                <path d="M0 30H40" stroke="#8cc6e2" stroke-width="1"/>
+              </pattern>
+              <pattern id="patIdeal" width="40" height="30" patternUnits="userSpaceOnUse">
+                <rect width="40" height="30" fill="#dfe6f0"/>
+                <path d="M-6 22L22 -6M6 38L34 6" stroke="#ffffff" stroke-width="4" opacity=".7"/>
+              </pattern>
+              <filter id="carShadow" x="-30%" y="-30%" width="160%" height="160%">
+                <feDropShadow dx="0" dy="3" stdDeviation="3" flood-color="#1c2333" flood-opacity=".22"/>
+              </filter>
+            </defs>
+
+            <!-- 远景天空/地面底 -->
+            <rect x="0" y="0" width="760" height="470" fill="#ffffff"/>
+
+            <!-- ===== 可平移的场景组 ===== -->
+            <g id="sceneG">
+              <!-- 斜面 -->
+              <path id="rampTri" d="M25 206.5 L194 300 L25 300 Z" fill="#f1f4f9" stroke="#dfe5ef" stroke-width="2"/>
+              <line id="rampLine" x1="25" y1="206.5" x2="194" y2="300" stroke="#b6c0d0" stroke-width="6" stroke-linecap="round"/>
+
+              <!-- 释放高度标注 -->
+              <line id="hLine" x1="60" y1="206.5" x2="60" y2="300" stroke="#12a150" stroke-width="1.5" stroke-dasharray="4 4"/>
+              <line id="hTickT" x1="53" y1="206.5" x2="67" y2="206.5" stroke="#12a150" stroke-width="1.5"/>
+              <line id="hTickB" x1="53" y1="300" x2="67" y2="300" stroke="#12a150" stroke-width="1.5"/>
+              <text id="hLabel" x="47" y="264" font-size="11" fill="#12a150" text-anchor="middle" font-weight="700">h</text>
+
+              <!-- 水平面材质（x / width 每帧更新，实现无限延伸） -->
+              <rect id="ground" x="-20" y="300" width="820" height="34" fill="url(#patCloth)"/>
+              <line id="groundTop" x1="-20" y1="300" x2="800" y2="300" stroke="#a9b3c4" stroke-width="2"/>
+              <rect id="groundEdge" x="-20" y="334" width="820" height="8" fill="#000" opacity=".07"/>
+
+              <!-- 距离刻度（JS 动态定位，支持无限延伸） -->
+              <g id="ticks"></g>
+
+              <!-- 滑行距离标注 -->
+              <g id="sMark" opacity="0">
+                <line id="sLine" stroke="#2f6bff" stroke-width="2"/>
+                <polygon id="sHeadL" fill="#2f6bff"/>
+                <polygon id="sHeadR" fill="#2f6bff"/>
+                <rect id="sBg" rx="5" fill="#fff" stroke="#c3d4f8" opacity=".97"/>
+                <text id="sTxt" font-size="11.5" fill="#2f6bff" font-weight="700" text-anchor="middle"></text>
+              </g>
+
+              <!-- 速度矢量 -->
+              <g id="vG" opacity="0">
+                <line id="vLine" stroke="#e5484d" stroke-width="3" stroke-linecap="round"/>
+                <polygon id="vHead" fill="#e5484d"/>
+                <text id="vTxt" font-size="11" fill="#e5484d" font-weight="700"></text>
+              </g>
+
+              <!-- 小车 -->
+              <g id="car" filter="url(#carShadow)">
+                <rect x="-31" y="-34" width="62" height="26" rx="6" fill="#e5484d"/>
+                <rect x="-31" y="-13" width="62" height="5" rx="2" fill="#c22b30"/>
+                <rect x="-22" y="-31" width="21" height="11" rx="3" fill="#ffe1e2"/>
+                <g id="wB" transform="translate(-16,-8)">
+                  <circle r="8.5" fill="#2c3446"/>
+                  <path d="M-5.6 0H5.6M0 -5.6V5.6" stroke="#c9d0de" stroke-width="1.7"/>
+                  <circle r="2.6" fill="#c9d0de"/>
+                </g>
+                <g id="wF" transform="translate(16,-8)">
+                  <circle r="8.5" fill="#2c3446"/>
+                  <path d="M-5.6 0H5.6M0 -5.6V5.6" stroke="#c9d0de" stroke-width="1.7"/>
+                  <circle r="2.6" fill="#c9d0de"/>
+                </g>
+              </g>
+            </g>
+
+            <!-- ===== 固定信息（不随平移）===== -->
+            <g id="infoBox">
+              <rect x="452" y="14" width="292" height="50" rx="9" fill="#f8fafd" stroke="#e2e7f0"/>
+              <text x="468" y="34" font-size="11.5" fill="#4a5568">每次都从同一高度 h = <tspan id="infoH" font-weight="700" fill="#12a150">20</tspan> cm 由静止释放</text>
+              <text x="468" y="52" font-size="11.5" fill="#4a5568">到达水平面时，初速度相同 <tspan id="infoV" font-weight="700" fill="#12a150">v₀ = 2.0 m/s</tspan></text>
+            </g>
+
+            <!-- 地面材质指向标注（固定，不随平移；宽度按文字自适应） -->
+            <g id="matCallout">
+              <rect id="mcRect" x="524" y="157" width="152" height="38" rx="8" fill="#ffffff" stroke="#d7deea" stroke-width="1.3"/>
+              <text id="mcTitle" x="600" y="174" font-size="14" font-weight="700" fill="#c98f5e" text-anchor="middle">棉布</text>
+              <text id="mcSub" x="600" y="190" font-size="11" fill="#4a5568" text-anchor="middle">粗糙 · 阻力最大</text>
+              <line id="mcArrow" x1="600" y1="195" x2="600" y2="293" stroke="#7d8798" stroke-width="1.6"/>
+              <polygon id="mcArrowHead" points="600,300 593,287 607,287" fill="#7d8798"/>
+            </g>
+
+            <!-- 释放点提示 -->
+            <g id="releaseTag">
+              <rect x="14" y="128" width="118" height="24" rx="7" fill="#fff" stroke="#ffd0d2"/>
+              <text x="73" y="144" font-size="11" fill="#c9343a" text-anchor="middle" font-weight="600">释放点（静止）</text>
+            </g>
+
+            <!-- 底部提示条 -->
+            <g id="tipBar" opacity="0">
+              <rect id="tipBg" rx="8"/>
+              <text id="tipTxt" font-size="12" font-weight="600" text-anchor="middle"></text>
+            </g>
+          </svg>
+        </div>
+
+        <div class="readouts">
+          <div class="ro"><div class="k">释放高度 h</div><div class="v" id="roH">20.0<i>cm</i></div></div>
+          <div class="ro"><div class="k">水平初速度 v₀</div><div class="v" id="roV0">2.0<i>m/s</i></div></div>
+          <div class="ro"><div class="k">当前速度 v</div><div class="v" id="roV">0.0<i>m/s</i></div></div>
+          <div class="ro hl"><div class="k">滑行距离 s</div><div class="v" id="roS">0.0<i>cm</i></div></div>
+        </div>
+
+        <div class="hctrl">
+          <div class="hctrl-head"><span class="dot" style="background:var(--ok)"></span>改变释放高度 h（高度越高 → 到达水平面的速度越大）</div>
+          <div class="hctrl-row">
+            <input type="range" id="rangeH" min="10" max="40" step="1" value="20">
+            <span class="hval"><b id="hVal">20</b> cm</span>
+          </div>
+          <div class="hquick" id="hQuick">
+            <button data-h="10">10 cm</button>
+            <button data-h="20" class="on">20 cm</button>
+            <button data-h="30">30 cm</button>
+            <button data-h="40">40 cm</button>
+          </div>
+        </div>
+
+        <div class="sceneTip">操作提示：选好<b>右侧地面</b>后，点「▶ 释放小车」（或按<b>空格键</b>）即可开始；改变释放高度后，已测数据会自动清空，保证在同一高度下公平比较。</div>
+
+      </div>
+    </div>
+
+    <!-- ============ 右：选择地面 + 操作 + 滑行距离对比 ============ -->
+    <div>
+      <div class="card">
+        <div class="card-head">
+          <div class="card-title"><span class="dot" style="background:var(--accent)"></span>选择地面（点一下切换）</div>
+          <div class="hint">看看不同阻力下小车滑多远</div>
+        </div>
+        <div style="padding:0 16px 16px">
+          <div class="mats" id="mats">
+            <button class="mat on" data-m="cloth">
+              <span class="sw" style="background:#d9a97c"><i></i></span>
+              <span class="tx"><b>棉布</b><small>粗糙 · 阻力最大</small></span>
+            </button>
+            <button class="mat" data-m="wood">
+              <span class="sw" style="background:#cb8b45"></span>
+              <span class="tx"><b>木板</b><small>较粗糙 · 阻力较大</small></span>
+            </button>
+            <button class="mat" data-m="glass">
+              <span class="sw" style="background:#a5d7ef"></span>
+              <span class="tx"><b>玻璃</b><small>很光滑 · 阻力很小</small></span>
+            </button>
+            <button class="mat" data-m="ideal">
+              <span class="sw" style="background:#dfe6f0"></span>
+              <span class="tx"><b>理想光滑</b><small>绝对光滑 · 阻力为 0</small></span>
+            </button>
+          </div>
+          <div class="fixbar">
+            释放高度 <b id="fbH">h = 20 cm</b> → 到达水平面时 <span class="g" id="fbV">初速度 v₀ = 2.0 m/s</span>（每次都相同）<br>
+            当前地面：<b id="curMat">棉布</b>　·　阻力大小：棉布 ＞ 木板 ＞ 玻璃 ＞ 理想光滑（＝ 0）<br>
+            <b style="color:#c99100">越粗糙的表面，对小车阻力越大。</b>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:14px">
+        <div class="card-head">
+          <div class="card-title"><span class="dot" style="background:#12a150"></span>操作小车</div>
+          <div class="hint">空格键也可释放 / 停止</div>
+        </div>
+        <div style="padding:0 16px 16px">
+          <div class="btns">
+            <button class="btn primary" id="btnGo" style="font-size:14px;padding:14px 0">▶ 释放小车</button>
+            <button class="btn" id="btnReset" style="font-size:13px;padding:14px 0">↺ 全部重置</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="margin-top:14px">
+        <div class="card-head">
+          <div class="card-title"><span class="dot"></span>滑行距离对比</div>
+          <div class="hint" id="recHint">已完成 0 / 4 种地面</div>
+        </div>
+        <div class="chart-box"><canvas id="bar"></canvas></div>
+        <div class="sub">阻力：棉布 <b>＞</b> 木板 <b>＞</b> 玻璃 <b>＞</b> 理想光滑（＝ 0）。<br>理想光滑时阻力为零，小车永远运动下去，滑行距离 = <b>无穷远</b>。</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ 下方：速度-时间 / 速度-位移 两张图并排 ============ -->
+  <div class="grid2">
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title"><span class="dot"></span>速度–时间图像</div>
+        <div class="hint">速度随时间如何变化</div>
+      </div>
+      <div class="chart-box"><canvas id="vt"></canvas></div>
+      <div class="sub">每条线表示"速度怎样随时间变小"；线在越靠右的位置才到 0，说明阻力越小、滑得越远。<b>水平线表示速度保持不变（理想光滑）</b>。</div>
+    </div>
+
+    <div class="card">
+      <div class="card-head">
+        <div class="card-title"><span class="dot"></span>速度–位移图像</div>
+        <div class="hint">速度随滑行距离变化</div>
+      </div>
+      <div class="chart-box"><canvas id="vs"></canvas></div>
+      <div class="sub">曲线在越靠左的位置降到 0，说明越早停下、滑得越近；<b>水平线表示速度一直不变（理想光滑，滑行距离 = 无穷远）</b>。</div>
+    </div>
+  </div>
+
+  <!-- ============ 要点小结 ============ -->
+  <div class="note">
+    <div class="card">
+      <h3><span class="ico blue">1</span>控制变量：同一高度</h3>
+      <p>每次都从<b>同一高度由静止释放</b>，保证小车到达水平面时的<b>初速度相同</b>，这样才能公平比较"地面粗糙程度"这一个因素。</p>
+    </div>
+    <div class="card">
+      <h3><span class="ico gold">2</span>越粗糙，阻力越大</h3>
+      <p>地面越光滑，阻力越小，小车越不容易停下，滑行的距离越远（棉布 30 cm → 木板 60 cm → 玻璃 100 cm）。反过来，地面越粗糙，阻力越大，小车很快就停下。</p>
+    </div>
+    <div class="card">
+      <h3><span class="ico green">3</span>推理到极限：阻力为零</h3>
+      <p>如果完全没有阻力，小车的速度就不会变小，它将一直以同样的速度运动下去（匀速直线运动）。现实中阻力永远存在，无法真正"零阻力"，这是科学推理的结果。</p>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  /* ================= 物理参数 ================= */
+  const G = 10;                 // m/s²
+  const SLOW = 3;               // 慢放倍数
+
+  // 斜面几何（屏幕像素）
+  const RAMP_X0 = 60, RAMP_X1 = 194;
+  const VHI = 467.5;            // 竖直：像素/米（h=0.20 m 时高 93.5px，与画面协调）
+
+  let H = 0.20;                 // 释放高度 m（可由滑块改变）
+  let V0, A_RAMP, RAMP_LEN, T_RAMP, RAMP_ANG, hPx, TX, TY;
+
+  const MATS = {
+    cloth: { name:'棉布',     mu:2/3, color:'#c98f5e', pat:'url(#patCloth)', a:null, dist:null, sub:'粗糙 · 阻力最大' },
+    wood:  { name:'木板',     mu:1/3, color:'#cb8b45', pat:'url(#patWood)',  a:null, dist:null, sub:'较粗糙 · 阻力较大' },
+    glass: { name:'玻璃',     mu:1/5, color:'#5aa9d6', pat:'url(#patGlass)', a:null, dist:null, sub:'很光滑 · 阻力很小' },
+    ideal: { name:'理想光滑', mu:0,   color:'#7c8aa0', pat:'url(#patIdeal)', a:null, dist:Infinity, sub:'绝对光滑 · 阻力为 0' }
+  };
+  const ORDER = ['cloth','wood','glass','ideal'];
+
+  // 根据当前高度重新计算：初速度、斜面形状、各材质滑行距离
+  function recomputePhysics(){
+    V0 = Math.sqrt(2*G*H);                 // 到达水平面初速度（仅由高度决定）
+    hPx = H * VHI;
+    TX = RAMP_X0; TY = GY - hPx;           // 斜面顶端（释放点）坐标
+    const run = RAMP_X1 - RAMP_X0;
+    RAMP_ANG = Math.atan2(hPx, run);       // 屏幕夹角（y 向下）
+    RAMP_LEN = H / Math.sin(RAMP_ANG);     // 斜面长 m
+    A_RAMP  = G * Math.sin(RAMP_ANG);      // 沿斜面加速度 m/s²
+    T_RAMP  = Math.sqrt(2*RAMP_LEN/A_RAMP);// 滑下时间 s
+    ORDER.forEach(k => {
+      const m = MATS[k];
+      m.a = G * m.mu;                                   // 减速加速度
+      m.dist = m.mu === 0 ? Infinity : V0*V0/(2*m.a);   // 滑行距离 m
+      m.tStop = m.mu === 0 ? Infinity : V0/m.a;         // 滑行时间 s
+    });
+  }
+
+  /* ================= 状态 ================= */
+  let cur = 'cloth';
+  let phase = 'idle';        // idle | ramp | flat | stopped
+  let tRamp = 0, tFlat = 0;
+  let s = 0;                 // 水平滑行距离 m
+  let v = 0;                 // 当前速度 m/s
+  const records = { cloth:null, wood:null, glass:null, ideal:null };
+  let raf = null, last = 0;
+
+  /* ================= 场景几何 ================= */
+  const $ = id => document.getElementById(id);
+  const X0 = 194;            // 水平面起点 x（小车 s=0 处）
+  const GY = 300;            // 水平面 y
+  const PXM = 400;           // 1 m → 400 px（1 cm → 4 px）
+  const PXCM = 4;
+  const TIP_X = 380, TIP_Y = 358;
+  const WHEEL_C = 2 * Math.PI * (8.5 / PXM);   // 车轮周长 m
+
+  const S = {
+    sceneG:$('sceneG'), ground:$('ground'), groundTop:$('groundTop'), groundEdge:$('groundEdge'),
+    rampTri:$('rampTri'), rampLine:$('rampLine'),
+    hLine:$('hLine'), hTickT:$('hTickT'), hTickB:$('hTickB'), hLabel:$('hLabel'),
+    ticks:$('ticks'),
+    sMark:$('sMark'), sLine:$('sLine'), sHeadL:$('sHeadL'), sHeadR:$('sHeadR'),
+    sBg:$('sBg'), sTxt:$('sTxt'),
+    vG:$('vG'), vLine:$('vLine'), vHead:$('vHead'), vTxt:$('vTxt'),
+    car:$('car'), wB:$('wB'), wF:$('wF'),
+    tipBar:$('tipBar'), tipBg:$('tipBg'), tipTxt:$('tipTxt'),
+    releaseTag:$('releaseTag'),
+    mcTitle:$('mcTitle'), mcSub:$('mcSub'),
+    mcRect:$('mcRect'), mcArrow:$('mcArrow'), mcArrowHead:$('mcArrowHead')
+  };
+
+  /* ---- 距离刻度：预建元素池，每帧只改坐标（无限延伸）---- */
+  const TICK_N = 16, TICK_TXT_N = 6;
+  const tickLines = [], tickTexts = [];
+  (function buildTicks(){
+    const NS = 'http://www.w3.org/2000/svg';
+    for (let i = 0; i < TICK_N; i++){
+      const ln = document.createElementNS(NS, 'line');
+      S.ticks.appendChild(ln);
+      tickLines.push(ln);
+    }
+    for (let i = 0; i < TICK_TXT_N; i++){
+      const t = document.createElementNS(NS, 'text');
+      t.setAttribute('y', GY + 27);
+      t.setAttribute('font-size', '10.5');
+      t.setAttribute('fill', '#8a94a6');
+      t.setAttribute('text-anchor', 'middle');
+      S.ticks.appendChild(t);
+      tickTexts.push(t);
+    }
+  })();
+
+  function layoutTicks(shift){
+    // 屏幕最左侧对应的路程（cm），向下取到 20 的整数倍
+    const leftCm = Math.max(0, (shift - (X0 - 0)) / PXCM);
+    const firstCm = Math.floor(leftCm / 20) * 20;
+    let ti = 0;
+    for (let i = 0; i < TICK_N; i++){
+      const cm = firstCm + i * 20;
+      if (cm < 0){ tickLines[i].setAttribute('opacity', 0); continue; }
+      const x = X0 + cm * PXCM;
+      const big = cm % 100 === 0;
+      const ln = tickLines[i];
+      ln.setAttribute('x1', x.toFixed(1)); ln.setAttribute('x2', x.toFixed(1));
+      ln.setAttribute('y1', GY); ln.setAttribute('y2', GY + (big ? 13 : 7));
+      ln.setAttribute('stroke', big ? '#7d8798' : '#aab3c2');
+      ln.setAttribute('stroke-width', big ? 1.6 : 1);
+      const vis = (x - shift) > 900 ? 0 : 1;
+      ln.setAttribute('opacity', vis);
+      if (big && ti < TICK_TXT_N){
+        const t = tickTexts[ti];
+        t.setAttribute('x', x.toFixed(1));
+        t.setAttribute('opacity', vis);
+        t.textContent = cm + (i === 0 ? ' cm' : '');
+        ti++;
+      }
+    }
+    for (; ti < TICK_TXT_N; ti++) tickTexts[ti].setAttribute('opacity', 0);
+  }
+
+  /* 根据当前高度重绘斜面形状与高度标注 */
+  function layoutRamp(){
+    const ty = TY.toFixed(1);
+    S.rampTri.setAttribute('d', `M${RAMP_X0} ${ty} L${RAMP_X1} ${GY} L${RAMP_X0} ${GY} Z`);
+    S.rampLine.setAttribute('x1', RAMP_X0); S.rampLine.setAttribute('y1', ty);
+    S.rampLine.setAttribute('x2', RAMP_X1); S.rampLine.setAttribute('y2', GY);
+    // 释放高度（竖直虚线 + 两端刻度）
+    S.hLine.setAttribute('x1', RAMP_X0); S.hLine.setAttribute('x2', RAMP_X0);
+    S.hLine.setAttribute('y1', ty); S.hLine.setAttribute('y2', GY);
+    S.hTickT.setAttribute('x1', RAMP_X0-7); S.hTickT.setAttribute('x2', RAMP_X0+7);
+    S.hTickT.setAttribute('y1', ty); S.hTickT.setAttribute('y2', ty);
+    S.hTickB.setAttribute('x1', RAMP_X0-7); S.hTickB.setAttribute('x2', RAMP_X0+7);
+    S.hTickB.setAttribute('y1', GY); S.hTickB.setAttribute('y2', GY);
+    S.hLabel.setAttribute('x', RAMP_X0 - 13);
+    S.hLabel.setAttribute('y', ((TY + GY) / 2).toFixed(1));
+    // 释放点标签跟随顶端
+    S.releaseTag.setAttribute('transform', `translate(0, ${(TY - 192).toFixed(1)})`);
+  }
+
+  function renderScene(){
+    const sCm = s * 100;
+
+    /* ---- 镜头跟随：滑行超过 90 cm 后场景向左卷动 ---- */
+    const shift = Math.max(0, (sCm - 90) * PXCM);
+    S.sceneG.setAttribute('transform', `translate(${(-shift).toFixed(1)},0)`);
+
+    // 地面无限延伸：每帧把地面搬到可见区域
+    const gx = shift - 20;
+    S.ground.setAttribute('x', gx.toFixed(0));
+    S.ground.setAttribute('width', 820);
+    S.groundEdge.setAttribute('x', gx.toFixed(0));
+    S.groundEdge.setAttribute('width', 820);
+    S.groundTop.setAttribute('x1', gx.toFixed(0));
+    S.groundTop.setAttribute('x2', (gx + 820).toFixed(0));
+    layoutTicks(shift);
+
+    // 斜面与释放点标签滑出画面后隐藏
+    S.releaseTag.setAttribute('opacity', shift > 40 ? 0 : 1);
+
+    /* ---- 小车位置 ---- */
+    const onRamp = phase === 'idle' || phase === 'ramp';
+    let travel = 0;                                              // 车轮滚过的路程 m
+    if (onRamp){
+      travel = phase === 'ramp' ? 0.5 * A_RAMP * tRamp * tRamp : 0;
+      const frac = RAMP_LEN > 0 ? Math.min(1, travel / RAMP_LEN) : 0;  // 沿斜面的进度
+      const x = TX + frac * (RAMP_X1 - TX);
+      const y = TY + frac * (GY - TY);
+      S.car.setAttribute('transform', `translate(${x.toFixed(1)},${y.toFixed(1)}) rotate(${(RAMP_ANG*180/Math.PI).toFixed(1)})`);
+    } else {
+      travel = s;
+      const x = X0 + sCm * PXCM;
+      S.car.setAttribute('transform', `translate(${x.toFixed(1)},${GY})`);
+    }
+
+    /* ---- 车轮转动（斜面位移 + 水平滑行，连续累计）---- */
+    const ang = ((RAMP_LEN + travel) / WHEEL_C) * 360;
+    S.wB.setAttribute('transform', `translate(-16,-8) rotate(${(ang % 90).toFixed(1)})`);
+    S.wF.setAttribute('transform', `translate(16,-8) rotate(${(ang % 90).toFixed(1)})`);
+
+    /* ---- 速度矢量 ---- */
+    const isRamp = phase === 'ramp';
+    const showV = isRamp || phase === 'flat';
+    S.vG.setAttribute('opacity', showV ? 1 : 0);
+    if (showV){
+      const cv = isRamp ? A_RAMP * tRamp : v;
+      const len = Math.max(6, cv / V0 * 62);
+      let bx, by;
+      if (isRamp){
+        const d = 0.5 * A_RAMP * tRamp * tRamp;
+        const frac = RAMP_LEN > 0 ? Math.min(1, d / RAMP_LEN) : 0;
+        const cx = TX + frac * (RAMP_X1 - TX);
+        const cy = TY + frac * (GY - TY);
+        bx = cx + 28; by = cy - 40;
+      } else {
+        bx = X0 + sCm * PXCM + 34;
+        by = GY - 46;
+      }
+      // 沿斜面时箭头方向也倾斜
+      const ang = isRamp ? RAMP_ANG * 180/Math.PI : 0;
+      const rad = ang * Math.PI/180;
+      const ex = bx + len * Math.cos(rad);
+      const ey = by + len * Math.sin(rad);
+      S.vLine.setAttribute('x1', bx); S.vLine.setAttribute('y1', by);
+      S.vLine.setAttribute('x2', (bx + (len-9)*Math.cos(rad)));
+      S.vLine.setAttribute('y2', by + (len-9)*Math.sin(rad));
+      const hx = ex, hy = ey;
+      const wx = 5.5, perp = rad + Math.PI/2;
+      S.vHead.setAttribute('points',
+        `${hx},${hy} ${(hx-9*Math.cos(rad)+wx*Math.cos(perp)).toFixed(1)},${(hy-9*Math.sin(rad)+wx*Math.sin(perp)).toFixed(1)} ${(hx-9*Math.cos(rad)-wx*Math.cos(perp)).toFixed(1)},${(hy-9*Math.sin(rad)-wx*Math.sin(perp)).toFixed(1)}`);
+      S.vTxt.setAttribute('x', bx + len + 8);
+      S.vTxt.setAttribute('y', by + 4);
+      S.vTxt.textContent = 'v = ' + cv.toFixed(1) + ' m/s';
+    }
+
+    /* ---- 滑行距离标注 ---- */
+    const showS = phase === 'stopped' && s > 0.01;
+    S.sMark.setAttribute('opacity', showS ? 1 : 0);
+    if (showS){
+      const x1 = X0, x2 = X0 + sCm * PXCM, y = GY + 48;
+      S.sLine.setAttribute('x1', x1); S.sLine.setAttribute('x2', x2);
+      S.sLine.setAttribute('y1', y);  S.sLine.setAttribute('y2', y);
+      S.sHeadL.setAttribute('points', `${x1},${y} ${x1+9},${y-5} ${x1+9},${y+5}`);
+      S.sHeadR.setAttribute('points', `${x2},${y} ${x2-9},${y-5} ${x2-9},${y+5}`);
+      const txt = '滑行距离 s = ' + (s*100).toFixed(0) + ' cm';
+      S.sTxt.textContent = txt;
+      const mid = (x1 + x2)/2;
+      S.sTxt.setAttribute('x', mid);
+      S.sTxt.setAttribute('y', y + 4);
+      const w = txt.length * 6.4 + 16;
+      S.sBg.setAttribute('x', mid - w/2);
+      S.sBg.setAttribute('y', y - 9);
+      S.sBg.setAttribute('width', w);
+      S.sBg.setAttribute('height', 22);
+    }
+
+    /* ---- 底部提示条 ---- */
+    let tip = '', tipColor = '#2f6bff', tipBg = '#e8efff', tipStroke = '#d3e0ff';
+    if (phase === 'stopped'){
+      tip = '小车停下：阻力使它减速到 0，滑行了 ' + (s*100).toFixed(0) + ' cm';
+      tipColor = '#c9343a'; tipBg = '#fdecec'; tipStroke = '#f6cfd0';
+    } else if (phase === 'flat' && MATS[cur].mu === 0){
+      tip = '阻力为零 → 速度保持 ' + V0.toFixed(1) + ' m/s 不变，小车将永远运动下去（滑行距离 = 无穷远）';
+      tipColor = '#0f8a47'; tipBg = '#e7f7ee'; tipStroke = '#bfe6d0';
+    } else if (phase === 'idle' && MATS[cur].mu === 0){
+      tip = '理想地面：阻力为零，现实中无法做到，只能靠科学推理';
+      tipColor = '#5b6b80'; tipBg = '#eef1f6'; tipStroke = '#dde3ec';
+    } else if (phase === 'idle'){
+      tip = '从同一高度静止释放 → 到达水平面时速度相同';
+    }
+    S.tipBar.setAttribute('opacity', tip ? 1 : 0);
+    if (tip){
+      const w = tip.length * 12.4 + 34;
+      S.tipBg.setAttribute('x', TIP_X - w/2);
+      S.tipBg.setAttribute('y', TIP_Y - 15);
+      S.tipBg.setAttribute('width', w);
+      S.tipBg.setAttribute('height', 30);
+      S.tipBg.setAttribute('fill', tipBg);
+      S.tipBg.setAttribute('stroke', tipStroke);
+      S.tipBg.setAttribute('rx', 8);
+      S.tipTxt.setAttribute('x', TIP_X);
+      S.tipTxt.setAttribute('y', TIP_Y + 5);
+      S.tipTxt.setAttribute('fill', tipColor);
+      S.tipTxt.textContent = tip;
+    }
+  }
+
+  /* ================= 动画 ================= */
+  function step(dt){
+    if (phase === 'ramp'){
+      tRamp += dt;
+      if (tRamp >= T_RAMP){
+        tRamp = T_RAMP;
+        phase = 'flat'; tFlat = 0; s = 0; v = V0;
+      }
+      return;
+    }
+    if (phase === 'flat'){
+      const a = MATS[cur].a;
+      if (a === 0){
+        s += V0 * dt; v = V0;
+      } else {
+        tFlat += dt;
+        v = Math.max(0, V0 - a*tFlat);
+        s = V0*tFlat - 0.5*a*tFlat*tFlat;
+        if (v <= 0){
+          s = MATS[cur].dist; v = 0;
+          phase = 'stopped';
+          records[cur] = s;
+        }
+      }
+      return;
+    }
+  }
+
+  function loop(now){
+    raf = requestAnimationFrame(loop);
+    if (!last) { last = now; return; }
+    let dtR = (now - last)/1000; last = now;
+    if (dtR > 0.05) dtR = 0.05;
+    if (phase === 'idle' || phase === 'stopped') { return; }
+    step(dtR / SLOW);
+    renderScene();
+    syncUI();
+  }
+
+  /* ================= 图表 ================= */
+  const FONT = '-apple-system,"PingFang SC","Microsoft YaHei",sans-serif';
+
+  /* ---- 柱状图 ---- */
+  const bar = $('bar'), bctx = bar.getContext('2d');
+  const BW = 860, BH = 480;
+  const BP = { l:76, r:34, t:34, b:66 };
+  const BPW = BW - BP.l - BP.r, BPH = BH - BP.t - BP.b;
+  let SMAX = 110;
+  const BX = i => BP.l + BPW * (i + 0.5) / 4;
+  const BY = cm => BP.t + BPH - (cm / SMAX) * BPH;
+
+  function drawBar(){
+    SMAX = Math.max(110, Math.ceil(500*H*1.15/20)*20);   // 玻璃最远，留 15% 余量
+    const dpr = window.devicePixelRatio || 1;
+    if (bar.width !== Math.round(BW*dpr)){
+      bar.width = Math.round(BW*dpr); bar.height = Math.round(BH*dpr);
+      bar.style.aspectRatio = BW + '/' + BH;
+    }
+    bctx.setTransform(dpr,0,0,dpr,0,0);
+    bctx.clearRect(0,0,BW,BH);
+    bctx.fillStyle = '#fff'; bctx.fillRect(0,0,BW,BH);
+
+    // 网格
+    bctx.strokeStyle = '#eff2f8'; bctx.lineWidth = 1;
+    for (let g = 0; g <= SMAX; g += 20){
+      bctx.beginPath(); bctx.moveTo(BP.l, BY(g)); bctx.lineTo(BP.l+BPW, BY(g)); bctx.stroke();
+    }
+    // 轴
+    bctx.strokeStyle = '#c3ccda'; bctx.lineWidth = 1.6;
+    bctx.beginPath();
+    bctx.moveTo(BP.l, BP.t); bctx.lineTo(BP.l, BP.t+BPH); bctx.lineTo(BP.l+BPW, BP.t+BPH);
+    bctx.stroke();
+
+    // 刻度
+    bctx.fillStyle = '#8a94a6'; bctx.font = '500 15px ' + FONT;
+    bctx.textAlign = 'right'; bctx.textBaseline = 'middle';
+    for (let g = 0; g <= SMAX; g += 20) bctx.fillText(String(g), BP.l-13, BY(g));
+
+    // 轴标题
+    bctx.fillStyle = '#4a5568'; bctx.font = '600 16px ' + FONT;
+    bctx.save();
+    bctx.translate(24, BP.t+BPH/2); bctx.rotate(-Math.PI/2);
+    bctx.textAlign = 'center'; bctx.textBaseline = 'middle';
+    bctx.fillText('滑行距离 / cm', 0, 0);
+    bctx.restore();
+
+    const bw = 104;
+    ORDER.forEach((k, i) => {
+      const m = MATS[k];
+      const rec = records[k];
+      const cx = BX(i);
+      const isCur = k === cur;
+      if (rec === null || rec === undefined){
+        // 未测量
+        bctx.save();
+        bctx.setLineDash([6,5]);
+        bctx.strokeStyle = '#dbe2ee'; bctx.lineWidth = 2;
+        bctx.strokeRect(cx-bw/2, BY(24), bw, 24/ SMAX * BPH);
+        bctx.restore();
+        bctx.fillStyle = '#b9c2d1'; bctx.font = '600 13px ' + FONT;
+        bctx.textAlign = 'center'; bctx.textBaseline = 'bottom';
+        bctx.fillText('未测', cx, BY(24) - 6);
+      } else if (rec === Infinity){
+        // 理想：柱顶到顶 + 箭头
+        const top = BP.t + 6;
+        const grd = bctx.createLinearGradient(0, BP.t+BPH, 0, top);
+        grd.addColorStop(0, '#e6ecf5'); grd.addColorStop(1, '#c3cede');
+        bctx.fillStyle = grd;
+        bctx.fillRect(cx-bw/2, top, bw, BP.t+BPH-top);
+        // 向上箭头
+        bctx.fillStyle = '#7c8aa0';
+        bctx.beginPath();
+        bctx.moveTo(cx, top-16); bctx.lineTo(cx-11, top-2); bctx.lineTo(cx+11, top-2);
+        bctx.closePath(); bctx.fill();
+        bctx.fillStyle = '#5b6b80'; bctx.font = '700 15px ' + FONT;
+        bctx.textAlign = 'center'; bctx.textBaseline = 'bottom';
+        bctx.fillText('无穷远', cx, top - 20);
+      } else {
+        const hpx = rec*100 / SMAX * BPH;
+        const grd = bctx.createLinearGradient(0, BP.t+BPH, 0, BP.t+BPH-hpx);
+        grd.addColorStop(0, m.color); grd.addColorStop(1, m.color + 'cc');
+        bctx.fillStyle = grd;
+        bctx.fillRect(cx-bw/2, BP.t+BPH-hpx, bw, hpx);
+        bctx.fillStyle = m.color; bctx.font = '700 15px ' + FONT;
+        bctx.textAlign = 'center'; bctx.textBaseline = 'bottom';
+        bctx.fillText((rec*100).toFixed(0) + ' cm', cx, BP.t+BPH-hpx-7);
+      }
+      // 底座标签
+      bctx.fillStyle = isCur ? '#1c2333' : '#6b7688';
+      bctx.font = (isCur ? '700 ' : '600 ') + '14px ' + FONT;
+      bctx.textAlign = 'center'; bctx.textBaseline = 'top';
+      bctx.fillText(m.name, cx, BP.t+BPH+12);
+      bctx.fillStyle = '#a3adbe'; bctx.font = '500 12px ' + FONT;
+      bctx.fillText('μ = ' + (m.mu === 0 ? '0' : m.mu.toFixed(2)), cx, BP.t+BPH+32);
+
+      if (isCur){
+        bctx.save();
+        bctx.strokeStyle = '#2f6bff'; bctx.lineWidth = 2;
+        bctx.setLineDash([5,4]);
+        bctx.strokeRect(cx-bw/2-6, BP.t-4, bw+12, BPH+8);
+        bctx.restore();
+      }
+    });
+  }
+
+  /* ---- v–t 图 ---- */
+  const vt = $('vt'), vctx = vt.getContext('2d');
+  const VW = 860, VH = 480;
+  const VP = { l:76, r:38, t:26, b:52 };
+  const VPW = VW - VP.l - VP.r, VPH = VH - VP.t - VP.b;
+  let T_MAX = 1.15, V_MAX = 2.6;
+  const VX = t => VP.l + (t / T_MAX) * VPW;
+  const VY = vv => VP.t + VPH - (vv / V_MAX) * VPH;
+
+  function drawVT(){
+    T_MAX = Math.max(1.15, V0/(G*0.2)*1.12);   // 玻璃停得最晚
+    V_MAX = V0 * 1.12;
+    const dpr = window.devicePixelRatio || 1;
+    if (vt.width !== Math.round(VW*dpr)){
+      vt.width = Math.round(VW*dpr); vt.height = Math.round(VH*dpr);
+      vt.style.aspectRatio = VW + '/' + VH;
+    }
+    vctx.setTransform(dpr,0,0,dpr,0,0);
+    vctx.clearRect(0,0,VW,VH);
+    vctx.fillStyle = '#fff'; vctx.fillRect(0,0,VW,VH);
+
+    // 网格
+    vctx.strokeStyle = '#eff2f8'; vctx.lineWidth = 1;
+    for (let g = 0; g <= T_MAX; g += 0.2){ vctx.beginPath(); vctx.moveTo(VX(g),VP.t); vctx.lineTo(VX(g),VP.t+VPH); vctx.stroke(); }
+    for (let g = 0; g <= V_MAX; g += 0.5){ vctx.beginPath(); vctx.moveTo(VP.l,VY(g)); vctx.lineTo(VP.l+VPW,VY(g)); vctx.stroke(); }
+
+    // 轴
+    vctx.strokeStyle = '#c3ccda'; vctx.lineWidth = 1.6;
+    vctx.beginPath();
+    vctx.moveTo(VP.l, VP.t); vctx.lineTo(VP.l, VP.t+VPH); vctx.lineTo(VP.l+VPW, VP.t+VPH);
+    vctx.stroke();
+
+    // 刻度
+    vctx.fillStyle = '#8a94a6'; vctx.font = '500 14px ' + FONT;
+    vctx.textAlign = 'center'; vctx.textBaseline = 'top';
+    for (let g = 0; g <= T_MAX; g += 0.2) vctx.fillText(g.toFixed(1), VX(g), VP.t+VPH+9);
+    vctx.textAlign = 'right'; vctx.textBaseline = 'middle';
+    for (let g = 0; g <= V_MAX; g += 0.5) vctx.fillText(g.toFixed(1), VP.l-12, VY(g));
+
+    // 轴标题
+    vctx.fillStyle = '#4a5568'; vctx.font = '600 15px ' + FONT;
+    vctx.textAlign = 'center'; vctx.textBaseline = 'top';
+    vctx.fillText('时间 t / s', VP.l+VPW/2, VP.t+VPH+28);
+    vctx.save();
+    vctx.translate(24, VP.t+VPH/2); vctx.rotate(-Math.PI/2);
+    vctx.textAlign = 'center'; vctx.textBaseline = 'middle';
+    vctx.fillText('速度 v / (m/s)', 0, 0);
+    vctx.restore();
+
+    // 曲线
+    ORDER.forEach(k => {
+      const m = MATS[k];
+      const isCur = k === cur;
+      vctx.beginPath();
+      if (m.mu === 0){
+        vctx.moveTo(VX(0), VY(V0));
+        vctx.lineTo(VX(T_MAX), VY(V0));
+      } else {
+        vctx.moveTo(VX(0), VY(V0));
+        vctx.lineTo(VX(Math.min(m.tStop, T_MAX)), VY(Math.max(0, V0 - m.a*Math.min(m.tStop,T_MAX))));
+      }
+      vctx.strokeStyle = isCur ? m.color : m.color + '55';
+      vctx.lineWidth = isCur ? 4 : 2.4;
+      vctx.lineCap = 'round';
+      vctx.stroke();
+      if (isCur){
+        vctx.fillStyle = m.color; vctx.font = '700 19px ' + FONT;
+        vctx.textAlign = 'left'; vctx.textBaseline = 'bottom';
+        if (m.mu === 0){
+          vctx.fillText(m.name + '：速度不变', VX(0.06), VY(V0) - 9);
+        } else {
+          vctx.fillText(m.name + '：速度逐渐减小', VX(0.02), VY(V0) - 9);
+        }
+      }
+    });
+
+    // 当前运动点
+    if ((phase === 'flat') && MATS[cur].mu === 0){
+      // 理想：点沿水平线移动，循环
+      const tt = (s / V0) % T_MAX;
+      vctx.beginPath();
+      vctx.arc(VX(tt), VY(V0), 8, 0, Math.PI*2);
+      vctx.fillStyle = 'rgba(124,138,160,.2)'; vctx.fill();
+      vctx.beginPath();
+      vctx.arc(VX(tt), VY(V0), 4.5, 0, Math.PI*2);
+      vctx.fillStyle = '#7c8aa0'; vctx.fill();
+      vctx.lineWidth = 2; vctx.strokeStyle = '#fff'; vctx.stroke();
+    } else if (phase === 'flat' || phase === 'stopped'){
+      const a = MATS[cur].a;
+      const tt = Math.min(tFlat, T_MAX);
+      const vv = Math.max(0, V0 - a*tt);
+      vctx.beginPath();
+      vctx.arc(VX(tt), VY(vv), 8, 0, Math.PI*2);
+      vctx.fillStyle = MATS[cur].color + '33'; vctx.fill();
+      vctx.beginPath();
+      vctx.arc(VX(tt), VY(vv), 4.5, 0, Math.PI*2);
+      vctx.fillStyle = MATS[cur].color; vctx.fill();
+      vctx.lineWidth = 2; vctx.strokeStyle = '#fff'; vctx.stroke();
+    }
+  }
+
+  /* ---- v–s 图（速度随滑行距离变化）---- */
+  const vs = $('vs'), vsctx = vs.getContext('2d');
+  const VS_W = 860, VS_H = 480;
+  const VS_P = { l:78, r:38, t:26, b:52 };
+  const VS_PW = VS_W - VS_P.l - VS_P.r, VS_PH = VS_H - VS_P.t - VS_P.b;
+  let S_MAX = 110, VV_MAX = 2.6;
+  const SX = cm => VS_P.l + (cm / S_MAX) * VS_PW;
+  const SY = vv => VS_P.t + VS_PH - (vv / VV_MAX) * VS_PH;
+
+  function drawVS(){
+    S_MAX = Math.max(110, Math.ceil(500*H*1.15/20)*20);
+    VV_MAX = V0 * 1.12;
+    const dpr = window.devicePixelRatio || 1;
+    if (vs.width !== Math.round(VS_W*dpr)){
+      vs.width = Math.round(VS_W*dpr); vs.height = Math.round(VS_H*dpr);
+      vs.style.aspectRatio = VS_W + '/' + VS_H;
+    }
+    vsctx.setTransform(dpr,0,0,dpr,0,0);
+    vsctx.clearRect(0,0,VS_W,VS_H);
+    vsctx.fillStyle = '#fff'; vsctx.fillRect(0,0,VS_W,VS_H);
+
+    // 网格
+    vsctx.strokeStyle = '#eff2f8'; vsctx.lineWidth = 1;
+    for (let g = 0; g <= S_MAX; g += 20){ vsctx.beginPath(); vsctx.moveTo(SX(g),VS_P.t); vsctx.lineTo(SX(g),VS_P.t+VS_PH); vsctx.stroke(); }
+    for (let g = 0; g <= VV_MAX; g += 0.5){ vsctx.beginPath(); vsctx.moveTo(VS_P.l,SY(g)); vsctx.lineTo(VS_P.l+VS_PW,SY(g)); vsctx.stroke(); }
+
+    // 轴
+    vsctx.strokeStyle = '#c3ccda'; vsctx.lineWidth = 1.6;
+    vsctx.beginPath();
+    vsctx.moveTo(VS_P.l, VS_P.t); vsctx.lineTo(VS_P.l, VS_P.t+VS_PH); vsctx.lineTo(VS_P.l+VS_PW, VS_P.t+VS_PH);
+    vsctx.stroke();
+
+    // 刻度
+    vsctx.fillStyle = '#8a94a6'; vsctx.font = '500 14px ' + FONT;
+    vsctx.textAlign = 'center'; vsctx.textBaseline = 'top';
+    for (let g = 0; g <= S_MAX; g += 20) vsctx.fillText(String(g), SX(g), VS_P.t+VS_PH+9);
+    vsctx.textAlign = 'right'; vsctx.textBaseline = 'middle';
+    for (let g = 0; g <= VV_MAX; g += 0.5) vsctx.fillText(g.toFixed(1), VS_P.l-12, SY(g));
+
+    // 轴标题
+    vsctx.fillStyle = '#4a5568'; vsctx.font = '600 15px ' + FONT;
+    vsctx.textAlign = 'center'; vsctx.textBaseline = 'top';
+    vsctx.fillText('滑行距离 s / cm', VS_P.l+VS_PW/2, VS_P.t+VS_PH+28);
+    vsctx.save();
+    vsctx.translate(24, VS_P.t+VS_PH/2); vsctx.rotate(-Math.PI/2);
+    vsctx.textAlign = 'center'; vsctx.textBaseline = 'middle';
+    vsctx.fillText('速度 v / (m/s)', 0, 0);
+    vsctx.restore();
+
+    // 曲线
+    ORDER.forEach(k => {
+      const m = MATS[k];
+      const isCur = k === cur;
+      vsctx.beginPath();
+      if (m.mu === 0){
+        vsctx.moveTo(SX(0), SY(V0));
+        vsctx.lineTo(SX(S_MAX), SY(V0));
+      } else {
+        const distCm = m.dist * 100;
+        let first = true;
+        for (let cm = 0; cm <= distCm; cm += 1){
+          const sm = cm/100;
+          const vv = Math.sqrt(Math.max(0, V0*V0 - 2*m.a*sm));
+          const x = SX(cm), y = SY(vv);
+          if (first){ vsctx.moveTo(x,y); first=false; } else vsctx.lineTo(x,y);
+        }
+      }
+      vsctx.strokeStyle = isCur ? m.color : m.color + '55';
+      vsctx.lineWidth = isCur ? 4 : 2.4;
+      vsctx.lineCap = 'round';
+      vsctx.stroke();
+      if (isCur){
+        vsctx.fillStyle = m.color; vsctx.font = '700 19px ' + FONT;
+        vsctx.textAlign = 'left'; vsctx.textBaseline = 'bottom';
+        if (m.mu === 0){
+          vsctx.fillText(m.name + '：速度不变', SX(3), SY(V0) - 9);
+        } else {
+          vsctx.fillText(m.name + '：速度逐渐减小', SX(2), SY(V0) - 9);
+        }
+      }
+    });
+
+    // 停下标记
+    ORDER.forEach(k => {
+      const m = MATS[k];
+      if (m.mu > 0){
+        const x = SX(m.dist*100), y = SY(0);
+        vsctx.beginPath(); vsctx.arc(x, y, 4.5, 0, Math.PI*2);
+        vsctx.fillStyle = k === cur ? m.color : m.color + '88'; vsctx.fill();
+        if (k === cur){
+          vsctx.fillStyle = m.color; vsctx.font = '600 12px ' + FONT;
+          vsctx.textAlign = 'center'; vsctx.textBaseline = 'top';
+          vsctx.fillText('停', x, y + 6);
+        }
+      }
+    });
+
+    // 当前运动点
+    const m = MATS[cur];
+    if (phase === 'flat' || phase === 'stopped'){
+      const scm = Math.min(s*100, S_MAX);
+      const vv = m.mu === 0 ? V0 : Math.sqrt(Math.max(0, V0*V0 - 2*m.a*s));
+      const x = SX(scm), y = SY(vv);
+      vsctx.beginPath(); vsctx.arc(x, y, 8, 0, Math.PI*2);
+      vsctx.fillStyle = m.color + '33'; vsctx.fill();
+      vsctx.beginPath(); vsctx.arc(x, y, 4.5, 0, Math.PI*2);
+      vsctx.fillStyle = m.color; vsctx.fill();
+      vsctx.lineWidth = 2; vsctx.strokeStyle = '#fff'; vsctx.stroke();
+    }
+  }
+
+  /* ================= UI 同步 ================= */
+  function syncUI(){
+    const cvv = phase === 'ramp' ? A_RAMP*tRamp : (phase === 'idle' ? 0 : v);
+    $('roV').innerHTML = cvv.toFixed(1) + '<i>m/s</i>';
+    $('roH').innerHTML = (H*100).toFixed(1) + '<i>cm</i>';
+    $('roV0').innerHTML = V0.toFixed(1) + '<i>m/s</i>';
+    const sCm = s * 100;
+    const m = MATS[cur];
+    if (m.mu === 0){
+      $('roS').innerHTML = '∞<i>无穷远</i>';
+    } else if (sCm >= 200){
+      $('roS').innerHTML = (sCm/100).toFixed(2) + '<i>m</i>';
+    } else {
+      $('roS').innerHTML = sCm.toFixed(1) + '<i>cm</i>';
+    }
+    $('curMat').textContent = m.name;
+    $('mcTitle').textContent = m.name;
+    $('mcTitle').setAttribute('fill', m.color);
+    $('mcSub').textContent = m.sub;
+    /* ---- 材质标注框：宽度刚好贴住文字 ---- */
+    const padX = 9;
+    const wT = S.mcTitle.getBBox().width, wS = S.mcSub.getBBox().width;
+    const bw = Math.max(wT, wS) + padX * 2;
+    const boxRight = 692;
+    const bx = boxRight - bw;
+    S.mcRect.setAttribute('x', bx.toFixed(1));
+    S.mcRect.setAttribute('width', bw.toFixed(1));
+    const cxText = bx + bw / 2;              // 框中心 → 文字居中
+    S.mcTitle.setAttribute('x', cxText.toFixed(1));
+    S.mcSub.setAttribute('x', cxText.toFixed(1));
+    const cx = bx + bw / 2;                  // 箭头居中向下指向地面
+    S.mcArrow.setAttribute('x1', cx.toFixed(1));
+    S.mcArrow.setAttribute('x2', cx.toFixed(1));
+    S.mcArrowHead.setAttribute('points', `${cx.toFixed(1)},300 ${(cx-7).toFixed(1)},287 ${(cx+7).toFixed(1)},287`);
+    $('infoH').textContent = (H*100).toFixed(0);
+    $('infoV').textContent = 'v₀ = ' + V0.toFixed(1) + ' m/s';
+    $('fbH').textContent = 'h = ' + (H*100).toFixed(0) + ' cm';
+    $('fbV').textContent = '初速度 v₀ = ' + V0.toFixed(1) + ' m/s';
+
+    const badge = $('statusBadge');
+    let txt = '待释放', bg = '#e8efff', fg = '#2f6bff', bd = '#d3e0ff';
+    if (phase === 'ramp'){ txt = '正在斜面下滑'; }
+    else if (phase === 'flat'){ txt = m.mu === 0 ? '匀速直线运动中…' : '水平面滑行中…'; fg = m.mu===0?'#5b6b80':'#c99100'; bg = m.mu===0?'#eef1f6':'#fdf5e3'; bd = m.mu===0?'#dde3ec':'#f0e2bd'; }
+    else if (phase === 'stopped'){ txt = '已停下 · 滑行 ' + (s*100).toFixed(0) + ' cm'; bg = '#fdecec'; fg = '#e5484d'; bd = '#f6cfd0'; }
+    else if (m.mu === 0){ txt = '理想地面 · 阻力为零'; bg = '#eef1f6'; fg = '#5b6b80'; bd = '#dde3ec'; }
+    badge.textContent = txt;
+    badge.style.background = bg; badge.style.color = fg; badge.style.borderColor = bd;
+
+    const btn = $('btnGo');
+    if (phase === 'idle'){ btn.textContent = '▶ 释放小车'; btn.disabled = false; }
+    else if (phase === 'ramp' || phase === 'flat'){ btn.textContent = '■ 停止'; btn.disabled = false; }
+    else { btn.textContent = '▶ 再放一次'; btn.disabled = false; }
+
+    const done = ORDER.filter(k => records[k] !== null).length;
+    $('recHint').textContent = '已完成 ' + done + ' / 4 种地面';
+
+    document.querySelectorAll('.mat').forEach(b => {
+      b.classList.toggle('on', b.dataset.m === cur);
+    });
+
+    drawBar(); drawVT(); drawVS();
+  }
+
+  /* ================= 交互 ================= */
+  function setMat(k){
+    cur = k;
+    const m = MATS[k];
+    $('ground').setAttribute('fill', m.pat);
+    resetToTop();
+  }
+
+  function resetToTop(){
+    phase = 'idle'; tRamp = 0; tFlat = 0; s = 0; v = 0; last = 0;
+    renderScene(); syncUI();
+  }
+
+  function go(){
+    if (phase === 'idle'){
+      phase = 'ramp'; tRamp = 0; tFlat = 0; s = 0; v = 0; last = 0;
+      if (MATS[cur].mu === 0 && records.ideal === null) records.ideal = Infinity;
+    } else if (phase === 'ramp' || phase === 'flat'){
+      // 中断 → 回到斜面顶端
+      resetToTop();
+      return;
+    } else {
+      // 停下后 → 再放一次
+      phase = 'ramp'; tRamp = 0; tFlat = 0; s = 0; v = 0; last = 0;
+    }
+  }
+
+  $('mats').addEventListener('click', e => {
+    const b = e.target.closest('.mat'); if (!b) return;
+    setMat(b.dataset.m);
+  });
+
+  $('btnGo').addEventListener('click', go);
+
+  $('btnReset').addEventListener('click', () => {
+    Object.keys(records).forEach(k => records[k] = null);
+    setMat('cloth');
+  });
+
+  /* 改变释放高度：重算物理、重绘斜面、清空已测对比（保证同一高度下比较） */
+  function setHeight(cm){
+    H = cm / 100;
+    recomputePhysics();
+    layoutRamp();
+    Object.keys(records).forEach(k => records[k] = null);
+    $('hVal').textContent = cm;
+    $('rangeH').value = cm;
+    document.querySelectorAll('#hQuick button').forEach(b => b.classList.toggle('on', +b.dataset.h === cm));
+    resetToTop();         // 内部调用 renderScene + syncUI（含三张图重绘）
+  }
+
+  $('rangeH').addEventListener('input', e => setHeight(+e.target.value));
+  $('hQuick').addEventListener('click', e => {
+    const b = e.target.closest('button'); if (!b) return;
+    setHeight(+b.dataset.h);
+  });
+
+  window.addEventListener('keydown', e => {
+    if (e.code === 'Space'){ e.preventDefault(); go(); }
+  });
+
+  /* ================= 初始化 ================= */
+  // 支持 URL 参数预设：?m=glass&jump=stop|flat|ideal|ramp&h=30
+  recomputePhysics();
+  layoutRamp();
+  $('ground').setAttribute('fill', MATS[cur].pat);
+  resetToTop();
+  try{
+    const q = new URLSearchParams(location.search);
+    const hp = q.get('h');
+    if (hp){ const hc = Math.max(10, Math.min(40, parseInt(hp,10)||20)); H = hc/100; recomputePhysics(); layoutRamp();
+      $('hVal').textContent = hc; $('rangeH').value = hc;
+      document.querySelectorAll('#hQuick button').forEach(b => b.classList.toggle('on', +b.dataset.h === hc)); }
+    const k = q.get('m');
+    if (k && MATS[k]){ cur = k; $('ground').setAttribute('fill', MATS[cur].pat); resetToTop(); }
+    const jp = q.get('jump');
+    if (jp === 'stop' && MATS[cur].mu > 0){
+      tFlat = MATS[cur].tStop; s = MATS[cur].dist; v = 0;
+      phase = 'stopped';
+      records[cur] = s;
+    } else if (jp === 'flat'){
+      phase = 'flat';
+      tFlat = (MATS[cur].mu === 0 ? 1.0 : MATS[cur].tStop * 0.55);
+      s = MATS[cur].mu === 0 ? V0 * tFlat : V0*tFlat - 0.5*MATS[cur].a*tFlat*tFlat;
+      v = MATS[cur].mu === 0 ? V0 : V0 - MATS[cur].a*tFlat;
+      if (MATS[cur].mu === 0 && records.ideal === null) records.ideal = Infinity;
+    } else if (jp === 'ideal'){
+      cur = 'ideal'; $('ground').setAttribute('fill', MATS[cur].pat);
+      phase = 'flat'; records.ideal = Infinity;
+      tFlat = 6; s = V0 * tFlat; v = V0;
+    } else if (jp === 'ramp'){
+      phase = 'ramp'; tRamp = T_RAMP * 0.6;
+    }
+  }catch(err){}
+  renderScene();
+  syncUI();
+  raf = requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

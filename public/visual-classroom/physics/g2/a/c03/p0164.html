@@ -1,0 +1,665 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>11.1　电源和电流 ｜ 人教版物理必修第三册</title>
+<style>
+  :root{
+    --blue:#1d4ed8; --blue-soft:#eff6ff; --blue-line:#bfdbfe;
+    --ink:#1e293b; --sub:#64748b; --line:#e2e8f0;
+    --amber-bg:#fffbeb; --amber-line:#fcd34d; --amber-ink:#92400e;
+    --green:#059669; --red:#dc2626;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:#f3f5f9; color:var(--ink);
+    font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif; padding:18px 12px 40px;}
+  .wrap{max-width:1060px; margin:0 auto;}
+  header{background:#fff; border:1px solid var(--line); border-left:6px solid var(--blue);
+    border-radius:12px; padding:16px 22px; box-shadow:0 1px 3px rgba(15,23,42,.06);}
+  header h1{font-size:22px; color:var(--ink);}
+  header .meta{margin-top:6px; font-size:12.5px; color:var(--sub); line-height:1.7;}
+  .mod{background:#fff; border:1px solid var(--line); border-radius:12px;
+    padding:16px 20px 18px; margin-top:16px; box-shadow:0 1px 3px rgba(15,23,42,.05);}
+  .mod-h{display:flex; align-items:center; gap:10px; margin-bottom:10px;}
+  .mod-h .no{background:var(--blue); color:#fff; font-size:12px; border-radius:6px;
+    padding:2px 8px; white-space:nowrap;}
+  .mod-h h2{font-size:16.5px;}
+  .mod-h .kp{margin-left:auto; font-size:12px; color:var(--sub); white-space:nowrap;}
+  .think{background:var(--blue-soft); border:1px solid var(--blue-line); border-radius:8px;
+    padding:8px 12px; font-size:12.5px; color:#1e40af; margin-bottom:10px; line-height:1.7;}
+  .think b{color:var(--blue);}
+  canvas.stage{display:block; width:100%; background:#fbfdff;
+    border:1px solid var(--line); border-radius:10px;}
+  .ctrl{display:flex; flex-wrap:wrap; gap:8px 18px; align-items:center; margin-top:10px;}
+  .row{display:flex; align-items:center; gap:8px; font-size:13px;}
+  .row label{color:var(--sub); white-space:nowrap;}
+  .row input[type=range]{width:150px; accent-color:var(--blue);}
+  .row .val{min-width:64px; font-variant-numeric:tabular-nums; color:var(--ink); font-weight:600;}
+  .btn{border:1px solid var(--blue); color:var(--blue); background:#fff; border-radius:7px;
+    padding:4px 12px; font-size:12.5px; cursor:pointer;}
+  .btn:hover{background:var(--blue-soft);}
+  .btn.on{background:var(--blue); color:#fff;}
+  .note{margin-top:10px; background:var(--amber-bg); border:1px solid var(--amber-line);
+    border-radius:8px; padding:8px 12px; font-size:12.5px; color:var(--amber-ink); line-height:1.8;}
+  .note b{color:#b45309;}
+  footer{margin-top:20px; text-align:center; font-size:12px; color:#94a3b8;}
+  .seg{display:inline-flex; border:1px solid var(--blue); border-radius:8px; overflow:hidden;}
+  .seg button{border:none; background:#fff; color:var(--blue); padding:4px 12px;
+    font-size:12.5px; cursor:pointer;}
+  .seg button.on{background:var(--blue); color:#fff;}
+  .read{display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-top:10px;}
+  .read div{background:#f8fafc; border:1px solid var(--line); border-radius:7px;
+    padding:5px 9px; font-size:11.5px; color:var(--sub);}
+  .read div b{display:block; color:var(--ink); font-size:14px; font-weight:700;
+    font-variant-numeric:tabular-nums;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>11.1　电源和电流</h1>
+  <div class="meta">人教版《物理》必修第三册 · 第十一章 电路及其应用 · 教材 P53–P56 ｜
+    覆盖知识点：电流的形成与恒定电场、电流的定义式 I＝q/t、电流的微观表达式 I＝neSv ｜
+    难点：漂移速率极小而电场建立速率为光速</div>
+</header>
+
+<div class="mod">
+  <div class="mod-h"><span class="no">模块 1</span><h2>电流的形成：热运动 + 定向漂移</h2><span class="kp">动画演示</span></div>
+  <div class="think"><b>先想一想：</b>闭合开关的一瞬间，灯泡为什么"立刻"就亮？是电池里的电子一路飞奔过来了吗？先猜一猜，再闭合开关看动画。</div>
+  <canvas class="stage" id="cv1" style="height:420px;"></canvas>
+  <div class="ctrl">
+    <button class="btn" id="sw1">闭合开关</button>
+    <div class="row"><label>电子漂移速率 v</label><input type="range" id="d1" min="0.02" max="0.5" step="0.01" value="0.12"><span class="val" id="d1v"></span></div>
+    <button class="btn" id="p1a">看"灯立刻亮"</button>
+    <button class="btn" id="p1b">暂停动画</button>
+  </div>
+  <div class="note"><b>观察要点：</b>① 断开时电子只在做<b>无规则热运动</b>，来回乱窜、没有净迁移，不形成电流；
+    ② 闭合后电子只是在热运动上<b>叠加了一个极慢的定向漂移</b>（方向与电流相反），漂移速率只有 10⁻⁴ m/s 量级；
+    ③ 但<b>电场沿导线以约 3×10⁸ m/s（光速）建立</b>，整条回路里的自由电子几乎同时收到"命令"开始漂移，所以灯立刻就亮 ——
+    亮的不是"跑来的电子"，而是"传到"的能量与电场。</div>
+</div>
+
+<div class="mod">
+  <div class="mod-h"><span class="no">模块 2</span><h2>电流的定义式 I＝q/t</h2><span class="kp">交互仿真 + 数据图象</span></div>
+  <div class="think"><b>先想一想：</b>电流 1 A 到底是"多大"？如果 2 s 内有 4 C 电荷通过截面，电流是多少？把电流调大，q–t 图线会怎样变陡？</div>
+  <canvas class="stage" id="cv2" style="height:340px;"></canvas>
+  <div class="read">
+    <div>计时 t<b id="r2t">0.00 s</b></div>
+    <div>累计通过电荷 q<b id="r2q">0.00 C</b></div>
+    <div>I＝q/t（实测）<b id="r2i">—</b></div>
+    <div>设定电流 I<b id="r2s">1.00 A</b></div>
+  </div>
+  <div class="ctrl">
+    <div class="row"><label>电流 I</label><input type="range" id="i2" min="0.2" max="2.5" step="0.1" value="1"><span class="val" id="i2v"></span></div>
+    <button class="btn" id="run2">开始计时</button>
+    <button class="btn" id="rst2">复位</button>
+    <button class="btn" id="p2a">0.5 A（慢）</button>
+    <button class="btn" id="p2b">2.0 A（快）</button>
+  </div>
+  <div class="note"><b>观察要点：</b>q–t 图线是<b>过原点的直线</b>，直线越陡表示电流越大 —— 斜率就是 I，即 I＝q/t。
+    电流大时单位时间穿过截面的电荷多（亮点穿过得更频繁）。注意 I＝q/t 是<b>比值定义式</b>：I 由电源和电路决定，不随你取多长时间而变。</div>
+</div>
+
+<div class="mod">
+  <div class="mod-h"><span class="no">模块 3</span><h2>电流的微观式 I＝neSv</h2><span class="kp">交互仿真</span></div>
+  <div class="think"><b>先想一想：</b>同样粗细的铜线和硅片，通同样的电流，里面电子跑得一样快吗？把材料换成半导体（n 小很多）后，要维持同样的电流，电子得跑多快？</div>
+  <canvas class="stage" id="cv3" style="height:400px;"></canvas>
+  <div class="read">
+    <div>载流子密度 n<b id="r3n">—</b></div>
+    <div>横截面积 S<b id="r3s">—</b></div>
+    <div>漂移速率 v<b id="r3v">—</b></div>
+    <div>电流 I＝neSv<b id="r3i">—</b></div>
+  </div>
+  <div class="ctrl">
+    <div class="row"><label>材料</label>
+      <span class="seg" id="m3">
+        <button data-i="0" class="on">铜</button><button data-i="1">铁</button><button data-i="2">硅（半导体）</button>
+      </span>
+    </div>
+    <div class="row"><label>横截面积 S</label><input type="range" id="s3" min="0.5" max="6" step="0.1" value="1.5"><span class="val" id="s3v"></span></div>
+    <div class="row"><label>漂移速率 v</label><input type="range" id="v3" min="0.02" max="0.8" step="0.01" value="0.20"><span class="val" id="v3v"></span></div>
+    <button class="btn" id="p3a">典型：铜 1 mm² / 0.1 mm·s⁻¹</button>
+  </div>
+  <div class="note"><b>观察要点：</b>I 与 n、S、v 三者都成<b>正比</b>：导线越粗（S 大）、电子跑得越快（v 大）、单位体积载流子越多（n 大），电流就越大。
+    换成半导体时 n 骤减约 10⁸ 倍，要得到同样的电流，v 必须大得多 —— 这也是半导体器件里"载流子少但速度快"的直观感受。</div>
+</div>
+
+<footer>人教版高中物理必修第三册 · 可视化交互课件 ｜ 单文件离线运行，双击即可使用</footer>
+</div>
+
+<script>
+(function(){
+'use strict';
+/* ========== 通用工具（所有文件统一使用） ========== */
+function $(id){ return document.getElementById(id); }
+function fmt(x, d){
+  if (d === undefined) d = 2;
+  if (!isFinite(x)) return '—';
+  var a = Math.abs(x);
+  if (a >= 10000 || (a > 0 && a < 0.01)) return x.toExponential(2);
+  return (+x.toFixed(d)).toString();
+}
+/* 舞台：自动适配尺寸并清底 */
+function stage(id){
+  var cv = $(id);
+  var o = { cv:cv, ctx:cv.getContext('2d'), w:0, h:0 };
+  o.clear = function(){
+    var dpr = window.devicePixelRatio || 1;
+    var w = cv.clientWidth || 800, h = cv.clientHeight || 340;
+    if (cv.width !== Math.round(w*dpr) || cv.height !== Math.round(h*dpr)){
+      cv.width = Math.round(w*dpr); cv.height = Math.round(h*dpr);
+    }
+    o.ctx.setTransform(dpr,0,0,dpr,0,0);
+    o.w = w; o.h = h;
+    var c = o.ctx;
+    c.clearRect(0,0,w,h);
+    c.fillStyle = '#fbfdff'; c.fillRect(0,0,w,h);
+    return c;
+  };
+  return o;
+}
+function bind(id, fn, disp){
+  var el = $(id), v = $(id + 'v');
+  function go(){ var x = parseFloat(el.value); if (v) v.textContent = disp ? disp(x) : el.value; fn(x); }
+  el.addEventListener('input', go); go();
+  return el;
+}
+function setR(id, val){
+  var el = $(id); el.value = val;
+  el.dispatchEvent(new Event('input'));
+}
+function arrow(ctx, x1, y1, x2, y2, color, w){
+  ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = w || 2;
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  var a = Math.atan2(y2 - y1, x2 - x1), s = 7;
+  ctx.beginPath(); ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - s * Math.cos(a - 0.42), y2 - s * Math.sin(a - 0.42));
+  ctx.lineTo(x2 - s * Math.cos(a + 0.42), y2 - s * Math.sin(a + 0.42));
+  ctx.closePath(); ctx.fill();
+}
+/* 文字 */
+function T(c, s, x, y, col, f, al, bl){
+  c.font = f || '12px "Microsoft YaHei",sans-serif';
+  c.fillStyle = col || '#334155';
+  c.textAlign = al || 'left'; c.textBaseline = bl || 'alphabetic';
+  c.fillText(s, x, y);
+}
+/* 圆角框 */
+function box(c, x, y, w, h, fill, stroke){
+  var r = 8;
+  c.beginPath();
+  c.moveTo(x+r, y); c.lineTo(x+w-r, y); c.quadraticCurveTo(x+w, y, x+w, y+r);
+  c.lineTo(x+w, y+h-r); c.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+  c.lineTo(x+r, y+h); c.quadraticCurveTo(x, y+h, x, y+h-r);
+  c.lineTo(x, y+r); c.quadraticCurveTo(x, y, x+r, y);
+  c.closePath();
+  if (fill){ c.fillStyle = fill; c.fill(); }
+  if (stroke){ c.strokeStyle = stroke; c.lineWidth = 1.2; c.stroke(); }
+}
+/* 电源（竖直放置，上端为正极） */
+function batteryV(c, x, y){
+  c.save();
+  c.strokeStyle = '#0f172a'; c.lineWidth = 3; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(x-22, y-6); c.lineTo(x+22, y-6); c.stroke();   // 长：正极
+  c.beginPath(); c.moveTo(x-12, y+8); c.lineTo(x+12, y+8); c.stroke();   // 短：负极
+  c.restore();
+  T(c, '+', x+30, y-2, '#dc2626', 'bold 13px Consolas,monospace', 'left', 'middle');
+  T(c, '−', x+30, y+10, '#1d4ed8', 'bold 13px Consolas,monospace', 'left', 'middle');
+}
+/* 灯泡 */
+function lamp(c, x, y, lit){
+  c.save();
+  if (lit > 0.01){
+    var g = c.createRadialGradient(x, y, 2, x, y, 34);
+    g.addColorStop(0, 'rgba(245,158,11,' + (0.85*lit).toFixed(3) + ')');
+    g.addColorStop(1, 'rgba(245,158,11,0)');
+    c.fillStyle = g;
+    c.beginPath(); c.arc(x, y, 34, 0, 6.2832); c.fill();
+  }
+  c.beginPath(); c.arc(x, y, 15, 0, 6.2832);
+  c.fillStyle = lit > 0.01 ? '#fde68a' : '#fff'; c.fill();
+  c.strokeStyle = '#0f172a'; c.lineWidth = 2.2; c.stroke();
+  c.strokeStyle = '#0f172a'; c.lineWidth = 1.6;
+  c.beginPath(); c.moveTo(x-7, y+9); c.lineTo(x+7, y+9); c.stroke();
+  c.beginPath(); c.moveTo(x-6, y-6); c.lineTo(x-2, y+4); c.lineTo(x+2, y-4); c.lineTo(x+6, y-6); c.stroke();
+  c.restore();
+}
+/* 开关 */
+function drawSwitch(c, x, y, closed){
+  c.save(); c.strokeStyle = '#0f172a'; c.lineWidth = 2.6; c.lineCap = 'round';
+  c.fillStyle = '#0f172a';
+  c.beginPath(); c.arc(x-18, y, 3.5, 0, 6.2832); c.fill();
+  c.beginPath(); c.arc(x+18, y, 3.5, 0, 6.2832); c.fill();
+  c.beginPath(); c.moveTo(x-18, y);
+  if (closed) c.lineTo(x+18, y); else c.lineTo(x+11, y-14);
+  c.stroke(); c.restore();
+  T(c, closed ? '闭合' : '断开', x, y-20, '#64748b', '11px "Microsoft YaHei",sans-serif', 'center', 'bottom');
+}
+/* 电表圆圈 */
+function meter(c, x, y, sym, txt, col){
+  c.save();
+  c.beginPath(); c.arc(x, y, 20, 0, 6.2832);
+  c.fillStyle = '#fff'; c.fill(); c.strokeStyle = '#0f172a'; c.lineWidth = 2; c.stroke();
+  c.restore();
+  T(c, sym, x, y, '#0f172a', 'bold 14px Consolas,monospace', 'center', 'middle');
+  T(c, txt, x, y+26, col || '#b45309', '12px Consolas,monospace', 'center', 'top');
+}
+/* 坐标轴 */
+function axes(c, x0, y0, x1, y1, xmax, ymax, xlab, ylab, xt, yt){
+  c.strokeStyle = '#cbd5e1'; c.lineWidth = 1;
+  var i, gx, gy;
+  for (i = 0; i <= 5; i++){
+    gx = x0 + (x1-x0)*i/5;
+    c.beginPath(); c.moveTo(gx, y1); c.lineTo(gx, y0); c.stroke();
+    gy = y0 - (y0-y1)*i/5;
+    c.beginPath(); c.moveTo(x0, gy); c.lineTo(x1, gy); c.stroke();
+  }
+  c.strokeStyle = '#334155'; c.lineWidth = 1.6;
+  c.beginPath(); c.moveTo(x0, y1); c.lineTo(x0, y0); c.lineTo(x1, y0); c.stroke();
+  for (i = 0; i <= 5; i++){
+    gx = x0 + (x1-x0)*i/5;
+    T(c, (xmax*i/5).toFixed(xt === undefined ? 1 : xt), gx, y0+5, '#64748b', '11px Consolas,monospace', 'center', 'top');
+    gy = y0 - (y0-y1)*i/5;
+    T(c, (ymax*i/5).toFixed(yt === undefined ? 1 : yt), x0-5, gy, '#64748b', '11px Consolas,monospace', 'right', 'middle');
+  }
+  T(c, xlab, (x0+x1)/2, y0+22, '#334155', '12px "Microsoft YaHei",sans-serif', 'center', 'top');
+  c.save(); c.translate(x0-30, (y0+y1)/2); c.rotate(-Math.PI/2);
+  T(c, ylab, 0, 0, '#334155', '12px "Microsoft YaHei",sans-serif', 'center', 'top');
+  c.restore();
+}
+
+/* ================= 模块 1：电流的形成 ================= */
+var S1 = stage('cv1');
+var sw1 = false, vd1 = 0.12, run1 = true, pulse1 = -1;
+var E1 = [], E2 = [];
+function seedElec(){
+  E1 = []; E2 = [];
+  var i;
+  for (i = 0; i < 46; i++){
+    E1.push({ nx:Math.random(), ny:Math.random(), a:Math.random()*6.2832, sp:0.7+Math.random()*1.1 });
+    E2.push({ nx:Math.random(), ny:Math.random(), a:Math.random()*6.2832, sp:0.7+Math.random()*1.1 });
+  }
+}
+seedElec();
+function stepElec(arr, drift){
+  var i, p;
+  for (i = 0; i < arr.length; i++){
+    p = arr[i];
+    if (Math.random() < 0.05) p.a += (Math.random()-0.5)*2.2;
+    p.nx += Math.cos(p.a)*p.sp*0.0016;
+    p.ny += Math.sin(p.a)*p.sp*0.0016;
+    if (p.nx < 0.02) { p.nx = 0.02; p.a = Math.PI - p.a; }
+    if (p.nx > 0.98) { p.nx = 0.98; p.a = Math.PI - p.a; }
+    if (p.ny < 0.06) { p.ny = 0.06; p.a = -p.a; }
+    if (p.ny > 0.97) { p.ny = 0.97; p.a = -p.a; }
+    if (drift > 0){ p.nx -= drift; if (p.nx < 0.02) p.nx += 0.96; }
+  }
+}
+function drawElecs(c, arr, x, y, w, h){
+  var i, p, px, py;
+  for (i = 0; i < arr.length; i++){
+    p = arr[i]; px = x + p.nx*w; py = y + p.ny*h;
+    c.beginPath(); c.arc(px, py, 4.2, 0, 6.2832);
+    c.fillStyle = 'rgba(37,99,235,.85)'; c.fill();
+    c.strokeStyle = '#fff'; c.lineWidth = 1; c.stroke();
+  }
+}
+function draw1(){
+  var c = S1.clear(), W = S1.w, H = S1.h;
+  var yTop = 54, yBot = 170, xL = 86, xR = W - 86, xs = W*0.5;
+  var lit = sw1 ? 1 : 0;
+  c.lineCap = 'round';
+  /* 导线 */
+  c.strokeStyle = '#334155'; c.lineWidth = 3;
+  c.beginPath(); c.moveTo(xL, yTop); c.lineTo(xL, 92); c.stroke();
+  c.beginPath(); c.moveTo(xL, 146); c.lineTo(xL, yBot); c.stroke();
+  c.beginPath(); c.moveTo(xL, yBot); c.lineTo(xR, yBot); c.stroke();
+  c.beginPath(); c.moveTo(xR, yBot); c.lineTo(xR, 148); c.stroke();
+  c.beginPath(); c.moveTo(xR, 90); c.lineTo(xR, yTop); c.stroke();
+  c.beginPath(); c.moveTo(xR, yTop); c.lineTo(xs+18, yTop); c.stroke();
+  c.beginPath(); c.moveTo(xs-18, yTop); c.lineTo(xL, yTop); c.stroke();
+  batteryV(c, xL, 119);
+  drawSwitch(c, xs, yTop, sw1);
+  /* 电流（琥珀色流动粒子） */
+  if (sw1){
+    c.save();
+    c.strokeStyle = 'rgba(245,158,11,.95)'; c.lineWidth = 3.4;
+    c.setLineDash([9, 13]); c.lineDashOffset = -dash;
+    c.beginPath();
+    c.moveTo(xL, 92); c.lineTo(xL, yTop); c.lineTo(xs-18, yTop);
+    c.moveTo(xs+18, yTop); c.lineTo(xR, yTop); c.lineTo(xR, 90);
+    c.moveTo(xR, 148); c.lineTo(xR, yBot); c.lineTo(xL, yBot); c.lineTo(xL, 146);
+    c.stroke();
+    c.restore();
+  }
+  /* 电场建立脉冲（光速） */
+  if (pulse1 >= 0){
+    c.save();
+    c.strokeStyle = 'rgba(245,158,11,.95)'; c.lineWidth = 6;
+    c.setLineDash([64, 6000]); c.lineDashOffset = -pulse1;
+    c.beginPath();
+    c.moveTo(xL, 92); c.lineTo(xL, yTop); c.lineTo(xs, yTop); c.lineTo(xR, yTop); c.lineTo(xR, 119);
+    c.lineTo(xR, yBot); c.lineTo(xL, yBot); c.lineTo(xL, 119);
+    c.stroke();
+    c.restore();
+    T(c, '电场以 ≈3×10⁸ m/s（光速）沿导线建立', W*0.5, yTop-30, '#b45309',
+      'bold 13px "Microsoft YaHei",sans-serif', 'center', 'bottom');
+  }
+  lamp(c, xR, 119, lit);
+  T(c, sw1 ? '灯立刻亮了！' : '灯不亮', xR, 158, sw1 ? '#b45309' : '#94a3b8',
+    '12px "Microsoft YaHei",sans-serif', 'center', 'top');
+  T(c, '电源就像"水泵"：靠非静电力把正电荷从负极搬到正极，维持两极间的电势差（电动势）', xL+8, 194, '#64748b',
+    '11.5px "Microsoft YaHei",sans-serif', 'left', 'middle');
+
+  /* 两个放大窗口 */
+  var by = 210, bh = 118, gap = 26;
+  var bw = (W - 60 - gap)/2;
+  var b1x = 30, b2x = 30 + bw + gap;
+  box(c, b1x, by, bw, bh, '#f8fafc', '#e2e8f0');
+  box(c, b2x, by, bw, bh, '#f8fafc', '#e2e8f0');
+  T(c, '开关断开：只有无规则热运动', b1x+bw/2, by+16, '#1e40af', 'bold 12.5px "Microsoft YaHei",sans-serif', 'center', 'middle');
+  T(c, '开关闭合：热运动 + 定向漂移', b2x+bw/2, by+16, '#1e40af', 'bold 12.5px "Microsoft YaHei",sans-serif', 'center', 'middle');
+  drawElecs(c, E1, b1x+6, by+26, bw-12, bh-34);
+  drawElecs(c, E2, b2x+6, by+26, bw-12, bh-34);
+  /* 热运动/漂移说明 */
+  T(c, '净迁移 = 0，不形成电流', b1x+8, by+bh-8, '#64748b', '11px "Microsoft YaHei",sans-serif', 'left', 'bottom');
+  if (sw1){
+    arrow(c, b2x+bw-24, by+bh-16, b2x+24, by+bh-16, '#b45309', 2);
+    T(c, '电子漂移方向（与电流相反）', b2x+bw/2, by+bh-24, '#b45309', '11px "Microsoft YaHei",sans-serif', 'center', 'bottom');
+  } else {
+    T(c, '尚无电场，电子只是乱窜', b2x+bw/2, by+bh-8, '#94a3b8', '11px "Microsoft YaHei",sans-serif', 'center', 'bottom');
+  }
+  /* 速率对比：对数数轴（电场建立速率 vs 电子漂移速率） */
+  var vms = vd1*1e-3;
+  var hour = 1/Math.max(vms, 1e-9)/3600;
+  var ay = 358, ax0 = 66, ax1 = W - 66, LO = -4, HI = 9;
+  var SUP = { '-4':'⁻⁴', '-2':'⁻²', '0':'⁰', '2':'²', '4':'⁴', '6':'⁶', '8':'⁸' };
+  function lx(v){
+    var l = Math.log(Math.max(v, 1e-12))/Math.LN10;
+    return ax0 + (ax1-ax0)*Math.max(LO, Math.min(HI, l))/(HI-LO);
+  }
+  T(c, '速率对比（对数刻度）：电场建立 ≈ 光速，电子漂移只有 10⁻⁴ m/s 量级 —— 相差约 10¹² 倍',
+    ax0, ay-34, '#92400e', '12px "Microsoft YaHei",sans-serif', 'left', 'bottom');
+  c.strokeStyle = '#cbd5e1'; c.lineWidth = 2;
+  c.beginPath(); c.moveTo(ax0, ay); c.lineTo(ax1, ay); c.stroke();
+  var e, xe;
+  for (e = -4; e <= 8; e += 2){
+    xe = lx(Math.pow(10, e));
+    c.strokeStyle = '#94a3b8'; c.lineWidth = 1;
+    c.beginPath(); c.moveTo(xe, ay-6); c.lineTo(xe, ay+6); c.stroke();
+    T(c, '10' + SUP[String(e)], xe, ay+20, '#64748b', '10px Consolas,monospace', 'center', 'top');
+  }
+  var xd = lx(vms);
+  c.fillStyle = '#1d4ed8';
+  c.beginPath(); c.arc(xd, ay, 6, 0, 6.2832); c.fill();
+  T(c, '电子漂移 ' + vd1.toFixed(2) + ' mm/s', xd, ay-10, '#1d4ed8', '11px "Microsoft YaHei",sans-serif', 'center', 'bottom');
+  var xf = lx(3e8);
+  c.fillStyle = '#dc2626';
+  c.beginPath(); c.arc(xf, ay, 6, 0, 6.2832); c.fill();
+  T(c, '电场建立 3×10⁸ m/s', xf, ay-10, '#dc2626', '11px "Microsoft YaHei",sans-serif', 'center', 'bottom');
+  T(c, '单位 m/s ｜ 电子漂移 ' + vd1.toFixed(2) + ' mm/s：走完 1 m 需要约 ' + fmt(hour,1) + ' 小时（动画已放大约 10⁵ 倍）',
+    W*0.5, H-10, '#92400e', '12px "Microsoft YaHei",sans-serif', 'center', 'bottom');
+}
+
+/* ================= 模块 2：I = q/t ================= */
+var S2 = stage('cv2');
+var I2 = 1.0, run2 = false, t2 = 0, q2 = 0, hist2 = [], pt2 = [];
+var DOTQ = 0.2;   // 每个亮点代表的电荷量（C）
+function seedP2(){
+  pt2 = [];
+  var i;
+  for (i = 0; i < 26; i++) pt2.push({ nx:Math.random(), ny:0.15+Math.random()*0.7 });
+}
+seedP2();
+function draw2(){
+  var c = S2.clear(), W = S2.w, H = S2.h;
+  var LW = W*0.52, GX = LW + 16;
+  /* 左：导体与截面 */
+  var yc = H*0.34, x1 = 40, x2 = LW - 40, xsx = (x1+x2)*0.62;
+  c.strokeStyle = '#334155'; c.lineWidth = 3; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(x1, yc); c.lineTo(x2, yc); c.stroke();
+  box(c, x1, yc-26, x2-x1, 52, '#f1f5f9', '#94a3b8');
+  c.strokeStyle = '#334155'; c.lineWidth = 3;
+  c.beginPath(); c.moveTo(x1, yc); c.lineTo(x2, yc); c.stroke();
+  /* 电源 + 电流表（示意回路） */
+  var yb = H*0.62;
+  c.strokeStyle = '#334155'; c.lineWidth = 2.6;
+  c.beginPath(); c.moveTo(x1, yc); c.lineTo(x1, yb); c.lineTo(x2, yb); c.lineTo(x2, yc); c.stroke();
+  batteryV(c, (x1+x2)/2 - 60, yb);
+  meter(c, (x1+x2)/2 + 50, yb, 'A', I2.toFixed(2)+' A');
+  /* 截面 */
+  c.save();
+  c.strokeStyle = '#dc2626'; c.lineWidth = 2; c.setLineDash([5,4]);
+  c.beginPath(); c.moveTo(xsx, yc-34); c.lineTo(xsx, yc+34); c.stroke();
+  c.restore();
+  T(c, '截面', xsx, yc-40, '#dc2626', '12px "Microsoft YaHei",sans-serif', 'center', 'bottom');
+  /* 流动的电荷（琥珀色） */
+  var i, p, px, py;
+  for (i = 0; i < pt2.length; i++){
+    p = pt2[i]; px = x1 + p.nx*(x2-x1); py = yc - 26 + p.ny*52;
+    c.beginPath(); c.arc(px, py, 4.6, 0, 6.2832);
+    c.fillStyle = 'rgba(245,158,11,.95)'; c.fill();
+    c.strokeStyle = '#fff'; c.lineWidth = 1; c.stroke();
+  }
+  c.save();
+  c.strokeStyle = 'rgba(245,158,11,.35)'; c.lineWidth = 2.4;
+  c.setLineDash([8, 12]); c.lineDashOffset = -dash*0.8;
+  c.beginPath(); c.moveTo(x1, yc); c.lineTo(x2, yc); c.stroke();
+  c.restore();
+  T(c, '每个亮点代表 ' + DOTQ.toFixed(1) + ' C（约 ' + fmt(DOTQ/1.6e-19, 1) + ' 个电子）',
+    x1, H*0.80, '#64748b', '11.5px "Microsoft YaHei",sans-serif', 'left', 'middle');
+  T(c, run2 ? '计时中……' : '已暂停', x1, H*0.88, run2 ? '#059669' : '#94a3b8',
+    '12px "Microsoft YaHei",sans-serif', 'left', 'middle');
+
+  /* 右：q–t 图 */
+  var gx0 = GX + 34, gy0 = H - 34, gx1 = W - 24, gy1 = 30;
+  var tmax = Math.max(6, t2*1.15);
+  var qmax = Math.max(4, I2*tmax*1.05);
+  axes(c, gx0, gy0, gx1, gy1, tmax, qmax, 't / s', 'q / C', 1, 1);
+  var PX = function(t){ return gx0 + (gx1-gx0)*Math.min(t, tmax)/tmax; };
+  var PY = function(q){ return gy0 - (gy0-gy1)*Math.min(q, qmax)/qmax; };
+  c.strokeStyle = '#1d4ed8'; c.lineWidth = 2.4; c.setLineDash([]);
+  c.beginPath(); c.moveTo(PX(0), PY(0)); c.lineTo(PX(tmax), PY(I2*tmax)); c.stroke();
+  T(c, '斜率 = I = ' + I2.toFixed(2) + ' A', gx1-6, gy1+8, '#1d4ed8', '12px Consolas,monospace', 'right', 'top');
+  c.strokeStyle = '#dc2626'; c.lineWidth = 2;
+  if (hist2.length > 1){
+    c.beginPath();
+    for (i = 0; i < hist2.length; i++){
+      var hp = hist2[i];
+      if (i === 0) c.moveTo(PX(hp[0]), PY(hp[1])); else c.lineTo(PX(hp[0]), PY(hp[1]));
+    }
+    c.stroke();
+  }
+  if (t2 > 0){
+    c.beginPath(); c.arc(PX(t2), PY(q2), 5.5, 0, 6.2832);
+    c.fillStyle = '#dc2626'; c.fill(); c.strokeStyle = '#fff'; c.lineWidth = 1.6; c.stroke();
+    T(c, '(' + t2.toFixed(1) + ', ' + q2.toFixed(2) + ')', PX(t2)+8, PY(q2)-6, '#dc2626', '11px Consolas,monospace', 'left', 'bottom');
+  }
+  T(c, 'q–t 图线：过原点的直线，斜率即电流', (gx0+gx1)/2, H-8, '#334155', '12px "Microsoft YaHei",sans-serif', 'center', 'bottom');
+}
+function upd2(){
+  $('r2t').textContent = t2.toFixed(2) + ' s';
+  $('r2q').textContent = q2.toFixed(2) + ' C';
+  $('r2i').textContent = t2 > 0.15 ? (q2/t2).toFixed(2) + ' A' : '—';
+  $('r2s').textContent = I2.toFixed(2) + ' A';
+}
+
+/* ================= 模块 3：I = neSv ================= */
+var S3 = stage('cv3');
+var MAT = [
+  { name:'铜',   n:8.5e28, col:'#b45309' },
+  { name:'铁',   n:1.0e28, col:'#64748b' },
+  { name:'硅（半导体）', n:1.0e21, col:'#1d4ed8' }
+];
+var mi = 0, S3v = 1.5, V3v = 0.20, e_charge = 1.60e-19;
+var el3 = [];
+(function(){ var i; for (i = 0; i < 60; i++) el3.push({ nx:Math.random(), ny:Math.random() }); })();
+function draw3(){
+  var c = S3.clear(), W = S3.w, H = S3.h;
+  var m = MAT[mi];
+  var Imks = m.n * e_charge * (S3v*1e-6) * (V3v*1e-3);   // S: mm²→m², v: mm/s→m/s
+  /* 圆柱导体 */
+  var yc = 116, x1 = 70, x2 = W - 150;
+  var hgt = 26 + 46*(Math.sqrt(S3v) - Math.sqrt(0.5))/(Math.sqrt(6) - Math.sqrt(0.5));
+  c.save();
+  box(c, x1, yc-hgt/2, x2-x1, hgt, '#eef2f7', '#94a3b8');
+  /* 右端截面椭圆 */
+  var rx = hgt*0.22, ry = hgt/2;
+  c.beginPath(); c.ellipse(x2, yc, Math.max(rx,4), ry, 0, 0, 6.2832);
+  c.fillStyle = 'rgba(245,158,11,.35)'; c.fill();
+  c.strokeStyle = '#b45309'; c.lineWidth = 1.6; c.stroke();
+  c.beginPath(); c.ellipse(x1, yc, Math.max(rx,4), ry, 0, 0, 6.2832);
+  c.fillStyle = 'rgba(148,163,184,.25)'; c.fill();
+  c.strokeStyle = '#94a3b8'; c.lineWidth = 1.2; c.stroke();
+  c.restore();
+  T(c, 'S', x2, yc-ry-8, '#b45309', 'bold 13px Consolas,monospace', 'center', 'bottom');
+  /* 载流子（点的疏密按 n 的对数示意） */
+  var cnt = Math.round(10 + 34*(Math.log(m.n)/Math.LN10 - 21)/(28.93 - 21));
+  cnt = Math.max(6, Math.min(44, cnt));
+  var i, p, px, py;
+  for (i = 0; i < cnt; i++){
+    p = el3[i % el3.length];
+    px = x1 + 8 + ((p.nx + dash3) % 1)*(x2 - x1 - 16);
+    py = yc - hgt/2 + 6 + p.ny*(hgt - 12);
+    c.beginPath(); c.arc(px, py, 3.6, 0, 6.2832);
+    c.fillStyle = 'rgba(245,158,11,.95)'; c.fill();
+    c.strokeStyle = '#fff'; c.lineWidth = 0.9; c.stroke();
+  }
+  /* 漂移速率箭头与 1 s 漂移距离 */
+  var arrowLen = 30 + 120*(V3v/0.8);
+  arrow(c, x1+40, yc+hgt/2+34, x1+40+arrowLen, yc+hgt/2+34, '#1d4ed8', 2.4);
+  T(c, '电子漂移 v = ' + V3v.toFixed(2) + ' mm/s', x1+40, yc+hgt/2+24, '#1d4ed8',
+    '12px "Microsoft YaHei",sans-serif', 'left', 'bottom');
+  /* 长度标尺：1 s 内漂移的距离 */
+  T(c, '1 s 内电子只前进 ' + (V3v).toFixed(2) + ' mm',
+    x1+40+arrowLen+14, yc+hgt/2+38, '#64748b', '11px "Microsoft YaHei",sans-serif', 'left', 'middle');
+  /* 电流方向标注 */
+  arrow(c, x2-30, yc-hgt/2-30, x1+30, yc-hgt/2-30, '#dc2626', 2.4);
+  T(c, '电流 I 方向（与电子漂移相反）', x1+30, yc-hgt/2-38, '#dc2626', '12px "Microsoft YaHei",sans-serif', 'left', 'bottom');
+
+  /* 公式分解 */
+  var fy = 218;
+  box(c, 40, fy, W-80, 84, '#fffbeb', '#fcd34d');
+  T(c, 'I = n·e·S·v', 56, fy+26, '#92400e', 'bold 17px Consolas,monospace', 'left', 'middle');
+  T(c, '= (' + m.n.toExponential(2) + ' m⁻³) × (1.60×10⁻¹⁹ C) × (' + S3v.toFixed(2) + ' mm²) × (' + V3v.toFixed(2) + ' mm/s)',
+    56, fy+50, '#92400e', '12.5px Consolas,monospace', 'left', 'middle');
+  T(c, '材料：' + m.name + ' ｜ 单位换算：S = ' + S3v.toFixed(2) + '×10⁻⁶ m²，v = ' + (V3v*1e-3).toExponential(2) + ' m/s',
+    56, fy+72, '#64748b', '12px "Microsoft YaHei",sans-serif', 'left', 'middle');
+  T(c, 'I = ' + fmt(Imks, 3) + ' A', W-120, fy+46, '#b45309', 'bold 26px Consolas,monospace', 'right', 'middle');
+  T(c, '≈ ' + fmt(Imks*1000, 1) + ' mA', W-120, fy+72, '#92400e', '13px Consolas,monospace', 'right', 'middle');
+  $('r3n').textContent = m.n.toExponential(2) + ' m⁻³';
+  $('r3s').textContent = S3v.toFixed(2) + ' mm²';
+  $('r3v').textContent = V3v.toFixed(2) + ' mm/s';
+  $('r3i').textContent = fmt(Imks, 3) + ' A';
+
+  /* 反问题：要得到 I = 1 A，各材料的电子得跑多快？ */
+  var ty = 316;
+  box(c, 40, ty, W-80, H-ty-14, '#f1f5f9', '#cbd5e1');
+  T(c, '反过来问：若都要通过 I = 1 A 的电流（S 相同），三种材料里电子的漂移速率各是多少？  v = I/(neS)',
+    56, ty+20, '#334155', '12.5px "Microsoft YaHei",sans-serif', 'left', 'middle');
+  var k, vv, bx, bw3 = (W-120)/3;
+  for (k = 0; k < 3; k++){
+    vv = 1/(MAT[k].n*e_charge*(S3v*1e-6));       // m/s
+    vv = vv*1e3;                                  // 换算成 mm/s
+    bx = 56 + k*bw3;
+    T(c, MAT[k].name, bx, ty+42, '#334155', '12px "Microsoft YaHei",sans-serif', 'left', 'middle');
+    T(c, 'n = ' + MAT[k].n.toExponential(2), bx, ty+58, '#64748b', '11px Consolas,monospace', 'left', 'middle');
+    T(c, 'v = ' + fmt(vv, 3) + ' mm/s', bx, ty+76, k === mi ? '#b45309' : '#1d4ed8',
+      (k === mi ? 'bold ' : '') + '13px Consolas,monospace', 'left', 'middle');
+    if (k === mi) T(c, '← 当前材料', bx+150, ty+76, '#b45309', '11px "Microsoft YaHei",sans-serif', 'left', 'middle');
+  }
+}
+var dash3 = 0;
+
+/* ================= 控件绑定 ================= */
+bind('d1', function(x){ vd1 = x; }, function(x){ return x.toFixed(2) + ' mm/s'; });
+$('sw1').addEventListener('click', function(){
+  sw1 = !sw1;
+  this.textContent = sw1 ? '断开开关' : '闭合开关';
+  this.classList.toggle('on', sw1);
+  if (sw1) pulse1 = 0;
+});
+$('p1a').addEventListener('click', function(){
+  sw1 = true; $('sw1').textContent = '断开开关'; $('sw1').classList.add('on');
+  pulse1 = 0; run1 = true; $('p1b').textContent = '暂停动画'; $('p1b').classList.remove('on');
+});
+$('p1b').addEventListener('click', function(){
+  run1 = !run1;
+  this.textContent = run1 ? '暂停动画' : '继续动画';
+  this.classList.toggle('on', !run1);
+});
+$('p1a').click();
+
+bind('i2', function(x){ I2 = x; upd2(); draw2(); }, function(x){ return x.toFixed(2) + ' A'; });
+$('run2').addEventListener('click', function(){
+  run2 = !run2;
+  this.textContent = run2 ? '暂停计时' : '继续计时';
+  this.classList.toggle('on', run2);
+  draw2();
+});
+$('rst2').addEventListener('click', function(){
+  t2 = 0; q2 = 0; hist2 = []; upd2(); draw2();
+});
+$('p2a').addEventListener('click', function(){ setR('i2', 0.5); });
+$('p2b').addEventListener('click', function(){ setR('i2', 2.0); });
+
+bind('s3', function(x){ S3v = x; draw3(); }, function(x){ return x.toFixed(2) + ' mm²'; });
+bind('v3', function(x){ V3v = x; draw3(); }, function(x){ return x.toFixed(2) + ' mm/s'; });
+(function(){
+  var btns = $('m3').getElementsByTagName('button'), i;
+  for (i = 0; i < btns.length; i++){
+    (function(k){
+      btns[k].addEventListener('click', function(){
+        mi = Math.max(0, Math.min(k, MAT.length-1));
+        var bs = $('m3').getElementsByTagName('button'), j;
+        for (j = 0; j < bs.length; j++) bs[j].classList.toggle('on', j === k);
+        draw3();
+      });
+    })(i);
+  }
+})();
+$('p3a').addEventListener('click', function(){ setR('s3', 1.0); setR('v3', 0.10); });
+
+/* ================= 动画循环 ================= */
+var dash = 0, last = 0;
+function loop(ts){
+  var dt = last ? Math.min((ts - last)/1000, 0.05) : 0.016;
+  last = ts;
+  dash += 0.9;
+  if (run1){
+    stepElec(E1, 0);
+    stepElec(E2, sw1 ? (0.00035 + vd1*0.0022) : 0);
+  }
+  if (pulse1 >= 0){
+    pulse1 += 900*dt;
+    if (pulse1 > 4200) pulse1 = -1;
+  }
+  draw1();
+  if (run2){
+    /* 亮点速度取 v_frac，使"每秒穿过截面的亮点数 × 每点电荷量 = I" */
+    var i, p, before, fracX = 0.62;
+    var vf = I2/(DOTQ*pt2.length);
+    for (i = 0; i < pt2.length; i++){
+      p = pt2[i];
+      before = p.nx;
+      p.nx += vf*dt;
+      if (p.nx >= 1) p.nx -= 1;
+      if (before < fracX && p.nx >= fracX) q2 += DOTQ;   // 穿过截面：计数一次
+    }
+    t2 += dt;
+    if (hist2.length === 0 || t2 - hist2[hist2.length-1][0] > 0.12) hist2.push([t2, q2]);
+    if (hist2.length > 400) hist2.shift();
+    upd2();
+  }
+  dash3 += (V3v/0.8)*0.012;
+  draw2();
+  draw3();
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+upd2();
+})();
+</script>
+</body>
+</html>

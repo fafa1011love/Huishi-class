@@ -1,0 +1,1227 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>运动物体重力与阻力合力分析 · 可视化仿真</title>
+<style>
+  :root{
+    --bg:#f4f7fb; --card:#ffffff; --ink:#1f2a37; --muted:#6b7280;
+    --grav:#e63946;   /* 重力 红 */
+    --drag:#1d6fb8;   /* 阻力 蓝 */
+    --net:#7b2ff7;    /* 合力 紫 */
+    --vel:#2a9d4a;    /* 速度 绿 */
+    --f1:#2563eb;     /* F1 蓝 */
+    --f2:#ea580c;     /* F2 橙 */
+    --fc:#dc2626;     /* F合 红 */
+    --fe:#0f766e;     /* 弹力 青 */
+    --line:#e3e8ef; --accent:#2563eb;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+    background:var(--bg); color:var(--ink);
+  }
+  .app{max-width:1000px; margin:0 auto; padding:18px 16px 36px;}
+  header h1{font-size:22px; margin:0 0 4px;}
+  header p{margin:0 0 14px; color:var(--muted); font-size:13px;}
+  .tabs{display:flex; gap:10px; margin-bottom:16px;}
+  .tab{flex:1; padding:12px 10px; border-radius:12px; border:1px solid var(--line); background:#fff;
+       cursor:pointer; font-size:15px; color:var(--ink); font-weight:600; transition:.15s;}
+  .tab.active{background:var(--ink); color:#fff; border-color:var(--ink);}
+  .tab small{display:block; font-weight:400; opacity:.75; font-size:12px; margin-top:2px;}
+
+  .top{display:grid; grid-template-columns:minmax(340px,400px) 1fr; gap:18px; align-items:stretch; margin-bottom:18px;}
+  .summary{display:grid; grid-template-columns:1fr 1fr; gap:18px;}
+  @media(max-width:760px){ .summary{grid-template-columns:1fr;} }
+  /* 实验二/三：横向装置通栏，画布居中且限制最大宽度以保持清晰 */
+  #exp2 .stage, #exp3 .stage{margin-bottom:18px;}
+  #exp2 canvas, #exp3 canvas{max-width:760px; touch-action:none;}
+  @media(max-width:880px){ .main{grid-template-columns:1fr;} }
+
+  .stage{background:var(--card); border-radius:14px; padding:12px; box-shadow:0 4px 18px rgba(20,30,60,.06);
+         display:flex; align-items:center; justify-content:center;}
+  canvas{display:block; width:100%; height:auto; border-radius:10px; background:#eef4fb;}
+
+  .panel{display:flex; flex-direction:column; justify-content:center; gap:14px;}
+  .card{background:var(--card); border-radius:14px; padding:16px; box-shadow:0 4px 18px rgba(20,30,60,.06);}
+  .card h2{font-size:15px; margin:0 0 12px; display:flex; align-items:center; gap:8px;}
+  .card h2 .dot{width:9px;height:9px;border-radius:50%;background:var(--accent);}
+
+  .modes{display:flex; gap:10px;}
+  .modes button{
+    flex:1; padding:10px 6px; border:1px solid var(--line); background:#fff;
+    border-radius:10px; cursor:pointer; font-size:14px; color:var(--ink); transition:.15s;
+  }
+  .modes button.active{background:var(--accent); color:#fff; border-color:var(--accent); font-weight:600;}
+
+  .ctrl{margin:14px 0;}
+  .ctrl label{display:flex; justify-content:space-between; font-size:13px; color:var(--muted); margin-bottom:6px;}
+  .ctrl label b{color:var(--ink); font-variant-numeric:tabular-nums;}
+  input[type=range]{width:100%; accent-color:var(--accent);}
+
+  .row{display:flex; gap:10px; margin-top:6px;}
+  .row button{
+    flex:1; padding:9px; border-radius:10px; border:1px solid var(--line);
+    background:#fff; cursor:pointer; font-size:14px; color:var(--ink);
+  }
+  .row button.primary{background:var(--ink); color:#fff; border-color:var(--ink);}
+  .chk{display:flex; align-items:center; gap:8px; font-size:13px; color:var(--muted); margin-top:10px;}
+
+  .readout{display:grid; grid-template-columns:1fr 1fr; gap:10px;}
+  .stat{background:#f8fafc; border:1px solid var(--line); border-radius:10px; padding:10px 12px;}
+  .stat .k{font-size:12px; color:var(--muted); display:flex; align-items:center; gap:6px;}
+  .stat .v{font-size:18px; font-weight:700; margin-top:3px; font-variant-numeric:tabular-nums;}
+  .swatch{width:10px;height:10px;border-radius:3px;display:inline-block;}
+
+  .hint{
+    background:linear-gradient(135deg,#fff7e6,#fff); border:1px solid #ffe2a8;
+    border-radius:10px; padding:12px 14px; font-size:14px; line-height:1.5; color:#7a5a12;
+  }
+  .legend{display:flex; gap:16px; flex-wrap:wrap; font-size:13px; color:var(--muted); margin-top:6px;}
+  .legend span{display:flex; align-items:center; gap:6px;}
+
+  .notes{font-size:13px; color:var(--muted); line-height:1.7;}
+  .notes b{color:var(--ink);}
+  .formula{background:#0f172a; color:#e2e8f0; border-radius:10px; padding:12px 14px; font-family:ui-monospace,Consolas,monospace; font-size:13px; margin-top:8px; line-height:1.6;}
+  .formula .g{color:#ff8a8a}.formula .d{color:#7cc4ff}.formula .n{color:#c79bff}
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>🧪 力的合成</h1>
+    <p>实验一：抛体所受重力与空气阻力的合力分析 ｜ 实验二：研究同一直线上二力的合成</p>
+  </header>
+
+  <div class="tabs">
+    <button class="tab active" data-exp="1">实验一 · 重力与空气阻力<small>竖直方向：阻力方向永远与运动方向相反</small></button>
+    <button class="tab" data-exp="2">实验二 · 同一直线上二力合成<small>橡皮筋 + 弹簧测力计 + 小圆环</small></button>
+    <button class="tab" data-exp="3">实验三 · 互成角度二力合成<small>平行四边形定则</small></button>
+  </div>
+
+  <div id="exp1">
+  <div class="top">
+    <!-- 仿真画面 -->
+    <div class="stage">
+      <canvas id="cv"></canvas>
+    </div>
+
+    <!-- 控制面板 -->
+    <div class="panel">
+      <div class="card">
+        <h2><span class="dot"></span>运动模式</h2>
+        <div class="modes">
+          <button id="mThrow" class="active">⬆ 竖直上抛</button>
+          <button id="mFall">⬇ 自由下落</button>
+        </div>
+
+        <div class="ctrl">
+          <label>重力加速度 g <b><span id="gVal">9.8</span> m/s²</b></label>
+          <input type="range" id="gSlider" min="0" max="20" step="0.1" value="9.8">
+        </div>
+        <div class="ctrl">
+          <label>空气阻力系数 k（阻力 = k·v）<b><span id="kVal">0.40</span> N·s/m</b></label>
+          <input type="range" id="kSlider" min="0" max="1.5" step="0.05" value="0.4">
+        </div>
+        <div class="ctrl">
+          <label>动画速度 <b><span id="sVal">0.6</span>×</b></label>
+          <input type="range" id="sSlider" min="0.2" max="1.5" step="0.1" value="0.6">
+        </div>
+
+        <div class="row">
+          <button id="playBtn" class="primary">⏸ 暂停</button>
+          <button id="resetBtn">↺ 重置</button>
+        </div>
+        <label class="chk"><input type="checkbox" id="vChk" checked> 显示速度矢量 v（绿色虚线，帮助判断阻力方向）</label>
+
+        <div class="legend">
+          <span><i class="swatch" style="background:var(--grav)"></i>重力 G</span>
+          <span><i class="swatch" style="background:var(--drag)"></i>阻力 f</span>
+          <span><i class="swatch" style="background:var(--net)"></i>合力 F<sub>合</sub></span>
+          <span><i class="swatch" style="background:var(--vel)"></i>速度 v</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2><span class="dot"></span>实时读数</h2>
+        <div class="hint" id="hint">—</div>
+        <div class="readout" style="margin-top:12px">
+          <div class="stat">
+            <div class="k"><i class="swatch" style="background:var(--grav)"></i>重力 G = m·g</div>
+            <div class="v" id="fgOut">—</div>
+          </div>
+          <div class="stat">
+            <div class="k"><i class="swatch" style="background:var(--drag)"></i>阻力 f = k·v</div>
+            <div class="v" id="fdOut">—</div>
+          </div>
+          <div class="stat">
+            <div class="k"><i class="swatch" style="background:var(--net)"></i>合力大小 |F<sub>合</sub>|</div>
+            <div class="v" id="fnOut">—</div>
+          </div>
+          <div class="stat">
+            <div class="k">合力方向</div>
+            <div class="v" id="dirOut">—</div>
+          </div>
+        </div>
+      </div>
+
+      </div>
+    </div>
+
+    <div class="summary">
+      <div class="card">
+        <h2><span class="dot"></span>核心规律与三种情形</h2>
+        <div class="notes">
+          <b>① 阻力方向铁律：</b>空气阻力方向 <b>始终与物体运动方向相反</b>（即与速度 v 反向）。<br>
+          <b>② 上升阶段：</b>重力(↓) 与 阻力(↓) <b>同向</b> → 合力向下且更大，减速更快。<br>
+          <b>③ 下落阶段：</b>重力(↓) 与 阻力(↑) <b>反向</b> → 合力 = G − f，向下（通常）。<br>
+          <b>④ 最高点：</b>v ≈ 0 → 阻力 ≈ 0，此刻小球只受重力。<br>
+          <b>⑤ 收尾速度：</b>下落中阻力随 v 增大；当 f = G 时合力为 0、加速度为 0，此后匀速下落，v<sub>t</sub> = mg/k。
+        </div>
+        <div class="formula">
+<span class="g">G = m·g</span>  （恒向下）<br>
+<span class="d">f = −k·v</span>  （负号 = 与速度反向）<br>
+<span class="n">F<sub>合</sub> = G + f = −(m·g + k·v)</span>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2><span class="dot"></span>仿真模型与数值推导</h2>
+        <div class="notes">
+          本仿真取 <b>质量 m = 1 kg</b>，阻力采用线性模型 <b>f = k·v</b>（大小与速率成正比、方向恒与速度反向），对运动方程做实时数值积分：<br>
+          <b>加速度</b> a = F<sub>合</sub>/m = −(g + k·v/m)<br>
+          上升时 v &gt; 0 → a 向下且偏大；下落时 v &lt; 0 → 阻力向上抵消部分重力。<br>
+          说明：真实空气阻力多为 f ∝ v（低速）或 f ∝ v²（高速），此处为便于教学采用线性近似。
+        </div>
+        <div class="formula">
+a = −(g + (k/m)·v)<br>
+v(t+Δt) = v(t) + a·Δt<br>
+s(t+Δt) = s(t) + v·Δt   （Δt 为实时步长）
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 实验二 ================= -->
+  <div id="exp2" style="display:none">
+    <!-- 仿真画面：横向实验装置（通栏） -->
+    <div class="stage">
+      <canvas id="cv2"></canvas>
+    </div>
+
+    <!-- 控制面板：卡片并排 -->
+    <div class="summary">
+      <div class="card">
+        <h2><span class="dot"></span>实验装置与步骤</h2>
+        <div class="modes">
+          <button id="e2same" class="active">→→ 同向二力</button>
+          <button id="e2opp">→← 反向二力</button>
+        </div>
+
+        <div class="ctrl">
+          <label>演示步骤<b><span id="stepVal">① 两个测力计拉橡皮筋</span></b></label>
+          <div class="modes">
+            <button id="st1Btn" class="active">① 两个测力计</button>
+            <button id="st2Btn">② 一个测力计</button>
+          </div>
+        </div>
+
+        <div class="row">
+          <button id="markBtn" class="primary">📍 标记 O 点</button>
+          <button id="resetBtn2">↺ 复原</button>
+        </div>
+
+        <label class="chk" style="margin-top:10px"><input type="checkbox" id="e2forceChk" checked> 显示力的方向（F₁ / F₂ / F合 矢量）</label>
+
+        <div class="notes" style="margin-top:10px">
+          用鼠标<b>拖动画面中的手 ✊</b> 来拉动测力计：拉得越远，示数越大，橡皮筋伸得越长；松手后保持。<br>
+          步骤①：两个测力计拉到某一位置 → 点「标记 O 点」；<br>
+          步骤②：一个测力计把小圆环<b>重新拉到同一 O 点</b>，读出示数 F合 并与 F₁、F₂ 比较。
+        </div>
+      </div>
+
+      <div class="card">
+        <h2><span class="dot"></span>测力计读数与结论</h2>
+        <div class="hint" id="hint2">—</div>
+        <div class="readout" style="margin-top:12px">
+          <div class="stat">
+            <div class="k"><i class="swatch" style="background:var(--f1)"></i>F₁ 读数</div>
+            <div class="v" id="r_f1">—</div>
+          </div>
+          <div class="stat">
+            <div class="k"><i class="swatch" style="background:var(--f2)"></i>F₂ 读数</div>
+            <div class="v" id="r_f2">—</div>
+          </div>
+          <div class="stat">
+            <div class="k">橡皮筋伸长 Δx</div>
+            <div class="v" id="r_dx">—</div>
+          </div>
+          <div class="stat">
+            <div class="k"><i class="swatch" style="background:var(--fc)"></i>单力读数 F合</div>
+            <div class="v" id="r_fc">—</div>
+          </div>
+        </div>
+        <div class="formula" id="fml2">—</div>
+      </div>
+    </div>
+
+    <div class="summary">
+      <div class="card">
+        <h2><span class="dot"></span>实验原理与结论（课本原文）</h2>
+        <div class="notes">
+          <b>大量实验研究表明：</b><br>
+          同一直线上的两个力，如果<b>方向相同</b>，合力的大小等于这两个力的大小<b>之和</b>，合力的方向与这两个力的方向<b>相同</b>；<br>
+          如果<b>方向相反</b>，合力的大小等于这两个力的大小<b>之差</b>，合力的方向与<b>较大的力</b>方向一致。<br>
+          <b>应用：</b>行驶在平直轨道上的列车，若牵引力与阻力大小相等，则合力为 0、二力平衡，列车做匀速直线运动；若牵引力小于阻力，合力不为 0、方向与前进方向相反，列车逐渐慢下来。
+        </div>
+      </div>
+
+      <div class="card">
+        <h2><span class="dot"></span>为什么要拉到同一个 O 点？（等效替代）</h2>
+        <div class="notes">
+          橡皮筋<b>伸长量相同</b> ⟹ 橡皮筋<b>弹力相同</b> ⟹ 对小圆环的<b>作用效果相同</b>。<br>
+          因此「两个测力计共同作用」与「一个测力计单独作用」能把圆环拉到<b>同一位置 O</b>，说明这一个力的作用效果与那两个力共同作用的效果<b>完全等效</b>，这一个力就是它们的<b>合力</b>。<br>
+          本仿真把这一点量化了：取橡皮筋劲度 k = 2 N/cm，则 Δx = F合/k —— 无论用两个力还是一个力，只要圆环停在同一 O 点，Δx 就相同，可直接读出 F合 并验证合成规则。<br>
+          <b>多次改变 F₁、F₂ 重复实验</b>，结论才具有普遍性。
+        </div>
+        <div class="formula">
+Δx = F<sub>合</sub> / k   （k = 2 N/cm）<br>
+同向：F<sub>合</sub> = F₁ + F₂<br>
+反向：F<sub>合</sub> = |F₁ − F₂|
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ================= 实验三 ================= -->
+  <div id="exp3" style="display:none">
+    <!-- 仿真画面：装置通栏 -->
+    <div class="stage">
+      <canvas id="cv3"></canvas>
+    </div>
+
+    <!-- 控制面板：卡片并排 -->
+    <div class="summary">
+      <div class="card">
+        <h2><span class="dot"></span>实验装置与步骤</h2>
+        <div class="modes">
+          <button id="e3st1Btn" class="active">①② 两个测力计</button>
+          <button id="e3st2Btn">③ 一个测力计</button>
+        </div>
+        <div class="row">
+          <button id="e3markBtn" class="primary">📍 标记 O 点</button>
+          <button id="e3resetBtn">↺ 复原</button>
+        </div>
+        <label class="chk" style="margin-top:10px"><input type="checkbox" id="e3forceChk" checked> 显示力的方向（F₁ / F₂ / F合 矢量）</label>
+        <label class="chk"><input type="checkbox" id="e3paraChk" checked> 显示平行四边形（求合力）</label>
+        <div class="notes" style="margin-top:10px">
+          用鼠标<b>拖动画面中的手 ✊</b> 来拉动任意一个弹簧测力计：把手朝哪个方向，力就朝哪个方向；拉得越远，示数越大。<br>
+          小圆环会自动沿<b>合力方向</b>被拉离固定端，橡皮筋实时伸长。<br>
+          步骤①：两个测力计把圆环拉到某一位置 → 点「标记 O 点」；<br>
+          步骤②：一个测力计把圆环<b>重新拉到同一 O 点</b>，读出示数 F合，与平行四边形定则结果比较。
+        </div>
+      </div>
+
+      <div class="card">
+        <h2><span class="dot"></span>测力计读数与结论</h2>
+        <div class="hint" id="e3hint">—</div>
+        <div class="readout" style="margin-top:12px">
+          <div class="stat">
+            <div class="k"><i class="swatch" style="background:var(--f1)"></i>F₁ 读数</div>
+            <div class="v" id="e3_f1">—</div>
+          </div>
+          <div class="stat">
+            <div class="k"><i class="swatch" style="background:var(--f2)"></i>F₂ 读数</div>
+            <div class="v" id="e3_f2">—</div>
+          </div>
+          <div class="stat">
+            <div class="k">橡皮筋伸长 Δx</div>
+            <div class="v" id="e3_dx">—</div>
+          </div>
+          <div class="stat">
+            <div class="k"><i class="swatch" style="background:var(--fc)"></i>合力 F合</div>
+            <div class="v" id="e3_fc">—</div>
+          </div>
+        </div>
+        <div class="formula" id="e3fml">—</div>
+      </div>
+    </div>
+
+    <div class="summary">
+      <div class="card">
+        <h2><span class="dot"></span>实验原理与结论（平行四边形定则）</h2>
+        <div class="notes">
+          如果用来<b>表示两个力 F₁ 和 F₂ 的线段为邻边作平行四边形</b>，那么合力 F 的<b>大小和方向</b>可以用这两个邻边之间的<b>对角线</b>表示，这叫做<b>力的平行四边形定则</b>。<br>
+          它是所有矢量合成的普遍法则，既适用于共点力，也适用于互成任意角度的两个力。
+        </div>
+        <div class="formula">
+F<sub>合</sub> = F₁ + F₂  （矢量相加）<br>
+大小：|F<sub>合</sub>| = √(F₁² + F₂² + 2F₁F₂·cosθ)<br>
+方向：与 F₁ 夹角 α = arctan( F₂·sinθ / (F₁ + F₂·cosθ) )
+        </div>
+      </div>
+
+      <div class="card">
+        <h2><span class="dot"></span>为什么要拉到同一个 O 点？（等效替代）</h2>
+        <div class="notes">
+          橡皮筋<b>伸长量相同</b> ⟹ 橡皮筋<b>弹力相同</b> ⟹ 对小圆环的<b>作用效果相同</b>。<br>
+          因此「两个测力计共同作用」与「一个测力计单独作用」能把圆环拉到<b>同一位置 O</b>，说明这一个力的作用效果与那两个力共同作用的效果<b>完全等效</b>，这一个力就是它们的<b>合力</b>。<br>
+          本仿真用平行四边形直观显示：以 F₁、F₂ 为邻边，对角线即合力 F合；步骤②读出的单力示数应与之吻合。
+        </div>
+        <div class="formula">
+Δx = F<sub>合</sub> / k   （k = 2 N/cm）<br>
+合力方向 = 平行四边形对角线方向
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  const cv = document.getElementById('cv');
+  const ctx = cv.getContext('2d');
+  const W = 360, H = 520;
+  const dpr = window.devicePixelRatio || 1;
+  cv.width = W*dpr; cv.height = H*dpr;
+  cv.style.width = '100%'; // CSS 自适应
+  ctx.scale(dpr, dpr);
+
+  const PPM = 14;            // 像素/米
+  const GROUND_Y = H - 40;   // s=0 对应的画布 y
+  const M = 1;               // 质量 kg
+  const MAX_S = (GROUND_Y - 24) / PPM; // 顶部可达高度（米）
+
+  // 状态
+  let mode = 'throw';        // 'throw' | 'fall'
+  let g = 9.8, k = 0.4, speed = 0.6;
+  let showV = true, running = true;
+  let s, vy, t;              // s: 高度(米,向上为正)  vy: 速度(m/s,向上为正)  t: 时间(s)
+
+  function resetSim(){
+    t = 0;
+    if(mode === 'throw'){ s = 0;  vy = 22; }   // 从地面以初速上抛
+    else                { s = MAX_S; vy = 0; }  // 从顶端自由下落
+  }
+  resetSim();
+
+  // ---- 控件绑定 ----
+  const $ = id => document.getElementById(id);
+  $('mThrow').onclick = () => { mode='throw'; switchMode(); };
+  $('mFall').onclick  = () => { mode='fall';  switchMode(); };
+  function switchMode(){
+    $('mThrow').classList.toggle('active', mode==='throw');
+    $('mFall').classList.toggle('active', mode==='fall');
+    resetSim();
+  }
+  $('gSlider').oninput = e => { g = +e.target.value; $('gVal').textContent = g.toFixed(1); };
+  $('kSlider').oninput = e => { k = +e.target.value; $('kVal').textContent = k.toFixed(2); };
+  $('sSlider').oninput = e => { speed = +e.target.value; $('sVal').textContent = speed.toFixed(1); };
+  $('vChk').onchange   = e => { showV = e.target.checked; };
+  $('playBtn').onclick = () => { running = !running; $('playBtn').textContent = running ? '⏸ 暂停' : '▶ 播放'; };
+  $('resetBtn').onclick= () => { resetSim(); running = true; $('playBtn').textContent='⏸ 暂停'; };
+
+  // ---- 物理步进 ----
+  function step(dt){
+    const a = -g - (k/M)*vy;      // 加速度(向上为正)
+    vy += a*dt;
+    s  += vy*dt;
+    t  += dt;
+    if(mode === 'throw'){
+      if(s <= 0){ resetSim(); }           // 落地后重新上抛，保持演示连续
+    } else {
+      if(s <= 0){ resetSim(); }           // 落到底后回到顶端
+    }
+  }
+
+  // ---- 绘制箭头 ----
+  function arrow(x, y, dx, dy, color, label){
+    const len = Math.hypot(dx, dy);
+    if(len < 3) return;
+    const max = 210, sc = len>max ? max/len : 1;
+    dx*=sc; dy*=sc;
+    ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = 4; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(x+dx, y+dy); ctx.stroke();
+    const ang = Math.atan2(dy,dx), ah = 13;
+    ctx.beginPath();
+    ctx.moveTo(x+dx, y+dy);
+    ctx.lineTo(x+dx-ah*Math.cos(ang-0.42), y+dy-ah*Math.sin(ang-0.42));
+    ctx.lineTo(x+dx-ah*Math.cos(ang+0.42), y+dy-ah*Math.sin(ang+0.42));
+    ctx.closePath(); ctx.fill();
+    ctx.font = 'bold 14px sans-serif';
+    ctx.fillText(label, x+dx + (dx>=0?6:-30), y+dy + (dy>=0?16:-6));
+  }
+
+  function rrect(x,y,w,h,r){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    // 背景
+    ctx.fillStyle = '#eef4fb'; ctx.fillRect(0,0,W,H);
+    // 科学网格
+    ctx.strokeStyle='rgba(110,140,170,.10)'; ctx.lineWidth=1;
+    for(let x=0;x<=W;x+=30){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+    for(let y=0;y<=H;y+=30){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+
+    // 地面 + 剖面线
+    ctx.fillStyle = '#d8ead0'; ctx.fillRect(0, GROUND_Y, W, H-GROUND_Y);
+    ctx.strokeStyle = '#9cc393'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(0,GROUND_Y); ctx.lineTo(W,GROUND_Y); ctx.stroke();
+    ctx.strokeStyle='rgba(120,150,110,.45)'; ctx.lineWidth=1;
+    for(let x=8;x<W;x+=14){ ctx.beginPath(); ctx.moveTo(x,GROUND_Y+3); ctx.lineTo(x-9,H-2); ctx.stroke(); }
+
+    const cx = W/2;
+    // 一维运动坐标轴（竖直虚线，带箭头）
+    ctx.strokeStyle='rgba(70,90,120,.5)'; ctx.setLineDash([5,5]); ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(cx,14); ctx.lineTo(cx,GROUND_Y); ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle='rgba(70,90,120,.7)'; ctx.beginPath();
+    ctx.moveTo(cx,GROUND_Y-2); ctx.lineTo(cx-4,GROUND_Y+8); ctx.lineTo(cx+4,GROUND_Y+8); ctx.closePath(); ctx.fill();
+    // 高度刻度
+    ctx.fillStyle='#7c92a8'; ctx.font='11px sans-serif';
+    for(let m=5; m<MAX_S; m+=5){
+      const y = GROUND_Y - m*PPM;
+      ctx.strokeStyle='rgba(120,150,180,.55)'; ctx.lineWidth=1;
+      ctx.beginPath(); ctx.moveTo(cx-6,y); ctx.lineTo(cx+6,y); ctx.stroke();
+      ctx.fillText(m+' m', cx+10, y+4);
+    }
+
+    const cy = GROUND_Y - s*PPM;      // 小球画布坐标
+
+    // 速度矢量（绿，虚线）：物理向上为正 → 画布向上为负
+    if(showV){
+      ctx.save(); ctx.setLineDash([6,5]); ctx.lineWidth=3;
+      arrow(cx, cy, 0, -vy*5, getCSS('--vel'), 'v');
+      ctx.restore();
+    }
+
+    // 力（以小球为作用点）
+    const Fscale = 7;                 // px / N
+    const Fg = M*g;                   // 重力大小
+    const Fd = -k*vy;                 // 阻力(向上为正)，负号=与速度反向
+    const FdMag = Math.abs(Fd);
+    const Fn = -(Fg + k*vy);          // 合力(向上为正)
+    const FnMag = Math.abs(Fn);
+
+    // 物理 up+ → 画布 up = 负y，故画布 dy = -(物理y)*scale
+    arrow(cx, cy, 0, -(-Fg)*Fscale,        getCSS('--grav'), 'G');
+    if(FdMag>0.05) arrow(cx, cy, 0, -Fd*Fscale, getCSS('--drag'), 'f');
+    arrow(cx, cy, 0, -Fn*Fscale,          getCSS('--net'),  'F合');
+
+    // 小球（径向高光，立体感）
+    const r = 13;
+    const grad = ctx.createRadialGradient(cx-4, cy-4, 2, cx, cy, r);
+    grad.addColorStop(0,'#fff3bf'); grad.addColorStop(1,'#e0a800');
+    ctx.beginPath(); ctx.arc(cx, cy, r, 0, Math.PI*2);
+    ctx.fillStyle = grad; ctx.fill();
+    ctx.lineWidth=2; ctx.strokeStyle='#b8860b'; ctx.stroke();
+
+    // 实时数据 HUD
+    const a = -g - (k/M)*vy;
+    ctx.fillStyle='rgba(15,23,42,.82)'; rrect(8,8,156,72,8); ctx.fill();
+    ctx.fillStyle='#e2e8f0'; ctx.font='12px ui-monospace,Consolas,monospace';
+    ctx.fillText('t = '+t.toFixed(2)+' s', 18, 28);
+    ctx.fillText('h = '+s.toFixed(1)+' m', 18, 46);
+    ctx.fillText('v = '+(vy>=0?'+':'')+vy.toFixed(1)+' m/s', 18, 64);
+    ctx.fillStyle='#9fb3c8'; ctx.font='10px sans-serif';
+    ctx.fillText('(↑正方向)', 18, 76);
+
+    // ---- 读数 ----
+    $('fgOut').textContent = Fg.toFixed(1)+' N ↓';
+    $('fdOut').textContent = FdMag.toFixed(1)+' N ' + (Math.abs(vy)<0.5?'≈0':(vy>0?'↓':'↑'));
+    $('fnOut').textContent = FnMag.toFixed(1)+' N';
+    $('dirOut').textContent = (Fn < -0.05 ? '向下 ↓' : (Fn>0.05?'向上 ↑':'≈0'));
+
+    // 阶段 & 提示
+    let phase, hint;
+    if(mode==='throw'){
+      if(vy>0.5){ phase='上升阶段'; hint='小球上升：重力(↓) 与 阻力(↓) <b>同向</b>，合力向下且更大 → 减速明显。'; }
+      else if(vy<-0.5){ phase='下降阶段'; hint='小球下降：重力(↓) 与 阻力(↑) <b>反向</b>，合力 = G − f，向下。'; }
+      else { phase='最高点附近'; hint='最高点：速度≈0 → 阻力≈0，此刻小球只受重力。'; }
+    } else {
+      phase='自由下落';
+      const vt = k>0 ? (M*g)/k : Infinity;
+      hint='自由下落：重力(↓) 与 阻力(↑) <b>反向</b>，阻力随速度增大；理论收尾速度 v<sub>t</sub>≈'+(isFinite(vt)?vt.toFixed(1):'∞')+' m/s。';
+    }
+    $('hint').innerHTML = '【'+phase+'】 ' + hint;
+  }
+
+  function getCSS(v){ return getComputedStyle(document.documentElement).getPropertyValue(v).trim(); }
+
+  // ---- 主循环 ----
+  let last = performance.now();
+  function loop(now){
+    requestAnimationFrame(loop);
+    if((window.activeExp||1) !== 1){ last = now; return; }  // 仅在实验一标签激活时运行
+    let dt = (now-last)/1000; last = now;
+    dt = Math.min(dt, 0.033) * speed;
+    if(running) step(dt);
+    draw();
+  }
+  requestAnimationFrame(loop);
+})();
+
+/* ==================== 标签切换 ==================== */
+(function(){
+  const tabs = document.querySelectorAll('.tab');
+  function activate(e){
+    window.activeExp = e;
+    tabs.forEach(b=>b.classList.toggle('active', +b.dataset.exp===e));
+    document.getElementById('exp1').style.display = (e===1) ? '' : 'none';
+    document.getElementById('exp2').style.display = (e===2) ? '' : 'none';
+    document.getElementById('exp3').style.display = (e===3) ? '' : 'none';
+  }
+  tabs.forEach(btn=>{ btn.onclick = ()=>activate(+btn.dataset.exp); });
+  window.activeExp = 1;
+  if(location.hash === '#exp2') activate(2);
+  else if(location.hash === '#exp3') activate(3);
+})();
+
+/* ==================== 实验二：研究同一直线上二力的合成 ==================== */
+(function(){
+  const cv  = document.getElementById('cv2');
+  const ctx = cv.getContext('2d');
+  const W = 760, H = 340;
+  const dpr = window.devicePixelRatio || 1;
+  cv.width = W*dpr; cv.height = H*dpr; cv.style.width = '100%';
+  ctx.scale(dpr, dpr);
+
+  const WALL = 120;                 // 固定端 x
+  const L0   = 110;                 // 橡皮筋自然长度(px)
+  const X0   = WALL + L0;           // 小圆环自然位置 x
+  const AXIS = 190;                 // 橡皮筋所在水平线
+  const Y1 = AXIS - 18, Y2 = AXIS + 18;  // 两个测力计都贴近橡皮筋所在水平直线（仅轻微上下错开以免重叠）
+  const BW = 104, BH = 30;          // 测力计外壳尺寸
+  const PXN  = 8;                  // 小圆环位移 px/N（橡皮筋形变）
+  const PXNh = 9;                  // 手/测力计随拉力的位移 px/N（拖动手感）
+  const GAP0 = 26;                 // 拉力为0时测力计与环的最小间距
+  const MAXF = 10;                 // 测力计量程 N
+
+  const C = {f1:'#2563eb', f2:'#ea580c', fc:'#dc2626'};
+
+  let mode = 'same';                // 'same' 同向 | 'opp' 反向
+  let step = 1;                     // 1 双力拉 | 2 单力拉
+  let F1 = 0, F2 = 0, Fc = 0;       // 各测力计拉力(N)
+  let Ox = null;                    // 标记的 O 点位置(x)
+  let drag = null, hover = null;
+  let msgTxt = '', msgUntil = 0;
+  let showForce = true;             // 是否显示力的方向矢量
+
+  const $ = id => document.getElementById(id);
+  const clamp = (v,a,b)=> Math.min(b, Math.max(a, v));
+  function currentNet(){ return step===2 ? Fc : (F1 + F2); }   // 代数和（F₂ 可负 = 向左）
+  function ringX(){ return X0 + Math.max(0, currentNet())*PXN; }
+  function msg(t){ msgTxt = t; msgUntil = performance.now() + 2600; }
+
+  // ---------- 控件 ----------
+  function setMode(m, fill){
+    mode = m;
+    if(fill && Math.abs(F1) < 0.1 && Math.abs(F2) < 0.1){ F1 = 8; F2 = (m==='opp' ? -4 : 4); }
+    else { F2 = (m==='opp') ? -Math.abs(F2) : Math.abs(F2); }
+    Ox = null;
+    $('e2same').classList.toggle('active', m==='same');
+    $('e2opp').classList.toggle('active',  m==='opp');
+  }
+  function setStep(s){
+    if(s===2 && Ox===null && ringX() > X0+0.5) Ox = ringX();  // 自动用当前位置作为 O 点
+    step = s;
+    if(s===2) Fc = 0;
+    $('st1Btn').classList.toggle('active', s===1);
+    $('st2Btn').classList.toggle('active', s===2);
+    $('stepVal').textContent = s===1 ? '① 两个测力计拉橡皮筋' : '② 一个测力计拉到 O 点';
+  }
+  $('e2same').onclick = ()=>{ setMode('same', true); msg('已切换为同向：两个拉力都向右。'); };
+  $('e2opp').onclick  = ()=>{ setMode('opp', true);  msg('已切换为反向：下方拉力改向左（拖动手也可改变方向）。'); };
+  $('st1Btn').onclick = ()=>setStep(1);
+  $('st2Btn').onclick = ()=>setStep(2);
+  $('markBtn').onclick = ()=>{
+    if(ringX() <= X0+0.5){ msg('先拉动橡皮筋，再标记 O 点。'); return; }
+    Ox = ringX(); msg('已标记 O 点（Δx = '+((Ox-X0)/PXN/2).toFixed(1)+' cm）。');
+  };
+  $('resetBtn2').onclick = ()=>{
+    F1 = F2 = Fc = 0; Ox = null;
+    msg('已复原：橡皮筋回到原长，小圆环回到初始位置。');
+  };
+  $('e2forceChk').onchange = e=>{ showForce = e.target.checked; };
+  setMode('same', false); setStep(1);
+
+  // ---------- 拖动 ----------
+  function toC(e){
+    const r = cv.getBoundingClientRect();
+    return { x:(e.clientX-r.left)*(W/r.width), y:(e.clientY-r.top)*(H/r.height) };
+  }
+  function getF(id){ return id==='F1'?F1 : id==='F2'?F2 : Fc; }
+  function setF(id,v){ if(id==='F1')F1=v; else if(id==='F2')F2=v; else Fc=v; }
+  // 测力计把手（手 ✊）位置：力为正→在圆环右侧，为负→在圆环左侧
+  function hg(id){
+    const xr = ringX();
+    const F  = getF(id);
+    const y  = id==='F1' ? Y1 : id==='F2' ? Y2 : AXIS;
+    const d  = (F>=0) ? 1 : -1;
+    const innerX = xr + d*(GAP0 + Math.abs(F)*PXNh);
+    return {id, x: innerX + d*BW, y, dir:d};
+  }
+  function handleList(){ return step===1 ? [hg('F1'), hg('F2')] : [hg('Fc')]; }
+  cv.addEventListener('pointerdown', e=>{
+    if((window.activeExp||1)!==2) return;
+    const p = toC(e);
+    for(const h of handleList()){
+      if(Math.hypot(p.x-h.x, p.y-h.y) < 28){
+        drag = {id:h.id, startX:p.x, startF:getF(h.id), xr0:ringX()};
+        cv.setPointerCapture(e.pointerId);
+        cv.style.cursor = 'grabbing';
+        e.preventDefault();
+        break;
+      }
+    }
+  });
+  cv.addEventListener('pointermove', e=>{
+    const p = toC(e);
+    if(drag){
+      // 以按下时圆环位置为基准：把手始终跟随指针；越过圆环即翻转方向
+      const s   = (p.x >= drag.xr0) ? 1 : -1;
+      let mag   = (Math.abs(p.x - drag.xr0) - GAP0 - BW) / PXNh;
+      mag = clamp(mag, 0, MAXF);
+      setF(drag.id, s*mag);
+      // 步骤②靠近 O 点时吸附，便于精确对齐
+      if(step===2 && Ox!==null && Math.abs(ringX()-Ox) < 3) Fc = (Ox-X0)/PXN;
+    } else {
+      hover = null;
+      for(const h of handleList()){ if(Math.hypot(p.x-h.x,p.y-h.y) < 28){ hover = h.id; break; } }
+      cv.style.cursor = hover ? 'grab' : 'default';
+    }
+  });
+  const endDrag = ()=>{ drag = null; cv.style.cursor = hover ? 'grab' : 'default'; };
+  cv.addEventListener('pointerup', endDrag);
+  cv.addEventListener('pointercancel', endDrag);
+
+  // ---------- 绘图 ----------
+  function rrect(x,y,w,h,r){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+  }
+  // 力矢量箭头：从 (x,y) 沿 dir(±1) 画长 len 像素
+  function forceArrow(x, y, mag, dir, color, label, lw){
+    const FS = 7, CAP = 150;                        // px/N 与最大长度（箭头短于测力计距离，避免遮挡）
+    let len = Math.min(mag*FS, CAP);
+    if(len < 2) return;
+    const dx = len*dir, ax = x+dx;
+    ctx.strokeStyle = color; ctx.fillStyle = color;
+    ctx.lineWidth = lw||4; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(x, y); ctx.lineTo(ax, y); ctx.stroke();
+    const ah = 11 + (lw||4);
+    const ang = dir>0 ? 0 : Math.PI;
+    ctx.beginPath();
+    ctx.moveTo(ax, y);
+    ctx.lineTo(ax-ah*Math.cos(ang-0.42), y-ah*Math.sin(ang-0.42));
+    ctx.lineTo(ax-ah*Math.cos(ang+0.42), y+ah*Math.sin(ang+0.42));
+    ctx.closePath(); ctx.fill();
+    ctx.font = (lw&&lw>=5?'bold 14px':'bold 13px')+' sans-serif';
+    ctx.fillText(label, ax + (dir>0?7:-30), y - 7);
+  }
+  // 弹簧测力计：hookX=挂钩位置，dirR=true 向右拉
+  function drawScale(hookX, y, dirR, val, id, label, color){
+    const bx  = dirR ? hookX : hookX-BW;
+    const hot = (drag && drag.id===id) || hover===id;
+    // 外壳（金属渐变）
+    const grd = ctx.createLinearGradient(0, y-BH/2, 0, y+BH/2);
+    grd.addColorStop(0,'#ffffff'); grd.addColorStop(1,'#d7e0ea');
+    rrect(bx, y-BH/2, BW, BH, 8);
+    ctx.fillStyle = grd; ctx.fill();
+    ctx.lineWidth = hot ? 3 : 1.5;
+    ctx.strokeStyle = hot ? color : '#8fa3b8'; ctx.stroke();
+    // 刻度窗
+    const wx=bx+8, ww=BW-16, wy=y-9, wh=13;
+    rrect(wx, wy, ww, wh, 2);
+    ctx.fillStyle='#fff'; ctx.fill(); ctx.lineWidth=1; ctx.strokeStyle='#94a3b8'; ctx.stroke();
+    for(let i=0;i<=MAXF;i++){
+      const tx = wx + (i/MAXF)*ww, major = i%5===0;
+      ctx.strokeStyle='#475569'; ctx.lineWidth = major?1.4:0.8;
+      ctx.beginPath(); ctx.moveTo(tx, wy+wh); ctx.lineTo(tx, wy+wh-(major?8:4)); ctx.stroke();
+    }
+    ctx.fillStyle='#475569'; ctx.font='8px sans-serif'; ctx.textAlign='center';
+    for(let i=0;i<=MAXF;i+=5) ctx.fillText(i, wx+(i/MAXF)*ww, wy+wh+9);
+    ctx.textAlign='left';
+    // 指针（示数）
+    const px = wx + (val/MAXF)*ww;
+    ctx.strokeStyle='#dc2626'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(px, wy+1); ctx.lineTo(px, wy+wh-1); ctx.stroke();
+    // 挂钩环
+    ctx.beginPath(); ctx.arc(hookX, y, 4, 0, Math.PI*2);
+    ctx.lineWidth=2; ctx.strokeStyle='#475569'; ctx.stroke();
+    // 拉环 + 手
+    const ex = dirR ? bx+BW : bx;
+    ctx.beginPath(); ctx.arc(ex, y, 6, 0, Math.PI*2);
+    ctx.lineWidth=2.5; ctx.strokeStyle= hot ? color : '#475569'; ctx.stroke();
+    ctx.font='20px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('✊', ex + (dirR?23:-23), y+7);
+    ctx.textAlign='left';
+    // 名称
+    ctx.fillStyle=color; ctx.font='bold 13px sans-serif';
+    ctx.fillText(label, dirR ? bx+2 : bx+BW-2-ctx.measureText(label).width, y-BH/2-6);
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle='#fbfdff'; ctx.fillRect(0,0,W,H);
+    ctx.strokeStyle='rgba(110,140,170,.08)'; ctx.lineWidth=1;
+    for(let x=0;x<=W;x+=30){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+    for(let y=0;y<=H;y+=30){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+
+    const xr = ringX();
+    const stretchCm = Math.max(0, currentNet())/2;
+    const aligned = (step===2 && Ox!==null && Math.abs(xr-Ox) <= 2.5);
+
+    // 固定端（墙）
+    ctx.fillStyle='#e2e8f0'; ctx.fillRect(WALL-14, AXIS-56, 14, 112);
+    ctx.strokeStyle='#94a3b8'; ctx.lineWidth=1;
+    for(let yy=AXIS-56; yy<AXIS+56; yy+=8){
+      ctx.beginPath(); ctx.moveTo(WALL-14, yy); ctx.lineTo(WALL-8, yy+6); ctx.stroke();
+    }
+    ctx.strokeStyle='#64748b'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(WALL,AXIS-56); ctx.lineTo(WALL,AXIS+56); ctx.stroke();
+
+    // 原长参考（虚线）
+    ctx.save(); ctx.setLineDash([4,4]); ctx.strokeStyle='#94a3b8'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(WALL,AXIS); ctx.lineTo(X0,AXIS); ctx.stroke(); ctx.restore();
+    ctx.fillStyle='#94a3b8'; ctx.font='11px sans-serif'; ctx.fillText('原长', WALL+4, AXIS-9);
+
+    // 橡皮筋（含伸长段）
+    ctx.lineCap='round';
+    ctx.strokeStyle='#a16207'; ctx.lineWidth=7;
+    ctx.beginPath(); ctx.moveTo(WALL,AXIS); ctx.lineTo(xr,AXIS); ctx.stroke();
+    if(xr > X0){
+      ctx.strokeStyle='rgba(234,179,8,.55)'; ctx.lineWidth=7;
+      ctx.beginPath(); ctx.moveTo(X0,AXIS); ctx.lineTo(xr,AXIS); ctx.stroke();
+    }
+
+    // O 点标记
+    if(Ox !== null){
+      ctx.save(); ctx.setLineDash([5,4]);
+      ctx.strokeStyle = aligned ? '#16a34a' : '#dc2626'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.moveTo(Ox,60); ctx.lineTo(Ox,AXIS-24); ctx.stroke(); ctx.restore();
+      ctx.fillStyle = aligned ? '#16a34a' : '#dc2626'; ctx.font='bold 13px sans-serif';
+      ctx.fillText('O', Ox+6, 70);
+      ctx.font='11px sans-serif';
+      ctx.fillText('Δx='+((Ox-X0)/PXN/2).toFixed(1)+'cm', Ox+6, 84);
+    }
+
+    // 细绳 + 测力计（力为正→在环右侧，为负→在环左侧；拖动中的测力计把手跟随指针）
+    const rope = (hx,ry)=>{
+      ctx.setLineDash([]); ctx.strokeStyle='#475569'; ctx.lineWidth=2;
+      ctx.beginPath(); ctx.moveTo(xr,AXIS); ctx.lineTo(hx,ry); ctx.stroke();
+    };
+    const xrUse = id => (drag && drag.id===id) ? drag.xr0 : xr;
+    const geom = id => {
+      const F = getF(id);
+      const y = id==='F1' ? Y1 : id==='F2' ? Y2 : AXIS;
+      const d = (F>=0) ? 1 : -1;
+      return {F, y, d, innerX: xrUse(id) + d*(GAP0 + Math.abs(F)*PXNh)};
+    };
+    if(step===1){
+      const g1=geom('F1'), g2=geom('F2');
+      rope(g1.innerX,g1.y); drawScale(g1.innerX,g1.y, g1.d>0, Math.abs(g1.F), 'F1','①',C.f1);
+      rope(g2.innerX,g2.y); drawScale(g2.innerX,g2.y, g2.d>0, Math.abs(g2.F), 'F2','②',C.f2);
+    } else {
+      const g=geom('Fc');
+      rope(g.innerX,g.y); drawScale(g.innerX,g.y, g.d>0, Math.abs(g.F), 'Fc','合',C.fc);
+    }
+
+    // 小圆环
+    ctx.beginPath(); ctx.arc(xr,AXIS,10,0,Math.PI*2);
+    ctx.fillStyle='#fff'; ctx.fill(); ctx.lineWidth=3; ctx.strokeStyle='#475569'; ctx.stroke();
+    ctx.beginPath(); ctx.arc(xr,AXIS,3.5,0,Math.PI*2); ctx.fillStyle='#475569'; ctx.fill();
+
+    // ---- 力的方向矢量（全部画在橡皮筋所在水平直线上，方向沿弹簧测力计轴线）----
+    if(showForce){
+      const FS    = 5;                     // 力矢量比例尺 px/N（与 forceArrow 内部一致）
+      const net   = currentNet();          // 有符号合力(右为正)
+      const netdir= net>=0 ? 1 : -1;
+      const hasF  = Math.max(Math.abs(F1), Math.abs(F2), (step===2?Math.abs(Fc):0)) > 0.05;
+      // 把力的大小换算成箭头长度，并限制在“刚好停在测力计之前”，避免遮挡仪器
+      const capMag = f => { const hk = GAP0 + Math.abs(f)*PXNh; return Math.min(Math.abs(f), (hk-22)/FS); };
+      if(hasF){
+        if(step===1){
+          const d1 = F1>=0?1:-1, d2 = F2>=0?1:-1;
+          const m1 = capMag(F1), m2 = capMag(F2);
+          // 合力箭头长度受“合力方向上最近的测力计”限制，避免指到仪器上
+          let nearHook = Infinity;
+          [[F1,d1],[F2,d2]].forEach(([f,dd])=>{ if(dd===netdir) nearHook = Math.min(nearHook, GAP0 + Math.abs(f)*PXNh); });
+          if(!isFinite(nearHook)) nearHook = GAP0;
+          const mNet  = Math.min(Math.abs(net), (nearHook-24)/FS);
+          // 合力 F合：先画（底层），从圆环沿合力方向指向测力计
+          forceArrow(xr, AXIS, mNet, netdir, C.fc, '', 6);
+          ctx.fillStyle = C.fc; ctx.font = 'bold 13px sans-serif';
+          ctx.fillText('F合', xr + netdir*mNet*FS - (netdir>0?0:28), AXIS - 30);
+          // F₁、F₂：都从小圆环出发，沿各自测力计轴线方向，上下略微错开以便看清（仍与轴线平行）
+          forceArrow(xr, AXIS-11, m1, d1, C.f1, '', 4);
+          forceArrow(xr, AXIS+11, m2, d2, C.f2, '', 4);
+          ctx.fillStyle = C.f1; ctx.font = 'bold 13px sans-serif';
+          ctx.fillText('F₁', xr + d1*m1*FS + (d1>0?6:-28), AXIS - 13);
+          ctx.fillStyle = C.f2;
+          ctx.fillText('F₂', xr + d2*m2*FS + (d2>0?6:-28), AXIS + 28);
+        } else {
+          const dc = Fc>=0?1:-1, m = capMag(Fc);
+          forceArrow(xr, AXIS, m, dc, C.fc, '', 6);
+          ctx.fillStyle = C.fc; ctx.font = 'bold 13px sans-serif';
+          ctx.fillText('F合', xr + dc*m*FS - (dc>0?0:28), AXIS - 30);
+        }
+      }
+    }
+
+    // ---- 作用效果 说明横幅 ----
+    const slack  = currentNet() < -0.01;
+    const netMag = Math.abs(currentNet());
+    ctx.fillStyle = 'rgba(15,23,42,.85)';
+    rrect(14, 14, 470, 40, 8); ctx.fill();
+    ctx.fillStyle='#fff'; ctx.font='bold 13px sans-serif'; ctx.textAlign='left';
+    ctx.fillText('作用效果', 24, 33);
+    ctx.font='12px sans-serif'; ctx.fillStyle='#cbd5e1';
+    let eff;
+    if(step===1){
+      eff = slack
+        ? '两拉力方向相反，向左的合力更大 → 橡皮筋松弛（实际应使向右的合力）'
+        : '两个拉力共同作用 → 合力 F合 = '+netMag.toFixed(1)+' N，把橡皮筋拉长 Δx = '+stretchCm.toFixed(1)+' cm（拉到 O 点）';
+    } else {
+      const same = (Ox!==null && aligned);
+      eff = '一个力 F合 单独作用 → 同样把橡皮筋拉长 Δx，'+(same?'已到达同一 O 点，作用效果完全相同 ✓':'把它拉到 O 点即可与两力效果等效');
+    }
+    ctx.fillText(eff, 24, 49);
+
+    // ---- 读数 ----
+    $('r_f1').textContent = F1.toFixed(1)+' N '+(F1>=0?'→':'←');
+    $('r_f2').textContent = F2.toFixed(1)+' N '+(F2>=0?'→':'←');
+    $('r_dx').textContent = stretchCm.toFixed(1)+' cm';
+    $('r_fc').textContent = step===2 ? Fc.toFixed(1)+' N '+(Fc>=0?'→':'←') : '—';
+
+    if(step===1){
+      const f = currentNet();
+      $('fml2').innerHTML = 'F<sub>合</sub> = F₁ + F₂ = '+F1.toFixed(1)+' + ('+F2.toFixed(1)+') = <b>'+f.toFixed(1)+' N</b><br>方向：'+(f>=0?'向右（与较大的力同向）':'向左（向左的力更大）');
+    } else {
+      const theory = F1+F2;
+      $('fml2').innerHTML = (Ox===null)
+        ? '请先在步骤①标记 O 点'
+        : aligned
+          ? '已对准 O 点 ✓  测得 F<sub>合</sub> = <b>'+Fc.toFixed(1)+' N</b>，恰等于理论值 '+theory.toFixed(1)+' N<br>一个力的作用效果与两个力共同作用完全等效'
+          : '当前 F合 = '+Fc.toFixed(1)+' N（理论应为 '+theory.toFixed(1)+' N）<br>把小圆环对准 O 点后再读数';
+    }
+
+    let hint;
+    if(performance.now() < msgUntil) hint = msgTxt;
+    else if(step===1) hint = '拖动手 ✊ 拉动测力计：向右拉→力向右，向左拉→力向左，松手保持。拉到合适位置后点「标记 O 点」。';
+    else if(Ox===null)  hint = '请回到步骤①，先拉出橡皮筋并标记 O 点。';
+    else if(aligned)    hint = '小圆环已对准 O 点 ✓ 读出示数 F合，并与 F₁、F₂ 比较。';
+    else                hint = '拖动手 ✊ 拉动测力计，把小圆环重新拉到 O 点（红色虚线）后读数。';
+    if(currentNet() < -0.01)
+      hint += ' ⚠ 向左的合力大于向右的力：橡皮筋松弛，小圆环停在原长——本装置需使向右的合力。';
+    $('hint2').innerHTML = hint;
+  }
+
+  function loop(){
+    requestAnimationFrame(loop);
+    if((window.activeExp||1) !== 2) return;
+    draw();
+  }
+  requestAnimationFrame(loop);
+})();
+
+/* ==================== 实验三：研究互成角度的二力合成（平行四边形定则） ==================== */
+(function(){
+  const cv  = document.getElementById('cv3');
+  const ctx = cv.getContext('2d');
+  const W = 680, H = 420;
+  const dpr = window.devicePixelRatio || 1;
+  cv.width = W*dpr; cv.height = H*dpr; cv.style.width = '100%';
+  ctx.scale(dpr, dpr);
+
+  // ---- 几何与物理常量 ----
+  const A   = {x: 190, y: 250};   // 橡皮筋固定端（钉在板上的固定点）
+  const L0  = 95;                 // 橡皮筋自然长度(px)
+  const ES  = 7;                  // 橡皮筋伸长 px/N
+  const FS  = 16;                 // 力矢量比例尺 px/N
+  const HS  = 15;                 // 测力计把手位移 px/N（拖动手感）
+  const GAP = 26;                 // 圆环到测力计挂钩的最小间距
+  const MAXF= 10;                 // 测力计量程 N
+  const C   = {f1:'#2563eb', f2:'#ea580c', fc:'#dc2626'};
+
+  let step = 1;                   // 1 双力 | 2 单力
+  let dir1 = {x: Math.cos(-0.55), y: Math.sin(-0.55)};  // 测力计1 方向（右上）
+  let dir2 = {x: Math.cos(0.62),  y: Math.sin(0.62)};   // 测力计2 方向（右下）
+  let dirC = {x: 1, y: 0};                                   // 单力测力计方向（运行时设）
+  let F1 = 5, F2 = 4, Fc = 0;
+  let P0 = null;                  // 标记的 O 点（圆环位置）
+  let drag = null, hover = null;
+  let msgTxt = '', msgUntil = 0;
+  let showForce = true, showPara = true;
+
+  const $ = id => document.getElementById(id);
+  const clamp = (v,a,b)=> Math.min(b, Math.max(a, v));
+  const vadd = (a,b)=>({x:a.x+b.x, y:a.y+b.y});
+  const vmul = (a,s)=>({x:a.x*s, y:a.y*s});
+  const vlen = a=> Math.hypot(a.x, a.y);
+  const unit = a=>{ const l=vlen(a)||1; return {x:a.x/l, y:a.y/l}; };
+  function msg(t){ msgTxt=t; msgUntil=performance.now()+2600; }
+
+  // ---- 合力（N 矢量，方向 = 屏幕方向） ----
+  function netN(){
+    if(step===2) return vmul(dirC, Fc);
+    return vadd(vmul(dir1, F1), vmul(dir2, F2));
+  }
+  // 圆环位置：沿合力方向被拉离固定端
+  function ringPos(){
+    const fc = netN(); const mag = vlen(fc);
+    if(mag < 1e-6) return {x: A.x + L0, y: A.y};
+    const u = unit(fc);
+    const len = L0 + mag*ES;
+    return {x: A.x + u.x*len, y: A.y + u.y*len};
+  }
+  function strainCm(){ return vlen(netN())/2; }   // k=2 N/cm
+
+  // ---- 控件 ----
+  function setStep(s){
+    step = s;
+    if(s===2){
+      const p = (P0!==null) ? P0 : ringPos();
+      dirC = unit({x:p.x-A.x, y:p.y-A.y});
+      Fc   = (vlen({x:p.x-A.x, y:p.y-A.y}) - L0)/ES;
+    }
+    $('e3st1Btn').classList.toggle('active', s===1);
+    $('e3st2Btn').classList.toggle('active', s===2);
+  }
+  $('e3st1Btn').onclick = ()=> setStep(1);
+  $('e3st2Btn').onclick = ()=>{
+    if(P0===null){ msg('请先在步骤①拖动并标记 O 点。'); return; }
+    setStep(2);
+  };
+  $('e3markBtn').onclick = ()=>{
+    const p = ringPos();
+    if(vlen(netN()) < 0.1){ msg('先拉动橡皮筋，再标记 O 点。'); return; }
+    P0 = {x:p.x, y:p.y};
+    msg('已标记 O 点（橡皮筋伸长 Δx = '+strainCm().toFixed(1)+' cm）。');
+  };
+  $('e3resetBtn').onclick = ()=>{
+    F1=5; F2=4; Fc=0; P0=null; step=1;
+    dir1={x:Math.cos(-0.55), y:Math.sin(-0.55)};
+    dir2={x:Math.cos(0.62),  y:Math.sin(0.62)};
+    dirC={x:1,y:0};
+    $('e3st1Btn').classList.add('active'); $('e3st2Btn').classList.remove('active');
+    msg('已复原：两个测力计回到初始角度与示数。');
+  };
+  $('e3forceChk').onchange = e=> showForce = e.target.checked;
+  $('e3paraChk').onchange  = e=> showPara  = e.target.checked;
+  setStep(1);
+
+  // ---- 拖动 ----
+  function toC(e){
+    const r = cv.getBoundingClientRect();
+    return { x:(e.clientX-r.left)*(W/r.width), y:(e.clientY-r.top)*(H/r.height) };
+  }
+  function handlePos(id){
+    const P = ringPos();
+    const d = id===1?dir1 : id===2?dir2 : dirC;
+    const F = id===1?F1 : id===2?F2 : Fc;
+    const off = GAP + Math.abs(F)*HS;
+    return {id, x: P.x + d.x*off, y: P.y + d.y*off};
+  }
+  function handleList(){ return step===1 ? [handlePos(1), handlePos(2)] : [handlePos(3)]; }
+  cv.addEventListener('pointerdown', e=>{
+    if((window.activeExp||1)!==3) return;
+    const p = toC(e);
+    for(const h of handleList()){
+      if(Math.hypot(p.x-h.x, p.y-h.y) < 30){
+        drag = {id:h.id};
+        cv.setPointerCapture(e.pointerId);
+        cv.style.cursor='grabbing'; e.preventDefault(); break;
+      }
+    }
+  });
+  cv.addEventListener('pointermove', e=>{
+    const p = toC(e);
+    if(drag){
+      const P = ringPos();
+      const dx = p.x-P.x, dy = p.y-P.y;
+      const dir = unit({x:dx, y:dy});
+      let F = clamp((Math.hypot(dx,dy) - GAP)/HS, 0, MAXF);
+      if(drag.id===1){ dir1=dir; F1=F; }
+      else if(drag.id===2){ dir2=dir; F2=F; }
+      else {
+        dirC=dir; Fc=F;
+        if(P0){
+          const rp = ringPos();
+          if(Math.hypot(rp.x-P0.x, rp.y-P0.y) < 5){
+            dirC = unit({x:P0.x-A.x, y:P0.y-A.y});
+            Fc = (vlen({x:P0.x-A.x, y:P0.y-A.y}) - L0)/ES;
+          }
+        }
+      }
+    } else {
+      hover=null;
+      for(const h of handleList()){ if(Math.hypot(p.x-h.x,p.y-h.y)<30){ hover=h.id; break; } }
+      cv.style.cursor = hover? 'grab':'default';
+    }
+  });
+  const endDrag = ()=>{ drag=null; cv.style.cursor = hover?'grab':'default'; };
+  cv.addEventListener('pointerup', endDrag);
+  cv.addEventListener('pointercancel', endDrag);
+
+  // ---- 绘图 ----
+  function rrect(x,y,w,h,r){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r); ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+  }
+  function arrowFrom(P, vec, color, label, lw){
+    const len = vlen(vec); if(len<2) return;
+    const ax=P.x+vec.x, ay=P.y+vec.y;
+    const ang=Math.atan2(vec.y,vec.x);
+    ctx.strokeStyle=color; ctx.fillStyle=color; ctx.lineWidth=lw||4; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(P.x,P.y); ctx.lineTo(ax,ay); ctx.stroke();
+    const ah=11+(lw||4);
+    ctx.beginPath();
+    ctx.moveTo(ax,ay);
+    ctx.lineTo(ax-ah*Math.cos(ang-0.42), ay-ah*Math.sin(ang-0.42));
+    ctx.lineTo(ax-ah*Math.cos(ang+0.42), ay+ah*Math.sin(ang+0.42));
+    ctx.closePath(); ctx.fill();
+    if(label){ ctx.font='bold 13px sans-serif'; ctx.fillText(label, ax + (vec.x>=0?7:-26), ay - 7); }
+  }
+  function drawScale(id){
+    const P = ringPos();
+    const d = id===1?dir1 : id===2?dir2 : dirC;
+    const F = id===1?F1 : id===2?F2 : Fc;
+    const ang = Math.atan2(d.y, d.x);
+    const hx = P.x + d.x*GAP, hy = P.y + d.y*GAP;   // 挂钩位置
+    ctx.strokeStyle='#475569'; ctx.lineWidth=2; ctx.setLineDash([]);
+    ctx.beginPath(); ctx.moveTo(P.x,P.y); ctx.lineTo(hx,hy); ctx.stroke();
+    ctx.save(); ctx.translate(hx,hy); ctx.rotate(ang);
+    const BW=96, BH=26;
+    const hot = (drag&&drag.id===id)||(hover===id);
+    const col = id===1?C.f1 : id===2?C.f2 : C.fc;
+    const grd=ctx.createLinearGradient(0,-BH/2,0,BH/2); grd.addColorStop(0,'#fff'); grd.addColorStop(1,'#d7e0ea');
+    rrect(0,-BH/2,BW,BH,7); ctx.fillStyle=grd; ctx.fill();
+    ctx.lineWidth= hot?3:1.5; ctx.strokeStyle= hot?col:'#8fa3b8'; ctx.stroke();
+    const wx=8,ww=BW-16,wy=-8,wh=12; rrect(wx,wy,ww,wh,2); ctx.fillStyle='#fff'; ctx.fill();
+    ctx.lineWidth=1; ctx.strokeStyle='#94a3b8'; ctx.stroke();
+    for(let i=0;i<=MAXF;i++){ const tx=wx+(i/MAXF)*ww, major=i%5===0; ctx.strokeStyle='#475569'; ctx.lineWidth=major?1.4:0.8; ctx.beginPath(); ctx.moveTo(tx,wy+wh); ctx.lineTo(tx,wy+wh-(major?7:4)); ctx.stroke(); }
+    ctx.fillStyle='#475569'; ctx.font='8px sans-serif'; ctx.textAlign='center';
+    for(let i=0;i<=MAXF;i+=5) ctx.fillText(i, wx+(i/MAXF)*ww, wy+wh+9);
+    ctx.textAlign='left';
+    const px=wx+(F/MAXF)*ww; ctx.strokeStyle='#dc2626'; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(px,wy+1); ctx.lineTo(px,wy+wh-1); ctx.stroke();
+    ctx.beginPath(); ctx.arc(0,0,4,0,Math.PI*2); ctx.lineWidth=2; ctx.strokeStyle='#475569'; ctx.stroke();
+    ctx.beginPath(); ctx.arc(BW,0,6,0,Math.PI*2); ctx.lineWidth=2.5; ctx.strokeStyle=hot?col:'#475569'; ctx.stroke();
+    ctx.font='20px sans-serif'; ctx.textAlign='center'; ctx.fillText('✊', BW + (d.x>=0?22:-22), 7); ctx.textAlign='left';
+    ctx.fillStyle=col; ctx.font='bold 12px sans-serif'; ctx.fillText(id===1?'①':id===2?'②':'合', 4, -BH/2-6);
+    ctx.restore();
+  }
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle='#fbfdff'; ctx.fillRect(0,0,W,H);
+    ctx.strokeStyle='rgba(110,140,170,.08)'; ctx.lineWidth=1;
+    for(let x=0;x<=W;x+=30){ ctx.beginPath(); ctx.moveTo(x,0); ctx.lineTo(x,H); ctx.stroke(); }
+    for(let y=0;y<=H;y+=30){ ctx.beginPath(); ctx.moveTo(0,y); ctx.lineTo(W,y); ctx.stroke(); }
+
+    const P = ringPos();
+    const fc = netN();
+    const mag = vlen(fc);
+    const aligned = (step===2 && P0 && Math.hypot(P.x-P0.x,P.y-P0.y) < 5);
+
+    // 固定端 A
+    ctx.fillStyle='#475569'; ctx.beginPath(); ctx.arc(A.x,A.y,7,0,Math.PI*2); ctx.fill();
+    ctx.fillStyle='#1e293b'; ctx.font='11px sans-serif'; ctx.fillText('固定端', A.x-16, A.y+22);
+    // 原长参考虚线
+    ctx.save(); ctx.setLineDash([4,4]); ctx.strokeStyle='#94a3b8'; ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(A.x,A.y); ctx.lineTo(A.x+L0, A.y); ctx.stroke(); ctx.restore();
+    ctx.fillStyle='#94a3b8'; ctx.font='11px sans-serif'; ctx.fillText('原长', A.x+4, A.y-8);
+
+    // 橡皮筋 A->P
+    ctx.lineCap='round'; ctx.strokeStyle='#a16207'; ctx.lineWidth=7;
+    ctx.beginPath(); ctx.moveTo(A.x,A.y); ctx.lineTo(P.x,P.y); ctx.stroke();
+
+    // O 点
+    if(P0){
+      ctx.save(); ctx.setLineDash([5,4]); ctx.strokeStyle= aligned?'#16a34a':'#dc2626'; ctx.lineWidth=1.5;
+      ctx.beginPath(); ctx.arc(P0.x,P0.y,9,0,Math.PI*2); ctx.stroke(); ctx.restore();
+      ctx.fillStyle= aligned?'#16a34a':'#dc2626'; ctx.font='bold 13px sans-serif';
+      ctx.fillText('O', P0.x+12, P0.y-8);
+    }
+
+    // 平行四边形（底层）
+    if(showPara && step===1){
+      const v1=vmul(dir1,F1*FS), v2=vmul(dir2,F2*FS);
+      const Pe={x:P.x+v1.x+v2.x, y:P.y+v1.y+v2.y};
+      ctx.beginPath();
+      ctx.moveTo(P.x,P.y); ctx.lineTo(P.x+v1.x,P.y+v1.y); ctx.lineTo(Pe.x,Pe.y); ctx.lineTo(P.x+v2.x,P.y+v2.y); ctx.closePath();
+      ctx.fillStyle='rgba(37,99,235,.24)'; ctx.fill();
+      ctx.strokeStyle='rgba(37,99,235,.7)'; ctx.lineWidth=1.5; ctx.stroke();
+    }
+
+    // 测力计
+    if(step===1){ drawScale(1); drawScale(2); } else { drawScale(3); }
+
+    // 力矢量（从 P 出发）
+    if(showForce){
+      if(step===1){
+        const v1=vmul(dir1,F1*FS), v2=vmul(dir2,F2*FS);
+        arrowFrom(P, v1, C.f1, 'F₁', 4);
+        arrowFrom(P, v2, C.f2, 'F₂', 4);
+        arrowFrom(P, vadd(v1,v2), C.fc, 'F合', 6);
+      } else {
+        arrowFrom(P, vmul(dirC,Fc*FS), C.fc, 'F合', 6);
+      }
+    }
+
+    // 小圆环
+    ctx.beginPath(); ctx.arc(P.x,P.y,10,0,Math.PI*2); ctx.fillStyle='#fff'; ctx.fill();
+    ctx.lineWidth=3; ctx.strokeStyle='#475569'; ctx.stroke();
+    ctx.beginPath(); ctx.arc(P.x,P.y,3.5,0,Math.PI*2); ctx.fillStyle='#475569'; ctx.fill();
+
+    // 作用效果横幅
+    ctx.fillStyle='rgba(15,23,42,.85)'; rrect(14,14,540,40,8); ctx.fill();
+    ctx.fillStyle='#fff'; ctx.font='bold 13px sans-serif'; ctx.textAlign='left'; ctx.fillText('作用效果', 24,33);
+    ctx.font='12px sans-serif'; ctx.fillStyle='#cbd5e1';
+    let eff = step===1
+      ? '两个拉力共同作用 → 合力 F合 = '+mag.toFixed(1)+' N，把橡皮筋拉长 Δx = '+strainCm().toFixed(1)+' cm'
+      : '一个力 F合 单独作用 → 同样把橡皮筋拉长 Δx'+(aligned?'（已抵达 O 点，作用效果完全相同 ✓）':'');
+    ctx.fillText(eff, 24, 49);
+
+    // 读数
+    $('e3_f1').textContent = F1.toFixed(1)+' N';
+    $('e3_f2').textContent = F2.toFixed(1)+' N';
+    $('e3_dx').textContent = strainCm().toFixed(1)+' cm';
+    $('e3_fc').textContent = (step===2? Fc.toFixed(1)+' N' : mag.toFixed(1)+' N（理论）');
+
+    if(step===1){
+      const costh = clamp(dir1.x*dir2.x + dir1.y*dir2.y, -1, 1);
+      const th = Math.acos(costh)*180/Math.PI;
+      const size = Math.sqrt(F1*F1 + F2*F2 + 2*F1*F2*costh);
+      $('e3fml').innerHTML = 'F<sub>合</sub> = F₁ + F₂（矢量）<br>大小 = √(F₁²+F₂²+2F₁F₂cosθ) = √('+F1.toFixed(1)+'²+'+F2.toFixed(1)+'²+2·'+F1.toFixed(1)+'·'+F2.toFixed(1)+'·cos'+th.toFixed(0)+'°) = <b>'+size.toFixed(1)+' N</b>';
+    } else {
+      const theory = vlen(vadd(vmul(dir1,F1),vmul(dir2,F2)));
+      $('e3fml').innerHTML = (P0===null) ? '请先在步骤①标记 O 点'
+        : aligned ? '已对准 O 点 ✓  测得 F<sub>合</sub> = <b>'+Fc.toFixed(1)+' N</b>，恰等于理论值 '+theory.toFixed(1)+' N<br>一个力的作用效果与两个力共同作用完全等效'
+        : '当前 F合 = '+Fc.toFixed(1)+' N（理论应为 '+theory.toFixed(1)+' N）<br>把圆环对准 O 点后再读数';
+    }
+
+    let hint;
+    if(performance.now()<msgUntil) hint=msgTxt;
+    else if(step===1) hint='拖动手 ✊ 拉动任意测力计：把手朝哪，力朝哪；拉得越远示数越大。圆环自动沿合力方向被拉离固定端。';
+    else if(P0===null) hint='请回到步骤①，先拉出橡皮筋并标记 O 点。';
+    else if(aligned) hint='小圆环已对准 O 点 ✓ 读出示数 F合，并与 F₁、F₂ 比较。';
+    else hint='拖动手 ✊ 拉动测力计，把小圆环重新拉到 O 点（虚线圈）后读数。';
+    $('e3hint').innerHTML = hint;
+  }
+
+  function loop(){
+    requestAnimationFrame(loop);
+    if((window.activeExp||1)!==3) return;
+    draw();
+  }
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

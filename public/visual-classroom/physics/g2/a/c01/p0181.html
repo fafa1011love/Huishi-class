@@ -1,0 +1,697 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>9.4静电的防止与利用 ｜ 人教版物理必修第三册</title>
+<style>
+  :root{
+    --blue:#1d4ed8; --blue-soft:#eff6ff; --blue-line:#bfdbfe;
+    --ink:#1e293b; --sub:#64748b; --line:#e2e8f0;
+    --amber-bg:#fffbeb; --amber-line:#fcd34d; --amber-ink:#92400e;
+    --green:#059669; --red:#dc2626;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:#f3f5f9; color:var(--ink);
+    font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif; padding:18px 12px 40px;}
+  .wrap{max-width:1060px; margin:0 auto;}
+  header{background:#fff; border:1px solid var(--line); border-left:6px solid var(--blue);
+    border-radius:12px; padding:16px 22px; box-shadow:0 1px 3px rgba(15,23,42,.06);}
+  header h1{font-size:22px; color:var(--ink);}
+  header .meta{margin-top:6px; font-size:12.5px; color:var(--sub); line-height:1.7;}
+  .mod{background:#fff; border:1px solid var(--line); border-radius:12px;
+    padding:16px 20px 18px; margin-top:16px; box-shadow:0 1px 3px rgba(15,23,42,.05);}
+  .mod-h{display:flex; align-items:center; gap:10px; margin-bottom:10px;}
+  .mod-h .no{background:var(--blue); color:#fff; font-size:12px; border-radius:6px;
+    padding:2px 8px; white-space:nowrap;}
+  .mod-h h2{font-size:16.5px;}
+  .mod-h .kp{margin-left:auto; font-size:12px; color:var(--sub); white-space:nowrap;}
+  .think{background:var(--blue-soft); border:1px solid var(--blue-line); border-radius:8px;
+    padding:8px 12px; font-size:12.5px; color:#1e40af; margin-bottom:10px; line-height:1.7;}
+  .think b{color:var(--blue);}
+  canvas.stage{display:block; width:100%; background:#fbfdff;
+    border:1px solid var(--line); border-radius:10px;}
+  .ctrl{display:flex; flex-wrap:wrap; gap:8px 18px; align-items:center; margin-top:10px;}
+  .row{display:flex; align-items:center; gap:8px; font-size:13px;}
+  .row label{color:var(--sub); white-space:nowrap;}
+  .row input[type=range]{width:150px; accent-color:var(--blue);}
+  .row .val{min-width:64px; font-variant-numeric:tabular-nums; color:var(--ink); font-weight:600;}
+  .btn{border:1px solid var(--blue); color:var(--blue); background:#fff; border-radius:7px;
+    padding:4px 12px; font-size:12.5px; cursor:pointer;}
+  .btn:hover{background:var(--blue-soft);}
+  .btn.on{background:var(--blue); color:#fff;}
+  .note{margin-top:10px; background:var(--amber-bg); border:1px solid var(--amber-line);
+    border-radius:8px; padding:8px 12px; font-size:12.5px; color:var(--amber-ink); line-height:1.8;}
+  .note b{color:#b45309;}
+  footer{margin-top:20px; text-align:center; font-size:12px; color:#94a3b8;}
+  .seg{display:inline-flex; border:1px solid var(--blue); border-radius:8px; overflow:hidden;}
+  .seg button{border:none; background:#fff; color:var(--blue); padding:4px 12px;
+    font-size:12.5px; cursor:pointer;}
+  .seg button.on{background:var(--blue); color:#fff;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>9.4　静电的防止与利用</h1>
+  <div class="meta">人教版《物理》必修第三册 · 第九章 静电场及其应用 · 教材 P18–P24 ｜ 覆盖知识点：静电感应与静电平衡（内部场强为零、电荷分布在外表面）、尖端放电、静电屏蔽（法拉第笼）、静电的应用（静电除尘）</div>
+</header>
+
+<div class="mod">
+  <div class="mod-h"><span class="no">模块 1</span><h2>静电感应与静电平衡</h2><span class="kp">交互仿真</span></div>
+  <div class="think"><b>先想一想：</b>把一个金属导体放进匀强电场里，它内部的自由电子会往哪边跑？最后导体内部的场强会变成多少？</div>
+  <canvas class="stage" id="cv1" style="height:380px;"></canvas>
+  <div class="ctrl">
+    <button class="btn" id="b1a">把导体放入电场</button>
+    <div class="row"><label>外电场 E₀</label><input type="range" id="e1" min="2" max="10" step="1" value="6"><span class="val" id="e1v"></span></div>
+    <button class="btn" id="b1b">单步：看电子移动</button>
+    <button class="btn" id="b1c">重置</button>
+  </div>
+  <div class="note"><b>观察要点：</b>外电场把自由电子推向左端，左端积<b>负电荷</b>、右端积<b>正电荷</b>。这些感应电荷自己产生一个<b>反向的电场 E感</b>，它把外电场一点点抵消掉，直到 <b>E内＝E外−E感＝0</b>，电子才停止定向移动——这就是<b>静电平衡</b>。平衡后：导体<b>内部场强处处为零</b>，净电荷只分布在<b>外表面</b>。</div>
+</div>
+
+<div class="mod">
+  <div class="mod-h"><span class="no">模块 2</span><h2>尖端放电</h2><span class="kp">动画演示</span></div>
+  <div class="think"><b>先想一想：</b>一个带电的导体，电荷是均匀铺在表面的吗？哪里最密？避雷针为什么要做成尖的？</div>
+  <canvas class="stage" id="cv2" style="height:360px;"></canvas>
+  <div class="ctrl">
+    <div class="row"><label>尖锐程度</label><input type="range" id="s2" min="0" max="100" step="1" value="80"><span class="val" id="s2v"></span></div>
+    <div class="row"><label>电压 U</label><input type="range" id="u2" min="0" max="100" step="1" value="60"><span class="val" id="u2v"></span></div>
+    <button class="btn" id="b2a">预设：圆钝导体</button>
+    <button class="btn" id="b2b">预设：很尖的针</button>
+  </div>
+  <div class="note"><b>观察要点：</b>导体表面越<b>尖</b>（曲率半径越小）的地方，电荷挤得<b>越密</b>，附近的电场<b>越强</b>，空气更容易被电离，于是从尖端<b>放出电荷（放电）</b>——尖锐程度和电压越大，飞出的电子越多。避雷针正是利用尖端放电把电荷慢慢放掉，从而保护建筑。</div>
+</div>
+
+<div class="mod">
+  <div class="mod-h"><span class="no">模块 3</span><h2>静电屏蔽（法拉第笼）</h2><span class="kp">交互仿真</span></div>
+  <div class="think"><b>先想一想：</b>把一个验电器放进金属网罩里，外面有很强的电场，罩内的验电器金属箔会张开吗？把网罩盖上再看看。</div>
+  <canvas class="stage" id="cv3" style="height:380px;"></canvas>
+  <div class="ctrl">
+    <button class="btn" id="b3a">盖上金属网罩</button>
+    <div class="row"><label>外电场 E₀</label><input type="range" id="e3" min="2" max="10" step="1" value="8"><span class="val" id="e3v"></span></div>
+    <button class="btn" id="b3b">预设：网罩接地</button>
+  </div>
+  <div class="note"><b>观察要点：</b>网罩<b>盖上</b>后，电场线全部终止在网罩外表面，罩内<b>一条电场线都没有</b>，场强<b>恒为零</b>，验电器箔片<b>完全合拢</b>；罩外的电场分布<b>一点没变</b>。这就是<b>静电屏蔽</b>：金属壳（或金属网）可以保护内部不受外电场影响。屏蔽服、信号线外层的金属网都是这个道理。</div>
+</div>
+
+<div class="mod">
+  <div class="mod-h"><span class="no">模块 4</span><h2>静电的应用：静电除尘</h2><span class="kp">动画演示</span></div>
+  <div class="think"><b>先想一想：</b>烟尘颗粒本身不带电，怎么让它们乖乖跑到集尘极上去？电压调大一点，除尘效果会怎么变？</div>
+  <canvas class="stage" id="cv4" style="height:360px;"></canvas>
+  <div class="ctrl">
+    <div class="row"><label>工作电压</label><input type="range" id="u4" min="10" max="60" step="1" value="45"><span class="val" id="u4v"></span></div>
+    <button class="btn" id="b4a">▶ 开始</button>
+    <button class="btn" id="b4b">■ 暂停</button>
+    <button class="btn" id="b4c">重置</button>
+    <button class="btn" id="b4d">预设：低压（效果差）</button>
+  </div>
+  <div class="note"><b>观察要点：</b>烟尘经过中间的<b>电晕极</b>时带上负电，随后在电场力作用下<b>定向飞向带正电的集尘极</b>并被吸附住（灰色 → 蓝色 → 贴到极板上）。电压越高，电场力越大，颗粒还没被气流带走就已经被收集，<b>除尘效率明显上升</b>。静电除尘、静电喷漆、静电复印用的都是同一个思路。</div>
+</div>
+
+<footer>人教版高中物理必修第三册 · 可视化交互课件 ｜ 单文件离线运行，双击即可使用</footer>
+</div>
+
+<script>
+(function(){
+'use strict';
+/* ================= 通用工具（与模板一致） ================= */
+function $(id){ return document.getElementById(id); }
+function fit(cv){
+  var dpr = window.devicePixelRatio || 1;
+  var w = cv.clientWidth, h = cv.clientHeight;
+  cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+  var ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return ctx;
+}
+function bindRange(id, fn){
+  var el = $(id), v = $(id + 'v');
+  function go(){ if (v) v.textContent = el.value; fn(parseFloat(el.value)); }
+  el.addEventListener('input', go); go();
+  return el;
+}
+function arrow(ctx, x1, y1, x2, y2, color, w){
+  ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = w || 2;
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  var a = Math.atan2(y2 - y1, x2 - x1), s = 7;
+  ctx.beginPath(); ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - s * Math.cos(a - 0.42), y2 - s * Math.sin(a - 0.42));
+  ctx.lineTo(x2 - s * Math.cos(a + 0.42), y2 - s * Math.sin(a + 0.42));
+  ctx.closePath(); ctx.fill();
+}
+function begin(id){
+  var cv = $(id); var ctx = fit(cv);
+  return {cv:cv, ctx:ctx, W:cv.clientWidth, H:cv.clientHeight};
+}
+function bg(ctx, W, H){ ctx.fillStyle = '#fbfdff'; ctx.fillRect(0, 0, W, H); }
+function rr(ctx, x, y, w, h, r){
+  r = Math.min(r, w/2, h/2);
+  ctx.beginPath();
+  ctx.moveTo(x+r, y);
+  ctx.lineTo(x+w-r, y); ctx.quadraticCurveTo(x+w, y, x+w, y+r);
+  ctx.lineTo(x+w, y+h-r); ctx.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+  ctx.lineTo(x+r, y+h); ctx.quadraticCurveTo(x, y+h, x, y+h-r);
+  ctx.lineTo(x, y+r); ctx.quadraticCurveTo(x, y, x+r, y);
+  ctx.closePath();
+}
+function txt(ctx, s, x, y, color, size, align){
+  ctx.fillStyle = color || '#334155';
+  ctx.font = (size || 12) + 'px "Microsoft YaHei",system-ui,sans-serif';
+  ctx.textAlign = align || 'left'; ctx.textBaseline = 'middle';
+  ctx.fillText(s, x, y);
+}
+function mono(ctx, s, x, y, color, size, align){
+  ctx.fillStyle = color || '#334155';
+  ctx.font = (size || 12) + 'px Consolas,Menlo,monospace';
+  ctx.textAlign = align || 'left'; ctx.textBaseline = 'middle';
+  ctx.fillText(s, x, y);
+}
+function dot(ctx, x, y, r, color){
+  ctx.beginPath(); ctx.arc(x, y, r, 0, 6.2832); ctx.fillStyle = color; ctx.fill();
+}
+/* 匀强电场：水平向右的电场线（可被导体/网罩挡住） */
+function uniformLines(ctx, W, H, y0, y1, step, block, opt){
+  for (var y = y0; y <= y1; y += step){
+    var segs = [[10, W - 10]];
+    if (block){
+      var g = block(y);
+      if (g){ segs = [[10, g[0]], [g[1], W - 10]]; }
+    }
+    for (var i = 0; i < segs.length; i++){
+      var a = segs[i][0], b = segs[i][1];
+      if (b - a < 14) continue;
+      ctx.strokeStyle = 'rgba(13,148,136,.75)'; ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.moveTo(a, y); ctx.lineTo(b - 8, y); ctx.stroke();
+      ctx.save(); ctx.translate(b - 7, y); ctx.fillStyle = 'rgba(13,148,136,.9)';
+      ctx.beginPath(); ctx.moveTo(5,0); ctx.lineTo(-3.5,3); ctx.lineTo(-3.5,-3); ctx.closePath();
+      ctx.fill(); ctx.restore();
+    }
+    if (block && opt){
+      var g2 = block(y);
+      if (g2){
+        dot(ctx, g2[0] - 2, y, 3.4, '#2563eb');       // 左侧感应负电荷
+        dot(ctx, g2[1] + 2, y, 3.4, '#dc2626');       // 右侧感应正电荷
+      }
+    }
+  }
+}
+
+/* ================= 模块 1：静电感应与静电平衡 ================= */
+var M1 = {t:0, tg:0, E0:6, inField:false};
+var raf1 = 0;
+function draw1(){
+  var s = begin('cv1'), ctx = s.ctx, W = s.W, H = s.H;
+  bg(ctx, W, H);
+  var cy = H*0.42, cx = W*0.5, Rx = Math.min(130, W*0.14), Ry = 66;
+  txt(ctx, '匀强电场 E₀（方向向右 →）', 14, 20, '#1e40af', 12.5);
+  txt(ctx, '● 电子带负电，受电场力方向向左', W - 14, 20, '#2563eb', 12, 'right');
+
+  function gap(y){
+    if (Math.abs(y - cy) > Ry) return null;
+    var k = (y - cy) / Ry;
+    var dx = Rx * Math.sqrt(Math.max(0, 1 - k*k));
+    return [cx - dx, cx + dx];
+  }
+  uniformLines(ctx, W, H, cy - 150, cy + 150, 30, M1.t > 0.02 ? gap : null, true);
+
+  /* 导体 */
+  ctx.save();
+  ctx.beginPath();
+  ctx.ellipse(cx, cy, Rx, Ry, 0, 0, 6.2832);
+  var g = ctx.createLinearGradient(cx - Rx, cy, cx + Rx, cy);
+  var a = M1.t;
+  g.addColorStop(0, 'rgba(37,99,235,' + (0.10 + 0.30*a).toFixed(3) + ')');
+  g.addColorStop(0.5, '#e8edf5');
+  g.addColorStop(1, 'rgba(220,38,38,' + (0.10 + 0.30*a).toFixed(3) + ')');
+  ctx.fillStyle = g; ctx.fill();
+  ctx.strokeStyle = '#64748b'; ctx.lineWidth = 2; ctx.stroke();
+  ctx.restore();
+
+  /* 内部自由电子的定向移动：外电场把电子推向左端 */
+  if (a > 0.01){
+    for (var e = 0; e < 12; e++){
+      var f0 = (e % 6) / 5, f1 = Math.floor(e / 6);
+      var xStart = cx - Rx*0.72 + f0 * (Rx*1.44);
+      var xEnd = cx - Rx*0.80 + f0 * (Rx*0.32);
+      var yb = cy - Ry*0.40 + f1 * (Ry*0.80);
+      dot(ctx, xStart + (xEnd - xStart)*a, yb, 3.4, '#2563eb');
+    }
+    if (a < 0.98){
+      txt(ctx, '← 电子定向移动', cx, cy - 30, '#2563eb', 11.5, 'center');
+    }
+  }
+
+  /* 表面感应电荷 */
+  if (a > 0.02){
+    var n = Math.round(4 + 14*a);
+    for (var i = 0; i < n; i++){
+      var ang = -Math.PI/2 + Math.PI * (i + 0.5) / n;
+      var px = cx + (Rx + 7) * Math.cos(ang), py = cy + (Ry + 7) * Math.sin(ang);
+      var neg = Math.cos(ang) < 0;
+      dot(ctx, px, py, 3.6, neg ? '#2563eb' : '#dc2626');
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 9px system-ui';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText(neg ? '−' : '+', px, py + 0.5);
+    }
+    txt(ctx, '感应出的负电荷', cx - Rx - 6, cy - Ry - 18, '#2563eb', 11.5, 'center');
+    txt(ctx, '感应出的正电荷', cx + Rx + 6, cy - Ry - 18, '#dc2626', 11.5, 'center');
+  }
+
+  /* 内部场强 */
+  var Ein = M1.E0 * (1 - a);
+  if (a < 0.98){
+    var L = 8 + 46 * (Ein / 10);
+    arrow(ctx, cx - L/2, cy + 4, cx + L/2, cy + 4, '#b45309', 2.6);
+    txt(ctx, 'E内', cx, cy + 20, '#b45309', 11.5, 'center');
+  } else {
+    txt(ctx, '导体内部 E内 = 0', cx, cy + 4, '#059669', 13, 'center');
+    txt(ctx, '（静电平衡）', cx, cy + 22, '#059669', 11.5, 'center');
+  }
+  /* 感应电场箭头 */
+  if (a > 0.05){
+    var Li = 8 + 46 * (M1.E0 * a / 10);
+    arrow(ctx, cx + Rx*0.55, cy - Ry - 34, cx + Rx*0.55 - Li, cy - Ry - 34, '#7c3aed', 2.2);
+    txt(ctx, 'E感（感应电荷产生的电场，向左）', cx + Rx*0.55 - Li - 96, cy - Ry - 34, '#7c3aed', 11.5, 'right');
+  }
+  /* 读数板 */
+  var py2 = H - 56;
+  rr(ctx, 14, py2, W - 28, 44, 8);
+  ctx.fillStyle = '#f8fafc'; ctx.fill();
+  ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1; ctx.stroke();
+  mono(ctx, '外电场 E₀ = ' + M1.E0.toFixed(1) + '（相对单位）    感应电荷的电场 E感 = ' +
+       (M1.E0*a).toFixed(1) + '    内部合场强 E内 = E₀ − E感 = ' + Ein.toFixed(2),
+       26, py2 + 14, '#334155', 12.5);
+  txt(ctx, a > 0.98 ? '已达静电平衡：内部场强为零，电子不再定向移动，净电荷只分布在外表面'
+                    : (M1.inField ? '正在建立静电平衡……电子继续向左端聚集' :
+                       '导体还没放入电场：点上面按钮把它放进去'),
+      26, py2 + 33, a > 0.98 ? '#059669' : '#b45309', 12.5);
+}
+function loop1(){
+  raf1 = 0;
+  M1.t += (M1.tg - M1.t) * 0.07;
+  if (Math.abs(M1.tg - M1.t) < 0.004){ M1.t = M1.tg; draw1(); return; }
+  draw1();
+  raf1 = requestAnimationFrame(loop1);
+}
+function kick1(){ if (!raf1) raf1 = requestAnimationFrame(loop1); }
+
+/* ================= 模块 2：尖端放电 ================= */
+var M2 = {s:0.80, U:60, parts:[]};
+var raf2 = 0, tick2 = 0;
+function tipGeom(W, H){
+  var Rb = Math.min(78, H*0.22);
+  var cx = W*0.34, cy = H*0.46;
+  var tipL = Rb * 1.5;
+  var alpha = (40 - 34*M2.s) * Math.PI / 180;      // 半角：越小越尖
+  var apex = {x: cx + Rb*0.55 + tipL, y: cy};
+  var beta = Math.acos(0.55);                       // 与圆的交点角 ≈ 56.6°
+  var p1 = {x: cx + Rb*Math.cos(-beta), y: cy + Rb*Math.sin(-beta)};
+  var p2 = {x: cx + Rb*Math.cos(beta), y: cy + Rb*Math.sin(beta)};
+  var rt = Math.max(1, tipL * Math.tan(alpha));     // 尖端等效曲率半径
+  return {Rb:Rb, cx:cx, cy:cy, apex:apex, p1:p1, p2:p2, beta:beta, rt:rt};
+}
+function outlinePath(ctx, g){
+  /* 圆的左大半部分 + 右侧的尖（三角形） */
+  ctx.beginPath();
+  ctx.arc(g.cx, g.cy, g.Rb, g.beta, 2*Math.PI - g.beta, false);
+  ctx.lineTo(g.apex.x, g.apex.y);
+  ctx.closePath();
+}
+/* 尖端越尖（等效半径 rt 越小），电荷越密，放电越强 */
+function sharpness(g){ return Math.min(1.8, (g.Rb * 0.55) / g.rt); }
+function frac2(){
+  var g = tipGeom($('cv2').clientWidth, $('cv2').clientHeight);
+  var dTip = 0.22 + 1.2 * sharpness(g);
+  return Math.max(0, Math.min(1, (M2.U/100) * dTip / 2.38));
+}
+function draw2(){
+  var s = begin('cv2'), ctx = s.ctx, W = s.W, H = s.H;
+  bg(ctx, W, H);
+  var g = tipGeom(W, H);
+  txt(ctx, '带电导体（带负电）：表面电荷的疏密 = 电荷面密度的大小', 14, 20, '#1e40af', 12.5);
+  /* 导体 */
+  outlinePath(ctx, g);
+  var lg = ctx.createLinearGradient(g.cx - g.Rb, g.cy, g.apex.x, g.cy);
+  lg.addColorStop(0, '#eef2f8'); lg.addColorStop(1, '#c7d7f5');
+  ctx.fillStyle = lg; ctx.fill();
+  ctx.strokeStyle = '#475569'; ctx.lineWidth = 2; ctx.stroke();
+
+  /* 表面电荷密度：越靠近尖端越密，且尖端越尖峰值越高 */
+  var sh = sharpness(g);
+  var dens = function(x, y){
+    var d = Math.sqrt(Math.pow(x - g.apex.x, 2) + Math.pow(y - g.apex.y, 2));
+    return 0.22 + 1.2 * sh * Math.exp(-d / (g.Rb * 0.42));
+  };
+  var i, ang, px, py, dv;
+  for (i = 0; i <= 60; i++){
+    ang = -g.beta + (2*g.beta) * i / 60;
+    px = g.cx + (g.Rb + 6) * Math.cos(ang);
+    py = g.cy + (g.Rb + 6) * Math.sin(ang);
+    dv = dens(px, py);
+    dot(ctx, px, py, 1.4 + 2.6 * Math.min(1.6, dv) / 1.6, '#2563eb');
+  }
+  for (i = 0; i <= 34; i++){
+    var t1 = i / 34;
+    px = g.p1.x + (g.apex.x - g.p1.x) * t1;
+    py = g.p1.y + (g.apex.y - g.p1.y) * t1;
+    dv = dens(px, py);
+    dot(ctx, px + 4, py - 4, 1.4 + 2.6 * Math.min(1.6, dv) / 1.6, '#2563eb');
+    px = g.p2.x + (g.apex.x - g.p2.x) * t1;
+    py = g.p2.y + (g.apex.y - g.p2.y) * t1;
+    dv = dens(px, py);
+    dot(ctx, px + 4, py + 4, 1.4 + 2.6 * Math.min(1.6, dv) / 1.6, '#2563eb');
+  }
+  /* 尖端标注 */
+  ctx.setLineDash([3, 3]); ctx.strokeStyle = '#dc2626'; ctx.lineWidth = 1.2;
+  ctx.beginPath(); ctx.arc(g.apex.x, g.apex.y, 22, 0, 6.2832); ctx.stroke();
+  ctx.setLineDash([]);
+  txt(ctx, '最尖处：电荷最密、场强最强', g.apex.x + 30, g.apex.y - 26, '#dc2626', 12);
+  mono(ctx, '尖端等效半径 r = ' + (g.rt/g.Rb).toFixed(2) + ' R', g.apex.x + 30, g.apex.y - 8, '#b45309', 11.5);
+
+  /* 放电：飞出的电子 */
+  for (var k = 0; k < M2.parts.length; k++){
+    var p = M2.parts[k];
+    var al = (1 - p.life / p.max);
+    ctx.globalAlpha = Math.max(0, al);
+    dot(ctx, p.x, p.y, 2.6, '#2563eb');
+    ctx.globalAlpha = 1;
+  }
+  /* 尖端附近空气被电离出的离子对 */
+  var fr = frac2();
+  if (fr > 0.10){
+    for (var m = 0; m < 10; m++){
+      var ix = g.apex.x + 26 + (m % 5) * 26;
+      var iy = g.apex.y - 56 + Math.floor(m / 5) * 112 + Math.sin(tick2*0.07 + m*1.3) * 7;
+      ctx.fillStyle = '#dc2626'; ctx.font = 'bold 12px system-ui';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('+', ix, iy);
+      ctx.fillStyle = '#2563eb';
+      ctx.fillText('−', ix + 9, iy + 12);
+    }
+    txt(ctx, '附近空气被电离成正、负离子 → 形成放电通道', g.apex.x + 26, g.apex.y + 74, '#b45309', 11.5);
+  }
+  /* 放电强度条 */
+  var bx = W*0.62, by = H*0.17, bw = Math.min(240, W*0.30), bh = 20;
+  txt(ctx, '放电强度', bx, by - 14, '#64748b', 12);
+  rr(ctx, bx, by, bw, bh, 5);
+  ctx.fillStyle = '#f1f5f9'; ctx.fill();
+  ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1; ctx.stroke();
+  var frac = frac2();
+  if (frac > 0){
+    rr(ctx, bx, by, Math.max(3, bw*frac), bh, 5);
+    ctx.fillStyle = 'rgba(37,99,235,.75)'; ctx.fill();
+  }
+  mono(ctx, (frac*100).toFixed(0) + '%', bx + bw + 10, by + bh/2, '#1d4ed8', 12.5);
+
+  /* 读数板 */
+  var py2 = H - 56;
+  rr(ctx, 14, py2, W - 28, 44, 8);
+  ctx.fillStyle = '#f8fafc'; ctx.fill();
+  ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1; ctx.stroke();
+  mono(ctx, '尖端处电荷面密度 σ ∝ 1/r，r 越小 σ 越大；附近场强 E 越强，空气被电离 → 尖端放电',
+       26, py2 + 14, '#334155', 12.5);
+  txt(ctx, frac > 0.55 ? '正在强烈放电：电荷不断从尖端跑掉（避雷针就是这个原理）'
+       : (frac > 0.12 ? '有轻微放电' : '几乎不放电：导体太圆钝或电压太低'),
+       26, py2 + 33, frac > 0.55 ? '#b45309' : '#64748b', 12.5);
+}
+function kick2(){ if (!raf2) raf2 = requestAnimationFrame(step2); }
+function step2(){
+  raf2 = 0; tick2++;
+  var g = tipGeom($('cv2').clientWidth, $('cv2').clientHeight);
+  var frac = frac2();
+  if (tick2 % 2 === 0){
+    var n = Math.round(frac * 4);
+    for (var i = 0; i < n; i++){
+      M2.parts.push({
+        x: g.apex.x + 4, y: g.apex.y + (Math.random() - 0.5) * 12,
+        vx: 1.6 + Math.random() * 2.6, vy: (Math.random() - 0.5) * 1.8,
+        life: 0, max: 55 + Math.random() * 45
+      });
+    }
+  }
+  for (var k = M2.parts.length - 1; k >= 0; k--){
+    var p = M2.parts[k];
+    p.x += p.vx; p.y += p.vy; p.life++;
+    if (p.life > p.max || p.x > $('cv2').clientWidth) M2.parts.splice(k, 1);
+  }
+  if (M2.parts.length > 260) M2.parts.splice(0, M2.parts.length - 260);
+  draw2();
+  if (frac < 0.02 && M2.parts.length === 0) return;    // 不放电时自动停下，省资源
+  raf2 = requestAnimationFrame(step2);
+}
+
+/* ================= 模块 3：静电屏蔽 ================= */
+var M3 = {cage:false, E0:8, ground:false};
+function draw3(){
+  var s = begin('cv3'), ctx = s.ctx, W = s.W, H = s.H;
+  bg(ctx, W, H);
+  var cx = W*0.52, cy = H*0.44;
+  var bw = Math.min(240, W*0.26), bh = Math.min(180, H*0.46);
+  var x0 = cx - bw/2, x1 = cx + bw/2, y0 = cy - bh/2, y1 = cy + bh/2;
+  txt(ctx, '外部匀强电场（方向向右）', 14, 20, '#1e40af', 12.5);
+  txt(ctx, '罩外电场不受影响，罩内场强恒为零', W - 14, 20, '#0f766e', 12, 'right');
+
+  function gap(y){ return (y > y0 - 2 && y < y1 + 2) ? [x0, x1] : null; }
+  uniformLines(ctx, W, H, y0 - 96, y1 + 96, 30, M3.cage ? gap : null, M3.cage);
+
+  /* 罩内验电器 */
+  var ex = cx, ey = y0 + 34, hinge = ey + 96;
+  var theta = M3.cage ? 0 : 40 * Math.tanh(M3.E0 / 6);
+  ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(ex, ey + 16); ctx.lineTo(ex, hinge); ctx.stroke();
+  ctx.lineCap = 'butt';
+  dot(ctx, ex, ey, 15, '#cbd5e1');
+  ctx.strokeStyle = '#64748b'; ctx.lineWidth = 1.5;
+  ctx.beginPath(); ctx.arc(ex, ey, 15, 0, 6.2832); ctx.stroke();
+  var th = theta * Math.PI / 180;
+  ctx.strokeStyle = theta > 1 ? '#dc2626' : '#94a3b8'; ctx.lineWidth = 4; ctx.lineCap = 'round';
+  ctx.beginPath(); ctx.moveTo(ex, hinge);
+  ctx.lineTo(ex - 62*Math.sin(th), hinge + 62*Math.cos(th)); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(ex, hinge);
+  ctx.lineTo(ex + 62*Math.sin(th), hinge + 62*Math.cos(th)); ctx.stroke();
+  ctx.lineCap = 'butt';
+  txt(ctx, '罩内验电器', ex, y0 + 6, '#475569', 11.5, 'center');
+  txt(ctx, '张角 ' + theta.toFixed(0) + '°', ex + 74, hinge - 10, '#334155', 11.5, 'center');
+
+  /* 金属网罩 */
+  if (M3.cage){
+    ctx.save();
+    ctx.strokeStyle = '#475569'; ctx.lineWidth = 2.4;
+    ctx.strokeRect(x0, y0, bw, bh);
+    ctx.strokeStyle = 'rgba(100,116,139,.55)'; ctx.lineWidth = 1;
+    for (var gx = x0 + 14; gx < x1; gx += 14){
+      ctx.beginPath(); ctx.moveTo(gx, y0); ctx.lineTo(gx, y1); ctx.stroke();
+    }
+    for (var gy = y0 + 14; gy < y1; gy += 14){
+      ctx.beginPath(); ctx.moveTo(x0, gy); ctx.lineTo(x1, gy); ctx.stroke();
+    }
+    ctx.restore();
+    /* 罩上的感应电荷 */
+    for (var i = 0; i < 16; i++){
+      var yy = y0 + 10 + (bh - 20) * i / 15;
+      dot(ctx, x0 - 6, yy, 3.2, '#2563eb');
+      dot(ctx, x1 + 6, yy, 3.2, '#dc2626');
+    }
+    txt(ctx, '感应负电荷', x0 - 10, y0 - 14, '#2563eb', 11.5, 'center');
+    txt(ctx, '感应正电荷', x1 + 10, y0 - 14, '#dc2626', 11.5, 'center');
+    if (M3.ground){
+      ctx.strokeStyle = '#059669'; ctx.lineWidth = 2.4;
+      ctx.beginPath(); ctx.moveTo(x0, y1); ctx.lineTo(x0 - 26, y1 + 26); ctx.lineTo(x0 - 46, y1 + 26); ctx.stroke();
+      for (var j = 0; j < 3; j++){
+        ctx.beginPath();
+        ctx.moveTo(x0 - 30 - j*9, y1 + 32 + j*7); ctx.lineTo(x0 - 42 - j*9, y1 + 32 + j*7);
+        ctx.stroke();
+      }
+      txt(ctx, '接地', x0 - 46, y1 + 58, '#059669', 11.5, 'center');
+    }
+  } else {
+    ctx.setLineDash([6, 5]); ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 1.6;
+    ctx.strokeRect(x0, y0, bw, bh); ctx.setLineDash([]);
+    txt(ctx, '（网罩已移开）', cx, y1 + 16, '#94a3b8', 11.5, 'center');
+  }
+
+  /* 读数板 */
+  var py2 = H - 56;
+  rr(ctx, 14, py2, W - 28, 44, 8);
+  ctx.fillStyle = '#f8fafc'; ctx.fill();
+  ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1; ctx.stroke();
+  mono(ctx, '罩内场强 E内 = ' + (M3.cage ? '0' : M3.E0.toFixed(1)) +
+       '    罩外场强 = ' + M3.E0.toFixed(1) + '（相对单位）', 26, py2 + 14, '#334155', 12.5);
+  txt(ctx, M3.cage
+      ? '金属网罩盖上：电场线止于外表面，罩内 E = 0，验电器箔片合拢 → 静电屏蔽'
+      : '没有网罩：电场线穿过，罩内验电器因静电感应而张开箔片',
+      26, py2 + 33, M3.cage ? '#059669' : '#b45309', 12.5);
+}
+
+/* ================= 模块 4：静电除尘 ================= */
+var M4 = {U:45, run:false, dust:[], inN:0, colN:0};
+var raf4 = 0, tick4 = 0;
+function geo4(W, H){
+  return {x0:46, x1:W - 46, y0:64, y1:H - 84, wire:W*0.26};
+}
+function draw4(){
+  var s = begin('cv4'), ctx = s.ctx, W = s.W, H = s.H;
+  bg(ctx, W, H);
+  var g = geo4(W, H);
+  txt(ctx, '静电除尘器：电晕极使尘粒带电 → 电场力把尘粒推向集尘极', 14, 20, '#1e40af', 12.5);
+
+  /* 极板（集尘极，带正电） */
+  ctx.fillStyle = '#fee2e2'; ctx.fillRect(g.x0, g.y0 - 12, g.x1 - g.x0, 11);
+  ctx.fillStyle = '#fee2e2'; ctx.fillRect(g.x0, g.y1 + 1, g.x1 - g.x0, 11);
+  ctx.strokeStyle = '#dc2626'; ctx.lineWidth = 1.4;
+  ctx.strokeRect(g.x0, g.y0 - 12, g.x1 - g.x0, 11);
+  ctx.strokeRect(g.x0, g.y1 + 1, g.x1 - g.x0, 11);
+  for (var x = g.x0 + 16; x < g.x1; x += 34){
+    txt(ctx, '+', x, g.y0 - 6.5, '#dc2626', 12, 'center');
+    txt(ctx, '+', x, g.y1 + 6.5, '#dc2626', 12, 'center');
+  }
+  txt(ctx, '集尘极（＋）', g.x0 + 4, g.y0 - 26, '#b91c1c', 11.5);
+  txt(ctx, '集尘极（＋）', g.x0 + 4, g.y1 + 26, '#b91c1c', 11.5);
+
+  /* 电晕极 */
+  ctx.strokeStyle = '#2563eb'; ctx.lineWidth = 3;
+  ctx.beginPath(); ctx.moveTo(g.wire, g.y0); ctx.lineTo(g.wire, g.y1); ctx.stroke();
+  for (var y = g.y0 + 14; y < g.y1; y += 26){
+    dot(ctx, g.wire, y, 3.2, '#2563eb');
+  }
+  txt(ctx, '电晕极（−，高压）', g.wire, g.y0 - 26, '#1d4ed8', 11.5, 'center');
+
+  /* 尘粒 */
+  for (var i = 0; i < M4.dust.length; i++){
+    var d = M4.dust[i];
+    if (d.state === 0) dot(ctx, d.x, d.y, 3.2, '#94a3b8');
+    else if (d.state === 1){
+      dot(ctx, d.x, d.y, 3.6, '#2563eb');
+      ctx.fillStyle = '#fff'; ctx.font = 'bold 8px system-ui';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillText('−', d.x, d.y + 0.5);
+    } else {
+      dot(ctx, d.x, d.y, 3.0, '#059669');
+    }
+  }
+  /* 效率条 */
+  var eff = M4.inN > 4 ? M4.colN / M4.inN : 0;
+  var by = H - 62, bw2 = Math.min(300, W*0.34), bx2 = W - bw2 - 26;
+  txt(ctx, '除尘效率', bx2, by - 14, '#64748b', 12);
+  rr(ctx, bx2, by, bw2, 20, 5);
+  ctx.fillStyle = '#f1f5f9'; ctx.fill();
+  ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1; ctx.stroke();
+  if (eff > 0){
+    rr(ctx, bx2, by, Math.max(3, bw2*eff), 20, 5);
+    ctx.fillStyle = 'rgba(5,150,105,.78)'; ctx.fill();
+  }
+  mono(ctx, (eff*100).toFixed(0) + '%', bx2 + bw2 + 10, by + 10, '#059669', 12.5);
+  /* 读数板 */
+  var py2 = H - 34;
+  rr(ctx, 14, py2, W - 28, 26, 7);
+  ctx.fillStyle = '#f8fafc'; ctx.fill();
+  ctx.strokeStyle = '#e2e8f0'; ctx.lineWidth = 1; ctx.stroke();
+  mono(ctx, '工作电压 U = ' + M4.U + ' kV    进入 ' + M4.inN + ' 颗    已收集 ' + M4.colN +
+       ' 颗    电场力 F = qE ∝ U', 26, py2 + 13, '#334155', 12.5);
+}
+function step4(){
+  raf4 = 0; tick4++;
+  var cv = $('cv4'), W = cv.clientWidth, H = cv.clientHeight;
+  var g = geo4(W, H);
+  if (tick4 % 5 === 0 && M4.dust.length < 150){
+    M4.dust.push({x:g.x0, y:g.y0 + 6 + Math.random()*(g.y1 - g.y0 - 12),
+                  state:0, v:1.8 + Math.random()*0.9});
+    M4.inN++;
+  }
+  var vd = 0.022 * M4.U;                 // 垂直（向极板）漂移速度，∝ U
+  var mid = (g.y0 + g.y1) / 2;
+  for (var i = M4.dust.length - 1; i >= 0; i--){
+    var d = M4.dust[i];
+    if (d.state === 2){                  // 已吸附在极板上
+      d.t++;
+      if (d.t > 170 || M4.dust.length > 240) M4.dust.splice(i, 1);
+      continue;
+    }
+    d.x += d.v;
+    if (d.state === 0 && d.x > g.wire) d.state = 1;   // 经过电晕极 → 带负电
+    if (d.state === 1){
+      d.y += (d.y < mid ? -1 : 1) * vd;               // 被正电极板吸引
+      if (d.y <= g.y0 + 3){ d.y = g.y0 + 3; d.state = 2; d.t = 0; M4.colN++; }
+      else if (d.y >= g.y1 - 3){ d.y = g.y1 - 3; d.state = 2; d.t = 0; M4.colN++; }
+    }
+    if (d.x > g.x1) M4.dust.splice(i, 1);             // 没被收集就随气流跑掉
+  }
+  draw4();
+  raf4 = requestAnimationFrame(step4);
+}
+
+/* ================= 事件绑定 ================= */
+$('b1a').addEventListener('click', function(){
+  M1.inField = !M1.inField;
+  M1.tg = M1.inField ? 1 : 0;
+  this.textContent = M1.inField ? '把导体移出电场' : '把导体放入电场';
+  kick1(); draw1();
+});
+bindRange('e1', function(v){ M1.E0 = v; $('e1v').textContent = v.toFixed(0); draw1(); });
+$('b1b').addEventListener('click', function(){
+  M1.inField = true;
+  $('b1a').textContent = '把导体移出电场';
+  M1.tg = Math.min(1, M1.t + 0.25);
+  if (M1.tg >= 1) M1.tg = 1;
+  kick1(); draw1();
+});
+$('b1c').addEventListener('click', function(){
+  M1.inField = false; M1.tg = 0; M1.t = 0;
+  $('b1a').textContent = '把导体放入电场';
+  kick1(); draw1();
+});
+
+bindRange('s2', function(v){ M2.s = v/100; $('s2v').textContent = v + '%'; draw2(); kick2(); });
+bindRange('u2', function(v){ M2.U = v; $('u2v').textContent = v + '%'; draw2(); kick2(); });
+$('b2a').addEventListener('click', function(){
+  $('s2').value = 5; M2.s = 0.05; $('s2v').textContent = '5%'; draw2(); kick2();
+});
+$('b2b').addEventListener('click', function(){
+  $('s2').value = 100; M2.s = 1; $('s2v').textContent = '100%'; draw2(); kick2();
+});
+
+$('b3a').addEventListener('click', function(){
+  M3.cage = !M3.cage;
+  this.textContent = M3.cage ? '移开金属网罩' : '盖上金属网罩';
+  this.className = M3.cage ? 'btn on' : 'btn';
+  draw3();
+});
+bindRange('e3', function(v){ M3.E0 = v; $('e3v').textContent = v.toFixed(0); draw3(); });
+$('b3b').addEventListener('click', function(){
+  M3.ground = !M3.ground;
+  this.className = M3.ground ? 'btn on' : 'btn';
+  this.textContent = M3.ground ? '取消接地' : '预设：网罩接地';
+  if (M3.ground){ M3.cage = true; $('b3a').textContent = '移开金属网罩'; $('b3a').className = 'btn on'; }
+  draw3();
+});
+
+bindRange('u4', function(v){
+  M4.U = v; $('u4v').textContent = v + ' kV';
+  M4.inN = 0; M4.colN = 0;                 // 改变电压后重新统计效率
+  draw4();
+});
+$('b4a').addEventListener('click', function(){
+  M4.run = true;
+  if (!raf4) raf4 = requestAnimationFrame(step4);
+});
+$('b4b').addEventListener('click', function(){
+  M4.run = false;
+  if (raf4){ cancelAnimationFrame(raf4); raf4 = 0; }
+  draw4();
+});
+$('b4c').addEventListener('click', function(){
+  M4.dust.length = 0; M4.inN = 0; M4.colN = 0; draw4();
+});
+$('b4d').addEventListener('click', function(){
+  $('u4').value = 12; M4.U = 12; $('u4v').textContent = '12 kV';
+  M4.dust.length = 0; M4.inN = 0; M4.colN = 0; draw4();
+});
+
+window.addEventListener('resize', function(){ draw1(); draw2(); draw3(); draw4(); });
+draw1(); draw2(); draw3(); draw4();
+if (!raf2) raf2 = requestAnimationFrame(step2);
+})();
+</script>
+</body>
+</html>

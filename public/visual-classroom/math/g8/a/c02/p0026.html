@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>三角形全等的判定 · 尺规作图演示</title>
+<style>
+  :root{
+    --bg:#eef2f7; --card:#fff; --line:#dbe3ee; --text:#17233b; --muted:#66748c;
+    --blue:#2563eb; --green:#15803d; --red:#dc2626; --orange:#ea580c;
+  }
+  *{box-sizing:border-box;margin:0;padding:0;}
+  body{font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;background:var(--bg);color:var(--text);padding:18px;}
+  .app{max-width:1120px;margin:0 auto;}
+  header{margin-bottom:14px;}
+  h1{font-size:23px;letter-spacing:.5px;}
+  header p{color:var(--muted);font-size:13.5px;margin-top:5px;}
+
+  .chips{display:grid;grid-template-columns:repeat(6,1fr);gap:9px;margin-bottom:14px;}
+  .chip{
+    background:var(--card);border:1.5px solid var(--line);border-radius:12px;padding:10px 4px;
+    cursor:pointer;text-align:center;transition:.15s;user-select:none;
+  }
+  .chip:hover{border-color:#a9bde0;transform:translateY(-1px);}
+  .chip b{display:block;font-size:20px;letter-spacing:1px;line-height:1.2;}
+  .chip span{display:block;font-size:12.5px;color:var(--muted);margin-top:3px;}
+  .chip.active{background:var(--blue);border-color:var(--blue);box-shadow:0 6px 16px rgba(37,99,235,.28);}
+  .chip.active b,.chip.active span{color:#fff;}
+  .chip.bad.active{background:var(--red);border-color:var(--red);box-shadow:0 6px 16px rgba(220,38,38,.28);}
+  .chip.bad b{color:var(--red);}
+
+  .stage{background:var(--card);border:1.5px solid var(--line);border-radius:14px;padding:12px 12px 8px;margin-bottom:12px;}
+  .steps{display:flex;gap:8px;margin-bottom:8px;flex-wrap:wrap;}
+  .step{
+    flex:1;min-width:150px;font-size:13px;padding:7px 10px;border-radius:9px;color:var(--muted);
+    background:#f3f6fb;border:1.5px solid transparent;transition:.2s;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
+  .step.cur{background:#e6f0ff;border-color:#9ec0ff;color:#123a86;font-weight:700;}
+  .step.done{background:#e9f9ef;color:#136c37;}
+  canvas{width:100%;height:auto;display:block;border-radius:10px;}
+
+  .ctrl{display:flex;align-items:center;gap:9px;margin-bottom:12px;flex-wrap:wrap;}
+  button{
+    font-family:inherit;font-size:14.5px;padding:9px 18px;border-radius:10px;border:1.5px solid var(--line);
+    background:#fff;cursor:pointer;color:var(--text);transition:.15s;
+  }
+  button:hover{border-color:#a9bde0;}
+  button.primary{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:700;min-width:118px;}
+  button.on{background:#111c33;border-color:#111c33;color:#fff;}
+  #prog{flex:1;min-width:180px;accent-color:var(--blue);height:6px;}
+  .speedwrap{display:flex;align-items:center;gap:6px;color:var(--muted);font-size:13px;}
+
+  .concl{
+    display:flex;align-items:center;gap:14px;background:var(--card);border:1.5px solid var(--line);
+    border-left:6px solid var(--blue);border-radius:12px;padding:13px 16px;margin-bottom:14px;
+  }
+  .concl.ok{border-left-color:var(--green);background:#f2fdf5;}
+  .concl.no{border-left-color:var(--red);background:#fff5f5;}
+  .concl .code{font-size:22px;font-weight:800;letter-spacing:1px;color:var(--blue);min-width:74px;}
+  .concl.ok .code{color:var(--green);}
+  .concl.no .code{color:var(--red);}
+  .concl .txt{font-size:15.5px;line-height:1.5;flex:1;}
+  .concl .badge{font-size:13px;font-weight:700;padding:5px 12px;border-radius:20px;background:#eef2f7;color:var(--muted);white-space:nowrap;}
+  .concl.ok .badge{background:#d7f5e1;color:#136c37;}
+  .concl.no .badge{background:#ffe0e0;color:#a11b1b;}
+
+  table{width:100%;border-collapse:collapse;background:var(--card);border-radius:12px;overflow:hidden;font-size:14px;}
+  caption{text-align:left;font-size:13px;color:var(--muted);padding:0 0 8px;}
+  th,td{padding:9px 12px;border-bottom:1px solid #eef2f8;text-align:left;}
+  th{background:#f5f8fd;font-size:13px;color:var(--muted);font-weight:700;}
+  td.k{font-weight:800;width:96px;}
+  tr:last-child td{border-bottom:none;}
+  .yes{color:var(--green);font-weight:700;}
+  .no2{color:var(--red);font-weight:700;}
+  @media (max-width:760px){
+    .chips{grid-template-columns:repeat(3,1fr);}
+    .step{min-width:120px;font-size:12px;}
+  }
+</style>
+</head>
+<body>
+<div class="app">
+  <header>
+    <h1>三角形全等的判定 · 尺规作图演示</h1>
+    <p>先固定已知条件，再画弧 / 摆动定长线段找交点 —— 交点唯一 ⇒ 三角形唯一 ⇒ 能判定；SSA 摆出两个交点 ⇒ 不能判定　（空格：播放/暂停，← →：切换）</p>
+  </header>
+
+  <nav class="chips" id="chips"></nav>
+
+  <section class="stage">
+    <div class="steps" id="steps"></div>
+    <canvas id="cv"></canvas>
+  </section>
+
+  <section class="ctrl">
+    <button class="primary" id="play">▶ 播放</button>
+    <button id="replay">↺ 重播</button>
+    <input type="range" id="prog" min="0" max="1000" value="0">
+    <div class="speedwrap">速度<button id="speed" style="padding:6px 12px;font-size:13px;">1×</button></div>
+    <button id="all">▶▶ 连播全部</button>
+  </section>
+
+  <section class="concl" id="concl">
+    <div class="code" id="ccode">SSS</div>
+    <div class="txt" id="ctext"></div>
+    <div class="badge" id="cbadge">演示中…</div>
+  </section>
+
+  <table>
+    <caption>判定方法速查（均可作为"判定两个三角形全等"的依据）</caption>
+    <tr><th>判定</th><th>条件</th><th>结论</th></tr>
+    <tr><td class="k">SSS</td><td>三边分别相等</td><td class="yes">全等 ✓</td></tr>
+    <tr><td class="k">SAS</td><td>两边和它们的夹角分别相等</td><td class="yes">全等 ✓</td></tr>
+    <tr><td class="k">ASA</td><td>两角和它们的夹边分别相等</td><td class="yes">全等 ✓</td></tr>
+    <tr><td class="k">AAS</td><td>两角分别相等且其中一组等角的对边相等</td><td class="yes">全等 ✓</td></tr>
+    <tr><td class="k">HL</td><td>斜边和一条直角边分别相等（仅限直角三角形）</td><td class="yes">全等 ✓</td></tr>
+    <tr><td class="k">SSA</td><td>两边及其中一边的对角分别相等</td><td class="no2">不一定全等 ✗（反例）</td></tr>
+  </table>
+</div>
+
+<script>
+"use strict";
+/* ============ 工具 ============ */
+const clamp=(x,a=0,b=1)=>Math.max(a,Math.min(b,x));
+const seg=(t,a,b)=>clamp((t-a)/(b-a));
+const smooth=x=>{x=clamp(x);return x*x*(3-2*x);};
+const ss=(t,a,b)=>smooth(seg(t,a,b));
+const f1=n=>n.toFixed(1);
+const rad=d=>d*Math.PI/180;
+const dist2=(a,b)=>Math.hypot(a[0]-b[0],a[1]-b[1]);
+
+/* ============ 画布 ============ */
+const W=1040,H=560;
+const cv=document.getElementById('cv');
+const ctx=cv.getContext('2d');
+const DPR=Math.min(2,(typeof devicePixelRatio==='number'?devicePixelRatio:1)||1);
+cv.width=W*DPR; cv.height=H*DPR; cv.style.aspectRatio=W+' / '+H;
+ctx.setTransform(DPR,0,0,DPR,0,0);
+
+/* 世界坐标（y 向上）→ 屏幕。基线 y=420，比例 40px/单位 */
+const K=40, OY=420, AX=300;
+const S=(x,y)=>[AX+x*K, OY-y*K];
+
+/* ============ 几何数据 ============ */
+/* 基准三角形：A(0,0) B(6,0) C(1.8,3.2) */
+const BA={x:0,y:0}, BB={x:6,y:0}, BC={x:1.8,y:3.2};
+const angAt=(P,Q,O)=>{ // 顶点 O，两侧方向 OQ、OP 的夹角（度）
+  const u=[Q[0]-O[0],Q[1]-O[1]], v=[P[0]-O[0],P[1]-O[1]];
+  return Math.acos(clamp((u[0]*v[0]+u[1]*v[1])/(Math.hypot(u[0],u[1])*Math.hypot(v[0],v[1])),-1,1))*180/Math.PI;
+};
+const w2s=p=>[AX+p.x*K, OY-p.y*K];
+const lenW=(p,q)=>Math.hypot(p.x-q.x,p.y-q.y);
+
+const ABw=lenW(BA,BB);                     // 6
+const ACw=lenW(BA,BC), BCw=lenW(BB,BC);    // 3.67 / 5.28
+const AAng=angAt([BB.x,BB.y],[BC.x,BC.y],[BA.x,BA.y]);   // ∠A=60.6
+const BAng=angAt([BA.x,BA.y],[BC.x,BC.y],[BB.x,BB.y]);   // ∠B=37.3
+const CAng=180-AAng-BAng;                                  // 82.1
+/* AAS：以 BC 为底 */
+const aasB={x:0,y:0}, aasC={x:BCw,y:0};
+const aasA={x:ABw*Math.cos(rad(BAng)), y:ABw*Math.sin(rad(BAng))};
+/* HL：直角三角形，∠C=90° */
+const hA={x:0,y:0}, hB={x:6,y:0}, hC={x:2.2,y:2.89};
+const hAC=lenW(hA,hC), hBC=lenW(hB,hC);
+/* SSA 反例：∠A=35°, AB=6, BC=3.9 的两个解 */
+const xA={x:0,y:0}, xB={x:6,y:0};
+const xC1={x:5.531,y:3.870}, xC2={x:2.523,y:1.767};
+const xAng=35, xBC=3.9;
+
+/* ============ 绘图原语 ============ */
+function segG(P,Q,g,color,lw,dash,alpha){
+  if(g<=0.001) return;
+  ctx.save(); ctx.globalAlpha=alpha==null?1:alpha;
+  ctx.strokeStyle=color; ctx.lineWidth=lw||3; ctx.lineCap='round';
+  if(dash) ctx.setLineDash(dash);
+  ctx.beginPath(); ctx.moveTo(P[0],P[1]);
+  ctx.lineTo(P[0]+(Q[0]-P[0])*g, P[1]+(Q[1]-P[1])*g);
+  ctx.stroke(); ctx.restore();
+}
+function rayG(O,angDeg,len,color,lw,alpha){ // 从 O 沿世界角度画射线
+  ctx.save(); ctx.globalAlpha=alpha==null?1:alpha;
+  ctx.strokeStyle=color; ctx.lineWidth=lw||2.4; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(O[0],O[1]);
+  ctx.lineTo(O[0]+Math.cos(rad(angDeg))*len, O[1]-Math.sin(rad(angDeg))*len);
+  ctx.stroke(); ctx.restore();
+}
+function arcW(Cp,r,th1,th2,color,lw,dash,alpha){ // 世界角度圆弧 th1→th2
+  if(Math.abs(th2-th1)<0.01) return;
+  ctx.save(); ctx.globalAlpha=alpha==null?1:alpha;
+  ctx.strokeStyle=color; ctx.lineWidth=lw||2.4; ctx.lineCap='round';
+  if(dash) ctx.setLineDash(dash);
+  ctx.beginPath();
+  ctx.arc(Cp[0],Cp[1],r,-rad(th1),-rad(th2),true);
+  ctx.stroke(); ctx.restore();
+}
+function dot(P,color,r){
+  ctx.save(); ctx.fillStyle=color;
+  ctx.beginPath(); ctx.arc(P[0],P[1],r||4.5,0,7); ctx.fill(); ctx.restore();
+}
+function flashRing(P,color,age){ // 交点闪现光环 age:0→1
+  if(age<=0||age>=1) return;
+  ctx.save(); ctx.globalAlpha=1-age;
+  ctx.strokeStyle=color; ctx.lineWidth=2.5;
+  ctx.beginPath(); ctx.arc(P[0],P[1],6+age*24,0,7); ctx.stroke();
+  ctx.restore();
+}
+function tickM(P,Q,n,color,alpha){
+  const mx=(P[0]+Q[0])/2,my=(P[1]+Q[1])/2;
+  const dx=Q[0]-P[0],dy=Q[1]-P[1],L=Math.hypot(dx,dy)||1;
+  const ux=dx/L,uy=dy/L,nx=-uy,ny=ux;
+  ctx.save(); ctx.globalAlpha=alpha; ctx.strokeStyle=color; ctx.lineWidth=2.4; ctx.lineCap='round';
+  for(let i=0;i<n;i++){
+    const off=(i-(n-1)/2)*6.5;
+    ctx.beginPath();
+    ctx.moveTo(mx+ux*off+nx*7,my+uy*off+ny*7);
+    ctx.lineTo(mx+ux*off-nx*7,my+uy*off-ny*7);
+    ctx.stroke();
+  }
+  ctx.restore();
+}
+function arcM(V,P,Q,n,color,alpha){ // 角标记弧
+  const a1=Math.atan2(P[1]-V[1],P[0]-V[0]), a2=Math.atan2(Q[1]-V[1],Q[0]-V[0]);
+  let dd=a2-a1;
+  while(dd>Math.PI)dd-=2*Math.PI;
+  while(dd<-Math.PI)dd+=2*Math.PI;
+  ctx.save(); ctx.globalAlpha=alpha; ctx.strokeStyle=color; ctx.lineWidth=2.3;
+  for(let i=0;i<n;i++){ctx.beginPath();ctx.arc(V[0],V[1],20+i*7,a1,a1+dd,dd<0);ctx.stroke();}
+  ctx.restore();
+}
+function rightM(V,P,Q,color,alpha){
+  const u={x:P[0]-V[0],y:P[1]-V[1]},v={x:Q[0]-V[0],y:Q[1]-V[1]};
+  const lu=Math.hypot(u.x,u.y)||1,lv=Math.hypot(v.x,v.y)||1,s=14;
+  ctx.save(); ctx.globalAlpha=alpha; ctx.strokeStyle=color; ctx.lineWidth=2.2;
+  ctx.beginPath();
+  ctx.moveTo(V[0]+u.x/lu*s,V[1]+u.y/lu*s);
+  ctx.lineTo(V[0]+u.x/lu*s+v.x/lv*s,V[1]+u.y/lu*s+v.y/lv*s);
+  ctx.lineTo(V[0]+v.x/lv*s,V[1]+v.y/lv*s);
+  ctx.stroke(); ctx.restore();
+}
+function vLabel(P,n,color,alpha,dx,dy){
+  if(alpha<=0.01) return;
+  ctx.save(); ctx.globalAlpha=alpha;
+  ctx.font='bold 16px "Microsoft YaHei"'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.lineWidth=4; ctx.strokeStyle='rgba(255,255,255,.92)'; ctx.lineJoin='round';
+  ctx.strokeText(n,P[0]+(dx||0),P[1]+(dy||0));
+  ctx.fillStyle=color; ctx.fillText(n,P[0]+(dx||0),P[1]+(dy||0));
+  ctx.restore();
+}
+function fillTri(pts,fill){ 
+  ctx.save(); ctx.fillStyle=fill;
+  ctx.beginPath(); ctx.moveTo(pts[0][0],pts[0][1]);
+  ctx.lineTo(pts[1][0],pts[1][1]); ctx.lineTo(pts[2][0],pts[2][1]);
+  ctx.closePath(); ctx.fill(); ctx.restore();
+}
+function stamp(main,sub,color,alpha){
+  if(alpha<=0.01) return;
+  ctx.save(); ctx.globalAlpha=alpha;
+  ctx.translate(500,158); ctx.rotate(-7*Math.PI/180);
+  const sc=0.82+0.18*Math.min(1,alpha*1.5); ctx.scale(sc,sc);
+  ctx.font='bold 44px "Microsoft YaHei"';
+  const wm=ctx.measureText(main).width;
+  ctx.font='bold 16px "Microsoft YaHei"';
+  const ws=sub?ctx.measureText(sub).width:0;
+  const w=Math.max(wm,ws)+72, h=sub?106:82;
+  ctx.strokeStyle=color; ctx.lineWidth=5;
+  ctx.beginPath();
+  ctx.moveTo(-w/2+16,-h/2); ctx.lineTo(w/2-16,-h/2); ctx.quadraticCurveTo(w/2,-h/2,w/2,-h/2+16);
+  ctx.lineTo(w/2,h/2-16); ctx.quadraticCurveTo(w/2,h/2,w/2-16,h/2);
+  ctx.lineTo(-w/2+16,h/2); ctx.quadraticCurveTo(-w/2,h/2,-w/2,h/2-16);
+  ctx.lineTo(-w/2,-h/2+16); ctx.quadraticCurveTo(-w/2,-h/2,-w/2+16,-h/2);
+  ctx.closePath(); ctx.stroke();
+  ctx.textAlign='center'; ctx.textBaseline='middle'; ctx.fillStyle=color;
+  ctx.font='bold 44px "Microsoft YaHei"';
+  ctx.fillText(main,0,sub?-15:0);
+  if(sub){ctx.font='bold 16px "Microsoft YaHei"'; ctx.fillText(sub,0,30);}
+  ctx.restore();
+}
+function narration(lines,lit,t){
+  const x=775,y0=100,dy=33;
+  ctx.font='14px "Microsoft YaHei"'; ctx.textAlign='left'; ctx.textBaseline='middle';
+  lines.forEach((s,i)=>{
+    const on=t>=lit[i];
+    ctx.beginPath(); ctx.arc(x+4,y0+i*dy,4,0,7);
+    ctx.fillStyle=on?'#2563eb':'#cbd5e1'; ctx.fill();
+    ctx.fillStyle=on?'#17233b':'#9aa8bd';
+    ctx.fillText(s,x+16,y0+i*dy);
+  });
+}
+function topInfo(items,t){
+  const a=ss(t,0.02,0.12);
+  if(a<=0.01) return;
+  ctx.save(); ctx.globalAlpha=a;
+  ctx.fillStyle='#eef2ff';
+  ctx.beginPath();
+  ctx.moveTo(34,20); ctx.lineTo(102,20); ctx.quadraticCurveTo(114,20,114,32);
+  ctx.lineTo(114,40); ctx.quadraticCurveTo(114,52,102,52);
+  ctx.lineTo(34,52); ctx.quadraticCurveTo(22,52,22,40);
+  ctx.lineTo(22,32); ctx.quadraticCurveTo(22,20,34,20);
+  ctx.closePath(); ctx.fill();
+  ctx.fillStyle='#3730a3'; ctx.font='bold 15px "Microsoft YaHei"';
+  ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText('已知条件',68,37);
+  ctx.textAlign='left';
+  ctx.font='bold 19px "Microsoft YaHei"'; ctx.fillStyle='#17233b';
+  ctx.fillText(items.join('　　'),128,37);
+  ctx.restore();
+}
+
+/* ============ 各场景绘制 ============ */
+const CBLUE='#2563eb', CGREEN='#15803d', CORANGE='#ea580c', CGRAY='#94a3b8', CRED='#dc2626', CDARK='#17233b';
+
+function baseSeg(A,Bp,t){
+  segG(A,Bp,ss(t,0,0.12),CDARK,3.5);
+  if(t>0.09){dot(A,CDARK,4);dot(Bp,CDARK,4);}
+}
+/* 沿周长生长描边三角形 */
+function growTri(pts,g,stroke,fill){
+  if(g<=0.001) return;
+  if(g>0.99&&fill) fillTri(pts,fill);
+  const L=[dist2(pts[0],pts[1]),dist2(pts[1],pts[2]),dist2(pts[2],pts[0])];
+  let need=(L[0]+L[1]+L[2])*Math.min(g,1);
+  ctx.save(); ctx.strokeStyle=stroke; ctx.lineWidth=3; ctx.lineJoin='round'; ctx.lineCap='round';
+  ctx.beginPath(); ctx.moveTo(pts[0][0],pts[0][1]);
+  for(let i=0;i<3&&need>0;i++){
+    const s=Math.min(need,L[i]);
+    ctx.lineTo(pts[i][0]+(pts[(i+1)%3][0]-pts[i][0])*s/L[i], pts[i][1]+(pts[(i+1)%3][1]-pts[i][1])*s/L[i]);
+    need-=s;
+  }
+  ctx.stroke(); ctx.restore();
+}
+
+function drawSSS(t){
+  const A=S(0,0),Bp=S(6,0),C=S(1.8,3.2),Cm=S(1.8,-3.2);
+  baseSeg(A,Bp,t);
+  vLabel(A,'A',CDARK,ss(t,0.06,0.16),-16,-14);
+  vLabel(Bp,'B',CDARK,ss(t,0.06,0.16),16,-14);
+  /* 圆规弧：A 为圆心 r=CA，B 为圆心 r=BC */
+  arcW(A,ACw*K,32.6,32.6+56*ss(t,0.14,0.34),CBLUE,2.4);
+  arcW(Bp,BCw*K,114.7,114.7+56*ss(t,0.36,0.56),CBLUE,2.4);
+  /* 交点 */
+  flashRing(C,CGREEN,seg(t,0.58,0.72));
+  if(t>0.60) dot(C,CGREEN,5);
+  vLabel(C,'C',CGREEN,ss(t,0.62,0.70),0,-18);
+  /* 下方对称交点（虚线示意） */
+  const gm=ss(t,0.62,0.72);
+  arcW(A,ACw*K,-32.6,-32.6-47*gm,CGRAY,1.8,[6,5],0.55);
+  arcW(Bp,BCw*K,-114.7,-114.7-28*gm,CGRAY,1.8,[6,5],0.55);
+  segG(A,Cm,gm,CGRAY,2,[6,5],0.55);
+  segG(Bp,Cm,gm,CGRAY,2,[6,5],0.55);
+  if(t>0.66) dot(Cm,CGRAY,3.5);
+  vLabel(Cm,"C′",CGRAY,ss(t,0.68,0.76),16,10);
+  /* 完成三角形 */
+  growTri([A,Bp,C],ss(t,0.72,0.84),CBLUE,'rgba(37,99,235,.08)');
+  tickM(A,C,2,CBLUE,ss(t,0.82,0.90));
+  tickM(Bp,C,3,CBLUE,ss(t,0.85,0.93));
+  stamp('全　等','SSS 判定成立',CGREEN,ss(t,0.90,0.98));
+}
+
+function drawSAS(t){
+  const A=S(0,0),Bp=S(6,0),C=S(1.8,3.2);
+  baseSeg(A,Bp,t);
+  vLabel(A,'A',CDARK,ss(t,0.06,0.16),-16,-14);
+  vLabel(Bp,'B',CDARK,ss(t,0.06,0.16),16,-14);
+  /* 绕 A 旋转出固定角 ∠A */
+  const g1=ss(t,0.14,0.32), cur=AAng*g1;
+  if(g1>0.01){
+    rayG(A,cur,250,CORANGE,2.6);
+    arcW(A,36,2,Math.max(3,cur-2),CORANGE,2);
+    if(g1>0.96){
+      ctx.save(); ctx.fillStyle=CORANGE; ctx.font='bold 14px "Microsoft YaHei"'; ctx.textAlign='center';
+      ctx.fillText('∠A='+f1(AAng)+'° 固定', A[0]+Math.cos(rad(cur/2))*96, A[1]-Math.sin(rad(cur/2))*96);
+      ctx.restore();
+    }
+  }
+  /* 圆规弧截取 CA：与射线只有一个交点 */
+  arcW(A,ACw*K,34.6,34.6+52*ss(t,0.36,0.54),CBLUE,2.4);
+  flashRing(C,CGREEN,seg(t,0.52,0.66));
+  if(t>0.55) dot(C,CGREEN,5);
+  vLabel(C,'C',CGREEN,ss(t,0.58,0.66),0,-18);
+  /* 连接 BC，完成 */
+  const g3=ss(t,0.74,0.86);
+  segG(C,Bp,ss(t,0.74,0.84),CBLUE,3);
+  if(g3>0.99){
+    fillTri([A,Bp,C],'rgba(37,99,235,.08)');
+    tickM(A,Bp,1,CBLUE,0.95); tickM(A,C,2,CBLUE,0.95); arcM(A,Bp,C,1,CBLUE,0.95);
+  }
+  stamp('全　等','SAS 判定成立',CGREEN,ss(t,0.90,0.98));
+}
+
+function drawASA(t){
+  const A=S(0,0),Bp=S(6,0),C=S(1.8,3.2);
+  baseSeg(A,Bp,t);
+  vLabel(A,'A',CDARK,ss(t,0.06,0.16),-16,-14);
+  vLabel(Bp,'B',CDARK,ss(t,0.06,0.16),16,-14);
+  /* 过 A 的射线 */
+  const g1=ss(t,0.14,0.30), cur1=AAng*g1;
+  if(g1>0.01){
+    rayG(A,cur1,250,CORANGE,2.6);
+    arcW(A,36,2,Math.max(3,cur1-2),CORANGE,2);
+    if(g1>0.96){ctx.save();ctx.fillStyle=CORANGE;ctx.font='bold 14px "Microsoft YaHei"';ctx.textAlign='center';
+      ctx.fillText('∠A='+f1(AAng)+'°',A[0]+Math.cos(rad(cur1/2))*86,A[1]-Math.sin(rad(cur1/2))*86);ctx.restore();}
+  }
+  /* 过 B 的射线（从基线方向转上来） */
+  const g2=ss(t,0.36,0.52), cur2=180-BAng*g2;
+  if(g2>0.01){
+    rayG(Bp,cur2,250,CORANGE,2.6);
+    arcW(Bp,36,Math.min(178,cur2+2),178,CORANGE,2);
+    if(g2>0.96){ctx.save();ctx.fillStyle=CORANGE;ctx.font='bold 14px "Microsoft YaHei"';ctx.textAlign='center';
+      ctx.fillText('∠B='+f1(BAng)+'°',Bp[0]+Math.cos(rad((cur2+180)/2))*88,Bp[1]-Math.sin(rad((cur2+180)/2))*88);ctx.restore();}
+  }
+  flashRing(C,CGREEN,seg(t,0.56,0.68));
+  if(t>0.58) dot(C,CGREEN,5);
+  vLabel(C,'C',CGREEN,ss(t,0.60,0.68),0,-18);
+  const g3=ss(t,0.74,0.86);
+  if(g3>0.99){
+    fillTri([A,Bp,C],'rgba(37,99,235,.08)');
+    tickM(A,Bp,1,CBLUE,0.95); arcM(A,Bp,C,1,CBLUE,0.95); arcM(Bp,A,C,2,CBLUE,0.95);
+  }
+  stamp('全　等','ASA 判定成立',CGREEN,ss(t,0.90,0.98));
+}
+
+function drawAAS(t){
+  const Bp=S(0,0),Cp=S(BCw,0),A=S(aasA.x,aasA.y);
+  baseSeg(Bp,Cp,t);
+  vLabel(Bp,'B',CDARK,ss(t,0.06,0.16),-16,-14);
+  vLabel(Cp,'C',CDARK,ss(t,0.06,0.16),16,-14);
+  /* 过 B 画 ∠B */
+  const g1=ss(t,0.14,0.30), cur1=BAng*g1;
+  if(g1>0.01){
+    rayG(Bp,cur1,250,CORANGE,2.6);
+    arcW(Bp,36,2,Math.max(3,cur1-2),CORANGE,2);
+    if(g1>0.96){ctx.save();ctx.fillStyle=CORANGE;ctx.font='bold 14px "Microsoft YaHei"';ctx.textAlign='center';
+      ctx.fillText('∠B='+f1(BAng)+'°',Bp[0]+Math.cos(rad(cur1/2))*86,Bp[1]-Math.sin(rad(cur1/2))*86);ctx.restore();}
+  }
+  /* 过 C 画 ∠C（=180°−∠A−∠B） */
+  const g2=ss(t,0.36,0.52), cur2=180-CAng*g2;
+  if(g2>0.01){
+    rayG(Cp,cur2,260,CORANGE,2.6);
+    arcW(Cp,36,Math.min(178,cur2+2),178,CORANGE,2);
+    if(g2>0.96){ctx.save();ctx.fillStyle=CORANGE;ctx.font='bold 14px "Microsoft YaHei"';ctx.textAlign='center';
+      ctx.fillText('∠C='+f1(CAng)+'°',Cp[0]+Math.cos(rad((cur2+180)/2))*92,Cp[1]-Math.sin(rad((cur2+180)/2))*92);ctx.restore();}
+  }
+  flashRing(A,CGREEN,seg(t,0.56,0.68));
+  if(t>0.58) dot(A,CGREEN,5);
+  vLabel(A,'A',CGREEN,ss(t,0.60,0.68),-14,-16);
+  const g3=ss(t,0.74,0.86);
+  if(g3>0.99){
+    fillTri([Bp,Cp,A],'rgba(37,99,235,.08)');
+    tickM(Bp,Cp,3,CBLUE,0.95); arcM(Bp,Cp,A,1,CBLUE,0.95); arcM(A,Bp,Cp,1,CBLUE,0.95);
+  }
+  stamp('全　等','AAS 判定成立',CGREEN,ss(t,0.90,0.98));
+}
+
+function drawHL(t){
+  const A=S(0,0),Bp=S(6,0),C=S(2.2,2.89),Cm=S(2.2,-2.89);
+  baseSeg(A,Bp,t);
+  vLabel(A,'A',CDARK,ss(t,0.06,0.16),-16,-14);
+  vLabel(Bp,'B',CDARK,ss(t,0.06,0.16),16,-14);
+  /* 两条直角边长度已确定（勾股），画弧找交点 */
+  arcW(A,hAC*K,32.7,32.7+40*ss(t,0.30,0.46),CBLUE,2.4);
+  arcW(Bp,hBC*K,122.7,122.7+40*ss(t,0.48,0.62),CBLUE,2.4);
+  flashRing(C,CGREEN,seg(t,0.64,0.76));
+  if(t>0.66) dot(C,CGREEN,5);
+  vLabel(C,'C',CGREEN,ss(t,0.68,0.76),0,-18);
+  /* 下方对称交点 */
+  const gm=ss(t,0.68,0.76);
+  arcW(A,hAC*K,-32.7,-32.7-38*gm,CGRAY,1.8,[6,5],0.55);
+  arcW(Bp,hBC*K,-122.7,-122.7-30*gm,CGRAY,1.8,[6,5],0.55);
+  segG(A,Cm,gm,CGRAY,2,[6,5],0.5);
+  segG(Bp,Cm,gm,CGRAY,2,[6,5],0.5);
+  if(t>0.72) dot(Cm,CGRAY,3.5);
+  vLabel(Cm,"C′",CGRAY,ss(t,0.72,0.80),16,10);
+  const g3=ss(t,0.74,0.86);
+  if(g3>0.99){
+    fillTri([A,Bp,C],'rgba(37,99,235,.08)');
+    tickM(A,Bp,1,CBLUE,0.95); tickM(Bp,C,2,CBLUE,0.95); rightM(C,A,Bp,CBLUE,0.95);
+  }
+  stamp('全　等','HL 判定成立',CGREEN,ss(t,0.90,0.98));
+}
+
+function drawSSA(t){
+  const A=S(0,0),Bp=S(6,0),C1=S(xC1.x,xC1.y),C2=S(xC2.x,xC2.y);
+  baseSeg(A,Bp,t);
+  vLabel(A,'A',CDARK,ss(t,0.06,0.16),-16,-14);
+  vLabel(Bp,'B',CDARK,ss(t,0.06,0.16),16,-14);
+  /* 固定 ∠A 射线 */
+  const g1=ss(t,0.14,0.26), cur=xAng*g1;
+  if(g1>0.01){
+    rayG(A,cur,300,CORANGE,2.6);
+    arcW(A,36,2,Math.max(3,cur-2),CORANGE,2);
+    if(g1>0.96){ctx.save();ctx.fillStyle=CORANGE;ctx.font='bold 14px "Microsoft YaHei"';ctx.textAlign='center';
+      ctx.fillText('∠A='+xAng+'°',A[0]+Math.cos(rad(cur/2))*86,A[1]-Math.sin(rad(cur/2))*86);ctx.restore();}
+  }
+  /* 定长线段绕 B 摆动（扫过整片区域） */
+  const p=seg(t,0.34,0.64);
+  const phi=178-176*p;
+  const E=S(6+xBC*Math.cos(rad(phi)), xBC*Math.sin(rad(phi)));
+  if(p>0&&p<1){
+    segG(Bp,E,1,CORANGE,2.6);
+    dot(E,CORANGE,5);
+  }
+  /* 摆动轨迹：上半圆（虚线） */
+  arcW(Bp,xBC*K,2,178,CORANGE,1.6,[6,5],0.5*ss(t,0.52,0.62));
+  /* 两个交点（φ=153.05 → C₂，φ=96.95 → C₁） */
+  const t2=0.34+0.30*0.1416, t3=0.34+0.30*0.4604;
+  flashRing(C2,CRED,seg(t,t2,t2+0.12));
+  flashRing(C1,CRED,seg(t,t3,t3+0.12));
+  if(t>t2+0.06) dot(C2,CORANGE,5);
+  if(t>t3+0.06) dot(C1,CORANGE,5);
+  vLabel(C2,'C₂',CORANGE,ss(t,0.58,0.66),-6,18);
+  vLabel(C1,'C₁',CORANGE,ss(t,0.62,0.70),26,-10);
+  /* 两个不同的三角形 */
+  const g3=ss(t,0.72,0.82), g4=ss(t,0.76,0.86);
+  if(g3>0.99) fillTri([A,Bp,C1],'rgba(37,99,235,.09)');
+  segG(A,C1,g3,CBLUE,3); segG(Bp,C1,g3,CBLUE,3);
+  if(g3>0.99) tickM(Bp,C1,2,CBLUE,0.95);
+  segG(A,C2,g4,CORANGE,2.6,[7,5]); segG(Bp,C2,g4,CORANGE,2.6,[7,5]);
+  if(g4>0.99) tickM(Bp,C2,2,CORANGE,0.9);
+  /* 警示文字 */
+  const wa=ss(t,0.82,0.90);
+  if(wa>0.01){
+    ctx.save(); ctx.globalAlpha=wa;
+    ctx.fillStyle='#7f1d1d'; ctx.font='bold 16px "Microsoft YaHei"'; ctx.textAlign='center';
+    ctx.fillText('条件完全一样，定长线段却与射线交于两点 → 两个不同的三角形',420,548);
+    ctx.restore();
+  }
+  stamp('不能判定','SSA 不是判定方法',CRED,ss(t,0.88,0.96));
+}
+
+/* ============ 场景定义 ============ */
+const stepsStd=['① 固定已知线段','② 画出其余固定条件','③ 画弧 / 摆动找交点','④ 交点唯一 ⇒ 全等'];
+const stepsSSA=['① 固定线段 AB 与 ∠A','② 定长线段绕 B 摆动','③ 与射线交于 C₁、C₂ 两点','④ 不唯一 ⇒ 不能判定'];
+
+const scenes=[
+ {k:'SSS',name:'边边边',draw:drawSSS,
+  given:[`AB = ${f1(ABw)}`,`CA = ${f1(ACw)}`,`BC = ${f1(BCw)}`],
+  narr:['固定线段 AB = 6.0','以 A 为圆心 r=3.7 画弧','以 B 为圆心 r=5.3 画弧','两弧交点 → 顶点 C','上下两交点对称、翻折重合','⇒ 三角形唯一，SSS 成立'],
+  lit:[0.02,0.15,0.37,0.59,0.72,0.90],
+  con:'三边分别相等的两个三角形全等（SSS）'},
+ {k:'SAS',name:'边角边',draw:drawSAS,
+  given:[`AB = ${f1(ABw)}`,`CA = ${f1(ACw)}`,`∠A = ${f1(AAng)}°`],
+  narr:['固定线段 AB = 6.0','绕 A 转出 ∠A = 60.6°，固定','以 A 为圆心 r=3.7 画弧','弧与射线只有一个交点 → C','连接 BC','⇒ 三角形唯一，SAS 成立'],
+  lit:[0.02,0.15,0.37,0.55,0.75,0.90],
+  con:'两边和它们的夹角分别相等的两个三角形全等（SAS）'},
+ {k:'ASA',name:'角边角',draw:drawASA,
+  given:[`∠A = ${f1(AAng)}°`,`AB = ${f1(ABw)}`,`∠B = ${f1(BAng)}°`],
+  narr:['固定线段 AB = 6.0','过 A 画 ∠A = 60.6° 射线','过 B 画 ∠B = 37.3° 射线','两射线交于一点 → C','⇒ 交点唯一，ASA 成立'],
+  lit:[0.02,0.15,0.37,0.57,0.90],
+  con:'两角和它们的夹边分别相等的两个三角形全等（ASA）'},
+ {k:'AAS',name:'角角边',draw:drawAAS,
+  given:[`∠A = ${f1(AAng)}°`,`∠B = ${f1(BAng)}°`,`BC = ${f1(BCw)}`],
+  narr:['固定线段 BC = 5.3','∠C = 180°−∠A−∠B = 82.1°','过 B 画 ∠B 射线','过 C 画 ∠C 射线','交点唯一 → 顶点 A','⇒ 三角形唯一，AAS 成立'],
+  lit:[0.02,0.15,0.37,0.40,0.57,0.90],
+  con:'两角分别相等且其中一组等角的对边相等的两个三角形全等（AAS）'},
+ {k:'HL',name:'斜边、直角边',draw:drawHL,
+  given:[`∠C = 90°`,`AB = ${f1(ABw)}`,`BC = ${f1(hBC)}`],
+  narr:['固定斜边 AB = 6.0','勾股定理：AC = √(6²−4.8²) = 3.6','以 A 为圆心 r=3.6 画弧','以 B 为圆心 r=4.8 画弧','交点唯一 → 直角顶点 C','⇒ 三角形唯一，HL 成立'],
+  lit:[0.02,0.15,0.31,0.49,0.65,0.90],
+  con:'斜边和一条直角边分别相等的两个直角三角形全等（HL）'},
+ {k:'SSA',name:'边边角（反例）',special:true,draw:drawSSA,
+  given:[`∠A = ${xAng}°`,`AB = ${f1(ABw)}`,`BC = ${f1(xBC)}`],
+  narr:['固定线段 AB = 6.0','过 A 画 ∠A = 35° 射线','以 B 为圆心 r=3.9 摆动','圆弧与射线交于 C₁、C₂ 两点','得到两个不同的三角形','⇒ 不唯一，SSA 不能判定'],
+  lit:[0.02,0.15,0.35,0.62,0.82,0.90],
+  con:'两边及其中一边的对角分别相等时，两个三角形不一定全等 —— SSA 不能判定全等'},
+];
+
+/* ============ 渲染 ============ */
+function render(){
+  const sc=scenes[idx];
+  ctx.clearRect(0,0,W,H);
+  ctx.save();
+  ctx.strokeStyle='#f3f6fb'; ctx.lineWidth=1;
+  for(let x=0;x<W;x+=K){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,H);ctx.stroke();}
+  for(let y=H;y>0;y-=K){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(W,y);ctx.stroke();}
+  ctx.restore();
+  sc.draw(t);
+  topInfo(sc.given,t);
+  narration(sc.narr,sc.lit,t);
+}
+
+/* ============ 交互与时间轴 ============ */
+let idx=0, t=0, playing=false, speed=1, playAll=false, holdT=0, dragging=false;
+const DUR=8.5;
+
+const chipsEl=document.getElementById('chips');
+scenes.forEach((sc,i)=>{
+  const b=document.createElement('div');
+  b.className='chip'+(sc.special?' bad':'');
+  b.innerHTML=`<b>${sc.k}</b><span>${sc.name}</span>`;
+  b.onclick=()=>{setScene(i,true); playAll=false; syncAllBtn();};
+  chipsEl.appendChild(b);
+});
+const stepsEl=document.getElementById('steps');
+function buildSteps(){
+  stepsEl.innerHTML='';
+  const list=scenes[idx].special?stepsSSA:stepsStd;
+  list.forEach(s=>{
+    const d=document.createElement('div'); d.className='step'; d.textContent=s;
+    stepsEl.appendChild(d);
+  });
+}
+function stepIndex(){
+  if(t<0.14) return 0;
+  if(t<0.36) return 1;
+  if(t<0.74) return 2;
+  return 3;
+}
+function syncSteps(){
+  const si=stepIndex();
+  [...stepsEl.children].forEach((el,i)=>{
+    el.classList.toggle('cur', i===si);
+    el.classList.toggle('done', i<si);
+  });
+}
+const ccode=document.getElementById('ccode'), ctext=document.getElementById('ctext'),
+      cbadge=document.getElementById('cbadge'), concl=document.getElementById('concl');
+function syncConcl(){
+  const sc=scenes[idx];
+  ccode.textContent=sc.k;
+  ctext.textContent=sc.con;
+  concl.classList.toggle('ok', !sc.special && t>0.86);
+  concl.classList.toggle('no', !!sc.special && t>0.84);
+  cbadge.textContent = (sc.special ? (t>0.84?'✗ 不能判定':'演示中…') : (t>0.86?'✓ 可以判定':'演示中…'));
+}
+const playBtn=document.getElementById('play'), prog=document.getElementById('prog'),
+      speedBtn=document.getElementById('speed'), allBtn=document.getElementById('all');
+function syncPlayBtn(){ playBtn.textContent = playing ? '⏸ 暂停' : (t>=1?'▶ 再播一次':'▶ 播放'); }
+function syncAllBtn(){ allBtn.classList.toggle('on',playAll); allBtn.textContent = playAll?'■ 停止连播':'▶▶ 连播全部'; }
+playBtn.onclick=()=>{ if(t>=1) t=0; playing=!playing; if(playing) holdT=0; syncPlayBtn(); };
+document.getElementById('replay').onclick=()=>{t=0;playing=true;holdT=0;syncPlayBtn();};
+speedBtn.onclick=()=>{ speed=speed===1?1.5:(speed===1.5?2:(speed===2?0.5:1)); speedBtn.textContent=speed+'×'; };
+allBtn.onclick=()=>{ playAll=!playAll; syncAllBtn(); if(playAll) setScene(0,true); };
+prog.addEventListener('pointerdown',()=>{dragging=true;});
+prog.addEventListener('pointerup',()=>{dragging=false;});
+prog.addEventListener('input',()=>{ t=parseFloat(prog.value)/1000; });
+document.addEventListener('keydown',e=>{
+  if(e.code==='Space'){e.preventDefault(); playBtn.onclick();}
+  if(e.code==='ArrowRight'){ setScene((idx+1)%scenes.length,true); }
+  if(e.code==='ArrowLeft'){ setScene((idx-1+scenes.length)%scenes.length,true); }
+  if(e.key==='r'||e.key==='R'){ t=0; playing=true; }
+});
+function setScene(i,autoplay){
+  idx=i; t=0; holdT=0; playing=!!autoplay;
+  [...chipsEl.children].forEach((el,j)=>el.classList.toggle('active', j===i));
+  buildSteps(); syncPlayBtn();
+  prog.value=0;
+  render(); syncSteps(); syncConcl();
+}
+let last=performance.now();
+function frame(now){
+  let dt=(now-last)/1000; last=now;
+  dt=Math.max(0,Math.min(dt,0.08));
+  if(playing&&!dragging){
+    if(t<1){ t=Math.min(1,t+dt*speed/DUR); holdT=0; }
+    else{
+      holdT+=dt;
+      if(playAll){
+        if(holdT>1.1){ holdT=0;
+          if(idx<scenes.length-1) setScene(idx+1,true);
+          else{ playAll=false; playing=false; syncAllBtn(); syncPlayBtn(); }
+        }
+      }else{ playing=false; syncPlayBtn(); }
+    }
+  }
+  if(!dragging) prog.value=Math.round(t*1000);
+  render(); syncSteps(); syncConcl(); syncPlayBtn();
+  requestAnimationFrame(frame);
+}
+speedBtn.textContent=speed+'×';
+setScene(0,true);
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>

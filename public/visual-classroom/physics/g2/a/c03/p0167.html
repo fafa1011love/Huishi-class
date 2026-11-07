@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>11.4　串联电路和并联电路 ｜ 人教版物理必修第三册</title>
+<style>
+  :root{
+    --blue:#1d4ed8; --blue-soft:#eff6ff; --blue-line:#bfdbfe;
+    --ink:#1e293b; --sub:#64748b; --line:#e2e8f0;
+    --amber-bg:#fffbeb; --amber-line:#fcd34d; --amber-ink:#92400e;
+    --green:#059669; --red:#dc2626;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:#f3f5f9; color:var(--ink);
+    font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif; padding:18px 12px 40px;}
+  .wrap{max-width:1060px; margin:0 auto;}
+  header{background:#fff; border:1px solid var(--line); border-left:6px solid var(--blue);
+    border-radius:12px; padding:16px 22px; box-shadow:0 1px 3px rgba(15,23,42,.06);}
+  header h1{font-size:22px; color:var(--ink);}
+  header .meta{margin-top:6px; font-size:12.5px; color:var(--sub); line-height:1.7;}
+  .mod{background:#fff; border:1px solid var(--line); border-radius:12px;
+    padding:16px 20px 18px; margin-top:16px; box-shadow:0 1px 3px rgba(15,23,42,.05);}
+  .mod-h{display:flex; align-items:center; gap:10px; margin-bottom:10px;}
+  .mod-h .no{background:var(--blue); color:#fff; font-size:12px; border-radius:6px;
+    padding:2px 8px; white-space:nowrap;}
+  .mod-h h2{font-size:16.5px;}
+  .mod-h .kp{margin-left:auto; font-size:12px; color:var(--sub); white-space:nowrap;}
+  .think{background:var(--blue-soft); border:1px solid var(--blue-line); border-radius:8px;
+    padding:8px 12px; font-size:12.5px; color:#1e40af; margin-bottom:10px; line-height:1.7;}
+  .think b{color:var(--blue);}
+  canvas.stage{display:block; width:100%; background:#fbfdff;
+    border:1px solid var(--line); border-radius:10px;}
+  .ctrl{display:flex; flex-wrap:wrap; gap:8px 18px; align-items:center; margin-top:10px;}
+  .row{display:flex; align-items:center; gap:8px; font-size:13px;}
+  .row label{color:var(--sub); white-space:nowrap;}
+  .row input[type=range]{width:150px; accent-color:var(--blue);}
+  .row .val{min-width:64px; font-variant-numeric:tabular-nums; color:var(--ink); font-weight:600;}
+  .btn{border:1px solid var(--blue); color:var(--blue); background:#fff; border-radius:7px;
+    padding:4px 12px; font-size:12.5px; cursor:pointer;}
+  .btn:hover{background:var(--blue-soft);}
+  .btn.on{background:var(--blue); color:#fff;}
+  .note{margin-top:10px; background:var(--amber-bg); border:1px solid var(--amber-line);
+    border-radius:8px; padding:8px 12px; font-size:12.5px; color:var(--amber-ink); line-height:1.8;}
+  .note b{color:#b45309;}
+  footer{margin-top:20px; text-align:center; font-size:12px; color:#94a3b8;}
+  .seg{display:inline-flex; border:1px solid var(--blue); border-radius:8px; overflow:hidden;}
+  .seg button{border:none; background:#fff; color:var(--blue); padding:4px 12px;
+    font-size:12.5px; cursor:pointer;}
+  .seg button.on{background:var(--blue); color:#fff;}
+  .read{display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-top:10px;}
+  .read div{background:#f8fafc; border:1px solid var(--line); border-radius:7px;
+    padding:5px 9px; font-size:11.5px; color:var(--sub);}
+  .read div b{display:block; color:var(--ink); font-size:14px; font-weight:700;
+    font-variant-numeric:tabular-nums;}
+  .verdict{margin-top:10px; background:#ecfdf5; border:1px solid #a7f3d0; border-radius:8px;
+    padding:8px 12px; font-size:12.5px; color:#065f46; line-height:1.7;}
+  .verdict b{color:#047857;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>11.4　串联电路和并联电路</h1>
+  <div class="meta">人教版《物理》必修第三册 · 第十一章 电路及其应用 · 教材 P68–P71 ｜
+    覆盖知识点：串并联的 I/U/R 关系与分配规律、电流表（分流）与电压表（分压）的改装、混联电路的动态分析"串反并同" ｜
+    核心公式：R串＝R₁＋R₂、1/R并＝1/R₁＋1/R₂、R并＝R<sub>g</sub>/(n−1)、R串＝(n−1)R<sub>g</sub></div>
+</header>
+
+<div class="mod">
+  <div class="mod-h"><span class="no">模块 1</span><h2>串并联的电流、电压、电阻关系</h2><span class="kp">交互仿真</span></div>
+  <div class="think"><b>先想一想：</b>两个电阻串联时，谁分到的电压大？并联时，谁分到的电流大？把 R₁ 调得比 R₂ 大很多，看分配条怎么变。</div>
+  <canvas class="stage" id="cv1" style="height:400px;"></canvas>
+  <div class="read">
+    <div>总电阻 R<b id="r1r">—</b></div>
+    <div>总电流 I<b id="r1i">—</b></div>
+    <div>U₁ / U₂<b id="r1u">—</b></div>
+    <div>I₁ / I₂<b id="r1b">—</b></div>
+  </div>
+  <div class="ctrl">
+    <div class="row"><label>连接方式</label>
+      <span class="seg" id="m1">
+        <button data-i="0" class="on">串联</button><button data-i="1">并联</button>
+      </span>
+    </div>
+    <div class="row"><label>电源电压 U</label><input type="range" id="e1" min="2" max="12" step="0.5" value="6"><span class="val" id="e1v"></span></div>
+    <div class="row"><label>R₁</label><input type="range" id="a1" min="1" max="20" step="0.5" value="10"><span class="val" id="a1v"></span></div>
+    <div class="row"><label>R₂</label><input type="range" id="b1" min="1" max="20" step="0.5" value="5"><span class="val" id="b1v"></span></div>
+    <button class="btn" id="p1a">R₁ = R₂</button>
+    <button class="btn" id="p1b">R₁ : R₂ = 1 : 3</button>
+    <button class="btn" id="p1c">R₁ : R₂ = 3 : 1</button>
+  </div>
+  <div class="note"><b>观察要点：</b><b>串联</b>：电流处处相等（I＝I₁＝I₂），总电压等于各部分电压之和（U＝U₁＋U₂），
+    <b>电压按电阻正比分</b>（U₁/U₂ ＝ R₁/R₂），总电阻 R＝R₁＋R₂；
+    <b>并联</b>：各支路电压相等（U＝U₁＝U₂），总电流等于各支路电流之和（I＝I₁＋I₂），
+    <b>电流按电阻反比分</b>（I₁/I₂ ＝ R₂/R₁），1/R＝1/R₁＋1/R₂，总电阻<b>小于任何一个</b>支路电阻。</div>
+</div>
+
+<div class="mod">
+  <div class="mod-h"><span class="no">模块 2</span><h2>电表改装：分流与分压</h2><span class="kp">交互仿真 + 表盘验证</span></div>
+  <div class="think"><b>先想一想：</b>一个只能测 1 mA、耐压 0.1 V 的小表头，怎么能拿去测 3 A 的电流、15 V 的电压？该给它并联还是串联一个电阻？多大？</div>
+  <canvas class="stage" id="cv2" style="height:380px;"></canvas>
+  <div class="read">
+    <div>扩程倍数 n<b id="r2n">—</b></div>
+    <div>需接电阻<b id="r2x">—</b></div>
+    <div>改装后电表内阻<b id="r2i">—</b></div>
+    <div>表盘读数<b id="r2d">—</b></div>
+  </div>
+  <div class="ctrl">
+    <div class="row"><label>改装目标</label>
+      <span class="seg" id="m2">
+        <button data-i="0" class="on">改装电流表（并联分流）</button><button data-i="1">改装电压表（串联分压）</button>
+      </span>
+    </div>
+    <div class="row"><label>目标量程</label><input type="range" id="r2" min="0" max="100" step="1" value="60"><span class="val" id="r2v"></span></div>
+    <div class="row"><label>被测值</label><input type="range" id="x2" min="0" max="100" step="1" value="60"><span class="val" id="x2v"></span></div>
+    <button class="btn" id="p2a">满偏</button>
+    <button class="btn" id="p2b">半偏（指针居中）</button>
+  </div>
+  <div class="note"><b>观察要点：</b>表头参数 Ig＝1.00 mA、R<sub>g</sub>＝100 Ω，满偏电压 U<sub>g</sub>＝Ig·R<sub>g</sub>＝0.100 V。
+    改装电流表要<b>并联</b>一个小电阻分流：R<sub>并</sub>＝R<sub>g</sub>/(n−1)，n＝I/I<sub>g</sub>；
+    改装电压表要<b>串联</b>一个大电阻分压：R<sub>串</sub>＝(n−1)R<sub>g</sub>，n＝U/U<sub>g</sub>。
+    表盘刻度虽不变，但<b>量程扩大 n 倍</b>，读数要用"格数/满偏格数 × 新量程"。</div>
+</div>
+
+<div class="mod">
+  <div class="mod-h"><span class="no">模块 3</span><h2>混联电路的动态分析："串反并同"</h2><span class="kp">交互仿真</span></div>
+  <div class="think"><b>先想一想：</b>在 R₁ 串 (R₂ 并 R₃) 的电路里，把滑动变阻器 R₂ 的阻值调大，干路电流会怎么变？并联支路里的灯泡会变亮还是变暗？</div>
+  <canvas class="stage" id="cv3" style="height:400px;"></canvas>
+  <div class="read">
+    <div>并联等效 R并<b id="r3p">—</b></div>
+    <div>总电阻 R总<b id="r3t">—</b></div>
+    <div>干路电流 I<b id="r3i">—</b></div>
+    <div>I₂ / I₃<b id="r3b">—</b></div>
+    <div>U₁（R₁ 上电压）<b id="r3u">—</b></div>
+    <div>U并（并联部分）<b id="r3v">—</b></div>
+    <div>灯泡功率 P₃<b id="r3w">—</b></div>
+    <div>灯泡亮度<b id="r3l">—</b></div>
+  </div>
+  <div class="ctrl">
+    <div class="row"><label>R₁（串联）</label><input type="range" id="a3" min="1" max="20" step="0.5" value="6"><span class="val" id="a3v"></span></div>
+    <div class="row"><label>R₂（滑变）</label><input type="range" id="b3" min="1" max="30" step="0.5" value="10"><span class="val" id="b3v"></span></div>
+    <div class="row"><label>R₃（灯泡）</label><input type="range" id="c3" min="2" max="30" step="0.5" value="10"><span class="val" id="c3v"></span></div>
+    <div class="row"><label>电源内阻 r</label><input type="range" id="d3" min="0" max="3" step="0.1" value="0"><span class="val" id="d3v"></span></div>
+    <button class="btn" id="p3a">R₂ 最小</button>
+    <button class="btn" id="p3b">R₂ = R₃</button>
+    <button class="btn" id="p3c">R₂ 最大</button>
+    <button class="btn" id="p3d">自动来回扫</button>
+  </div>
+  <div class="verdict" id="vd3"></div>
+  <div class="note"><b>观察要点：</b>R₂ ↑ → 并联等效电阻 R并 ↑ → 总电阻 ↑ → <b>干路电流 I ↓</b>；
+    于是与 R₂ <b>串联</b>的 R₁ 上电压 U₁＝I·R₁ <b>减小（串反）</b>；
+    而并联部分电压 U并＝U总 − U₁ <b>增大</b>，所以 I₃＝U并/R₃ <b>增大、灯泡变亮（并同）</b>。
+    口诀"<b>串反并同</b>"：与变化电阻串联的部分，I、U 与它<b>反向</b>变化；与它并联的部分<b>同向</b>变化。</div>
+</div>
+
+<footer>人教版高中物理必修第三册 · 可视化交互课件 ｜ 单文件离线运行，双击即可使用</footer>
+</div>
+
+<script>
+(function(){
+'use strict';
+/* ========== 通用工具 ========== */
+function $(id){ return document.getElementById(id); }
+function fmt(x, d){
+  if (d === undefined) d = 2;
+  if (!isFinite(x)) return '—';
+  var a = Math.abs(x);
+  if (a >= 10000 || (a > 0 && a < 0.01)) return x.toExponential(2);
+  return (+x.toFixed(d)).toString();
+}
+function stage(id){
+  var cv = $(id);
+  var o = { cv:cv, ctx:cv.getContext('2d'), w:0, h:0 };
+  o.clear = function(){
+    var dpr = window.devicePixelRatio || 1;
+    var w = cv.clientWidth || 800, h = cv.clientHeight || 340;
+    if (cv.width !== Math.round(w*dpr) || cv.height !== Math.round(h*dpr)){
+      cv.width = Math.round(w*dpr); cv.height = Math.round(h*dpr);
+    }
+    o.ctx.setTransform(dpr,0,0,dpr,0,0);
+    o.w = w; o.h = h;
+    var c = o.ctx;
+    c.clearRect(0,0,w,h);
+    c.fillStyle = '#fbfdff'; c.fillRect(0,0,w,h);
+    return c;
+  };
+  return o;
+}
+function bind(id, fn, disp){
+  var el = $(id), v = $(id + 'v');
+  function go(){ var x = parseFloat(el.value); if (v) v.textContent = disp ? disp(x) : el.value; fn(x); }
+  el.addEventListener('input', go); go();
+  return el;
+}
+function setR(id, val){ var el = $(id); el.value = val; el.dispatchEvent(new Event('input')); }
+function arrow(ctx, x1, y1, x2, y2, color, w){
+  ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = w || 2;
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  var a = Math.atan2(y2 - y1, x2 - x1), s = 7;
+  ctx.beginPath(); ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - s * Math.cos(a - 0.42), y2 - s * Math.sin(a - 0.42));
+  ctx.lineTo(x2 - s * Math.cos(a + 0.42), y2 - s * Math.sin(a + 0.42));
+  ctx.closePath(); ctx.fill();
+}
+function T(c, s, x, y, col, f, al, bl){
+  c.font = f || '12px "Microsoft YaHei",sans-serif';
+  c.fillStyle = col || '#334155';
+  c.textAlign = al || 'left'; c.textBaseline = bl || 'alphabetic';
+  c.fillText(s, x, y);
+}
+function box(c, x, y, w, h, fill, stroke){
+  var r = 8;
+  c.beginPath();
+  c.moveTo(x+r, y); c.lineTo(x+w-r, y); c.quadraticCurveTo(x+w, y, x+w, y+r);
+  c.lineTo(x+w, y+h-r); c.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+  c.lineTo(x+r, y+h); c.quadraticCurveTo(x, y+h, x, y+h-r);
+  c.lineTo(x, y+r); c.quadraticCurveTo(x, y, x+r, y);
+  c.closePath();
+  if (fill){ c.fillStyle = fill; c.fill(); }
+  if (stroke){ c.strokeStyle = stroke; c.lineWidth = 1.2; c.stroke(); }
+}
+function segBind(wrapId, fn){
+  var bs = $(wrapId).getElementsByTagName('button'), i;
+  for (i = 0; i < bs.length; i++){
+    (function(k){
+      bs[k].addEventListener('click', function(){
+        var all = $(wrapId).getElementsByTagName('button'), j;
+        for (j = 0; j < all.length; j++) all[j].classList.toggle('on', j === k);
+        fn(k);
+      });
+    })(i);
+  }
+}
+function meterSym(c, x, y, sym, txt, r){
+  r = r || 19;
+  c.save();
+  c.beginPath(); c.arc(x, y, r, 0, 6.2832);
+  c.fillStyle = '#fff'; c.fill(); c.strokeStyle = '#0f172a'; c.lineWidth = 2; c.stroke();
+  c.restore();
+  T(c, sym, x, y, '#0f172a', 'bold 13px Consolas,monospace', 'center', 'middle');
+  if (txt) T(c, txt, x, y+r+5, '#b45309', '11.5px Consolas,monospace', 'center', 'top');
+}
+function resistorSym(c, x, y, w, h, label, sub){
+  c.save();
+  c.fillStyle = '#fff'; c.strokeStyle = '#0f172a'; c.lineWidth = 2.2;
+  c.beginPath(); c.rect(x-w/2, y-h/2, w, h); c.fill(); c.stroke();
+  c.restore();
+  T(c, label, x, sub ? y-3 : y, '#0f172a', '11.5px Consolas,monospace', 'center', 'middle');
+  if (sub) T(c, sub, x, y+11, '#b45309', '10.5px Consolas,monospace', 'center', 'middle');
+}
+function batteryH(c, x, y){
+  c.save();
+  c.strokeStyle = '#0f172a'; c.lineWidth = 3; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(x-5, y-19); c.lineTo(x-5, y+19); c.stroke();
+  c.beginPath(); c.moveTo(x+6, y-11); c.lineTo(x+6, y+11); c.stroke();
+  c.restore();
+  T(c, '+', x-15, y-25, '#dc2626', 'bold 12px Consolas,monospace', 'center', 'middle');
+}
+function lampSym(c, x, y, lit, r){
+  r = r || 15;
+  c.save();
+  if (lit > 0.01){
+    var g = c.createRadialGradient(x, y, 2, x, y, r*2.4);
+    g.addColorStop(0, 'rgba(245,158,11,' + (0.85*lit).toFixed(3) + ')');
+    g.addColorStop(1, 'rgba(245,158,11,0)');
+    c.fillStyle = g; c.beginPath(); c.arc(x, y, r*2.4, 0, 6.2832); c.fill();
+  }
+  c.beginPath(); c.arc(x, y, r, 0, 6.2832);
+  c.fillStyle = lit > 0.01 ? '#fde68a' : '#fff'; c.fill();
+  c.strokeStyle = '#0f172a'; c.lineWidth = 2; c.stroke();
+  c.strokeStyle = '#0f172a'; c.lineWidth = 1.5;
+  c.beginPath(); c.moveTo(x-r*0.45, y+r*0.6); c.lineTo(x+r*0.45, y+r*0.6); c.stroke();
+  c.beginPath();
+  c.moveTo(x-r*0.4, y-r*0.35); c.lineTo(x-r*0.12, y+r*0.25);
+  c.lineTo(x+r*0.12, y-r*0.25); c.lineTo(x+r*0.4, y-r*0.35);
+  c.stroke();
+  c.restore();
+}
+/* 电流粒子流：沿折线流动，速度 ∝ 电流 */
+function flow(c, pts, I, scale){
+  if (!(I > 1e-6)) return;
+  c.save();
+  c.strokeStyle = 'rgba(245,158,11,.95)'; c.lineWidth = 3.2;
+  c.setLineDash([9, 13]);
+  c.lineDashOffset = -dash*(0.25 + I*(scale || 1.6));
+  c.beginPath();
+  var i;
+  for (i = 0; i < pts.length; i += 2){
+    if (i === 0) c.moveTo(pts[0], pts[1]); else c.lineTo(pts[i], pts[i+1]);
+  }
+  c.stroke();
+  c.restore();
+}
+function wire(c, pts){
+  c.strokeStyle = '#334155'; c.lineWidth = 3; c.lineCap = 'round'; c.setLineDash([]);
+  c.beginPath();
+  var i;
+  for (i = 0; i < pts.length; i += 2){
+    if (i === 0) c.moveTo(pts[0], pts[1]); else c.lineTo(pts[i], pts[i+1]);
+  }
+  c.stroke();
+}
+/* 分配条：把总量按 parts 分成若干段 */
+function shareBar(c, x, y, w, h, parts, title, unit){
+  var tot = 0, i;
+  for (i = 0; i < parts.length; i++) tot += Math.max(parts[i].v, 0);
+  if (tot <= 1e-12) tot = 1;
+  T(c, title, x, y-8, '#334155', '12px "Microsoft YaHei",sans-serif', 'left', 'bottom');
+  box(c, x, y, w, h, '#f1f5f9', '#cbd5e1');
+  var cx = x;
+  for (i = 0; i < parts.length; i++){
+    var ww = w*Math.max(parts[i].v, 0)/tot;
+    if (ww > 0){
+      c.fillStyle = parts[i].col;
+      c.fillRect(cx+1, y+1, Math.max(ww-2, 0), h-2);
+      if (ww > 46) T(c, parts[i].name + ' ' + parts[i].v.toFixed(2) + unit, cx+ww/2, y+h/2, '#fff',
+        'bold 11.5px Consolas,monospace', 'center', 'middle');
+    }
+    cx += ww;
+  }
+  for (i = 0; i < parts.length; i++){
+    T(c, parts[i].name + ' = ' + parts[i].v.toFixed(2) + unit, x + 4 + i*(w/parts.length), y+h+14,
+      parts[i].col, '11.5px Consolas,monospace', 'left', 'middle');
+  }
+}
+
+/* ================= 模块 1：串并联 ================= */
+var S1 = stage('cv1');
+var mode1 = 0, E1 = 6, R1a = 10, R1b = 5;
+function calc1(){
+  if (mode1 === 0){
+    var R = R1a + R1b;
+    var I = E1/Math.max(R, 1e-9);
+    return { R:R, I:I, I1:I, I2:I, U1:I*R1a, U2:I*R1b };
+  }
+  var Rp = R1a*R1b/Math.max(R1a + R1b, 1e-9);
+  var It = E1/Math.max(Rp, 1e-9);
+  return { R:Rp, I:It, I1:E1/Math.max(R1a, 1e-9), I2:E1/Math.max(R1b, 1e-9), U1:E1, U2:E1 };
+}
+function draw1(){
+  var c = S1.clear(), W = S1.w, H = S1.h;
+  var d = calc1();
+  var yTop = 120, yBot = 240, yMid = 180;
+  var xL = 80, xR = W - 80;
+  c.lineCap = 'round';
+  if (mode1 === 0){
+    /* 串联 */
+    var xa = xL + (xR-xL)*0.36, xb = xL + (xR-xL)*0.70;
+    wire(c, [xL, yTop, xa-40, yTop]);
+    wire(c, [xa+40, yTop, xb-40, yTop]);
+    wire(c, [xb+40, yTop, xR, yTop]);
+    wire(c, [xR, yTop, xR, yBot]);
+    wire(c, [xR, yBot, xL, yBot]);
+    wire(c, [xL, yBot, xL, yTop]);
+    flow(c, [xL, yTop, xR, yTop], d.I);
+    flow(c, [xR, yTop, xR, yBot, xL, yBot, xL, yTop], d.I);
+    resistorSym(c, xa, yTop, 80, 28, 'R₁ = ' + fmt(R1a,1) + ' Ω', 'U₁=' + d.U1.toFixed(2) + 'V  I₁=' + d.I1.toFixed(2) + 'A');
+    resistorSym(c, xb, yTop, 80, 28, 'R₂ = ' + fmt(R1b,1) + ' Ω', 'U₂=' + d.U2.toFixed(2) + 'V  I₂=' + d.I2.toFixed(2) + 'A');
+    batteryH(c, (xL+xR)/2, yBot);
+    meterSym(c, xL, (yTop+yBot)/2, 'A', d.I.toFixed(2) + ' A');
+    T(c, '串联：电流只有一条路径，处处相等', W/2, 34, '#334155', '13px "Microsoft YaHei",sans-serif', 'center', 'middle');
+    T(c, 'U = U₁ + U₂ = ' + E1.toFixed(1) + ' V ｜ R = R₁ + R₂ = ' + fmt(d.R,2) + ' Ω',
+      W/2, 56, '#1d4ed8', '13px Consolas,monospace', 'center', 'middle');
+    T(c, '电压分配比 U₁:U₂ = R₁:R₂ = ' + fmt(R1a,1) + ':' + fmt(R1b,1),
+      W/2, 78, '#b45309', '12.5px Consolas,monospace', 'center', 'middle');
+  } else {
+    /* 并联 */
+    var xP = xL + (xR-xL)*0.34, xQ = xL + (xR-xL)*0.76;
+    var xa1 = xP + (xQ-xP)*0.42, xb1 = xP + (xQ-xP)*0.42;
+    wire(c, [xL, yTop, xP, yTop]);
+    wire(c, [xP, yTop, xa1-40, yTop]);
+    wire(c, [xa1+40, yTop, xQ, yTop]);
+    wire(c, [xQ, yTop, xR, yTop]);
+    wire(c, [xP, yTop, xP, yMid]);
+    wire(c, [xP, yMid, xb1-40, yMid]);
+    wire(c, [xb1+40, yMid, xQ, yMid]);
+    wire(c, [xQ, yMid, xQ, yTop]);
+    wire(c, [xR, yTop, xR, yBot]);
+    wire(c, [xR, yBot, xL, yBot]);
+    wire(c, [xL, yBot, xL, yTop]);
+    flow(c, [xL, yTop, xP, yTop], d.I);
+    flow(c, [xP, yTop, xQ, yTop], d.I1);
+    flow(c, [xP, yTop, xP, yMid, xQ, yMid, xQ, yTop], d.I2);
+    flow(c, [xQ, yTop, xR, yTop, xR, yBot, xL, yBot, xL, yTop], d.I);
+    resistorSym(c, xa1, yTop, 80, 26, 'R₁ = ' + fmt(R1a,1) + ' Ω', 'I₁=' + d.I1.toFixed(2) + 'A');
+    resistorSym(c, xb1, yMid, 80, 26, 'R₂ = ' + fmt(R1b,1) + ' Ω', 'I₂=' + d.I2.toFixed(2) + 'A');
+    batteryH(c, (xL+xR)/2, yBot);
+    meterSym(c, xL, (yTop+yBot)/2, 'A', d.I.toFixed(2) + ' A');
+    T(c, '并联：两条支路电压都等于电源电压', W/2, 34, '#334155', '13px "Microsoft YaHei",sans-serif', 'center', 'middle');
+    T(c, 'I = I₁ + I₂ = ' + d.I.toFixed(2) + ' A ｜ 1/R = 1/R₁ + 1/R₂ ，R = ' + fmt(d.R,2) + ' Ω',
+      W/2, 56, '#1d4ed8', '13px Consolas,monospace', 'center', 'middle');
+    T(c, '电流分配比 I₁:I₂ = R₂:R₁ = ' + fmt(R1b,1) + ':' + fmt(R1a,1) + '（反比）',
+      W/2, 78, '#b45309', '12.5px Consolas,monospace', 'center', 'middle');
+  }
+  /* 分配条 */
+  var by = 286;
+  shareBar(c, 60, by, W-120, 30,
+    [{ name:'U₁', v:d.U1, col:'#1d4ed8' }, { name:'U₂', v:d.U2, col:'#059669' }],
+    '电压分配（总量 U = ' + E1.toFixed(1) + ' V）', ' V');
+  shareBar(c, 60, by+58, W-120, 30,
+    [{ name:'I₁', v:d.I1, col:'#dc2626' }, { name:'I₂', v:d.I2, col:'#b45309' }],
+    '电流分配（总量 I = ' + d.I.toFixed(2) + ' A）', ' A');
+
+  $('r1r').textContent = fmt(d.R, 2) + ' Ω';
+  $('r1i').textContent = d.I.toFixed(2) + ' A';
+  $('r1u').textContent = d.U1.toFixed(2) + ' / ' + d.U2.toFixed(2) + ' V';
+  $('r1b').textContent = d.I1.toFixed(2) + ' / ' + d.I2.toFixed(2) + ' A';
+}
+
+/* ================= 模块 2：电表改装 ================= */
+var S2 = stage('cv2');
+var mode2 = 0, lg2 = 60, xg2 = 60;
+var IG = 1.0e-3, RG = 100;                 // 表头：Ig = 1.00 mA，Rg = 100 Ω
+var UG = IG*RG;                            // 满偏电压 0.100 V
+function rangeMax(){                       // 目标量程：0..100 映射（电流表 0.05~10 A，电压表 0.5~15 V）
+  if (mode2 === 0) return Math.pow(10, -1.3 + (2.3)*lg2/100);   // 0.05 → 10 A
+  return 0.5 + (15-0.5)*lg2/100;
+}
+function measured(){                       // 被测值：0..100 表示 0..100% 量程
+  return rangeMax()*xg2/100;
+}
+function calc2(){
+  var M = rangeMax();
+  if (mode2 === 0){
+    var n = M/IG;
+    var Rs = RG/Math.max(n-1, 1e-9);
+    var RA = RG/n;
+    return { M:M, n:n, Rx:Rs, Rin:RA, kind:'并' };
+  }
+  var n2 = M/UG;
+  var Rsr = (n2-1)*RG;
+  var RV2 = n2*RG;
+  return { M:M, n:n2, Rx:Rsr, Rin:RV2, kind:'串' };
+}
+function draw2(){
+  var c = S2.clear(), W = S2.w, H = S2.h;
+  var d = calc2(), X = measured();
+  var frac = Math.max(0, Math.min(1, X/Math.max(d.M, 1e-12)));
+  var Ig_now = IG*frac;                    // 表头实际流过的电流
+  var CW = W*0.52;
+
+  T(c, mode2 === 0 ? '电流表改装：表头并联分流电阻 R并' : '电压表改装：表头串联分压电阻 R串',
+    40, 26, '#334155', 'bold 13.5px "Microsoft YaHei",sans-serif', 'left', 'middle');
+  T(c, '表头：Ig = ' + (IG*1000).toFixed(2) + ' mA，Rg = ' + RG.toFixed(0) + ' Ω，Ug = Ig·Rg = ' + UG.toFixed(3) + ' V',
+    40, 46, '#64748b', '12.5px Consolas,monospace', 'left', 'middle');
+
+  var yA = 110, yB = 210, xA = 110, xB = CW - 40;
+  if (mode2 === 0){
+    /* 并联：上支路 G，下支路 Rs */
+    wire(c, [40, (yA+yB)/2, xA, (yA+yB)/2]);
+    wire(c, [xA, (yA+yB)/2, xA, yA]);
+    wire(c, [xA, yA, xB, yA]);
+    wire(c, [xB, yA, xB, (yA+yB)/2]);
+    wire(c, [xA, (yA+yB)/2, xA, yB]);
+    wire(c, [xA, yB, xB, yB]);
+    wire(c, [xB, yB, xB, (yA+yB)/2]);
+    wire(c, [xB, (yA+yB)/2, CW+30, (yA+yB)/2]);
+    var Is = Math.max(X - Ig_now, 0);
+    flow(c, [40, (yA+yB)/2, xA, (yA+yB)/2], X, 0.25);
+    flow(c, [xA, yA, xB, yA], Ig_now, 40);
+    flow(c, [xA, yB, xB, yB], Is, 0.25);
+    flow(c, [xB, (yA+yB)/2, CW+30, (yA+yB)/2], X, 0.25);
+    meterSym(c, (xA+xB)/2, yA, 'G', '表头 ' + (Ig_now*1000).toFixed(3) + ' mA', 22);
+    T(c, 'Rg = ' + RG + ' Ω', (xA+xB)/2, yA-34, '#64748b', '11.5px Consolas,monospace', 'center', 'middle');
+    resistorSym(c, (xA+xB)/2, yB, 96, 26, 'R并 = ' + fmt(d.Rx, 4) + ' Ω');
+    T(c, '分流 ' + (Is*1000).toFixed(2) + ' mA', (xA+xB)/2, yB+26, '#b45309', '11.5px Consolas,monospace', 'center', 'middle');
+    T(c, '被测电流 I = ' + fmt(X, 3) + ' A', 40, (yA+yB)/2 - 26, '#1d4ed8', '13px Consolas,monospace', 'left', 'bottom');
+  } else {
+    /* 串联：G 与 R串 串在一起 */
+    wire(c, [40, 160, xA, 160]);
+    wire(c, [xA, 160, xB, 160]);
+    wire(c, [xB, 160, CW+30, 160]);
+    flow(c, [40, 160, xA, 160, xB, 160, CW+30, 160], Ig_now, 40);
+    meterSym(c, xA+40, 160, 'G', (Ig_now*1000).toFixed(3) + ' mA', 22);
+    resistorSym(c, xB-50, 160, 100, 28, 'R串 = ' + fmt(d.Rx, 2) + ' Ω');
+    T(c, 'U_G = ' + (Ig_now*RG).toFixed(3) + ' V', xA+40, 160-34, '#64748b', '12px Consolas,monospace', 'center', 'middle');
+    T(c, 'U_串 = ' + (Ig_now*d.Rx).toFixed(3) + ' V', xB-50, 160-32, '#b45309', '12px Consolas,monospace', 'center', 'middle');
+    T(c, '被测电压 U = ' + fmt(X, 3) + ' V', 40, 130, '#1d4ed8', '13px Consolas,monospace', 'left', 'bottom');
+  }
+  /* 公式 */
+  var fy = H - 96;
+  box(c, 40, fy, CW-20, 78, '#fffbeb', '#fcd34d');
+  T(c, mode2 === 0 ? 'n = I/Ig = ' + fmt(d.n,1) + '，R并 = Rg/(n−1) = ' + fmt(d.Rx, 4) + ' Ω'
+                   : 'n = U/Ug = ' + fmt(d.n,1) + '，R串 = (n−1)Rg = ' + fmt(d.Rx, 2) + ' Ω',
+    56, fy+22, '#92400e', '13px Consolas,monospace', 'left', 'middle');
+  T(c, mode2 === 0 ? '改装后电流表内阻 R_A = Rg/n = ' + fmt(d.Rin, 4) + ' Ω（越小越好）'
+                   : '改装后电压表内阻 R_V = n·Rg = ' + fmt(d.Rin, 0) + ' Ω（越大越好）',
+    56, fy+44, '#64748b', '12.5px Consolas,monospace', 'left', 'middle');
+  T(c, mode2 === 0 ? '校验：Ig·Rg = ' + (Ig_now*RG).toExponential(2) + ' ，Is·R并 = ' + ((X-Ig_now)*d.Rx).toExponential(2) + '（应相等）'
+                   : '校验：I·(Rg+R串) = ' + (Ig_now*(RG+d.Rx)).toFixed(3) + ' V = 被测电压',
+    56, fy+64, '#059669', '12.5px Consolas,monospace', 'left', 'middle');
+
+  /* 表盘 */
+  var cx = CW + (W-CW)/2 + 10, cy = H*0.62, rr = Math.min((W-CW)/2 - 30, H*0.42, 120);
+  if (rr < 60) rr = 60;
+  c.save();
+  c.beginPath(); c.arc(cx, cy, rr+16, Math.PI*1.0, Math.PI*2.0);
+  c.closePath();
+  c.fillStyle = '#fbfdff'; c.fill();
+  c.strokeStyle = '#e2e8f0'; c.lineWidth = 1.2; c.stroke();
+  c.restore();
+  var ang0 = -Math.PI/2 - Math.PI/3, ang1 = -Math.PI/2 + Math.PI/3;
+  var i, a, ca, sa;
+  c.strokeStyle = '#334155'; c.lineWidth = 1.6;
+  c.beginPath(); c.arc(cx, cy, rr, Math.PI*1.1667, Math.PI*1.8333); c.stroke();
+  for (i = 0; i <= 50; i++){
+    a = ang0 + (ang1-ang0)*i/50;
+    ca = Math.cos(a); sa = Math.sin(a);
+    var big = (i % 10 === 0), mid = (i % 5 === 0);
+    c.strokeStyle = '#334155'; c.lineWidth = big ? 2 : 1;
+    c.beginPath();
+    c.moveTo(cx + ca*rr, cy + sa*rr);
+    c.lineTo(cx + ca*(rr - (big ? 14 : (mid ? 9 : 6))), cy + sa*(rr - (big ? 14 : (mid ? 9 : 6))));
+    c.stroke();
+    if (big){
+      var lv = d.M*i/50;
+      T(c, fmt(lv, lv >= 10 ? 0 : (lv >= 1 ? 1 : 2)), cx + ca*(rr-28), cy + sa*(rr-28), '#b45309',
+        'bold 11px Consolas,monospace', 'center', 'middle');
+      T(c, (i/50*100).toFixed(0) + '%', cx + ca*(rr+8), cy + sa*(rr+8), '#94a3b8',
+        '9.5px Consolas,monospace', 'center', 'middle');
+    }
+  }
+  /* 表头电流内圈刻度 */
+  for (i = 0; i <= 5; i++){
+    a = ang0 + (ang1-ang0)*i/5;
+    ca = Math.cos(a); sa = Math.sin(a);
+    T(c, (IG*1000*i/5).toFixed(2), cx + ca*(rr-46), cy + sa*(rr-46), '#1d4ed8',
+      '10px Consolas,monospace', 'center', 'middle');
+  }
+  T(c, '表头电流 / mA', cx, cy - rr + 46, '#1d4ed8', '10.5px "Microsoft YaHei",sans-serif', 'center', 'middle');
+  T(c, mode2 === 0 ? '改装后量程 / A' : '改装后量程 / V', cx, cy - rr - 2, '#b45309',
+    '11.5px "Microsoft YaHei",sans-serif', 'center', 'middle');
+  /* 指针 */
+  var ap = ang0 + (ang1-ang0)*frac;
+  c.save();
+  c.strokeStyle = '#dc2626'; c.lineWidth = 2.6; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(cx, cy); c.lineTo(cx + Math.cos(ap)*(rr-8), cy + Math.sin(ap)*(rr-8)); c.stroke();
+  c.beginPath(); c.arc(cx, cy, 5, 0, 6.2832); c.fillStyle = '#dc2626'; c.fill(); c.restore();
+  T(c, '读数 = ' + fmt(d.M*frac, 3) + (mode2 === 0 ? ' A' : ' V') + '（偏转 ' + (frac*100).toFixed(0) + '%）',
+    cx, cy + 34, '#dc2626', 'bold 13px Consolas,monospace', 'center', 'middle');
+  T(c, '表头实际电流 ' + (Ig_now*1000).toFixed(3) + ' mA' + (frac >= 0.999 ? '（已满偏！）' : ''),
+    cx, cy + 54, '#64748b', '11.5px Consolas,monospace', 'center', 'middle');
+
+  $('r2n').textContent = fmt(d.n, 1) + ' 倍';
+  $('r2x').textContent = 'R' + d.kind + ' = ' + fmt(d.Rx, 4) + ' Ω';
+  $('r2i').textContent = fmt(d.Rin, 4) + ' Ω';
+  $('r2d').textContent = fmt(d.M*frac, 3) + (mode2 === 0 ? ' A' : ' V');
+}
+
+/* ================= 模块 3：混联动态分析 ================= */
+var S3 = stage('cv3');
+var E3 = 12, R1c = 6, R2c = 10, R3c = 10, r3 = 0;
+function calc3(){
+  var Rp = R2c*R3c/Math.max(R2c + R3c, 1e-9);
+  var Rt = R1c + Rp + r3;
+  var I = E3/Math.max(Rt, 1e-9);
+  var U1 = I*R1c, Up = I*Rp;
+  var I2 = Up/Math.max(R2c, 1e-9), I3 = Up/Math.max(R3c, 1e-9);
+  var P3 = I3*I3*R3c;
+  return { Rp:Rp, Rt:Rt, I:I, U1:U1, Up:Up, I2:I2, I3:I3, P3:P3, Utot:E3 - I*r3 };
+}
+function draw3(){
+  var c = S3.clear(), W = S3.w, H = S3.h;
+  var d = calc3();
+  var yTop = 118, yMid = 196, yBot = 268;
+  var xL = 70, xR = W - 70;
+  var xP = xL + (xR-xL)*0.34, xQ = xL + (xR-xL)*0.78;
+  var xr1 = xL + (xR-xL)*0.17;
+  var xr2 = xP + (xQ-xP)*0.45;
+  /* 干路 */
+  wire(c, [xL, yTop, xr1-42, yTop]);
+  wire(c, [xr1+42, yTop, xP, yTop]);
+  wire(c, [xP, yTop, xr2-42, yTop]);
+  wire(c, [xr2+42, yTop, xQ, yTop]);
+  wire(c, [xQ, yTop, xR, yTop]);
+  wire(c, [xR, yTop, xR, yBot]);
+  wire(c, [xR, yBot, xL, yBot]);
+  wire(c, [xL, yBot, xL, yTop]);
+  /* 并联支路 */
+  wire(c, [xP, yTop, xP, yMid]);
+  wire(c, [xP, yMid, xr2-42, yMid]);
+  wire(c, [xr2+42, yMid, xQ, yMid]);
+  wire(c, [xQ, yMid, xQ, yTop]);
+  /* 电流粒子 */
+  flow(c, [xL, yTop, xr1-42, yTop], d.I);
+  flow(c, [xr1+42, yTop, xP, yTop], d.I);
+  flow(c, [xP, yTop, xr2-42, yTop], d.I2);
+  flow(c, [xr2+42, yTop, xQ, yTop], d.I2);
+  flow(c, [xP, yTop, xP, yMid, xQ, yMid, xQ, yTop], d.I3);
+  flow(c, [xQ, yTop, xR, yTop, xR, yBot, xL, yBot, xL, yTop], d.I);
+  /* 元件 */
+  resistorSym(c, xr1, yTop, 84, 28, 'R₁ = ' + fmt(R1c,1) + ' Ω', 'U₁ = ' + d.U1.toFixed(2) + ' V');
+  resistorSym(c, xr2, yTop, 84, 28, 'R₂ = ' + fmt(R2c,1) + ' Ω', 'I₂ = ' + d.I2.toFixed(2) + ' A');
+  lampSym(c, xr2, yMid, Math.min(1, d.P3/18), 17);
+  T(c, 'R₃（灯泡）= ' + fmt(R3c,1) + ' Ω  I₃ = ' + d.I3.toFixed(2) + ' A  P₃ = ' + d.P3.toFixed(2) + ' W',
+    xr2, yMid+34, '#b45309', '11.5px Consolas,monospace', 'center', 'middle');
+  batteryH(c, (xL+xR)/2, yBot);
+  T(c, 'E = ' + E3.toFixed(1) + ' V' + (r3 > 0.01 ? '，r = ' + r3.toFixed(1) + ' Ω' : '（理想电源 r = 0）'),
+    (xL+xR)/2, yBot+30, '#64748b', '11.5px Consolas,monospace', 'center', 'middle');
+  meterSym(c, xL, (yTop+yBot)/2, 'A', d.I.toFixed(2) + ' A');
+  T(c, '并联部分电压', xQ + 46, yTop - 46, '#64748b', '11.5px "Microsoft YaHei",sans-serif', 'center', 'middle');
+  T(c, 'U并 = ' + d.Up.toFixed(2) + ' V', xQ + 46, yTop - 26, '#059669', 'bold 12.5px Consolas,monospace', 'center', 'middle');
+
+  T(c, '电路：R₁ 串联 (R₂ 并联 R₃)', W/2, 30, '#334155', '13.5px "Microsoft YaHei",sans-serif', 'center', 'middle');
+  T(c, 'R并 = R₂R₃/(R₂+R₃) = ' + fmt(d.Rp,2) + ' Ω ｜ R总 = ' + fmt(d.Rt,2) + ' Ω ｜ U并 = ' + d.Up.toFixed(2) + ' V',
+    W/2, 52, '#1d4ed8', '13px Consolas,monospace', 'center', 'middle');
+
+  /* 分配条 */
+  shareBar(c, 60, 316, (W-140)/2, 26,
+    [{ name:'U₁', v:d.U1, col:'#1d4ed8' }, { name:'U并', v:d.Up, col:'#059669' }],
+    '电压分配（总 ' + d.Utot.toFixed(2) + ' V）', ' V');
+  shareBar(c, 60 + (W-140)/2 + 20, 316, (W-140)/2, 26,
+    [{ name:'I₂', v:d.I2, col:'#dc2626' }, { name:'I₃', v:d.I3, col:'#b45309' }],
+    '并联支路电流分配（总 ' + d.I.toFixed(2) + ' A）', ' A');
+
+  $('r3p').textContent = fmt(d.Rp, 2) + ' Ω';
+  $('r3t').textContent = fmt(d.Rt, 2) + ' Ω';
+  $('r3i').textContent = d.I.toFixed(3) + ' A';
+  $('r3b').textContent = d.I2.toFixed(2) + ' / ' + d.I3.toFixed(2) + ' A';
+  $('r3u').textContent = d.U1.toFixed(2) + ' V';
+  $('r3v').textContent = d.Up.toFixed(2) + ' V';
+  $('r3w').textContent = d.P3.toFixed(2) + ' W';
+  $('r3l').textContent = (Math.min(1, d.P3/18)*100).toFixed(0) + ' %';
+
+  var v = '';
+  if (R2c < R3c*0.85){
+    v = '<b>此刻 R₂ &lt; R₃。</b>R₂ 再调大 → 并联等效电阻变大 → 干路电流 I <b>减小</b>'
+      + '（与 R₂ 串联的 R₁：U₁＝I·R₁ <b>减小，串反</b>）；'
+      + '并联部分电压 U并＝U总−U₁ <b>增大</b> → I₃＝U并/R₃ <b>增大，灯泡变亮（并同）</b>。';
+  } else if (R2c > R3c*1.18){
+    v = '<b>此刻 R₂ &gt; R₃。</b>继续增大 R₂，并联等效电阻仍在增大但已接近 R₃，变化越来越平缓：'
+      + 'I 继续减小（串反），I₃ 继续增大（并同）。把 R₂ 调小则一切反向：I 增大、灯泡变暗。';
+  } else {
+    v = '<b>此刻 R₂ ≈ R₃。</b>两条支路电流基本相等（I₂ ≈ I₃）；以此为界，再增大 R₂ 时 I₃ 增大、I₂ 减小，'
+      + '<b>一增一减</b>正好说明并联各支路电阻互不影响、却共同受干路电流重新分配的支配。';
+  }
+  $('vd3').innerHTML = v + ' 当前 I₂ = ' + d.I2.toFixed(2) + ' A，I₃ = ' + d.I3.toFixed(2) + ' A，P₃ = ' + d.P3.toFixed(2) + ' W。';
+}
+
+/* ================= 控件绑定 ================= */
+var dash = 0;
+segBind('m1', function(k){ mode1 = Math.max(0, Math.min(k, 1)); draw1(); });
+bind('e1', function(x){ E1 = x; draw1(); }, function(x){ return x.toFixed(1) + ' V'; });
+bind('a1', function(x){ R1a = x; draw1(); }, function(x){ return x.toFixed(1) + ' Ω'; });
+bind('b1', function(x){ R1b = x; draw1(); }, function(x){ return x.toFixed(1) + ' Ω'; });
+$('p1a').addEventListener('click', function(){ setR('b1', R1a); });
+$('p1b').addEventListener('click', function(){ setR('a1', 4); setR('b1', 12); });
+$('p1c').addEventListener('click', function(){ setR('a1', 12); setR('b1', 4); });
+
+segBind('m2', function(k){ mode2 = Math.max(0, Math.min(k, 1)); draw2(); });
+bind('r2', function(x){ lg2 = x; draw2(); }, function(){
+  return fmt(rangeMax(), rangeMax() >= 1 ? 2 : 3) + (mode2 === 0 ? ' A' : ' V');
+});
+bind('x2', function(x){ xg2 = x; draw2(); }, function(){
+  return fmt(measured(), measured() >= 1 ? 2 : 3) + (mode2 === 0 ? ' A' : ' V');
+});
+$('p2a').addEventListener('click', function(){ setR('x2', 100); });
+$('p2b').addEventListener('click', function(){ setR('x2', 50); });
+
+bind('a3', function(x){ R1c = x; draw3(); }, function(x){ return x.toFixed(1) + ' Ω'; });
+bind('b3', function(x){ R2c = x; draw3(); }, function(x){ return x.toFixed(1) + ' Ω'; });
+bind('c3', function(x){ R3c = x; draw3(); }, function(x){ return x.toFixed(1) + ' Ω'; });
+bind('d3', function(x){ r3 = x; draw3(); }, function(x){ return x.toFixed(1) + ' Ω'; });
+var scan3 = 0, scanDir = 1;
+$('p3a').addEventListener('click', function(){ scan3 = 0; $('p3d').classList.remove('on'); setR('b3', 1); });
+$('p3b').addEventListener('click', function(){ scan3 = 0; $('p3d').classList.remove('on'); setR('b3', R3c); });
+$('p3c').addEventListener('click', function(){ scan3 = 0; $('p3d').classList.remove('on'); setR('b3', 30); });
+$('p3d').addEventListener('click', function(){
+  scan3 = scan3 ? 0 : 1; this.classList.toggle('on', !!scan3);
+});
+
+/* ================= 动画 ================= */
+function loop(){
+  dash += 1.0;
+  if (scan3){
+    R2c += 0.12*scanDir;
+    if (R2c > 30){ R2c = 30; scanDir = -1; }
+    if (R2c < 1){ R2c = 1; scanDir = 1; }
+    setR('b3', R2c);
+  }
+  draw1(); draw2(); draw3();
+  requestAnimationFrame(loop);
+}
+draw1(); draw2(); draw3();
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

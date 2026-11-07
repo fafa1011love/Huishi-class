@@ -1,0 +1,1211 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>三角函数动态展示教具 · 人教版高中数学必修第一册</title>
+  <style>
+    :root {
+      --bg: #f5f7fa;
+      --card: #fff;
+      --line: #e2e8f0;
+      --ink: #1e293b;
+      --ink2: #334155;
+      --sub: #64748b;
+      --brand: #2563eb;
+      --brand-soft: #eff6ff;
+      --hl: #ef4444;
+      --sin: #ef4444;
+      --cos: #2563eb;
+      --tan: #7c3aed;
+      --gold: #f59e0b;
+      --green: #16a34a;
+    }
+
+    * {
+      box-sizing: border-box
+    }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: "Microsoft YaHei", "PingFang SC", system-ui, sans-serif;
+      font-size: 17px;
+      line-height: 1.7;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    header {
+      background: linear-gradient(120deg, #1e3a8a, #2563eb 60%, #0ea5e9);
+      color: #fff;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, .08);
+      padding: 18px 20px 14px;
+    }
+
+    .wrap {
+      max-width: 1320px;
+      margin: 0 auto;
+    }
+
+    h1 {
+      margin: 0;
+      font-size: 24px;
+      letter-spacing: .5px;
+      color: #fff;
+      font-weight: 700
+    }
+
+    .sub {
+      margin: 4px 0 0;
+      color: #fff;
+      opacity: .88;
+      font-size: 15px
+    }
+
+    nav.tabs {
+      display: flex;
+      gap: 6px;
+      margin: 12px auto 0;
+      overflow-x: auto;
+      padding-bottom: 2px;
+    }
+
+    .tab {
+      flex: 0 0 auto;
+      border: 1px solid var(--line);
+      background: #fff;
+      color: var(--ink2);
+      border-radius: 999px;
+      padding: 8px 18px;
+      font-size: 16px;
+      cursor: pointer;
+      transition: .15s;
+      font-family: inherit;
+    }
+
+    .tab:hover {
+      border-color: var(--brand);
+      color: var(--brand);
+      background: var(--brand-soft)
+    }
+
+    .tab.active {
+      background: var(--brand);
+      border-color: var(--brand);
+      color: #fff;
+      font-weight: 700
+    }
+
+    main {
+      padding: 16px 20px 40px
+    }
+
+    .panel {
+      display: none
+    }
+
+    .panel.active {
+      display: block
+    }
+
+    .card {
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 14px;
+      padding: 18px;
+      margin-bottom: 14px;
+      box-shadow: 0 1px 3px rgba(0, 0, 0, .05);
+    }
+
+    .card h2 {
+      margin: 0 0 6px;
+      font-size: 19px
+    }
+
+    .card .note {
+      margin: 0 0 12px;
+      color: var(--sub);
+      font-size: 15px
+    }
+
+    canvas {
+      width: 100%;
+      display: block;
+      background: #fff;
+      border: 1px solid #cbd5e1;
+      border-radius: 10px
+    }
+
+    #cvCircle {
+      height: 500px
+    }
+
+    #cvSin,
+    #cvCos,
+    #cvTan {
+      height: 415px
+    }
+
+    .ctrls {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px 14px;
+      align-items: center;
+      margin: 12px 0 4px
+    }
+
+    button.btn,
+    select.btn {
+      border: 1px solid var(--brand);
+      background: #fff;
+      color: var(--brand);
+      border-radius: 8px;
+      padding: 7px 15px;
+      font-size: 16px;
+      cursor: pointer;
+      font-family: inherit;
+      transition: .15s;
+    }
+
+    button.btn:hover,
+    select.btn:hover {
+      background: var(--brand-soft)
+    }
+
+    button.btn.primary {
+      background: var(--brand);
+      border-color: var(--brand);
+      color: #fff
+    }
+
+    button.btn.primary:hover {
+      background: #1d4ed8;
+      color: #fff
+    }
+
+    button.btn.on,
+    select.btn.on {
+      background: var(--brand-soft);
+      border-color: var(--brand);
+      color: var(--brand);
+      font-weight: 700
+    }
+
+    .mono-control {
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      color: var(--brand);
+      font-size: 16px;
+    }
+
+    select.btn:focus-visible {
+      outline: 2px solid var(--brand);
+      outline-offset: 3px;
+    }
+
+    .mono-status {
+      color: var(--sub);
+      font-size: 15px;
+    }
+
+    label.sl {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      font-size: 16px;
+      color: var(--sub)
+    }
+
+    input[type=range] {
+      accent-color: var(--brand);
+      width: 180px
+    }
+
+    .val {
+      display: inline-block;
+      min-width: 56px;
+      font-weight: 600;
+      color: var(--brand);
+      font-size: 16px
+    }
+
+    .readout {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px
+    }
+
+    .chip {
+      background: #f8fafc;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 6px 12px;
+      font-size: 15px;
+      color: var(--sub);
+    }
+
+    .chip b {
+      color: var(--ink);
+      font-weight: 600
+    }
+
+    .chip.s b {
+      color: var(--sin)
+    }
+
+    .chip.c b {
+      color: var(--cos)
+    }
+
+    .chip.t b {
+      color: var(--tan)
+    }
+
+    .legend {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 14px;
+      margin-top: 10px;
+      font-size: 15px;
+      color: var(--sub)
+    }
+
+    .legend i {
+      display: inline-block;
+      width: 14px;
+      height: 4px;
+      border-radius: 2px;
+      margin-right: 5px;
+      vertical-align: middle
+    }
+
+    .props {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(230px, 1fr));
+      gap: 12px
+    }
+
+    .prop {
+      background: #f8fafc;
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 11px 13px
+    }
+
+    .prop h4 {
+      margin: 0 0 6px;
+      font-size: 15px;
+      color: var(--sub);
+      font-weight: 600
+    }
+
+    .prop p {
+      margin: 0;
+      font-size: 16px;
+      line-height: 1.75
+    }
+
+    .prop p+p {
+      margin-top: 4px
+    }
+
+    .k {
+      color: var(--brand);
+      font-weight: 600
+    }
+
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 16px;
+      margin-top: 4px
+    }
+
+    th,
+    td {
+      border: 1px solid var(--line);
+      padding: 8px 10px;
+      text-align: left
+    }
+
+    th {
+      background: var(--brand-soft);
+      font-weight: 600;
+      color: var(--ink2);
+      font-size: 15px
+    }
+
+    td.f {
+      font-weight: 600
+    }
+
+    .q {
+      border: 1px solid var(--line);
+      border-radius: 10px;
+      padding: 12px 14px;
+      margin-bottom: 10px
+    }
+
+    .q p {
+      margin: 0 0 8px;
+      font-weight: 600
+    }
+
+    .opt {
+      display: block;
+      width: 100%;
+      text-align: left;
+      border: 1px solid var(--line);
+      background: #fff;
+      border-radius: 8px;
+      padding: 8px 13px;
+      margin: 6px 0;
+      font-size: 16px;
+      cursor: pointer;
+      font-family: inherit;
+    }
+
+    .opt:hover {
+      border-color: var(--brand)
+    }
+
+    .opt.correct {
+      background: #dcfce7;
+      border-color: #16a34a;
+      color: #166534;
+      font-weight: 600
+    }
+
+    .opt.wrong {
+      background: #fee2e2;
+      border-color: #dc2626;
+      color: #991b1b
+    }
+
+    .fb {
+      margin-top: 6px;
+      font-size: 15px;
+      color: var(--sub);
+      min-height: 20px
+    }
+
+    .formula {
+      background: var(--brand-soft);
+      border-left: 3px solid var(--brand);
+      padding: 8px 12px;
+      border-radius: 0 8px 8px 0;
+      font-size: 16px;
+      margin: 8px 0
+    }
+
+    .tip {
+      font-size: 15px;
+      color: var(--sub);
+      margin-top: 8px
+    }
+
+    @media (max-width:900px) {
+      #cvCircle {
+        height: 400px
+      }
+
+      #cvSin,
+      #cvCos,
+      #cvTan {
+        height: 330px
+      }
+
+      input[type=range] {
+        width: 130px
+      }
+
+      .props {
+        grid-template-columns: 1fr
+      }
+    }
+  </style>
+</head>
+
+<body>
+  <header>
+    <div class="wrap">
+      <h1>三角函数动态展示教具</h1>
+      <p class="sub">人教版高中数学 · 必修第一册 · 第五章《三角函数》—— 单位圆与三角函数线、正弦/余弦/正切函数的图象与性质</p>
+      <nav class="tabs" id="tabs">
+        <button class="tab active" data-target="p-circle">① 单位圆与三角函数线</button>
+        <button class="tab" data-target="p-sin">② 正弦函数 y=sin x</button>
+        <button class="tab" data-target="p-cos">③ 余弦函数 y=cos x</button>
+        <button class="tab" data-target="p-tan">④ 正切函数 y=tan x</button>
+      </nav>
+    </div>
+  </header>
+
+  <main class="wrap">
+
+    <!-- ============ ① 单位圆 ============ -->
+    <section class="panel active" id="p-circle">
+      <div class="card">
+        <h2>单位圆中的三角函数线：sin θ、cos θ、tan θ</h2>
+        <p class="note">设角 θ 的终边与单位圆交于点 P(x, y)，则 <b>cos θ = x</b>，<b>sin θ = y</b>。拖动滑块或点击"播放"，观察三角函数线的变化以及右侧图象的生成过程。
+        </p>
+        <canvas id="cvCircle"></canvas>
+        <div class="legend">
+          <span><i style="background:#ef4444"></i>正弦线 MP（有向线段，值 = sin θ）</span>
+          <span><i style="background:#2563eb"></i>余弦线 OM（有向线段，值 = cos θ）</span>
+          <span><i style="background:#7c3aed"></i>正切线 AT（过 A(1,0) 的切线，值 = tan θ）</span>
+          <span><i style="background:#f59e0b"></i>角 θ 与弧长</span>
+        </div>
+        <div class="ctrls">
+          <button class="btn primary" id="cPlay">▶ 播放</button>
+          <button class="btn" id="cReset">重置</button>
+          <button class="btn" id="cTanC">显示 tan 曲线</button>
+          <label class="sl">θ <input type="range" id="cTheta" min="0" max="6.2832" step="0.01" value="0.7"><span
+              class="val" id="cThetaV">0.70</span></label>
+          <label class="sl">速度 <input type="range" id="cSpeed" min="0.5" max="2" step="0.1" value="1"><span class="val"
+              id="cSpeedV">1.0×</span></label>
+        </div>
+        <div class="readout">
+          <span class="chip">θ = <b id="cRad">0.70 rad</b></span>
+          <span class="chip">= <b id="cDeg">40°</b></span>
+          <span class="chip s">sin θ = <b id="cSin">0.64</b></span>
+          <span class="chip c">cos θ = <b id="cCos">0.77</b></span>
+          <span class="chip t">tan θ = <b id="cTan">0.84</b></span>
+          <span class="chip">所在象限：<b id="cQuad">第一象限</b></span>
+        </div>
+        <p class="tip">弧度制下，半径为 1 的扇形弧长恰好等于圆心角的弧度数 θ，所以角 θ 的弧长就是 θ（图中橙色弧）。</p>
+      </div>
+    </section>
+
+    <!-- ============ ② 正弦 ============ -->
+    <section class="panel" id="p-sin">
+      <div class="card">
+        <h2>正弦函数 y = sin x 的图象与性质</h2>
+        <p class="note">由单位圆上点的纵坐标随角的变化可以得到正弦曲线；图中标注了 (0,0)、(π/2,1)、(π,0)、(3π/2,−1)、(2π,0) 等关键点的坐标。</p>
+        <canvas id="cvSin"></canvas>
+        <div class="ctrls">
+          <button class="btn primary" id="sPlay">▶ 生成图象</button>
+          <button class="btn" id="sKeys">关键点标注：开</button>
+          <label class="mono-control" for="sMono">单调区间：
+            <select class="btn" id="sMono" aria-describedby="sMonoStatus">
+              <option value="0">无</option>
+              <option value="1">增区间</option>
+              <option value="2">减区间</option>
+              <option value="3">同时展示</option>
+            </select>
+          </label>
+          <span class="mono-status" id="sMonoStatus" role="status" aria-live="polite"></span>
+        </div>
+        <div class="props" style="margin-top:14px">
+          <div class="prop">
+            <h4>定义域</h4>
+            <p><span class="k">R</span>（全体实数）</p>
+          </div>
+          <div class="prop">
+            <h4>值域</h4>
+            <p><span class="k">[−1, 1]</span>，有最大值 1、最小值 −1</p>
+          </div>
+          <div class="prop">
+            <h4>周期性</h4>
+            <p>最小正周期 <span class="k">T = 2π</span></p>
+          </div>
+          <div class="prop">
+            <h4>奇偶性</h4>
+            <p><span class="k">奇函数</span>：sin(−x) = −sin x，图象关于原点对称</p>
+          </div>
+          <div class="prop">
+            <h4>单调性</h4>
+            <p><span class="k">增区间 [−π/2+2kπ, π/2+2kπ]</span></p>
+            <p><span class="k">减区间 [π/2+2kπ, 3π/2+2kπ]</span>（k∈Z）</p>
+          </div>
+          <div class="prop">
+            <h4>最值点</h4>
+            <p>y=1 时 x = π/2 + 2kπ</p>
+            <p>y=−1 时 x = −π/2 + 2kπ</p>
+          </div>
+          <div class="prop">
+            <h4>对称性</h4>
+            <p>对称轴 x = π/2 + kπ</p>
+            <p>对称中心 (kπ, 0)，k∈Z</p>
+          </div>
+          <div class="prop">
+            <h4>零点</h4>
+            <p>x = kπ，k∈Z</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ ③ 余弦 ============ -->
+    <section class="panel" id="p-cos">
+      <div class="card">
+        <h2>余弦函数 y = cos x 的图象与性质</h2>
+        <p class="note">余弦曲线可由正弦曲线向左平移 π/2 个单位得到：cos x = sin(x + π/2)。图中标注了 (0,1)、(π/2,0)、(π,−1)、(3π/2,0)、(2π,1)
+          等关键点的坐标。</p>
+        <canvas id="cvCos"></canvas>
+        <div class="ctrls">
+          <button class="btn primary" id="oPlay">▶ 生成图象</button>
+          <button class="btn" id="oKeys">关键点标注：开</button>
+          <label class="mono-control" for="oMono">单调区间：
+            <select class="btn" id="oMono" aria-describedby="oMonoStatus">
+              <option value="0">无</option>
+              <option value="1">增区间</option>
+              <option value="2">减区间</option>
+              <option value="3">同时展示</option>
+            </select>
+          </label>
+          <span class="mono-status" id="oMonoStatus" role="status" aria-live="polite"></span>
+        </div>
+        <div class="props" style="margin-top:14px">
+          <div class="prop">
+            <h4>定义域</h4>
+            <p><span class="k">R</span>（全体实数）</p>
+          </div>
+          <div class="prop">
+            <h4>值域</h4>
+            <p><span class="k">[−1, 1]</span>，有最大值 1、最小值 −1</p>
+          </div>
+          <div class="prop">
+            <h4>周期性</h4>
+            <p>最小正周期 <span class="k">T = 2π</span></p>
+          </div>
+          <div class="prop">
+            <h4>奇偶性</h4>
+            <p><span class="k">偶函数</span>：cos(−x) = cos x，图象关于 y 轴对称</p>
+          </div>
+          <div class="prop">
+            <h4>单调性</h4>
+            <p><span class="k">增区间 [−π+2kπ, 2kπ]</span></p>
+            <p><span class="k">减区间 [2kπ, π+2kπ]</span>（k∈Z）</p>
+          </div>
+          <div class="prop">
+            <h4>最值点</h4>
+            <p>y=1 时 x = 2kπ</p>
+            <p>y=−1 时 x = π + 2kπ</p>
+          </div>
+          <div class="prop">
+            <h4>对称性</h4>
+            <p>对称轴 x = kπ</p>
+            <p>对称中心 (π/2 + kπ, 0)，k∈Z</p>
+          </div>
+          <div class="prop">
+            <h4>零点</h4>
+            <p>x = π/2 + kπ，k∈Z</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- ============ ④ 正切 ============ -->
+    <section class="panel" id="p-tan">
+      <div class="card">
+        <h2>正切函数 y = tan x 的图象与性质</h2>
+        <p class="note">正切曲线由无数支组成，被渐近线 x = π/2 + kπ 隔开；每支都是上升的，但在整个定义域上<b>不是</b>增函数。</p>
+        <canvas id="cvTan"></canvas>
+        <div class="ctrls">
+          <button class="btn primary" id="tPlay">▶ 生成图象</button>
+          <button class="btn" id="tKeys">关键点标注：开</button>
+          <label class="mono-control" for="tMono">单调区间：
+            <select class="btn" id="tMono" aria-describedby="tMonoStatus">
+              <option value="0">无</option>
+              <option value="1">增区间</option>
+            </select>
+          </label>
+          <span class="mono-status" id="tMonoStatus" role="status" aria-live="polite"></span>
+        </div>
+        <div class="props" style="margin-top:14px">
+          <div class="prop">
+            <h4>定义域</h4>
+            <p>{ x | x ≠ π/2 + kπ, k∈Z }</p>
+          </div>
+          <div class="prop">
+            <h4>值域</h4>
+            <p><span class="k">R</span>（全体实数），无最大、最小值</p>
+          </div>
+          <div class="prop">
+            <h4>周期性</h4>
+            <p>最小正周期 <span class="k">T = π</span></p>
+          </div>
+          <div class="prop">
+            <h4>奇偶性</h4>
+            <p><span class="k">奇函数</span>：tan(−x) = −tan x，图象关于原点对称</p>
+          </div>
+          <div class="prop">
+            <h4>单调性</h4>
+            <p>在开区间 <span class="k">(−π/2+kπ, π/2+kπ)</span> 上单调递增</p>
+          </div>
+          <div class="prop">
+            <h4>渐近线</h4>
+            <p>x = π/2 + kπ，k∈Z</p>
+          </div>
+          <div class="prop">
+            <h4>对称性</h4>
+            <p>无对称轴；对称中心 (kπ/2, 0)，k∈Z</p>
+          </div>
+          <div class="prop">
+            <h4>零点</h4>
+            <p>x = kπ，k∈Z；且 tan(π/4+kπ) = 1</p>
+          </div>
+        </div>
+      </div>
+    </section>
+
+  </main>
+
+  <script>
+    /* ===================== 通用工具 ===================== */
+    const $ = s => document.querySelector(s);
+    const $$ = function (s, root) {
+      return Array.prototype.slice.call((root || document).querySelectorAll(s));
+    };
+    const PI = Math.PI, TAU = Math.PI * 2, HALF = Math.PI / 2;
+
+    const COL = {
+      grid: '#eef2f8', gridStrong: '#e2e8f1', axis: '#334155', label: '#64748b',
+      sin: '#ef4444', cos: '#2563eb', tan: '#7c3aed', gold: '#f59e0b',
+      cyan: '#0ea5e9', gray: '#94a3b8', ink: '#1e293b'
+    };
+
+    function piLabel(k) {
+      if (k === 0) return '0';
+      const sign = k < 0 ? '−' : '';
+      const a = Math.abs(k);
+      if (k % 2 === 0) { const m = a / 2; return sign + (m === 1 ? 'π' : m + 'π'); }
+      return sign + (a === 1 ? 'π/2' : a + 'π/2');
+    }
+    function fmtPi(v) {
+      const k = v / (PI / 12), r = Math.round(k);
+      if (Math.abs(k - r) < 1e-3) {
+        if (r === 0) return '0';
+        const sign = r < 0 ? '−' : '', a = Math.abs(r), g = gcd(a, 12);
+        const num = a / g, den = 12 / g;
+        if (den === 1) return sign + (num === 1 ? 'π' : num + 'π');
+        return sign + (num === 1 ? 'π/' + den : num + 'π/' + den);
+      }
+      return v.toFixed(2);
+    }
+    function gcd(a, b) { return b ? gcd(b, a % b) : a; }
+
+    function prep(canvas) {
+      const dpr = Math.min(window.devicePixelRatio || 1, 2);
+      const rect = canvas.getBoundingClientRect();
+      const w = rect.width, h = rect.height;
+      if (w === 0 || h === 0) return null;
+      canvas.width = Math.round(w * dpr);
+      canvas.height = Math.round(h * dpr);
+      const ctx = canvas.getContext('2d');
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      ctx.clearRect(0, 0, w, h);
+      ctx.font = '14px "Segoe UI","Microsoft YaHei",sans-serif';
+      ctx.textBaseline = 'middle';
+      return { ctx: ctx, w: w, h: h };
+    }
+    function makeView(canvas, view, margin) {
+      const p = prep(canvas);
+      if (!p) return null;
+      const m = { l: 34, r: 16, t: 14, b: 26 };
+      if (margin) for (const k in margin) m[k] = margin[k];
+      const pw = p.w - m.l - m.r, ph = p.h - m.t - m.b;
+      p.xmin = view.xmin; p.xmax = view.xmax; p.ymin = view.ymin; p.ymax = view.ymax;
+      p.X = x => m.l + (x - view.xmin) / (view.xmax - view.xmin) * pw;
+      p.Y = y => m.t + (view.ymax - y) / (view.ymax - view.ymin) * ph;
+      return p;
+    }
+    function arrow(ctx, x, y, dx, dy, size, color) {
+      size = size || 6; color = color || COL.axis;
+      const ang = Math.atan2(dy, dx);
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x - size * Math.cos(ang - 0.42), y - size * Math.sin(ang - 0.42));
+      ctx.lineTo(x - size * Math.cos(ang + 0.42), y - size * Math.sin(ang + 0.42));
+      ctx.closePath();
+      ctx.fillStyle = color; ctx.fill();
+    }
+    function drawAxes(p, opt) {
+      opt = opt || {};
+      const ctx = p.ctx, X = p.X, Y = p.Y;
+      const xs = opt.xStep || HALF, ys = opt.yStep || 0.5;
+      ctx.save();
+      ctx.lineWidth = 1;
+      for (let k = Math.ceil(p.xmin / xs); k <= Math.floor(p.xmax / xs); k++) {
+        const px = X(k * xs);
+        ctx.strokeStyle = (Math.abs(k) % 2 === 1) ? COL.grid : COL.gridStrong;
+        ctx.beginPath(); ctx.moveTo(px, Y(p.ymax)); ctx.lineTo(px, Y(p.ymin)); ctx.stroke();
+      }
+      for (let k = Math.ceil(p.ymin / ys); k <= Math.floor(p.ymax / ys); k++) {
+        const py = Y(k * ys);
+        ctx.strokeStyle = (Math.abs(k % 2) < 1e-9) ? COL.gridStrong : COL.grid;
+        ctx.beginPath(); ctx.moveTo(X(p.xmin), py); ctx.lineTo(X(p.xmax), py); ctx.stroke();
+      }
+      ctx.strokeStyle = COL.axis; ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.moveTo(X(p.xmin), Y(0)); ctx.lineTo(X(p.xmax), Y(0)); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(X(0), Y(p.ymax)); ctx.lineTo(X(0), Y(p.ymin)); ctx.stroke();
+      arrow(ctx, X(p.xmax), Y(0), 1, 0, 7);
+      arrow(ctx, X(0), Y(p.ymax), 0, -1, 7);
+      ctx.fillStyle = COL.label; ctx.font = '14px "Segoe UI","Microsoft YaHei",sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+      const yAx = Y(0);
+      for (let k = Math.ceil(p.xmin / xs); k <= Math.floor(p.xmax / xs); k++) {
+        if (k === 0) continue;
+        ctx.fillText(piLabel(k), X(k * xs), yAx + 7);
+      }
+      ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+      for (let k = Math.ceil(p.ymin / ys); k <= Math.floor(p.ymax / ys); k++) {
+        if (k === 0) continue;
+        ctx.fillText(String(Math.round(k * ys * 100) / 100), X(0) - 6, Y(k * ys));
+      }
+      ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+      ctx.fillStyle = COL.ink;
+      ctx.fillText('x', X(p.xmax) - 12, yAx + 7);
+      ctx.fillText('y', X(0) + 6, Y(p.ymax) + 2);
+      ctx.fillStyle = COL.label;
+      ctx.fillText('O', X(0) - 14, Y(0) + 4);
+      ctx.restore();
+    }
+    function drawCurve(p, f, color, opt) {
+      opt = opt || {};
+      const ctx = p.ctx, X = p.X, Y = p.Y;
+      const n = opt.n || 1200;
+      const x0 = p.xmin, x1 = (opt.upto === undefined) ? p.xmax : Math.min(p.xmax, opt.upto);
+      if (x1 <= x0) return;
+      const span = p.ymax - p.ymin;
+      const breakAt = opt.breakAt === undefined ? Infinity : opt.breakAt;
+      ctx.save();
+      ctx.beginPath();
+      ctx.strokeStyle = color;
+      ctx.lineWidth = opt.width || 2.4;
+      ctx.lineJoin = 'round';
+      if (opt.dash) ctx.setLineDash(opt.dash);
+      let prev = null, started = false;
+      for (let i = 0; i <= n; i++) {
+        const x = x0 + (x1 - x0) * i / n;
+        const y = f(x);
+        if (y === null || !isFinite(y) || Math.abs(y) > breakAt) { started = false; prev = null; continue; }
+        if (!started) { ctx.moveTo(X(x), Y(y)); started = true; }
+        else if (prev !== null && Math.abs(y - prev) > span * 0.7) { ctx.moveTo(X(x), Y(y)); }
+        else ctx.lineTo(X(x), Y(y));
+        prev = y;
+      }
+      ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.restore();
+    }
+    function dot(ctx, x, y, color, r) {
+      ctx.beginPath();
+      ctx.arc(x, y, r || 4, 0, TAU);
+      ctx.fillStyle = color; ctx.fill();
+      ctx.lineWidth = 1.5; ctx.strokeStyle = '#fff'; ctx.stroke();
+    }
+    function tag(ctx, x, y, text, color, dy) {
+      ctx.font = '13px "Segoe UI","Microsoft YaHei",sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+      ctx.fillStyle = color;
+      ctx.fillText(text, x, y + (dy === undefined ? -12 : dy));
+    }
+
+    /* ===================== 状态 ===================== */
+    const state = {
+      circle: { theta: 0.7, playing: false, speed: 1 },
+      sin: { progress: 1, playing: false, keys: true, mono: 0 },
+      cos: { progress: 1, playing: false, keys: true, mono: 0 },
+      tan: { progress: 1, playing: false, keys: true, mono: 0 }
+    };
+    let active = 'p-circle';
+
+    const WAVES = {
+      sin: {
+        canvas: '#cvSin', color: COL.sin, f: Math.sin,
+        ymin: -1.45, ymax: 1.45,
+        keyPts: [[0, 0], [HALF, 1], [PI, 0], [3 * HALF, -1], [TAU, 0]],
+        monoInc: [[-HALF, HALF]], monoDec: [[HALF, 3 * HALF]], period: TAU
+      },
+      cos: {
+        canvas: '#cvCos', color: COL.cos, f: Math.cos,
+        ymin: -1.45, ymax: 1.45,
+        keyPts: [[0, 1], [HALF, 0], [PI, -1], [3 * HALF, 0], [TAU, 1]],
+        monoInc: [[-PI, 0]], monoDec: [[0, PI]], period: TAU
+      },
+      tan: {
+        canvas: '#cvTan', color: COL.tan, f: Math.tan,
+        ymin: -4, ymax: 4, keyPts: [], monoInc: [[-HALF, HALF]], monoDec: [], period: PI
+      }
+    };
+
+    /* ===================== ① 单位圆 ===================== */
+    function drawCircle() {
+      const p = prep($('#cvCircle'));
+      if (!p) return;
+      const ctx = p.ctx, st = state.circle;
+      const th = st.theta;
+      const sinT = Math.sin(th), cosT = Math.cos(th);
+      const tanT = Math.abs(cosT) < 1e-6 ? NaN : sinT / cosT;
+
+      const pad = 12;
+      const size = Math.min(p.h - 2 * pad, p.w * 0.40);
+      const r = size / 2 - 16;
+      const cx = pad + size / 2, cy = p.h / 2;
+      const gx0 = pad + size + 26, gx1 = p.w - pad - 8;
+      const sx = (gx1 - gx0) / TAU;
+
+      const showTan = $('#cvCircle').dataset.tan === '1';
+      // tan 的值域为 R：显示 tan 时压缩纵轴比例，曲线可向上下无限延伸
+      const sy = showTan ? r / 4 : r;
+
+      // 右侧图象区网格
+      ctx.save();
+      ctx.strokeStyle = COL.grid; ctx.lineWidth = 1;
+      for (let k = 1; k <= 8; k++) {
+        const px = gx0 + (k * HALF * sx);
+        ctx.beginPath(); ctx.moveTo(px, cy - r - 10); ctx.lineTo(px, cy + r + 10); ctx.stroke();
+      }
+      const hLines = showTan ? [-4, -3, -2, -1, 1, 2, 3, 4] : [-1, -0.5, 0.5, 1];
+      hLines.forEach(v => {
+        const py = cy - v * sy;
+        ctx.strokeStyle = (Math.abs(v) === 1) ? COL.gridStrong : COL.grid;
+        ctx.beginPath(); ctx.moveTo(gx0, py); ctx.lineTo(gx1, py); ctx.stroke();
+      });
+      ctx.strokeStyle = COL.axis; ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.moveTo(gx0, cy); ctx.lineTo(gx1, cy); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(gx0, cy - r - 10); ctx.lineTo(gx0, cy + r + 10); ctx.stroke();
+      arrow(ctx, gx1, cy, 1, 0, 7);
+      ctx.fillStyle = COL.label; ctx.font = '14px "Segoe UI","Microsoft YaHei",sans-serif';
+      ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+      ['π/2', 'π', '3π/2', '2π'].forEach((t, i) => {
+        ctx.fillText(t, gx0 + (i + 1) * HALF * sx, cy + 8);
+      });
+      ctx.textAlign = 'right'; ctx.textBaseline = 'middle';
+      hLines.forEach(v => { ctx.fillText(String(v), gx0 - 6, cy - v * sy); });
+      ctx.textAlign = 'left'; ctx.textBaseline = 'top';
+      ctx.fillStyle = COL.ink; ctx.fillText('θ', gx1 - 14, cy + 8);
+      ctx.restore();
+
+      // 右侧曲线（0 ~ θ 段）：显示 tan 时只画 tan，否则画 sin 和 cos
+      const upto = Math.max(th, 1e-6);
+      ctx.save();
+      ctx.beginPath(); ctx.rect(gx0, cy - r - 12, gx1 - gx0, 2 * r + 24); ctx.clip();
+      if (showTan) {
+        drawCurveAxisHelper(ctx, gx0, cy, sx, sy, Math.tan, COL.tan, upto, true);
+      } else {
+        drawCurveAxisHelper(ctx, gx0, cy, sx, sy, Math.sin, COL.sin, upto, false);
+        drawCurveAxisHelper(ctx, gx0, cy, sx, sy, Math.cos, COL.cos, upto, false);
+      }
+      ctx.restore();
+
+      // 当前点
+      const wx = gx0 + th * sx;
+      if (showTan) {
+        if (isFinite(tanT)) dot(ctx, wx, cy - tanT * sy, COL.tan, 4.5);
+      } else {
+        dot(ctx, wx, cy - sinT * sy, COL.sin, 4.5);
+        dot(ctx, wx, cy - cosT * sy, COL.cos, 4.5);
+      }
+
+      // 单位圆
+      ctx.save();
+      ctx.strokeStyle = COL.gridStrong; ctx.lineWidth = 1;
+      ctx.beginPath(); ctx.moveTo(cx - r - 14, cy); ctx.lineTo(cx + r + 14, cy); ctx.stroke();
+      ctx.beginPath(); ctx.moveTo(cx, cy - r - 14); ctx.lineTo(cx, cy + r + 14); ctx.stroke();
+      ctx.strokeStyle = '#94a3b8'; ctx.lineWidth = 1.6;
+      ctx.beginPath(); ctx.arc(cx, cy, r, 0, TAU); ctx.stroke();
+      // 角与弧
+      const ar = r * 0.30;
+      ctx.fillStyle = 'rgba(245,158,11,0.22)';
+      ctx.beginPath(); ctx.moveTo(cx, cy);
+      ctx.arc(cx, cy, ar, 0, -th, true); ctx.closePath(); ctx.fill();
+      ctx.strokeStyle = COL.gold; ctx.lineWidth = 2;
+      ctx.beginPath(); ctx.arc(cx, cy, ar, 0, -th, true); ctx.stroke();
+      // 终边
+      const ex = cx + Math.cos(th) * r * 1.42, ey = cy - Math.sin(th) * r * 1.42;
+      ctx.strokeStyle = COL.ink; ctx.lineWidth = 1.8;
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(ex, ey); ctx.stroke();
+      // 切线基准线 x=1
+      ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 1; ctx.setLineDash([4, 3]);
+      ctx.beginPath(); ctx.moveTo(cx + r, cy - r * 1.5); ctx.lineTo(cx + r, cy + r * 1.5); ctx.stroke();
+      ctx.setLineDash([]);
+
+      const px = cx + cosT * r, py = cy - sinT * r;
+      // 余弦线 OM
+      ctx.strokeStyle = COL.cos; ctx.lineWidth = 3.4; ctx.lineCap = 'round';
+      ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + cosT * r, cy); ctx.stroke();
+      // 正弦线 MP
+      ctx.strokeStyle = COL.sin;
+      ctx.beginPath(); ctx.moveTo(cx + cosT * r, cy); ctx.lineTo(px, py); ctx.stroke();
+      // 正切线 AT
+      if (isFinite(tanT) && Math.abs(tanT) < 3.2) {
+        ctx.strokeStyle = COL.tan;
+        ctx.beginPath(); ctx.moveTo(cx + r, cy); ctx.lineTo(cx + r, cy - tanT * r); ctx.stroke();
+        dot(ctx, cx + r, cy - tanT * r, COL.tan, 3.5);
+      }
+      dot(ctx, px, py, COL.ink, 4.5);
+      dot(ctx, cx + cosT * r, cy, COL.cos, 3.5);
+      dot(ctx, cx + r, cy, '#64748b', 3.5);
+      // 水平对应虚线（单位圆纵坐标 → 正弦曲线）
+      if (!showTan) {
+        ctx.strokeStyle = 'rgba(239,68,68,0.45)'; ctx.lineWidth = 1.2; ctx.setLineDash([5, 4]);
+        ctx.beginPath(); ctx.moveTo(px, py); ctx.lineTo(wx, cy - sinT * r); ctx.stroke();
+        ctx.setLineDash([]);
+      }
+      // 标签
+      ctx.font = '14px "Segoe UI","Microsoft YaHei",sans-serif';
+      ctx.fillStyle = COL.ink; ctx.textAlign = 'left'; ctx.textBaseline = 'middle';
+      ctx.fillText('P', px + (cosT >= 0 ? 8 : -16), py + (sinT >= 0 ? -8 : 10));
+      ctx.textAlign = 'center';
+      ctx.fillStyle = COL.cos;
+      ctx.fillText('M', cx + cosT * r, cy + (sinT >= 0 ? 16 : -16));
+      if (isFinite(tanT) && Math.abs(tanT) < 3.2) {
+        ctx.fillStyle = COL.tan;
+        ctx.fillText('T', cx + r + 13, cy - tanT * r + (tanT >= 0 ? -9 : 9));
+      }
+      ctx.textAlign = 'left';
+      ctx.fillStyle = COL.label;
+      ctx.fillText('A', cx + r + 6, cy + 12);
+      ctx.fillStyle = COL.gold;
+      const mid = th / 2;
+      ctx.fillText('θ', cx + Math.cos(mid) * (ar + 14), cy - Math.sin(mid) * (ar + 14));
+      ctx.restore();
+    }
+    function drawCurveAxisHelper(ctx, x0, y0, sx, sy, f, color, upto, isTan) {
+      const n = 900;
+      ctx.beginPath();
+      ctx.strokeStyle = color; ctx.lineWidth = 2.2; ctx.lineJoin = 'round';
+      let prev = null, started = false;
+      for (let i = 0; i <= n; i++) {
+        const t = upto * i / n;
+        const y = f(t);
+        const X = x0 + t * sx, Y = y0 - y * sy;
+        if (!isFinite(y) || Math.abs(y) > 6) { started = false; prev = null; continue; }
+        if (!started) { ctx.moveTo(X, Y); started = true; }
+        else if (prev !== null && Math.abs(y - prev) > 2.5) { ctx.moveTo(X, Y); }
+        else ctx.lineTo(X, Y);
+        prev = y;
+      }
+      ctx.stroke();
+    }
+
+    /* ===================== ②③④ 波形图 ===================== */
+    function drawWave(key) {
+      const cfg = WAVES[key], st = state[key];
+      let view;
+      if (key === 'tan') view = { xmin: -1.75 * PI, xmax: 1.75 * PI, ymin: cfg.ymin, ymax: cfg.ymax };
+      else view = { xmin: -TAU, xmax: TAU, ymin: cfg.ymin, ymax: cfg.ymax };
+      const p = makeView($(cfg.canvas), view);
+      if (!p) return;
+      const ctx = p.ctx, X = p.X, Y = p.Y;
+
+      // 0：无，1：增区间，2：减区间，3：同时展示。
+      // 使用两个独立条件，让同时展示模式绘制两类色带。
+      function shadeIntervals(base, color) {
+        ctx.save();
+        ctx.fillStyle = color;
+        for (let k = -3; k <= 3; k++) {
+          base.forEach(function (iv) {
+            const a = Math.max(iv[0] + k * cfg.period, p.xmin);
+            const b = Math.min(iv[1] + k * cfg.period, p.xmax);
+            if (b > a) {
+              ctx.fillRect(X(a), Y(p.ymax), X(b) - X(a), Y(p.ymin) - Y(p.ymax));
+            }
+          });
+        }
+        ctx.restore();
+      }
+      if (st.mono === 1 || st.mono === 3) shadeIntervals(cfg.monoInc, 'rgba(239,68,68,0.10)');
+      if (st.mono === 2 || st.mono === 3) shadeIntervals(cfg.monoDec, 'rgba(37,99,235,0.10)');
+
+      drawAxes(p, { xStep: HALF, yStep: (key === 'tan' ? 1 : 0.5) });
+
+      // 渐近线
+      if (key === 'tan') {
+        ctx.save();
+        ctx.strokeStyle = '#cbd5e1'; ctx.lineWidth = 1.4; ctx.setLineDash([6, 4]);
+        for (let k = -2; k <= 2; k++) {
+          const x = HALF + k * PI;
+          if (x > p.xmin && x < p.xmax) {
+            ctx.beginPath(); ctx.moveTo(X(x), Y(p.ymax)); ctx.lineTo(X(x), Y(p.ymin)); ctx.stroke();
+          }
+        }
+        ctx.restore();
+      }
+
+      const upto = p.xmin + (p.xmax - p.xmin) * st.progress;
+      drawCurve(p, cfg.f, cfg.color, { n: 1600, upto: upto, breakAt: (key === 'tan' ? 4.6 : Infinity) });
+
+      // 关键点
+      if (st.keys && st.progress > 0.98) {
+        ctx.save();
+        if (key === 'tan') {
+          [-PI, 0, PI].forEach(function (x) {
+            dot(ctx, X(x), Y(0), cfg.color, 4);
+            tag(ctx, X(x), Y(0), '(' + piLabel(x / HALF) + ', 0)', cfg.color, 28);
+          });
+          [[-PI / 4, -1], [PI / 4, 1]].forEach(function (pt) {
+            dot(ctx, X(pt[0]), Y(pt[1]), cfg.color, 4);
+            tag(ctx, X(pt[0]), Y(pt[1]), '(' + (pt[0] < 0 ? '−π/4' : 'π/4') + ', ' + pt[1] + ')', cfg.color, -14);
+          });
+        } else {
+          const bases = [-TAU, 0];
+          bases.forEach(function (b) {
+            cfg.keyPts.forEach(function (pt) {
+              const x = b + pt[0];
+              if (x < p.xmin - 1e-6 || x > p.xmax + 1e-6) return;
+              const y = pt[1];
+              dot(ctx, X(x), Y(y), cfg.color, 4);
+              const xl = piLabel(Math.round(x / HALF));
+              if (Math.abs(y) === 1) {
+                tag(ctx, X(x), Y(y), '(' + xl + ', ' + y + ')', cfg.color, y > 0 ? -15 : 15);
+              }
+            });
+          });
+        }
+        ctx.restore();
+      }
+    }
+
+    /* ===================== 绘制分发 ===================== */
+    function draw(key) {
+      if (key === 'p-circle') { drawCircle(); updateCircleReadout(); }
+      else if (key === 'p-sin') drawWave('sin');
+      else if (key === 'p-cos') drawWave('cos');
+      else if (key === 'p-tan') drawWave('tan');
+    }
+    function drawActive() { draw(active); }
+
+    function updateCircleReadout() {
+      const th = state.circle.theta;
+      $('#cThetaV').textContent = th.toFixed(2);
+      const s = Math.sin(th), c = Math.cos(th);
+      $('#cRad').textContent = th.toFixed(2) + ' rad';
+      $('#cDeg').textContent = Math.round(th * 180 / PI) + '°';
+      $('#cSin').textContent = s.toFixed(3);
+      $('#cCos').textContent = c.toFixed(3);
+      $('#cTan').textContent = Math.abs(c) < 1e-6 ? '不存在' : (s / c).toFixed(3);
+      const q = ['第一象限', '第二象限', '第三象限', '第四象限'][Math.floor(th / HALF) % 4];
+      $('#cQuad').textContent = (Math.abs(s) < 1e-9 || Math.abs(c) < 1e-9) ? '坐标轴上' : q;
+    }
+
+    /* ===================== 交互绑定 ===================== */
+    $('#tabs').addEventListener('click', function (e) {
+      const b = e.target.closest('.tab');
+      if (!b) return;
+      $$('.tab').forEach(t => t.classList.remove('active'));
+      $$('.panel').forEach(pn => pn.classList.remove('active'));
+      b.classList.add('active');
+      active = b.dataset.target;
+      $('#' + b.dataset.target).classList.add('active');
+      requestAnimationFrame(drawActive);
+    });
+
+    /* 单位圆 */
+    $('#cTheta').addEventListener('input', function () {
+      state.circle.theta = parseFloat(this.value);
+      state.circle.playing = false; $('#cPlay').textContent = '▶ 播放';
+      draw('p-circle');
+    });
+    $('#cSpeed').addEventListener('input', function () {
+      state.circle.speed = parseFloat(this.value);
+      $('#cSpeedV').textContent = state.circle.speed.toFixed(1) + '×';
+    });
+    $('#cPlay').addEventListener('click', function () {
+      state.circle.playing = !state.circle.playing;
+      this.textContent = state.circle.playing ? '⏸ 暂停' : '▶ 播放';
+      // 从定格端点重新播放时，回到起点
+      if (state.circle.playing && state.circle.theta >= TAU - 1e-6) state.circle.theta = 0;
+    });
+    $('#cReset').addEventListener('click', function () {
+      state.circle.theta = 0; state.circle.playing = false; $('#cPlay').textContent = '▶ 播放';
+      $('#cTheta').value = 0; draw('p-circle');
+    });
+    $('#cTanC').addEventListener('click', function () {
+      const cv = $('#cvCircle');
+      cv.dataset.tan = (cv.dataset.tan === '1') ? '0' : '1';
+      this.classList.toggle('on', cv.dataset.tan === '1');
+      this.textContent = cv.dataset.tan === '1' ? '隐藏 tan 曲线' : '显示 tan 曲线';
+      draw('p-circle');
+    });
+
+    /* 波形模块通用绑定 */
+    function bindWave(key, ids) {
+      const st = state[key];
+      $(ids.play).addEventListener('click', function () {
+        if (st.progress >= 1) st.progress = 0;
+        st.playing = !st.playing;
+        this.textContent = st.playing ? '⏸ 暂停' : '▶ 生成图象';
+      });
+      if (ids.reset) {
+        $(ids.reset).addEventListener('click', function () {
+          st.progress = 1; st.playing = false; st.mono = 0;
+          $(ids.play).textContent = '▶ 生成图象';
+          $(ids.mono).value = '0';
+          updateMonoControl();
+          draw(key === 'sin' ? 'p-sin' : (key === 'cos' ? 'p-cos' : 'p-tan'));
+        });
+      }
+      $(ids.keys).addEventListener('click', function () {
+        st.keys = !st.keys;
+        this.textContent = '关键点标注：' + (st.keys ? '开' : '关');
+        this.classList.toggle('on', st.keys);
+        draw(key === 'sin' ? 'p-sin' : (key === 'cos' ? 'p-cos' : 'p-tan'));
+      });
+      function updateMonoControl() {
+        $(ids.mono).classList.toggle('on', st.mono !== 0);
+        const descriptions = ['', '红色：增区间', '蓝色：减区间', '红色：增区间；蓝色：减区间'];
+        $(ids.mono + 'Status').textContent = descriptions[st.mono];
+      }
+      $(ids.mono).addEventListener('change', function () {
+        st.mono = Number(this.value);
+        updateMonoControl();
+        draw(key === 'sin' ? 'p-sin' : (key === 'cos' ? 'p-cos' : 'p-tan'));
+      });
+      updateMonoControl();
+    }
+    bindWave('sin', { play: '#sPlay', keys: '#sKeys', mono: '#sMono' });
+    bindWave('cos', { play: '#oPlay', keys: '#oKeys', mono: '#oMono' });
+    bindWave('tan', { play: '#tPlay', keys: '#tKeys', mono: '#tMono' });
+
+    /* ===================== 动画循环 ===================== */
+    let last = performance.now();
+    function loop(now) {
+      const dt = Math.min((now - last) / 1000, 0.05); last = now;
+      let need = false;
+      if (active === 'p-circle' && state.circle.playing) {
+        const st = state.circle;
+        st.theta += st.speed * 0.9 * dt;
+        // 播完一整圈后定格在 2π，不再循环
+        if (st.theta >= TAU) { st.theta = TAU; st.playing = false; $('#cPlay').textContent = '▶ 播放'; }
+        $('#cTheta').value = st.theta;
+        $('#cThetaV').textContent = st.theta.toFixed(2);
+        need = true;
+      }
+      ['sin', 'cos', 'tan'].forEach(function (k) {
+        const panel = k === 'sin' ? 'p-sin' : (k === 'cos' ? 'p-cos' : 'p-tan');
+        if (active === panel && state[k].playing) {
+          state[k].progress = Math.min(1, state[k].progress + dt * 0.55);
+          if (state[k].progress >= 1) {
+            state[k].playing = false;
+            const btn = $(k === 'sin' ? '#sPlay' : (k === 'cos' ? '#oPlay' : '#tPlay'));
+            if (btn) btn.textContent = '▶ 生成图象';
+          }
+          need = true;
+        }
+      });
+      if (need) draw(active);
+      requestAnimationFrame(loop);
+    }
+    requestAnimationFrame(loop);
+
+    let rt;
+    window.addEventListener('resize', function () {
+      clearTimeout(rt);
+      rt = setTimeout(drawActive, 120);
+    });
+
+    /* 初始化 */
+    $('#cThetaV').textContent = '0.70';
+    document.fonts && document.fonts.ready && document.fonts.ready.then(drawActive);
+    requestAnimationFrame(drawActive);
+  </script>
+</body>
+
+</html>

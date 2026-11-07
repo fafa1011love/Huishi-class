@@ -1,0 +1,547 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>声速与回声测距 · 喊山与声呐（交互动画）</title>
+<style>
+:root{
+  --blue:#2563EB; --blue-d:#1D4ED8;
+  --green:#10B981; --green-l:#EAFBF4;
+  --red:#EF4444; --purple:#7C3AED; --amber:#F59E0B;
+  --ink:#1F2937; --ink-2:#4B5563; --ink-3:#6B7280;
+  --line:#E5E7EB; --bg:#F5F7FB; --card:#FFFFFF;
+  --radius:14px;
+  --shadow:0 1px 2px rgba(16,24,40,.04), 0 8px 24px rgba(16,24,40,.06);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:"Microsoft YaHei","PingFang SC","Hiragino Sans GB",system-ui,-apple-system,"Segoe UI",sans-serif;
+  background:var(--bg); color:var(--ink); line-height:1.65; -webkit-font-smoothing:antialiased;
+}
+
+/* ---------- header ---------- */
+.site-header{background:linear-gradient(135deg,#1E40AF 0%,#2563EB 55%,#3B82F6 100%);color:#fff;padding:26px 0 28px;}
+.header-inner{max-width:1080px;margin:0 auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;}
+.header-text h1{margin:0;font-size:25px;letter-spacing:.4px;font-weight:700;}
+.header-nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.header-link{border:1px solid rgba(255,255,255,.45);border-radius:999px;padding:7px 16px;font-size:13px;color:#fff;text-decoration:none;background:rgba(255,255,255,.08);white-space:nowrap;}
+.header-badge{border:1px solid rgba(255,255,255,.4);border-radius:999px;padding:7px 16px;font-size:13px;background:rgba(255,255,255,.12);white-space:nowrap;}
+
+/* ---------- layout ---------- */
+.wrap{max-width:1080px;margin:0 auto;padding:26px 24px 40px;}
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:24px;border:1px solid rgba(229,231,235,.7);margin-bottom:22px;}
+.card h2{margin:0;font-size:19px;font-weight:700;}
+.step{display:inline-flex;align-items:center;justify-content:center;width:26px;height:26px;border-radius:8px;background:var(--blue);color:#fff;font-size:14px;margin-right:8px;vertical-align:-4px;}
+
+/* ---------- figure ---------- */
+.fig{border:1px solid var(--line);border-radius:12px;background:#F8FAFC;padding:10px 8px 4px;margin-top:14px;overflow-x:auto;}
+.fig svg{display:block;margin:0 auto;max-width:100%;}
+
+/* ---------- controls ---------- */
+.controls{display:grid;grid-template-columns:repeat(auto-fit,minmax(260px,1fr));gap:14px;margin-top:14px;}
+.ctrl label{display:block;font-size:13px;color:var(--ink-2);margin-bottom:6px;}
+.ctrl label b{color:var(--blue);font-variant-numeric:tabular-nums;}
+.ctrl input[type=range]{width:100%;accent-color:var(--blue);cursor:pointer;}
+.tick{display:flex;justify-content:space-between;font-size:11px;color:var(--ink-3);margin-top:1px;}
+.btn-row{display:flex;gap:10px;flex-wrap:wrap;align-items:center;margin-top:14px;}
+.btn{border:1px solid var(--blue);background:#fff;color:var(--blue);border-radius:8px;padding:8px 16px;font-size:13.5px;cursor:pointer;font-family:inherit;white-space:nowrap;transition:.16s;}
+.btn:hover{background:var(--blue);color:#fff;}
+.btn.primary{background:var(--blue);color:#fff;box-shadow:0 1px 2px rgba(37,99,235,.25);}
+.btn.primary:hover{background:var(--blue-d);}
+.btn.ghost{border-color:var(--line);color:var(--ink-2);}
+.btn.ghost:hover{border-color:var(--blue);background:#fff;color:var(--blue);}
+.btn:disabled{opacity:.45;cursor:not-allowed;}
+
+/* ---------- stopwatch + timeline ---------- */
+.sw-row{display:flex;align-items:baseline;gap:14px;flex-wrap:wrap;margin-top:16px;}
+.sw-label{font-size:13px;color:var(--ink-3);}
+.sw{font-size:30px;font-weight:700;font-variant-numeric:tabular-nums;color:var(--ink);letter-spacing:.5px;}
+.status{font-size:13px;font-weight:700;color:var(--purple);}
+.tl{margin-top:12px;}
+.tl-track{position:relative;height:14px;border-radius:999px;background:#EDF0F5;border:1px solid var(--line);overflow:hidden;}
+.tl-fill{position:absolute;left:0;top:0;bottom:0;width:0;background:linear-gradient(90deg,#93C5FD,var(--blue));border-radius:999px;}
+.tl-mk{position:absolute;top:-1px;bottom:-1px;width:2px;background:var(--amber);}
+.tl-head{position:absolute;left:0;top:-5px;width:2px;height:24px;background:var(--ink);border-radius:2px;margin-left:-1px;}
+.tl-lab{display:flex;justify-content:space-between;font-size:11.5px;color:var(--ink-3);margin-top:7px;}
+.tl-lab b{color:var(--amber);font-variant-numeric:tabular-nums;}
+
+/* ---------- 大号公式计算行 ---------- */
+.calc-line{margin-top:14px;font-size:21px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:.3px;color:var(--ink);}
+.calc-line .cv{color:var(--blue);}
+.calc-line .ct{color:var(--amber);}
+.calc-line .cr{color:var(--green);}
+.calc-line .cunk{color:var(--ink-3);}
+.calc-warn{margin-top:4px;font-size:12.5px;color:#B45309;font-weight:600;min-height:1em;}
+
+/* ---------- readouts / conclusion ---------- */
+.ro-wrap{border:1px solid var(--line);border-radius:10px;overflow:hidden;margin-top:14px;}
+.ro{display:flex;justify-content:space-between;gap:12px;padding:8px 14px;font-size:13.5px;border-bottom:1px solid var(--line);}
+.ro:last-child{border-bottom:none;}
+.ro span{color:var(--ink-3);}
+.ro b{font-variant-numeric:tabular-nums;color:var(--ink);}
+.conclusion{margin-top:12px;padding:9px 14px;background:var(--green-l);border-left:3px solid var(--green);border-radius:8px;font-size:13.5px;color:#065F46;}
+.conclusion b{color:#047857;}
+.site-footer{text-align:center;padding:22px 0 34px;color:var(--ink-3);font-size:12.5px;}
+@media(max-width:700px){ .sw{font-size:24px;} .calc-line{font-size:17px;} }
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-text">
+      <h1>声速与回声测距</h1>
+    </div>
+    <div class="header-nav">
+      <a class="header-link" href="#">« 返回实验目录</a>
+      <span class="header-badge">八年级物理 · 声现象 · §2.1</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- ==================== ① 喊山 ==================== -->
+  <section class="card" id="m1">
+    <h2><span class="step">1</span>喊山 · 回声测距</h2>
+
+    <div class="fig" id="m1Fig"></div>
+
+    <div class="controls">
+      <div class="ctrl">
+        <label>人到山崖的距离 s：<b id="m1Sv">100</b> m</label>
+        <input type="range" id="m1S" min="5" max="500" step="1" value="100">
+        <div class="tick"><span>5 m（听不见回声）</span><span>17 m 极限</span><span>250</span><span>500</span></div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn primary" id="m1Play">▶ 播放（真实速度）</button>
+      <button class="btn" id="m1Slow">🐢 慢放 0.2×</button>
+      <button class="btn ghost" id="m1Reset">↺ 复位</button>
+    </div>
+
+    <div class="sw-row">
+      <span class="sw-label">停表</span>
+      <b class="sw" id="m1Sw">0.000 s</b>
+      <span class="status" id="m1St">待命：设定距离，点播放喊一声</span>
+    </div>
+
+    <div class="tl">
+      <div class="tl-track">
+        <div class="tl-fill" id="m1Fill"></div>
+        <div class="tl-mk" id="m1Mk" style="left:50%"></div>
+        <div class="tl-head" id="m1Head" style="left:0%"></div>
+      </div>
+      <div class="tl-lab">
+        <span>0（喊出声）</span>
+        <span id="m1Lab1"></span>
+        <span id="m1Lab2"></span>
+      </div>
+    </div>
+
+    <div class="calc-line" id="m1Calc"></div>
+    <div class="calc-warn" id="m1Warn"></div>
+
+    <div class="ro-wrap">
+      <div class="ro"><span>空气中的声速 v（15 ℃）</span><b>340 m/s</b></div>
+      <div class="ro"><span>设定的真实距离 s</span><b id="ro1s">100 m</b></div>
+      <div class="ro"><span>原声与回声的间隔 t（往返）</span><b id="ro1t2">0.588 s</b></div>
+    </div>
+
+    <div class="conclusion"><b>结论：</b>s = v·t ÷ 2 —— t 是往返时间，除以 2 才是单程；离崖壁不足 17 m 时回声与原声重叠，听不到。</div>
+  </section>
+
+  <!-- ==================== ② 声呐 ==================== -->
+  <section class="card" id="m2">
+    <h2><span class="step">2</span>声呐 · 测海深</h2>
+
+    <div class="fig" id="m2Fig"></div>
+
+    <div class="controls">
+      <div class="ctrl">
+        <label>海的真实深度 h：<b id="m2Hv">1500</b> m</label>
+        <input type="range" id="m2H" min="200" max="3000" step="10" value="1500">
+        <div class="tick"><span>200 m 浅海</span><span>1600</span><span>3000 m</span></div>
+      </div>
+    </div>
+
+    <div class="btn-row">
+      <button class="btn primary" id="m2Play">▶ 播放（真实速度）</button>
+      <button class="btn" id="m2Slow">🐢 慢放 0.2×</button>
+      <button class="btn ghost" id="m2Reset">↺ 复位</button>
+    </div>
+
+    <div class="sw-row">
+      <span class="sw-label">计时器</span>
+      <b class="sw" id="m2Sw">0.000 s</b>
+      <span class="status" id="m2St">待命：设定海深，点播放发射声波</span>
+    </div>
+
+    <div class="tl">
+      <div class="tl-track">
+        <div class="tl-fill" id="m2Fill"></div>
+        <div class="tl-mk" id="m2Mk" style="left:50%"></div>
+        <div class="tl-head" id="m2Head" style="left:0%"></div>
+      </div>
+      <div class="tl-lab">
+        <span>0（发射）</span>
+        <span id="m2Lab1"></span>
+        <span id="m2Lab2"></span>
+      </div>
+    </div>
+
+    <div class="calc-line" id="m2Calc"></div>
+
+    <div class="ro-wrap">
+      <div class="ro"><span>海水中的声速 v</span><b>1500 m/s</b></div>
+      <div class="ro"><span>设定的真实深度 h</span><b id="ro2h">1500 m</b></div>
+      <div class="ro"><span>发射与回波的间隔 t（往返）</span><b id="ro2t2">2.000 s</b></div>
+    </div>
+
+    <div class="conclusion"><b>结论：</b>h = v·t ÷ 2 —— 与喊山同一公式，换的只是声速（水 1500 m/s，空气 340 m/s）。</div>
+  </section>
+
+</div>
+
+<footer class="site-footer">物理可视化模型 · 声速与回声测距</footer>
+
+<script>
+/* ============================================================
+   工具
+   注：$ 做了容错：万一某个节点被外部编辑器改动/丢失，页面其余部分照常工作
+   ============================================================ */
+const SAFE = { textContent: "", innerHTML: "", style: {}, disabled: false };
+const $ = s => document.querySelector(s) || SAFE;
+const fmt = (n, d = 3) => Number(n).toFixed(d);
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const FONT = "Microsoft YaHei, PingFang SC, sans-serif";
+const txt = (x, y, s, o = {}) =>
+  `<text x="${x}" y="${y}" font-size="${o.size ?? 13}" fill="${o.fill ?? "#1F2937"}"
+     font-weight="${o.w ?? 400}" text-anchor="${o.a ?? "start"}" font-family="${FONT}">${s}</text>`;
+
+/* ============================================================
+   音频：短促 beep（发射 / 撞击 / 回波）。AudioContext 由按钮点击创建（浏览器手势要求）
+   ============================================================ */
+let AC = null;
+function ensureAC() {
+  if (!AC) { const C = window.AudioContext || window.webkitAudioContext; if (C) AC = new C(); }
+  if (AC && AC.state === "suspended") AC.resume();
+  return AC;
+}
+function beep(at, f, dur, vol) {
+  const o = AC.createOscillator(), g = AC.createGain();
+  o.type = "sine"; o.frequency.value = f;
+  g.gain.setValueAtTime(0.0001, at);
+  g.gain.linearRampToValueAtTime(vol, at + 0.012);
+  g.gain.exponentialRampToValueAtTime(0.0008, at + dur);
+  o.connect(g); g.connect(AC.destination);
+  o.start(at); o.stop(at + dur + 0.1);
+}
+
+/* ============================================================
+   通用往返动画状态机：idle → run(t: 0→t2) → done
+   speed 缩放真实秒；声音延迟按同一倍率缩放，保证音画同步
+   ============================================================ */
+function makeRunner(mod) {
+  return {
+    phase: "idle", t: 0, raf: null, last: 0,
+    play(speed) {
+      this.reset();
+      this.phase = "run"; this.t = 0; this.last = null;   // 首帧用 rAF 自己的时间戳作基准
+      mod.btnState("run");
+      mod.onPlayStart(speed);
+      const step = now => {
+        if (this.last === null) this.last = now;
+        /* dt 夹在 0~100 ms：既防负时间，也防切走标签页回来后一帧跳完 */
+        const dt = clamp((now - this.last) / 1000, 0, 0.1); this.last = now;
+        this.t += dt * speed;
+        if (this.t >= mod.t2()) { this.t = mod.t2(); this.finish(); return; }
+        mod.draw(this.t, false);
+        this.raf = requestAnimationFrame(step);
+      };
+      this.raf = requestAnimationFrame(step);
+      mod.draw(0, false);
+    },
+    finish() {
+      cancelAnimationFrame(this.raf); this.raf = null;
+      this.phase = "done";
+      mod.draw(this.t, true);
+      mod.btnState("done");
+    },
+    reset() {
+      if (this.raf) cancelAnimationFrame(this.raf);
+      this.raf = null; this.phase = "idle"; this.t = 0;
+      mod.btnState("idle");
+      mod.drawIdle();
+    }
+  };
+}
+
+/* 时间轴：fill + playhead 按 t/t₂，中点固定标记 t₁（t₂ = 2t₁ 恒成立） */
+function makeTimeline(pre) {
+  return function set(t, t1, t2) {
+    const p = clamp(t / t2, 0, 1) * 100;
+    $("#" + pre + "Fill").style.width = p + "%";
+    $("#" + pre + "Head").style.left = p + "%";
+    $("#" + pre + "Mk").style.left = (t1 / t2 * 100) + "%";
+    $("#" + pre + "Lab1").textContent = `t₁ = ${fmt(t1)} s`;
+    $("#" + pre + "Lab2").textContent = `t₂ = ${fmt(t2)} s`;
+  };
+}
+
+/* 大号公式行：t=null 待命；done=true 填入结果 */
+function calcLine(el, name, v, t, done) {
+  const head = `${name} = v·t ÷ 2 = <span class="cv">${v}</span> × `;
+  if (t == null) el.innerHTML = head + `<span class="cunk">?</span> ÷ 2 ≈ <span class="cunk">?</span> m`;
+  else if (!done) el.innerHTML = head + `<span class="ct">${fmt(t)}</span> ÷ 2 ≈ <span class="cunk">…</span> m`;
+  else el.innerHTML = `✔ ` + head + `<span class="ct">${fmt(t)}</span> ÷ 2 ≈ <span class="cr">${fmt(v * t / 2, 1)} m</span>`;
+}
+
+/* ============================================================
+   模块① 喊山：人固定 x0=110，崖壁 xC = 110 + 600·√(s/500)（近处拉开、远处不挤）
+   波纹以半径 r 表示行进距离：去程 r = rMax·t/t₁（弧心在人，右凸）
+                             回程 r = rMax·(t−t₁)/t₁（弧心在崖壁，左凸）
+   ============================================================ */
+const M1 = {
+  v: 340, s: 100,
+  x0: 110, cy: 186, gy: 236,
+  xC() { return this.x0 + 600 * Math.sqrt(this.s / 500); },
+  t1() { return this.s / this.v; },
+  t2() { return 2 * this.s / this.v; }
+};
+
+function m1Static() {
+  const x0 = M1.x0, xC = M1.xC(), gy = M1.gy;
+  let g = `<defs><linearGradient id="skyG" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#EFF6FF"/><stop offset="1" stop-color="#DBEAFE"/></linearGradient></defs>`;
+  /* 天空 · 地面 */
+  g += `<rect x="0" y="0" width="900" height="${gy}" fill="url(#skyG)"/>`;
+  g += `<circle cx="812" cy="50" r="22" fill="#FDE68A" opacity=".9"/>`;
+  g += `<rect x="0" y="${gy}" width="900" height="16" fill="#BBF7D0"/>`;
+  g += `<line x1="0" y1="${gy}" x2="900" y2="${gy}" stroke="#86EFAC" stroke-width="2"/>`;
+  for (let x = 14; x < 900; x += 46)
+    g += `<path d="M${x} ${gy} q 3 -8 6 0" stroke="#4ADE80" stroke-width="1.6" fill="none"/>`;
+
+  /* 山崖（崖壁竖直面在 xC，向右铺开） */
+  g += `<path d="M${xC} ${gy} L${xC} 96 C ${xC + 8} 82 ${xC + 34} 74 ${xC + 62} 84
+        L ${Math.max(xC + 130, 760)} 56 L 900 74 L 900 ${gy} Z" fill="#A8A29E" stroke="#78716C" stroke-width="2"/>`;
+  g += `<path d="M${xC + 24} ${gy - 20} L${xC + 40} 140 M${xC + 90} ${gy - 24} L${xC + 70} 110"
+        stroke="#78716C" stroke-width="1.4" fill="none" opacity=".7"/>`;
+  g += txt(xC + 64, 66, "山崖（反射面）", { size: 12, fill: "#57534E", w: 700 });
+
+  /* 喊话的人 */
+  g += `<circle cx="${x0}" cy="${M1.cy + 2}" r="9" fill="#FCD9B8" stroke="#B45309" stroke-width="1.6"/>`;
+  g += `<line x1="${x0}" y1="${M1.cy + 11}" x2="${x0}" y2="${gy - 4}" stroke="#B45309" stroke-width="4" stroke-linecap="round"/>`;
+  g += `<line x1="${x0}" y1="${gy - 4}" x2="${x0 - 8}" y2="${gy}" stroke="#B45309" stroke-width="3.4" stroke-linecap="round"/>`;
+  g += `<line x1="${x0}" y1="${gy - 4}" x2="${x0 + 8}" y2="${gy}" stroke="#B45309" stroke-width="3.4" stroke-linecap="round"/>`;
+  g += `<line x1="${x0}" y1="${M1.cy + 18}" x2="${x0 + 15}" y2="${M1.cy + 4}" stroke="#B45309" stroke-width="3.4" stroke-linecap="round"/>`;
+  for (let i = 0; i < 3; i++)
+    g += `<path d="M${x0 + 16 + i * 7} ${M1.cy - 6} a 8 8 0 0 1 0 16" stroke="#F59E0B" stroke-width="1.4" fill="none" opacity="${0.35 - i * 0.1}"/>`;
+  g += txt(x0, gy + 30, "你", { size: 12, fill: "#B45309", w: 700, a: "middle" });
+
+  /* 距离标注 */
+  const ay = gy + 52;
+  g += `<line x1="${x0 + 6}" y1="${ay}" x2="${xC - 4}" y2="${ay}" stroke="#6B7280" stroke-width="1.6"/>`;
+  g += `<path d="M${x0 + 6} ${ay} l 9 -4.5 v 9 z M${xC - 4} ${ay} l -9 -4.5 v 9 z" fill="#6B7280"/>`;
+  g += `<line x1="${x0 + 6}" y1="${ay - 8}" x2="${x0 + 6}" y2="${ay + 8}" stroke="#6B7280" stroke-width="1.2"/>`;
+  g += `<line x1="${xC - 4}" y1="${ay - 8}" x2="${xC - 4}" y2="${ay + 8}" stroke="#6B7280" stroke-width="1.2"/>`;
+  g += txt((x0 + xC) / 2, ay - 9, `s = ${Math.round(M1.s)} m`, { size: 13, fill: "#374151", w: 700, a: "middle" });
+
+  $("#m1Fig").innerHTML =
+    `<svg viewBox="0 0 900 316" width="100%" xmlns="http://www.w3.org/2000/svg" role="img">${g}<g id="m1Dyn"></g></svg>`;
+}
+
+/* 波纹层：每帧只重画这一小段 */
+function m1Waves(t) {
+  const x0 = M1.x0, xC = M1.xC(), cy = M1.cy;
+  const rMax = xC - x0 - 6, t1 = M1.t1(), t2 = M1.t2();
+  /* dir 1 右凸（去程） · -1 左凸（回程）；k=0 是波前，加粗 */
+  const arc = (cx, r, dir, k) =>
+    `<path d="M${cx + dir * r} ${cy - r * 0.92} A ${r} ${r} 0 0 ${dir === 1 ? 1 : 0} ${cx + dir * r} ${cy + r * 0.92}"
+       stroke="#F59E0B" stroke-width="${k ? 1.6 : 3.2}" opacity="${k ? 0.55 : 1}" fill="none" stroke-linecap="round"/>`;
+  let s = "";
+  if (t <= t1) {
+    const r0 = rMax * t / t1;
+    for (let k = 0; k < 3; k++) { const r = r0 - k * 30; if (r > 5) s += arc(x0, r, 1, k); }
+  } else {
+    const r0 = rMax * (t - t1) / (t2 - t1);
+    for (let k = 0; k < 3; k++) { const r = r0 - k * 30; if (r > 5) s += arc(xC, r, -1, k); }
+    if (t - t1 < 0.1)                                  /* 撞击瞬间的小闪 */
+      s += `<circle cx="${xC - 6}" cy="${cy}" r="14" fill="none" stroke="#EF4444" stroke-width="2" opacity="${1 - (t - t1) / 0.1}"/>`;
+  }
+  if (t >= t2 - 0.001)
+    s += `<circle cx="${x0 + 18}" cy="${cy}" r="10" fill="none" stroke="#10B981" stroke-width="2.4"/>` +
+         txt(x0 + 18, cy - 16, "回声！", { size: 12, fill: "#10B981", w: 700, a: "middle" });
+  const dyn = document.querySelector("#m1Dyn");
+  if (dyn) dyn.innerHTML = s;
+}
+
+const m1TL = makeTimeline("m1");
+
+function m1Readouts() {
+  $("#m1Sv").textContent = Math.round(M1.s);
+  $("#ro1s").textContent = Math.round(M1.s) + " m";
+  $("#ro1t2").textContent = fmt(M1.t2()) + " s";
+  $("#m1Warn").innerHTML = M1.s < 17
+    ? `⚠ 0.1 s 内往返只有 34 m，${Math.round(M1.s)} m 处听不出回声（需 ≥ 17 m）`
+    : "";
+}
+
+function m1Idle() {
+  m1Static();
+  $("#m1Sw").textContent = "0.000 s";
+  $("#m1St").textContent = "待命";
+  m1TL(0, M1.t1(), M1.t2());
+  calcLine($("#m1Calc"), "s", M1.v, null, false);
+  m1Readouts();
+}
+
+const m1Run = makeRunner({
+  t2: () => M1.t2(),
+  onPlayStart(spd) {
+    if (!ensureAC()) return;
+    const b = AC.currentTime + 0.06;
+    beep(b, 640, 0.14, 0.45);                    // 喊声
+    beep(b + M1.t1() / spd, 460, 0.06, 0.12);    // 撞崖（轻）
+    beep(b + M1.t2() / spd, 640, 0.11, 0.16);    // 回声
+  },
+  draw(t, done) {
+    m1Waves(t);
+    $("#m1Sw").textContent = fmt(t) + " s";
+    $("#m1St").textContent = done ? "回声返回" : (t <= M1.t1() ? "去程" : "回程");
+    m1TL(t, M1.t1(), M1.t2());
+    calcLine($("#m1Calc"), "s", M1.v, t, done);
+  },
+  drawIdle: m1Idle,
+  btnState(p) { $("#m1Play").disabled = $("#m1Slow").disabled = (p === "run"); }
+});
+
+$("#m1S").oninput = e => { m1Run.reset(); M1.s = +e.target.value; m1Static(); m1Readouts(); };
+$("#m1Play").onclick = () => m1Run.play(1);
+$("#m1Slow").onclick = () => m1Run.play(0.2);
+$("#m1Reset").onclick = () => m1Run.reset();
+
+/* ============================================================
+   模块② 声呐测海深：船固定 sx=250，海底 y = 112 + 210·(h/3000)
+   波纹向下（发射）→ 触底 → 向上（回波）
+   ============================================================ */
+const M2 = {
+  v: 1500, h: 1500,
+  sx: 250, sy: 96,
+  by() { return 112 + 210 * (this.h / 3000); },
+  t1() { return this.h / this.v; },
+  t2() { return 2 * this.h / this.v; }
+};
+
+function m2Static() {
+  const sx = M2.sx, sy = M2.sy, by = M2.by();
+  let g = `<defs><linearGradient id="seaG" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#93C5FD"/><stop offset="1" stop-color="#3B82F6"/></linearGradient></defs>`;
+  g += `<rect x="0" y="0" width="900" height="70" fill="#EFF6FF"/>`;
+  g += `<rect x="0" y="70" width="900" height="${by - 70}" fill="url(#seaG)" opacity=".8"/>`;
+  let wv = "M0 70";
+  for (let x = 0; x < 900; x += 60) wv += " q 15 -7 30 0 q 15 7 30 0";
+  g += `<path d="${wv}" stroke="#60A5FA" stroke-width="2.4" fill="none"/>`;
+
+  /* 测量船 + 换能器 */
+  g += `<path d="M${sx - 52} 70 L${sx + 52} 70 L${sx + 36} 92 L${sx - 36} 92 Z" fill="#1E40AF"/>`;
+  g += `<rect x="${sx - 20}" y="48" width="34" height="22" rx="3" fill="#3B82F6"/>`;
+  g += `<rect x="${sx - 12}" y="54" width="12" height="10" rx="2" fill="#DBEAFE"/>`;
+  g += `<line x1="${sx + 14}" y1="48" x2="${sx + 14}" y2="34" stroke="#1E40AF" stroke-width="2.4"/>`;
+  g += `<circle cx="${sx + 14}" cy="32" r="3" fill="#F59E0B"/>`;
+  g += txt(sx, 40, "测量船（声呐）", { size: 12, fill: "#1E40AF", w: 700, a: "middle" });
+  g += `<rect x="${sx - 10}" y="${sy - 6}" width="20" height="7" rx="2" fill="#F59E0B"/>`;
+
+  /* 海底 */
+  g += `<path d="M0 ${by} Q 150 ${by - 9} 300 ${by} T 600 ${by} T 900 ${by} L 900 330 L 0 330 Z"
+        fill="#EAD9A8" stroke="#C9A85C" stroke-width="2"/>`;
+  g += `<ellipse cx="140" cy="${by + 16}" rx="16" ry="7" fill="#C9A85C"/>
+        <ellipse cx="620" cy="${by + 20}" rx="22" ry="8" fill="#C9A85C"/>`;
+  g += txt(60, by + 42, "海底（反射面）", { size: 12, fill: "#92702F", w: 700 });
+
+  /* 深度标注 */
+  const ax = 730;
+  g += `<line x1="${ax}" y1="${sy + 4}" x2="${ax}" y2="${by - 2}" stroke="#1F2937" stroke-width="1.8"/>`;
+  g += `<path d="M${ax} ${sy + 4} l -4.5 9 h 9 z M${ax} ${by - 2} l -4.5 -9 h 9 z" fill="#1F2937"/>`;
+  g += txt(ax + 14, (sy + by) / 2 - 4, `h = ${Math.round(M2.h)} m`, { size: 13, fill: "#1F2937", w: 700 });
+  g += txt(ax + 14, (sy + by) / 2 + 14, "海水 v = 1500 m/s", { size: 11.5, fill: "#1D4ED8" });
+
+  $("#m2Fig").innerHTML =
+    `<svg viewBox="0 0 900 330" width="100%" xmlns="http://www.w3.org/2000/svg" role="img">${g}<g id="m2Dyn"></g></svg>`;
+}
+
+function m2Waves(t) {
+  const sx = M2.sx, sy = M2.sy, by = M2.by();
+  const rMax = by - sy - 4, t1 = M2.t1(), t2 = M2.t2();
+  /* dir 1 凸向下（下行） · -1 凸向上（回波） */
+  const arc = (cyy, r, dir, k) =>
+    `<path d="M${sx - r * 0.92} ${cyy} A ${r} ${r} 0 0 ${dir === 1 ? 0 : 1} ${sx + r * 0.92} ${cyy}"
+       stroke="#F59E0B" stroke-width="${k ? 1.6 : 3.2}" opacity="${k ? 0.55 : 1}" fill="none" stroke-linecap="round"/>`;
+  let s = "";
+  if (t <= t1) {
+    const r0 = rMax * t / t1;
+    for (let k = 0; k < 3; k++) { const r = r0 - k * 26; if (r > 5) s += arc(sy, r, 1, k); }
+  } else {
+    const r0 = rMax * (t - t1) / (t2 - t1);
+    for (let k = 0; k < 3; k++) { const r = r0 - k * 26; if (r > 5) s += arc(by, r, -1, k); }
+    if (t - t1 < 0.1)
+      s += `<circle cx="${sx}" cy="${by - 6}" r="13" fill="none" stroke="#EF4444" stroke-width="2" opacity="${1 - (t - t1) / 0.1}"/>`;
+  }
+  if (t >= t2 - 0.001)
+    s += `<circle cx="${sx}" cy="${sy + 14}" r="10" fill="none" stroke="#10B981" stroke-width="2.4"/>` +
+         txt(sx + 20, sy + 18, "回波！", { size: 12, fill: "#10B981", w: 700 });
+  const dyn = document.querySelector("#m2Dyn");
+  if (dyn) dyn.innerHTML = s;
+}
+
+const m2TL = makeTimeline("m2");
+
+function m2Readouts() {
+  $("#m2Hv").textContent = Math.round(M2.h);
+  $("#ro2h").textContent = Math.round(M2.h) + " m";
+  $("#ro2t2").textContent = fmt(M2.t2()) + " s";
+}
+
+function m2Idle() {
+  m2Static();
+  $("#m2Sw").textContent = "0.000 s";
+  $("#m2St").textContent = "待命";
+  m2TL(0, M2.t1(), M2.t2());
+  calcLine($("#m2Calc"), "h", M2.v, null, false);
+  m2Readouts();
+}
+
+const m2Run = makeRunner({
+  t2: () => M2.t2(),
+  onPlayStart(spd) {
+    if (!ensureAC()) return;
+    const b = AC.currentTime + 0.06;
+    beep(b, 880, 0.10, 0.35);                    // 发射
+    beep(b + M2.t1() / spd, 500, 0.06, 0.10);    // 触底（轻）
+    beep(b + M2.t2() / spd, 880, 0.09, 0.13);    // 回波
+  },
+  draw(t, done) {
+    m2Waves(t);
+    $("#m2Sw").textContent = fmt(t) + " s";
+    $("#m2St").textContent = done ? "回波返回" : (t <= M2.t1() ? "下行" : "上行");
+    m2TL(t, M2.t1(), M2.t2());
+    calcLine($("#m2Calc"), "h", M2.v, t, done);
+  },
+  drawIdle: m2Idle,
+  btnState(p) { $("#m2Play").disabled = $("#m2Slow").disabled = (p === "run"); }
+});
+
+$("#m2H").oninput = e => { m2Run.reset(); M2.h = +e.target.value; m2Static(); m2Readouts(); };
+$("#m2Play").onclick = () => m2Run.play(1);
+$("#m2Slow").onclick = () => m2Run.play(0.2);
+$("#m2Reset").onclick = () => m2Run.reset();
+
+/* ---------- 启动 ---------- */
+m1Idle();
+m2Idle();
+</script>
+</body>
+</html>

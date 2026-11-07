@@ -20,7 +20,7 @@ class CoursewareLayoutTest(unittest.TestCase):
                 Image.new('RGB', (60, 90), (index * 50, 80, 100)).save(paths[key])
             manifest = courseware.build_manifest({'title': '模型测试', 'activities': [{'name': '观察'}]},
                 {'modelUrl': '/api/3d/download/test/model.glb', 'viewImageUrls': {key: str(path) for key, path in paths.items()}})
-            with patch.object(courseware, 'prepare_model_views', return_value={'status': 'ready', 'viewImageUrls': paths}), patch.object(courseware, '_resolve_image', side_effect=lambda url: Path(url) if url else None), patch.object(courseware, 'add_powerpoint_animations', return_value={'verified': True}):
+            with patch.object(courseware, 'prepare_model_views', return_value={'status': 'ready', 'viewImageUrls': paths}), patch.object(courseware, '_resolve_image', side_effect=lambda url: Path(url) if url else None):
                 output, report = courseware.create_ppt(manifest)
             self.addCleanup(output.unlink, missing_ok=True)
             ppt = Presentation(output)
@@ -109,12 +109,11 @@ class CoursewareLayoutTest(unittest.TestCase):
             for field in ('title', 'claim', 'teacherCue', 'studentAction', 'expectedOutput'):
                 self.assertFalse(re.search(r'[A-Za-z]{3,}', scene[field]), (scene['id'], field))
         self.assertFalse(any('heart-anatomy' in asset['url'] for asset in manifest['assets']))
-        with patch.object(courseware, 'add_powerpoint_animations', return_value={'verified': True}) as animate:
-            output, _ = courseware.create_ppt(manifest)
+        output, report = courseware.create_ppt(manifest)
         self.addCleanup(output.unlink, missing_ok=True)
         ppt = Presentation(output)
         self.assertEqual(len(ppt.slides), len([scene for scene in manifest['scenes'] if scene.get('enabled', True)]))
-        self.assertEqual(len(animate.call_args.args[1]['scenes']), len(ppt.slides))
+        self.assertEqual(report['slideCount'], len(ppt.slides))
         texts = []
         for slide in ppt.slides:
             for shape in slide.shapes:
@@ -139,6 +138,13 @@ class CoursewareLayoutTest(unittest.TestCase):
         self.assertEqual(translated['title'], '观察结构并解释功能')
         self.assertEqual(translated['detail']['studentSteps'], ['完成并提交迁移任务。'])
         self.assertEqual(scene['title'], 'Observe the model and explain the structure')
+
+    def test_long_text_shrinks_without_local_cjk_font(self):
+        # Servers without PowerPoint or Windows fonts must still keep text inside its box.
+        slide = Presentation().slides.add_slide(Presentation().slide_layouts[6])
+        with patch.object(courseware, '_measure_font_path', return_value=None):
+            box = courseware._add_text(slide, '心脏结构与血流方向' * 40, 0, 0, 4, 1, 18, '000000')
+        self.assertLess(box.text_frame.paragraphs[0].runs[0].font.size.pt, 18)
 
 
 if __name__ == '__main__':

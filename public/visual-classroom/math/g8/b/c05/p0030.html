@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>23.1-23.2 一次函数的概念与图象 · 互动实验</title>
+<style>
+  :root{
+    --blue:#2f6fe4; --blue-d:#1d4fb0; --orange:#ef8b1c; --green:#12996a;
+    --red:#dc4646; --purple:#7350d0; --ink:#22303f; --sub:#68798c;
+    --card:#fff; --line:#dde8f4; --grid:#e4edf6;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:var(--ink);
+    background:linear-gradient(135deg,#dfeefc 0%,#ecf6ff 45%,#f8fcff 100%);
+    display:flex; flex-direction:column; min-width:900px; min-height:560px; overflow:auto;
+  }
+
+  header{flex:none; display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; padding:9px 18px 4px;}
+  header h1{font-size:clamp(17px,2.1vw,25px); letter-spacing:1px; white-space:nowrap;}
+  header h1 .badge{display:inline-block; background:var(--blue); color:#fff; border-radius:8px;
+    font-size:.66em; padding:2px 10px; margin-right:10px; vertical-align:3px;}
+  header .memo{font-size:clamp(11.5px,1.15vw,13.5px); color:var(--sub);}
+
+  main{flex:1; min-height:0; display:grid; grid-template-columns:1fr 380px; gap:12px; padding:4px 16px;}
+  main > div{min-width:0;}
+  .panel{background:var(--card); border:1px solid var(--line); border-radius:12px;
+         box-shadow:0 2px 8px rgba(47,111,228,.07);}
+
+  /* 左栏 */
+  #left{display:flex; flex-direction:column; gap:8px; min-height:0;}
+  #ctrlRow{display:flex; gap:6px; padding:8px; flex-wrap:wrap; align-items:center;}
+  .btn{font-family:inherit; font-size:clamp(11px,1.1vw,13.5px); padding:7px 11px; border-radius:9px;
+       cursor:pointer; border:1.5px solid var(--line); background:#f5faff; color:var(--ink);
+       transition:.15s; white-space:nowrap;}
+  .btn:hover{border-color:var(--blue); color:var(--blue);}
+  .btn.on{background:var(--blue); border-color:var(--blue); color:#fff; font-weight:700;}
+  .btn.act{background:var(--orange); border-color:var(--orange); color:#fff; font-weight:700;}
+  .btn.act.on{background:var(--red); border-color:var(--red);}
+  .btn.act.paused{background:#fff4e8; border-color:var(--orange); color:#b26a10;}
+  .btn.mini{padding:5px 9px; font-size:12px;}
+  #status{flex:1; min-width:170px; font-size:12.5px; color:var(--sub); background:#fffbe8;
+          border:1px dashed #e6c96a; border-radius:8px; padding:5px 10px; line-height:1.45;}
+
+  #sliders{display:grid; grid-template-columns:1fr 1fr; gap:16px; padding:8px 14px; flex:none;}
+  .sl .lab{display:flex; justify-content:space-between; font-size:12.5px; color:var(--sub); margin-bottom:2px;}
+  .sl .val{font-size:16px; font-weight:800; color:var(--blue-d);}
+  .sl .val.kpos{color:var(--red);} .sl .val.kneg{color:var(--blue);} .sl .val.kzero{color:var(--sub);}
+  input[type=range]{width:100%; appearance:none; height:7px; border-radius:6px; cursor:pointer;
+    background:linear-gradient(90deg,#e3edf9 var(--p,50%), var(--blue) var(--p,50%), #e3edf9 var(--p,50%));
+    outline:none;}
+  input[type=range]::-webkit-slider-thumb{appearance:none; width:20px; height:20px; border-radius:50%;
+    background:#fff; border:3px solid var(--blue); box-shadow:0 2px 5px rgba(0,0,0,.18); cursor:grab;}
+  input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:#fff;
+    border:3px solid var(--blue);}
+
+  #strip{display:flex; gap:8px; flex-wrap:wrap; padding:6px 14px 10px; flex:none;}
+  .chip{font-size:clamp(11.5px,1.2vw,14px); font-weight:700; background:#f1f7ff;
+        border:1px solid var(--line); border-radius:8px; padding:3px 9px; white-space:nowrap;}
+  .chip b{color:var(--blue-d);}
+  .chip.up{background:#fdeeee; border-color:var(--red); color:var(--red);}
+  .chip.down{background:#e9f1fd; border-color:var(--blue); color:var(--blue);}
+  .chip.flat{background:#f0f2f5; border-color:#aab6c4; color:#5c6b7c;}
+  .chip.g{background:#e9f9f1; border-color:var(--green); color:var(--green);}
+
+  #canvasWrap{flex:1; min-height:230px; padding:4px; display:flex;}
+  svg#cv{flex:1; width:100%; min-height:0; touch-action:none; display:block;}
+
+  /* 右栏 */
+  #right{min-height:0; display:flex; flex-direction:column; gap:8px; overflow:hidden;}
+  #rightInner{flex:1; min-height:0; overflow-y:auto; display:flex; flex-direction:column; gap:8px;}
+  .card{padding:10px 12px;}
+  .card h3{font-size:14px; color:var(--blue-d); display:flex; align-items:center; gap:6px;
+           margin-bottom:7px; border-bottom:2px solid var(--line); padding-bottom:5px;}
+  .card h3 .tag{font-size:10.5px; font-weight:400; color:var(--sub); background:#f1f7ff;
+                border-radius:9px; padding:1px 7px; border:1px solid var(--line);}
+  .fml{font-size:clamp(14px,1.5vw,19px); font-weight:800; line-height:1.7; overflow-wrap:anywhere;}
+  .fml .k{color:var(--red);} .fml .b{color:var(--purple);}
+  .prop{font-size:13px; line-height:1.8;}
+  .prop .row{display:flex; gap:8px; padding:2px 0;}
+  .prop .ico{flex:none; width:20px; text-align:center;}
+  .ruleline{font-size:12px; color:var(--sub); line-height:1.7;}
+  .ruleline b{color:var(--ink);}
+  .warnbox{border:2px solid var(--red); background:#fff1f1; color:var(--red); border-radius:9px;
+           padding:6px 10px; font-size:12.5px; font-weight:700; line-height:1.5; margin-top:6px; display:none;}
+
+  #presets{display:flex; gap:6px; flex-wrap:wrap;}
+  .pchip{font-size:12.5px; font-weight:700; padding:4px 10px; border-radius:14px; cursor:pointer;
+         border:1.5px solid var(--line); background:#f5faff; transition:.15s; white-space:nowrap;}
+  .pchip:hover{border-color:var(--orange); color:var(--orange); background:#fff8ef;}
+  .pchip.on{background:var(--orange); border-color:var(--orange); color:#fff;}
+
+  #opts{display:grid; grid-template-columns:1fr 1fr; gap:2px 10px; font-size:12.5px;}
+  #opts label{display:flex; align-items:center; gap:6px; padding:3px 0; cursor:pointer;}
+  #opts input{width:14px; height:14px; accent-color:var(--blue);}
+
+  footer{flex:none; margin:8px 16px 11px; background:linear-gradient(90deg,#2f6fe4,#5a8ff0);
+         color:#fff; border-radius:12px; padding:8px 16px; display:flex; align-items:center;
+         justify-content:center; gap:10px 20px; flex-wrap:wrap;
+         font-size:clamp(12.5px,1.4vw,17.5px); font-weight:700; letter-spacing:1px;
+         box-shadow:0 3px 8px rgba(47,111,228,.28);}
+  footer .dot{opacity:.45;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span class="badge">23.1-23.2</span>一次函数的概念与图象
+    <small style="font-size:.55em;color:var(--sub);font-weight:400;">y = kx + b（k≠0）· k/b 滑块实时重绘</small></h1>
+  <div class="memo">拖滑块或直接拖画布上的红点：y 轴交点定 b，线上定点旋转定 k</div>
+</header>
+
+<main>
+  <div id="left">
+    <div class="panel" id="ctrlRow">
+      <button class="btn act" id="btnB0">b = 0 正比例</button>
+      <button class="btn act" id="btnDot">🎬 动点演示</button>
+      <button class="btn mini" id="btnDotHide" style="display:none;">✕ 收起动点</button>
+      <button class="btn mini" id="btnZin">＋ 缩小视野</button>
+      <button class="btn mini" id="btnZout">－ 放大视野</button>
+      <div id="status">k=1：直线上升，y 随 x 增大而增大；b=0：直线过原点（正比例函数）。</div>
+    </div>
+
+    <div class="panel" id="sliders">
+      <div class="sl">
+        <div class="lab"><span>斜率 k（−5 ~ 5，步长 0.1）</span><span class="val" id="vK">1.0</span></div>
+        <input type="range" id="sK" min="-5" max="5" step="0.1" value="1">
+      </div>
+      <div class="sl">
+        <div class="lab"><span>截距 b（−5 ~ 5，步长 0.1）</span><span class="val" id="vB">0.0</span></div>
+        <input type="range" id="sB" min="-5" max="5" step="0.1" value="0">
+      </div>
+    </div>
+
+    <div class="panel" id="strip"></div>
+
+    <div class="panel" id="canvasWrap">
+      <svg id="cv" preserveAspectRatio="xMidYMid meet"></svg>
+    </div>
+  </div>
+
+  <div id="right">
+    <div class="panel card" id="cardFml">
+      <h3>① 当前解析式 <span class="tag">实时联动</span></h3>
+      <div class="fml" id="fml"></div>
+    </div>
+
+    <div id="rightInner">
+      <div class="panel card">
+        <h3>② 性质总结</h3>
+        <div class="prop" id="props"></div>
+      </div>
+
+      <div class="panel card">
+        <h3>③ 快速例题 <span class="tag">一键切换</span></h3>
+        <div id="presets"></div>
+      </div>
+
+      <div class="panel card">
+        <h3>④ 显示选项 <span class="tag">信息技术应用</span></h3>
+        <div id="opts">
+          <label><input type="checkbox" id="ckGrid" checked>网格</label>
+          <label><input type="checkbox" id="ckLabel" checked>交点标签</label>
+          <label><input type="checkbox" id="ckArrow" checked>增减箭头</label>
+          <label><input type="checkbox" id="ckTrace">轨迹追踪</label>
+          <label><input type="checkbox" id="ckCompare">对比 y=kx（过原点）</label>
+          <label><input type="checkbox" id="ckNums" checked>坐标刻度</label>
+        </div>
+        <div style="margin-top:6px;"><button class="btn mini" id="btnClear">🧹 清除轨迹</button></div>
+      </div>
+
+      <div class="panel card">
+        <h3>⑤ 概念提示</h3>
+        <div class="ruleline">
+          <b>一次函数</b>：y = kx + b（<b>k ≠ 0</b>）。<br>
+          当 <b>b = 0</b> 时，y = kx 是<b>正比例函数</b>，是一次函数的特例，图象过原点。<br>
+          当 <b>k = 0</b> 时，y = b 是常函数，<b>不是</b>一次函数。
+        </div>
+        <div class="warnbox" id="warnK0">🚨 k = 0：y = b 是水平线（常函数），不是一次函数！请把 k 调成非 0。</div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <span>k 管升降 b 管交</span><span class="dot">◆</span>
+  <span>正负零值要记牢</span><span class="dot">◆</span>
+  <span>b 等于零过原点</span><span class="dot">◆</span>
+  <span>正比例里真奇妙</span>
+</footer>
+
+<script>
+const NS="http://www.w3.org/2000/svg";
+const $=id=>document.getElementById(id);
+const svg=$("cv");
+const clamp=(v,lo,hi)=>Math.min(hi,Math.max(lo,v));
+const r1=v=>Math.round(v*10)/10;
+
+let k=1, b=0, R=8;                 // R = 半视野（可缩放 4~12）
+let opt={grid:true,label:true,arrow:true,trace:false,compare:false,nums:true};
+let trail=[];                      // 轨迹 [{k,b}]
+let dotT=0, moving=false, dotOn=false, dotRAF=null;   // dotOn=动点是否"存在"（暂停后仍保留）
+
+/* ============ 场景 ============ */
+let scene;
+function clearScene(){ scene={lines:[],texts:[],dots:[],pts:[]}; }
+function seg(p1,p2,o={}){
+  const {stroke="#2f6fe4",sw=1,dash=null,op=1}=o;
+  scene.lines.push({p1,p2,stroke,sw,dash,op});
+  scene.pts.push(p1,p2);
+}
+function T(x,y,t,o={}){
+  const {color="#22303f",fs=1,anchor="middle",weight="700"}=o;
+  scene.texts.push({x,y,t,color,fs,anchor,weight});
+  scene.pts.push([x,y]);
+}
+function dot(x,y,r,h,color="#dc4646"){
+  scene.dots.push({x,y,r,h,color});
+  scene.pts.push([x,y]);
+}
+
+/* ============ 画布 ============ */
+function el(tag,at,parent,text){
+  const e=document.createElementNS(NS,tag);
+  for(const kk in at) e.setAttribute(kk,at[kk]);
+  if(text!==undefined) e.textContent=text;
+  (parent||svg).appendChild(e);
+  return e;
+}
+function fmtTerm(kk,b0){                 // 解析式文本
+  let s="";
+  if(kk===0) return `y = ${r1(b0)}`;
+  if(kk===1) s="x";
+  else if(kk===-1) s="−x";
+  else s=`${r1(kk)}x`;
+  if(b0>0) s+=` + ${r1(b0)}`;
+  else if(b0<0) s+=` − ${Math.abs(r1(b0))}`;
+  return "y = "+s;
+}
+
+function draw(){
+  svg.innerHTML="";                       // 每帧清空，防止残影
+  clearScene();
+  const span=2*R;
+  const fs=span*0.030, sw=span*0.006, fsS=span*0.026;
+
+  /* 轨迹（旧的直线淡影） */
+  if(opt.trace){
+    trail.forEach(t=>{
+      seg([-R-0.5, t.k*(-R-0.5)+t.b],[R+0.5, t.k*(R+0.5)+t.b],
+          {stroke:"#b9c9de",sw:sw*0.55,op:0.55});
+    });
+  }
+  /* 对比线 y = kx（过原点虚线） */
+  if(opt.compare && b!==0){
+    seg([-R-0.5,-k*(R+0.5)],[R+0.5,k*(R+0.5)],
+        {stroke:"#7350d0",sw:sw*0.8,dash:`${span*0.012} ${span*0.009}`,op:0.85});
+    T(R*0.42, k*R*0.42 + (k>0?-fs*0.9:fs*1.6), "y = kx（过原点）",
+      {fs:fsS,color:"#7350d0",weight:"700"});
+  }
+
+  /* 当前直线 */
+  const isK0=Math.abs(k)<1e-9;
+  seg([-R-0.5, k*(-R-0.5)+b],[R+0.5, k*(R+0.5)+b],
+      isK0?{stroke:"#8fa2b6",sw:sw*1.1,dash:`${span*0.014} ${span*0.010}`}
+          :{stroke:"#2f6fe4",sw:sw*1.35});
+
+  /* y 轴交点 (0,b) */
+  const bi=Math.abs(b)<=R+0.4;
+  if(bi){
+    dot(0,b,span*0.012,"hB");
+    if(opt.label && !isK0){
+      const left = k>0;                        // 交点标签放在直线不经过的一侧
+      const lx = left ? -span*0.018 : span*0.018;
+      T(lx, b+span*0.022, `(0, ${r1(b)})`,
+        {fs:fsS*1.05,color:"#dc4646",anchor:left?"end":"start"});
+    }
+  }
+  /* 旋转手柄（拖动改 k） */
+  if(!isK0){
+    const xh=Math.min(2, Math.max(0.8,(R-0.8-Math.abs(b))/Math.abs(k)*0.9));
+    const yh=k*xh+b;
+    if(Math.abs(yh)<=R-0.3){
+      dot(xh,yh,span*0.010,"hK","#ef8b1c");
+      if(opt.label) T(xh+span*0.015, yh+span*0.024, "↕ 拖动改 k",
+        {fs:fsS*0.9,color:"#a35f0c",anchor:"start"});
+    }
+  }
+
+  /* 增减箭头与说明 */
+  if(opt.arrow && !isK0){
+    const xa=R*0.55, ya=k*xa+b;
+    if(Math.abs(ya)<R*0.98){
+      const sgn=Math.sign(k)||1;
+      const th=Math.atan2(sgn*k,1);            // 直线方向角（数学坐标，y 向上）
+      const L2=span*0.03;
+      const tip=[xa,ya];
+      const w1=[xa-L2*Math.cos(th-0.45), ya-L2*Math.sin(th-0.45)];
+      const w2=[xa-L2*Math.cos(th+0.45), ya-L2*Math.sin(th+0.45)];
+      el("path",{d:`M${w1[0]},${-w1[1]} L${tip[0]},${-tip[1]} L${w2[0]},${-w2[1]}`,
+        stroke:sgn>0?"#dc4646":"#2f6fe4","stroke-width":sw*0.9,fill:"none",
+        "stroke-linecap":"round","stroke-linejoin":"round"});
+      const txt=sgn>0?"y 随 x 增大而增大 ↗":"y 随 x 增大而减小 ↘";
+      T(xa-span*0.02, ya+(sgn>0?-span*0.030:span*0.040), txt,
+        {fs:fsS*0.95,color:sgn>0?"#dc4646":"#1d4fb0",anchor:"end"});
+    }
+  }
+
+  /* 动点：dotOn 控制"是否存在"，moving 只控制"是否继续跑" */
+  if(dotOn && !isK0){
+    const phase=(dotT%2+2)%2;                 // 0..2 三角波
+    const x=-R+phase*R;                       // -R → R 往返
+    const y=k*x+b;
+    seg([x,0],[x,y],{stroke:"#12996a",sw:sw*0.5,dash:`${span*0.008} ${span*0.008}`,op:0.8});
+    seg([0,y],[x,y],{stroke:"#12996a",sw:sw*0.5,dash:`${span*0.008} ${span*0.008}`,op:0.8});
+    if(!moving){                              // 暂停：加一圈虚线环，明确"停在这里了"
+      el("circle",{cx:x,cy:-y,r:span*0.020,fill:"none",stroke:"#12996a",
+        "stroke-width":sw*0.7,"stroke-dasharray":`${span*0.007} ${span*0.006}`,opacity:0.85});
+    }
+    dot(x,y,span*0.011,null,"#12996a");
+    const lx=clamp(x,-R*0.72,R*0.72);         // 标签不出画布边界
+    T(lx,y+(k>=0?-span*0.028:span*0.040),`x=${r1(x)}, y=${r1(y)}`,
+      {fs:fsS*0.95,color:"#0b7d55"});
+    if(!moving)
+      T(lx,y+(k>=0?-span*0.052:span*0.064),"⏸ 动点已停在此处",{fs:fsS*0.8,color:"#12996a"});
+  }
+
+  /* 网格 / 坐标轴 / 刻度 */
+  const pad=span*0.07;
+  svg.setAttribute("viewBox",`${-R-pad} ${-R-pad} ${2*(R+pad)} ${2*(R+pad)}`);
+  const gs=span*0.0016;
+  if(opt.grid){
+    const st=R>8?2:1;
+    for(let i=-R;i<=R;i+=st){
+      if(Math.abs(i)>R) continue;
+      el("line",{x1:i,y1:-R,x2:i,y2:R,stroke:"#e4edf6","stroke-width":gs});
+      el("line",{x1:-R,y1:i,x2:R,y2:i,stroke:"#e4edf6","stroke-width":gs});
+    }
+  }
+  const as=span*0.0032;
+  el("line",{x1:-R-pad*0.6,y1:0,x2:R+pad*0.6,y2:0,stroke:"#a9bccf","stroke-width":as});
+  el("line",{x1:0,y1:-R-pad*0.6,x2:0,y2:R+pad*0.6,stroke:"#a9bccf","stroke-width":as});
+  el("path",{d:`M${R+pad*0.6},0 l${-span*0.014},${-span*0.006} l0,${span*0.012} Z`,fill:"#a9bccf"});
+  el("path",{d:`M0,${R+pad*0.6} l${-span*0.006},${-span*0.014} l${span*0.012},0 Z`,fill:"#a9bccf"});
+  el("text",{x:-span*0.02,y:span*0.024,"font-size":span*0.024,fill:"#93a7bb","text-anchor":"end"},svg,"O");
+  el("text",{x:R+pad*0.55,y:span*0.032,"font-size":span*0.026,fill:"#93a7bb"},svg,"x");
+  el("text",{x:span*0.016,y:-R-pad*0.52,"font-size":span*0.026,fill:"#93a7bb"},svg,"y");
+  if(opt.nums){
+    const st=R>8?2:1;
+    for(let i=-R;i<=R;i+=st){
+      if(i===0) continue;
+      el("text",{x:i,y:span*0.024,"font-size":span*0.021,fill:"#93a7bb","text-anchor":"middle"},svg,String(i));
+      el("text",{x:-span*0.012,y:-i+span*0.008,"font-size":span*0.021,fill:"#93a7bb",
+                 "text-anchor":"end"},svg,String(i));
+    }
+  }
+
+  /* 渲染场景元素 */
+  scene.lines.forEach(l=>{
+    const at={x1:l.p1[0],y1:-l.p1[1],x2:l.p2[0],y2:-l.p2[1],stroke:l.stroke,
+              "stroke-width":l.sw,"stroke-linecap":"round",opacity:l.op};
+    if(l.dash) at["stroke-dasharray"]=l.dash;
+    el("line",at);
+  });
+  scene.texts.forEach(t=>{
+    if(!t.t) return;
+    el("text",{x:t.x,y:-t.y,"font-size":t.fs,fill:t.color,"font-weight":t.weight,
+      "text-anchor":t.anchor,"font-family":"Microsoft YaHei,PingFang SC,sans-serif",
+      "dominant-baseline":"middle"},null,t.t);
+  });
+  scene.dots.forEach(d=>el("circle",{cx:d.x,cy:-d.y,r:d.r,fill:d.color,stroke:"#fff",
+    "stroke-width":d.r*0.4,...(d.h?{class:"drag",cursor:"grab","data-h":d.h}:{})}));
+}
+
+/* ============ 面板 ============ */
+function renderPanels(){
+  const isK0=Math.abs(k)<1e-9;
+  $("vK").textContent=r1(k).toFixed(1);
+  $("vB").textContent=r1(b).toFixed(1);
+  $("vK").className="val "+(isK0?"kzero":k>0?"kpos":"kneg");
+
+  $("fml").innerHTML =
+    `<div>y = <span class="k">${r1(k)}</span>x <span style="color:var(--sub)">${b>=0?"+":"−"}</span> <span class="b">${Math.abs(r1(b))}</span></div>`+
+    `<div style="font-size:.75em;color:var(--sub);font-weight:400;">即 ${fmtTerm(k,b)}　（k≠0 才是一次函数）</div>`;
+
+  /* 性质 */
+  const steep=Math.abs(k)>=3?"很陡（|k| 大）":Math.abs(k)>=1.5?"较陡":"较缓（|k| 小）";
+  const kRow = isK0
+    ? `<div class="row"><span class="ico">⚠️</span><span>k = 0：<b>常函数</b>，图象是水平线，<b>不是一次函数</b></span></div>`
+    : k>0
+    ? `<div class="row"><span class="ico">↗</span><span>k = ${r1(k)} &gt; 0：<b>增函数</b>，y 随 x 增大而增大（上升）</span></div>`
+    : `<div class="row"><span class="ico">↘</span><span>k = ${r1(k)} &lt; 0：<b>减函数</b>，y 随 x 增大而减小（下降）</span></div>`;
+  const bRow = Math.abs(b)<1e-9
+    ? `<div class="row"><span class="ico">◎</span><span>b = 0：直线过<b>原点</b>（正比例函数 y = kx）</span></div>`
+    : b>0
+    ? `<div class="row"><span class="ico">↑</span><span>b = ${r1(b)} &gt; 0：与 y 轴交于<b>正半轴</b> (0, ${r1(b)})</span></div>`
+    : `<div class="row"><span class="ico">↓</span><span>b = ${r1(b)} &lt; 0：与 y 轴交于<b>负半轴</b> (0, ${r1(b)})</span></div>`;
+  $("props").innerHTML =
+    kRow + bRow +
+    `<div class="row"><span class="ico">📈</span><span>倾斜程度：|k| = ${Math.abs(r1(k))}，${steep}</span></div>`+
+    `<div class="row"><span class="ico">🎯</span><span>左右平移不变 k，上下平移变 b</span></div>`;
+
+  /* 状态条 */
+  const dirChip = isK0
+    ? `<span class="chip flat">k = 0 水平线 ⚠️</span>`
+    : k>0 ? `<span class="chip up">k &gt; 0 上升 ↗</span>`
+          : `<span class="chip down">k &lt; 0 下降 ↘</span>`;
+  const bChip = Math.abs(b)<1e-9
+    ? `<span class="chip g">b = 0 过原点（正比例）</span>`
+    : `<span class="chip">交点 (0, ${r1(b)})</span>`;
+  $("strip").innerHTML =
+    `<span class="chip">解析式 <b>${fmtTerm(k,b)}</b></span>`+dirChip+bChip+
+    (isK0?`<span class="chip" style="background:#fff1f1;border-color:var(--red);color:var(--red);">k≠0 才是一次函数！</span>`:"");
+
+  $("warnK0").style.display = isK0 ? "block" : "none";
+  $("status").textContent = isK0
+    ? "k = 0：图象是水平线 y = b（常函数），不是一次函数。请把 k 调成非 0。"
+    : k>0 ? `k = ${r1(k)} > 0：直线上升，y 随 x 增大而增大；b = ${r1(b)} 决定与 y 轴交于 (0, ${r1(b)})。`
+          : `k = ${r1(k)} < 0：直线下降，y 随 x 增大而减小；b = ${r1(b)} 决定与 y 轴交于 (0, ${r1(b)})。`;
+}
+
+function render(){
+  draw();
+  [["sK",k,"vK"],["sB",b,"vB"]].forEach(([id,v,vid])=>{
+    const e=$(id); e.value=v;
+    e.style.setProperty("--p",((v-(-5))/10*100)+"%");
+  });
+  $("btnB0").classList.toggle("on",Math.abs(b)<1e-9);
+  syncDotBtn();
+  renderPanels();
+}
+
+function syncDotBtn(){
+  const btn=$("btnDot");
+  btn.textContent = moving ? "⏸ 暂停动点" : (dotOn ? "▶ 继续演示" : "🎬 动点演示");
+  btn.classList.toggle("on",moving);
+  btn.classList.toggle("paused",dotOn && !moving);
+  $("btnDotHide").style.display = dotOn ? "" : "none";
+}
+
+/* ============ 轨迹 ============ */
+function pushTrail(){
+  if(!opt.trace) return;
+  const last=trail[trail.length-1];
+  if(!last || Math.abs(last.k-k)>1e-9 || Math.abs(last.b-b)>1e-9){
+    trail.push({k:r1(k),b:r1(b)});
+    if(trail.length>50) trail.shift();
+  }
+}
+
+/* ============ 交互 ============ */
+["sK","sB"].forEach(id=>$(id).oninput=e=>{
+  if(id==="sK") k=r1(+e.target.value); else b=r1(+e.target.value);
+  pushTrail(); render();
+});
+
+$("btnB0").onclick=()=>{ b=0; pushTrail(); render();
+  $("status").textContent="已置 b = 0：直线过原点，y = kx 是正比例函数（一次函数的特例）。"; };
+
+$("btnDot").onclick=()=>{
+  if(Math.abs(k)<1e-9){
+    $("status").textContent="k = 0 时不是一次函数，没有「y 随 x 变化」的动点，请先把 k 调成非 0。";
+    return;
+  }
+  const pausing = moving;
+  if(moving){                       // 暂停：点停在当前位置并保留显示
+    moving=false;
+  }else{                            // 开始 / 继续
+    moving=true; dotOn=true;
+    dotLoop();
+  }
+  render();
+  if(pausing)
+    $("status").textContent="动点已暂停在当前位置（虚线环标记）。拖动 k / b 滑块，可以看到这个点的位置随解析式变化。";
+  else
+    $("status").textContent="动点正在沿直线往返：观察 x 增大时 y 的变化趋势（k>0 上升，k<0 下降）。";
+};
+$("btnDotHide").onclick=()=>{
+  moving=false; dotOn=false; dotT=0; dotRAF=null;
+  render();
+  $("status").textContent="已收起动点演示。";
+};
+function dotLoop(){
+  if(dotRAF) return;
+  dotRAF=requestAnimationFrame(function step(){
+    dotT+=0.006; draw();
+    if(moving){ dotRAF=requestAnimationFrame(step); }
+    else { dotRAF=null; draw(); }   // 停下的瞬间补一帧，让点以"暂停态"留在原位
+  });
+}
+
+$("btnZin").onclick=()=>{ R=clamp(R-1,4,12); render(); };
+$("btnZout").onclick=()=>{ R=clamp(R+1,4,12); render(); };
+svg.addEventListener("wheel",e=>{
+  e.preventDefault();
+  R=clamp(R+(e.deltaY>0?1:-1),4,12); render();
+},{passive:false});
+
+$("ckGrid").onchange=e=>{opt.grid=e.target.checked; render();};
+$("ckLabel").onchange=e=>{opt.label=e.target.checked; render();};
+$("ckArrow").onchange=e=>{opt.arrow=e.target.checked; render();};
+$("ckNums").onchange=e=>{opt.nums=e.target.checked; render();};
+$("ckTrace").onchange=e=>{
+  opt.trace=e.target.checked;
+  if(!opt.trace) trail=[];
+  render();
+};
+$("ckCompare").onchange=e=>{opt.compare=e.target.checked; render();};
+$("btnClear").onclick=()=>{ trail=[]; render(); };
+
+/* 预设例题 */
+const PRESETS=[[2,1],[-1,-2],[0.5,3],[-2,0],[1,0],[3,-4],[-3,4],[4,2]];
+$("presets").innerHTML=PRESETS.map(([pk,pb])=>
+  `<span class="pchip" data-k="${pk}" data-b="${pb}">k=${pk}, b=${pb}</span>`).join("");
+$("presets").onclick=e=>{
+  const t=e.target.closest(".pchip"); if(!t) return;
+  k=+t.dataset.k; b=+t.dataset.b; pushTrail(); render();
+};
+
+/* 拖拽：交点改 b，线上定点旋转改 k */
+let drag=null;
+svg.addEventListener("pointerdown",e=>{
+  if(e.target.classList&&e.target.classList.contains("drag")){
+    drag=e.target.dataset.h; svg.setPointerCapture(e.pointerId);
+  }
+});
+function toMath(e){
+  const p=svg.createSVGPoint(); p.x=e.clientX; p.y=e.clientY;
+  const m=p.matrixTransform(svg.getScreenCTM().inverse());
+  return {x:m.x, y:-m.y};
+}
+svg.addEventListener("pointermove",e=>{
+  if(!drag) return;
+  const p=toMath(e);
+  if(drag==="hB"){
+    b=r1(clamp(p.y,-5,5)); pushTrail();
+  }else{
+    const xh=Math.min(2,Math.max(0.8,(R-0.8-Math.abs(b))/Math.max(Math.abs(k),0.1)*0.9));
+    k=r1(clamp((p.y-b)/xh,-5,5)); pushTrail();
+  }
+  render();
+});
+svg.addEventListener("pointerup",()=>drag=null);
+
+document.addEventListener("keydown",e=>{
+  if(e.key==="ArrowUp"){ b=r1(clamp(b+0.5,-5,5)); pushTrail(); render(); e.preventDefault(); }
+  else if(e.key==="ArrowDown"){ b=r1(clamp(b-0.5,-5,5)); pushTrail(); render(); e.preventDefault(); }
+  else if(e.key==="ArrowRight"){ k=r1(clamp(k+0.5,-5,5)); pushTrail(); render(); e.preventDefault(); }
+  else if(e.key==="ArrowLeft"){ k=r1(clamp(k-0.5,-5,5)); pushTrail(); render(); e.preventDefault(); }
+});
+
+render();
+</script>
+</body>
+</html>

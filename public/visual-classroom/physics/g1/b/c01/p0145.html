@@ -1,0 +1,2268 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>模型28 · 受力与轨迹偏转（磁钢球）</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:#edf1f7;color:#1e293b;font:14px/1.55 system-ui,-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;-webkit-font-smoothing:antialiased}
+
+/* ---------- 顶栏 ---------- */
+.topbar{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  padding:10px 16px;background:rgba(255,255,255,.96);backdrop-filter:blur(6px);border-bottom:1px solid #dbe3ef}
+.brand{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.badge{background:#2563eb;color:#fff;font-size:11px;padding:2px 9px;border-radius:999px;letter-spacing:.6px}
+.brand h1{font-size:17px;margin:0;font-weight:650;letter-spacing:.3px}
+.brand .sub{font-size:12px;color:#64748b}
+.steps{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+.steps button{border:1px solid #dbe3ef;background:#f8fafc;color:#475569;padding:5px 11px;border-radius:999px;
+  font-size:12.5px;cursor:pointer;transition:.15s}
+.steps button:hover{border-color:#93c5fd;color:#1d4ed8}
+.steps button.on{background:#2563eb;border-color:#2563eb;color:#fff;box-shadow:0 2px 10px rgba(37,99,235,.28)}
+.btn-lib{border:1px solid #dbe3ef;background:#fff;color:#334155;padding:5px 12px;border-radius:999px;font-size:12.5px;
+  cursor:pointer;display:flex;align-items:center;gap:6px}
+.btn-lib:hover{border-color:#93c5fd;color:#1d4ed8;background:#eff6ff}
+
+/* ---------- 提示条 ---------- */
+.tipbar{padding:8px 16px;background:#fffbeb;border-bottom:1px solid #fde68a;color:#78350f;font-size:13px;
+  display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap}
+.tipbar b{color:#b45309;white-space:nowrap}
+.tipbar .q{color:#92400e;background:#fef3c7;border:1px solid #fcd34d;border-radius:6px;padding:1px 9px;font-size:12px}
+.tipbar .txt{flex:1;min-width:240px}
+.tipbar .hintChip{cursor:pointer;border-color:#93c5fd;background:#eff6ff;color:#1d4ed8;white-space:nowrap;transition:background .15s}
+.tipbar .hintChip:hover{background:#dbeafe}
+
+/* ---------- 布局 ---------- */
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 356px;gap:12px;padding:12px 12px 0;align-items:start}
+.stage{position:relative;background:#fff;border:1px solid #dbe3ef;border-radius:14px;overflow:hidden;
+  box-shadow:0 4px 18px rgba(15,23,42,.06)}
+#scene{display:block;width:100%;height:clamp(360px,54vh,600px);touch-action:none;cursor:crosshair}
+
+.legend{position:absolute;top:10px;right:10px;background:rgba(255,255,255,.93);border:1px solid #e2e8f0;
+  border-radius:10px;padding:7px 10px;font-size:11.5px;line-height:1.72;color:#334155;pointer-events:none;
+  box-shadow:0 2px 10px rgba(15,23,42,.06)}
+.legend i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:6px;vertical-align:3px}
+.legend .lg-title{font-weight:700;color:#0f172a;font-size:11px;line-height:1.5;padding-bottom:4px;margin-bottom:4px;
+  border-bottom:1px solid #e2e8f0}
+.legend .lg-title span{font-weight:400;color:#64748b;font-size:10.5px}
+
+.readout{position:absolute;top:10px;left:10px;background:rgba(255,255,255,.94);border:1px solid #e2e8f0;
+  border-radius:10px;padding:7px 11px;font:12px/1.68 ui-monospace,Consolas,"Courier New",monospace;color:#0f172a;
+  pointer-events:none;box-shadow:0 2px 10px rgba(15,23,42,.06);min-width:216px}
+.readout .k{color:#64748b}
+.readout b{font-weight:600}
+
+.verdict{position:absolute;top:10px;left:50%;transform:translateX(-50%);padding:5px 14px;border-radius:999px;
+  font-size:13px;font-weight:700;letter-spacing:.4px;box-shadow:0 2px 10px rgba(15,23,42,.10);pointer-events:none;
+  background:#f1f5f9;color:#475569;border:1px solid #e2e8f0;white-space:nowrap}
+.verdict.up{background:#fef2f2;color:#b91c1c;border-color:#fecaca}
+.verdict.down{background:#eff6ff;color:#1d4ed8;border-color:#bfdbfe}
+.verdict.flat{background:#f0fdf4;color:#15803d;border-color:#bbf7d0}
+
+.endcard{position:absolute;left:10px;bottom:10px;background:rgba(255,251,235,.97);border:1px solid #fde68a;
+  border-radius:10px;padding:7px 11px;font-size:12px;color:#78350f;line-height:1.7;display:none;
+  box-shadow:0 2px 10px rgba(15,23,42,.06);max-width:min(440px,74%)}
+.endcard.show{display:block}
+.endcard b{color:#b45309}
+
+.scaleTag{position:absolute;right:10px;bottom:10px;background:rgba(255,255,255,.9);border:1px solid #e2e8f0;
+  border-radius:8px;padding:3px 8px;font-size:11px;color:#64748b;pointer-events:none}
+
+/* 探针浮卡 */
+.probeTip{position:absolute;z-index:5;background:rgba(255,255,255,.97);border:1px solid #cbd5e1;border-radius:10px;
+  padding:8px 11px;font-size:12px;line-height:1.75;box-shadow:0 8px 24px rgba(15,23,42,.16);pointer-events:none;
+  min-width:206px;display:none}
+.probeTip.show{display:block}
+.probeTip .pt-h{font-weight:700;color:#0f172a;margin-bottom:3px;font-size:12.5px}
+.probeTip .row2{display:flex;justify-content:space-between;gap:10px}
+.probeTip .row2 span:last-child{font-family:ui-monospace,Consolas,monospace;font-weight:600}
+.probeTip .pv{color:#2563eb}.probeTip .pf{color:#dc2626}.probeTip .pt{color:#f59e0b}.probeTip .pn{color:#7c3aed}
+.probeTip .vd{margin-top:4px;padding:3px 7px;border-radius:6px;font-weight:700;font-size:11.5px;text-align:center}
+.probeTip .vd.up{background:#fef2f2;color:#b91c1c}
+.probeTip .vd.down{background:#eff6ff;color:#1d4ed8}
+.probeTip .vd.flat{background:#f0fdf4;color:#15803d}
+
+/* 钉住的卡片 */
+.pinned{position:absolute;left:10px;bottom:56px;display:flex;flex-direction:column;gap:8px;z-index:4;max-width:270px}
+.pinCard{background:#fff;border:1px solid #cbd5e1;border-left:4px solid #2563eb;border-radius:8px;padding:6px 9px;
+  box-shadow:0 6px 20px rgba(15,23,42,.14);font-size:11.5px;line-height:1.6;color:#334155;position:relative}
+.pinCard b{display:block;color:#0f172a;font-size:12px;margin-bottom:2px;padding-right:16px}
+.pinCard .x{position:absolute;right:5px;top:3px;border:0;background:transparent;color:#94a3b8;cursor:pointer;font-size:13px;line-height:1}
+
+/* ---------- 控制面板 ---------- */
+.panel{display:flex;flex-direction:column;gap:10px;max-height:calc(clamp(360px,54vh,600px) - 4px);overflow-y:auto;
+  padding-right:3px;scrollbar-width:thin}
+.panel::-webkit-scrollbar{width:7px}
+.panel::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:4px}
+.sec{background:#fff;border:1px solid #dbe3ef;border-radius:12px;padding:9px 11px 11px;
+  box-shadow:0 2px 8px rgba(15,23,42,.04)}
+.sec h3{margin:0 0 8px;font-size:12.5px;font-weight:650;color:#334155;letter-spacing:.4px;
+  display:flex;align-items:center;gap:6px}
+.sec h3::before{content:"";width:3px;height:12px;background:#2563eb;border-radius:2px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:6px 0 2px;font-size:12.5px;color:#475569}
+.val{font:600 12.5px ui-monospace,Consolas,monospace;color:#1d4ed8;background:#eff6ff;border:1px solid #dbeafe;
+  border-radius:6px;padding:1px 7px;min-width:66px;text-align:center}
+input[type=range]{width:100%;accent-color:#2563eb;height:20px;cursor:pointer}
+.chk{display:flex;align-items:center;gap:6px;font-size:12.5px;color:#475569;cursor:pointer;margin-top:5px}
+.chk input{accent-color:#2563eb;width:14px;height:14px;cursor:pointer}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:1px 10px}
+.grid2 .chk{margin-top:4px}
+
+.btns{display:flex;flex-wrap:wrap;gap:6px}
+button{font-family:inherit}
+.btns button{border:1px solid #dbe3ef;background:#f8fafc;color:#334155;padding:5px 10px;border-radius:8px;
+  font-size:12.5px;cursor:pointer;transition:.15s}
+.btns button:hover{background:#eff6ff;border-color:#93c5fd;color:#1d4ed8}
+.btns button:active{transform:translateY(1px)}
+.btns button.primary{background:#2563eb;border-color:#2563eb;color:#fff;font-weight:600;box-shadow:0 2px 8px rgba(37,99,235,.28)}
+.btns button.primary:hover{background:#1d4ed8}
+.btns button.preset{font-size:12px;padding:5px 8px;text-align:left}
+.btns button.preset.on{border-color:#2563eb;background:#eff6ff;color:#1d4ed8;font-weight:600}
+.seg{display:inline-flex;border:1px solid #dbe3ef;border-radius:8px;overflow:hidden;background:#f8fafc}
+.seg button{border:0;background:transparent;padding:4px 9px;font-size:12px;color:#475569;cursor:pointer}
+.seg button.on{background:#2563eb;color:#fff}
+.seg button:hover:not(.on){background:#eff6ff;color:#1d4ed8}
+.note{font-size:11.5px;color:#92400e;background:#fffbeb;border:1px solid #fde68a;border-radius:7px;
+  padding:5px 8px;line-height:1.6;margin-top:7px}
+.note.blue{color:#1e40af;background:#eff6ff;border-color:#bfdbfe}
+.concl{font-size:12.3px;color:#334155;line-height:1.75}
+.concl .hl{color:#b45309;font-weight:600}
+.concl .num{font:600 12px ui-monospace,Consolas,monospace;color:#1d4ed8}
+.concl .warn{color:#b91c1c}
+
+/* ---------- 图表 ---------- */
+.charts{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding:12px}
+.card{background:#fff;border:1px solid #dbe3ef;border-radius:12px;padding:8px 10px 6px;
+  box-shadow:0 2px 8px rgba(15,23,42,.04);min-width:0}
+.card h3{margin:0 0 3px;font-size:12.5px;font-weight:600;color:#334155;display:flex;justify-content:space-between;
+  align-items:baseline;gap:6px}
+.card h3 em{font-style:normal;font-weight:400;color:#94a3b8;font-size:11px;white-space:nowrap}
+.card canvas{display:block;width:100%;height:176px}
+
+/* ---------- 底部 ---------- */
+.bottom{display:grid;grid-template-columns:minmax(0,1.1fr) minmax(0,1fr);gap:10px;padding:0 12px 18px}
+.tablewrap{max-height:220px;overflow:auto;border:1px solid #e2e8f0;border-radius:8px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{padding:4px 6px;text-align:right;white-space:nowrap;border-bottom:1px solid #eef2f7}
+th{position:sticky;top:0;background:#f8fafc;color:#475569;font-weight:600;font-size:11.5px;z-index:1}
+td:nth-child(2),th:nth-child(2){text-align:left}
+td:first-child,th:first-child{text-align:center;color:#94a3b8}
+tbody tr:hover{background:#f8fbff}
+tbody tr.mark{background:#fffbeb}
+.dot{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:5px;vertical-align:0}
+.empty{padding:18px;text-align:center;color:#94a3b8;font-size:12px}
+
+.quiz .q{margin-bottom:10px;padding-bottom:9px;border-bottom:1px dashed #e2e8f0}
+.quiz .q:last-child{border-bottom:0;margin-bottom:2px}
+.quiz .qt{font-size:12.8px;color:#1e293b;margin-bottom:5px;font-weight:600}
+.opt{display:block;width:100%;text-align:left;border:1px solid #e2e8f0;background:#fbfdff;color:#334155;
+  padding:5px 9px;border-radius:8px;margin:3px 0;font-size:12.3px;cursor:pointer;transition:.12s}
+.opt:hover{border-color:#93c5fd;background:#eff6ff}
+.opt.correct{background:#f0fdf4;border-color:#86efac;color:#166534;font-weight:600}
+.opt.wrong{background:#fef2f2;border-color:#fca5a5;color:#991b1b}
+.opt:disabled{cursor:default}
+.exp{display:none;margin-top:5px;font-size:12px;color:#7c2d12;background:#fffbeb;border:1px solid #fde68a;
+  border-radius:8px;padding:6px 9px;line-height:1.7}
+.exp.show{display:block}
+.exp a{color:#1d4ed8;cursor:pointer;text-decoration:underline}
+
+/* ---------- 卡片抽屉 ---------- */
+.drawer{position:fixed;top:0;right:0;height:100%;width:392px;max-width:92vw;background:#fff;border-left:1px solid #dbe3ef;
+  box-shadow:-12px 0 36px rgba(15,23,42,.16);transform:translateX(102%);transition:transform .26s ease;
+  z-index:60;display:flex;flex-direction:column}
+.drawer.open{transform:translateX(0)}
+@media (prefers-reduced-motion: reduce){.drawer{transition:none}}
+.drawer-head{display:flex;align-items:center;gap:8px;padding:11px 14px;border-bottom:1px solid #eef2f7}
+.drawer-head h2{margin:0;font-size:14.5px;font-weight:650}
+.drawer-head .cnt{font-size:11.5px;color:#94a3b8}
+.drawer-head button{margin-left:auto;border:1px solid #e2e8f0;background:#f8fafc;width:28px;height:28px;
+  border-radius:8px;cursor:pointer;color:#64748b;font-size:14px;line-height:1}
+.drawer-tools{padding:8px 14px;border-bottom:1px solid #eef2f7;display:flex;flex-direction:column;gap:7px}
+.drawer-tools input{border:1px solid #dbe3ef;border-radius:8px;padding:6px 9px;font-size:12.5px;font-family:inherit;outline:none}
+.drawer-tools input:focus{border-color:#93c5fd;box-shadow:0 0 0 3px rgba(37,99,235,.10)}
+.tabs{display:flex;gap:5px;flex-wrap:wrap}
+.tabs button{border:1px solid #e2e8f0;background:#f8fafc;color:#64748b;font-size:11.5px;padding:3px 9px;
+  border-radius:999px;cursor:pointer}
+.tabs button.on{background:#2563eb;border-color:#2563eb;color:#fff}
+.drawer-body{flex:1;overflow-y:auto;padding:12px 14px 6px}
+.drawer-foot{display:flex;align-items:center;gap:8px;padding:8px 14px;border-top:1px solid #eef2f7;font-size:12px;color:#64748b}
+.drawer-foot button{border:1px solid #dbe3ef;background:#f8fafc;color:#334155;padding:4px 10px;border-radius:8px;
+  font-size:12px;cursor:pointer}
+.drawer-foot .pos{margin:0 auto}
+
+.kc{border:1px solid #e2e8f0;border-radius:12px;padding:11px 13px;background:#fff}
+.kc .cat{display:inline-block;font-size:11px;padding:1px 8px;border-radius:999px;background:#eff6ff;color:#1d4ed8;
+  border:1px solid #dbeafe;margin-bottom:6px}
+.kc h3{margin:0 0 5px;font-size:14px;font-weight:650;color:#0f172a}
+.kc .line{font-size:13px;color:#1e293b;line-height:1.7;margin-bottom:7px}
+.kc .fx{font:600 12.5px/1.7 ui-monospace,Consolas,monospace;color:#0f172a;background:#f8fafc;border:1px dashed #cbd5e1;
+  border-radius:8px;padding:6px 9px;margin-bottom:8px;white-space:pre-wrap}
+.kc .mini{background:#fbfdff;border:1px solid #eef2f7;border-radius:10px;margin-bottom:8px;overflow:hidden}
+.kc .mini svg{display:block;width:100%;height:auto}
+.kc .how{font-size:12.2px;color:#334155;line-height:1.7;background:#f0fdf4;border:1px solid #bbf7d0;
+  border-radius:8px;padding:6px 9px;margin-bottom:6px}
+.kc .how b{color:#15803d}
+.kc .warn{font-size:12.2px;color:#7c2d12;line-height:1.7;background:#fffbeb;border:1px solid #fde68a;
+  border-radius:8px;padding:6px 9px}
+.kc .back{font-size:12.3px;color:#334155;line-height:1.8;border-top:1px dashed #e2e8f0;margin-top:8px;padding-top:8px}
+.kc .back b{color:#0f172a}
+.kc .acts{display:flex;gap:6px;margin-top:9px}
+.kc .acts button{border:1px solid #dbe3ef;background:#f8fafc;color:#334155;padding:4px 10px;border-radius:8px;
+  font-size:12px;cursor:pointer}
+.kc .acts button:hover{background:#eff6ff;border-color:#93c5fd;color:#1d4ed8}
+.safety{margin:6px 14px 14px;border:1px solid #fecaca;background:#fef2f2;border-radius:10px;padding:7px 10px;
+  font-size:11.8px;color:#991b1b;line-height:1.7}
+.safety summary{cursor:pointer;font-weight:600;color:#b91c1c}
+
+.hit{outline:2px solid #2563eb;outline-offset:2px}
+
+/* ---------- 响应式 ---------- */
+@media (max-width:1080px){
+  .layout{grid-template-columns:minmax(0,1fr)}
+  .panel{max-height:none;overflow:visible}
+  .charts{grid-template-columns:minmax(0,1fr)}
+  .bottom{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:640px){
+  .brand h1{font-size:15px}.brand .sub{display:none}
+  #scene{height:clamp(280px,42vh,380px)}
+  .legend{font-size:10.5px;padding:5px 7px}
+  .readout{font-size:10.5px;min-width:0;padding:5px 8px}
+  .verdict{font-size:11.5px;padding:3px 10px;top:auto;bottom:8px;left:50%}
+  .probeTip{font-size:11px;min-width:170px}
+}
+</style>
+</head>
+<body>
+
+<header class="topbar">
+  <div class="brand">
+    <span class="badge">模型 28</span>
+    <h1>受力与轨迹偏转（磁钢球）</h1>
+    <span class="sub">俯视水平面 · 交互式演示 · 单文件零依赖</span>
+  </div>
+  <nav class="steps" id="steps">
+    <button data-step="0" class="on">① 观察对照</button>
+    <button data-step="1">② 猜想</button>
+    <button data-step="2">③ 改变夹角</button>
+    <button data-step="3">④ 数据</button>
+    <button data-step="4">⑤ 结论</button>
+  </nav>
+  <button class="btn-lib" id="openLib" aria-label="打开知识卡片库">📚 知识卡片库</button>
+</header>
+
+<div class="tipbar" id="tipbar">
+  <b id="tipTitle">① 观察对照</b>
+  <span class="txt" id="tipText">先点「磁铁移开」发射一次：钢球沿直线匀速滚动，频闪残影等间距。再把磁铁放回侧面，重发一次，对比两条轨迹。</span>
+  <span class="q" id="tipQ">待答：磁铁放进后，钢球的轨迹为什么会弯？</span>
+  <button class="q hintChip" id="hintChip" style="display:none" type="button"></button>
+</div>
+
+<main class="layout">
+  <section class="stage">
+    <canvas id="scene" aria-label="磁钢球偏转演示区，可拖动磁铁、点击轨迹取点分析"></canvas>
+
+    <div class="readout" id="readout">
+      <div><span class="k">t</span> = <b id="ro-t">0.00</b> s　<span class="k">v</span> = <b id="ro-v">1.30</b> m/s</div>
+      <div><span class="k">F</span> = <b id="ro-F">0.000</b> N　<span class="k">方向</span> <b id="ro-Fa">—</b>°</div>
+      <div><span class="k">θ(F,v)</span> = <b id="ro-th">—</b>°　<span class="k">r</span> = <b id="ro-r">—</b> m</div>
+      <div><span class="k">F_t</span> <b id="ro-Ft">0.000</b>　<span class="k">F_n</span> <b id="ro-Fn">0.000</b> N</div>
+      <div><span class="k" id="ro-Wlab">累计功 W</span> <b id="ro-W">0.000</b> J</div>
+    </div>
+
+    <div class="verdict" id="verdict">等待发射</div>
+
+    <div class="legend">
+      <div class="lg-title">俯视（水平面）<br><span>重力与支持力平衡</span></div>
+      <div><i style="background:#2563eb"></i>速度 / 切线 v</div>
+      <div><i style="background:#dc2626"></i>磁力 F（指向磁铁·吸引）</div>
+      <div><i style="background:#f59e0b"></i>切向分力 F_t（改速率）</div>
+      <div><i style="background:#7c3aed"></i>法向分力 F_n（改方向）</div>
+      <div><i style="background:#16a34a"></i>加速度 a = F/m</div>
+      <div><i style="background:#94a3b8"></i>对照组（无磁铁）</div>
+    </div>
+
+    <div class="probeTip" id="probeTip"></div>
+    <div class="endcard" id="endcard"></div>
+    <div class="pinned" id="pinnedWrap"></div>
+    <div class="scaleTag" id="scaleTag">1 m ≈ 300 px</div>
+  </section>
+
+  <aside class="panel">
+    <div class="sec">
+      <h3>演示预设（一键切换夹角）</h3>
+      <div class="btns" id="presetBox" style="flex-direction:column;align-items:stretch"></div>
+      <div class="note">磁铁在<b>前</b>，吸引力与 v 同向 → 直线加速；磁铁在<b>后</b>，力与 v 反向 → 直线减速。两者都<b>不偏转</b>，是「共线则直线」的反证。<br>注意 ⑤：磁力随距离急剧增大，钢球会<b>先减速到零、再被反向吸回</b>，末段 θ 又变回 0°、「速率增大」——判据看的永远是<b>当前这一瞬间</b>的夹角。<br>另外，钢球掠过磁铁后，θ 会由锐角逐渐变大并越过 90°，速率趋势随之由「增」转「减」——这正是<b>瞬时判据</b>的体现，数据表里看得很清楚。</div>
+    </div>
+
+    <div class="sec">
+      <h3>磁铁（可拖动 / 可调）</h3>
+      <div class="row"><label>磁极</label>
+        <div class="seg" id="segPole"><button data-att="1" class="on">吸引 N 极朝球</button><button data-att="0">排斥</button></div>
+      </div>
+      <div class="row"><label>磁性强度 S</label><span class="val" id="vS">1.00</span></div>
+      <input type="range" id="rS" min="0.3" max="2" step="0.05" value="1">
+      <div class="row"><label>横向位置 y</label><span class="val" id="vMy">1.25 m</span></div>
+      <input type="range" id="rMy" min="0.05" max="1.5" step="0.01" value="1.25">
+      <div class="row"><label>纵向位置 x</label><span class="val" id="vMx">1.80 m</span></div>
+      <input type="range" id="rMx" min="0.05" max="2.75" step="0.01" value="1.80">
+      <div class="note blue">磁力 <b>F = k·S / r²</b>（沿磁极—球心连线）：距离越近力越大、方向随球位置不断变化，因此轨迹<b>不是</b>标准抛物线或圆弧。这是定性近似模型，不做精确磁学计算。</div>
+    </div>
+
+    <div class="sec">
+      <h3>钢球与摩擦</h3>
+      <div class="row"><label>初速度 v₀</label><span class="val" id="vV0">1.30 m/s</span></div>
+      <input type="range" id="rV0" min="0.6" max="2.4" step="0.05" value="1.3">
+      <div class="row"><label>质量 m</label><span class="val" id="vM">0.050 kg</span></div>
+      <input type="range" id="rM" min="0.02" max="0.10" step="0.005" value="0.05">
+      <div class="row"><label>滚动摩擦系数 μ</label><span class="val" id="vMu">0（理想）</span></div>
+      <input type="range" id="rMu" min="0" max="0.06" step="0.005" value="0">
+    </div>
+
+    <div class="sec">
+      <h3>播放控制</h3>
+      <div class="btns" style="margin-bottom:7px">
+        <button id="bLaunch" class="primary">发射</button>
+        <button id="bPause">暂停</button>
+        <button id="bStep">单步</button>
+        <button id="bReset">重置</button>
+        <button id="bMag">磁铁移开</button>
+      </div>
+      <div class="row"><label>慢动作</label>
+        <div class="seg" id="segSpeed">
+          <button data-s="0.25">0.25×</button><button data-s="0.5">0.5×</button><button data-s="1" class="on">1×</button>
+        </div>
+      </div>
+    </div>
+
+    <div class="sec">
+      <h3>图层显示</h3>
+      <div class="grid2">
+        <label class="chk"><input type="checkbox" id="cInk" checked>墨水轨迹</label>
+        <label class="chk"><input type="checkbox" id="cStrobe">频闪残影</label>
+        <label class="chk"><input type="checkbox" id="cVel" checked>速度矢量</label>
+        <label class="chk"><input type="checkbox" id="cForce" checked>磁力矢量</label>
+        <label class="chk"><input type="checkbox" id="cDecomp" checked>切向/法向分解</label>
+        <label class="chk"><input type="checkbox" id="cConcave" checked>凹侧阴影</label>
+        <label class="chk"><input type="checkbox" id="cCtrl" checked>对照组叠加</label>
+        <label class="chk"><input type="checkbox" id="cGrid" checked>刻度底板</label>
+        <label class="chk"><input type="checkbox" id="cProbe" checked>探针读数</label>
+        <label class="chk"><input type="checkbox" id="cSound">音效</label>
+      </div>
+    </div>
+
+    <div class="sec">
+      <h3>卡片锚点（也可直接点画面上的 ⓘ）</h3>
+      <div class="btns" id="anchorBox">
+        <button data-card="concave">合力指向凹侧</button>
+        <button data-card="tangent">速度沿切线</button>
+        <button data-card="threeCase">锐/钝/直三判定</button>
+        <button data-card="magModel">磁力模型</button>
+        <button data-card="vsLorentz">≠ 洛伦兹力</button>
+      </div>
+    </div>
+
+    <div class="sec">
+      <h3>结论（自动同步）</h3>
+      <div class="concl" id="conclusionBox"></div>
+    </div>
+  </aside>
+</main>
+
+<section class="charts">
+  <div class="card"><h3>v – t<em id="chVNote">速率随时间</em></h3><canvas id="chV"></canvas></div>
+  <div class="card"><h3>θ – t<em>F 与 v 的夹角</em></h3><canvas id="chTh"></canvas></div>
+  <div class="card"><h3>轨迹 y – x<em>叠加对照组直线</em></h3><canvas id="chXY"></canvas></div>
+</section>
+
+<section class="bottom">
+  <div class="card">
+    <h3>数据记录表<em id="recCount">共 0 条</em></h3>
+    <div class="tablewrap">
+      <table>
+        <thead><tr>
+          <th>#</th><th>预设 / 磁铁方位</th><th>θ 区间</th><th>速率趋势</th><th>末速率 v(m/s)</th>
+        </tr></thead>
+        <tbody id="recBody"><tr><td colspan="5" class="empty">还没有数据，先发射一发吧</td></tr></tbody>
+      </table>
+    </div>
+    <div class="btns" style="margin-top:8px">
+      <button id="bCsv">导出 CSV</button>
+      <button id="bClearRec">清空记录</button>
+    </div>
+  </div>
+
+  <div class="card quiz" id="quizBox">
+    <h3>即时反馈 · 4 题<em>点选项立即判定</em></h3>
+    <div id="quizList"></div>
+  </div>
+</section>
+
+<!-- 知识卡片抽屉 -->
+<aside class="drawer" id="drawer" aria-hidden="true" aria-label="知识卡片库">
+  <div class="drawer-head">
+    <h2>知识卡片库</h2>
+    <span class="cnt" id="dCnt">14 张</span>
+    <button id="dClose" aria-label="关闭卡片库">✕</button>
+  </div>
+  <div class="drawer-tools">
+    <input id="dSearch" type="search" placeholder="搜索关键词，如：洛伦兹、凹侧、锐角…" aria-label="搜索卡片">
+    <div class="tabs" id="dTabs"></div>
+  </div>
+  <div class="drawer-body" id="dBody" tabindex="-1" style="outline:none"></div>
+  <div class="drawer-foot">
+    <button id="dPrev" aria-label="上一张">← 上一张</button>
+    <span class="pos" id="dPos">1 / 14</span>
+    <button id="dNext" aria-label="下一张">下一张 →</button>
+  </div>
+  <details class="safety">
+    <summary>⚠ 强磁铁安全提示（点击展开）</summary>
+    <div>① 钕磁铁吸力大，两片相吸易夹伤手指，请勿让磁铁互相吸引碰撞；② 远离手机、银行卡、机械手表、心脏起搏器等易受磁场影响的物品；③ 钢球可能被高速弹出，实验时不要让球正对他人，桌面四周留出缓冲；④ 磁铁靠近铁质桌腿会被吸住，取放时握稳。</div>
+  </details>
+</aside>
+
+<script>
+(function () {
+  "use strict";
+
+  /* =====================================================================
+     1. 配置（物理参数与卡片数据集中管理）
+     ===================================================================== */
+  const CFG = {
+    dt: 1 / 240,              // 固定积分步长
+    k: 0.020,                 // 磁力系数 F = k*S/r²  (N·m²)
+    rMin: 0.14,               // 力饱和距离，避免 r→0 时发散 (m)
+    absorb: 0.10,             // 吸附判定距离 (m)
+    ballR: 0.022,             // 钢球半径 (m)
+    magnetW: 0.075,           // 磁铁长边 (m)
+    magnetH: 0.052,           // 磁铁短边 (m)
+    board: { w: 2.80, h: 1.55 },
+    start: { x: 0.30, y: 0.50 },
+    v0: 1.30, m: 0.05, mu: 0, S: 1,
+    g: 9.8,
+    strobeDt: 0.1,
+    maxT: 8
+  };
+
+  const P = {
+    v0: CFG.v0, m: CFG.m, mu: CFG.mu, S: CFG.S,
+    attract: true, magIn: true,
+    mag: { x: 1.80, y: 1.25 },
+    speed: 1
+  };
+
+  const REDUCE = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  const COL = {
+    v: "#2563eb", force: "#dc2626", ft: "#f59e0b", fn: "#7c3aed",
+    acc: "#16a34a", ctrl: "#94a3b8", ink: "#1e293b",
+    text: "#1e293b", muted: "#64748b", grid: "#e5ecf6"
+  };
+
+  /* =====================================================================
+     2. 知识卡片数据（14 张）
+     ===================================================================== */
+  function svg(w, h, body) {
+    return '<svg viewBox="0 0 ' + w + ' ' + h + '" xmlns="http://www.w3.org/2000/svg">' +
+      '<rect width="' + w + '" height="' + h + '" fill="#fbfdff"/>' + body + '</svg>';
+  }
+  const ARR = (x1, y1, x2, y2, c, w) => {
+    const a = Math.atan2(y2 - y1, x2 - x1), L = 7, sp = 0.42;
+    return '<line x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 + '" stroke="' + c + '" stroke-width="' + (w || 2) + '" stroke-linecap="round"/>' +
+      '<polygon points="' + x2 + ',' + y2 + ' ' + (x2 - L * Math.cos(a - sp)) + ',' + (y2 - L * Math.sin(a - sp)) + ' ' +
+      (x2 - L * Math.cos(a + sp)) + ',' + (y2 - L * Math.sin(a + sp)) + '" fill="' + c + '"/>';
+  };
+  const TXT = (x, y, t, c, s) => '<text x="' + x + '" y="' + y + '" fill="' + (c || "#475569") + '" font-size="' + (s || 10) + '" font-family="system-ui">' + t + '</text>';
+
+  const MINI = {
+    cond: svg(260, 108,
+      '<path d="M18 74 L112 74" stroke="#94a3b8" stroke-width="2" stroke-dasharray="5 4"/>' +
+      ARR(38, 62, 62, 62, "#2563eb") + ARR(62, 62, 86, 62, "#dc2626") +
+      TXT(30, 50, "F ∥ v → 直线", "#334155") +
+      '<path d="M140 88 Q182 88 208 40" fill="none" stroke="#334155" stroke-width="2"/>' +
+      ARR(168, 85, 188, 76, "#2563eb") + ARR(168, 85, 182, 66, "#dc2626") +
+      TXT(142, 104, "F 与 v 不共线 → 曲线", "#334155")),
+    tangent: svg(260, 108,
+      '<path d="M22 90 Q120 88 200 26" fill="none" stroke="#334155" stroke-width="2"/>' +
+      '<circle cx="128" cy="70" r="4" fill="#fff" stroke="#0f172a" stroke-width="2"/>' +
+      '<line x1="88" y1="76" x2="182" y2="54" stroke="#2563eb" stroke-width="2" stroke-dasharray="4 3"/>' +
+      ARR(150, 62, 186, 54, "#2563eb") + TXT(186, 50, "v 沿切线", "#2563eb") +
+      '<line x1="128" y1="70" x2="206" y2="18" stroke="#f87171" stroke-width="2" stroke-dasharray="3 3"/>' +
+      '<line x1="176" y1="34" x2="196" y2="50" stroke="#ef4444" stroke-width="2"/>' +
+      '<line x1="196" y1="34" x2="176" y2="50" stroke="#ef4444" stroke-width="2"/>' +
+      TXT(196, 76, "✗ 指向磁铁", "#ef4444")),
+    concave: svg(260, 108,
+      '<path d="M20 92 Q128 20 228 78" fill="none" stroke="#334155" stroke-width="2"/>' +
+      '<path d="M20 92 Q128 20 228 78 L228 104 L20 104 Z" fill="rgba(220,38,38,.09)"/>' +
+      ARR(124, 46, 124, 82, "#dc2626") + TXT(130, 74, "F 指向凹侧", "#dc2626") +
+      ARR(124, 46, 124, 14, "#f87171") + '<line x1="112" y1="20" x2="136" y2="38" stroke="#ef4444" stroke-width="2"/>' +
+      '<line x1="136" y1="20" x2="112" y2="38" stroke="#ef4444" stroke-width="2"/>' +
+      TXT(140, 24, "✗ 不可能指向凸侧", "#ef4444")),
+    decomp: svg(260, 108,
+      '<line x1="40" y1="84" x2="210" y2="84" stroke="#cbd5e1" stroke-width="1.5"/>' +
+      ARR(40, 84, 150, 84, "#2563eb", 2.4) + TXT(150, 78, "v", "#2563eb", 12) +
+      ARR(40, 84, 118, 36, "#dc2626", 2.4) + TXT(122, 34, "F", "#dc2626", 12) +
+      '<line x1="150" y1="84" x2="150" y2="52" stroke="#cbd5e1" stroke-dasharray="3 3"/>' +
+      '<line x1="118" y1="36" x2="150" y2="52" stroke="#cbd5e1" stroke-dasharray="3 3"/>' +
+      ARR(40, 96, 118, 96, "#f59e0b", 2.4) + TXT(122, 100, "F_t 改速率", "#b45309", 10) +
+      ARR(150, 84, 150, 52, "#7c3aed", 2.4) + TXT(156, 54, "F_n 改方向", "#6d28d9", 10)),
+    threeCase: svg(260, 108,
+      '<line x1="20" y1="54" x2="66" y2="54" stroke="#2563eb" stroke-width="2.2"/>' + ARR(52, 54, 66, 54, "#2563eb") +
+      ARR(20, 54, 56, 30, "#dc2626") + TXT(18, 92, "θ<90° 加速", "#b91c1c", 9.5) +
+      '<line x1="100" y1="54" x2="146" y2="54" stroke="#2563eb" stroke-width="2.2"/>' + ARR(132, 54, 146, 54, "#2563eb") +
+      ARR(100, 54, 100, 22, "#dc2626") + TXT(96, 92, "θ=90° 速率不变", "#15803d", 9.5) +
+      '<line x1="180" y1="54" x2="226" y2="54" stroke="#2563eb" stroke-width="2.2"/>' + ARR(212, 54, 226, 54, "#2563eb") +
+      ARR(180, 54, 156, 32, "#dc2626") + TXT(176, 92, "θ>90° 减速", "#1d4ed8", 9.5)),
+    work: svg(260, 108,
+      '<line x1="30" y1="80" x2="230" y2="80" stroke="#94a3b8" stroke-width="1.5" stroke-dasharray="4 3"/>' +
+      '<circle cx="60" cy="80" r="5" fill="#fff" stroke="#0f172a" stroke-width="2"/>' +
+      '<circle cx="204" cy="80" r="5" fill="#fff" stroke="#0f172a" stroke-width="2"/>' +
+      ARR(60, 80, 110, 80, "#2563eb") + TXT(76, 96, "位移 s", "#2563eb") +
+      ARR(60, 80, 104, 44, "#dc2626") + TXT(70, 40, "F", "#dc2626", 12) +
+      '<path d="M84 80 A24 24 0 0 0 78 62" fill="none" stroke="#f59e0b" stroke-width="1.6"/>' +
+      TXT(88, 70, "θ", "#b45309", 11) +
+      TXT(126, 34, "W = F·s·cosθ", "#0f172a", 12) +
+      TXT(126, 50, "cosθ>0 加速 / =0 不变 / <0 减速", "#475569", 9.5)),
+    fn: svg(260, 108,
+      '<circle cx="130" cy="56" r="34" fill="none" stroke="#cbd5e1" stroke-width="1.6" stroke-dasharray="4 3"/>' +
+      '<circle cx="130" cy="56" r="3.5" fill="#0f172a"/>' +
+      '<circle cx="164" cy="56" r="5" fill="#fff" stroke="#0f172a" stroke-width="2"/>' +
+      ARR(164, 56, 164, 26, "#2563eb") + TXT(168, 32, "v", "#2563eb", 12) +
+      ARR(164, 56, 136, 56, "#dc2626") + TXT(120, 50, "F_n", "#dc2626", 11) +
+      TXT(150, 96, "F_n = m v² / ρ", "#0f172a", 12)),
+    magModel: svg(260, 108,
+      '<rect x="30" y="34" width="26" height="40" rx="3" fill="#ef4444"/>' +
+      '<rect x="56" y="34" width="26" height="40" rx="3" fill="#2563eb"/>' +
+      TXT(36, 60, "N", "#fff", 13) + TXT(62, 60, "S", "#fff", 13) +
+      '<circle cx="196" cy="54" r="6" fill="#94a3b8"/>' +
+      '<path d="M96 54 Q140 24 186 52" fill="none" stroke="#f59e0b" stroke-width="1.6" stroke-dasharray="4 3"/>' +
+      ARR(186, 52, 150, 44, "#dc2626") +
+      TXT(86, 100, "F = kS / r²，r 越小 F 越大", "#0f172a", 10.5) +
+      TXT(86, 20, "方向沿「磁极—球心」连线", "#475569", 10)),
+    vsLorentz: svg(260, 108,
+      '<rect x="16" y="24" width="110" height="66" rx="6" fill="#fef2f2" stroke="#fecaca"/>' +
+      '<rect x="30" y="42" width="18" height="30" fill="#dc2626"/><rect x="48" y="42" width="18" height="30" fill="#2563eb"/>' +
+      '<circle cx="96" cy="58" r="5" fill="#94a3b8"/>' +
+      ARR(96, 58, 66, 58, "#dc2626") + TXT(20, 102, "磁极吸引 → F 沿连线", "#b91c1c", 9) +
+      '<rect x="136" y="24" width="110" height="66" rx="6" fill="#eff6ff" stroke="#bfdbfe"/>' +
+      '<circle cx="180" cy="58" r="5" fill="#0f172a"/>' +
+      ARR(180, 58, 210, 58, "#2563eb") + ARR(180, 58, 180, 30, "#7c3aed") +
+      TXT(140, 102, "洛伦兹力 → F ⊥ v 恒垂直", "#1d4ed8", 9)),
+    vsCircle: svg(260, 108,
+      '<circle cx="70" cy="56" r="34" fill="none" stroke="#94a3b8" stroke-width="1.8"/>' +
+      '<circle cx="104" cy="56" r="5" fill="#fff" stroke="#0f172a" stroke-width="2"/>' +
+      ARR(104, 56, 104, 24, "#2563eb") + ARR(104, 56, 74, 56, "#dc2626") +
+      TXT(26, 102, "匀速圆周：|v| 不变", "#475569", 9.5) +
+      '<path d="M150 84 Q196 84 224 30" fill="none" stroke="#334155" stroke-width="2"/>' +
+      '<circle cx="176" cy="83" r="5" fill="#fff" stroke="#0f172a" stroke-width="2"/>' +
+      ARR(176, 83, 206, 76, "#2563eb") + ARR(176, 83, 196, 52, "#dc2626") +
+      TXT(150, 102, "本演示：|v| 在变", "#b91c1c", 9.5)),
+    method: svg(260, 108,
+      '<path d="M22 90 Q120 14 232 76" fill="none" stroke="#334155" stroke-width="2"/>' +
+      '<circle cx="70" cy="62" r="3.5" fill="#2563eb"/><circle cx="128" cy="38" r="3.5" fill="#2563eb"/><circle cx="190" cy="56" r="3.5" fill="#2563eb"/>' +
+      ARR(70, 62, 96, 78, "#dc2626") + ARR(128, 38, 128, 62, "#dc2626") + ARR(190, 56, 214, 74, "#dc2626") +
+      TXT(18, 104, "三点作法线 → 都指向凹侧", "#0f172a", 9.5)),
+    control: svg(260, 108,
+      '<line x1="20" y1="34" x2="120" y2="34" stroke="#94a3b8" stroke-width="2" stroke-dasharray="5 4"/>' +
+      '<circle cx="70" cy="34" r="4" fill="#94a3b8"/>' + TXT(126, 38, "无磁铁：直线匀速", "#64748b", 9.5) +
+      '<path d="M20 82 Q90 82 120 58" fill="none" stroke="#2563eb" stroke-width="2"/>' +
+      '<circle cx="70" cy="80" r="4" fill="#2563eb"/>' + TXT(126, 78, "有磁铁：轨迹弯曲", "#1d4ed8", 9.5) +
+      TXT(20, 102, "只改一个变量：磁铁的有无", "#b45309", 9.5)),
+    misconception: svg(260, 108,
+      TXT(12, 22, "✗ 速度指向磁铁", "#ef4444", 10) + TXT(150, 22, "✓ 速度沿切线", "#15803d", 10) +
+      TXT(12, 46, "✗ 受力就做曲线", "#ef4444", 10) + TXT(150, 46, "✓ 共线则直线", "#15803d", 10) +
+      TXT(12, 70, "✗ 曲线运动速率必变", "#ef4444", 10) + TXT(150, 70, "✓ 匀速圆周不变", "#15803d", 10) +
+      TXT(12, 94, "✗ 磁力方向大小不变", "#ef4444", 10) + TXT(150, 94, "✓ 随距离方位变", "#15803d", 10)),
+    apply: svg(260, 108,
+      '<circle cx="46" cy="46" r="13" fill="none" stroke="#94a3b8" stroke-width="1.5"/>' +
+      '<circle cx="46" cy="46" r="4" fill="#2563eb"/><path d="M62 32 l14 -12" stroke="#dc2626" stroke-width="2"/>' +
+      TXT(18, 84, "卫星变轨", "#475569", 9.5) +
+      '<rect x="104" y="26" width="46" height="8" fill="#cbd5e1"/><rect x="104" y="62" width="46" height="8" fill="#cbd5e1"/>' +
+      '<path d="M126 34 Q150 48 126 62" fill="none" stroke="#2563eb" stroke-width="1.8"/>' +
+      TXT(98, 84, "电场偏转", "#475569", 9.5) +
+      '<circle cx="206" cy="46" r="9" fill="none" stroke="#dc2626" stroke-width="1.5"/>' +
+      '<path d="M170 60 Q190 52 196 46" fill="none" stroke="#2563eb" stroke-width="1.8"/>' +
+      TXT(176, 84, "滚珠侧偏", "#475569", 9.5))
+  };
+
+  const CATS = ["全部", "概念", "规律", "公式", "辨析", "方法", "易错", "应用"];
+
+  const CARDS = [
+    {
+      id: "cond", cat: "概念", title: "曲线运动的条件",
+      line: "合力方向与速度方向不在同一直线上，物体才做曲线运动。",
+      fx: "共线 → 直线（加速 / 减速）\n不共线 → 曲线（方向一定改变）",
+      mini: "cond",
+      how: "点预设「④ 共线·磁铁在前」：钢球走直线加速；再点「① 侧前方」：轨迹立刻弯曲。",
+      warn: "受力 ≠ 曲线运动。共线时力只改变速率，不改变方向。",
+      back: "把 F 沿 v 方向和垂直 v 方向分解：只有垂直于 v 的分量 F_n 才能改变速度方向。F 与 v 共线时 F_n = 0，速度方向不变，所以是直线运动。"
+    },
+    {
+      id: "tangent", cat: "概念", title: "速度沿轨迹切线方向",
+      line: "瞬时速度的方向就是轨迹在该点的切线方向。",
+      fx: "v = Δr/Δt（Δt→0），方向沿切线",
+      mini: "tangent",
+      how: "点亮「速度矢量」，观察蓝箭头始终与墨水轨迹相切；用探针点任意一点，箭头会重新贴合该点切线。",
+      warn: "速度不指向磁铁，也不指向合力方向——它只认轨迹的切线。",
+      back: "曲线运动中位置矢量 r(t) 连续变化，速度 v = dr/dt 是 r 的导数，其方向必然是轨迹的切线方向；轨迹的弯曲由加速度（合力）负责，与速度方向是两件事。"
+    },
+    {
+      id: "concave", cat: "概念", title: "合力指向轨迹的凹侧",
+      line: "轨迹总是向合力所指的一侧弯曲，合力指向凹侧（内侧），绝不会指向凸侧。",
+      fx: "F 与 v 的夹角 0°<θ<180° 时，轨迹夹在 v 与 F 之间",
+      mini: "concave",
+      how: "打开「凹侧阴影」：粉色区域永远在磁铁那一侧；把磁铁拖到轨迹另一侧，阴影随之翻面。",
+      warn: "「力指向凸侧」是高频错误——凸侧是轨迹「背对」力的方向。",
+      back: "加速度指向速度的「转向」一侧。速度矢量在 Δt 内转过一个角度，转轴方向由 a 的垂直分量决定，故轨迹凹向 a，即凹向合力。三个连续点的法线都交于凹侧，可用「三点作法线」检验。"
+    },
+    {
+      id: "decompose", cat: "概念", title: "切向分力与法向分力",
+      line: "把合力分解到切线方向与法线方向：F_t 只改速率，F_n 只改方向。",
+      fx: "F_t = F·cosθ（沿切线）\nF_n = F·sinθ（垂直切线，指向凹侧）",
+      mini: "decomp",
+      how: "打开「切向/法向分解」：橙色 F_t 与蓝箭头同线，紫色 F_n 垂直于轨迹。",
+      warn: "磁力一般不垂直于速度，所以速率和方向同时改变——不是「只改方向」。",
+      back: "对速度矢量求导：dv/dt 中沿 v 的分量改变大小，垂直 v 的分量改变方向。因此 F_t = m·dv/dt 只管速率，F_n = m·v²/ρ 只管方向（ρ 为曲率半径）。"
+    },
+    {
+      id: "threeCase", cat: "规律", title: "锐角加速 · 直角不变 · 钝角减速",
+      line: "看 F 与 v 的夹角就能判断速率怎么变：锐角增大、直角不变、钝角减小。",
+      fx: "θ < 90° → 速率增大\nθ = 90° → 速率不变（瞬时）\nθ > 90° → 速率减小",
+      mini: "threeCase",
+      how: "分别点「① 侧前方」「② 正侧方」「③ 侧后方」，盯着右上角判定标签与 v–t 曲线。",
+      warn: "这是「瞬时」判据：磁铁位置一变，θ 就变，速率的变化趋势也会跟着变（见 ⑥ 排斥档）。",
+      back: "由 W = F·s·cosθ 或 F_t = F cosθ 可知：θ<90° 时 F_t 与 v 同向，做正功，动能增大；θ=90° 时 F_t=0，不做功；θ>90° 时 F_t 与 v 反向，做负功，动能减小。"
+    },
+    {
+      id: "work", cat: "规律", title: "功的正负决定速率增减",
+      line: "合力做正功速率增大，做负功速率减小，不做功速率不变（动能定理）。",
+      fx: "W = F·s·cosθ = ΔEk = ½mv² − ½mv₀²",
+      mini: "work",
+      how: "读数区的「累计功 W」与 ΔEk 始终相等（误差 &lt; 0.1%），可当堂验算动能定理；把 μ 调大后 W 会自动计入摩擦做的负功，两者依然相等。",
+      warn: "W 的正负看夹角，不看力的大小；力再大，只要 θ=90° 也不做功。",
+      back: "动能定理：W合 = ΔEk。磁力沿连线、速度沿切线，两者夹角 θ 决定 cosθ 的正负，于是 W 的正负决定速率增减。本演示中读出的累计功由 Σ(F·v)dt 累加得到。"
+    },
+    {
+      id: "fn", cat: "公式", title: "法向力与曲率（进阶）",
+      line: "法向分力提供向心效果，力越大、速度越大，轨迹弯得越急（ρ 越小）。",
+      fx: "F_n = m·v²/ρ　→　ρ = m v² / F_n",
+      mini: "fn",
+      how: "把磁铁拖近轨迹：F 变大，轨迹明显弯得更急；拖远则弯得平缓。",
+      warn: "只有 F_n 恰好等于 m v²/ρ 且大小恒定时，才可能出现一段圆弧——本演示的磁力是变力，做不到。",
+      back: "曲率半径由「法向加速度」决定：a_n = v²/ρ。磁力随距离迅速增大，越靠近磁铁 a_n 越大，ρ 越小，轨迹弯曲越剧烈，这正是「越近越弯」的定量解释。"
+    },
+    {
+      id: "magModel", cat: "公式", title: "本 Demo 的磁力近似模型",
+      line: "磁力取 F = kS/r²，方向沿磁极—球心连线；这是定性近似，不是精确磁学计算。",
+      fx: "F = k·S / r²（r < 0.14 m 时按 0.14 m 计，防发散）\n方向：吸引指向磁铁，排斥背离磁铁",
+      mini: "magModel",
+      how: "拖动磁铁或调「磁性强度 S」，看红色箭头长度与 r 读数如何变化。",
+      warn: "真实磁铁是偶极场（远处近似 1/r³ 的梯度力），本模型只保留「越近越强、方向沿连线」这两个定性特征。",
+      back: "把磁铁看成点磁极、钢球看成可磁化的小球，等效吸引力近似与 1/r² 成正比。这样既保证「越近越强」，又便于数值积分。为避免 r→0 时力发散，代码在 r < rMin 处截断，并在 r < 0.10 m 判定为吸附、结束实验。"
+    },
+    {
+      id: "vsLorentz", cat: "辨析", title: "磁力 ≠ 洛伦兹力",
+      line: "本演示是磁铁吸引铁质钢球的磁力；洛伦兹力是电荷在磁场中受的力，两者机制不同。",
+      fx: "洛伦兹力：F = qvB·sinθ，方向由左手定则，恒垂直于 v，不做功\n本演示磁力：沿磁极—球心连线，与 v 可成任意角，做功",
+      mini: "vsLorentz",
+      how: "看红色箭头：它会随钢球位置不断改变方向，并不总垂直于蓝色速度箭头。",
+      warn: "把「磁铁吸钢球」当成洛伦兹力，是本题最典型的错误联想。",
+      back: "钢球不带净电荷，它被吸引是因为铁磁材料在磁场中被磁化后被磁极吸引，力沿磁场梯度方向；洛伦兹力作用于运动电荷，F = qv×B 恒垂直于 v，所以只改变方向、不改变速率，可做匀速圆周运动。两者的方向规律、做功情况都不同。"
+    },
+    {
+      id: "vsCircle", cat: "辨析", title: "本演示 ≠ 匀速圆周运动",
+      line: "匀速圆周运动的合力始终垂直速度、指向圆心、大小恒定；本演示三条都不满足。",
+      fx: "匀速圆周：θ ≡ 90°，F 大小恒定，速率不变\n本演示：θ 在变，F 在变，速率在变",
+      mini: "vsCircle",
+      how: "看 θ–t 曲线：它并不恒等于 90°，而是随位置漂移；v–t 曲线也不是水平线。",
+      warn: "「做曲线运动速率一定变化」同样错——匀速圆周就是速率不变的反例。",
+      back: "只有法向力、且大小恰好等于 mv²/ρ 时才是匀速圆周。本演示中磁力既有切向分量又有法向分量，且随距离变化，所以速率与方向同时改变，轨迹是「被拉向磁铁的螺旋状曲线」。"
+    },
+    {
+      id: "method", cat: "方法", title: "由轨迹反推合力方向",
+      line: "在轨迹上取三点作法线，法线共同指向的一侧就是合力方向（凹侧）。",
+      fx: "口诀：切线定 v，法线定 F，F 在凹侧，夹角定快慢",
+      mini: "method",
+      how: "点轨迹任意三点，观察「凹侧阴影」始终落在磁铁一侧；再用探针看该点 F 的方向。",
+      warn: "只看一个点容易误判，取三点更稳。",
+      back: "曲线运动的速度沿切线，加速度（合力）指向曲率中心一侧，因此把若干点的法线画出来，它们会围出凹侧区域。这也是「已知轨迹求受力方向」的标准做法。"
+    },
+    {
+      id: "control", cat: "方法", title: "控制变量：有没有磁铁",
+      line: "先让钢球在没有磁铁时走直线，再把磁铁放回去，两次对比才能说明「是磁力让轨迹弯曲」。",
+      fx: "只改变一个变量：磁铁的有无\n其余（v₀、m、μ、起点）保持不变",
+      mini: "control",
+      how: "点「磁铁移开」发一次，再点「磁铁放入」发一次；「对照组叠加」会把两条轨迹画在同一坐标系里。",
+      warn: "同时改 v₀ 又改磁铁位置，就无法判断是哪一个因素造成的偏转。",
+      back: "对照实验是排除干扰因素的基本方法。本演示中对照组与实验组共用同一坐标系、同一起点与初速度，唯一差别是磁铁是否参与作用。"
+    },
+    {
+      id: "misconception", cat: "易错", title: "6 条典型误解",
+      line: "把「感觉」换成「判据」，这 6 条就不会再错。",
+      fx: "① 速度指向磁铁 ✗ → 沿切线\n② 受力就做曲线 ✗ → 共线则直线\n③ 曲线运动速率必变 ✗ → 匀速圆周不变\n④ 合力指向凸侧 ✗ → 指向凹侧\n⑤ 磁力大小方向不变 ✗ → 随距离方位变\n⑥ 磁铁吸球=洛伦兹力 ✗ → 机制不同",
+      mini: "misconception",
+      how: "逐条在本 Demo 中验证：①看蓝箭头 ②点共线预设 ③看 θ=90° 的瞬时 ④看凹侧阴影 ⑤拖磁铁 ⑥看 F 不垂直 v。",
+      warn: "口诀：切线定速度，凹侧定合力，夹角定快慢。",
+      back: "每条误解都对应一个可观察的反例：本演示把这 6 个反例都做成了可复现的操作，建议逐条动手验证一遍。"
+    },
+    {
+      id: "apply", cat: "应用", title: "生活与工程中的同类现象",
+      line: "凡是「力与速度不共线」的场合，都会出现同样的偏转与速率变化。",
+      fx: "卫星变轨：推力与速度夹角决定加速 / 减速\n带电粒子偏转：恒力（类平抛）\n行星绕日：引力指向焦点（凹侧）",
+      mini: "apply",
+      how: "把磁铁看作「引力源」：钢球越靠近、弯得越急、速率变化越快，与行星近日点加速是同一类图景。",
+      warn: "带电粒子在匀强电场中受力恒定，轨迹是抛物线；本演示的磁力是变力，轨迹不是标准曲线。",
+      back: "万有引力、静电力、磁极吸引力都指向「力源」，因此轨迹都向力源一侧弯曲；当力源固定且力随距离变化时，轨迹是圆锥曲线族（引力）或更复杂的曲线。"
+    }
+  ];
+
+  /* =====================================================================
+     3. 五种夹角预设
+     ===================================================================== */
+  const PRESETS = [
+    { id: "p1", name: "① 侧前方 · 吸引（v 与 F 成锐角起步）", color: "#2563eb", mag: { x: 1.80, y: 1.25 }, attract: true, card: "threeCase" },
+    { id: "p2", name: "② 正侧方 · 吸引（经过 θ=90°）", color: "#0891b2", mag: { x: 1.55, y: 1.40 }, attract: true, card: "threeCase" },
+    { id: "p3", name: "③ 侧后方 · 吸引（钝角 → 减速）", color: "#7c3aed", mag: { x: 0.05, y: 0.10 }, attract: true, card: "threeCase" },
+    { id: "p4", name: "④ 共线 · 磁铁在前（同向 → 直线加速）", color: "#16a34a", mag: { x: 2.30, y: 0.50 }, attract: true, card: "cond" },
+    { id: "p5", name: "⑤ 共线 · 磁铁在后（先减速，后被吸回）", color: "#b45309", mag: { x: 0.08, y: 0.50 }, attract: true, card: "cond" },
+    { id: "p6", name: "⑥ 侧前方 · 排斥（背离弯曲 → 先减速）", color: "#dc2626", mag: { x: 1.90, y: 1.30 }, attract: false, card: "vsLorentz" }
+  ];
+  let curPreset = PRESETS[0];
+
+  /* =====================================================================
+     4. 状态
+     ===================================================================== */
+  const S = {
+    running: false, launched: false, ended: false,
+    t: 0, x: CFG.start.x, y: CFG.start.y, vx: 0, vy: 0,
+    samples: [],          // {t,x,y,vx,vy,v,F,th,ft,fn,fx,fy}
+    W: 0,                 // 累计功
+    probeIdx: -1,
+    dragging: false,
+    records: [],
+    control: [],          // 对照组轨迹
+    show: { ink: true, strobe: false, vel: true, force: true, decomp: true, concave: true, ctrl: true, grid: true, probe: true, sound: false },
+    step: 0
+  };
+
+  /* =====================================================================
+     5. 物理引擎
+     ===================================================================== */
+  const rad = d => d * Math.PI / 180;
+  const deg = r => r * 180 / Math.PI;
+  const TAU = Math.PI * 2;
+  const clamp = (v, a, b) => v < a ? a : (v > b ? b : v);
+  const fmt = (n, d) => (Math.abs(n) < 1e-9 ? 0 : n).toFixed(d === undefined ? 2 : d);
+
+  /** 某点处钢球受到的磁力（吸引沿球→磁铁，排斥反向） */
+  function forceAt(x, y) {
+    if (!P.magIn) return { fx: 0, fy: 0, F: 0, r: Infinity, ux: 0, uy: 0 };
+    const dx = P.mag.x - x, dy = P.mag.y - y;
+    const r = Math.hypot(dx, dy) || 1e-6;
+    const rr = Math.max(r, CFG.rMin);
+    const F = CFG.k * P.S / (rr * rr);
+    let ux = dx / r, uy = dy / r;
+    if (!P.attract) { ux = -ux; uy = -uy; }
+    return { fx: F * ux, fy: F * uy, F, r, ux, uy };
+  }
+
+  /** 加速度（含滚动摩擦） */
+  function accelAt(x, y, vx, vy) {
+    const f = forceAt(x, y);
+    let ax = f.fx / P.m, ay = f.fy / P.m;
+    const sp = Math.hypot(vx, vy);
+    if (P.mu > 0 && sp > 1e-6) {
+      const fr = P.mu * CFG.g;
+      ax -= fr * vx / sp; ay -= fr * vy / sp;
+    }
+    return [ax, ay, f];
+  }
+
+  /** 一步 RK4 积分（位置/速度都用四阶精度，保证长时间演示能量不漂移） */
+  function stepPhysics(dt) {
+    if (S.ended) return;
+    const x = S.x, y = S.y, vx = S.vx, vy = S.vy;
+
+    const f = (X, Y, VX, VY) => {
+      const a = accelAt(X, Y, VX, VY);
+      return [VX, VY, a[0], a[1]];
+    };
+    const k1 = f(x, y, vx, vy);
+    const k2 = f(x + dt / 2 * k1[0], y + dt / 2 * k1[1], vx + dt / 2 * k1[2], vy + dt / 2 * k1[3]);
+    const k3 = f(x + dt / 2 * k2[0], y + dt / 2 * k2[1], vx + dt / 2 * k2[2], vy + dt / 2 * k2[3]);
+    const k4 = f(x + dt * k3[0], y + dt * k3[1], vx + dt * k3[2], vy + dt * k3[3]);
+
+    const nx = x + dt / 6 * (k1[0] + 2 * k2[0] + 2 * k3[0] + k4[0]);
+    const ny = y + dt / 6 * (k1[1] + 2 * k2[1] + 2 * k3[1] + k4[1]);
+    const nvx = vx + dt / 6 * (k1[2] + 2 * k2[2] + 2 * k3[2] + k4[2]);
+    const nvy = vy + dt / 6 * (k1[3] + 2 * k2[3] + 2 * k3[3] + k4[3]);
+
+    // 累计功：W += F·v·dt（中点值近似）
+    const fm = forceAt((x + nx) / 2, (y + ny) / 2);
+    S.W += (fm.fx * (vx + nvx) / 2 + fm.fy * (vy + nvy) / 2) * dt;
+    // 摩擦力做的负功也要计入，否则 μ>0 时 W ≠ ΔEk（动能定理对不上）
+    if (P.mu > 0) {
+      const sp0 = Math.hypot(vx, vy), sp1 = Math.hypot(nvx, nvy);
+      S.W -= P.mu * CFG.g * P.m * (sp0 + sp1) / 2 * dt;
+    }
+
+    S.x = nx; S.y = ny; S.vx = nvx; S.vy = nvy; S.t += dt;
+
+    pushSample();
+    checkEnd();
+  }
+
+  /** 记录一个采样点（含该点的力、夹角、分解量） */
+  function pushSample() {
+    const sp = Math.hypot(S.vx, S.vy);
+    const f = forceAt(S.x, S.y);
+    let th = NaN;
+    if (sp > 1e-9 && f.F > 1e-12) {
+      th = deg(Math.acos(clamp((f.fx * S.vx + f.fy * S.vy) / (f.F * sp), -1, 1)));
+    }
+    // 切向 / 法向分力
+    const ux = sp > 1e-9 ? S.vx / sp : 1, uy = sp > 1e-9 ? S.vy / sp : 0;
+    const ft = f.fx * ux + f.fy * uy;              // 与 v 同向为正
+    const fnx = f.fx - ft * ux, fny = f.fy - ft * uy; // 法向矢量
+    S.samples.push({
+      t: S.t, x: S.x, y: S.y, vx: S.vx, vy: S.vy, v: sp,
+      F: f.F, fx: f.fx, fy: f.fy, th: th,
+      ft: ft, fn: Math.hypot(fnx, fny), fnx: fnx, fny: fny
+    });
+  }
+
+  /** 结束条件判定 */
+  function checkEnd() {
+    const B = CFG.board;
+    if (P.magIn) {
+      const r = Math.hypot(P.mag.x - S.x, P.mag.y - S.y);
+      if (r < CFG.absorb) return endRun("absorb", r);
+      if (!P.attract && r < CFG.absorb + 0.02) return endRun("absorb", r);
+    }
+    if (S.x < 0.01 || S.x > B.w - 0.01 || S.y < 0.01 || S.y > B.h - 0.01) return endRun("exit", 0);
+    const sp = Math.hypot(S.vx, S.vy);
+    if (sp < 0.02 && forceAt(S.x, S.y).F < 0.01) return endRun("stop", 0);
+    if (S.t > CFG.maxT) return endRun("timeout", 0);
+  }
+
+  function endRun(reason, r) {
+    S.ended = true; S.running = false;
+    const vEnd = Math.hypot(S.vx, S.vy);
+    let msg = "";
+    if (reason === "absorb") {
+      msg = P.attract
+        ? "<b>钢球被磁铁吸住</b>　r = " + fmt(r, 3) + " m　—　越靠近磁铁磁力越大（F ∝ 1/r²），本次实验结束。"
+        : "<b>钢球顶到磁铁（排斥）</b>　r = " + fmt(r, 3) + " m　—　本次实验结束。";
+      beep(180, 0.14);
+    } else if (reason === "exit") {
+      msg = "<b>钢球滚出玻璃板</b>　—　本次实验结束。";
+      beep(320, 0.08);
+    } else if (reason === "stop") {
+      msg = "<b>钢球停下</b>　—　动能被摩擦耗尽（μ = " + fmt(P.mu, 3) + "）。";
+      beep(240, 0.1);
+    } else {
+      msg = "<b>已达演示时长上限</b>　—　本次实验结束。";
+    }
+    msg += "　末速率 v = <b>" + fmt(vEnd, 2) + " m/s</b>（初速 " + fmt(P.v0, 2) + " m/s）。";
+    const ec = $("endcard");
+    ec.innerHTML = msg;
+    ec.classList.add("show");
+    S._dirty = true;   // 结束时也要把最后一批数据刷进图表
+    addRecord(vEnd);
+    updateConclusion();
+  }
+
+  /* =====================================================================
+     6. 场景坐标（世界 → 屏幕，等比例自适应）
+     ===================================================================== */
+  const PAD = { l: 34, r: 34, t: 30, b: 46 };
+  const V = { W: 0, H: 0, dpr: 1, s: 300, ox: 40, oy: 500 };
+  const scene = document.getElementById("scene");
+  const ctx = scene.getContext("2d");
+
+  function resizeScene() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = scene.clientWidth || 900, h = scene.clientHeight || 520;
+    if (scene.width !== Math.round(w * dpr) || scene.height !== Math.round(h * dpr)) {
+      scene.width = Math.round(w * dpr); scene.height = Math.round(h * dpr);
+    }
+    V.W = w; V.H = h; V.dpr = dpr;
+  }
+
+  function computeView() {
+    // 视野 = 玻璃板 ∪ 所有轨迹（正常情况下轨迹都在板内）
+    let minX = 0, maxX = CFG.board.w, minY = 0, maxY = CFG.board.h;
+    const all = S.samples.concat(S.control);
+    for (let i = 0; i < all.length; i++) {
+      const p = all[i];
+      if (!isFinite(p.x) || !isFinite(p.y)) continue;
+      minX = Math.min(minX, p.x); maxX = Math.max(maxX, p.x);
+      minY = Math.min(minY, p.y); maxY = Math.max(maxY, p.y);
+    }
+    const wW = Math.max(0.4, maxX - minX), wH = Math.max(0.3, maxY - minY);
+    const availW = Math.max(120, V.W - PAD.l - PAD.r);
+    const availH = Math.max(100, V.H - PAD.t - PAD.b);
+    const s = Math.min(availW / wW, availH / wH);
+    V.s = s;
+    V.ox = PAD.l + (availW - wW * s) / 2 - minX * s;
+    V.oy = V.H - PAD.b - (availH - wH * s) / 2 + minY * s;
+    $("scaleTag").textContent = "等比例 · 1 m ≈ " + s.toFixed(0) + " px";
+  }
+
+  const px = x => V.ox + x * V.s;
+  const py = y => V.oy - y * V.s;   // 世界 y 向上
+
+  /* =====================================================================
+     7. 绘图工具
+     ===================================================================== */
+  function roundRect(c, x, y, w, h, r) {
+    r = Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2);
+    c.beginPath();
+    c.moveTo(x + r, y);
+    c.lineTo(x + w - r, y); c.quadraticCurveTo(x + w, y, x + w, y + r);
+    c.lineTo(x + w, y + h - r); c.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    c.lineTo(x + r, y + h); c.quadraticCurveTo(x, y + h, x, y + h - r);
+    c.lineTo(x, y + r); c.quadraticCurveTo(x, y, x + r, y);
+    c.closePath();
+  }
+
+  function label(text, x, y, o) {
+    o = o || {};
+    const size = o.size || 12, weight = o.weight || 500, pad = o.pad === undefined ? 4 : o.pad;
+    ctx.save();
+    ctx.font = weight + " " + size + 'px system-ui,"Microsoft YaHei",sans-serif';
+    ctx.textBaseline = "middle";
+    const w = ctx.measureText(text).width;
+    let bx = x;
+    if (o.align === "center") bx = x - w / 2; else if (o.align === "right") bx = x - w;
+    if (o.bg !== false) {
+      ctx.fillStyle = o.bg || "rgba(255,255,255,.9)";
+      roundRect(ctx, bx - pad, y - size * 0.72, w + pad * 2, size * 1.44, 4);
+      ctx.fill();
+    }
+    ctx.fillStyle = o.color || COL.text;
+    ctx.textAlign = "left";
+    ctx.fillText(text, bx, y);
+    ctx.restore();
+  }
+
+  function arrow(x1, y1, x2, y2, color, width, head) {
+    head = head || 8;
+    const dx = x2 - x1, dy = y2 - y1, L = Math.hypot(dx, dy);
+    if (L < 1.5) return;
+    const ux = dx / L, uy = dy / L;
+    ctx.save();
+    ctx.strokeStyle = color; ctx.fillStyle = color;
+    ctx.lineWidth = width || 2; ctx.lineCap = "round";
+    ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2 - ux * head * 0.8, y2 - uy * head * 0.8); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - ux * head + uy * head * 0.42, y2 - uy * head - ux * head * 0.42);
+    ctx.lineTo(x2 - ux * head - uy * head * 0.42, y2 - uy * head + ux * head * 0.42);
+    ctx.closePath(); ctx.fill();
+    ctx.restore();
+  }
+
+  function niceStep(scale, minPx) {
+    const cands = [0.05, 0.1, 0.2, 0.25, 0.5, 1, 2, 5, 10];
+    for (let i = 0; i < cands.length; i++) if (cands[i] * scale >= minPx) return cands[i];
+    return 10;
+  }
+
+  /* =====================================================================
+     8. 场景绘制
+     ===================================================================== */
+  function drawBoard() {
+    const B = CFG.board;
+    const x0 = px(0), y0 = py(B.h), w = B.w * V.s, h = B.h * V.s;
+
+    // 玻璃板
+    ctx.save();
+    const gd = ctx.createLinearGradient(x0, y0, x0 + w, y0 + h);
+    gd.addColorStop(0, "#f7fbff");
+    gd.addColorStop(0.55, "#eef6fd");
+    gd.addColorStop(1, "#e8f1fa");
+    ctx.fillStyle = gd;
+    roundRect(ctx, x0, y0, w, h, 10); ctx.fill();
+    ctx.strokeStyle = "#b9cde0"; ctx.lineWidth = 2; ctx.stroke();
+
+    // 刻度网格
+    if (S.show.grid) {
+      const step = niceStep(V.s, 44);
+      ctx.strokeStyle = "rgba(148,163,184,.30)";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let x = 0; x <= B.w + 1e-6; x += step) {
+        ctx.moveTo(px(x), y0); ctx.lineTo(px(x), y0 + h);
+      }
+      for (let y = 0; y <= B.h + 1e-6; y += step) {
+        ctx.moveTo(x0, py(y)); ctx.lineTo(x0 + w, py(y));
+      }
+      ctx.stroke();
+
+      // 刻度数字
+      ctx.fillStyle = "#94a3b8";
+      ctx.font = '10px system-ui,"Microsoft YaHei",sans-serif';
+      ctx.textAlign = "center"; ctx.textBaseline = "top";
+      for (let x = 0; x <= B.w + 1e-6; x += step) ctx.fillText(fmt(x, step < 0.5 ? 1 : 0), px(x), y0 + h + 5);
+      ctx.textAlign = "right"; ctx.textBaseline = "middle";
+      for (let y = 0; y <= B.h + 1e-6; y += step) ctx.fillText(fmt(y, step < 0.5 ? 1 : 0), x0 - 6, py(y));
+      ctx.textAlign = "left"; ctx.textBaseline = "top";
+      ctx.fillText("x / m", x0 + w - 34, y0 + h + 5);
+      ctx.fillText("y / m", x0 + 4, y0 - 15);
+    }
+
+    // 起点挡块
+    ctx.fillStyle = "#94a3b8";
+    roundRect(ctx, px(CFG.start.x) - 16, py(CFG.start.y) - 7, 8, 14, 2); ctx.fill();
+    label("起点挡块", px(CFG.start.x) - 18, py(CFG.start.y) + 18, { align: "center", size: 10, color: COL.muted });
+    ctx.restore();
+  }
+
+  /** 墨水轨迹（钢球在纸上留下的印迹） */
+  function drawInk() {
+    if (!S.show.ink || S.samples.length < 2) return;
+    ctx.save();
+    ctx.lineCap = "round"; ctx.lineJoin = "round";
+    ctx.strokeStyle = "rgba(30,41,59,.75)";
+    ctx.lineWidth = 3.4;
+    ctx.beginPath();
+    for (let i = 0; i < S.samples.length; i++) {
+      const p = S.samples[i], X = px(p.x), Y = py(p.y);
+      if (i === 0) ctx.moveTo(X, Y); else ctx.lineTo(X, Y);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  /** 对照组（无磁铁）轨迹 */
+  function drawControl() {
+    if (!S.show.ctrl || S.control.length < 2) return;
+    ctx.save();
+    ctx.strokeStyle = "rgba(148,163,184,.95)";
+    ctx.lineWidth = 2;
+    ctx.setLineDash([7, 6]);
+    ctx.beginPath();
+    for (let i = 0; i < S.control.length; i++) {
+      const p = S.control[i];
+      if (i === 0) ctx.moveTo(px(p.x), py(p.y)); else ctx.lineTo(px(p.x), py(p.y));
+    }
+    ctx.stroke();
+    ctx.restore();
+    const e = S.control[S.control.length - 1];
+    label("对照组：无磁铁 → 直线", px(e.x), py(e.y) - 14, { align: "center", size: 10, color: COL.muted });
+  }
+
+  /** 频闪残影：等时间间隔 */
+  function drawStrobe() {
+    if (!S.show.strobe || S.samples.length < 2) return;
+    const dt = CFG.strobeDt;
+    let next = 0;
+    for (let i = 0; i < S.samples.length; i++) {
+      const p = S.samples[i];
+      if (p.t + 1e-9 < next) continue;
+      next += dt;
+      ctx.beginPath();
+      ctx.arc(px(p.x), py(p.y), 3.2, 0, TAU);
+      ctx.fillStyle = "rgba(37,99,235,.35)";
+      ctx.fill();
+    }
+    // 对照组频闪（灰色）
+    if (S.show.ctrl && S.control.length > 2) {
+      const T = S.control[S.control.length - 1].t;
+      // 按时间插值取点：μ>0 时对照组在减速，频闪间距应当逐渐变密
+      let j = 0;
+      for (let k = 0; k * dt <= T; k++) {
+        const tt = k * dt;
+        while (j < S.control.length - 2 && S.control[j + 1].t < tt) j++;
+        const a = S.control[j], b = S.control[j + 1];
+        const span = b.t - a.t;
+        const u = span > 1e-9 ? (tt - a.t) / span : 0;
+        const x = a.x + (b.x - a.x) * u, y = a.y + (b.y - a.y) * u;
+        ctx.beginPath();
+        ctx.arc(px(x), py(y), 2.6, 0, TAU);
+        ctx.fillStyle = "rgba(148,163,184,.55)";
+        ctx.fill();
+      }
+    }
+  }
+
+  /** 凹侧阴影：沿轨迹把「曲率方向」一侧涂色 */
+  function drawConcave() {
+    if (!S.show.concave || S.samples.length < 6) return;
+    const pts = S.samples, n = pts.length;
+    const step = Math.max(1, Math.floor(n / 90));
+    const left = [], right = [];
+    const d = 0.11; // 阴影带宽（m）
+    // 注意：二阶差分 ≈ a·dt²，其中既有法向分量也有切向分量。
+    // 「凹侧」只由法向（曲率）分量决定，所以必须先扣掉切向分量，
+    // 否则直线段（加速度沿 v）也会被涂出一条假的「凹侧」。
+    for (let i = step; i < n - step; i += step) {
+      const a = pts[i - step], b = pts[i], c = pts[i + step];
+      const wx = c.x - 2 * b.x + a.x, wy = c.y - 2 * b.y + a.y;
+      let tx = c.x - a.x, ty = c.y - a.y;
+      const tl = Math.hypot(tx, ty);
+      if (tl < 1e-12) { left.push(null); right.push(null); continue; }
+      tx /= tl; ty /= tl;
+      const proj = wx * tx + wy * ty;            // 切向分量
+      let nx = wx - proj * tx, ny = wy - proj * ty; // 纯法向 → 指向凹侧
+      const L = Math.hypot(nx, ny);
+      if (L < 1e-9) { left.push(null); right.push(null); continue; } // 直线段：没有凹侧
+      nx /= L; ny /= L;
+      left.push({ x: b.x, y: b.y });
+      right.push({ x: b.x + nx * d, y: b.y + ny * d });
+    }
+    if (!left.some(p => p)) return;              // 全程直线：不画阴影
+    // 填充带
+    ctx.save();
+    ctx.beginPath();
+    let started = false;
+    for (let i = 0; i < right.length; i++) {
+      if (!right[i]) continue;
+      const X = px(right[i].x), Y = py(right[i].y);
+      if (!started) { ctx.moveTo(X, Y); started = true; } else ctx.lineTo(X, Y);
+    }
+    for (let i = left.length - 1; i >= 0; i--) {
+      if (!left[i]) continue;
+      ctx.lineTo(px(left[i].x), py(left[i].y));
+    }
+    ctx.closePath();
+    ctx.fillStyle = "rgba(220,38,38,.085)";
+    ctx.fill();
+    ctx.restore();
+  }
+
+  /** 磁铁 */
+  function drawMagnet() {
+    if (!P.magIn) {
+      label("磁铁已移开（对照组）", px(CFG.board.w / 2), py(CFG.board.h) + 18,
+        { align: "center", size: 11, color: COL.muted });
+      return;
+    }
+    const mx = px(P.mag.x), my = py(P.mag.y);
+    const ang2 = Math.atan2(S.y - P.mag.y, S.x - P.mag.x); // 磁铁 → 钢球 的方位
+    const L = CFG.magnetW * V.s, Wd = CFG.magnetH * V.s;
+
+    ctx.save();
+    ctx.translate(mx, my);
+    // 屏幕 y 轴向下，故取 -ang2；长边（N-S 连线）始终对着钢球
+    ctx.rotate(-ang2);
+    // 磁铁本体：靠球一侧为 N（吸引）
+    const half = L / 2;
+    ctx.fillStyle = P.attract ? "#ef4444" : "#2563eb";
+    roundRect(ctx, 0, -Wd / 2, half, Wd, 3); ctx.fill();
+    ctx.fillStyle = P.attract ? "#2563eb" : "#ef4444";
+    roundRect(ctx, -half, -Wd / 2, half, Wd, 3); ctx.fill();
+    ctx.strokeStyle = "rgba(15,23,42,.35)"; ctx.lineWidth = 1.2;
+    roundRect(ctx, -half, -Wd / 2, L, Wd, 3); ctx.stroke();
+    ctx.restore();
+
+    // 磁极文字（不旋转，保持可读）
+    const fs = Math.max(9, Math.min(14, V.s * CFG.magnetH * 0.5));
+    ctx.save();
+    ctx.font = '700 ' + fs + 'px system-ui,"Microsoft YaHei",sans-serif';
+    ctx.fillStyle = "#fff"; ctx.textAlign = "center"; ctx.textBaseline = "middle";
+    const dx = Math.cos(ang2) * L * 0.22, dy = -Math.sin(ang2) * L * 0.22;
+    ctx.fillText(P.attract ? "N" : "S", mx + dx, my + dy);
+    ctx.fillText(P.attract ? "S" : "N", mx - dx, my - dy);
+    ctx.restore();
+
+    // 磁力线示意
+    ctx.save();
+    ctx.strokeStyle = "rgba(239,68,68,.22)";
+    ctx.lineWidth = 1.2;
+    for (let k = 1; k <= 3; k++) {
+      ctx.beginPath();
+      ctx.arc(mx, my, (CFG.magnetW / 2 + 0.04 * k) * V.s, 0, TAU);
+      ctx.stroke();
+    }
+    ctx.restore();
+
+    // 距离与方位角标注
+    const bx = px(S.launched ? S.x : CFG.start.x), by = py(S.launched ? S.y : CFG.start.y);
+    const r = Math.hypot(P.mag.x - (S.launched ? S.x : CFG.start.x), P.mag.y - (S.launched ? S.y : CFG.start.y));
+    ctx.save();
+    ctx.strokeStyle = "rgba(220,38,38,.55)";
+    ctx.lineWidth = 1.2; ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(mx, my); ctx.lineTo(bx, by); ctx.stroke();
+    ctx.restore();
+    label("r = " + fmt(r, 2) + " m", (mx + bx) / 2, (my + by) / 2 - 8, { align: "center", size: 10, color: COL.force });
+
+    // 方位角刻度盘
+    ctx.save();
+    ctx.strokeStyle = "rgba(220,38,38,.35)";
+    ctx.lineWidth = 1;
+    const R = CFG.magnetW * V.s * 0.95;
+    ctx.beginPath(); ctx.arc(mx, my, R, -Math.PI / 2 - 1.2, -Math.PI / 2 + 1.2); ctx.stroke();
+    for (let a = -60; a <= 60; a += 15) {
+      const aa = -Math.PI / 2 + rad(a);
+      ctx.beginPath();
+      ctx.moveTo(mx + Math.cos(aa) * R, my + Math.sin(aa) * R);
+      ctx.lineTo(mx + Math.cos(aa) * (R + 4), my + Math.sin(aa) * (R + 4));
+      ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  /** 钢球 */
+  function drawBall() {
+    const X = px(S.x), Y = py(S.y);
+    const r = Math.max(5, CFG.ballR * V.s * 1.5);
+    ctx.save();
+    ctx.beginPath(); ctx.arc(X + 1.5, Y + 2.5, r, 0, TAU);
+    ctx.fillStyle = "rgba(15,23,42,.14)"; ctx.fill();
+    const gd = ctx.createRadialGradient(X - r * 0.35, Y - r * 0.35, r * 0.15, X, Y, r);
+    gd.addColorStop(0, "#f8fafc"); gd.addColorStop(0.5, "#94a3b8"); gd.addColorStop(1, "#334155");
+    ctx.beginPath(); ctx.arc(X, Y, r, 0, TAU);
+    ctx.fillStyle = gd; ctx.fill();
+    ctx.strokeStyle = "#0f172a"; ctx.lineWidth = 1; ctx.stroke();
+    ctx.restore();
+  }
+
+  /** 速度、磁力、分解、加速度矢量 */
+  function drawVectors(s) {
+    if (!s) return;
+    const X = px(s.x), Y = py(s.y);
+    const sp = Math.hypot(s.vx, s.vy) || 1e-9;
+    const k = Math.min(150, 0.30 * V.s * 1.6) / Math.max(P.v0, 0.3); // 速度比例尺
+
+    if (S.show.vel) {
+      const ux = s.vx / sp, uy = s.vy / sp;
+      const len = Math.max(26, sp * k);
+      arrow(X, Y, X + ux * len, Y - uy * len, COL.v, 2.6, 9);
+      label("v=" + fmt(sp, 2), X + ux * len + (ux >= 0 ? 6 : -6), Y - uy * len - 12,
+        { align: ux >= 0 ? "left" : "right", size: 10.5, color: COL.v, weight: 600 });
+    }
+
+    if (S.show.force && s.F > 1e-9) {
+      const fk = Math.max(40, Math.min(110, 0.34 * V.s * 1.6)) / 0.30; // 0.30 N 对应最长
+      const fl = clamp(s.F * fk, 24, 130);
+      const ufx = s.fx / s.F, ufy = s.fy / s.F;
+      arrow(X, Y, X + ufx * fl, Y - ufy * fl, COL.force, 3, 10);
+      label("F=" + fmt(s.F, 3) + " N", X + ufx * fl + (ufx >= 0 ? 7 : -7), Y - ufy * fl - 12,
+        { align: ufx >= 0 ? "left" : "right", size: 10.5, color: COL.force, weight: 600 });
+    }
+
+    if (S.show.decomp && s.F > 1e-9 && sp > 1e-6) {
+      const ux = s.vx / sp, uy = s.vy / sp;
+      const fk = Math.max(40, Math.min(110, 0.34 * V.s * 1.6)) / 0.30;
+      // 切向分力（橙）
+      const ftl = s.ft * fk;
+      if (Math.abs(ftl) > 3) {
+        arrow(X, Y, X + ux * ftl, Y - uy * ftl, COL.ft, 2.8, 8);
+        label("F_t=" + fmt(s.ft, 3), X + ux * ftl + 6, Y - uy * ftl + 14,
+          { size: 10, color: COL.ft, weight: 600 });
+      }
+      // 法向分力（紫）
+      const fnl = s.fn * fk;
+      if (fnl > 3 && s.fn > 1e-9) {
+        const nux = s.fnx / s.fn, nuy = s.fny / s.fn;
+        arrow(X, Y, X + nux * fnl, Y - nuy * fnl, COL.fn, 2.8, 8);
+        label("F_n=" + fmt(s.fn, 3), X + nux * fnl + 6, Y - nuy * fnl - 8,
+          { size: 10, color: COL.fn, weight: 600 });
+      }
+      // 平行四边形虚线
+      ctx.save();
+      ctx.strokeStyle = "rgba(148,163,184,.7)";
+      ctx.setLineDash([3, 3]); ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(X + ux * ftl, Y - uy * ftl);
+      ctx.lineTo(X + s.fx / s.F * clamp(s.F * fk, 24, 130), Y - s.fy / s.F * clamp(s.F * fk, 24, 130));
+      ctx.moveTo(X + (s.fnx / (s.fn || 1)) * fnl, Y - (s.fny / (s.fn || 1)) * fnl);
+      ctx.lineTo(X + s.fx / s.F * clamp(s.F * fk, 24, 130), Y - s.fy / s.F * clamp(s.F * fk, 24, 130));
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    // 量角器：在球心画出 v 与 F 的夹角弧
+    if (s.F > 1e-9 && sp > 1e-6) {
+      const av = Math.atan2(-s.vy, s.vx);
+      const af = Math.atan2(-s.fy, s.fx);
+      let d = af - av;
+      while (d > Math.PI) d -= TAU;
+      while (d < -Math.PI) d += TAU;
+      const R = 34;
+      ctx.save();
+      ctx.beginPath();
+      ctx.arc(X, Y, R, av, av + d, d < 0);
+      ctx.strokeStyle = "rgba(245,158,11,.9)";
+      ctx.lineWidth = 1.6;
+      ctx.stroke();
+      // 两条半径虚线
+      ctx.setLineDash([3, 3]);
+      ctx.strokeStyle = "rgba(148,163,184,.8)";
+      ctx.beginPath();
+      ctx.moveTo(X, Y); ctx.lineTo(X + Math.cos(av) * R, Y + Math.sin(av) * R);
+      ctx.moveTo(X, Y); ctx.lineTo(X + Math.cos(af) * R, Y + Math.sin(af) * R);
+      ctx.stroke();
+      ctx.restore();
+      if (isFinite(s.th)) {
+        const am = av + d / 2;
+        label("θ=" + fmt(s.th, 0) + "°", X + Math.cos(am) * (R + 22), Y + Math.sin(am) * (R + 22),
+          { align: "center", size: 10.5, color: "#b45309", weight: 700 });
+      }
+    }
+
+    // 加速度（绿色，略偏移以免与磁力重叠）
+    if (s.F > 1e-9) {
+      const ak = 46 / 0.30;
+      const al = clamp(s.F / P.m * ak, 22, 110);
+      const ux = s.fx / s.F, uy = s.fy / s.F;
+      const ox = -uy * 9, oy = -ux * 9;
+      arrow(X + ox, Y + oy, X + ox + ux * al, Y + oy - uy * al, COL.acc, 2, 8);
+      label("a=F/m", X + ox + ux * al + 5, Y + oy - uy * al + 10, { size: 9.5, color: COL.acc, weight: 600, bg: false });
+    }
+  }
+
+  /** 探针（取点分析） */
+  function drawProbe() {
+    if (!S.show.probe || S.probeIdx < 0) return;
+    const s = S.samples[clamp(S.probeIdx, 0, S.samples.length - 1)];
+    if (!s) return;
+    const X = px(s.x), Y = py(s.y);
+
+    // 凹侧高亮
+    if (s.fn > 1e-9) {
+      const nux = s.fnx / s.fn, nuy = s.fny / s.fn;
+      const cx = X + nux * 0.16 * V.s, cy = Y - nuy * 0.16 * V.s;
+      ctx.save();
+      ctx.beginPath(); ctx.arc(cx, cy, 0.17 * V.s, 0, TAU);
+      ctx.fillStyle = "rgba(220,38,38,.10)"; ctx.fill();
+      ctx.setLineDash([5, 4]);
+      ctx.strokeStyle = "rgba(220,38,38,.55)"; ctx.lineWidth = 1.4; ctx.stroke();
+      ctx.restore();
+    }
+    ctx.save();
+    ctx.beginPath(); ctx.arc(X, Y, 7, 0, TAU);
+    ctx.fillStyle = "rgba(255,255,255,.9)"; ctx.fill();
+    ctx.lineWidth = 3; ctx.strokeStyle = "#0f172a"; ctx.stroke();
+    ctx.restore();
+  }
+
+  /** 场景锚点（可点击的 ⓘ） */
+  let HOT = [];
+  function computeHotspots() {
+    HOT = [];
+    if (P.magIn) HOT.push({ id: "mag", card: "magModel", x: px(P.mag.x) + 18, y: py(P.mag.y) - 26, t: "磁铁" });
+    HOT.push({ id: "ball", card: "tangent", x: px(S.x) - 20, y: py(S.y) + 20, t: "钢球" });
+    const s = S.samples.length ? S.samples[S.samples.length - 1] : null;
+    if (s && s.fn > 1e-9) {
+      const nux = s.fnx / s.fn, nuy = s.fny / s.fn;
+      HOT.push({ id: "conc", card: "concave", x: px(s.x) + nux * 0.14 * V.s, y: py(s.y) - nuy * 0.14 * V.s, t: "凹侧" });
+    }
+    if (s && s.v > 1e-6) {
+      HOT.push({ id: "vel", card: "threeCase", x: px(s.x) + s.vx / s.v * 60, y: py(s.y) - s.vy / s.v * 60, t: "速度" });
+    }
+    HOT.push({ id: "ctrl", card: "control", x: px(CFG.board.w) - 26, y: py(CFG.board.h) + 34, t: "对照" });
+  }
+
+  function drawHotspots() {
+    for (let i = 0; i < HOT.length; i++) {
+      const h = HOT[i];
+      ctx.save();
+      ctx.beginPath(); ctx.arc(h.x, h.y, 9, 0, TAU);
+      ctx.fillStyle = "rgba(255,255,255,.95)"; ctx.fill();
+      ctx.strokeStyle = "rgba(37,99,235,.85)"; ctx.lineWidth = 1.6; ctx.stroke();
+      ctx.fillStyle = "#2563eb";
+      ctx.font = '700 12px Georgia, serif';
+      ctx.textAlign = "center"; ctx.textBaseline = "middle";
+      ctx.fillText("i", h.x, h.y + 0.5);
+      ctx.restore();
+    }
+  }
+
+  function drawScene() {
+    resizeScene();
+    ctx.setTransform(V.dpr, 0, 0, V.dpr, 0, 0);
+    ctx.clearRect(0, 0, V.W, V.H);
+    // 背景
+    const bg = ctx.createLinearGradient(0, 0, 0, V.H);
+    bg.addColorStop(0, "#f4f8ff"); bg.addColorStop(1, "#fbfdff");
+    ctx.fillStyle = bg; ctx.fillRect(0, 0, V.W, V.H);
+
+    computeView();
+    drawBoard();
+    drawControl();
+    drawConcave();
+    drawInk();
+    drawStrobe();
+    drawMagnet();
+
+    const last = S.samples.length ? S.samples[S.samples.length - 1] : null;
+    const cur = S.launched ? last : null;
+    drawBall();
+    if (cur) {
+      // 探针激活时，矢量画在探针点；否则画在当前点
+      const s = (S.probeIdx >= 0 && S.samples[S.probeIdx]) ? S.samples[S.probeIdx] : cur;
+      drawVectors(s);
+    }
+    drawProbe();
+    computeHotspots();
+    drawHotspots();
+
+  }
+
+  /* =====================================================================
+     9. 图表
+     ===================================================================== */
+  function prepCanvas(cv) {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = cv.clientWidth || 300, h = cv.clientHeight || 176;
+    if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) {
+      cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+    }
+    const c = cv.getContext("2d");
+    c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    c.clearRect(0, 0, w, h);
+    return { c, w, h };
+  }
+
+  function frame(c, w, h, xMax, yMin, yMax, xLab, yLab, xT, yT) {
+    const box = { x: 42, y: 14, w: w - 42 - 12, h: h - 14 - 26 };
+    const X = v => box.x + (v / xMax) * box.w;
+    const Y = v => box.y + box.h - ((v - yMin) / (yMax - yMin)) * box.h;
+    c.save();
+    c.strokeStyle = "#eef2f7"; c.lineWidth = 1;
+    for (let i = 0; i <= yT; i++) {
+      const yy = box.y + box.h * i / yT;
+      c.beginPath(); c.moveTo(box.x, yy); c.lineTo(box.x + box.w, yy); c.stroke();
+    }
+    c.strokeStyle = "#cbd5e1";
+    c.beginPath();
+    c.moveTo(box.x, box.y); c.lineTo(box.x, box.y + box.h); c.lineTo(box.x + box.w, box.y + box.h);
+    c.stroke();
+    c.fillStyle = "#94a3b8";
+    c.font = '10px system-ui,"Microsoft YaHei",sans-serif';
+    c.textAlign = "right"; c.textBaseline = "middle";
+    for (let i = 0; i <= yT; i++) {
+      const v = yMin + (yMax - yMin) * i / yT;
+      c.fillText(fmt(v, Math.abs(yMax - yMin) < 6 ? 1 : 0), box.x - 5, Y(v));
+    }
+    c.textAlign = "center"; c.textBaseline = "top";
+    for (let i = 0; i <= xT; i++) c.fillText(fmt(xMax * i / xT, xMax < 2 ? 2 : 1), X(xMax * i / xT), box.y + box.h + 5);
+    c.textAlign = "right"; c.fillText(xLab, box.x + box.w, box.y - 3);
+    c.textAlign = "left"; c.fillText(yLab, 4, box.y - 3);
+    c.restore();
+    return { X, Y, box };
+  }
+
+  function polyline(c, f, pts, color, width, dash) {
+    if (pts.length < 2) return;
+    c.save();
+    c.strokeStyle = color; c.lineWidth = width || 2;
+    if (dash) c.setLineDash(dash);
+    c.beginPath();
+    for (let i = 0; i < pts.length; i++) {
+      const X = f.X(pts[i][0]), Y = f.Y(pts[i][1]);
+      if (i === 0) c.moveTo(X, Y); else c.lineTo(X, Y);
+    }
+    c.stroke();
+    c.restore();
+  }
+
+  function drawCharts() {
+    /* --- v–t --- */
+    (function () {
+      const cv = $("chV"), p = prepCanvas(cv), c = p.c;
+      const tEnd = Math.max(0.4, S.samples.length ? S.samples[S.samples.length - 1].t : 1);
+      let vMin = 9e9, vMax = -9e9;
+      for (const s of S.samples) { vMin = Math.min(vMin, s.v); vMax = Math.max(vMax, s.v); }
+      if (!S.samples.length) { vMin = P.v0 * 0.8; vMax = P.v0 * 1.2; }
+      vMin = Math.min(vMin, P.v0) * 0.94; vMax = Math.max(vMax, P.v0) * 1.06;
+      const f = frame(c, p.w, p.h, tEnd, vMin, vMax, "t / s", "v /(m/s)", 4, 4);
+      // 初速基准线
+      c.save(); c.setLineDash([5, 4]); c.strokeStyle = "#cbd5e1"; c.lineWidth = 1.2;
+      c.beginPath(); c.moveTo(f.box.x, f.Y(P.v0)); c.lineTo(f.box.x + f.box.w, f.Y(P.v0)); c.stroke(); c.restore();
+      polyline(c, f, S.samples.map(s => [s.t, s.v]), COL.v, 2.2);
+      // 末点
+      if (S.samples.length) {
+        const s = S.samples[S.samples.length - 1];
+        c.beginPath(); c.arc(f.X(s.t), f.Y(s.v), 3.4, 0, TAU); c.fillStyle = COL.v; c.fill();
+      }
+      c.fillStyle = "#94a3b8"; c.font = '10px system-ui,"Microsoft YaHei",sans-serif';
+      c.textAlign = "left"; c.fillText("虚线 = 初速 v₀", f.box.x + 6, f.box.y + 10);
+    })();
+
+    /* --- θ–t --- */
+    (function () {
+      const cv = $("chTh"), p = prepCanvas(cv), c = p.c;
+      const tEnd = Math.max(0.4, S.samples.length ? S.samples[S.samples.length - 1].t : 1);
+      const f = frame(c, p.w, p.h, tEnd, 0, 180, "t / s", "θ / °", 4, 4);
+      // 90° 参考线
+      c.save(); c.setLineDash([5, 4]); c.strokeStyle = "rgba(22,163,74,.55)"; c.lineWidth = 1.4;
+      c.beginPath(); c.moveTo(f.box.x, f.Y(90)); c.lineTo(f.box.x + f.box.w, f.Y(90)); c.stroke(); c.restore();
+      c.fillStyle = "#15803d"; c.font = '10px system-ui,"Microsoft YaHei",sans-serif';
+      c.textAlign = "left"; c.fillText("90° = 速率不变", f.box.x + 6, f.Y(90) - 7);
+      const pts = S.samples.filter(s => isFinite(s.th)).map(s => [s.t, s.th]);
+      polyline(c, f, pts, "#dc2626", 2.2);
+      if (S.samples.length) {
+        const s = S.samples[S.samples.length - 1];
+        if (isFinite(s.th)) {
+          c.beginPath(); c.arc(f.X(s.t), f.Y(s.th), 3.4, 0, TAU); c.fillStyle = "#dc2626"; c.fill();
+        }
+      }
+    })();
+
+    /* --- 轨迹 y–x --- */
+    (function () {
+      const cv = $("chXY"), p = prepCanvas(cv), c = p.c;
+      const B = CFG.board;
+      const f = frame(c, p.w, p.h, B.w, 0, B.h, "x / m", "y / m", 4, 4);
+      // 对照组
+      if (S.control.length > 1) polyline(c, f, S.control.map(s => [s.x, s.y]), COL.ctrl, 1.8, [6, 5]);
+      // 实验组
+      polyline(c, f, S.samples.map(s => [s.x, s.y]), "#2563eb", 2.2);
+      if (S.samples.length) {
+        const s = S.samples[S.samples.length - 1];
+        c.beginPath(); c.arc(f.X(s.x), f.Y(s.y), 3.4, 0, TAU); c.fillStyle = "#2563eb"; c.fill();
+      }
+      // 起点
+      c.beginPath(); c.arc(f.X(CFG.start.x), f.Y(CFG.start.y), 3, 0, TAU); c.fillStyle = "#0f172a"; c.fill();
+    })();
+  }
+
+  /* =====================================================================
+     10. 仿真控制
+     ===================================================================== */
+  const DT = CFG.dt;
+  let lastTime = 0, accTime = 0;
+
+  function resetRun() {
+    S.running = false; S.launched = false; S.ended = false;
+    S.t = 0; S.x = CFG.start.x; S.y = CFG.start.y;
+    S.vx = P.v0; S.vy = 0;
+    S.samples = []; S.W = 0; S.probeIdx = -1;
+    accTime = 0;
+    $("endcard").classList.remove("show");
+    $("probeTip").classList.remove("show");
+    updateReadout();
+    updateVerdict(null);
+    computeControl();
+    updateConclusion();
+  }
+
+  /** 对照组：同一初速、无磁力（含摩擦）的轨迹 */
+  function computeControl() {
+    const pts = [];
+    let x = CFG.start.x, y = CFG.start.y, vx = P.v0, vy = 0, t = 0;
+    const h = 1 / 120;
+    while (t < CFG.maxT) {
+      pts.push({ x, y, t, v: Math.hypot(vx, vy) });
+      let ax = 0, ay = 0;
+      if (P.mu > 0) {
+        const sp = Math.hypot(vx, vy);
+        if (sp < 1e-6) break;
+        ax = -P.mu * CFG.g * vx / sp; ay = -P.mu * CFG.g * vy / sp;
+      }
+      vx += ax * h; vy += ay * h; x += vx * h; y += vy * h; t += h;
+      if (x < 0 || x > CFG.board.w || y < 0 || y > CFG.board.h) break;
+    }
+    S.control = pts;
+  }
+
+  function launch() {
+    resetRun();
+    S.launched = true; S.running = true;
+    S.vx = P.v0; S.vy = 0;
+    pushSample();
+    ensureAudio();
+    updateVerdict(S.samples[0]);
+  }
+
+  function stepOnce() {
+    if (S.ended) return;
+    if (!S.launched) { launch(); S.running = false; }
+    const n = Math.round((1 / 60) / DT);
+    for (let i = 0; i < n && !S.ended; i++) stepPhysics(DT);
+    updateReadout(); updateVerdict(S.samples[S.samples.length - 1]);
+  }
+
+  function loop(now) {
+    if (!lastTime) lastTime = now;
+    let real = (now - lastTime) / 1000;
+    lastTime = now;
+    if (real > 0.08) real = 0.08;
+
+    if (S.running && S.launched && !S.ended) {
+      accTime += real * P.speed;
+      let guard = 0;
+      while (accTime >= DT && guard < 900 && !S.ended) {
+        stepPhysics(DT); accTime -= DT; guard++;
+      }
+      if (S.samples.length) {
+        updateReadout();
+        updateVerdict(S.samples[S.samples.length - 1]);
+      }
+    }
+    drawScene();
+    if (S.running || S._dirty) { drawCharts(); S._dirty = false; }
+    requestAnimationFrame(loop);
+  }
+
+  /* =====================================================================
+     11. 读数与判定
+     ===================================================================== */
+  function updateReadout() {
+    const s = S.samples.length ? S.samples[S.samples.length - 1] : null;
+    const v = s ? s.v : P.v0;
+    const f = s ? { F: s.F, fx: s.fx, fy: s.fy } : forceAt(S.x, S.y);
+    $("ro-t").textContent = fmt(S.t, 2);
+    $("ro-v").textContent = fmt(v, 2);
+    $("ro-F").textContent = fmt(f.F, 3);
+    $("ro-Fa").textContent = f.F > 1e-12 ? fmt((deg(Math.atan2(f.fy, f.fx)) + 360) % 360, 0) : "—";
+    $("ro-th").textContent = s && isFinite(s.th) ? fmt(s.th, 0) : "—";
+    const r = P.magIn ? Math.hypot(P.mag.x - S.x, P.mag.y - S.y) : Infinity;
+    $("ro-r").textContent = P.magIn ? fmt(r, 2) : "—";
+    $("ro-Ft").textContent = s ? fmt(s.ft, 3) : "0.000";
+    $("ro-Fn").textContent = s ? fmt(s.fn, 3) : "0.000";
+    $("ro-W").textContent = fmt(S.W, 3);
+    $("ro-Wlab").textContent = P.mu > 0 ? "总功 W(磁+摩)" : "累计功 W";
+  }
+
+  function updateVerdict(s) {
+    const el = $("verdict");
+    if (!s || !S.launched) {
+      el.className = "verdict";
+      el.textContent = "等待发射";
+      return;
+    }
+    let th = s.th;
+    let txt, cls;
+    if (!isFinite(th)) {
+      // 无磁力时：有摩擦就不是匀速直线
+      if (P.mu > 0) { txt = "无磁力 · 仅受摩擦 → 速率减小"; cls = "down"; }
+      else { txt = "无磁力：速率不变（匀速直线）"; cls = "flat"; }
+    } else if (th < 89.4) {
+      txt = "θ = " + fmt(th, 0) + "° < 90° → 锐角 → 速率增大"; cls = "up";
+    } else if (th > 90.6) {
+      txt = "θ = " + fmt(th, 0) + "° > 90° → 钝角 → 速率减小"; cls = "down";
+    } else {
+      txt = "θ ≈ 90° → 力垂直于 v → 此刻速率不变（只改方向）"; cls = "flat";
+    }
+    if (S.ended) txt = "实验结束 · " + txt;
+    el.className = "verdict " + cls;
+    el.textContent = txt;
+  }
+
+  /* =====================================================================
+     12. 探针
+     ===================================================================== */
+  function nearestSample(sx, sy) {
+    let best = -1, bd = 22 * 22;
+    for (let i = 0; i < S.samples.length; i++) {
+      const d = (px(S.samples[i].x) - sx) * (px(S.samples[i].x) - sx) + (py(S.samples[i].y) - sy) * (py(S.samples[i].y) - sy);
+      if (d < bd) { bd = d; best = i; }
+    }
+    return best;
+  }
+
+  function setProbe(idx) {
+    if (idx < 0 || idx >= S.samples.length) { S.probeIdx = -1; $("probeTip").classList.remove("show"); return; }
+    S.probeIdx = idx;
+    const s = S.samples[idx];
+    const tip = $("probeTip");
+    let cls = "flat", vd = "速率不变";
+    if (isFinite(s.th)) {
+      if (s.th < 89.4) { cls = "up"; vd = "锐角 → 速率增大"; }
+      else if (s.th > 90.6) { cls = "down"; vd = "钝角 → 速率减小"; }
+      else { cls = "flat"; vd = "直角 → 此刻速率不变"; }
+    } else { vd = "无磁力 → 匀速"; }
+    tip.innerHTML =
+      '<div class="pt-h">轨迹取点分析　t = ' + fmt(s.t, 2) + ' s</div>' +
+      '<div class="row2"><span class="pv">速度 v（切线）</span><span>' + fmt(s.v, 2) + ' m/s</span></div>' +
+      '<div class="row2"><span class="pf">磁力 F</span><span>' + fmt(s.F, 3) + ' N</span></div>' +
+      '<div class="row2"><span>夹角 θ(F, v)</span><span>' + (isFinite(s.th) ? fmt(s.th, 1) + '°' : "—") + '</span></div>' +
+      '<div class="row2"><span class="pt">切向 F_t（改速率）</span><span>' + fmt(s.ft, 3) + ' N</span></div>' +
+      '<div class="row2"><span class="pn">法向 F_n（改方向）</span><span>' + fmt(s.fn, 3) + ' N</span></div>' +
+      '<div class="vd ' + cls + '">' + vd + '</div>';
+    tip.classList.add("show");
+    // 定位（避开边界）
+    const X = px(s.x), Y = py(s.y);
+    let lx = X + 18, ly = Y - 118;
+    if (lx + 220 > V.W) lx = X - 228;
+    if (ly < 6) ly = Y + 16;
+    if (ly + 130 > V.H) ly = V.H - 136;
+    tip.style.left = Math.max(4, lx) + "px";
+    tip.style.top = Math.max(4, ly) + "px";
+  }
+
+  /* =====================================================================
+     13. 数据记录 / CSV
+     ===================================================================== */
+  /** 磁铁相对出发点（及初速度 +x 方向）的方位描述 */
+  function azimuthText() {
+    if (!P.magIn) return "无磁铁";
+    const dx = P.mag.x - CFG.start.x, dy = P.mag.y - CFG.start.y;
+    const lon = Math.abs(dx) < 0.15 ? "正侧" : (dx > 0 ? "前" : "后");
+    const lat = Math.abs(dy) < 0.15 ? (Math.abs(dx) < 0.15 ? "重合" : "共线") : (dy > 0 ? "偏上" : "偏下");
+    return lon + lat + " (" + fmt(P.mag.x, 2) + ", " + fmt(P.mag.y, 2) + ")";
+  }
+
+  function trendOf(samples) {
+    const ths = samples.map(s => s.th).filter(t => isFinite(t));
+    if (!ths.length) return P.mu > 0 ? "仅摩擦·持续减小" : "无磁力·匀速";
+    const first = ths[0], min = Math.min(...ths), max = Math.max(...ths);
+    if (max < 89.4) return "锐角·持续增大";
+    if (min > 90.6) return "钝角·持续减小";
+    if (first < 90) return "跨 90°·先增后减";
+    return "跨 90°·先减后增";
+  }
+
+  function addRecord(vEnd) {
+    const ths = S.samples.map(s => s.th).filter(t => isFinite(t));
+    let thRange = "—";
+    if (ths.length) thRange = fmt(Math.min(...ths), 0) + "°~" + fmt(Math.max(...ths), 0) + "°";
+    const r = {
+      name: curPreset ? curPreset.name : "自定义",
+      color: curPreset ? curPreset.color : "#64748b",
+      az: azimuthText(),
+      thRange: thRange,
+      trend: trendOf(S.samples),
+      vEnd: vEnd,
+      v0: P.v0
+    };
+    S.records.push(r);
+    renderTable();
+    const body = $("recBody");
+    const rows = body.querySelectorAll("tr");
+    if (rows.length) rows[rows.length - 1].classList.add("mark");
+  }
+
+  function renderTable() {
+    const body = $("recBody");
+    $("recCount").textContent = "共 " + S.records.length + " 条";
+    if (!S.records.length) {
+      body.innerHTML = '<tr><td colspan="5" class="empty">还没有数据，先发射一发吧</td></tr>';
+      return;
+    }
+    let html = "";
+    for (let i = 0; i < S.records.length; i++) {
+      const r = S.records[i];
+      html += "<tr><td>" + (i + 1) + "</td>" +
+        '<td><span class="dot" style="background:' + r.color + '"></span>' + r.name + "</td>" +
+        "<td>" + r.thRange + "</td>" +
+        "<td>" + r.trend + "</td>" +
+        "<td>" + fmt(r.vEnd, 2) + "</td></tr>";
+    }
+    body.innerHTML = html;
+  }
+
+  function exportCSV() {
+    if (!S.records.length) { flash("还没有数据可导出，先发射几发吧。"); return; }
+    let csv = "\ufeff序号,预设,磁铁位置,θ区间,速率趋势,末速率v(m/s),初速v0(m/s)\n";
+    for (let i = 0; i < S.records.length; i++) {
+      const r = S.records[i];
+      csv += [i + 1, '"' + r.name + '"', '"' + r.az + '"', '"' + r.thRange + '"', '"' + r.trend + '"',
+        fmt(r.vEnd, 2), fmt(r.v0, 2)].join(",") + "\n";
+    }
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = "磁钢球偏转_数据记录.csv";
+    document.body.appendChild(a); a.click(); document.body.removeChild(a);
+    setTimeout(() => URL.revokeObjectURL(url), 1200);
+  }
+
+  /* =====================================================================
+     14. 音效
+     ===================================================================== */
+  let audioCtx = null;
+  function ensureAudio() {
+    if (!S.show.sound) return;
+    if (!audioCtx) {
+      try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { audioCtx = null; }
+    }
+    if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+  }
+  function beep(freq, dur) {
+    if (!S.show.sound || !audioCtx) return;
+    try {
+      const t = audioCtx.currentTime;
+      const o = audioCtx.createOscillator(), g = audioCtx.createGain();
+      o.type = "sine";
+      o.frequency.setValueAtTime(freq || 400, t);
+      g.gain.setValueAtTime(0.14, t);
+      g.gain.exponentialRampToValueAtTime(0.0008, t + (dur || 0.12));
+      o.connect(g); g.connect(audioCtx.destination);
+      o.start(t); o.stop(t + (dur || 0.12) + 0.02);
+    } catch (e) { /* 忽略 */ }
+  }
+
+  /* =====================================================================
+     15. 知识卡片抽屉
+     ===================================================================== */
+  let curCat = "全部", curKw = "", curList = CARDS.slice(), curIdx = 0;
+
+  function cardHTML(c, flipped) {
+    const front =
+      '<span class="cat">' + c.cat + '</span>' +
+      '<h3>' + c.title + '</h3>' +
+      '<div class="line">' + c.line + '</div>' +
+      '<div class="fx">' + c.fx + '</div>' +
+      '<div class="mini">' + MINI[c.mini] + '</div>' +
+      '<div class="how"><b>在本 Demo 中怎么看：</b>' + c.how + '</div>' +
+      (c.warn ? '<div class="warn"><b>易错提醒：</b>' + c.warn + '</div>' : "");
+    const back = '<div class="back"><b>说明与推导：</b>' + c.back + '</div>';
+    return '<div class="kc">' + front + (flipped ? back : "") +
+      '<div class="acts">' +
+      '<button data-act="flip">' + (flipped ? "收起说明" : "翻转看说明") + '</button>' +
+      '<button data-act="pin">📌 钉住</button>' +
+      '</div></div>';
+  }
+
+  function renderCard() {
+    if (!curList.length) {
+      $("dBody").innerHTML = '<div class="empty">没有匹配的卡片，换个关键词试试</div>';
+      $("dPos").textContent = "0 / 0";
+      return;
+    }
+    curIdx = clamp(curIdx, 0, curList.length - 1);
+    const c = curList[curIdx];
+    $("dBody").innerHTML = cardHTML(c, flippedSet.has(c.id));
+    $("dPos").textContent = (curIdx + 1) + " / " + curList.length;
+    $("dBody").scrollTop = 0;
+  }
+
+  const flippedSet = new Set();
+  const pinnedList = [];
+
+  function filterCards() {
+    const kw = curKw.trim();
+    curList = CARDS.filter(c => (curCat === "全部" || c.cat === curCat) &&
+      (!kw || (c.title + c.line + c.fx + c.how + c.back + c.cat).indexOf(kw) >= 0));
+    curIdx = 0;
+    renderCard();
+  }
+
+  function openCard(id) {
+    const i = CARDS.findIndex(c => c.id === id);
+    if (i < 0) return;
+    curCat = "全部"; curKw = "";
+    $("dSearch").value = "";
+    syncTabs();
+    curList = CARDS.slice();
+    curIdx = i;
+    renderCard();
+    openDrawer();
+    // 焦点管理
+    setTimeout(() => { $("dBody").focus(); }, 120);
+  }
+
+  function openDrawer() {
+    $("drawer").classList.add("open");
+    $("drawer").setAttribute("aria-hidden", "false");
+  }
+  function closeDrawer() {
+    $("drawer").classList.remove("open");
+    $("drawer").setAttribute("aria-hidden", "true");
+    $("openLib").focus();
+  }
+
+  function syncTabs() {
+    const t = $("dTabs");
+    if (t.children.length !== CATS.length) {
+      t.innerHTML = CATS.map(c => '<button data-cat="' + c + '">' + c + "</button>").join("");
+    }
+    for (const b of t.children) b.classList.toggle("on", b.dataset.cat === curCat);
+  }
+
+  function pinCard(c) {
+    if (pinnedList.indexOf(c.id) >= 0) { flash("这张卡片已经钉住了"); return; }
+    if (pinnedList.length >= 2) pinnedList.shift();
+    pinnedList.push(c.id);
+    renderPinned();
+  }
+  function renderPinned() {
+    const wrap = $("pinnedWrap");
+    wrap.innerHTML = pinnedList.map(id => {
+      const c = CARDS.find(x => x.id === id);
+      return '<div class="pinCard" data-id="' + id + '"><button class="x" data-unpin="' + id + '" aria-label="取消钉住">✕</button>' +
+        "<b>" + c.title + "</b>" + c.line + "</div>";
+    }).join("");
+  }
+
+  function bindDrawer() {
+    $("openLib").addEventListener("click", () => { openDrawer(); syncTabs(); renderCard(); });
+    $("hintChip").addEventListener("click", function () {
+      openCard(this.dataset.card);
+      this.style.display = "none";
+    });
+    $("dClose").addEventListener("click", closeDrawer);
+    $("dTabs").addEventListener("click", e => {
+      const b = e.target.closest("button");
+      if (!b) return;
+      curCat = b.dataset.cat; syncTabs(); filterCards();
+    });
+    $("dSearch").addEventListener("input", function () { curKw = this.value; filterCards(); });
+    $("dPrev").addEventListener("click", () => { if (curList.length) { curIdx = (curIdx - 1 + curList.length) % curList.length; renderCard(); } });
+    $("dNext").addEventListener("click", () => { if (curList.length) { curIdx = (curIdx + 1) % curList.length; renderCard(); } });
+    $("dBody").addEventListener("click", e => {
+      const b = e.target.closest("button");
+      if (!b) return;
+      const c = curList[curIdx];
+      if (!c) return;
+      if (b.dataset.act === "flip") {
+        if (flippedSet.has(c.id)) flippedSet.delete(c.id); else flippedSet.add(c.id);
+        renderCard();
+      } else if (b.dataset.act === "pin") {
+        pinCard(c);
+      }
+    });
+    $("pinnedWrap").addEventListener("click", e => {
+      const b = e.target.closest("[data-unpin]");
+      if (!b) return;
+      const i = pinnedList.indexOf(b.dataset.unpin);
+      if (i >= 0) pinnedList.splice(i, 1);
+      renderPinned();
+    });
+    // 抽屉内的键盘操作
+    $("drawer").addEventListener("keydown", e => {
+      if (e.key === "Escape") { e.preventDefault(); closeDrawer(); }
+      else if (e.key === "ArrowLeft") { e.preventDefault(); $("dPrev").click(); }
+      else if (e.key === "ArrowRight") { e.preventDefault(); $("dNext").click(); }
+    });
+    $("anchorBox").addEventListener("click", e => {
+      const b = e.target.closest("button");
+      if (b) openCard(b.dataset.card);
+    });
+  }
+
+  /* =====================================================================
+     16. 教学流程
+     ===================================================================== */
+  const STEPS = [
+    { t: "① 观察对照", txt: "先点「磁铁移开」发射一次：钢球沿直线匀速滚动，频闪残影等间距。再把磁铁放回侧面，重发一次，对比两条轨迹。", q: "待答：磁铁放进后，钢球的轨迹为什么会弯？" },
+    { t: "② 猜想", txt: "磁铁放在钢球轨道的侧前方。先猜：钢球经过磁铁附近时，速度会变大还是变小？轨迹会朝哪边弯？", q: "待答：速率会变大还是变小？你的依据是什么？" },
+    { t: "③ 改变夹角", txt: "依次切换 ①侧前方 / ②正侧方 / ③侧后方 / ④⑤共线 / ⑥排斥，盯住右上角的判定标签、v–t 与 θ–t 曲线。", q: "待答：θ 从锐角变到钝角时，v–t 曲线的斜率发生了什么变化？" },
+    { t: "④ 数据", txt: "记录每次的 θ 区间、速率趋势与末速率；用「累计功 W」和 ΔEk 互相比对，验证动能定理。", q: "待答：W 的符号与速率变化的方向一致吗？" },
+    { t: "⑤ 结论", txt: "两条判据：①合力指向轨迹凹侧；②夹角定快慢（锐角增大、直角不变、钝角减小）。注意：磁力是变力，轨迹不是标准抛物线或圆弧。", q: "待答：为什么本演示的轨迹不是圆弧？" }
+  ];
+
+  function setStep(i, silent) {
+    S.step = i;
+    const bs = $("steps").querySelectorAll("button");
+    for (let k = 0; k < bs.length; k++) bs[k].classList.toggle("on", k === i);
+    $("tipTitle").textContent = STEPS[i].t;
+    $("tipText").textContent = STEPS[i].txt;
+    $("tipQ").textContent = STEPS[i].q;
+    const map = { 0: "control", 1: "concave", 2: "threeCase", 3: "work", 4: "fn" };
+    if (map[i] && !silent) suggestCard(map[i]);
+    if (i === 4) { const b = $("conclusionBox"); b.style.background = "#fffbeb"; setTimeout(() => b.style.background = "", 900); }
+  }
+
+  let hintTimer = null;
+  function suggestCard(id) {
+    if (REDUCE) return;
+    const c = CARDS.find(x => x.id === id);
+    const el = $("hintChip");
+    if (!c) { el.style.display = "none"; return; }
+    el.textContent = "📚 相关卡片：" + c.title + " · 点击查看";
+    el.dataset.card = id;
+    el.style.display = "";
+    clearTimeout(hintTimer);
+    hintTimer = setTimeout(() => { el.style.display = "none"; }, 8000);
+  }
+
+  function flash(msg) {
+    const el = $("tipText"), old = el.textContent;
+    el.textContent = msg;
+    $("tipbar").style.background = "#fef2f2";
+    setTimeout(() => { el.textContent = old; $("tipbar").style.background = ""; }, 4000);
+  }
+
+  /* =====================================================================
+     17. 结论区
+     ===================================================================== */
+  function updateConclusion() {
+    const ths = S.samples.map(s => s.th).filter(t => isFinite(t));
+    let html = "";
+    if (!ths.length) {
+      if (S.samples.length) {
+        // 对照组（无磁铁）：θ 无定义，两条判据都不适用
+        html = "本次为<b>对照组</b>：没有磁力，" +
+          (P.mu > 0 ? "只有摩擦做负功，速率持续减小（直线减速）。"
+                    : "也没有摩擦，钢球沿直线匀速滚动。") +
+          "<br>F_n = 0 → 方向不变；θ 无定义 → 判据②不适用。<hr>" +
+          "<span style='color:#64748b'>正是这一条直线，反衬出「磁铁放进后轨迹才弯曲」。</span>";
+      } else {
+        html = "还没有实验数据。点「发射」后这里会自动汇总两条判据；也可以先切换 5 种夹角预设各发一次。";
+      }
+    } else {
+      const mn = Math.min(...ths), mx = Math.max(...ths);
+      const vEnd = Math.hypot(S.vx, S.vy);
+      const dK = 0.5 * P.m * (vEnd * vEnd - P.v0 * P.v0);
+      html += "本次 θ 区间 <span class='num'>" + fmt(mn, 0) + "°~" + fmt(mx, 0) + "°</span>，末速率 <span class='num'>" +
+        fmt(vEnd, 2) + " m/s</span>（初速 " + fmt(P.v0, 2) + " m/s）。<br>";
+      html += "累计功 W = <span class='num'>" + fmt(S.W, 4) + " J</span>，ΔEk = <span class='num'>" + fmt(dK, 4) +
+        " J</span>（差 " + fmt(Math.abs(S.W - dK), 4) + " J）。<hr>";
+      html += "<b>判据①</b> 合力指向轨迹<span class='hl'>凹侧</span>：磁力始终指向磁铁一侧，轨迹就向那一侧弯。<br>";
+      html += "<b>判据②</b> 夹角定快慢：θ" + (mx < 89.4 ? " 全程 &lt; 90° → <span class='hl'>速率持续增大</span>" :
+        (mn > 90.6 ? " 全程 &gt; 90° → <span class='hl'>速率持续减小</span>" :
+          " 跨过 90° → 速率<span class='hl'>先增后减（或先减后增）</span>")) + "。<br>";
+      if (Math.abs(S.W) < 1e-6) html += "<span class='warn'>本次 W ≈ 0：说明力与速度几乎垂直，只改方向不改速率。</span>";
+      html += "<hr><span style='color:#64748b'>前提说明：磁力 F = kS/r² 随距离变化、方向随位置变化，属<b>变力</b>，所以轨迹既不是抛物线也不是圆弧；以上判据对任意变力曲线运动都成立。</span>";
+    }
+    $("conclusionBox").innerHTML = html;
+  }
+
+  /* =====================================================================
+     18. 测验
+     ===================================================================== */
+  const QUIZ = [
+    {
+      q: "1. 钢球在某点的速度方向是（　）",
+      opts: ["指向磁铁", "沿轨迹在该点的切线方向", "沿磁力方向", "沿轨迹的凹侧"],
+      ans: 1,
+      exp: "瞬时速度沿轨迹切线，与受力方向无关。打开「速度矢量」看蓝箭头：它总是贴着墨水轨迹。",
+      card: "tangent"
+    },
+    {
+      q: "2. 关于轨迹的弯曲方向，下列说法正确的是（　）",
+      opts: ["合力指向轨迹的凸侧", "合力沿切线方向", "合力指向轨迹的凹侧（内侧）", "合力方向与轨迹弯曲无关"],
+      ans: 2,
+      exp: "轨迹总是向合力所指的一侧弯曲，即凹侧；打开「凹侧阴影」，粉色区域永远在磁铁那一侧。",
+      card: "concave"
+    },
+    {
+      q: "3. 磁力与速度夹角为钝角（θ>90°）时，钢球的速率（　）",
+      opts: ["增大", "减小", "不变", "先增大后减小，与夹角无关"],
+      ans: 1,
+      exp: "θ>90° 时切向分力 F_t 与 v 反向，磁力做负功，动能减小 → 速率减小。对应「③ 侧后方」预设。",
+      card: "threeCase"
+    },
+    {
+      q: "4. 本演示中磁铁对钢球的磁力，与洛伦兹力相比（　）",
+      opts: ["完全相同，都用左手定则", "磁力沿磁极—球心连线、可以做功；洛伦兹力恒垂直 v、不做功", "磁力恒垂直速度，只改方向", "两者都只改变速率"],
+      ans: 1,
+      exp: "洛伦兹力 F=qv×B 恒垂直于速度、不做功、只改方向；本演示的磁力沿连线、与 v 可成任意角，会做功、改变速率。",
+      card: "vsLorentz"
+    }
+  ];
+
+  function buildQuiz() {
+    let html = "";
+    for (let i = 0; i < QUIZ.length; i++) {
+      const q = QUIZ[i];
+      html += '<div class="q" data-i="' + i + '"><div class="qt">' + q.q + "</div>";
+      for (let k = 0; k < q.opts.length; k++) {
+        html += '<button class="opt" data-k="' + k + '">' + String.fromCharCode(65 + k) + ". " + q.opts[k] + "</button>";
+      }
+      html += '<div class="exp"></div></div>';
+    }
+    $("quizList").innerHTML = html;
+    $("quizList").addEventListener("click", function (e) {
+      const btn = e.target.closest(".opt");
+      if (!btn || btn.disabled) return;
+      const qd = btn.closest(".q"), qi = +qd.dataset.i, k = +btn.dataset.k, q = QUIZ[qi];
+      const opts = qd.querySelectorAll(".opt");
+      for (const o of opts) o.disabled = true;
+      if (k === q.ans) { btn.classList.add("correct"); qd.querySelector(".exp").innerHTML = "✔ 正确。" + q.exp; }
+      else {
+        btn.classList.add("wrong");
+        opts[q.ans].classList.add("correct");
+        qd.querySelector(".exp").innerHTML = "✘ 再想想。" + q.exp +
+          '　<a data-card="' + q.card + '" class="jump">打开相关卡片 →</a>';
+      }
+      qd.querySelector(".exp").classList.add("show");
+      const jump = qd.querySelector(".jump");
+      if (jump) jump.addEventListener("click", () => openCard(jump.dataset.card));
+    });
+  }
+
+  /* =====================================================================
+     19. 交互事件
+     ===================================================================== */
+  function bindUI() {
+    // 预设按钮
+    const box = $("presetBox");
+    box.innerHTML = PRESETS.map(p => '<button class="preset" data-id="' + p.id + '">' + p.name + "</button>").join("");
+    box.addEventListener("click", e => {
+      const b = e.target.closest("button");
+      if (!b) return;
+      applyPreset(b.dataset.id);
+    });
+
+    // 磁极
+    $("segPole").addEventListener("click", e => {
+      const b = e.target.closest("button");
+      if (!b) return;
+      P.attract = b.dataset.att === "1";
+      for (const x of $("segPole").children) x.classList.toggle("on", x === b);
+      resetRun(); S._dirty = true;
+    });
+    // 强度 / 位置 / 参数
+    $("rS").addEventListener("input", function () { P.S = parseFloat(this.value); $("vS").textContent = fmt(P.S, 2); resetRun(); S._dirty = true; });
+    $("rMy").addEventListener("input", function () { P.mag.y = parseFloat(this.value); $("vMy").textContent = fmt(P.mag.y, 2) + " m"; resetRun(); S._dirty = true; });
+    $("rMx").addEventListener("input", function () { P.mag.x = parseFloat(this.value); $("vMx").textContent = fmt(P.mag.x, 2) + " m"; resetRun(); S._dirty = true; });
+    $("rV0").addEventListener("input", function () { P.v0 = parseFloat(this.value); $("vV0").textContent = fmt(P.v0, 2) + " m/s"; resetRun(); S._dirty = true; });
+    $("rM").addEventListener("input", function () { P.m = parseFloat(this.value); $("vM").textContent = fmt(P.m, 3) + " kg"; resetRun(); S._dirty = true; });
+    $("rMu").addEventListener("input", function () {
+      P.mu = parseFloat(this.value);
+      $("vMu").textContent = P.mu === 0 ? "0（理想）" : fmt(P.mu, 3);
+      resetRun(); S._dirty = true;
+    });
+
+    // 播放控制
+    $("bLaunch").addEventListener("click", () => { launch(); S._dirty = true; });
+    $("bPause").addEventListener("click", function () {
+      if (!S.launched || S.ended) return;
+      S.running = !S.running;
+      this.textContent = S.running ? "暂停" : "继续";
+    });
+    $("bStep").addEventListener("click", () => { S.running = false; $("bPause").textContent = "暂停"; stepOnce(); S._dirty = true; });
+    $("bReset").addEventListener("click", () => { $("bPause").textContent = "暂停"; resetRun(); S._dirty = true; });
+    $("bMag").addEventListener("click", function () {
+      P.magIn = !P.magIn;
+      this.textContent = P.magIn ? "磁铁移开" : "磁铁放入";
+      resetRun(); S._dirty = true;
+      if (!P.magIn) flash("磁铁已移开：这是对照组——钢球沿直线匀速滚动，频闪残影等间距。");
+    });
+
+    $("segSpeed").addEventListener("click", e => {
+      const b = e.target.closest("button");
+      if (!b) return;
+      P.speed = parseFloat(b.dataset.s);
+      for (const x of $("segSpeed").children) x.classList.toggle("on", x === b);
+    });
+
+    // 图层
+    const map = { cInk: "ink", cStrobe: "strobe", cVel: "vel", cForce: "force", cDecomp: "decomp", cConcave: "concave", cCtrl: "ctrl", cGrid: "grid", cProbe: "probe", cSound: "sound" };
+    Object.keys(map).forEach(id => {
+      $(id).addEventListener("change", function () {
+        S.show[map[id]] = this.checked;
+        if (map[id] === "probe" && !this.checked) { S.probeIdx = -1; $("probeTip").classList.remove("show"); }
+        if (id === "cSound" && this.checked) { ensureAudio(); beep(520, 0.08); }
+        S._dirty = true;
+      });
+    });
+
+    // 数据
+    $("bCsv").addEventListener("click", exportCSV);
+    $("bClearRec").addEventListener("click", () => { S.records = []; renderTable(); });
+
+    // 教学流程
+    $("steps").addEventListener("click", e => {
+      const b = e.target.closest("button");
+      if (b) setStep(+b.dataset.step);
+    });
+
+    // 画布交互：热点 / 拖磁铁 / 探针
+    scene.addEventListener("pointerdown", onPointerDown);
+    scene.addEventListener("pointermove", onPointerMove);
+    window.addEventListener("pointerup", onPointerUp);
+
+    // 键盘
+    window.addEventListener("keydown", e => {
+      if (e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
+      if (e.key === "Escape") { closeDrawer(); return; }
+      if (e.code === "Space") {
+        e.preventDefault();
+        if (!S.launched || S.ended) { launch(); }
+        else { S.running = !S.running; $("bPause").textContent = S.running ? "暂停" : "继续"; }
+        S._dirty = true;
+      } else if (e.key === "r" || e.key === "R") { resetRun(); S._dirty = true; }
+      else if (e.key === "ArrowRight") { e.preventDefault(); stepOnce(); S._dirty = true; }
+    });
+
+    if (window.ResizeObserver) {
+      const ro = new ResizeObserver(() => { drawScene(); drawCharts(); });
+      ro.observe(scene);
+    }
+    window.addEventListener("resize", () => { drawScene(); drawCharts(); });
+  }
+
+  function applyPreset(id, silent) {
+    const p = PRESETS.find(x => x.id === id);
+    if (!p) return;
+    curPreset = p;
+    P.mag = { x: p.mag.x, y: p.mag.y };
+    P.attract = p.attract;
+    $("rMx").value = P.mag.x; $("vMx").textContent = fmt(P.mag.x, 2) + " m";
+    $("rMy").value = P.mag.y; $("vMy").textContent = fmt(P.mag.y, 2) + " m";
+    for (const x of $("segPole").children) x.classList.toggle("on", (x.dataset.att === "1") === P.attract);
+    for (const b of $("presetBox").children) b.classList.toggle("on", b.dataset.id === id);
+    if (!P.magIn) { P.magIn = true; $("bMag").textContent = "磁铁移开"; }
+    resetRun();
+    S._dirty = true;
+    if (!silent && p.card) suggestCard(p.card);
+  }
+
+  function canvasPos(ev) {
+    const r = scene.getBoundingClientRect();
+    return { x: ev.clientX - r.left, y: ev.clientY - r.top };
+  }
+
+  function onPointerDown(ev) {
+    const q = canvasPos(ev);
+    // 1) 热点
+    for (const h of HOT) {
+      if (Math.hypot(h.x - q.x, h.y - q.y) < 13) { openCard(h.card); return; }
+    }
+    // 2) 磁铁拖动
+    if (P.magIn) {
+      const d = Math.hypot(px(P.mag.x) - q.x, py(P.mag.y) - q.y);
+      if (d < Math.max(20, CFG.magnetW * V.s * 0.7)) {
+        S.dragging = true;
+        scene.style.cursor = "grabbing";
+        scene.setPointerCapture && scene.setPointerCapture(ev.pointerId);
+        return;
+      }
+    }
+    // 3) 探针
+    const idx = nearestSample(q.x, q.y);
+    if (idx >= 0) setProbe(idx);
+    else { S.probeIdx = -1; $("probeTip").classList.remove("show"); }
+  }
+
+  function onPointerMove(ev) {
+    const q = canvasPos(ev);
+    if (S.dragging) {
+      P.mag.x = clamp(q.x < 0 ? 0 : (q.x - V.ox) / V.s, 0.05, CFG.board.w - 0.05);
+      P.mag.y = clamp((V.oy - q.y) / V.s, 0.05, CFG.board.h - 0.05);
+      $("rMx").value = P.mag.x; $("vMx").textContent = fmt(P.mag.x, 2) + " m";
+      $("rMy").value = P.mag.y; $("vMy").textContent = fmt(P.mag.y, 2) + " m";
+      resetRun();
+      S._dirty = true;
+      return;
+    }
+    // hover 光标提示
+    let hover = false;
+    for (const h of HOT) if (Math.hypot(h.x - q.x, h.y - q.y) < 13) hover = true;
+    if (!hover && P.magIn && Math.hypot(px(P.mag.x) - q.x, py(P.mag.y) - q.y) < Math.max(20, CFG.magnetW * V.s * 0.7)) hover = true;
+    if (!hover && nearestSample(q.x, q.y) >= 0) hover = true;
+    scene.style.cursor = hover ? "pointer" : "crosshair";
+  }
+
+  function onPointerUp() {
+    if (S.dragging) { S.dragging = false; scene.style.cursor = "crosshair"; }
+  }
+
+  /* =====================================================================
+     20. 初始化
+     ===================================================================== */
+  function init() {
+    $("dCnt").textContent = CARDS.length + " 张";
+    buildQuiz();
+    bindUI();
+    bindDrawer();
+    if (REDUCE) { S.show.strobe = true; $("cStrobe").checked = true; }
+    syncTabs();
+    renderCard();
+    applyPreset("p1", true);
+    setStep(0, true);
+    resetRun();
+    renderTable();
+    updateConclusion();
+    drawCharts();
+    requestAnimationFrame(loop);
+  }
+
+  function $(id) { return document.getElementById(id); }
+
+  init();
+})();
+</script>
+</body>
+</html>

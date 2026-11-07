@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>跨学科实践：制作望远镜 · 交互式可视化（人教版八年级 §5.5）</title>
+<style>
+:root{
+  --blue:#2563EB; --blue-d:#1D4ED8; --blue-l:#EFF4FF;
+  --green:#10B981; --red:#EF4444; --amber:#F59E0B; --purple:#7C3AED;
+  --ink:#1F2937; --ink-2:#4B5563; --ink-3:#6B7280;
+  --line:#E5E7EB; --bg:#F5F7FB; --card:#FFFFFF;
+  --radius:14px;
+  --shadow:0 1px 2px rgba(16,24,40,.04), 0 10px 28px -14px rgba(16,24,40,.26);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:"Microsoft YaHei","PingFang SC","Hiragino Sans GB",system-ui,-apple-system,"Segoe UI",sans-serif;
+  background:var(--bg); color:var(--ink); line-height:1.68; -webkit-font-smoothing:antialiased;
+}
+svg{display:block; font-family:inherit;}
+
+/* ---------- header ---------- */
+.site-header{background:linear-gradient(120deg,#1D4ED8,#2563EB 55%,#3B82F6);color:#fff;padding:22px 0 24px;}
+.header-inner{max-width:1120px;margin:0 auto;padding:0 22px;display:flex;justify-content:space-between;align-items:flex-end;gap:18px;flex-wrap:wrap;}
+.header-text h1{margin:0;font-size:24px;font-weight:700;letter-spacing:.5px;}
+.header-text p{margin:6px 0 0;font-size:13.5px;color:rgba(255,255,255,.88);}
+.header-nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.header-link{border:1px solid rgba(255,255,255,.45);border-radius:999px;padding:7px 16px;font-size:13px;color:#fff;text-decoration:none;background:rgba(255,255,255,.08);white-space:nowrap;}
+.header-link:hover{background:rgba(255,255,255,.2);}
+.header-badge{border:1px solid rgba(255,255,255,.4);border-radius:999px;padding:7px 16px;font-size:13px;background:rgba(255,255,255,.12);white-space:nowrap;}
+
+/* ---------- layout ---------- */
+.wrap{max-width:1120px;margin:0 auto;padding:24px 22px 40px;}
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:24px 26px;margin-bottom:20px;border:1px solid rgba(229,231,235,.7);}
+.chead{display:flex;gap:14px;align-items:flex-start;margin-bottom:18px;}
+.idx{flex:0 0 auto;width:34px;height:34px;border-radius:11px;background:var(--blue-l);color:var(--blue);font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;margin-top:2px;}
+.chead h2{margin:0 0 3px;font-size:19px;font-weight:700;letter-spacing:.2px;}
+.chead p{margin:0;color:var(--ink-3);font-size:13.3px;}
+
+.split{display:grid;grid-template-columns:minmax(0,1.25fr) minmax(280px,.75fr);gap:26px;align-items:start;}
+@media(max-width:900px){ .split{grid-template-columns:1fr;} }
+.stage{border:1px solid var(--line);border-radius:12px;background:#FBFcFE;padding:6px;overflow:hidden;}
+.stage svg{width:100%;height:auto;border-radius:8px;touch-action:none;}
+.stage svg.grab{cursor:grab;}
+.stage svg.grab:active{cursor:grabbing;}
+
+/* ---------- controls ---------- */
+.panel{display:flex;flex-direction:column;gap:15px;}
+.ctl label{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--ink-3);margin-bottom:6px;}
+.ctl label b{color:var(--ink);font-size:14.5px;font-variant-numeric:tabular-nums;font-weight:700;}
+input[type=range]{width:100%;height:24px;accent-color:var(--blue);cursor:pointer;margin:0;background:transparent;}
+.seg{display:flex;gap:8px;flex-wrap:wrap;}
+.seg button{
+  border:1px solid var(--line);background:#fff;color:var(--ink-2);border-radius:9px;
+  padding:6px 14px;font-size:12.5px;cursor:pointer;font-family:inherit;transition:.15s;
+}
+.seg button:hover{border-color:#BFDBFE;background:#F8FAFF;}
+.seg button.on{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600;}
+.seg button.act{background:#FFF7ED;border-color:#FCD34D;color:#B45309;font-weight:600;}
+
+.rows{border:1px solid var(--line);border-radius:11px;overflow:hidden;background:#FCFDFF;}
+.row{display:flex;justify-content:space-between;gap:10px;padding:8px 13px;font-size:13px;border-bottom:1px solid var(--line);}
+.row:last-child{border-bottom:0;}
+.row span{color:var(--ink-3);}
+.row b{font-variant-numeric:tabular-nums;font-weight:700;}
+
+.tagline{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--ink-2);flex-wrap:wrap;}
+.tag{font-size:11.5px;font-weight:700;border-radius:999px;padding:2px 10px;letter-spacing:.3px;white-space:nowrap;}
+.tag.b{background:#E4F9F0;color:#0E9F6E;}
+.tag.r{background:#FEECEC;color:#DC2626;}
+.tag.a{background:#FFF6E5;color:#B45309;}
+.tag.g{background:#EFF4FF;color:#1D4ED8;}
+.tag.n{background:#F1F5F9;color:#64748B;}
+
+.note{margin:0;font-size:13.2px;color:var(--ink-2);line-height:1.72;background:#F6F9FF;border-left:3px solid var(--blue);border-radius:0 10px 10px 0;padding:11px 14px;}
+.note em{font-style:normal;font-weight:700;color:var(--blue-d);}
+.note em.r{color:#DC2626;}
+
+.chart{border:1px solid var(--line);border-radius:11px;background:#FCFDFF;padding:6px 4px 2px;}
+.chart svg{width:100%;height:auto;}
+.hint{font-size:12.5px;color:var(--ink-3);margin:0;}
+
+footer{text-align:center;color:#93A2B8;font-size:12.3px;padding:6px 0 0;}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-text">
+      <h1>跨学科实践：制作望远镜</h1>
+      <p>两片凸透镜，怎么把远处的景物「拉」到眼前？</p>
+    </div>
+    <div class="header-nav">
+      <a class="header-link" href="#">« 返回实验目录</a>
+      <span class="header-badge">八年级物理 · 光学 · §5.5</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- ============ ① 拆解成品望远镜 ============ -->
+  <section class="card">
+    <div class="chead">
+      <div class="idx">01</div>
+      <div>
+        <h2>拆开一只望远镜：物镜、目镜与调焦</h2>
+        <p>拖动目镜（或镜筒）改变两镜之间的距离，看什么时候才看得清。</p>
+      </div>
+    </div>
+    <div class="split">
+      <div class="stage"><svg id="svg1" class="grab" viewBox="0 0 620 310" role="img" aria-label="望远镜剖面与调焦"></svg></div>
+      <div class="panel">
+        <div class="ctl">
+          <label>两镜间距 L<b id="v1L">30.0 cm</b></label>
+          <input id="r1L" type="range" min="15" max="45" step="0.5" value="30">
+        </div>
+        <div class="ctl">
+          <label>景物到望远镜的距离<b id="v1u">很远</b></label>
+          <input id="r1u" type="range" min="0" max="100" step="1" value="0">
+        </div>
+        <div class="ctl">
+          <label>物镜直径 D<b id="v1D">5.0 cm</b></label>
+          <input id="r1D" type="range" min="3" max="8" step="0.5" value="5">
+        </div>
+        <div class="seg">
+          <button class="act" id="b1best">自动调到最清晰</button>
+        </div>
+        <div class="rows">
+          <div class="row"><span>物镜焦距 f物</span><b>20.0 cm</b></div>
+          <div class="row"><span>目镜焦距 f目</span><b>10.0 cm</b></div>
+          <div class="row"><span>物镜成的实像距物镜 v₁</span><b id="o1v">20.0 cm</b></div>
+          <div class="row"><span>最清晰的间距 v₁ + f目</span><b id="o1b">30.0 cm</b></div>
+          <div class="row"><span>当前偏差 Δ</span><b id="o1d">0.0 cm</b></div>
+        </div>
+        <div class="tagline"><span id="o1t" class="tag b">清晰</span><span class="hint">进光面积 ∝ D²，镜筒越粗像越亮</span></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ② 成像链光路 ============ -->
+  <section class="card">
+    <div class="chead">
+      <div class="idx">02</div>
+      <div>
+        <h2>成像链：物镜成实像 → 目镜当放大镜</h2>
+        <p>远处景物先在物镜后面成一个倒立、缩小的实像；这个实像落在目镜的焦点以内，目镜再把它放大一次。</p>
+      </div>
+    </div>
+    <div class="split">
+      <div class="stage"><svg id="svg2" class="grab" viewBox="0 0 900 380" role="img" aria-label="望远镜成像光路"></svg></div>
+      <div class="panel">
+        <div class="seg" id="seg2s">
+          <button data-s="1">① 只有物镜</button>
+          <button data-s="2">② 加上目镜</button>
+          <button data-s="3" class="on">③ 视角被放大</button>
+        </div>
+        <div class="ctl">
+          <label>物镜焦距 f物<b id="v2f1">20.0 cm</b></label>
+          <input id="r2f1" type="range" min="10" max="30" step="0.5" value="20">
+        </div>
+        <div class="ctl">
+          <label>目镜焦距 f目<b id="v2f2">10.0 cm</b></label>
+          <input id="r2f2" type="range" min="5" max="15" step="0.5" value="10">
+        </div>
+        <div class="ctl">
+          <label>两镜间距 L<b id="v2L">30.0 cm</b></label>
+          <input id="r2L" type="range" min="15" max="46" step="0.5" value="30">
+        </div>
+        <div class="ctl">
+          <label>景物张角 α<b id="v2a">8.0°</b></label>
+          <input id="r2a" type="range" min="3" max="10" step="0.5" value="8">
+        </div>
+        <div class="seg">
+          <button class="act" id="b2auto">自动调到最清晰</button>
+          <button id="b2play">▶ 分步演示</button>
+        </div>
+        <div class="rows">
+          <div class="row"><span>实像距物镜 v₁</span><b id="o2v">20.0 cm</b></div>
+          <div class="row"><span>实像到目镜 u₂</span><b id="o2u2">10.0 cm</b></div>
+          <div class="row"><span>目镜焦距 f目</span><b id="o2f2">10.0 cm</b></div>
+          <div class="row"><span>放大倍率 f物 ÷ f目</span><b id="o2m">2.0 ×</b></div>
+          <div class="row"><span>出射视角 β</span><b id="o2b">15.9°</b></div>
+        </div>
+        <div class="tagline"><span id="o2t" class="tag b">实像正落在目镜焦点上</span></div>
+        <div class="chart"><svg id="ch2" viewBox="0 0 300 170" role="img" aria-label="视角放大对比"></svg></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ③ 选镜片 ============ -->
+  <section class="card">
+    <div class="chead">
+      <div class="idx">03</div>
+      <div>
+        <h2>选哪两片？焦距组合决定放大倍率</h2>
+        <p>左边是肉眼看到的，右边是望远镜里看到的（镜筒已调到最佳长度）。</p>
+      </div>
+    </div>
+    <div class="split">
+      <div class="stage"><svg id="svg3" viewBox="0 0 560 250" role="img" aria-label="不同焦距镜片放大效果对比"></svg></div>
+      <div class="panel">
+        <div>
+          <div class="ctl"><label>物镜（焦距长、直径大）<b id="v3o">f = 20 cm　d = 5 cm</b></label></div>
+          <div class="seg" id="seg3o">
+            <button data-f="30">30 cm</button>
+            <button data-f="20" class="on">20 cm</button>
+            <button data-f="10">10 cm</button>
+          </div>
+        </div>
+        <div>
+          <div class="ctl"><label>目镜（焦距短、直径小）<b id="v3e">f = 10 cm　d = 4 cm</b></label></div>
+          <div class="seg" id="seg3e">
+            <button data-f="15">凸 15 cm</button>
+            <button data-f="10" class="on">凸 10 cm</button>
+            <button data-f="5">凸 5 cm</button>
+            <button data-f="-5">凹 5 cm</button>
+          </div>
+        </div>
+        <div class="rows">
+          <div class="row"><span>放大倍率 M = f物 ÷ f目</span><b id="o3m">2.0 ×</b></div>
+          <div class="row"><span>两镜最佳间距</span><b id="o3d">30.0 cm</b></div>
+          <div class="row"><span>看到的像</span><b id="o3i">倒立</b></div>
+          <div class="row"><span>结构名称</span><b id="o3n">开普勒式</b></div>
+        </div>
+        <div class="tagline"><span id="o3t" class="tag b">2.0 倍 · 合适</span><span class="hint">物镜越粗，进光越多、像越亮</span></div>
+        <p class="note" id="o3note">放大倍率取 <em>2~3 倍</em>最好：再大下去，像会变暗、变模糊，手一抖就晃得厉害。</p>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<footer>物理可视化模型 · 制作望远镜　|　单文件版，无需外部资源</footer>
+
+<script>
+/* ============================================================
+   基础工具
+   ============================================================ */
+const $  = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const fmt = (n, d = 1) => (isFinite(n) ? Number(n).toFixed(d) : "—");
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const D2R = Math.PI / 180, R2D = 180 / Math.PI;
+const F = 'font-family="Microsoft YaHei, PingFang SC, sans-serif"';
+const T = (x, y, s, o = {}) =>
+  `<text x="${x}" y="${y}" font-size="${o.s || 12}" fill="${o.c || "#1F2937"}" font-weight="${o.w || 400}"`
+  + ` text-anchor="${o.a || "start"}" ${F}${o.ex || ""}>${s}</text>`;
+const HALO = ' stroke="#FFFFFF" stroke-width="3" stroke-linejoin="round" paint-order="stroke"';
+const txt = (sel, v) => { const e = $(sel); if (e) e.textContent = v; };
+
+/* 双凸透镜剖面：半高 h，b 越大越鼓 */
+function lensPath(h, b) {
+  return `M -2 ${-h} Q ${-b} 0 -2 ${h} L 2 ${h} Q ${b} 0 2 ${-h} Z`;
+}
+
+/* ============================================================
+   光学核心（单位 cm；x 沿光轴向右，y 向上为正）
+   ============================================================ */
+/* 景物的远近：p = 0 表示很远（∞），否则 4 m ~ 200 m */
+function objDist(p) { return p <= 0 ? Infinity : 4 * Math.pow(50, p / 100); }
+/* 物镜成像距离：1/v = 1/f − 1/u */
+function imgDist(f, u) { return isFinite(u) ? f * u / (u - f) : f; }
+
+/* 一条光线的近轴追迹：入射倾角 s0（来自景物顶端），打到物镜高度 y1 */
+function traceRay(f1, f2, L, alpha, y1) {
+  const s0 = -Math.tan(alpha * D2R);   // 向光轴倾斜
+  const s1 = s0 - y1 / f1;             // 过物镜
+  const y2 = y1 + s1 * L;              // 到目镜时的高度
+  const s2 = s1 - y2 / f2;             // 过目镜（f2 < 0 即凹透镜）
+  return { s0, s1, y2, s2 };
+}
+
+/* 目镜单独成像：u2 为实像到目镜的距离，返回 v2（< 0 为虚像，−∞ 表示成像在无穷远） */
+function img2(f2, u2) {
+  if (Math.abs(u2 - f2) < 1e-9) return -Infinity;   // 实像正落在焦点上 → 出射平行光
+  return f2 * u2 / (u2 - f2);
+}
+
+/* ============================================================
+   共用：远处景物（以视场中心为原点，内容约 ±110）
+   ============================================================ */
+function sceneG(gid) {
+  return `<rect x="-130" y="-130" width="260" height="260" fill="url(#${gid})"/>`
+    + `<circle cx="66" cy="-64" r="15" fill="#FDE68A"/>`
+    + `<path d="M-130 8 L-70 -40 L-6 8 Z" fill="#94A3B8"/>`
+    + `<path d="M-8 8 L40 -34 L96 8 Z" fill="#64748B"/>`
+    + `<rect x="-130" y="6" width="260" height="124" fill="#4ADE80" opacity=".92"/>`
+    + `<rect x="24" y="-16" width="7" height="24" fill="#8B5A2B"/>`
+    + `<circle cx="27" cy="-24" r="15" fill="#15803D"/>`
+    + `<line x1="-18" y1="8" x2="-18" y2="-46" stroke="#F8FAFC" stroke-width="4"/>`
+    + `<path d="M-18 -46 L6 -35 L-18 -24 Z" fill="#EF4444"/>`;
+}
+function skyDefs(id) {
+  return `<linearGradient id="${id}" x1="0" y1="0" x2="0" y2="1">`
+    + `<stop offset="0" stop-color="#60A5FD"/><stop offset="1" stop-color="#DBEAFE"/></linearGradient>`;
+}
+
+/* ============================================================
+   ① 拆解成品望远镜
+   ============================================================ */
+const S1 = { X0: 70, K: 5.6, AY: 150, CX: 500, CY: 150, R: 88 };
+const C1 = { L: 30, uP: 0, D: 5, f1: 20, f2: 10, alpha: 5 };
+
+function draw1() {
+  const f1 = C1.f1, f2 = C1.f2, L = C1.L, D = C1.D;
+  const u = objDist(C1.uP);
+  const v1 = imgDist(f1, u);
+  const best = v1 + f2;
+  const d = L - best;
+  const blur = clamp(Math.abs(d) * 1.7, 0, 9);
+  const area = (D / 5) * (D / 5);
+  const dark = clamp(0.62 - 0.5 * area, 0, 0.8);
+  const xe = S1.X0 + L * S1.K;
+  const xI = S1.X0 + v1 * S1.K;          // 实像位置
+  const xF2 = xe - f2 * S1.K;            // 目镜前焦点
+  const M = f1 / f2;
+
+  let g = `<defs>${skyDefs("sky1")}`
+    + `<filter id="fb1" x="-25%" y="-25%" width="150%" height="150%">`
+    + `<feGaussianBlur stdDeviation="${blur.toFixed(2)}"/></filter>`
+    + `<clipPath id="cp1"><circle cx="${S1.CX}" cy="${S1.CY}" r="${S1.R}"/></clipPath>`
+    + `</defs>`;
+  g += `<rect x="0" y="0" width="620" height="310" fill="#FFFFFF"/>`;
+
+  /* 镜筒：外筒（粗，装物镜）+ 内筒（细，装目镜，可伸缩） */
+  const wallOut = "#E3D0B0", edgeOut = "#B08968";
+  const wallIn = "#F2E5CE", edgeIn = "#C4A57B";
+  const xOutR = Math.max(S1.X0 + 60, xe - 14);
+  const xInL = xe - 74, xInR = xe + 18;
+  g += `<rect x="40" y="102" width="${(xOutR - 40).toFixed(1)}" height="13" fill="${wallOut}" stroke="${edgeOut}" stroke-width="1.2"/>`;
+  g += `<rect x="40" y="185" width="${(xOutR - 40).toFixed(1)}" height="13" fill="${wallOut}" stroke="${edgeOut}" stroke-width="1.2"/>`;
+  g += `<rect x="${xInL.toFixed(1)}" y="112" width="${(xInR - xInL).toFixed(1)}" height="11" fill="${wallIn}" stroke="${edgeIn}" stroke-width="1.2"/>`;
+  g += `<rect x="${xInL.toFixed(1)}" y="177" width="${(xInR - xInL).toFixed(1)}" height="11" fill="${wallIn}" stroke="${edgeIn}" stroke-width="1.2"/>`;
+
+  /* 光轴 */
+  g += `<line x1="16" y1="${S1.AY}" x2="${(S1.CX - S1.R - 16).toFixed(1)}" y2="${S1.AY}" stroke="#94A3B8" stroke-width="1.2" stroke-dasharray="8 5"/>`;
+
+  /* 物镜 / 目镜 */
+  g += `<g transform="translate(${S1.X0},${S1.AY})"><path d="${lensPath(33, 9)}" fill="#BFDBFE" fill-opacity=".75" stroke="#2563EB" stroke-width="1.6"/></g>`;
+  g += `<g transform="translate(${xe.toFixed(1)},${S1.AY})"><path d="${lensPath(26, 7)}" fill="#BFDBFE" fill-opacity=".75" stroke="#2563EB" stroke-width="1.6"/></g>`;
+
+  /* 物镜后焦点（实像就成在它附近） */
+  const xF1 = S1.X0 + f1 * S1.K;
+  g += `<line x1="${xF1.toFixed(1)}" y1="126" x2="${xF1.toFixed(1)}" y2="174" stroke="#EF4444" stroke-width="1.3" stroke-dasharray="5 4"/>`;
+  g += T(xF1 + 2, 94, "实像 ≈ F物′", { s: 11.5, c: "#EF4444", w: 700, ex: HALO });
+
+  /* 实像（倒立、缩小） */
+  const ih = 15;
+  g += `<line x1="${xI.toFixed(1)}" y1="${S1.AY}" x2="${xI.toFixed(1)}" y2="${S1.AY + ih + 4}" stroke="#EF4444" stroke-width="2.4"/>`;
+  g += `<path d="M${(xI - 4).toFixed(1)} ${S1.AY + 4} L${xI.toFixed(1)} ${S1.AY + ih + 5} L${(xI + 4).toFixed(1)} ${S1.AY + 4} Z" fill="#EF4444"/>`;
+
+  /* 目镜前焦点 */
+  g += `<line x1="${xF2.toFixed(1)}" y1="126" x2="${xF2.toFixed(1)}" y2="174" stroke="#2563EB" stroke-width="1.3" stroke-dasharray="5 4"/>`;
+  g += T(xF2, 212, "F目", { s: 11.5, c: "#2563EB", w: 700, a: "middle", ex: HALO });
+
+  /* 尺寸线 */
+  g += `<line x1="${S1.X0}" y1="234" x2="${xe.toFixed(1)}" y2="234" stroke="#475569" stroke-width="1.2"/>`;
+  g += `<path d="M${S1.X0} 234 l9 -4 l0 8 Z" fill="#475569"/><path d="M${xe.toFixed(1)} 234 l-9 -4 l0 8 Z" fill="#475569"/>`;
+  g += `<line x1="${S1.X0}" y1="115" x2="${S1.X0}" y2="238" stroke="#475569" stroke-width="1" stroke-dasharray="3 3" opacity=".55"/>`;
+  g += `<line x1="${xe.toFixed(1)}" y1="115" x2="${xe.toFixed(1)}" y2="238" stroke="#475569" stroke-width="1" stroke-dasharray="3 3" opacity=".55"/>`;
+  g += T((S1.X0 + xe) / 2, 250, `L = ${fmt(L)} cm`, { s: 12.5, c: "#334155", w: 700, a: "middle", ex: HALO });
+
+  /* 标注 */
+  g += T(S1.X0 - 6, 268, `物镜　f = 20 cm　d = 5 cm`, { s: 12, c: "#1D4ED8", w: 700, a: "middle", ex: HALO });
+  g += T(xe, 268, `目镜　f = 10 cm　d = 4 cm`, { s: 12, c: "#1D4ED8", w: 700, a: "middle", ex: HALO });
+  g += T(16, 30, "镜筒剖面（可伸缩调焦）", { s: 12.5, c: "#94A3B8", w: 600 });
+
+  /* 眼睛 + 引出线 → 目镜里看到的 */
+  const ex0 = Math.min(xe + 46, S1.CX - S1.R - 26);
+  g += `<g transform="translate(${ex0.toFixed(1)},${S1.AY})">
+    <path d="M-16 0 Q0 -13 16 0 Q0 13 -16 0 Z" fill="#FFFFFF" stroke="#334155" stroke-width="1.6"/>
+    <circle cx="0" cy="0" r="5.4" fill="#1F2937"/><circle cx="1.8" cy="-2" r="1.7" fill="#FFFFFF"/></g>`;
+  g += `<line x1="${(ex0 + 18).toFixed(1)}" y1="${S1.AY}" x2="${S1.CX - S1.R - 8}" y2="${S1.CY}" stroke="#94A3B8" stroke-width="1.2" stroke-dasharray="4 4"/>`;
+
+  /* 视场圆 */
+  g += `<g clip-path="url(#cp1)"><g transform="translate(${S1.CX},${S1.CY}) rotate(180) scale(${(0.88 * M).toFixed(3)})">${sceneG("sky1")}</g>`
+    + `<rect x="${S1.CX - S1.R}" y="${S1.CY - S1.R}" width="${2 * S1.R}" height="${2 * S1.R}" fill="#000000" opacity="${dark.toFixed(3)}"/></g>`;
+  g += `<circle cx="${S1.CX}" cy="${S1.CY}" r="${S1.R}" fill="none" stroke="#334155" stroke-width="9"/>`;
+  g += `<circle cx="${S1.CX}" cy="${S1.CY}" r="${S1.R + 5}" fill="none" stroke="#94A3B8" stroke-width="1.2"/>`;
+  g += T(S1.CX, S1.CY + S1.R + 22, "从目镜里看到的", { s: 12.5, c: "#475569", w: 700, a: "middle" });
+
+  $("#svg1").innerHTML = g;
+
+  txt("#v1L", fmt(L) + " cm");
+  txt("#v1u", C1.uP === 0 ? "很远" : fmt(u, u < 10 ? 1 : 0) + " m");
+  txt("#v1D", fmt(D) + " cm");
+  txt("#o1v", fmt(v1) + " cm");
+  txt("#o1b", fmt(best) + " cm");
+  txt("#o1d", (d >= 0 ? "+" : "−") + fmt(Math.abs(d)) + " cm");
+
+  const tg = $("#o1t");
+  if (tg) {
+    if (L < v1) { tg.className = "tag r"; tg.textContent = "镜筒太短：实像还没成形"; }
+    else if (Math.abs(d) < 0.4) { tg.className = "tag b"; tg.textContent = "清晰：实像正落在目镜焦点上"; }
+    else if (Math.abs(d) < 2.5) { tg.className = "tag a"; tg.textContent = "有点模糊"; }
+    else { tg.className = "tag r"; tg.textContent = "很模糊：调一调镜筒长度"; }
+  }
+}
+
+/* ============================================================
+   ② 成像链光路
+   ============================================================ */
+const S2 = { X0: 200, K: 12, AY: 200, EX: 850 };
+const C2 = { f1: 20, f2: 10, L: 30, alpha: 8, step: 3, play: 0 };
+const X2 = (x) => S2.X0 + x * S2.K;      // cm → px（轴向）
+const Y2 = (y) => S2.AY - y * S2.K;      // cm → px（径向，向上为正）
+
+function draw2() {
+  const f1 = C2.f1, f2 = C2.f2, L = C2.L, alpha = C2.alpha, step = C2.step;
+  const v1 = imgDist(f1, Infinity);
+  const u2 = L - v1;
+  const v2 = img2(f2, u2);
+  const xe = X2(L), xI = X2(v1);
+  const tanA = Math.tan(alpha * D2R);
+  const h1 = -v1 * tanA;                  // 实像（轴下方）
+  const ys = [2.0, 0, -2.0];              // 打到物镜的三条光线高度（cm）
+  const full = step >= 2;
+
+  let g = `<defs>`
+    + `<marker id="abr" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#EF4444"/></marker>`
+    + `<marker id="abb" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#2563EB"/></marker>`
+    + `<marker id="abo" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#F59E0B"/></marker>`
+    + `<marker id="ag2" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse"><path d="M0 0 L10 5 L0 10 z" fill="#94A3B8"/></marker>`
+    + `</defs>`;
+  g += `<rect x="0" y="0" width="900" height="380" fill="#FFFFFF"/>`;
+
+  /* 镜筒剖面：外筒 + 内筒（光路就走在筒里） */
+  const xOutR = Math.max(X2(0) + 70, xe - 30);
+  g += `<rect x="150" y="${S2.AY - 54}" width="${(xOutR - 150).toFixed(1)}" height="16" fill="#E3D0B0" stroke="#B08968" stroke-width="1.2"/>`;
+  g += `<rect x="150" y="${S2.AY + 38}" width="${(xOutR - 150).toFixed(1)}" height="16" fill="#E3D0B0" stroke="#B08968" stroke-width="1.2"/>`;
+  g += `<rect x="${(xe - 96).toFixed(1)}" y="${S2.AY - 44}" width="130" height="13" fill="#F2E5CE" stroke="#C4A57B" stroke-width="1.2"/>`;
+  g += `<rect x="${(xe - 96).toFixed(1)}" y="${S2.AY + 31}" width="130" height="13" fill="#F2E5CE" stroke="#C4A57B" stroke-width="1.2"/>`;
+
+  /* 光轴 */
+  g += `<line x1="20" y1="${S2.AY}" x2="880" y2="${S2.AY}" stroke="#94A3B8" stroke-width="1.2" stroke-dasharray="8 5"/>`;
+
+  /* 远处景物（不按比例）+ 折断符号 */
+  const tipY = Y2(ys[0] + tanA * ((S2.X0 - 40) / S2.K));
+  g += `<line x1="40" y1="${S2.AY}" x2="40" y2="${tipY.toFixed(1)}" stroke="#EF4444" stroke-width="3"/>`;
+  g += `<path d="M32 ${(tipY + 8).toFixed(1)} L48 ${(tipY + 8).toFixed(1)} L48 ${tipY.toFixed(1)} L32 ${tipY.toFixed(1)} Z" fill="#EF4444"/>`;
+  g += `<path d="M62 ${(S2.AY - 30).toFixed(1)} l6 -12 M70 ${(S2.AY - 30).toFixed(1)} l6 -12" stroke="#94A3B8" stroke-width="1.6"/>`;
+  g += T(40, S2.AY + 22, "远处景物", { s: 12, c: "#EF4444", w: 700, a: "middle", ex: HALO });
+  g += T(40, S2.AY + 38, "距离未按比例", { s: 11, c: "#94A3B8", a: "middle", ex: HALO });
+
+  /* 光线 */
+  const xStart = 76, xStartCm = (xStart - S2.X0) / S2.K;
+  const rays = ys.map((y1) => traceRay(f1, f2, L, alpha, y1));
+  rays.forEach((r, k) => {
+    const yIn = Y2(r.y2);
+    const yAtStart = Y2(ys[k] + r.s0 * xStartCm);   // 物镜前：y = y1 + s0·x
+    g += `<line x1="${xStart}" y1="${yAtStart.toFixed(1)}" x2="${S2.X0}" y2="${Y2(ys[k]).toFixed(1)}" stroke="#EF4444" stroke-width="2"/>`;
+    if (step === 1) {
+      /* 只走到实像处 */
+      g += `<line x1="${S2.X0}" y1="${Y2(ys[k]).toFixed(1)}" x2="${xI.toFixed(1)}" y2="${Y2(ys[k] + r.s1 * v1).toFixed(1)}" stroke="#EF4444" stroke-width="2" marker-end="url(#abr)"/>`;
+    } else {
+      g += `<line x1="${S2.X0}" y1="${Y2(ys[k]).toFixed(1)}" x2="${xe.toFixed(1)}" y2="${yIn.toFixed(1)}" stroke="#EF4444" stroke-width="2"/>`;
+      const xEnd = S2.EX - 6;
+      const yEnd = Y2(r.y2 + r.s2 * ((xEnd - xe) / S2.K));
+      g += `<line x1="${xe.toFixed(1)}" y1="${yIn.toFixed(1)}" x2="${xEnd}" y2="${yEnd.toFixed(1)}" stroke="#F59E0B" stroke-width="2" marker-end="url(#abo)"/>`;
+      /* 反向延长线（找虚像） */
+      if (v2 < 0) {
+        const back = 60 / S2.K;                       // 往左回退 60 px
+        const yb = Y2(r.y2 + r.s2 * (-back));
+        g += `<line x1="${xe.toFixed(1)}" y1="${yIn.toFixed(1)}" x2="${(xe - 60).toFixed(1)}" y2="${yb.toFixed(1)}" stroke="#2563EB" stroke-width="1.4" stroke-dasharray="6 4"/>`;
+      }
+    }
+  });
+
+  /* 透镜（压在光线上） */
+  g += `<g transform="translate(${S2.X0},${S2.AY})"><path d="${lensPath(30, 9)}" fill="#BFDBFE" fill-opacity=".55" stroke="#2563EB" stroke-width="1.8"/></g>`;
+  if (full) g += `<g transform="translate(${xe.toFixed(1)},${S2.AY})"><path d="${lensPath(24, 7)}" fill="#BFDBFE" fill-opacity=".55" stroke="#2563EB" stroke-width="1.8"/></g>`;
+
+  /* 实像 */
+  const ihPx = Math.abs(h1) * S2.K;
+  g += `<line x1="${xI.toFixed(1)}" y1="${S2.AY}" x2="${xI.toFixed(1)}" y2="${(S2.AY + ihPx).toFixed(1)}" stroke="#EF4444" stroke-width="3"/>`;
+  g += `<path d="M${(xI - 6).toFixed(1)} ${S2.AY + 8} L${xI.toFixed(1)} ${(S2.AY + ihPx + 9).toFixed(1)} L${(xI + 6).toFixed(1)} ${S2.AY + 8} Z" fill="#EF4444"/>`;
+  const imgLab = step === 1 ? "倒立、缩小的实像" : "实像（目镜的「物体」）";
+  g += T(xI, S2.AY + ihPx + 26, imgLab, { s: 12, c: "#EF4444", w: 700, a: "middle", ex: HALO });
+
+  if (full) {
+    /* 目镜前焦点：实像应该落在这儿 */
+    const xF2 = xe - f2 * S2.K;
+    g += `<line x1="${xF2.toFixed(1)}" y1="${(S2.AY - 42).toFixed(1)}" x2="${xF2.toFixed(1)}" y2="${(S2.AY + 42).toFixed(1)}" stroke="#2563EB" stroke-width="1.4" stroke-dasharray="5 4"/>`;
+    g += T(xF2, S2.AY + 62, "F目", { s: 11.5, c: "#2563EB", w: 700, a: "middle", ex: HALO });
+
+    /* 虚像：位置在图内就画，太远就只标方向 */
+    if (v2 < 0 && X2(L + v2) > 96) {
+      const xv = X2(L + v2);
+      const m2 = -v2 / u2;
+      const h2 = m2 * h1;
+      g += `<line x1="${xv.toFixed(1)}" y1="${S2.AY}" x2="${xv.toFixed(1)}" y2="${Y2(h2).toFixed(1)}" stroke="#2563EB" stroke-width="2.4" stroke-dasharray="7 4"/>`;
+      g += T(xv, Y2(h2) - 10, "放大的虚像", { s: 12, c: "#2563EB", w: 700, a: "middle", ex: HALO });
+    } else if (v2 < 0) {
+      g += T(Math.max(120, xe - 150), S2.AY - 88, "放大的虚像（在左方远处）", { s: 12, c: "#2563EB", w: 700, a: "middle", ex: HALO });
+    } else if (isFinite(v2)) {
+      g += T(xe + 8, S2.AY - 96, "实像跑到目镜焦点外 → 成实像，眼睛看不到放大的像", { s: 12, c: "#DC2626", w: 700, ex: HALO });
+    }
+
+    /* 眼睛 */
+    g += `<g transform="translate(${S2.EX},${S2.AY})">
+      <path d="M-18 0 Q0 -15 18 0 Q0 15 -18 0 Z" fill="#FFFFFF" stroke="#334155" stroke-width="1.6"/>
+      <circle cx="0" cy="0" r="6" fill="#1F2937"/><circle cx="2" cy="-2.2" r="1.9" fill="#FFFFFF"/></g>`;
+    g += T(S2.EX, S2.AY + 34, "眼睛", { s: 12, c: "#475569", w: 700, a: "middle", ex: HALO });
+
+    if (step >= 3) {
+      /* 视角对比：入射 α 与出射 β（取中心光线） */
+      const rc = traceRay(f1, f2, L, alpha, 0);
+      const bAng = Math.atan(Math.abs(rc.s2)) * R2D;
+      const Rr = 46;
+      /* α：光轴左向与入射光反向的夹角（屏幕坐标 y 向下，故上偏为负角） */
+      g += `<path d="M${S2.X0 - Rr} ${S2.AY} A${Rr} ${Rr} 0 0 1 ${(S2.X0 - Rr * Math.cos(alpha * D2R)).toFixed(1)} ${(S2.AY - Rr * Math.sin(alpha * D2R)).toFixed(1)}" fill="none" stroke="#94A3B8" stroke-width="1.4"/>`;
+      g += T(S2.X0 - Rr - 8, S2.AY - 10, `α=${fmt(alpha)}°`, { s: 11.5, c: "#64748B", w: 700, a: "end", ex: HALO });
+      /* β：出射光与光轴的夹角（屏幕角 = −atan(s2)） */
+      if (bAng > 0.4) {
+        const sc = -Math.atan(rc.s2) * R2D;
+        const p0 = [xe + Rr, S2.AY];
+        const p1 = [xe + Rr * Math.cos(sc * D2R), S2.AY + Rr * Math.sin(sc * D2R)];
+        g += `<path d="M${p0[0].toFixed(1)} ${p0[1]} A${Rr} ${Rr} 0 0 ${sc > 0 ? 1 : 0} ${p1[0].toFixed(1)} ${p1[1].toFixed(1)}" fill="none" stroke="#F59E0B" stroke-width="1.8"/>`;
+        g += T(xe + Rr + 8, S2.AY + (sc > 0 ? 18 : -8), `β=${fmt(bAng)}°`, { s: 12, c: "#B45309", w: 700, ex: HALO });
+      }
+    }
+  }
+
+  /* 标注 */
+  g += T(S2.X0, S2.AY - 72, `物镜 f物 = ${fmt(f1)} cm`, { s: 13, c: "#1D4ED8", w: 700, a: "middle", ex: HALO });
+  if (full) g += T(xe, S2.AY - 72, `目镜 f目 = ${fmt(f2)} cm`, { s: 13, c: "#1D4ED8", w: 700, a: "middle", ex: HALO });
+  g += T(20, 26, step === 1 ? "① 只有物镜：远处景物成一个倒立、缩小的实像" :
+    (step === 2 ? "② 加上目镜：实像落在目镜焦点以内，目镜把它当物体再放大一次" :
+      "③ 出来的光束张角变大了 —— 这就是「望远」的全部秘密"), { s: 13, c: "#475569", w: 600 });
+
+  $("#svg2").innerHTML = g;
+
+  /* 读数 */
+  const rc = traceRay(f1, f2, L, alpha, 0);
+  const beta = Math.atan(Math.abs(rc.s2)) * R2D;
+  const M = f1 / f2;
+  txt("#v2f1", fmt(f1) + " cm");
+  txt("#v2f2", fmt(f2) + " cm");
+  txt("#v2L", fmt(L) + " cm");
+  txt("#v2a", fmt(alpha) + "°");
+  txt("#o2v", fmt(v1) + " cm");
+  txt("#o2u2", fmt(u2) + " cm");
+  txt("#o2f2", fmt(f2) + " cm");
+  txt("#o2m", fmt(M, 1) + " ×");
+  txt("#o2b", fmt(beta) + "°");
+
+  const tg = $("#o2t");
+  if (tg) {
+    if (u2 <= 0) { tg.className = "tag r"; tg.textContent = "镜筒太短：实像还没成形就被目镜挡住"; }
+    else if (Math.abs(u2 - f2) < 0.4) { tg.className = "tag b"; tg.textContent = "实像正落在目镜焦点上 → 最清晰"; }
+    else if (u2 < f2) { tg.className = "tag a"; tg.textContent = "实像在目镜焦点以内 → 能放大，但有点模糊"; }
+    else { tg.className = "tag r"; tg.textContent = "实像跑到目镜焦点外 → 目镜当不了放大镜"; }
+  }
+  drawChart2(alpha, beta, M);
+}
+
+/* 视角对比小图 */
+function drawChart2(alpha, beta, M) {
+  const ox = 26, oy = 148, svg = $("#ch2");
+  if (!svg) return;
+  const RR = clamp(140 / Math.max(Math.sin(Math.max(alpha, beta, 1) * D2R), 0.08), 70, 200);
+  const p = (ang) => [ox + RR * Math.cos(ang * D2R), oy - RR * Math.sin(ang * D2R)];
+  const q0 = p(0), qa = p(alpha), qb = p(beta);
+  let s = `<rect x="0" y="0" width="300" height="170" fill="#FFFFFF"/>`;
+  s += `<path d="M${q0[0].toFixed(1)} ${q0[1].toFixed(1)} L${ox} ${oy} L${qb[0].toFixed(1)} ${qb[1].toFixed(1)} Z" fill="#FEF3C7" opacity=".85"/>`;
+  s += `<path d="M${q0[0].toFixed(1)} ${q0[1].toFixed(1)} L${ox} ${oy} L${qa[0].toFixed(1)} ${qa[1].toFixed(1)} Z" fill="#DBEAFE" opacity=".9"/>`;
+  s += `<line x1="${ox}" y1="${oy}" x2="${(ox + RR + 22).toFixed(1)}" y2="${oy}" stroke="#334155" stroke-width="1.6"/>`;
+  s += `<circle cx="${ox}" cy="${oy}" r="4" fill="#1F2937"/>`;
+  s += T(ox + RR + 6, oy + 18, "光轴", { s: 11, c: "#94A3B8", a: "middle" });
+  s += T(ox + 6, oy - 46, `肉眼 α = ${fmt(alpha)}°`, { s: 12.5, c: "#1D4ED8", w: 700 });
+  s += T(ox + 6, oy - 64, `出射 β = ${fmt(beta)}°`, { s: 12.5, c: "#B45309", w: 700 });
+  s += T(ox + 6, 22, `视角放大 ${fmt(M, 1)} ×`, { s: 13, c: "#1F2937", w: 700 });
+  s += T(ox, oy + 16, "眼睛", { s: 11, c: "#475569", a: "start" });
+  svg.innerHTML = s;
+}
+
+/* ============================================================
+   ③ 选镜片与放大效果
+   ============================================================ */
+const LENS_O = { 30: 6, 20: 5, 10: 4 };
+const LENS_E = { 15: 5, 10: 4, 5: 3, "-5": 3 };
+const C3 = { f1: 20, f2: 10 };
+const S3 = { y: 120, r: 95, x1: 145, x2: 410 };
+
+function draw3() {
+  const f1 = C3.f1, f2 = C3.f2;
+  const af2 = Math.abs(f2);
+  const M = f1 / af2;
+  const dist = f1 + f2;                 // 凹透镜时自动变成 f物 − |f目|
+  const inv = f2 > 0;                   // 开普勒式（两凸）→ 倒立
+  const d1 = LENS_O[String(f1)], d2 = LENS_E[String(f2)];
+  const area = (d1 / 5) * (d1 / 5);
+  const dark = clamp(0.55 * (1 - area) + 0.12, 0, 0.7);
+  const sc = 0.88 * M;
+
+  let g = `<defs>${skyDefs("sky3")}`
+    + `<clipPath id="cp3a"><circle cx="${S3.x1}" cy="${S3.y}" r="${S3.r}"/></clipPath>`
+    + `<clipPath id="cp3b"><circle cx="${S3.x2}" cy="${S3.y}" r="${S3.r}"/></clipPath></defs>`;
+  g += `<rect x="0" y="0" width="560" height="250" fill="#FFFFFF"/>`;
+
+  const view = (cx, sca, rot) => `<g clip-path="url(#cp3${rot ? "b" : "a"}")">`
+    + `<g transform="translate(${cx},${S3.y}) rotate(${rot ? 180 : 0}) scale(${sca.toFixed(3)})">${sceneG("sky3")}</g>`
+    + (rot ? `<rect x="${cx - S3.r}" y="${S3.y - S3.r}" width="${2 * S3.r}" height="${2 * S3.r}" fill="#000000" opacity="${dark.toFixed(3)}"/>` : "")
+    + `</g>`;
+
+  g += view(S3.x1, 0.88, false);
+  g += view(S3.x2, sc, true);
+  g += `<circle cx="${S3.x1}" cy="${S3.y}" r="${S3.r}" fill="none" stroke="#94A3B8" stroke-width="6"/>`;
+  g += `<circle cx="${S3.x2}" cy="${S3.y}" r="${S3.r}" fill="none" stroke="#334155" stroke-width="9"/>`;
+  g += T(S3.x1, S3.y + S3.r + 24, "肉眼看到的", { s: 13, c: "#475569", w: 700, a: "middle" });
+  g += T(S3.x2, S3.y + S3.r + 24, `望远镜里（${fmt(M, 1)} ×，${inv ? "倒立" : "正立"}）`, { s: 13, c: "#1D4ED8", w: 700, a: "middle" });
+
+  $("#svg3").innerHTML = g;
+
+  txt("#v3o", `f = ${f1} cm　d = ${d1} cm`);
+  txt("#v3e", `f = ${af2} cm　d = ${d2} cm${f2 < 0 ? "（凹）" : ""}`);
+  txt("#o3m", fmt(M, 1) + " ×");
+  txt("#o3d", fmt(dist) + " cm");
+  txt("#o3i", inv ? "倒立" : "正立");
+  txt("#o3n", f2 > 0 ? "开普勒式（两凸）" : "伽利略式（凸 + 凹）");
+
+  const tg = $("#o3t"), nt = $("#o3note");
+  if (tg) {
+    if (M < 1) { tg.className = "tag r"; tg.textContent = "比肉眼看到的还小 —— 装反了"; }
+    else if (M < 1.2) { tg.className = "tag n"; tg.textContent = "几乎没放大"; }
+    else if (M <= 3.2) { tg.className = "tag b"; tg.textContent = fmt(M, 1) + " 倍 · 合适"; }
+    else { tg.className = "tag a"; tg.textContent = fmt(M, 1) + " 倍 · 偏大，像暗且抖"; }
+  }
+  if (nt) {
+    nt.innerHTML = inv
+      ? `放大倍率取 <em>2~3 倍</em>最好：倍率再大，像会变暗、变模糊，手一抖就晃得厉害。`
+      : `目镜换成<em>凹透镜</em>，看到的就是<em>正立</em>的像（玩具望远镜常用）；此时两镜间距要改成 f物 − f目。`;
+  }
+}
+
+/* ============================================================
+   拖动：在图上直接拖目镜改镜距
+   ============================================================ */
+function toPt(svg, e) {
+  const m = svg.getScreenCTM();
+  if (!m) return { x: 0, y: 0 };
+  const p = svg.createSVGPoint(); p.x = e.clientX; p.y = e.clientY;
+  const q = p.matrixTransform(m.inverse());
+  return { x: q.x, y: q.y };
+}
+function bindDrag(svg, hit, move) {
+  let on = false;
+  const down = (e) => {
+    const p = toPt(svg, e);
+    if (!hit(p.x, p.y)) return;
+    on = true; e.preventDefault();
+    if (svg.setPointerCapture && e.pointerId != null) { try { svg.setPointerCapture(e.pointerId); } catch (err) { void err; } }
+  };
+  const mv = (e) => { if (!on) return; const p = toPt(svg, e); move(p.x, p.y); };
+  const up = () => { on = false; };
+  svg.addEventListener("pointerdown", down);
+  svg.addEventListener("pointermove", mv);
+  svg.addEventListener("pointerup", up);
+  svg.addEventListener("pointercancel", up);
+}
+
+/* ============================================================
+   事件绑定
+   ============================================================ */
+function bindRange(id, fn) {
+  const el = $(id);
+  if (!el) return;
+  el.addEventListener("input", () => fn(parseFloat(el.value)));
+}
+
+/* ① */
+bindRange("#r1L", (v) => { C1.L = v; draw1(); });
+bindRange("#r1u", (v) => { C1.uP = v; draw1(); });
+bindRange("#r1D", (v) => { C1.D = v; draw1(); });
+$("#b1best").addEventListener("click", () => {
+  const u = objDist(C1.uP);
+  C1.L = clamp(imgDist(C1.f1, u) + C1.f2, 15, 45);
+  $("#r1L").value = C1.L; draw1();
+});
+bindDrag($("#svg1"),
+  (x, y) => Math.abs(x - (S1.X0 + C1.L * S1.K)) < 22 && Math.abs(y - S1.AY) < 52,
+  (x) => { C1.L = clamp((x - S1.X0) / S1.K, 15, 45); $("#r1L").value = C1.L; draw1(); });
+
+/* ② */
+bindRange("#r2f1", (v) => { C2.f1 = v; draw2(); });
+bindRange("#r2f2", (v) => { C2.f2 = v; draw2(); });
+bindRange("#r2L", (v) => { C2.L = v; draw2(); });
+bindRange("#r2a", (v) => { C2.alpha = v; draw2(); });
+$$("#seg2s button").forEach((b) => b.addEventListener("click", () => {
+  C2.step = parseInt(b.dataset.s, 10);
+  $$("#seg2s button").forEach((x) => x.classList.toggle("on", x === b));
+  draw2();
+}));
+$("#b2auto").addEventListener("click", () => {
+  C2.L = clamp(imgDist(C2.f1, Infinity) + C2.f2, 15, 46);
+  $("#r2L").value = C2.L; draw2();
+});
+let playTimer = null;
+$("#b2play").addEventListener("click", () => {
+  if (playTimer) { clearInterval(playTimer); playTimer = null; return; }
+  let s = 1;
+  const tick = () => {
+    C2.step = s;
+    $$("#seg2s button").forEach((x) => x.classList.toggle("on", parseInt(x.dataset.s, 10) === s));
+    draw2();
+    s++;
+    if (s > 3) { clearInterval(playTimer); playTimer = null; }
+  };
+  tick();
+  playTimer = setInterval(tick, 1600);
+});
+bindDrag($("#svg2"),
+  (x, y) => Math.abs(x - X2(C2.L)) < 26 && Math.abs(y - S2.AY) < 60,
+  (x) => { C2.L = clamp((x - S2.X0) / S2.K, 15, 46); $("#r2L").value = C2.L; draw2(); });
+
+/* ③ */
+$$("#seg3o button").forEach((b) => b.addEventListener("click", () => {
+  C3.f1 = parseFloat(b.dataset.f);
+  $$("#seg3o button").forEach((x) => x.classList.toggle("on", x === b));
+  draw3();
+}));
+$$("#seg3e button").forEach((b) => b.addEventListener("click", () => {
+  C3.f2 = parseFloat(b.dataset.f);
+  $$("#seg3e button").forEach((x) => x.classList.toggle("on", x === b));
+  draw3();
+}));
+
+/* ============================================================
+   首帧
+   ============================================================ */
+draw1();
+draw2();
+draw3();
+</script>
+</body>
+</html>

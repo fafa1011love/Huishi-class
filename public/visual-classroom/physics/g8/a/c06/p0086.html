@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>测量液体和固体的密度 · 交互式可视化（人教版八年级上册 §6.3）</title>
+<style>
+:root{
+  --blue:#2563EB; --blue-d:#1D4ED8; --blue-l:#EFF4FF;
+  --green:#10B981; --green-l:#EAFBF4;
+  --red:#EF4444; --amber:#F59E0B; --cyan:#06B6D4; --purple:#7C3AED;
+  --ink:#1F2937; --ink-2:#4B5563; --ink-3:#6B7280;
+  --line:#E5E7EB; --bg:#F5F7FB; --card:#FFFFFF;
+  --radius:14px;
+  --shadow:0 1px 2px rgba(16,24,40,.04), 0 10px 28px -14px rgba(16,24,40,.26);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:"Microsoft YaHei","PingFang SC","Hiragino Sans GB",system-ui,-apple-system,"Segoe UI",sans-serif;
+  background:var(--bg);color:var(--ink);line-height:1.68;-webkit-font-smoothing:antialiased;
+}
+svg{display:block;font-family:inherit;}
+svg text{font-family:inherit;}
+
+.site-header{background:linear-gradient(120deg,#1D4ED8,#2563EB 55%,#3B82F6);color:#fff;padding:22px 0 24px;}
+.header-inner{max-width:1120px;margin:0 auto;padding:0 22px;display:flex;justify-content:space-between;align-items:flex-end;gap:18px;flex-wrap:wrap;}
+.header-text h1{margin:0;font-size:24px;font-weight:700;letter-spacing:.5px;}
+.header-text p{margin:6px 0 0;font-size:13.5px;color:rgba(255,255,255,.88);}
+.header-nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.header-link{border:1px solid rgba(255,255,255,.45);border-radius:999px;padding:7px 16px;font-size:13px;color:#fff;text-decoration:none;background:rgba(255,255,255,.08);white-space:nowrap;}
+.header-link:hover{background:rgba(255,255,255,.2);}
+.header-badge{border:1px solid rgba(255,255,255,.4);border-radius:999px;padding:7px 16px;font-size:13px;background:rgba(255,255,255,.12);white-space:nowrap;}
+
+.wrap{max-width:1120px;margin:0 auto;padding:24px 22px 40px;}
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:24px 26px;margin-bottom:20px;border:1px solid rgba(229,231,235,.7);}
+.chead{display:flex;gap:14px;align-items:flex-start;margin-bottom:18px;}
+.idx{flex:0 0 auto;width:34px;height:34px;border-radius:11px;background:var(--blue-l);color:var(--blue);font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;margin-top:2px;}
+.chead h2{margin:0 0 3px;font-size:19px;font-weight:700;letter-spacing:.2px;}
+.chead p{margin:0;color:var(--ink-3);font-size:13.3px;}
+
+.split{display:grid;grid-template-columns:minmax(0,1.02fr) minmax(300px,.98fr);gap:26px;align-items:start;}
+@media(max-width:900px){.split{grid-template-columns:1fr;}}
+.stage{border:1px solid var(--line);border-radius:12px;background:#FBFCFE;padding:6px;overflow:hidden;}
+.stage svg{width:100%;height:auto;border-radius:8px;touch-action:none;}
+
+.panel{display:flex;flex-direction:column;gap:15px;}
+.ctl label{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--ink-3);margin-bottom:6px;gap:8px;}
+.ctl label b{color:var(--ink);font-size:14.5px;font-variant-numeric:tabular-nums;font-weight:700;}
+input[type=range]{width:100%;height:24px;accent-color:var(--blue);cursor:pointer;margin:0;background:transparent;}
+input[type=range]:disabled{opacity:.4;}
+.tick{display:flex;justify-content:space-between;font-size:11px;color:var(--ink-3);margin-top:1px;}
+.seg{display:flex;gap:8px;flex-wrap:wrap;}
+.seg button{border:1px solid var(--line);background:#fff;color:var(--ink-2);border-radius:9px;padding:6px 13px;font-size:12.5px;cursor:pointer;font-family:inherit;transition:.15s;}
+.seg button:hover{border-color:#BFDBFE;background:#F8FAFF;}
+.seg button.on{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600;}
+.btn{border:1px solid var(--blue);background:#fff;color:var(--blue);border-radius:9px;padding:7px 15px;font-size:13px;cursor:pointer;font-family:inherit;transition:.15s;white-space:nowrap;}
+.btn:hover{background:var(--blue-l);}
+.btn.on{background:var(--amber);border-color:var(--amber);color:#fff;font-weight:700;}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;}
+
+.rows{border:1px solid var(--line);border-radius:11px;overflow:hidden;background:#FCFDFF;}
+.row{display:flex;justify-content:space-between;gap:10px;padding:8px 13px;font-size:13px;border-bottom:1px solid var(--line);}
+.row:last-child{border-bottom:0;}
+.row span{color:var(--ink-3);}
+.row b{font-variant-numeric:tabular-nums;font-weight:700;}
+
+
+.tagline{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--ink-2);flex-wrap:wrap;}
+.tag{font-size:11.5px;font-weight:700;border-radius:999px;padding:2px 10px;letter-spacing:.3px;white-space:nowrap;}
+.tag.b{background:#E4F9F0;color:#0E9F6E;}
+.tag.r{background:#FEECEC;color:#DC2626;}
+.tag.a{background:#FFF6E5;color:#B45309;}
+.tag.g{background:#EFF4FF;color:#1D4ED8;}
+
+.note{margin:0;font-size:13.2px;color:var(--ink-2);line-height:1.72;background:#F6F9FF;border-left:3px solid var(--blue);border-radius:0 10px 10px 0;padding:11px 14px;}
+.note.warn{background:#FFF7F7;border-left-color:var(--red);}
+.note em{font-style:normal;font-weight:700;color:var(--blue-d);}
+.note.warn em{color:#DC2626;}
+footer{text-align:center;color:#93A2B8;font-size:12.3px;padding:6px 0 0;}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-text">
+      <h1>测量液体和固体的密度</h1>
+      <p>量筒怎么读才准？石块怎么"挤"出水？盐水怎么称才不亏？全部可以拖着看</p>
+    </div>
+    <div class="header-nav">
+      <a class="header-link" href="#">« 返回实验目录</a>
+      <span class="header-badge">八年级物理 · 质量与密度 · §6.3</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- ============ 01 量筒读数 ============ -->
+  <section class="card">
+    <div class="chead">
+      <div class="idx">01</div>
+      <div>
+        <h2>量筒的读数：视线要跟凹液面的最低处相平</h2>
+        <p>量筒里的水面不是平的，边上高、中间低，是一条"凹液面"。眼睛抬高一点、放低一点，读出来的数就不一样</p>
+      </div>
+    </div>
+    <div class="split">
+      <div class="stage">
+        <svg id="s1" viewBox="0 0 640 420" role="img" aria-label="量筒读数时俯视平视仰视的视线差异"></svg>
+      </div>
+      <div class="panel">
+        <div class="seg" id="seg1">
+          <button data-a="-95">俯视</button>
+          <button data-a="0" class="on">平视</button>
+          <button data-a="95">仰视</button>
+        </div>
+        <div class="ctl">
+          <label>视线高低 <b id="v1a">平视</b></label>
+          <input id="r1a" type="range" min="-95" max="95" step="1" value="0">
+          <div class="tick"><span>俯视</span><span>平视</span><span>仰视</span></div>
+        </div>
+        <div class="ctl">
+          <label>量筒里水的实际体积 <b id="v1V">28 mL</b></label>
+          <input id="r1V" type="range" min="10" max="45" step="1" value="28">
+          <div class="tick"><span>10</span><span>28</span><span>45 mL</span></div>
+        </div>
+        <div class="rows">
+          <div class="row"><span>视线状态</span><b id="o1s">平视</b></div>
+          <div class="row"><span>真实体积 V真</span><b id="o1t">28.0 mL</b></div>
+          <div class="row"><span>你读到的 V读</span><b id="o1r">28.0 mL</b></div>
+          <div class="row"><span>偏差</span><b id="o1d">0.0 mL</b></div>
+        </div>
+        <p class="note" id="n1"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 02 排水法测固体 ============ -->
+  <section class="card">
+    <div class="chead">
+      <div class="idx">02</div>
+      <div>
+        <h2>排水法测小石块：V石 = V₂ − V₁</h2>
+        <p>石块沉下去会把水"挤"上来，挤上来多少，石块就有多大。水量取多少才叫"适量"？拖一拖就知道</p>
+      </div>
+    </div>
+    <div class="split">
+      <div class="stage">
+        <svg id="s2" viewBox="0 0 700 440" role="img" aria-label="用排水法测量小石块的体积"></svg>
+      </div>
+      <div class="panel">
+        <div class="ctl">
+          <label>把石块放下／提起 <b id="v2t">已完全浸没</b></label>
+          <input id="r2t" type="range" min="0" max="100" step="1" value="100">
+          <div class="tick"><span>提出水面</span><span>沉到底</span></div>
+        </div>
+        <div class="ctl">
+          <label>石块真实体积 <b id="v2s">20 cm³</b></label>
+          <input id="r2s" type="range" min="10" max="30" step="1" value="20">
+          <div class="tick"><span>10</span><span>30 cm³</span></div>
+        </div>
+        <div class="ctl">
+          <label>先倒入的水量 V₁ <b id="v2v">20 mL</b></label>
+          <input id="r2v" type="range" min="3" max="45" step="1" value="20">
+          <div class="tick"><span>水太少</span><span>水太多</span></div>
+        </div>
+        <div class="btn-row">
+          <button class="btn" id="b2bub">石块上附着气泡</button>
+        </div>
+        <div class="rows">
+          <div class="row"><span>放入前 V₁</span><b id="o2a">20.0 mL</b></div>
+          <div class="row"><span>放入后 V₂</span><b id="o2b">40.0 mL</b></div>
+          <div class="row"><span>V石 = V₂ − V₁</span><b id="o2c">20.0 cm³</b></div>
+          <div class="row"><span>石块质量 m</span><b id="o2m">54.0 g</b></div>
+          <div class="row"><span>ρ = m / V石</span><b id="o2r">2.70 g/cm³</b></div>
+        </div>
+        <p class="note" id="n2"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ 03 剩余法测盐水 ============ -->
+  <section class="card">
+    <div class="chead">
+      <div class="idx">03</div>
+      <div>
+        <h2>测盐水：为什么不能"把盐水全倒进量筒"</h2>
+        <p>烧杯壁上总会挂一层盐水，倒不干净。两种方案，哪个数更准？切过去看</p>
+      </div>
+    </div>
+    <div class="split">
+      <div class="stage">
+        <svg id="s3" viewBox="0 0 700 430" role="img" aria-label="剩余法与全部倒出法测盐水密度的对比"></svg>
+      </div>
+      <div class="panel">
+        <div class="seg" id="seg3">
+          <button data-m="A" class="on">方案 A 剩余法</button>
+          <button data-m="B">方案 B 全部倒出</button>
+        </div>
+        <div class="ctl">
+          <label>倒入量筒的盐水体积 V <b id="v3V">20 mL</b></label>
+          <input id="r3V" type="range" min="5" max="40" step="1" value="20">
+          <div class="tick r"><span>40 mL</span></div>
+        </div>
+        <div class="rows">
+          <div class="row"><span id="k3a">烧杯 + 全部盐水 m₁</span><b id="o3a">78.0 g</b></div>
+          <div class="row"><span id="k3b">倒出后 烧杯 + 剩余 m₂</span><b id="o3b">55.0 g</b></div>
+          <div class="row"><span>量筒中盐水体积 V</span><b id="o3c">20.0 mL</b></div>
+          <div class="row"><span>被测盐水的质量 m</span><b id="o3d">23.0 g</b></div>
+          <div class="row"><span>ρ = m / V</span><b id="o3r">1.15 g/cm³</b></div>
+        </div>
+        <p class="note" id="n3"></p>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<footer>物理可视化模型 · 测量液体和固体的密度　|　单文件版，无外部依赖，可直接转发</footer>
+
+<script>
+/* =========================================================
+   通用工具
+   ========================================================= */
+var $ = function (s, r) { return (r || document).querySelector(s); };
+var $$ = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+var F = function (n, d) { return Number(n).toFixed(d == null ? 2 : d); };
+var clamp = function (v, a, b) { return Math.min(b, Math.max(a, v)); };
+function txt(sel, v) { var e = $(sel); if (e) e.textContent = v; }
+function htm(sel, v) { var e = $(sel); if (e) e.innerHTML = v; }
+function setColor(sel, c) { var e = $(sel); if (e) e.style.color = c; }
+
+function T(x, y, s, o) {
+  o = o || {};
+  return '<text x="' + F(x, 1) + '" y="' + F(y, 1) + '" font-size="' + (o.s || 13) +
+    '" fill="' + (o.f || '#334155') + '" font-weight="' + (o.w || 400) +
+    '" text-anchor="' + (o.a || 'start') + '" opacity="' + (o.o == null ? 1 : o.o) + '">' + s + '</text>';
+}
+function L(x1, y1, x2, y2, col, w, dash) {
+  return '<line x1="' + F(x1, 1) + '" y1="' + F(y1, 1) + '" x2="' + F(x2, 1) + '" y2="' + F(y2, 1) +
+    '" stroke="' + col + '" stroke-width="' + (w || 1) + '"' + (dash ? ' stroke-dasharray="' + dash + '"' : '') + '/>';
+}
+function G(id, markup) {
+  var el = $(id);
+  if (el) el.innerHTML = markup;
+}
+
+/* =========================================================
+   绘图零件
+   ========================================================= */
+
+/* 量筒。o={cx,top,rx,bot,Vmax,pxml,V,col,right,labels,surfaceLine} */
+function cyl(o) {
+  var cx = o.cx, top = o.top, rx = o.rx, bot = o.bot;
+  var pxml = o.pxml || 5, Vmax = o.Vmax || 50;
+  var ry = Math.round(rx * 0.28 * 100) / 100;
+  var dip = o.dip == null ? 6 : o.dip;
+  var right = o.right !== false;
+  var V = clamp(o.V || 0, 0, Vmax);
+  var col = o.col || '#2563EB';
+  var wy = bot - pxml * V;
+  var Lp = cx - rx + 1.6, Rp = cx + rx - 1.6;
+  var s = '';
+
+  // 底座
+  s += '<path d="M' + (cx - rx) + ' ' + bot + ' L' + (cx - rx - 13) + ' ' + (bot + ry + 15) +
+       ' L' + (cx + rx + 13) + ' ' + (bot + ry + 15) + ' L' + (cx + rx) + ' ' + bot +
+       ' Z" fill="#E6ECF5" stroke="#94A3B8" stroke-width="1.3"/>';
+  // 筒身
+  s += '<path d="M' + (cx - rx) + ' ' + top + ' L' + (cx - rx) + ' ' + bot +
+       ' A' + rx + ' ' + ry + ' 0 0 0 ' + (cx + rx) + ' ' + bot +
+       ' L' + (cx + rx) + ' ' + top + ' Z" fill="#F7FBFF" stroke="#94A3B8" stroke-width="1.7"/>';
+
+  // 水（凹液面）
+  if (V > 0.2) {
+    s += '<path d="M' + F(Lp, 1) + ' ' + F(wy - dip, 1) +
+         ' Q' + cx + ' ' + F(wy + dip, 1) + ' ' + F(Rp, 1) + ' ' + F(wy - dip, 1) +
+         ' L' + F(Rp, 1) + ' ' + bot +
+         ' A' + F(rx - 1.6, 1) + ' ' + ry + ' 0 0 1 ' + F(Lp, 1) + ' ' + bot +
+         ' Z" fill="' + col + '" opacity=".34"/>';
+    if (o.surfaceLine !== false) {
+      s += '<path d="M' + F(Lp, 1) + ' ' + F(wy - dip, 1) +
+           ' Q' + cx + ' ' + F(wy + dip, 1) + ' ' + F(Rp, 1) + ' ' + F(wy - dip, 1) +
+           '" fill="none" stroke="' + col + '" stroke-width="2.3"/>';
+    }
+  }
+
+  // 刻度
+  for (var v = 0; v <= Vmax; v++) {
+    var yy = bot - pxml * v;
+    var major = v % 10 === 0, mid = v % 5 === 0;
+    var len = major ? 16 : (mid ? 10 : 5.5);
+    var x1 = right ? (cx + rx - len) : (cx - rx);
+    var x2 = right ? (cx + rx) : (cx - rx + len);
+    s += L(x1, yy, x2, yy, major ? '#334155' : '#94A3B8', major ? 1.4 : 0.9);
+    if (major && o.labels !== false) {
+      s += T(right ? (cx + rx + 7) : (cx - rx - 7), yy + 4, String(v),
+        { s: 11.5, f: '#475569', w: 600, a: right ? 'start' : 'end' });
+    }
+  }
+
+  // 口沿
+  s += '<ellipse cx="' + cx + '" cy="' + top + '" rx="' + rx + '" ry="' + ry +
+       '" fill="none" stroke="#94A3B8" stroke-width="1.7"/>';
+  // 高光
+  s += '<path d="M' + (cx - rx + 10) + ' ' + (top + 24) + ' L' + (cx - rx + 10) + ' ' + (bot - 16) +
+       '" stroke="#FFFFFF" stroke-width="5" stroke-linecap="round" opacity=".5"/>';
+  return s;
+}
+
+/* 水面线（供"画在石块之上"用） */
+function meniscusLine(cx, rx, wy, col, dip, op) {
+  var Lp = cx - rx + 1.6, Rp = cx + rx - 1.6;
+  return '<path d="M' + F(Lp, 1) + ' ' + F(wy - dip, 1) +
+    ' Q' + cx + ' ' + F(wy + dip, 1) + ' ' + F(Rp, 1) + ' ' + F(wy - dip, 1) +
+    '" fill="none" stroke="' + col + '" stroke-width="2.3" opacity="' + (op == null ? 1 : op) + '"/>';
+}
+
+/* 托盘天平：只画架子 */
+function balanceFrame(o) {
+  var cx = o.cx, baseY = o.baseY, hw = o.hw || 134, panW = o.panW || 120;
+  var beamY = baseY - 150, panY = baseY - 64, lx = cx - hw + 14, rx = cx + hw - 14;
+  var s = '';
+  s += '<path d="M' + (cx - 54) + ' ' + baseY + ' L' + (cx + 54) + ' ' + baseY +
+       ' L' + (cx + 42) + ' ' + (baseY + 16) + ' L' + (cx - 42) + ' ' + (baseY + 16) +
+       ' Z" fill="#E2E8F0" stroke="#94A3B8" stroke-width="1.4"/>';
+  s += '<rect x="' + (cx - 5) + '" y="' + (beamY + 8) + '" width="10" height="' + (baseY - beamY - 8) +
+       '" fill="#CBD5E1" stroke="#94A3B8" stroke-width="1.2"/>';
+  [lx, rx].forEach(function (px) {
+    var hx = panW / 2 - 4;
+    s += L(px - hx, beamY + 8, px - hx, panY, '#94A3B8', 1.1);
+    s += L(px + hx, beamY + 8, px + hx, panY, '#94A3B8', 1.1);
+    s += '<path d="M' + (px - panW / 2) + ' ' + panY + ' l10 15 h' + (panW - 20) + ' l10 -15 z" fill="#E2E8F0" stroke="#94A3B8" stroke-width="1.3"/>';
+    s += L(px - panW / 2, panY, px + panW / 2, panY, '#94A3B8', 1.6);
+  });
+  s += '<rect x="' + (cx - hw) + '" y="' + beamY + '" width="' + (hw * 2) + '" height="8" rx="2" fill="#CBD5E1" stroke="#64748B" stroke-width="1.3"/>';
+  s += '<path d="M' + cx + ' ' + (beamY + 8) + ' l -9 14 h 18 z" fill="#94A3B8"/>';
+  var pdY = beamY + 52;
+  s += '<rect x="' + (cx - 32) + '" y="' + pdY + '" width="64" height="17" rx="3" fill="#F8FAFC" stroke="#CBD5E1"/>';
+  [-20, -10, 0, 10, 20].forEach(function (d) {
+    s += L(cx + d, pdY + 3, cx + d, pdY + (d === 0 ? 14 : 9), d === 0 ? '#64748B' : '#CBD5E1', d === 0 ? 1.4 : 1);
+  });
+  s += L(cx, beamY + 8, cx, pdY - 6, '#EF4444', 2);
+  s += '<path d="M' + cx + ' ' + (pdY - 6) + ' l -5 -9 h 10 z" fill="#EF4444"/>';
+  return { markup: s, lx: lx, rx: rx, panY: panY, baseY: baseY, beamY: beamY, cx: cx };
+}
+
+/* 砝码：按面值堆叠 */
+function weightsG(cx, panY, m) {
+  var DEN = [500, 200, 200, 100, 50, 20, 20, 10, 5, 2, 2, 1];
+  var rest = Math.round(m), parts = [];
+  for (var i = 0; i < DEN.length; i++) {
+    if (rest >= DEN[i]) { parts.push(DEN[i]); rest -= DEN[i]; }
+  }
+  var bh = 11, gap = 1.5;
+  var s = '', y = panY, topMost = panY;
+  parts.forEach(function (p) {
+    var bw = clamp(16 + p * 0.12, 18, 40);
+    y -= (bh + gap);
+    s += '<rect x="' + F(cx - bw / 2, 1) + '" y="' + F(y, 1) + '" width="' + F(bw, 1) + '" height="' + bh +
+         '" rx="2" fill="#DCEDFB" stroke="#475569" stroke-width="1"/>';
+    s += T(cx, y + bh - 2.6, String(p), { s: 8.5, a: 'middle', f: '#334155', w: 600 });
+    if (y < topMost) topMost = y;
+  });
+  return { markup: s, top: topMost, list: parts };
+}
+
+/* 烧杯（盛液体） */
+function beakerG(cx, baseY, V, col, Vmax) {
+  Vmax = Vmax || 100;
+  var bh = 58, top = baseY - bh;
+  var wTop = 38, wBot = 31;
+  var hwAt = function (y) { return wBot + (wTop - wBot) * (baseY - y) / bh; };
+  var s = '';
+  var wy = baseY - (bh - 4) * clamp(V, 0, Vmax) / Vmax;
+  if (baseY - wy > 1) {
+    s += '<path d="M' + F(cx - hwAt(wy), 1) + ' ' + F(wy, 1) + ' L' + (cx - wBot) + ' ' + baseY +
+         ' L' + (cx + wBot) + ' ' + baseY + ' L' + F(cx + hwAt(wy), 1) + ' ' + F(wy, 1) +
+         ' Z" fill="' + col + '" opacity=".4"/>';
+    s += L(cx - hwAt(wy), wy, cx + hwAt(wy), wy, col, 2);
+  }
+  s += '<path d="M' + (cx - wTop) + ' ' + top + ' L' + (cx - wBot) + ' ' + baseY +
+       ' L' + (cx + wBot) + ' ' + baseY + ' L' + (cx + wTop) + ' ' + top +
+       '" fill="none" stroke="#64748B" stroke-width="1.6"/>';
+  s += L(cx - wTop - 5, top, cx + wTop + 5, top, '#475569', 2.6);
+  return s;
+}
+
+/* 石块轮廓（不规则多边形） */
+var BLOB = [
+  [-0.50, -0.06], [-0.46, -0.32], [-0.30, -0.50], [-0.06, -0.56],
+  [0.18, -0.50], [0.40, -0.34], [0.50, -0.08], [0.44, 0.20],
+  [0.28, 0.42], [0.02, 0.50], [-0.26, 0.44], [-0.46, 0.22]
+];
+function blobPath(cx, yBot, w, h) {
+  var cy = yBot - h / 2, d = '';
+  for (var i = 0; i < BLOB.length; i++) {
+    var x = cx + BLOB[i][0] * w, y = cy - BLOB[i][1] * h;
+    d += (i ? ' L' : 'M') + F(x, 1) + ' ' + F(y, 1);
+  }
+  return d + ' Z';
+}
+function stoneG(cx, yBot, w, h) {
+  var s = '';
+  s += '<path d="' + blobPath(cx, yBot, w, h) + '" fill="#8A94A6" stroke="#4B5563" stroke-width="1.8"/>';
+  s += '<path d="' + blobPath(cx - w * 0.10, yBot - h * 0.10, w * 0.52, h * 0.46) + '" fill="#B7C0CE" opacity=".75"/>';
+  return s;
+}
+
+/* 眼睛 */
+function eyeG(x, y) {
+  var s = '';
+  s += '<path d="M' + (x - 26) + ' ' + y + ' Q' + x + ' ' + (y - 21) + ' ' + (x + 26) + ' ' + y +
+       ' Q' + x + ' ' + (y + 21) + ' ' + (x - 26) + ' ' + y + ' Z" fill="#FFFFFF" stroke="#475569" stroke-width="1.8"/>';
+  s += '<circle cx="' + x + '" cy="' + y + '" r="9.5" fill="#2563EB"/>';
+  s += '<circle cx="' + x + '" cy="' + y + '" r="4.4" fill="#0B1220"/>';
+  s += '<circle cx="' + (x + 3.4) + '" cy="' + (y - 3.4) + '" r="1.7" fill="#FFFFFF"/>';
+  s += T(x, y + 40, '眼睛', { s: 12, a: 'middle', f: '#475569', w: 600 });
+  return s;
+}
+
+/* =========================================================
+   01 · 量筒读数（俯视 / 平视 / 仰视）
+   ========================================================= */
+var M1 = { V: 28, dy: 0 };
+var C1 = { cx: 230, top: 78, rx: 58, bot: 350, pxml: 5, Vmax: 50 };
+var EX1 = 560;
+
+function geom1() {
+  var ys = C1.bot - C1.pxml * M1.V;               // 凹液面最低处 = 真实读数位置
+  var lo = Math.max(-95, 40 - ys), hi = Math.min(95, 360 - ys);
+  var dy = clamp(M1.dy, lo, hi);                   // 夹紧，保证眼睛不出画面
+  var Ey = ys + dy;                                 // 眼睛高度
+  var xnr = C1.cx + C1.rx;                         // 近侧筒壁（刻度所在面）
+  var t = (EX1 - xnr) / (EX1 - C1.cx);
+  var yr = Ey + t * (ys - Ey);                   // 视线与近侧壁的交点 → 你读到的位置
+  return { ys: ys, Ey: Ey, xnr: xnr, yr: yr };
+}
+
+function draw1() {
+  try {
+    var g = geom1();
+    var vy = function (y) { return (C1.bot - y) / C1.pxml; };
+    var Vtrue = M1.V, Vread = vy(g.yr);
+    var s = '';
+    var xl = C1.cx - C1.rx, xr = C1.cx + C1.rx;
+
+    s += L(24, C1.bot + 52, 616, C1.bot + 52, '#CBD5E1', 2);
+    s += cyl({ cx: C1.cx, top: C1.top, rx: C1.rx, bot: C1.bot, pxml: C1.pxml, Vmax: C1.Vmax, V: M1.V, col: '#2563EB', right: true });
+
+    // 视线：从眼睛穿过近侧壁读数点，一直到凹液面最低处，再往前延伸一点
+    var xEnd = C1.cx - 30;
+    var tp = (EX1 - xEnd) / (EX1 - C1.cx);
+    var yEnd = g.Ey + tp * (g.ys - g.Ey);
+    s += L(EX1, g.Ey, xEnd, yEnd, '#F59E0B', 2, '7 5');
+    s += L(g.xnr, g.yr, C1.cx, g.ys, '#F59E0B', 2);
+
+    // 两条读数指示线
+    s += L(xl - 30, g.yr, xl + 6, g.yr, '#EF4444', 2.6);
+    s += L(xl - 30, g.ys, xl + 6, g.ys, '#10B981', 2.6);
+    if (Math.abs(g.yr - g.ys) > 7) {
+      s += T(xl - 34, g.yr + 4, '你读到的刻度', { s: 11.5, a: 'end', f: '#EF4444', w: 700 });
+      s += T(xl - 34, g.ys + 4, '液面最低处', { s: 11.5, a: 'end', f: '#10B981', w: 700 });
+    } else {
+      s += T(xl - 34, g.ys + 4, '两者重合 · 平视', { s: 11.5, a: 'end', f: '#10B981', w: 700 });
+    }
+    s += '<circle cx="' + C1.cx + '" cy="' + F(g.ys, 1) + '" r="3.6" fill="#10B981"/>';
+
+    // 眼睛
+    s += eyeG(EX1, g.Ey);
+    s += T(486, 30, '视线', { s: 12, a: 'start', f: '#B45309', w: 700 });
+
+    G('#s1', s);
+
+    var state = Math.abs(M1.dy) <= 4 ? 'level' : (M1.dy < 0 ? 'down' : 'up');
+    txt('#v1a', state === 'level' ? '平视' : (state === 'down' ? '俯视' : '仰视'));
+    txt('#v1V', M1.V + ' mL');
+
+    txt('#o1s', state === 'level' ? '平视' : (state === 'down' ? '俯视（眼睛在上方）' : '仰视（眼睛在下方）'));
+    setColor('#o1s', state === 'level' ? '#10B981' : '#EF4444');
+    txt('#o1t', F(Vtrue, 1) + ' mL');
+    txt('#o1r', F(Vread, 1) + ' mL');
+    setColor('#o1r', state === 'level' ? '#10B981' : '#EF4444');
+    var dd = Vread - Vtrue;
+    txt('#o1d', (dd >= 0 ? '+' : '') + F(dd, 1) + ' mL' + (Math.abs(dd) < 0.05 ? '' : (dd > 0 ? '（偏大）' : '（偏小）')));
+    setColor('#o1d', state === 'level' ? '#10B981' : '#EF4444');
+
+    var n = $('#n1');
+    if (n) {
+      if (state === 'level') {
+        n.className = 'note';
+        n.innerHTML = '视线与凹液面的<em>最低处</em>相平，读到的就是真实体积 <em>' + F(Vtrue, 1) + ' mL</em>。这才是正确的读法。';
+      } else if (state === 'down') {
+        n.className = 'note warn';
+        n.innerHTML = '眼睛在液面上方，视线斜着往下穿过筒壁，跟<em>更高处</em>的刻度对齐 —— 读数<em>偏大</em>。';
+      } else {
+        n.className = 'note warn';
+        n.innerHTML = '眼睛在液面下方，视线斜着往上穿过筒壁，跟<em>更低处</em>的刻度对齐 —— 读数<em>偏小</em>。';
+      }
+    }
+  } catch (err) { console.warn('draw1', err); }
+}
+
+/* =========================================================
+   02 · 排水法测小石块的体积
+   ========================================================= */
+var M2 = { t: 100, Vs: 20, V1: 20, bub: false, m: 54, cur: 20 };
+var C2 = { cx: 530, top: 70, rx: 54, bot: 370, pxml: 5, Vmax: 50 };
+var FOOT = 0.70;          // 石块横截面积占量筒横截面积的比例
+
+/* 已知水量 V1、石块体积 Vs、石块底部离筒底的高度 b，
+   解出平衡后的水面高度 H（单位都折算成"mL 高度"） */
+function solve2() {
+  var Vs = M2.Vs, V1 = M2.V1;
+  var hs = Vs / FOOT;                       // 石块高度
+  var b = (1 - M2.t / 100) * (hs + 8);      // 石块底部离筒底的高度
+  var H, sub;
+  var Hfull = V1 + Vs;
+  if (Hfull >= b + hs) {                    // 石块完全浸没
+    H = Hfull; sub = hs;
+  } else {
+    var Hp = (V1 - FOOT * b) / (1 - FOOT);
+    if (Hp > b) { H = Hp; sub = H - b; }    // 部分露出
+    else { H = V1; sub = 0; }                // 石块完全在水面之上
+  }
+  var vb = M2.bub ? 2.0 * clamp(sub / hs, 0, 1) : 0;
+  var V2 = H + vb;
+  return {
+    H: H, sub: sub, hs: hs, b: b, V2: V2,
+    over: V2 > C2.Vmax + 0.001,
+    full: sub >= hs - 0.001
+  };
+}
+
+function draw2() {
+  try {
+    var r = solve2();
+    var yOf = function (v) { return C2.bot - C2.pxml * clamp(v, 0, C2.Vmax); };
+    var drawV = Math.min(r.V2, C2.Vmax);
+    var s = '';
+    var xl = C2.cx - C2.rx, xr = C2.cx + C2.rx;
+
+    s += L(24, C2.bot + 44, 676, C2.bot + 44, '#CBD5E1', 2);
+    s += cyl({ cx: C2.cx, top: C2.top, rx: C2.rx, bot: C2.bot, pxml: C2.pxml, Vmax: C2.Vmax, V: drawV, col: '#2563EB', right: true, surfaceLine: false });
+
+    // 石块（悬在 b 高度处，用细线吊着）
+    var yBotS = yOf(r.b) - 2;
+    var hS = C2.pxml * r.hs;
+    var wS = clamp(40 + 1.5 * M2.Vs, 44, 86);
+    s += L(C2.cx, yBotS - hS, C2.cx, 24, '#64748B', 1.4);
+    s += stoneG(C2.cx, yBotS, wS, hS);
+
+    // 气泡：贴着石块表面往上跑
+    if (M2.bub && r.sub > 0.05) {
+      for (var i = 0; i < bubbles.length; i++) {
+        var bb = bubbles[i];
+        var yy = yBotS - bb.p * hS;
+        if (yy > yOf(drawV) + 2) {
+          s += '<circle cx="' + F(C2.cx + bb.x, 1) + '" cy="' + F(yy, 1) + '" r="' + F(bb.r, 1) +
+               '" fill="#FFFFFF" stroke="#94A3B8" stroke-width="1"/>';
+        }
+      }
+    }
+
+    // 水面线画在石块之上（水在石块"前面"）
+    s += meniscusLine(C2.cx, C2.rx, yOf(drawV), '#2563EB', 6, 0.85);
+
+    // V₁ / V₂ 指示
+    s += L(xl - 34, yOf(M2.V1), xl, yOf(M2.V1), '#7C3AED', 2, '5 4');
+    s += T(xl - 38, yOf(M2.V1) + 4, 'V₁', { s: 12, a: 'end', f: '#7C3AED', w: 700 });
+    s += L(xl - 34, yOf(drawV), xl, yOf(drawV), '#7C3AED', 2, '5 4');
+    s += T(xl - 38, yOf(drawV) + 4, 'V₂', { s: 12, a: 'end', f: '#7C3AED', w: 700 });
+
+    if (r.over) {
+      s += T(C2.cx, C2.top - 8, '⚠ 水面已超过 50 mL 量程，读不出数', { s: 12.5, a: 'middle', f: '#EF4444', w: 700 });
+    }
+
+    // 天平
+    var b = balanceFrame({ cx: 150, baseY: 410, hw: 108, panW: 100 });
+    s += b.markup;
+    s += stoneG(b.lx, b.panY - 2, 40, 30);
+    s += weightsG(b.rx, b.panY, M2.m);
+    s += T(b.lx, b.panY + 30, '小石块', { s: 11.5, a: 'middle', f: '#475569' });
+    s += T(b.rx, b.panY + 30, '砝码', { s: 11.5, a: 'middle', f: '#475569' });
+    s += T(150, b.baseY + 42, '天平测质量 m', { s: 12, a: 'middle', f: '#6B7280' });
+
+    G('#s2', s);
+
+    var dV = r.V2 - M2.V1;
+    txt('#v2t', M2.t >= 99.5 ? '已完全浸没' : (M2.t <= 0.5 ? '完全提出水面' : '放到 ' + Math.round(M2.t) + '%'));
+    txt('#v2s', M2.Vs + ' cm³');
+    txt('#v2v', M2.V1 + ' mL');
+    txt('#v2m', M2.m + ' g');
+
+    txt('#o2a', F(M2.V1, 1) + ' mL');
+    txt('#o2b', F(r.V2, 1) + ' mL');
+    txt('#o2c', F(dV, 1) + ' cm³');
+    txt('#o2m', F(M2.m, 1) + ' g');
+    var rho = dV > 0.01 ? M2.m / dV : 0;
+    txt('#o2r', dV > 0.01 ? F(rho, 2) + ' g/cm³' : '—');
+    setColor('#o2r', dV > 0.01 ? (r.full && !r.over && !M2.bub ? '#10B981' : '#EF4444') : '#6B7280');
+
+    var n = $('#n2');
+    if (n) {
+      if (r.over) {
+        n.className = 'note warn';
+        n.innerHTML = '水溢出来了，水面超过<em>最大刻度</em>，读不出数。所以水要"适量"：能淹没石块，又不超过量程。';
+      } else if (r.sub <= 0.001) {
+        n.className = 'note warn';
+        n.innerHTML = '石块还在水面上方，一点水都没排开。要把它完全浸没，水面才会上升。';
+      } else if (!r.full) {
+        n.className = 'note warn';
+        n.innerHTML = '水太少了，石块<em>露出一截</em>，只有浸在水里的那部分在排水 —— 算出的 V石<em>偏小</em>，ρ 就<em>偏大</em>。往量筒里多加点水。';
+      } else if (M2.bub) {
+        n.className = 'note warn';
+        n.innerHTML = '石块表面<em>粘着气泡</em>，气泡也占地方、也排水，V₂ 多涨了一点 —— 算出的 V石<em>偏大</em>，ρ 就<em>偏小</em>。放石块时要贴着筒壁滑下去，把气泡赶掉。';
+      } else {
+        n.className = 'note';
+        n.innerHTML = '石块完全浸没，排开的水正好是 <em>' + F(dV, 1) + ' cm³</em>，与石块真实体积一致。ρ = m/V = ' +
+          F(rho, 2) + ' g/cm³ = ' + Math.round(rho * 1000) + ' kg/m³。';
+      }
+    }
+  } catch (err) { console.warn('draw2', err); }
+}
+
+/* =========================================================
+   03 · 剩余法测盐水密度
+   ========================================================= */
+var M3 = { mode: 'A', V: 20, cur: 20 };
+var C3 = { cx: 545, top: 76, rx: 52, bot: 362, pxml: 5, Vmax: 50 };
+var RHO = 1.15;      // 盐水真实密度 g/cm³
+var VT = 40.0;       // 盐水总体积 mL
+var M0 = 32.0;       // 空烧杯质量 g
+var RESID = 2.0;     // 挂壁残留 mL
+
+function calc3() {
+  if (M3.mode === 'A') {
+    return {
+      m1: M0 + RHO * VT,
+      m2: M0 + RHO * (VT - M3.cur),
+      V: M3.cur,
+      m: RHO * M3.cur,
+      rho: RHO,
+      ok: true
+    };
+  }
+  return {
+    m1: M0 + RHO * VT,
+    m2: null,
+    V: VT - RESID,
+    m: RHO * VT,
+    rho: RHO * VT / (VT - RESID),
+    ok: false
+  };
+}
+
+function draw3() {
+  try {
+    var c = calc3();
+    var yOf = function (v) { return C3.bot - C3.pxml * clamp(v, 0, C3.Vmax); };
+    var s = '';
+
+    s += L(24, C3.bot + 44, 676, C3.bot + 44, '#CBD5E1', 2);
+
+    // ---- 天平 ----
+    var b = balanceFrame({ cx: 165, baseY: 402, hw: 112, panW: 104 });
+    s += b.markup;
+    var vBeak = (M3.mode === 'A') ? (VT - M3.cur) : RESID;
+    s += beakerG(b.lx, b.panY - 2, vBeak, '#0EA5E9', 80);
+    s += weightsG(b.rx, b.panY, (M3.mode === 'A') ? c.m2 : (M0 + RHO * RESID));
+    s += T(b.lx, b.panY + 30, '烧杯 + 剩余盐水', { s: 11.5, a: 'middle', f: '#475569' });
+    s += T(b.rx, b.panY + 30, '砝码', { s: 11.5, a: 'middle', f: '#475569' });
+    if (M3.mode === 'B') {
+      // 挂壁的液滴
+      for (var i = 0; i < 4; i++) {
+        var dx = -15 + i * 10, dy = -14 - (i % 2) * 10;
+        s += '<circle cx="' + (b.lx + dx) + '" cy="' + (b.panY - 2 + dy) + '" r="' + (3.4 - (i % 2) * 0.9) +
+             '" fill="#0EA5E9" opacity=".8"/>';
+      }
+      s += T(165, b.baseY + 42, '天平：先称总质量，再倒，再称剩下的', { s: 12, a: 'middle', f: '#6B7280' });
+    }
+
+    // ---- 量筒 ----
+    s += cyl({ cx: C3.cx, top: C3.top, rx: C3.rx, bot: C3.bot, pxml: C3.pxml, Vmax: C3.Vmax, V: c.V, col: '#0EA5E9', right: true });
+    s += T(C3.cx, C3.bot + 74, '量筒：读倒进来的盐水体积 V', { s: 12, a: 'middle', f: '#6B7280' });
+
+    G('#s3', s);
+
+    txt('#v3V', Math.round(M3.V) + ' mL');
+    if (M3.mode === 'A') {
+      txt('#k3a', '烧杯 + 全部盐水 m₁');
+      txt('#k3b', '倒出后 烧杯 + 剩余 m₂');
+      txt('#o3a', F(c.m1, 1) + ' g');
+      txt('#o3b', F(c.m2, 1) + ' g');
+      txt('#o3c', F(c.V, 1) + ' mL');
+      txt('#o3d', F(c.m, 1) + ' g');
+      txt('#o3r', F(c.rho, 2) + ' g/cm³');
+    } else {
+      txt('#k3a', '空烧杯 m₀');
+      txt('#k3b', '烧杯 + 全部盐水 m₁');
+      txt('#o3a', F(M0, 1) + ' g');
+      txt('#o3b', F(c.m1, 1) + ' g');
+      txt('#o3c', F(c.V, 1) + ' mL');
+      txt('#o3d', F(c.m, 1) + ' g');
+      txt('#o3r', F(c.rho, 2) + ' g/cm³');
+    }
+    setColor('#o3r', c.ok ? '#10B981' : '#EF4444');
+
+    var n = $('#n3');
+    if (n) {
+      if (M3.mode === 'A') {
+        n.className = 'note';
+        n.innerHTML = '称的是<em>倒出去那部分</em>：m = m₁ − m₂ = ' + F(c.m, 1) +
+          ' g，V 从量筒读。杯壁挂不挂盐水都<em>不影响</em> —— 残留的那部分压根没算进去。ρ = ' + F(c.rho, 2) + ' g/cm³。';
+      } else {
+        n.className = 'note warn';
+        n.innerHTML = '你以为倒干净了，其实杯壁挂着 <em>2.0 mL（2.3 g）</em>。质量按 46.0 g 算，体积却只读到 38.0 mL —— ' +
+          '<em>V 偏小，ρ 偏大</em>（1.21 而不是 1.15，偏大 5%）。所以测液体要用<em>剩余法</em>。';
+      }
+    }
+  } catch (err) { console.warn('draw3', err); }
+}
+
+/* =========================================================
+   动画：水面缓动 + 气泡上升
+   ========================================================= */
+var bubbles = [
+  { p: 0.22, r: 3.0, x: -15, v: 0.0070 },
+  { p: 0.48, r: 2.2, x: 13,  v: 0.0092 },
+  { p: 0.64, r: 3.6, x: -7,  v: 0.0062 },
+  { p: 0.88, r: 2.5, x: 17,  v: 0.0081 }
+];
+
+function tick(dt) {
+  var f = Math.min(1, dt / 16.7);
+  var t2 = solve2().V2;
+  M2.cur += (t2 - M2.cur) * 0.18 * f;
+  if (Math.abs(M2.cur - t2) < 0.005) M2.cur = t2;
+
+  var t3 = (M3.mode === 'A') ? M3.V : (VT - RESID);
+  M3.cur += (t3 - M3.cur) * 0.14 * f;
+  if (Math.abs(M3.cur - t3) < 0.005) M3.cur = t3;
+
+  for (var i = 0; i < bubbles.length; i++) {
+    var b = bubbles[i];
+    b.p += b.v * f;
+    if (b.p > 1.06) { b.p = -0.06; b.r = 2.0 + Math.random() * 1.8; }
+  }
+}
+
+/* 只在状态真的变了时才重绘，避免每帧白重建 SVG */
+var last = 0, sig2 = '', sig3 = '';
+function sig(a) { return a.join('|'); }
+function loop(ts) {
+  requestAnimationFrame(loop);
+  var dt = last ? Math.min(60, ts - last) : 16.7;
+  last = ts;
+  try { tick(dt); } catch (e) { console.warn('tick', e); }
+
+  try {
+    var k2 = sig([M2.t, M2.Vs, M2.V1, M2.bub ? 1 : 0, M2.m, F(M2.cur, 3),
+      F(bubbles[0].p, 3), F(bubbles[1].p, 3), F(bubbles[2].p, 3), F(bubbles[3].p, 3)]);
+    if (k2 !== sig2) { sig2 = k2; draw2(); }
+  } catch (e) { console.warn('draw2-loop', e); }
+
+  try {
+    var k3 = sig([M3.mode, F(M3.V, 2), F(M3.cur, 3)]);
+    if (k3 !== sig3) { sig3 = k3; draw3(); }
+  } catch (e) { console.warn('draw3-loop', e); }
+}
+
+/* =========================================================
+   事件绑定
+   ========================================================= */
+function bindSeg(id, fn) {
+  var box = $(id);
+  if (!box) return;
+  box.addEventListener('click', function (e) {
+    var b = e.target.closest ? e.target.closest('button') : null;
+    if (!b) return;
+    $$('button', box).forEach(function (x) { x.classList.remove('on'); });
+    b.classList.add('on');
+    fn(b);
+  });
+}
+
+function init() {
+  // ---- 模块 1 ----
+  var r1a = $('#r1a'), r1V = $('#r1V');
+  if (r1a) r1a.addEventListener('input', function () {
+    M1.dy = +r1a.value;
+    var v = M1.dy;
+    $$('#seg1 button').forEach(function (x) { x.classList.remove('on'); });
+    if (v <= -95) $$('#seg1 button')[0].classList.add('on');
+    else if (v >= 95) $$('#seg1 button')[2].classList.add('on');
+    else if (Math.abs(v) <= 4) $$('#seg1 button')[1].classList.add('on');
+    draw1();
+  });
+  if (r1V) r1V.addEventListener('input', function () { M1.V = +r1V.value; draw1(); });
+  bindSeg('#seg1', function (b) {
+    M1.dy = +b.dataset.a;
+    if (r1a) r1a.value = M1.dy;
+    draw1();
+  });
+
+  // ---- 模块 2 ----
+  [['#r2t', 't'], ['#r2s', 'Vs'], ['#r2v', 'V1'], ['#r2m', 'm']].forEach(function (p) {
+    var el = $(p[0]);
+    if (!el) return;
+    el.addEventListener('input', function () { M2[p[1]] = +el.value; });
+  });
+  var bb = $('#b2bub');
+  if (bb) bb.addEventListener('click', function () {
+    M2.bub = !M2.bub;
+    bb.classList.toggle('on', M2.bub);
+    bb.textContent = M2.bub ? '✓ 石块上附着气泡' : '石块上附着气泡';
+  });
+
+  // ---- 模块 3 ----
+  var r3 = $('#r3V');
+  if (r3) r3.addEventListener('input', function () { M3.V = +r3.value; });
+  bindSeg('#seg3', function (b) {
+    M3.mode = b.dataset.m;
+    if (r3) r3.disabled = (M3.mode === 'B');
+  });
+
+  // ---- 首帧 ----
+  M2.cur = solve2().V2;
+  M3.cur = M3.V;
+  draw1(); draw2(); draw3();
+  requestAnimationFrame(loop);
+}
+
+if (document.readyState === 'loading') {
+  document.addEventListener('DOMContentLoaded', init);
+} else { init(); }
+</script>
+</body>
+</html>

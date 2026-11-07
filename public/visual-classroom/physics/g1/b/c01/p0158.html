@@ -1,0 +1,537 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>蜡块运动合成与分解 · 知识卡片版</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;background:#eef1f6;color:#2b2f36;padding:18px}
+h1{font-size:20px;text-align:center;margin-bottom:4px}
+.sub{text-align:center;font-size:13px;color:#7a828e;margin-bottom:14px}
+.stage{display:flex;gap:16px;flex-wrap:wrap;justify-content:center}
+.left{flex:1;min-width:560px;max-width:900px}
+canvas{background:#fff;border:1px solid #d8dde6;border-radius:10px;box-shadow:0 3px 14px rgba(0,0,0,.08);max-width:100%;touch-action:none}
+.panel{width:308px;background:#fff;border-radius:10px;padding:14px;box-shadow:0 3px 14px rgba(0,0,0,.08);font-size:13px}
+.panel h3{font-size:14px;margin:10px 0 6px;color:#3b6ea5;border-left:4px solid #3b6ea5;padding-left:8px}
+input[type=range]{width:100%}
+label{display:block;margin:8px 0 2px;color:#555}
+.btns{display:flex;gap:8px;margin:12px 0}
+button{flex:1;padding:9px;border:none;border-radius:6px;color:#fff;font-weight:700;cursor:pointer}
+#go{background:#2f9e44}#go.off{background:#f08c00}#rs{background:#e03131}#mk{background:#1971c2}
+.data{display:grid;grid-template-columns:1fr 1fr;gap:4px 10px;background:#f6f8fb;padding:8px;border-radius:6px;font-size:12px}
+.data b{color:#1f6feb}.data.tube{background:#fff9ec}.data.tube b{color:#e8590c}
+.data.back{background:#f3f0ff}.data.back b{color:#7048e8}
+.chk{display:flex;align-items:center;gap:6px;margin:5px 0}.chk label{margin:0}
+.cross{border:1px solid #d5cdf5;border-left:5px solid #a38ef0;border-radius:6px;padding:6px;margin:6px 0;background:#faf8ff}
+.cross.on{border-left-color:#7048e8;background:#efe9ff;box-shadow:0 0 0 2px rgba(112,72,232,.25)}
+.cross .ct{font-size:12px;font-weight:700;color:#5f3dc4;display:flex;justify-content:space-between;align-items:center;margin-bottom:4px}
+.cross .ct button{flex:none;padding:2px 8px;font-size:11px;background:#7048e8;border-radius:4px}
+/* ===== 图像下方的知识卡片 ===== */
+.knowhead{display:flex;justify-content:space-between;align-items:center;margin:14px 0 8px}
+.knowhead h3{font-size:15px;color:#3b6ea5;border-left:4px solid #3b6ea5;padding-left:8px}
+.knowhead button{flex:none;width:auto;padding:5px 12px;font-size:12px;background:#868e96}
+.know{display:grid;grid-template-columns:repeat(auto-fill,minmax(212px,1fr));gap:10px}
+.kcard{background:#fff;border-radius:8px;padding:10px 12px;border-top:4px solid #3b6ea5;
+       box-shadow:0 2px 10px rgba(0,0,0,.07);font-size:12.5px;line-height:1.75}
+.kcard h4{font-size:13px;color:#2b6cb0;margin-bottom:6px;display:flex;gap:7px;align-items:center}
+.kcard .num{background:#3b6ea5;color:#fff;min-width:20px;height:20px;border-radius:50%;
+            display:inline-flex;align-items:center;justify-content:center;font-size:11px}
+.kcard.o{border-top-color:#e8590c}.kcard.o h4{color:#d9480f}.kcard.o .num{background:#e8590c}
+.kcard.g{border-top-color:#2f9e44}.kcard.g h4{color:#2b8a3e}.kcard.g .num{background:#2f9e44}
+.kcard.p{border-top-color:#7048e8}.kcard.p h4{color:#5f3dc4}.kcard.p .num{background:#7048e8}
+.kcard .f{display:inline-block;background:#f1f4f9;border-radius:4px;padding:1px 6px;margin:2px 0;
+          font-family:Consolas,monospace;color:#c92a2a;font-size:12px}
+.kcard ul{padding-left:16px}.kcard li{margin:2px 0}
+.card{max-width:1180px;margin:16px auto 0;background:#fff;border-radius:10px;padding:14px;box-shadow:0 3px 14px rgba(0,0,0,.08)}
+.card h3{font-size:15px;color:#3b6ea5;margin-bottom:8px}
+.tblwrap{overflow-x:auto;max-height:190px;overflow-y:auto;border:1px solid #e3e7ee;border-radius:6px}
+table{width:100%;border-collapse:collapse;font-size:12px;min-width:720px}
+th,td{padding:6px 8px;text-align:center;border-bottom:1px solid #eef1f6;white-space:nowrap}
+th{background:#f1f4f9;position:sticky;top:0;color:#495057}
+tr.on td{background:#fff4e6;font-weight:700;color:#c92a2a}
+tr:hover td{background:#f8f9ff;cursor:pointer}
+.note{max-width:1180px;margin:16px auto 0;background:#fff;border-radius:10px;padding:14px;font-size:13px;line-height:1.9;box-shadow:0 3px 14px rgba(0,0,0,.08)}
+.note b{color:#c92a2a}.tag{display:inline-block;background:#e7f5ff;color:#1971c2;border-radius:4px;padding:0 6px;font-size:12px}
+.hint{font-size:12px;color:#868e96;margin-top:6px}.banner{font-size:12px;color:#e8590c;font-weight:700;margin-top:6px;display:none}
+</style>
+</head>
+<body>
+<h1>蜡块运动合成与分解 · 知识卡片版</h1>
+<div class="sub">图像下方为配套知识点卡片 ｜ 参数中途改变连续续接 ｜ 同一位置可回溯两次经过的瞬时数据</div>
+
+<div class="stage">
+  <div class="left">
+    <canvas id="cv" width="880" height="470"></canvas>
+
+    <div class="knowhead">
+      <h3>本实验知识卡片</h3>
+      <button id="kToggle">收起卡片</button>
+    </div>
+    <div class="know" id="know">
+      <div class="kcard"><h4><span class="num">1</span>实验装置与研究对象</h4>
+        注水密封玻璃管中放入蜡块，蜡块相对水<b>匀速上浮</b>；同时使管沿水平方向运动。<br>
+        研究对象是<b>蜡块相对地面（黑板）的运动</b>，即合运动；管水平运动与蜡块沿管上浮是两个分运动。</div>
+
+      <div class="kcard g"><h4><span class="num">2</span>分运动与合运动的三条性质</h4>
+        <ul><li><b>等时性</b>：分运动与合运动同时开始、同时结束，时间相同</li>
+        <li><b>独立性</b>：各分运动互不影响，可单独研究（改变 v<sub>y</sub> 不影响水平运动）</li>
+        <li><b>等效性</b>：合运动与分运动共同产生的效果完全相同</li></ul></div>
+
+      <div class="kcard"><h4><span class="num">3</span>位移的合成</h4>
+        两分位移互相垂直时：<span class="f">s = √(x² + y²)</span>，<span class="f">tanθ = y/x</span>（θ 为 s 与水平方向夹角）。<br>
+        本实验中 <span class="f">x = v<sub>x</sub>t</span>、<span class="f">y = v<sub>y</sub>t</span>。</div>
+
+      <div class="kcard o"><h4><span class="num">4</span>速度的合成</h4>
+        遵循<b>平行四边形定则</b>（矢量相加）：<span class="f">v = √(v<sub>x</sub>² + v<sub>y</sub>²)</span>，<span class="f">tanθ = v<sub>y</sub>/v<sub>x</sub></span>。<br>
+        合速度可以大于、等于或小于任一分速度，取决于两分速度的夹角。</div>
+
+      <div class="kcard"><h4><span class="num">5</span>匀速 + 匀速 → 直线运动</h4>
+        两方向都匀速时，消去 t 得轨迹方程 <span class="f">y = (v<sub>y</sub>/v<sub>x</sub>)x</span>，是过原点的直线，斜率 k = v<sub>y</sub>/v<sub>x</sub>。<br>
+        频闪点等间距分布，相邻点 Δx、Δy 恒定。</div>
+
+      <div class="kcard p"><h4><span class="num">6</span>匀速 + 匀变速 → 曲线运动</h4>
+        水平匀变速、竖直匀速时轨迹为抛物线（类平抛）。<br>
+        判据：<b>合加速度（合力）与合速度不共线</b> → 曲线运动；轨迹向合力一侧弯曲，合力指向<b>凹侧</b>。</div>
+
+      <div class="kcard g"><h4><span class="num">7</span>频闪照片的数据处理</h4>
+        闪光间隔 Δt 相同，故 <span class="f">Δx = v<sub>x</sub>Δt</span>、<span class="f">Δy = v<sub>y</sub>Δt</span>；<br>
+        由 <span class="f">v<sub>y</sub> = Δy/Δt</span> 求速度，用<b>逐差法</b> <span class="f">a = (x₄+x₅+x₆−x₁−x₂−x₃)/(9Δt²)</span> 求加速度。<br>
+        改变 Δt 后旧点保留，点疏密变化即体现新间隔。</div>
+
+      <div class="kcard o"><h4><span class="num">8</span>位置回溯与易错点</h4>
+        量筒位置 X(t) 与查询位置画横线，交点即“经过时刻”；折返时 v<sub>x</sub>=0，是 X–t 图线的顶点（相切交点）。<br>
+        易错：① 同一位置两次经过，<b>速度方向相反</b>；② 分运动改变不影响另一分运动；③ 速度方向沿轨迹<b>切线</b>，不是位移方向。</div>
+    </div>
+  </div>
+
+  <aside class="panel">
+    <h3>运动模式（可随时切换）</h3>
+    <div class="chk"><input type="radio" name="mode" id="m1" checked><label for="m1">水平匀速（直线）</label></div>
+    <div class="chk"><input type="radio" name="mode" id="m2"><label for="m2">水平加速（曲线，可折返）</label></div>
+    <div class="btns"><button id="demo" style="background:#7048e8">折返演示（a_x&lt;0）</button></div>
+
+    <h3>参数调节（即时生效，不跳变）</h3>
+    <label>竖直上浮速度 v<sub>y</sub>：<span id="vyv">20</span> cm/s</label>
+    <input type="range" id="vy" min="5" max="40" step="1" value="20">
+    <label id="vxLabel">水平速度 v<sub>x</sub>：<span id="vxv">30</span> cm/s</label>
+    <input type="range" id="vx" min="-120" max="120" step="1" value="30">
+    <label>水平加速度 a<sub>x</sub>：<span id="axv">20</span> cm/s²</label>
+    <input type="range" id="ax" min="-40" max="40" step="2" value="20">
+
+    <h3>频闪设置</h3>
+    <label>频闪间隔 Δt：<span id="dtv">0.40</span> s</label>
+    <input type="range" id="dtIn" min="0.1" max="1" step="0.05" value="0.4">
+    <div class="chk"><input type="checkbox" id="sNum" checked><label for="sNum">频闪点显示编号</label></div>
+    <div class="btns"><button id="mk">手动打点</button></div>
+
+    <h3>显示选项</h3>
+    <div class="chk"><input type="checkbox" id="sTraj" checked><label for="sTraj">合运动轨迹</label></div>
+    <div class="chk"><input type="checkbox" id="sVec" checked><label for="sVec">速度矢量分解</label></div>
+    <div class="chk"><input type="checkbox" id="sFlash" checked><label for="sFlash">频闪打点</label></div>
+    <div class="chk"><input type="checkbox" id="sMark" checked><label for="sMark">参数变更标记</label></div>
+    <div class="chk"><input type="checkbox" id="sBack" checked><label for="sBack">回溯标记（全部经过）</label></div>
+    <div class="chk"><input type="checkbox" id="sKnow" checked><label for="sKnow">图像下方知识卡片</label></div>
+
+    <div class="btns"><button id="go">开始</button><button id="rs">重置</button></div>
+    <div class="banner" id="banner">▶ 已结束：拖动量筒左右移动，查看该位置每次经过的瞬时数据</div>
+
+    <h3>量筒位置（可拖动）</h3>
+    <div class="data tube">
+      <span>量筒中心 X</span><span><b id="t_X">0.0</b> cm</span>
+      <span>拖动速度</span><span><b id="t_v">0.0</b> cm/s</span>
+      <span>蜡块相对管心偏移</span><span><b id="t_off">0.0</b> cm</span>
+      <span>蜡块是否在筒内</span><span><b id="t_in">是</b></span>
+    </div>
+    <div class="btns">
+      <button id="tZero" style="background:#495057">量筒归零</button>
+      <button id="tAlign" style="background:#1971c2">对齐蜡块</button>
+    </div>
+
+    <h3>位置回溯：此位置被经过时</h3>
+    <div class="data back">
+      <span>查询位置 X</span><span><b id="b_X">0.0</b> cm</span>
+      <span>实验是否经过</span><span><b id="b_hit">—</b></span>
+      <span>经过次数</span><span><b id="b_cnt">0</b></span>
+      <span>最接近频闪点</span><span><b id="b_near">—</b></span>
+    </div>
+    <div id="crossWrap"><div class="hint">拖动量筒到某位置后，这里会列出每一次经过的瞬时数据。</div></div>
+
+    <h3>蜡块当前瞬时数据</h3>
+    <div class="data">
+      <span>时间 t</span><span><b id="d_t">0.00</b> s</span>
+      <span>水平位移 x</span><span><b id="d_x">0.0</b> cm</span>
+      <span>竖直位移 y</span><span><b id="d_y">0.0</b> cm</span>
+      <span>v<sub>x</sub> / v<sub>y</sub></span><span><b id="d_vxy">30 / 20</b></span>
+      <span>合速度 v</span><span><b id="d_v">36.1</b> cm/s</span>
+      <span>方向 θ</span><span><b id="d_th">33.7</b>°</span>
+    </div>
+  </aside>
+</div>
+
+<div class="card">
+  <h3>当前位置的多次经过明细</h3>
+  <div class="tblwrap"><table id="ctbl"><tbody></tbody></table></div>
+  <div class="hint" id="cInfo">尚未查询位置。</div>
+</div>
+
+<div class="card">
+  <h3>参数变更记录</h3>
+  <div class="tblwrap"><table id="ptbl"><tbody></tbody></table></div>
+  <div class="hint" id="pInfo">尚未在实验中改变参数。</div>
+</div>
+
+<div class="card">
+  <h3>频闪点瞬时数据表</h3>
+  <div class="tblwrap"><table id="tbl"><tbody></tbody></table></div>
+  <div class="hint" id="selInfo">尚未选中频闪点。</div>
+</div>
+
+<div class="note">
+  <b>课堂使用建议：</b>
+  先以匀速模式运行，对照卡片 3、5 用频闪点验证 <span class="tag">y = (v_y/v_x)x</span> 与等间距；
+  再点“折返演示”，用卡片 6 讨论合力与速度不共线时的曲线运动；
+  结束后拖动量筒到折返点左侧，用卡片 8 解释同一位置两次经过的速度方向差异。
+</div>
+
+<script>
+const cv=document.getElementById('cv'),ctx=cv.getContext('2d');
+const S=6,OX=95,OY=430,TW=58,TH=384,HALF=TW/2/S,$=id=>document.getElementById(id);
+const PAD=TW/2+26;                     // 底座横向半宽（含外伸部分），px
+const X_LO=(PAD-OX)/S;                 // 量筒可到达的最左位置（cm），保证底座不出画布
+const X_HI=(cv.width-10-PAD-OX)/S;     // 量筒可到达的最右位置（cm）
+const VX_LIM=[-120,120];               // v_x 滑杆量程，需覆盖仿真可能达到的速度
+const TURN_TOL=0.35;                   // 判定“折返点（相切）”的位置容差，cm
+let P={vy:20,vx0:30,ax:20,mode:'uniform',dt:0.4};
+let st={t:0,tubeX:0,offX:0,y:0,vx:30,vy:20,ax:0,running:false,last:0,ended:false,
+        traj:[],flash:[],nextFlash:0.4,sel:-1,tubeHist:[],marks:[],paramLog:[],tblVer:0,crossVer:0,
+        dragging:false,sx:0,sTubeX:0,lastDragT:0,dragV:0,moved:false,rec:null,selCross:-1};
+let cross={X:0,hit:false,list:[]};
+
+function logChange(name,oldV,newV,unit){
+  if(st.t<=0)return;
+  const bx=st.tubeX+st.offX;
+  st.paramLog.push({i:st.paramLog.length+1,t:st.t,name,oldV,newV,unit,x:bx,y:st.y,vx:st.vx,vy:st.vy});
+  st.marks.push({x:bx,y:st.y,label:name+'→'+newV,t:st.t});
+  if(st.marks.length>10)st.marks.shift();
+  renderParamTable();
+}
+$('vy').addEventListener('input',e=>{const v=+e.target.value;$('vyv').textContent=v;logChange('v_y',P.vy,v,'cm/s');P.vy=v;if(!st.running)draw();});
+$('vx').addEventListener('input',e=>{const v=+e.target.value;$('vxv').textContent=v;
+  logChange(P.mode==='uniform'?'v_x':'v_x0',P.vx0,v,'cm/s');P.vx0=v;
+  if(P.mode==='uniform')st.vx=v;if(!st.running)draw();});
+$('ax').addEventListener('input',e=>{const v=+e.target.value;$('axv').textContent=v;logChange('a_x',P.ax,v,'cm/s²');P.ax=v;if(!st.running)draw();});
+document.querySelectorAll('input[name=mode]').forEach(r=>r.addEventListener('change',()=>{
+  const nm=(r.checked&&r.id==='m2')?'accel':'uniform';if(nm===P.mode)return;
+  logChange('模式',P.mode==='accel'?'加速':'匀速',nm==='accel'?'加速':'匀速','');
+  P.mode=nm;
+  if(nm==='uniform'){P.vx0=Math.round(st.vx);$('vx').value=P.vx0;$('vxv').textContent=P.vx0;}
+  updateModeLabel();draw();
+}));
+$('dtIn').addEventListener('input',e=>{const v=+e.target.value;$('dtv').textContent=v.toFixed(2);
+  logChange('Δt',P.dt,v.toFixed(2),'s');P.dt=v;st.nextFlash=st.t+v;if(!st.running)draw();});
+$('demo').addEventListener('click',()=>{
+  $('m2').checked=true;P.mode='accel';
+  const nv=-20;logChange('a_x',P.ax,nv,'cm/s²');P.ax=nv;$('ax').value=nv;$('axv').textContent=nv;
+  updateModeLabel();draw();
+});
+function updateModeLabel(){
+  $('vxLabel').innerHTML=P.mode==='uniform'
+    ?'水平速度 v<sub>x</sub>：<span id="vxv">'+P.vx0+'</span> cm/s'
+    :'水平初速度 v<sub>x0</sub>（重置后生效）：<span id="vxv">'+P.vx0+'</span> cm/s';
+}
+['sTraj','sVec','sFlash','sNum','sMark','sBack'].forEach(k=>$(k).addEventListener('change',()=>draw()));
+$('sKnow').addEventListener('change',()=>{$('know').style.display=$('sKnow').checked?'grid':'none';});
+$('kToggle').addEventListener('click',()=>{
+  const on=$('know').style.display!=='none';
+  $('know').style.display=on?'none':'grid';
+  $('kToggle').textContent=on?'展开卡片':'收起卡片';
+  $('sKnow').checked=!on;
+});
+
+$('go').addEventListener('click',()=>{
+  st.running=!st.running;
+  $('go').textContent=st.running?'暂停':'开始';$('go').classList.toggle('off',st.running);
+  $('banner').style.display=(!st.running&&st.t>0)?'block':'none';
+  if(st.running){st.last=performance.now();requestAnimationFrame(loop);}
+});
+$('rs').addEventListener('click',reset);
+$('mk').addEventListener('click',()=>{if(st.t>0){pushFlash();renderTable();draw();}});
+$('tZero').addEventListener('click',()=>{st.offX+=st.tubeX;st.tubeX=0;st.dragV=0;updateTube();draw();});
+$('tAlign').addEventListener('click',()=>{const bx=st.tubeX+st.offX;st.offX+=st.tubeX-bx;st.tubeX=bx;st.dragV=0;updateTube();draw();});
+
+function reset(){
+  st.running=false;st.t=0;st.tubeX=0;st.offX=0;st.y=0;st.vx=P.vx0;st.vy=P.vy;st.ax=0;
+  st.traj=[];st.flash=[];st.nextFlash=P.dt;st.sel=-1;st.selCross=-1;
+  st.tubeHist=[{t:0,X:0,x:0,y:0,vx:P.vx0,vy:P.vy,ax:0}];
+  st.marks=[];st.paramLog=[];st.dragging=false;st.dragV=0;st.rec=null;
+  cross={X:0,hit:false,list:[]};
+  $('go').textContent='开始';$('go').classList.remove('off');$('banner').style.display='none';
+  renderTable();renderParamTable();updateData();updateTube();draw();
+}
+
+function pushFlash(){
+  const bx=st.tubeX+st.offX;
+  st.flash.push({i:st.flash.length+1,t:st.t,x:bx,y:st.y,vx:st.vx,vy:st.vy});
+  st.nextFlash=st.t+P.dt;
+}
+function step(dt){
+  st.t+=dt;st.vy=P.vy;
+  if(P.mode==='uniform'){st.vx=P.vx0;st.ax=0;}else{st.ax=P.ax;st.vx+=P.ax*dt;}
+  st.tubeX+=st.vx*dt;st.y+=st.vy*dt;
+  const bx=st.tubeX+st.offX;
+  st.tubeHist.push({t:st.t,X:st.tubeX,x:bx,y:st.y,vx:st.vx,vy:st.vy,ax:st.ax});
+  st.traj.push({x:bx,y:st.y});
+  if(st.t>=st.nextFlash-1e-9)pushFlash();
+  if(st.y*S>=TH-14||st.tubeX>X_HI||st.tubeX<X_LO||OX+bx*S>cv.width-14||OX+bx*S<14){
+    st.running=false;st.ended=true;$('go').textContent='结束';$('banner').style.display='block';
+  }
+}
+function loop(now){
+  if(!st.running)return;
+  let dt=(now-st.last)/1000;st.last=now;if(dt>0.05)dt=0.05;
+  step(dt);renderTable();updateData();updateTube();draw();
+  if(st.running)requestAnimationFrame(loop);
+}
+
+function findCrossings(X){
+  const h=st.tubeHist,res=[],eps=0.05;
+  if(h.length<2)return res;
+  for(let i=1;i<h.length;i++){
+    const a=h[i-1],b=h[i],da=a.X-X,db=b.X-X;
+    if(Math.abs(da)<eps){res.push({t:a.t,x:a.x,y:a.y,vx:a.vx,vy:a.vy,kind:'pass'});continue;}
+    if(da*db<0){
+      const f=da/(da-db);
+      res.push({t:a.t+f*(b.t-a.t),x:a.x+f*(b.x-a.x),y:a.y+f*(b.y-a.y),
+                vx:a.vx+f*(b.vx-a.vx),vy:a.vy+f*(b.vy-a.vy),kind:'pass'});
+    }else if(a.vx*b.vx<0&&a.ax){
+      const tv=a.t-a.vx/a.ax,dtv=tv-a.t;
+      if(dtv>0&&dtv<(b.t-a.t)){
+        const xv=a.X+a.vx*dtv+0.5*a.ax*dtv*dtv;
+        if(Math.abs(xv-X)<0.3){
+          const f=dtv/(b.t-a.t);
+          res.push({t:tv,x:a.x+f*(b.x-a.x),y:a.y+f*(b.y-a.y),vx:0,vy:a.vy+f*(b.vy-a.vy),kind:'turn'});
+        }
+      }
+    }
+  }
+  const out=[];
+  res.forEach(r=>{if(!out.length||Math.abs(r.t-out[out.length-1].t)>0.05)out.push(r);});
+  return out;
+}
+function nearestFlash(t){
+  if(!st.flash.length)return null;
+  let b=st.flash[0];st.flash.forEach(p=>{if(Math.abs(p.t-t)<Math.abs(b.t-t))b=p;});
+  return b;
+}
+
+function toCanvas(e){const r=cv.getBoundingClientRect();return{mx:(e.clientX-r.left)*cv.width/r.width,my:(e.clientY-r.top)*cv.height/r.height};}
+function hitTube(mx,my){const X=OX+st.tubeX*S;return mx>X-TW/2-36&&mx<X+TW/2+36&&my>OY-TH-16&&my<OY+22;}
+function clamp(v,a,b){return Math.max(a,Math.min(b,v));}
+cv.addEventListener('pointerdown',e=>{
+  if(st.running)return;
+  const{mx,my}=toCanvas(e);
+  if(hitTube(mx,my)){
+    st.dragging=true;st.moved=false;st.sx=mx;st.sTubeX=st.tubeX;
+    st.lastDragT=performance.now();st.dragV=0;st.rec={start:st.tubeX,t0:Date.now()};
+    cv.setPointerCapture(e.pointerId);cv.style.cursor='grabbing';
+  }
+});
+cv.addEventListener('pointermove',e=>{
+  const{mx,my}=toCanvas(e);
+  if(st.dragging){
+    const nx=clamp(st.sTubeX+(mx-st.sx)/S,X_LO,X_HI);
+    if(Math.abs(mx-st.sx)>3)st.moved=true;
+    const now=performance.now(),dtt=(now-st.lastDragT)/1000;
+    if(dtt>0.002){st.dragV=(nx-st.tubeX)/dtt;st.lastDragT=now;}
+    st.offX+=(st.tubeX-nx);st.tubeX=nx;updateTube();draw();
+  }else{cv.style.cursor=(!st.running&&hitTube(mx,my))?'grab':'default';}
+});
+function endDrag(){if(!st.dragging)return;st.dragging=false;cv.style.cursor='grab';st.rec=null;}
+cv.addEventListener('pointerup',endDrag);
+cv.addEventListener('pointercancel',endDrag);
+document.addEventListener('keydown',e=>{
+  if(st.running)return;
+  if(e.key==='ArrowRight'||e.key==='ArrowLeft'){
+    const d=e.key==='ArrowRight'?0.5:-0.5,nx=clamp(st.tubeX+d,X_LO,X_HI);
+    st.offX+=(st.tubeX-nx);st.tubeX=nx;updateTube();draw();e.preventDefault();
+  }
+});
+
+function updateTube(){
+  $('t_X').textContent=st.tubeX.toFixed(1);
+  $('t_v').textContent=st.dragV.toFixed(1);
+  $('t_off').textContent=st.offX.toFixed(1);
+  $('t_in').textContent=Math.abs(st.offX)<=HALF?'是':'否（偏出筒外）';
+  const list=findCrossings(st.tubeX);
+  cross={X:st.tubeX,hit:list.length>0,list};
+  if(st.selCross>=list.length)st.selCross=list.length?0:-1;
+  $('b_X').textContent=st.tubeX.toFixed(1);
+  $('b_hit').textContent=list.length?'是':'否（未经过该位置）';
+  $('b_cnt').textContent=list.length;
+  const nf=list.length?nearestFlash(list[0].t):null;
+  $('b_near').textContent=nf?('第 '+nf.i+' 点（t='+nf.t.toFixed(2)+' s）'):'—';
+  renderCrossings();
+}
+function crossCard(c,i){
+  const v=Math.hypot(c.vx,c.vy),th=Math.atan2(c.vy,c.vx)*180/Math.PI;
+  return `<div class="cross ${i===st.selCross?'on':''}">
+    <div class="ct">第 ${i+1} 次经过（${c.kind==='turn'?'折返点':'穿越'}）
+      <button data-sel="${i}">在图中标出</button></div>
+    <div class="data back">
+      <span>时刻 t*</span><span><b>${c.t.toFixed(2)}</b> s</span>
+      <span>蜡块高度 y*</span><span><b>${c.y.toFixed(1)}</b> cm</span>
+      <span>水平位移 x*</span><span><b>${c.x.toFixed(1)}</b> cm</span>
+      <span>v<sub>x</sub>\* / v<sub>y</sub>\*</span><span><b>${c.vx.toFixed(1)} / ${c.vy.toFixed(1)}</b></span>
+      <span>合速度 v\*</span><span><b>${v.toFixed(1)}</b> cm/s</span>
+      <span>方向 θ\*</span><span><b>${th.toFixed(1)}</b>°</span>
+    </div></div>`;
+}
+function renderCrossings(){
+  const wrap=$('crossWrap');
+  if(!cross.list.length){
+    wrap.innerHTML='<div class="hint">该位置实验未经过（可能超出起止范围，或折返前未到达）。</div>';
+    $('ctbl').querySelector('tbody').innerHTML='<tr><td style="padding:14px;color:#868e96">该位置无经过记录。</td></tr>';
+    $('cInfo').textContent='查询位置 X='+cross.X.toFixed(1)+' cm：未经过。';
+    return;
+  }
+  wrap.innerHTML=cross.list.map((c,i)=>crossCard(c,i)).join('');
+  wrap.querySelectorAll('button[data-sel]').forEach(b=>b.addEventListener('click',()=>{
+    st.selCross=+b.dataset.sel;renderCrossings();draw();
+  }));
+  let h='<tr><th>次序</th><th>类型</th><th>t\* / s</th><th>x\* / cm</th><th>y\* / cm</th><th>v<sub>x</sub>\*</th><th>v<sub>y</sub>\*</th><th>v\* / cm·s⁻¹</th><th>θ\* / °</th></tr>';
+  cross.list.forEach((c,i)=>{
+    const v=Math.hypot(c.vx,c.vy),th=Math.atan2(c.vy,c.vx)*180/Math.PI;
+    h+=`<tr data-i="${i}" class="${i===st.selCross?'on':''}"><td>第 ${i+1} 次</td><td>${c.kind==='turn'?'折返相切':'穿越'}</td><td>${c.t.toFixed(2)}</td><td>${c.x.toFixed(1)}</td><td>${c.y.toFixed(1)}</td><td>${c.vx.toFixed(1)}</td><td>${c.vy.toFixed(1)}</td><td>${v.toFixed(1)}</td><td>${th.toFixed(1)}</td></tr>`;
+  });
+  $('ctbl').querySelector('tbody').innerHTML=h;
+  $('ctbl').querySelectorAll('tr[data-i]').forEach(tr=>tr.addEventListener('click',()=>{
+    st.selCross=+tr.dataset.i;renderCrossings();draw();
+  }));
+  $('cInfo').textContent='查询位置 X='+cross.X.toFixed(1)+' cm：共经过 '+cross.list.length+' 次'+(cross.list.length>1?'（同一位置、不同时刻、不同速度方向）':'')+'。';
+}
+
+function renderParamTable(){
+  const tb=$('ptbl').querySelector('tbody');
+  if(!st.paramLog.length){tb.innerHTML='<tr><td style="padding:14px;color:#868e96">暂无参数变更记录。</td></tr>';return;}
+  let h='<tr><th>序号</th><th>t / s</th><th>参数</th><th>旧值</th><th>新值</th><th>当时 x</th><th>当时 y</th><th>当时 v_x</th></tr>';
+  st.paramLog.forEach(d=>{h+=`<tr><td>${d.i}</td><td>${d.t.toFixed(2)}</td><td>${d.name}</td><td>${d.oldV}</td><td><b>${d.newV}</b> ${d.unit}</td><td>${d.x.toFixed(1)}</td><td>${d.y.toFixed(1)}</td><td>${d.vx.toFixed(1)}</td></tr>`;});
+  tb.innerHTML=h;$('pInfo').textContent='共 '+st.paramLog.length+' 次变更，位置与时间均连续。';
+}
+function renderTable(){
+  const tb=$('tbl').querySelector('tbody');
+  if(!st.flash.length){tb.innerHTML='<tr><td style="padding:14px;color:#868e96">暂无频闪点。</td></tr>';return;}
+  let h='<tr><th>点</th><th>t / s</th><th>Δt / s</th><th>x / cm</th><th>y / cm</th><th>v_x</th><th>v_y</th><th>v</th><th>θ / °</th></tr>';
+  st.flash.forEach((p,i)=>{
+    const dtp=i?(p.t-st.flash[i-1].t):0,v=Math.hypot(p.vx,p.vy),th=Math.atan2(p.vy,p.vx)*180/Math.PI;
+    h+=`<tr data-i="${i}" class="${i===st.sel?'on':''}"><td>${p.i}</td><td>${p.t.toFixed(2)}</td><td>${dtp.toFixed(2)}</td><td>${p.x.toFixed(1)}</td><td>${p.y.toFixed(1)}</td><td>${p.vx.toFixed(1)}</td><td>${p.vy.toFixed(1)}</td><td>${v.toFixed(1)}</td><td>${th.toFixed(1)}</td></tr>`;
+  });
+  tb.innerHTML=h;
+  tb.querySelectorAll('tr[data-i]').forEach(tr=>tr.addEventListener('click',()=>select(+tr.dataset.i)));
+}
+function select(i){
+  if(i<0||i>=st.flash.length)return;
+  st.sel=i;renderTable();draw();
+  const p=st.flash[i],v=Math.hypot(p.vx,p.vy),th=Math.atan2(p.vy,p.vx)*180/Math.PI;
+  $('selInfo').innerHTML=`已选中<b>第 ${p.i} 点</b>：t=${p.t.toFixed(2)} s，x=${p.x.toFixed(1)} cm，y=${p.y.toFixed(1)} cm，v=${v.toFixed(1)} cm/s，θ=${th.toFixed(1)}°`;
+}
+cv.addEventListener('click',e=>{
+  if(st.moved){st.moved=false;return;}
+  const{mx,my}=toCanvas(e);
+  let best=-1,bd=14;
+  st.flash.forEach((p,i)=>{const d=Math.hypot(OX+p.x*S-mx,OY+p.y*S-my);if(d<bd){bd=d;best=i;}});
+  if(best>=0)select(best);else{st.sel=-1;renderTable();draw();$('selInfo').textContent='尚未选中频闪点。';}
+});
+function updateData(){
+  const bx=st.tubeX+st.offX,v=Math.hypot(st.vx,st.vy),th=Math.atan2(st.vy,st.vx)*180/Math.PI;
+  $('d_t').textContent=st.t.toFixed(2);$('d_x').textContent=bx.toFixed(1);
+  $('d_y').textContent=st.y.toFixed(1);$('d_vxy').textContent=st.vx.toFixed(1)+' / '+st.vy.toFixed(1);
+  $('d_v').textContent=v.toFixed(1);$('d_th').textContent=th.toFixed(1);
+}
+
+function draw(){
+  ctx.clearRect(0,0,cv.width,cv.height);grid();axes();
+  const X=OX+st.tubeX*S,bx=st.tubeX+st.offX,WX=OX+bx*S,WY=OY-st.y*S;
+
+  ctx.fillStyle='#8d6e63';ctx.fillRect(X-TW/2-26,OY,TW+52,12);
+  ctx.fillStyle='#5d4037';[X-TW/2-10,X+TW/2+10].forEach(cx=>{ctx.beginPath();ctx.arc(cx,OY+12,7,0,7);ctx.fill();});
+  ctx.fillStyle='#90a4ae';ctx.font='11px sans-serif';ctx.fillText('可水平拖动底座',X-TW/2-26,OY+34);
+
+  ctx.fillStyle='rgba(190,225,255,.55)';ctx.strokeStyle='#7fb2e5';ctx.lineWidth=2;
+  ctx.beginPath();ctx.roundRect(X-TW/2,OY-TH,TW,TH,[10,10,4,4]);ctx.fill();ctx.stroke();
+  ctx.strokeStyle='#b3d4f0';ctx.beginPath();ctx.ellipse(X,OY-TH,TW/2,7,0,0,7);ctx.stroke();
+  ctx.fillStyle='#607d8b';
+  for(let i=0;i<=TH;i+=S*5){const big=i%(S*10)===0;ctx.fillRect(X-TW/2,OY-i,big?10:5,1);
+    if(big&&i)ctx.fillText(i/S,X-TW/2+13,OY-i+4);}
+  ctx.fillStyle='#495057';ctx.font='bold 11px sans-serif';ctx.fillText('量筒（密封玻璃管）/ cm',X-TW/2,OY-TH-8);
+
+  ctx.setLineDash([6,4]);ctx.strokeStyle='#f08c00';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(X,OY-TH);ctx.lineTo(X,OY+40);ctx.stroke();ctx.setLineDash([]);
+  ctx.fillStyle='#e8590c';ctx.font='11px sans-serif';ctx.fillText('量筒 X='+st.tubeX.toFixed(1)+'cm',X-38,OY+54);
+
+  if($('sTraj').checked&&st.traj.length>1){
+    ctx.strokeStyle='#e03131';ctx.lineWidth=2;ctx.beginPath();ctx.moveTo(OX+st.traj[0].x*S,OY-st.traj[0].y*S);
+    st.traj.forEach(p=>ctx.lineTo(OX+p.x*S,OY-p.y*S));ctx.stroke();
+  }
+  if($('sFlash').checked)st.flash.forEach(p=>{
+    const px=OX+p.x*S,py=OY-p.y*S;
+    ctx.fillStyle='rgba(200,80,60,.8)';ctx.beginPath();ctx.arc(px,py,4,0,7);ctx.fill();
+    if($('sNum').checked){ctx.fillStyle='#862e2e';ctx.font='10px sans-serif';ctx.fillText(p.i,px+6,py-6);}
+  });
+  if($('sMark').checked)st.marks.forEach(m=>{
+    const px=OX+m.x*S,py=OY-m.y*S;
+    ctx.strokeStyle='#7048e8';ctx.lineWidth=1.5;ctx.beginPath();ctx.arc(px,py,7,0,7);ctx.stroke();
+    ctx.fillStyle='#7048e8';ctx.font='10px sans-serif';ctx.fillText(m.label,px+9,py-9);
+  });
+  if($('sBack').checked)drawBack();
+
+  ctx.fillStyle=Math.abs(st.offX)<=HALF?'#ff7043':'rgba(255,112,67,.55)';
+  ctx.shadowBlur=6;ctx.shadowColor='rgba(0,0,0,.3)';ctx.fillRect(WX-11,WY-11,22,22);ctx.shadowBlur=0;
+  ctx.fillStyle='#fff';ctx.font='11px sans-serif';ctx.fillText('蜡',WX-6,WY+4);
+
+  if($('sVec').checked){
+    arrow(WX,WY,st.vx*S*0.5,0,'#2e8b57','v_x');
+    arrow(WX,WY,0,-st.vy*S*0.5,'#1e90ff','v_y');
+    arrow(WX,WY,st.vx*S*0.5,-st.vy*S*0.5,'#e03131','v');
+    if(P.mode==='accel'&&P.ax)arrow(WX,WY,P.ax*S*0.5,0,'#f08c00','a');
+  }
+  ctx.fillStyle='#333';ctx.font='12px sans-serif';
+  ctx.fillText('t = '+st.t.toFixed(2)+' s   Δt = '+P.dt.toFixed(2)+' s   '+(P.mode==='uniform'?'匀速':'加速'),cv.width-200,24);
+  if(!st.running&&st.t>0){ctx.fillStyle='#e8590c';ctx.font='bold 13px sans-serif';ctx.fillText('已暂停/结束 · 可拖动量筒回溯',16,24);}
+}
+function drawBack(){
+  if(!cross.hit)return;
+  cross.list.forEach((c,i)=>{
+    const px=OX+c.x*S,py=OY-c.y*S,on=i===st.selCross;
+    ctx.setLineDash(on?[]:[4,3]);ctx.strokeStyle='#7048e8';ctx.lineWidth=on?3:2;
+    ctx.beginPath();ctx.arc(px,py,on?12:10,0,7);ctx.stroke();ctx.setLineDash([]);
+    ctx.fillStyle=on?'#5f3dc4':'#7048e8';ctx.font='bold 11px sans-serif';
+    ctx.fillText('#'+(i+1)+' t*='+c.t.toFixed(2)+'s  y*='+c.y.toFixed(1)+'cm  v*='+Math.hypot(c.vx,c.vy).toFixed(1),px+15,py-8+i*14);
+  });
+}
+function grid(){ctx.strokeStyle='#f0f2f5';ctx.lineWidth=1;
+  for(let x=0;x<cv.width;x+=S*10){ctx.beginPath();ctx.moveTo(x,0);ctx.lineTo(x,cv.height);ctx.stroke();}
+  for(let y=0;y<cv.height;y+=S*10){ctx.beginPath();ctx.moveTo(0,y);ctx.lineTo(cv.width,y);ctx.stroke();}}
+function axes(){ctx.strokeStyle='#adb5bd';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(OX-40,OY);ctx.lineTo(cv.width-10,OY);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(OX,OY+20);ctx.lineTo(OX,20);ctx.stroke();
+  ctx.fillStyle='#6c757d';ctx.font='11px sans-serif';
+  ctx.fillText('x / cm',cv.width-52,OY-8);ctx.fillText('y / cm',OX+8,32);
+  for(let i=0;i<=12;i++){const x=OX+i*S*10;ctx.beginPath();ctx.moveTo(x,OY);ctx.lineTo(x,OY+5);ctx.stroke();ctx.fillText(i*10,x-8,OY+18);}
+  for(let i=0;i<=6;i++){const y=OY-i*S*10;ctx.beginPath();ctx.moveTo(OX,y);ctx.lineTo(OX-5,y);ctx.stroke();ctx.fillText(i*10,OX-30,y+4);}
+}
+function arrow(x,y,dx,dy,c,label){
+  if(Math.abs(dx)<0.5&&Math.abs(dy)<0.5)return;
+  const tx=x+dx,ty=y+dy,a=Math.atan2(dy,dx),h=9;
+  ctx.strokeStyle=c;ctx.fillStyle=c;ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(x,y);ctx.lineTo(tx,ty);ctx.stroke();
+  ctx.beginPath();ctx.moveTo(tx,ty);
+  ctx.lineTo(tx-h*Math.cos(a-0.5),ty-h*Math.sin(a-0.5));
+  ctx.lineTo(tx-h*Math.cos(a+0.5),ty-h*Math.sin(a+0.5));ctx.fill();
+  ctx.font='bold 12px sans-serif';ctx.fillText(label,tx+6,ty-4);
+}
+
+updateModeLabel();reset();
+</script>
+</body>
+</html>

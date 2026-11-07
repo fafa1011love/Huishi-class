@@ -1,0 +1,441 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>23.3 一次函数与方程（组）、不等式 · 数形联动</title>
+<style>
+  :root{
+    --blue:#2563eb; --blue-bg:#eff6ff;
+    --orange:#ea580c; --orange-bg:#fff7ed;
+    --purple:#7c3aed; --purple-bg:#f5f3ff;
+    --green:#16a34a; --green-bg:#f0fdf4;
+    --red:#dc2626; --red-bg:#fef2f2;
+    --amber:#d97706; --amber-bg:#fffbeb;
+    --ink:#1e293b; --sub:#64748b; --line:#e2e8f0;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:"Microsoft YaHei","PingFang SC",sans-serif; background:#f1f5f9; color:var(--ink); padding:14px 18px;}
+  .wrap{max-width:1560px; margin:0 auto;}
+  header{display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:10px; margin-bottom:10px;}
+  h1{font-size:24px;}
+  h1 .sub{font-size:14px; color:var(--sub); font-weight:400; margin-left:8px;}
+  .mottos{display:flex; gap:8px;}
+  .motto{background:linear-gradient(135deg,#2563eb,#7c3aed); color:#fff; font-weight:700; font-size:13px; padding:6px 14px; border-radius:999px; box-shadow:0 2px 6px rgba(37,99,235,.3);}
+  /* 页签 */
+  .tabs{display:flex; gap:8px; margin-bottom:10px;}
+  .tab-btn{border:2px solid var(--line); background:#fff; border-radius:10px 10px 0 0; padding:9px 16px; font-size:14.5px; font-weight:700; color:var(--sub); cursor:pointer; border-bottom:none;}
+  .tab-btn.on{color:var(--blue); border-color:var(--blue); background:#fff; box-shadow:0 -3px 0 var(--blue) inset;}
+  /* 布局 16:9 投屏 */
+  .stage{display:grid; grid-template-columns:minmax(680px,780px) 1fr; gap:14px; align-items:start;}
+  .card{background:#fff; border:1px solid var(--line); border-radius:12px; padding:12px 14px; box-shadow:0 1px 4px rgba(15,23,42,.06);}
+  svg#cv{width:100%; height:auto; display:block; background:#fcfdff; border-radius:8px; touch-action:none;}
+  .hint{font-size:12.5px; color:var(--sub); margin-top:6px; text-align:center;}
+  /* 滑块区 */
+  .sliders{margin-top:8px; display:flex; flex-direction:column; gap:6px;}
+  .srow{display:flex; align-items:center; gap:10px; font-size:14px; font-weight:700;}
+  .srow .tag{width:74px; border-radius:6px; color:#fff; text-align:center; padding:3px 0; font-size:12.5px;}
+  .srow input[type=range]{flex:1; accent-color:var(--blue); height:22px;}
+  .srow.l2 input[type=range]{accent-color:var(--orange);}
+  .srow .val{width:52px; text-align:center; font-family:Cambria Math,Cambria,serif; font-size:15px; background:#f1f5f9; border-radius:6px; padding:2px 0;}
+  .srow.l2 .tag{background:var(--orange);}
+  .srow.l1 .tag{background:var(--blue);}
+  /* 显示开关 */
+  .toggles{display:flex; gap:14px; flex-wrap:wrap; margin-top:8px; font-size:13px; color:var(--sub);}
+  .toggles label{display:flex; align-items:center; gap:4px; cursor:pointer; user-select:none;}
+  .toggles input{accent-color:var(--blue);}
+  /* 右侧面板 */
+  .right{display:flex; flex-direction:column; gap:10px;}
+  .panel{display:none; flex-direction:column; gap:8px;}
+  .panel.on{display:flex;}
+  .pcard{border-radius:10px; padding:10px 12px; border:1.5px solid;}
+  .pcard.blue{border-color:#bfdbfe; background:var(--blue-bg);}
+  .pcard.purple{border-color:#ddd6fe; background:var(--purple-bg);}
+  .pcard.green{border-color:#bbf7d0; background:var(--green-bg);}
+  .pcard.red{border-color:#fecaca; background:var(--red-bg);}
+  .pcard.amber{border-color:#fde68a; background:var(--amber-bg);}
+  .pt{font-size:14px; font-weight:800; margin-bottom:4px;}
+  .pcard.blue .pt{color:var(--blue);} .pcard.purple .pt{color:var(--purple);}
+  .pcard.green .pt{color:var(--green);} .pcard.red .pt{color:var(--red);} .pcard.amber .pt{color:var(--amber);}
+  .pmath{font-family:"Cambria Math",Cambria,Georgia,serif; font-size:21px; line-height:1.55;}
+  .pmath b{color:var(--red);}
+  .steps{font-family:"Cambria Math",Cambria,serif; font-size:16.5px; line-height:1.75; color:#334155;}
+  .steps .st{border-left:3px solid #cbd5e1; padding-left:8px; margin:3px 0;}
+  .nosteps .steps{display:none;}
+  .badge{border-radius:8px; padding:8px 10px; font-size:14px; font-weight:700; line-height:1.5;}
+  .badge.blue{background:var(--blue); color:#fff;}
+  .badge.purple{background:var(--purple); color:#fff;}
+  .badge.green{background:var(--green); color:#fff;}
+  .badge.red{background:var(--red); color:#fff;}
+  .badge.amber{background:var(--amber); color:#fff;}
+  .sys{display:flex; align-items:center; gap:6px; font-family:"Cambria Math",Cambria,serif; font-size:21px;}
+  .sys .brace{font-size:44px; font-weight:300; line-height:.9;}
+  .sys .eqs div{line-height:1.5;}
+  .small{font-size:12.5px; color:var(--sub);}
+  /* 对照表 */
+  table.map{width:100%; border-collapse:collapse; font-size:13.5px;}
+  table.map th{background:#f8fafc; padding:6px 8px; border:1px solid var(--line); font-size:13px;}
+  table.map td{padding:7px 8px; border:1px solid var(--line); line-height:1.45;}
+  table.map td.g{color:var(--blue); font-weight:700;} table.map td.a{color:var(--purple); font-weight:700;}
+  table.map .arrow{color:var(--sub); font-weight:400;}
+  /* 易错 */
+  .warn li{margin:4px 0 4px 16px; font-size:13px; line-height:1.55;}
+  .warn b.r{color:var(--red);}
+  .numline-wrap{margin-top:4px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>23.3 一次函数与方程（组）、不等式<span class="sub">数形联动实验 · 人教八下</span></h1>
+    <div class="mottos">
+      <span class="motto">交点即根</span><span class="motto">交点即解</span><span class="motto">上方即大（＞0）</span>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button class="tab-btn on" data-t="t1">① 直线与 x 轴交点 ⇔ 方程 kx＋b＝0 的根</button>
+    <button class="tab-btn" data-t="t2">② 两直线交点 ⇔ 方程组的解</button>
+    <button class="tab-btn" data-t="t3">③ 图象在 x 轴上方 ⇔ 不等式的解集</button>
+  </nav>
+
+  <div class="stage">
+    <!-- 左：坐标系画布 -->
+    <section class="card">
+      <svg id="cv" viewBox="0 0 720 560">
+        <defs><clipPath id="plot"><rect x="0" y="0" width="720" height="560" rx="8"/></clipPath></defs>
+        <g clip-path="url(#plot)">
+          <g id="gGrid"></g>
+          <g id="gAxes"></g>
+          <g id="gFill"></g>
+          <g id="gLines"></g>
+          <g id="gPts"></g>
+        </g>
+      </svg>
+      <div class="hint">🖐 拖动直线上的两个蓝色手柄即可改变直线（也可以用下面的滑块）；一切结果实时联动</div>
+      <div class="sliders">
+        <div class="srow l1">
+          <span class="tag">k₁（斜率）</span>
+          <input type="range" id="sk" min="-5" max="5" step="0.1" value="1">
+          <span class="val" id="vk">1</span>
+          <span class="tag">b₁（截距）</span>
+          <input type="range" id="sb" min="-5" max="5" step="0.1" value="-2">
+          <span class="val" id="vb">-2</span>
+        </div>
+        <div class="srow l2" id="rowL2" style="display:none">
+          <span class="tag">k₂（斜率）</span>
+          <input type="range" id="sk2" min="-5" max="5" step="0.1" value="-0.5">
+          <span class="val" id="vk2">-0.5</span>
+          <span class="tag">b₂（截距）</span>
+          <input type="range" id="sb2" min="-5" max="5" step="0.1" value="3">
+          <span class="val" id="vb2">3</span>
+        </div>
+      </div>
+      <div class="toggles">
+        <label><input type="checkbox" id="tgGrid" checked>网格</label>
+        <label><input type="checkbox" id="tgInt" checked>交点标记</label>
+        <label><input type="checkbox" id="tgFill" checked>填充区域</label>
+        <label><input type="checkbox" id="tgSeg" checked>解集区间</label>
+        <label><input type="checkbox" id="tgSteps" checked>推导步骤</label>
+      </div>
+    </section>
+
+    <!-- 右：同步面板 -->
+    <aside class="right" id="aside">
+      <div class="panel on" id="panel1"></div>
+      <div class="panel" id="panel2"></div>
+      <div class="panel" id="panel3"></div>
+
+      <div class="card">
+        <div class="pt" style="font-weight:800; margin-bottom:6px;">📌 三大对应关系（以形解数）</div>
+        <table class="map">
+          <tr><th>几何（形）</th><th></th><th>代数（数）</th></tr>
+          <tr><td class="g">直线与 x 轴交点 (x₀, 0)</td><td class="arrow">⇔</td><td class="a">方程 kx＋b＝0 的根 x＝x₀</td></tr>
+          <tr><td class="g">两直线交点 (x₀, y₀)</td><td class="arrow">⇔</td><td class="a">二元一次方程组的解</td></tr>
+          <tr><td class="g">图象在 x 轴上方 / 下方</td><td class="arrow">⇔</td><td class="a">kx＋b＞0 / kx＋b＜0 的解集</td></tr>
+        </table>
+      </div>
+
+      <div class="card warn">
+        <div class="pt" style="font-weight:800; margin-bottom:4px;">⚠ 易错提示</div>
+        <li>方程的解是<b class="r">横坐标（一个数）</b>，不是交点坐标；方程组的解是<b class="r">一对数 (x₀, y₀)</b>。</li>
+        <li>不等式解集的<b class="r">方向由 k 的正负决定</b>：k＜0 时"上方"反而在交点左侧。</li>
+        <li>k＝0 时直线平行（或重合）于 x 轴：方程可能<b class="r">无解或无数解</b>，要单独讨论。</li>
+        <li>两直线 k₁＝k₂ 且 b₁≠b₂ 时平行 → 方程组<b class="r">无解</b>。</li>
+      </div>
+    </aside>
+  </div>
+</div>
+
+<script>
+/* ================= 基础 ================= */
+const SVG='http://www.w3.org/2000/svg';
+const $=id=>document.getElementById(id);
+const cv=$('cv'), gGrid=$('gGrid'), gAxes=$('gAxes'), gFill=$('gFill'), gLines=$('gLines'), gPts=$('gPts');
+const CX=360, CY=280, PX=36;                     // 原点与比例
+const X=x=>CX+x*PX, Y=y=>CY-y*PX;
+const XMIN=-10, XMAX=10, YMAX=(CY-2)/PX, YMIN=-YMAX;
+const S1={k:1,b:-2}, S2={k:-0.5,b:3};
+const HX1=-5, HX2=5;                             // 拖动手柄所在横坐标
+let tab='t1';
+const show={grid:true,int:true,fill:true,seg:true,steps:true};
+
+const fmtN=v=>{const r=Math.round(v*100)/100; return (Object.is(r,-0)?0:r).toLocaleString('en-US',{maximumFractionDigits:2});};
+const same=(a,b)=>Math.abs(a-b)<1e-9;
+const yAt1=x=>S1.k*x+S1.b, yAt2=x=>S2.k*x+S2.b;
+
+/* 一次式排版：1x→x，-1x→−x，0x 忽略 */
+function linExpr(k,b){
+  let s='';
+  if(!same(k,0)){
+    const ka=same(Math.abs(k),1)?'':fmtN(Math.abs(k));
+    s=(k<0?'−':'')+ka+'x';
+  }
+  if(!same(b,0)){
+    if(s==='')s=(b<0?'−':'')+fmtN(Math.abs(b));
+    else s+=(b<0?' − ':' ＋ ')+fmtN(Math.abs(b));
+  }
+  if(s==='')s='0';
+  return s;
+}
+
+/* ================= 坐标轴（静态，一次绘制） ================= */
+function drawAxes(){
+  let s='';
+  for(let x=-10;x<=10;x++){const c=same(x,0)?'#94a3b8':'#dbe3ee'; s+=`<line x1="${X(x)}" y1="0" x2="${X(x)}" y2="560" stroke="${c}" stroke-width="1"/>`;}
+  for(let y=-7;y<=7;y++){if(same(y,0))continue; s+=`<line x1="0" y1="${Y(y)}" x2="720" y2="${Y(y)}" stroke="#dbe3ee" stroke-width="1"/>`;}
+  s+=`<line x1="0" y1="${CY}" x2="716" y2="${CY}" stroke="#475569" stroke-width="2"/>`;
+  s+=`<line x1="${CX}" y1="556" x2="${CX}" y2="4" stroke="#475569" stroke-width="2"/>`;
+  s+=`<polygon points="720,${CY} 710,${CY-5} 710,${CY+5}" fill="#475569"/>`;
+  s+=`<polygon points="${CX},0 ${CX-5},10 ${CX+5},10" fill="#475569"/>`;
+  for(let x=-10;x<=10;x+=2){if(same(x,0))continue; s+=`<text x="${X(x)}" y="${CY+18}" font-size="12" fill="#64748b" text-anchor="middle" font-family="Cambria Math,serif">${x}</text>`;}
+  for(let y=-6;y<=6;y+=2){if(same(y,0))continue; s+=`<text x="${CX-10}" y="${Y(y)+4}" font-size="12" fill="#64748b" text-anchor="end" font-family="Cambria Math,serif">${y}</text>`;}
+  s+=`<text x="706" y="${CY-10}" font-size="14" fill="#475569" font-style="italic" font-family="Cambria Math,serif">x</text>`;
+  s+=`<text x="${CX+12}" y="16" font-size="14" fill="#475569" font-style="italic" font-family="Cambria Math,serif">y</text>`;
+  s+=`<text x="${CX-16}" y="${CY+18}" font-size="12" fill="#64748b" font-family="Cambria Math,serif">O</text>`;
+  gAxes.innerHTML=s;
+}
+
+/* ================= 画布渲染 ================= */
+function lineSVG(S,color,w){
+  return `<line x1="${X(-11)}" y1="${Y(S.k*-11+S.b)}" x2="${X(11)}" y2="${Y(S.k*11+S.b)}" stroke="${color}" stroke-width="${w}" stroke-linecap="round"/>`;
+}
+function render(){
+  gGrid.innerHTML=show.grid?'':'';
+  /* 填充 + 解集区间（模块三，仅页签③） */
+  let f='', seg='';
+  const {k,b}=S1;
+  if(tab==='t3'&&!same(k,0)){
+    const x0=-b/k, rightPos=k>0;
+    const g1=rightPos?x0:-11, g2=rightPos?11:x0;
+    const r1=rightPos?-11:x0, r2=rightPos?x0:11;
+    if(show.fill){
+      f+=`<polygon points="${X(g1)},${Y(0)} ${X(g2)},${Y(yAt1(g2))} ${X(g2)},${Y(0)}" fill="rgba(22,163,74,.16)"/>`;
+      f+=`<polygon points="${X(r1)},${Y(0)} ${X(r2)},${Y(yAt1(r2))} ${X(r2)},${Y(0)}" fill="rgba(220,38,38,.13)"/>`;
+    }
+    if(show.seg){
+      seg+=`<line x1="${X(g1)}" y1="${CY}" x2="${X(g2)}" y2="${CY}" stroke="#16a34a" stroke-width="7" stroke-linecap="butt" opacity=".9"/>`;
+      seg+=`<line x1="${X(r1)}" y1="${CY}" x2="${X(r2)}" y2="${CY}" stroke="#dc2626" stroke-width="7" stroke-linecap="butt" opacity=".85"/>`;
+    }
+  }else if(tab==='t3'&&show.seg){
+    if(b>0) seg=`<line x1="0" y1="${CY}" x2="720" y2="${CY}" stroke="#16a34a" stroke-width="7" opacity=".9"/>`;
+    else if(b<0) seg=`<line x1="0" y1="${CY}" x2="720" y2="${CY}" stroke="#dc2626" stroke-width="7" opacity=".85"/>`;
+  }
+  gFill.innerHTML=(tab==='t3'&&(show.fill||show.seg))?f+seg:'';
+  /* 直线 */
+  let l=lineSVG(S1,'#2563eb',3.5);
+  if(tab==='t2') l+=lineSVG(S2,'#ea580c',3.5);
+  gLines.innerHTML=l;
+  /* 点标记 */
+  let p='';
+  if(show.int){
+    if(tab!=='t2' && !same(k,0)){
+      const x0=-b/k;
+      if(x0>=XMIN-0.3&&x0<=XMAX+0.3){
+        p+=`<circle cx="${X(x0)}" cy="${CY}" r="12" fill="none" stroke="#dc2626" stroke-width="2" opacity=".45"/>`;
+        p+=`<circle cx="${X(x0)}" cy="${CY}" r="6" fill="#dc2626" stroke="#fff" stroke-width="2"/>`;
+        p+=`<text x="${X(x0)}" y="${CY+34}" font-size="15" font-weight="700" fill="#dc2626" text-anchor="middle" font-family="Cambria Math,serif">x₀＝${fmtN(x0)}</text>`;
+      }
+    }
+    if(tab==='t2'){
+      const dk=S1.k-S2.k;
+      if(Math.abs(dk)>1e-9){
+        const x0=(S2.b-S1.b)/dk, y0=yAt1(x0);
+        if(x0>=XMIN-0.3&&x0<=XMAX+0.3&&y0>=YMIN-0.3&&y0<=YMAX+0.3){
+          p+=`<line x1="${X(x0)}" y1="${Y(y0)}" x2="${X(x0)}" y2="${CY}" stroke="#7c3aed" stroke-width="1.5" stroke-dasharray="5 4"/>`;
+          p+=`<line x1="${X(x0)}" y1="${Y(y0)}" x2="${CX}" y2="${Y(y0)}" stroke="#7c3aed" stroke-width="1.5" stroke-dasharray="5 4"/>`;
+          p+=`<circle cx="${X(x0)}" cy="${Y(y0)}" r="12" fill="none" stroke="#7c3aed" stroke-width="2" opacity=".45"/>`;
+          p+=`<circle cx="${X(x0)}" cy="${Y(y0)}" r="6" fill="#7c3aed" stroke="#fff" stroke-width="2"/>`;
+          const lx=Math.min(Math.max(X(x0),70),650), ly=Math.min(Math.max(Y(y0),24),540);
+          p+=`<text x="${lx}" y="${ly-16}" font-size="15" font-weight="700" fill="#7c3aed" text-anchor="middle" font-family="Cambria Math,serif">(${fmtN(x0)}, ${fmtN(y0)})</text>`;
+        }
+      }
+    }
+  }
+  /* 拖动手柄 */
+  for(const hx of [HX1,HX2]){
+    p+=`<circle cx="${X(hx)}" cy="${Y(yAt1(hx))}" r="9" fill="#fff" stroke="#2563eb" stroke-width="3" style="cursor:grab"/>`;
+    p+=`<circle cx="${X(hx)}" cy="${Y(yAt1(hx))}" r="3.5" fill="#2563eb"/>`;
+  }
+  gPts.innerHTML=p;
+}
+
+/* ================= 右侧面板 ================= */
+function panel1(){
+  const {k,b}=S1;
+  let eq,steps,badge;
+  if(same(k,0)){
+    eq=`0·x ${b<0?'−':'＋'} ${fmtN(Math.abs(b))} ＝ 0`;
+    if(same(b,0)){
+      steps=`<div class="steps"><div class="st">0 ＝ 0 恒成立</div></div>`;
+      badge=`<div class="badge blue">直线 y＝0 与 x 轴重合 → 方程有无数个解（任意 x）</div>`;
+    }else{
+      steps=`<div class="steps"><div class="st">${fmtN(b)} ＝ 0 矛盾</div></div>`;
+      badge=`<div class="badge red">直线 y＝${fmtN(b)} 与 x 轴平行，没有交点 → 方程无解</div>`;
+    }
+  }else{
+    const x0=-b/k;
+    eq=`${linExpr(k,b)} ＝ 0`;
+    steps=`<div class="steps">`
+      +`<div class="st">移项：${fmtN(Math.abs(k))}x ＝ ${fmtN(-b)}</div>`
+      +`<div class="st">x ＝ −b/k ＝ −(${fmtN(b)}) ÷ (${fmtN(k)}) ＝ <b>${fmtN(x0)}</b></div></div>`;
+    badge=`<div class="badge blue">交点 (${fmtN(x0)}, 0)：横坐标 ${fmtN(x0)} 就是方程的根 ✔</div>`;
+  }
+  $('panel1').innerHTML=
+    `<div class="pcard blue"><div class="pt">🧮 方程 kx＋b＝0（实时）</div><div class="pmath">${eq}</div>${steps}</div>`
+    +`<div class="pcard blue"><div class="pt">🔍 交点 ⇔ 根</div>${badge}<div class="small" style="margin-top:4px">直线 y＝${linExpr(k,b)} 与 x 轴的交点横坐标 ＝ 方程的根。</div></div>`;
+}
+function panel2(){
+  const k1=S1.k,b1=S1.b,k2=S2.k,b2=S2.b;
+  let body;
+  if(Math.abs(k1-k2)<1e-9){
+    if(same(b1,b2)){
+      body=`<div class="pcard amber"><div class="pt">⚖ 特殊情形：两直线重合</div>
+        <div class="steps"><div class="st">k₁＝k₂＝${fmtN(k1)}，b₁＝b₂＝${fmtN(b1)} → 两条直线是同一条！</div></div></div>
+        <div class="badge amber">重合 → 有无数个公共点 → 方程组有无数组解</div>`;
+    }else{
+      body=`<div class="pcard red"><div class="pt">🚫 特殊情形：两直线平行</div>
+        <div class="steps"><div class="st">k₁＝k₂＝${fmtN(k1)}，但 b₁＝${fmtN(b1)} ≠ b₂＝${fmtN(b2)}</div>
+        <div class="st">同一条直线上下错开 → 永不相交</div></div></div>
+        <div class="badge red">无交点 → 方程组无解</div>`;
+    }
+  }else{
+    const x0=(b2-b1)/(k1-k2), y0=yAt1(x0);
+    body=`<div class="pcard purple"><div class="pt">🧮 解方程组（消元 · 实时）</div>
+      <div class="sys"><span class="brace">｛</span><span class="eqs"><div>y＝${linExpr(k1,b1)}</div><div>y＝${linExpr(k2,b2)}</div></span></div>
+      <div class="steps">
+        <div class="st">① 消元（代入）：${linExpr(k1,b1)} ＝ ${linExpr(k2,b2)}</div>
+        <div class="st">② 移项合并：${fmtN(Math.abs(k1-k2))}x ＝ ${fmtN(b2-b1)}</div>
+        <div class="st">③ x₀ ＝ ${fmtN(b2-b1)} ÷ ${fmtN(k1-k2)} ＝ <b>${fmtN(x0)}</b></div>
+        <div class="st">④ 代回：y₀ ＝ ${fmtN(k1)}×${fmtN(x0)} ＋ ${fmtN(b1)} ＝ <b>${fmtN(y0)}</b></div>
+        <div class="st">⑤ 验证：直线②在 x₀ 处 y＝${fmtN(yAt2(x0))} ✔ 两直线都经过该点</div>
+      </div></div>
+      <div class="badge purple">交点 (${fmtN(x0)}, ${fmtN(y0)}) 就是方程组的解 ✔</div>`;
+  }
+  $('panel2').innerHTML=body
+    +`<div class="pcard purple"><div class="pt">🔍 交点 ⇔ 解</div><div class="small">公共点同时满足两个方程 → 它的坐标就是方程组的解；调整 k₂、b₂ 观察交点移动。</div></div>`;
+}
+function numline(x0,greenRight){
+  const w=340,h=74,pad=16, mx=x=>pad+(x+10)/20*(w-2*pad), ax=40;
+  let s=`<svg width="${w}" height="${h}" viewBox="0 0 ${w} ${h}">`;
+  s+=`<line x1="${pad}" y1="${ax}" x2="${w-pad}" y2="${ax}" stroke="#475569" stroke-width="1.5"/>`;
+  for(let x=-10;x<=10;x+=2) s+=`<line x1="${mx(x)}" y1="${ax-4}" x2="${mx(x)}" y2="${ax+4}" stroke="#94a3b8"/>`+`<text x="${mx(x)}" y="${ax+18}" font-size="10" fill="#64748b" text-anchor="middle" font-family="Cambria Math,serif">${x}</text>`;
+  const gx=greenRight?[mx(x0),w-pad,pad]:[pad,mx(x0),w-pad];
+  s+=`<line x1="${gx[0]}" y1="${ax}" x2="${gx[1]}" y2="${ax}" stroke="#16a34a" stroke-width="5" opacity=".9"/>`;
+  const rx=greenRight?[pad,mx(x0)]:[mx(x0),w-pad];
+  s+=`<line x1="${rx[0]}" y1="${ax+16}" x2="${rx[1]}" y2="${ax+16}" stroke="#dc2626" stroke-width="5" opacity=".85"/>`;
+  const head=(x,y,dir,color)=>`<polygon points="${x},${y} ${x+10*dir},${y-5} ${x+10*dir},${y+5}" fill="${color}"/>`;
+  s+=head(greenRight?w-pad:pad,ax,greenRight?1:-1,'#16a34a');
+  s+=head(greenRight?pad:w-pad,ax+16,greenRight?-1:1,'#dc2626');
+  s+=`<circle cx="${mx(x0)}" cy="${ax}" r="5.5" fill="#fff" stroke="#16a34a" stroke-width="2.5"/>`;
+  s+=`<circle cx="${mx(x0)}" cy="${ax+16}" r="5.5" fill="#fff" stroke="#dc2626" stroke-width="2.5"/>`;
+  s+=`<text x="${mx(x0)}" y="16" font-size="12" font-weight="700" fill="#334155" text-anchor="middle" font-family="Cambria Math,serif">分界 x₀＝${fmtN(x0)}</text>`;
+  s+=`</svg>`;
+  return s;
+}
+function panel3(){
+  const {k,b}=S1;
+  let core,green,red,extra='';
+  if(!same(k,0)){
+    const x0=-b/k;
+    core=`<div class="pcard green"><div class="pt">🧮 不等式（实时）</div>
+      <div class="pmath">${linExpr(k,b)} ＞ 0　/　${linExpr(k,b)} ＜ 0</div>
+      <div class="steps"><div class="st">分界点：直线与 x 轴交点 x₀ ＝ −b/k ＝ <b>${fmtN(x0)}</b></div>
+      <div class="st">k ＝ ${fmtN(k)} ${k>0?'＞ 0：x 越大图象越高（右上方为正）':'＜ 0：x 越大图象越低（右下方为负）'}</div></div></div>`;
+    if(k>0){ green=`x ＞ ${fmtN(x0)}`; red=`x ＜ ${fmtN(x0)}`; }
+    else   { green=`x ＜ ${fmtN(x0)}`; red=`x ＞ ${fmtN(x0)}`; }
+    extra=`<div class="numline-wrap">${numline(x0,k>0)}</div>`;
+  }else{
+    core=`<div class="pcard green"><div class="pt">🧮 不等式（k＝0 特殊情形）</div>
+      <div class="pmath">0·x ${b<0?'−':'＋'} ${fmtN(Math.abs(b))} ＞ 0</div>
+      <div class="steps"><div class="st">直线 y＝${fmtN(b)} 是水平线，${b>0?'整条在 x 轴上方':b<0?'整条在 x 轴下方':'整条与 x 轴重合'}</div></div></div>`;
+    if(b>0){green='全体实数';red='无解';}
+    else if(b<0){green='无解';red='全体实数';}
+    else{green='无解（只能等于 0）';red='无解（只能等于 0）';}
+  }
+  $('panel3').innerHTML=core
+    +`<div class="pcard green"><div class="pt">🟢 kx＋b ＞ 0 的解集（图象在 x 轴<b>上方</b>）</div><div class="pmath" style="color:var(--green); font-weight:700">${green}</div>${extra}</div>`
+    +`<div class="pcard red"><div class="pt">🔴 kx＋b ＜ 0 的解集（图象在 x 轴<b>下方</b>）</div><div class="pmath" style="color:var(--red); font-weight:700">${red}</div></div>`;
+}
+function updatePanels(){panel1();panel2();panel3();}
+
+/* ================= 滑块 / 开关 / 页签 ================= */
+function syncUI(){
+  $('sk').value=S1.k; $('sb').value=S1.b; $('sk2').value=S2.k; $('sb2').value=S2.b;
+  $('vk').textContent=fmtN(S1.k); $('vb').textContent=fmtN(S1.b);
+  $('vk2').textContent=fmtN(S2.k); $('vb2').textContent=fmtN(S2.b);
+}
+function refresh(){syncUI(); render(); updatePanels();}
+[['sk',v=>S1.k=v],['sb',v=>S1.b=v],['sk2',v=>S2.k=v],['sb2',v=>S2.b=v]].forEach(([id,set])=>{
+  $(id).addEventListener('input',e=>{set(parseFloat(e.target.value)); refresh();});
+});
+$('tgGrid').onchange=e=>{show.grid=e.target.checked; render();};
+$('tgInt').onchange=e=>{show.int=e.target.checked; render();};
+$('tgFill').onchange=e=>{show.fill=e.target.checked; render();};
+$('tgSeg').onchange=e=>{show.seg=e.target.checked; render();};
+$('tgSteps').onchange=e=>{$('aside').classList.toggle('nosteps',!e.target.checked);};
+
+const TABDESC={t1:'模块一：看直线与 x 轴的交点（红点）→ 右侧方程的根同步变化',t2:'模块二：拖动 k₂、b₂ 让橙色直线移动，紫色交点 ⇔ 方程组的解',t3:'模块三：绿色区域（上方）⇔ kx＋b＞0 的解集；红色区域（下方）⇔ kx＋b＜0'};
+document.querySelectorAll('.tab-btn').forEach(btn=>{
+  btn.onclick=()=>setTab(btn.dataset.t);
+});
+function setTab(t){
+  tab=t;
+  document.querySelectorAll('.tab-btn').forEach(b=>b.classList.toggle('on',b.dataset.t===t));
+  $('rowL2').style.display=t==='t2'?'flex':'none';
+  document.querySelectorAll('.panel').forEach((p,i)=>p.classList.toggle('on',['t1','t2','t3'][i]===t));
+  document.querySelector('.hint').textContent='🖐 '+TABDESC[t];
+  render(); updatePanels();
+}
+
+/* ================= 拖动手柄 ================= */
+let drag=null;
+function toMath(e){
+  const r=cv.getBoundingClientRect();
+  return {x:(e.clientX-r.left)*720/r.width-CX/PX, y:CY/PX-(e.clientY-r.top)*560/r.height};
+}
+cv.addEventListener('pointerdown',e=>{
+  const p=toMath(e);
+  const d1=Math.hypot(p.x-HX1,yAt1(HX1)-p.y), d2=Math.hypot(p.x-HX2,yAt1(HX2)-p.y);
+  if(Math.min(d1,d2)<1.0){drag=d1<d2?'h1':'h2'; cv.setPointerCapture(e.pointerId);}
+});
+cv.addEventListener('pointermove',e=>{
+  if(!drag)return;
+  const p=toMath(e);
+  const y=Math.min(Math.max(p.y,YMIN),YMAX);
+  let y1=yAt1(HX1), y2=yAt1(HX2);
+  if(drag==='h1')y1=y; else y2=y;
+  let k=(y2-y1)/(HX2-HX1), b=y1-k*HX1;
+  k=Math.min(Math.max(k,-5,5),5); b=Math.min(Math.max(Math.round(b*10)/10,-5),5);
+  S1.k=Math.round(k*10)/10; S1.b=b;
+  refresh();
+});
+cv.addEventListener('pointerup',()=>drag=null);
+
+/* ================= 入口 ================= */
+drawAxes();
+refresh();
+const h=(location.hash||'').replace('#','');
+if(['t1','t2','t3'].includes(h))setTab(h);
+</script>
+</body>
+</html>

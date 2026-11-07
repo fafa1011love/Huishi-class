@@ -1,0 +1,502 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>物体的浮沉条件</title>
+<style>
+  :root{
+    --bg:#f2f5f9; --card:#ffffff; --ink:#23303f; --sub:#5f7085;
+    --blue:#2f80ed; --blue-l:#eaf1fb;
+    --red:#eb5757; --red-l:#fdeaea;
+    --green:#1e8e4e; --green-l:#e6f6ec;
+    --shadow:0 4px 18px rgba(35,48,64,.07);
+    --radius:14px;
+  }
+  *{box-sizing:border-box}
+  body{
+    margin:0;font-family:"Segoe UI","PingFang SC","Microsoft YaHei",sans-serif;
+    background:var(--bg);color:var(--ink);padding:20px;line-height:1.6;
+    -webkit-font-smoothing:antialiased;
+  }
+  .page{max-width:1180px;margin:0 auto}
+
+  /* ===== 页头 ===== */
+  header{margin-bottom:18px}
+  h1{font-size:21px;margin:0 0 6px;letter-spacing:.5px}
+  .desc{color:var(--sub);font-size:13px;margin:0;max-width:760px}
+
+  /* ===== 主体：等高两栏 ===== */
+  .layout{
+    display:grid;
+    grid-template-columns:minmax(0,552px) minmax(0,1fr);
+    gap:18px;align-items:stretch;margin-bottom:18px;
+  }
+  @media(max-width:1040px){ .layout{grid-template-columns:1fr} }
+
+  .card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:16px}
+  .card h2{
+    font-size:13px;margin:0 0 12px;color:var(--sub);font-weight:700;
+    letter-spacing:1px;padding-bottom:8px;border-bottom:1px solid #eef2f7;
+  }
+
+  /* 左栏：仿真 */
+  .sim{display:flex;flex-direction:column}
+  .sim-body{flex:1;display:flex;flex-direction:column;justify-content:center}
+  canvas{display:block;border-radius:10px;background:#eef4fb;cursor:grab}
+  canvas:active{cursor:grabbing}
+  .legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12px;color:var(--sub);margin-top:10px}
+  .legend span{display:inline-flex;align-items:center;gap:5px}
+  .dot{width:11px;height:11px;border-radius:3px;display:inline-block}
+  .hintline{font-size:12px;color:var(--sub);margin-top:8px;text-align:center}
+
+  /* 右栏：控制 + 数据 */
+  .side{display:flex;flex-direction:column;gap:18px;min-width:0}
+  .ctrl{margin-bottom:14px}
+  .ctrl label{display:flex;justify-content:space-between;font-size:13px;margin-bottom:5px;align-items:baseline}
+  .ctrl label b{color:var(--blue);font-variant-numeric:tabular-nums;font-size:14px}
+  input[type=range]{width:100%;accent-color:var(--blue);margin:0}
+  .presets{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px}
+  button{border:none;border-radius:9px;padding:9px 8px;font-size:12.5px;cursor:pointer;
+    background:var(--blue-l);color:var(--blue);font-weight:600;transition:.15s;line-height:1.3}
+  button:hover{background:var(--blue);color:#fff}
+  button.ghost{background:#f0f4f9;color:var(--ink)}
+
+  .rd-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+  .rd{background:#f4f7fb;border-radius:10px;padding:9px 11px;border-left:3px solid #cfdcea}
+  .rd.f{border-left-color:var(--blue)} .rd.g{border-left-color:var(--red)}
+  .rd .k{font-size:11.5px;color:var(--sub)}
+  .rd .v{font-size:19px;font-weight:700;font-variant-numeric:tabular-nums;margin-top:1px}
+  .rd .v small{font-size:11px;color:var(--sub);font-weight:500}
+
+  .bars{margin-top:12px;padding-top:12px;border-top:1px dashed #e6ecf3}
+  .bar-row{display:flex;align-items:center;gap:8px;margin:7px 0;font-size:12px}
+  .bar-row .name{width:46px;color:var(--sub);flex:0 0 46px}
+  .bar-track{flex:1;height:15px;background:#eef2f7;border-radius:8px;overflow:hidden}
+  .bar-fill{height:100%;border-radius:8px;transition:width .1s linear}
+  .bar-val{width:58px;text-align:right;font-variant-numeric:tabular-nums;flex:0 0 58px}
+
+  .status{font-size:17px;font-weight:700;padding:11px;border-radius:10px;text-align:center;
+    margin-top:12px;transition:.2s}
+  .st-float{background:var(--green-l);color:var(--green)}
+  .st-sink{background:var(--red-l);color:#c0392b}
+  .st-sus{background:var(--blue-l);color:var(--blue)}
+  .explain{font-size:12.5px;color:var(--sub);margin-top:10px;line-height:1.75;min-height:66px}
+  .explain b{color:var(--ink)}
+  .explain .fml{display:block;margin-top:6px;font-family:"Cambria Math",Georgia,serif;
+    background:#f4f7fb;border-radius:8px;padding:7px 10px;color:var(--ink);font-size:13px}
+  .nline{font-size:12px;margin-top:8px;padding:7px 10px;border-radius:8px;background:#fff6e5;color:#8a6100}
+
+  /* ===== 知识点区 ===== */
+  .know-grid{display:grid;grid-template-columns:1fr 1fr;gap:18px;margin-top:18px}
+  @media(max-width:1040px){ .know-grid{grid-template-columns:1fr} }
+  .know-grid>.full{grid-column:1/-1}
+
+  .kcard{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:18px}
+  .kcard h3{font-size:15px;margin:0 0 12px;display:flex;align-items:center;gap:8px}
+  .kcard h3::before{content:"";width:4px;height:16px;border-radius:2px;background:var(--blue)}
+  .kcard p{font-size:13px;color:var(--sub);margin:0 0 10px;line-height:1.8}
+  .kcard p b{color:var(--ink)}
+  .kcard ul{margin:0 0 10px;padding-left:18px;font-size:13px;color:var(--sub);line-height:1.85}
+  .kcard ul b{color:var(--ink)}
+  .kcard li{margin-bottom:3px}
+
+  .fmlbox{background:#f6f9fd;border:1px solid #e3ebf5;border-radius:10px;padding:12px 14px;margin:0 0 12px}
+  .fmlbox .f{font-family:"Cambria Math",Georgia,"Times New Roman",serif;font-size:16px;
+    color:var(--ink);margin:6px 0;letter-spacing:.5px}
+  .fmlbox .n{font-size:12px;color:var(--sub)}
+  .fmlbox .noteunit{font-size:11.5px;color:#8296ab;margin-top:8px;padding-top:8px;border-top:1px dashed #dce6f1}
+
+  table{width:100%;border-collapse:collapse;font-size:12.5px}
+  th,td{padding:8px 6px;text-align:center;border-bottom:1px solid #eef2f7}
+  th{background:#f6f9fd;color:var(--ink);font-weight:700;font-size:12px}
+  td{color:var(--sub)}
+  td b{color:var(--ink)}
+  tr.tot-f td{background:#f4fbf6} tr.tot-s td{background:#f5f9fe} tr.tot-k td{background:#fdf6f5}
+  .res-up{color:var(--green);font-weight:700} .res-dn{color:#c0392b;font-weight:700}
+
+  .qa{border-left:3px solid #dbe6f2;padding:8px 0 8px 12px;margin:0 0 11px}
+  .qa .q{font-size:13px;font-weight:700;color:var(--ink);margin-bottom:4px}
+  .qa .a{font-size:12.5px;color:var(--sub);line-height:1.8}
+  .qa .a b{color:var(--ink)}
+
+  .tipbox{background:#fff9ec;border:1px solid #f3e3bd;border-radius:10px;padding:11px 14px;
+    font-size:12.5px;color:#7a5b12;line-height:1.8;margin-top:12px}
+  .tipbox b{color:#5d4408}
+
+  /* SVG 图示 */
+  .figbox{display:flex;justify-content:center;padding:6px 0 2px}
+  .figcap{font-size:11.5px;color:#8296ab;text-align:center;margin-top:4px}
+  footer{text-align:center;font-size:11.5px;color:#94a5b8;margin-top:22px}
+</style>
+</head>
+<body>
+<div class="page">
+
+  <header>
+    <h1>物体的浮沉条件</h1>
+    <p class="desc">拖动滑块调节「物体重力」与「液体密度」，观察蓝色浮力箭头与红色重力箭头的实时对比；也可用鼠标把物体拖到任意深度再松手，看它如何运动。右侧数据区会自动判定状态，下方给出完整公式与原理讲解。</p>
+  </header>
+
+  <!-- ===== 主体两栏 ===== -->
+  <div class="layout">
+
+    <!-- 左：仿真 -->
+    <div class="card sim">
+      <h2>仿真水槽</h2>
+      <div class="sim-body">
+        <canvas id="cv" width="516" height="580"></canvas>
+        <div class="legend">
+          <span><i class="dot" style="background:#2f80ed"></i>浮力 F<sub>浮</sub>（竖直向上）</span>
+          <span><i class="dot" style="background:#eb5757"></i>重力 G（竖直向下）</span>
+        </div>
+        <div class="hintline">🖱️ 用鼠标上下拖动物体可改变释放位置</div>
+      </div>
+    </div>
+
+    <!-- 右：控制 + 数据 -->
+    <div class="side">
+      <div class="card">
+        <h2>实验条件</h2>
+        <div class="ctrl">
+          <label>物体重力 G <b><span id="gVal">9.8</span> N</b></label>
+          <input type="range" id="gSlider" min="4" max="25" step="0.1" value="9.8">
+        </div>
+        <div class="ctrl">
+          <label>液体密度 ρ<sub>液</sub> <b><span id="rVal">1000</span> kg/m³</b></label>
+          <input type="range" id="rSlider" min="500" max="2000" step="10" value="1000">
+        </div>
+        <div class="presets">
+          <button data-g="4.9" data-r="1000">木块·漂浮</button>
+          <button data-g="9.8" data-r="1000">悬浮·潜水艇</button>
+          <button data-g="19.6" data-r="1000">铁块·下沉</button>
+          <button data-g="11.0" data-r="1000" id="saltBtn">淡水→加盐</button>
+        </div>
+      </div>
+
+      <div class="card">
+        <h2>实时受力数据与状态判定</h2>
+        <div class="rd-grid">
+          <div class="rd f"><div class="k">浮力 F<sub>浮</sub></div><div class="v"><span id="fVal">0.0</span> <small>N</small></div></div>
+          <div class="rd g"><div class="k">重力 G</div><div class="v"><span id="gNow">9.8</span> <small>N</small></div></div>
+          <div class="rd"><div class="k">物体密度 ρ<sub>物</sub></div><div class="v"><span id="roVal">1000</span> <small>kg/m³</small></div></div>
+          <div class="rd"><div class="k">液体密度 ρ<sub>液</sub></div><div class="v"><span id="rlVal">1000</span> <small>kg/m³</small></div></div>
+        </div>
+
+        <div class="bars">
+          <div class="bar-row">
+            <span class="name">浮力</span>
+            <div class="bar-track"><div class="bar-fill" id="barF" style="background:linear-gradient(90deg,#6ba6f5,#2f80ed);width:0%"></div></div>
+            <span class="bar-val" id="barFv">0.0 N</span>
+          </div>
+          <div class="bar-row">
+            <span class="name">重力</span>
+            <div class="bar-track"><div class="bar-fill" id="barG" style="background:linear-gradient(90deg,#f29090,#eb5757);width:0%"></div></div>
+            <span class="bar-val" id="barGv">9.8 N</span>
+          </div>
+        </div>
+
+        <div class="status st-sus" id="status">悬浮</div>
+        <div class="explain" id="explain"></div>
+        <div class="nline" id="nline" style="display:none"></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ===== 知识点讲解 ===== -->
+  <div class="know-grid">
+
+    <div class="kcard">
+      <h3>一、核心公式</h3>
+      <p>物体在液体中只受两个力：<b>竖直向上的浮力</b>和<b>竖直向下的重力</b>。浮沉取决于二者的合力方向。</p>
+      <div class="fmlbox">
+        <div class="f">F<sub>浮</sub> = ρ<sub>液</sub> · g · V<sub>排</sub></div>
+        <div class="n">阿基米德原理：浮力等于物体排开液体的重力</div>
+        <div class="f" style="margin-top:10px">G = m · g = ρ<sub>物</sub> · g · V<sub>物</sub></div>
+        <div class="n">重力由物体自身质量和密度决定</div>
+        <div class="noteunit">ρ：密度（kg/m³）　V：体积（m³）　g ≈ 9.8 N/kg</div>
+      </div>
+      <p><b>化简比较：</b>两式都含 g，约去后只需比较 <b>ρ<sub>液</sub>·V<sub>排</sub></b> 与 <b>ρ<sub>物</sub>·V<sub>物</sub></b>。<br>
+      当物体<b>完全浸没</b>时 V<sub>排</sub> = V<sub>物</sub>，进一步约去 V，判定就变成纯粹的<b>密度比较</b>：</p>
+      <div class="fmlbox">
+        <div class="f">ρ<sub>物</sub> &lt; ρ<sub>液</sub> → 上浮　|　ρ<sub>物</sub> = ρ<sub>液</sub> → 悬浮　|　ρ<sub>物</sub> &gt; ρ<sub>液</sub> → 下沉</div>
+      </div>
+      <p style="margin-bottom:0">这就是本 Demo 中右侧实时显示的「物体密度 vs 液体密度」为什么能预判结果的原因。</p>
+    </div>
+
+    <div class="kcard">
+      <h3>二、浮沉条件判定表</h3>
+      <p>下表按「<b>完全浸没时</b>」的受力关系分类——这是判定和计算的标准前提。</p>
+      <table>
+        <thead><tr><th>浸没时受力</th><th>合力</th><th>运动</th><th>最终状态</th><th>密度关系</th></tr></thead>
+        <tbody>
+          <tr class="tot-f"><td>F<sub>浮</sub> &gt; G</td><td class="res-up">向上</td><td>上浮</td><td><b>漂浮</b>于液面<br>（F<sub>浮</sub> = G）</td><td>ρ<sub>物</sub> &lt; ρ<sub>液</sub></td></tr>
+          <tr class="tot-s"><td>F<sub>浮</sub> = G</td><td>为零</td><td>静止</td><td><b>悬浮</b><br>（可停在任意深度）</td><td>ρ<sub>物</sub> = ρ<sub>液</sub></td></tr>
+          <tr class="tot-k"><td>F<sub>浮</sub> &lt; G</td><td class="res-dn">向下</td><td>下沉</td><td><b>沉底</b><br>（F<sub>浮</sub> + N = G）</td><td>ρ<sub>物</sub> &gt; ρ<sub>液</sub></td></tr>
+        </tbody>
+      </table>
+      <div class="tipbox">
+        <b>易错点：</b>「漂浮」和「悬浮」都满足 F<sub>浮</sub> = G，但<b>漂浮</b>时物体部分露出液面（V<sub>排</sub> &lt; V<sub>物</sub>，ρ<sub>物</sub> &lt; ρ<sub>液</sub>）；<b>悬浮</b>时物体完全浸没（V<sub>排</sub> = V<sub>物</sub>，ρ<sub>物</sub> = ρ<sub>液</sub>）。二者受力相同但 V<sub>排</sub> 不同，必须区分。
+      </div>
+    </div>
+
+    <div class="kcard">
+      <h3>三、浮力从哪来？——压强差的解释</h3>
+      <p>浮力不是凭空产生的。液体内部压强随深度增加（<b>p = ρ<sub>液</sub>gh</b>），因此<b>同一物体下表面所处的深度更大、受到的向上的压强更强</b>，而上表面受到的向下压强较弱。这个压强差乘以受力面积，就是浮力。</p>
+      <div class="figbox">
+        <svg width="300" height="210" viewBox="0 0 300 210" xmlns="http://www.w3.org/2000/svg">
+          <defs>
+            <marker id="ah" markerWidth="8" markerHeight="8" refX="6" refY="4" orient="auto">
+              <path d="M0,0 L8,4 L0,8 Z" fill="#e2802f"/>
+            </marker>
+            <marker id="ahb" markerWidth="9" markerHeight="9" refX="7" refY="4.5" orient="auto">
+              <path d="M0,0 L9,4.5 L0,9 Z" fill="#2f80ed"/>
+            </marker>
+          </defs>
+          <rect x="20" y="52" width="260" height="140" fill="#dcebf8"/>
+          <line x1="20" y1="52" x2="280" y2="52" stroke="#7fb0dd" stroke-width="2"/>
+          <text x="24" y="46" font-size="11" fill="#5f7085">水面</text>
+          <rect x="115" y="105" width="70" height="52" fill="#b9cf9e" stroke="#7a9160" stroke-width="2"/>
+          <text x="150" y="136" font-size="11" fill="#4d6134" text-anchor="middle">物体</text>
+          <path d="M95,105 L95,52" stroke="#8296ab" stroke-width="1" stroke-dasharray="3 3"/>
+          <path d="M95,157 L95,192" stroke="#8296ab" stroke-width="1" stroke-dasharray="3 3"/>
+          <text x="60" y="82" font-size="10" fill="#8296ab">h₁</text>
+          <text x="60" y="178" font-size="10" fill="#8296ab">h₂</text>
+          <line x1="150" y1="105" x2="150" y2="82" stroke="#e2802f" stroke-width="2.5" marker-end="url(#ah)"/>
+          <text x="156" y="96" font-size="10" fill="#c46a1c">p₁ 向下</text>
+          <line x1="150" y1="157" x2="150" y2="184" stroke="#2f80ed" stroke-width="2.5" marker-end="url(#ahb)"/>
+          <text x="156" y="174" font-size="10" fill="#2f80ed">p₂ 向上</text>
+          <line x1="185" y1="131" x2="205" y2="131" stroke="#e2802f" stroke-width="2" marker-end="url(#ah)"/>
+          <line x1="115" y1="131" x2="95" y2="131" stroke="#e2802f" stroke-width="2" marker-end="url(#ah)"/>
+          <text x="212" y="134" font-size="10" fill="#c46a1c">侧面压力</text>
+          <text x="212" y="146" font-size="10" fill="#c46a1c">相互抵消</text>
+        </svg>
+      </div>
+      <div class="figcap">图：上下表面压强差产生竖直向上的合力 —— 这就是浮力</div>
+      <div class="fmlbox" style="margin-top:12px">
+        <div class="f">F<sub>浮</sub> = F<sub>向上</sub> − F<sub>向下</sub> = p₂S − p₁S = ρ<sub>液</sub>g(h₂ − h₁)S = ρ<sub>液</sub>gV<sub>排</sub></div>
+        <div class="n">h₂ &gt; h₁，故 p₂ &gt; p₁，合力竖直向上</div>
+      </div>
+      <p style="margin-bottom:0">侧面压力两两平衡、合力为零，所以<b>只有上下表面的压强差留下了净效果</b>。这也解释了：物体一旦沉到底部与容器底<b>紧密贴合</b>（底部无水），向上的压力消失，浮力会急剧减小甚至为零。</p>
+    </div>
+
+    <div class="kcard">
+      <h3>四、为什么会这样？——实验现象成因</h3>
+      <div class="qa">
+        <div class="q">Q1：为什么上浮到液面后会停在某个位置漂浮？</div>
+        <div class="a">物体露出液面后，<b>浸入的体积 V<sub>排</sub> 变小</b>，由 F<sub>浮</sub> = ρ<sub>液</sub>gV<sub>排</sub> 可知<b>浮力随之减小</b>。当 V<sub>排</sub> 减小到刚好让 F<sub>浮</sub> = G 时，合力为零，物体静止漂浮。所以漂浮时浸入比例满足：<b>V<sub>排</sub>/V<sub>物</sub> = ρ<sub>物</sub>/ρ<sub>液</sub></b>。本 Demo 中可以看到物体一半左右露出水面正是这个比例。</div>
+      </div>
+      <div class="qa">
+        <div class="q">Q2：为什么悬浮的物体能停在任意深度？</div>
+        <div class="a">因为 F<sub>浮</sub> = ρ<sub>液</sub>gV<sub>排</sub> 中<b>不含深度 h</b>（液体难压缩、ρ<sub>液</sub> 各处相同）。只要完全浸没且 ρ<sub>物</sub> = ρ<sub>液</sub>，在任何深度都有 F<sub>浮</sub> = G，合力恒为零。拖动 Demo 中的悬浮物体到其他深度再松手，它会停在原地不动——这是悬浮最典型的现象。</div>
+      </div>
+      <div class="qa">
+        <div class="q">Q3：同一物体为什么在淡水中下沉、在盐水中却浮起来？</div>
+        <div class="a">物体没变（V<sub>物</sub>、G 不变），但<b>ρ<sub>液</sub> 变大了</b>，于是完全浸没时的浮力 ρ<sub>液</sub>gV<sub>排</sub> 变大。当 ρ<sub>液</sub> 超过 ρ<sub>物</sub> 时，F<sub>浮</sub> &gt; G，物体就上浮了。点击「淡水→加盐」按钮即可复现这个经典实验：<b>改变液体密度，而不是改变物体</b>。</div>
+      </div>
+      <div class="qa" style="margin-bottom:0">
+        <div class="q">Q4：沉底后物体静止，此时 F<sub>浮</sub> 还小于 G 吗？</div>
+        <div class="a">是的。此时物体受<b>三个力</b>：向上的浮力 F<sub>浮</sub>、容器底部向上的支持力 N、向下的重力 G，满足 <b>F<sub>浮</sub> + N = G</b>。Demo 会在这种情况下显示支持力 N 的数值，可以看到容器底替液体"分担"了一部分重力。</div>
+      </div>
+      <div class="tipbox" style="margin-top:12px">
+        <b>动手建议：</b>依次点击「木块·漂浮」「悬浮·潜水艇」「铁块·下沉」三个预设，对比三种情况下的箭头长度与密度数值；再点击「淡水→加盐」，观察<b>同一个物体在不改变自身的前提下</b>如何从下沉变为上浮——这是理解浮沉条件最直观的一组对照实验。
+      </div>
+    </div>
+
+  </div>
+
+  <footer>物体的浮沉条件 · 可视化教学 Demo　|　依据阿基米德原理与受力分析构建</footer>
+</div>
+
+<script>
+const cv=document.getElementById('cv');
+const ctx=cv.getContext('2d');
+const W=cv.width,H=cv.height;
+
+// ===== 几何与物理常量 =====
+const TANK={x:82,y:62,w:352,h:440};        // 水槽内框
+const WATER_TOP=152;                        // 水面 y
+const OBJ=66;                               // 物体边长(px)
+const CX=TANK.x+TANK.w/2;
+const CY_MIN=TANK.y+OBJ/2;                  // 最高位置
+const CY_MAX=TANK.y+TANK.h-OBJ/2;           // 沉底位置
+const g=9.8;
+const V=0.001;                              // 物体体积 m³
+
+// ===== 状态 =====
+let G=9.8, rho=1000, cy=270, v=0, dragging=false;
+
+const gSlider=document.getElementById('gSlider');
+const rSlider=document.getElementById('rSlider');
+const gVal=document.getElementById('gVal'), rVal=document.getElementById('rVal');
+
+gSlider.oninput=()=>{G=+gSlider.value;gVal.textContent=G.toFixed(1);};
+rSlider.oninput=()=>{rho=+rSlider.value;rVal.textContent=rho;};
+
+function setCond(gg,rr){
+  G=gg;rho=rr;gSlider.value=gg;rSlider.value=rr;
+  gVal.textContent=gg.toFixed(1);rVal.textContent=rr;v=0;
+}
+document.querySelectorAll('.presets button[data-g]').forEach(b=>{
+  b.onclick=()=>{
+    if(b.id==='saltBtn'){
+      setCond(11.0, (+rSlider.value>=1250)?1000:1250);
+      b.textContent=(+rSlider.value>=1250)?'淡水→加盐':'盐水→淡水';
+    }else{ setCond(+b.dataset.g,+b.dataset.r); document.getElementById('saltBtn').textContent='淡水→加盐'; }
+  };
+});
+document.getElementById('saltBtn').textContent='淡水→加盐';
+
+// ===== 鼠标拖动 =====
+function getY(e){
+  const r=cv.getBoundingClientRect();
+  const my=(e.touches?e.touches[0].clientY:e.clientY)-r.top;
+  return my*(cv.height/r.height);
+}
+const clamp=(x,a,b)=>Math.max(a,Math.min(b,x));
+cv.addEventListener('mousedown',e=>{dragging=true;v=0;cy=clamp(getY(e),CY_MIN,CY_MAX);});
+window.addEventListener('mousemove',e=>{if(dragging){cy=clamp(getY(e),CY_MIN,CY_MAX);v=0;}});
+window.addEventListener('mouseup',()=>dragging=false);
+cv.addEventListener('touchstart',e=>{dragging=true;v=0;cy=clamp(getY(e),CY_MIN,CY_MAX);e.preventDefault();},{passive:false});
+cv.addEventListener('touchmove',e=>{if(dragging){cy=clamp(getY(e),CY_MIN,CY_MAX);v=0;e.preventDefault();}},{passive:false});
+window.addEventListener('touchend',()=>dragging=false);
+
+// ===== 物理：v 为"向下"速度(正=下沉)， canvas 的 y 轴向下 =====
+function physics(){
+  const objBottom=cy+OBJ/2;
+  const submerged=clamp(objBottom-WATER_TOP,0,OBJ);   // 浸入水中的高度(px)
+  const frac=submerged/OBJ;                            // 浸没比例 V排/V物
+  const Fmax=rho*g*V;                                  // 完全浸没时的浮力
+  const F=Fmax*frac;                                   // 实际浮力
+
+  if(!dragging){
+    const netDown=G-F;                                 // 向下的合力：G-F>0 → 下沉
+    const DRAG=1.6;                                    // 粘滞阻力系数
+    // 用"趋近终端速度"代替纯加速度：既符合液体中的真实阻力，又避免小质量时速度爆炸
+    const vt=clamp(netDown/DRAG,-8,8);
+    v+=(vt-v)*0.22;
+    cy+=v;
+
+    if(cy>CY_MAX){cy=CY_MAX;if(v>0)v=0;}               // 触底
+    if(cy<CY_MIN){cy=CY_MIN;if(v<0)v=0;}               // 顶到槽口
+
+    // 保险：上浮物体不得越过其漂浮平衡位置（只能到达水面，不能"飞出去"）
+    if(Fmax>G){
+      const fracEq=Math.min(1,G/Fmax);                       // 漂浮时浸没比例 = ρ物/ρ液
+      const cyEq=WATER_TOP-OBJ/2+fracEq*OBJ;                 // 漂浮平衡时的中心 y
+      if(cy<cyEq-10){cy=cyEq-10;if(v<0)v=0;}
+    }
+  }
+  return {F,Fmax,frac};
+}
+
+// ===== 绘制 =====
+function draw(){
+  ctx.clearRect(0,0,W,H);
+  ctx.fillStyle='#fbfdff';ctx.fillRect(TANK.x,TANK.y,TANK.w,TANK.h);
+
+  const depth=(rho-500)/1500;
+  const wr=Math.round(152-depth*72),wg=Math.round(201-depth*62),wb=Math.round(236-depth*30);
+  ctx.fillStyle=`rgba(${wr},${wg},${wb},0.55)`;
+  ctx.fillRect(TANK.x,WATER_TOP,TANK.w,TANK.y+TANK.h-WATER_TOP);
+
+  ctx.strokeStyle='#9cc4ec';ctx.lineWidth=2;
+  ctx.beginPath();ctx.moveTo(TANK.x,WATER_TOP);ctx.lineTo(TANK.x+TANK.w,WATER_TOP);ctx.stroke();
+
+  ctx.strokeStyle='#aebfd0';ctx.lineWidth=3;ctx.strokeRect(TANK.x,TANK.y,TANK.w,TANK.h);
+
+  ctx.fillStyle='#9fb0c2';ctx.font='10px sans-serif';ctx.textAlign='right';
+  for(let yy=WATER_TOP;yy<=TANK.y+TANK.h;yy+=55){
+    ctx.fillText(((yy-WATER_TOP)/100).toFixed(2)+'m',TANK.x-7,yy+3);
+  }
+  ctx.save();ctx.translate(TANK.x+TANK.w+16,TANK.y+TANK.h);ctx.rotate(-Math.PI/2);
+  ctx.textAlign='left';ctx.fillText('侧壁刻度',0,0);ctx.restore();
+
+  const s=physics();
+  const ox=CX-OBJ/2, oy=cy-OBJ/2;
+  const objDensity=G/(g*V);
+  ctx.fillStyle=objDensity>rho?'#cf9494':'#8fb9d9';
+  ctx.strokeStyle='#5b7a96';ctx.lineWidth=2;
+  ctx.fillRect(ox,oy,OBJ,OBJ);ctx.strokeRect(ox,oy,OBJ,OBJ);
+  ctx.fillStyle='#ffffff';ctx.font='bold 12px sans-serif';ctx.textAlign='center';
+  ctx.fillText('物体',CX,cy+4);
+
+  // 动态选取比例尺，保证 F浮 与 G 两根箭头保持同一比例且不超出画布
+  const roomUp=cy-30, roomDown=H-cy-36;
+  let S=5;
+  if(s.F>0.01) S=Math.min(S,roomUp/s.F);
+  if(G>0.01) S=Math.min(S,roomDown/G);
+  drawArrow(CX,cy,CX,cy-s.F*S,'#2f80ed','F浮 '+s.F.toFixed(1)+'N');
+  drawArrow(CX,cy,CX,cy+G*S,'#eb5757','G '+G.toFixed(1)+'N');
+
+  updatePanel(s,objDensity);
+  requestAnimationFrame(draw);
+}
+
+function drawArrow(x1,y1,x2,y2,color,label){
+  const len=Math.hypot(x2-x1,y2-y1);
+  if(len<3)return;
+  const MAX=200;let ex=x2,ey=y2;
+  if(len>MAX){const k=MAX/len;ex=x1+(x2-x1)*k;ey=y1+(y2-y1)*k;}
+  ctx.strokeStyle=color;ctx.fillStyle=color;ctx.lineWidth=4;ctx.lineCap='round';
+  ctx.beginPath();ctx.moveTo(x1,y1);ctx.lineTo(ex,ey);ctx.stroke();
+  const ang=Math.atan2(ey-y1,ex-x1);
+  ctx.beginPath();ctx.moveTo(ex,ey);
+  ctx.lineTo(ex-12*Math.cos(ang-0.4),ey-12*Math.sin(ang-0.4));
+  ctx.lineTo(ex-12*Math.cos(ang+0.4),ey-12*Math.sin(ang+0.4));
+  ctx.closePath();ctx.fill();
+  ctx.fillStyle=color;ctx.font='bold 12px sans-serif';ctx.textAlign='left';
+  ctx.fillText(label,ex+8,ey-6);
+}
+
+function updatePanel(s,objDensity){
+  document.getElementById('fVal').textContent=s.F.toFixed(1);
+  document.getElementById('gNow').textContent=G.toFixed(1);
+  document.getElementById('roVal').textContent=Math.round(objDensity);
+  document.getElementById('rlVal').textContent=rho;
+
+  const scale=Math.max(s.Fmax,G,25);
+  document.getElementById('barF').style.width=(s.F/scale*100)+'%';
+  document.getElementById('barG').style.width=(G/scale*100)+'%';
+  document.getElementById('barFv').textContent=s.F.toFixed(1)+' N';
+  document.getElementById('barGv').textContent=G.toFixed(1)+' N';
+
+  const st=document.getElementById('status');
+  const ex=document.getElementById('explain');
+  const nl=document.getElementById('nline');
+  const atBottom=cy>CY_MAX-1;
+  const N=G-s.F;
+
+  if(Math.abs(s.Fmax-G)<=0.25){
+    st.className='status st-sus';st.textContent='悬浮';
+    ex.innerHTML='完全浸没时 F<sub>浮</sub> = G，合力为零，物体可静止在<b>任意深度</b>。'+
+      '<span class="fml">ρ<sub>物</sub> ≈ ρ<sub>液</sub> ≈ '+Math.round(objDensity)+' kg/m³</span>';
+    nl.style.display='none';
+  }else if(s.Fmax>G){
+    const balanced=(s.frac<0.98&&Math.abs(v)<0.25);
+    st.className='status st-float';
+    st.textContent=balanced?'漂浮（已平衡）':'上浮中 → 漂浮';
+    if(balanced){
+      ex.innerHTML='物体露出水面后 V<sub>排</sub> 减小，浮力随之减小，直到 F<sub>浮</sub> = G 静止漂浮。当前浸入比例约 <b>'+
+        Math.round(s.frac*100)+'%</b>，与 ρ<sub>物</sub>/ρ<sub>液</sub> 一致。'+
+        '<span class="fml">F<sub>浮</sub> = ρ<sub>液</sub>gV<sub>排</sub> = G = '+G.toFixed(1)+' N</span>';
+    }else{
+      ex.innerHTML='F<sub>浮</sub> &gt; G，合力<b>竖直向上</b>，物体加速上升，露出液面后浮力减小，最终漂浮。'+
+        '<span class="fml">ρ<sub>物</sub> '+Math.round(objDensity)+' &lt; ρ<sub>液</sub> '+rho+' → 上浮</span>';
+    }
+    nl.style.display='none';
+  }else{
+    st.className='status st-sink';
+    st.textContent=atBottom?'已沉底':'下沉中 → 沉底';
+    ex.innerHTML=(atBottom
+      ?'物体已静止在容器底部，此时受<b>三个力</b>：G、F<sub>浮</sub>、底部支持力 N。'
+      :'F<sub>浮</sub> &lt; G，合力<b>竖直向下</b>，物体加速下沉直至触底。')+
+      '<span class="fml">ρ<sub>物</sub> '+Math.round(objDensity)+' &gt; ρ<sub>液</sub> '+rho+' → 下沉</span>';
+    nl.style.display='block';
+    nl.innerHTML='N = G − F<sub>浮</sub> = '+G.toFixed(1)+' − '+s.F.toFixed(1)+' = <b>'+N.toFixed(1)+' N</b>';
+  }
+}
+draw();
+</script>
+</body>
+</html>

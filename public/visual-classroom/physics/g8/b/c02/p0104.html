@@ -1,0 +1,696 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>液体内部压强 · U 形管压强计</title>
+<style>
+  :root{
+    --bg:#f4f7fb; --card:#fff; --bd:#e3ebf3; --bd2:#cddced;
+    --tx:#0f172a; --mu:#64748b; --ac:#2563eb; --ac-s:#eff5ff;
+    --warn:#b45309; --warn-bg:#fff8ec;
+  }
+  *{box-sizing:border-box}
+  html,body{margin:0;padding:0}
+  body{background:var(--bg);color:var(--tx);
+    font-family:-apple-system,BlinkMacSystemFont,"PingFang SC","Microsoft YaHei","Segoe UI",sans-serif;
+    font-size:14px;line-height:1.6;-webkit-font-smoothing:antialiased}
+  .wrap{max-width:1320px;margin:0 auto;padding:12px 16px 14px}
+
+  header.hero{display:flex;align-items:center;justify-content:space-between;gap:14px;flex-wrap:wrap;margin-bottom:6px}
+  .hero h1{margin:0;font-size:17px;font-weight:600}
+  .hero p{margin:1px 0 0;color:var(--mu);font-size:12px}
+  .chips{display:flex;gap:7px;flex-wrap:wrap}
+  .chip{background:#e8f1ff;color:#1d4ed8;border:1px solid #cfe0fa;border-radius:999px;padding:3px 11px;font-size:12px;white-space:nowrap}
+  .chip.o{background:#fff4e5;color:#b45309;border-color:#f7dfb8}
+  .chip.g{background:#e9f7f1;color:#0f766e;border-color:#bfe8db}
+
+  .row1{display:grid;grid-template-columns:minmax(0,672px) minmax(0,1fr);gap:14px;align-items:stretch}
+  .row2{display:grid;grid-template-columns:repeat(3,minmax(0,1fr)) minmax(0,1.7fr);gap:14px;margin-top:10px;align-items:stretch}
+  @media(max-width:1180px){
+    .row1{grid-template-columns:1fr}
+    .row2{grid-template-columns:1fr 1fr}
+  }
+  @media(max-width:720px){.row2{grid-template-columns:1fr}}
+
+  .card{background:var(--card);border:1px solid var(--bd);border-radius:14px;padding:11px 13px;
+        box-shadow:0 1px 2px rgba(15,23,42,.04);display:flex;flex-direction:column}
+  .card > h2{margin:0 0 7px;font-size:13.5px;font-weight:600;display:flex;align-items:center;gap:7px}
+  .card > h2 span.n{background:var(--ac-s);color:var(--ac);border-radius:6px;padding:0 6px;font-size:11.5px;font-weight:600}
+  .card > h2 em{font-style:normal;font-weight:400;font-size:11.5px;color:var(--mu);margin-left:auto}
+
+  .stage{justify-content:center}
+  .stage svg{width:100%;max-width:566px;height:auto;display:block;margin:0 auto;touch-action:none}
+  .tip{margin-top:7px;background:var(--warn-bg);border:1px solid #f6e2c0;color:var(--warn);
+       border-radius:10px;padding:6px 11px;font-size:12.2px;line-height:1.5;min-height:34px;
+       max-width:566px;width:100%;margin-left:auto;margin-right:auto}
+  .tip b{font-weight:600}
+
+  .ctl{display:grid;grid-template-columns:1fr 1fr;gap:9px 20px}
+  @media(max-width:520px){.ctl{grid-template-columns:1fr}}
+  .lab{display:flex;justify-content:space-between;align-items:baseline;font-size:12px;color:var(--mu);margin-bottom:2px}
+  .lab b{color:var(--tx);font-size:12.5px;font-weight:600;font-variant-numeric:tabular-nums}
+  input[type=range]{width:100%;accent-color:var(--ac);margin:0}
+  .seg{display:flex;gap:5px;flex-wrap:wrap}
+  .seg button{flex:1 1 0;min-width:46px;background:#f7fafd;border:1px solid var(--bd2);color:#334155;
+    border-radius:8px;padding:5px 3px;font-size:12px;cursor:pointer;font-family:inherit;transition:.15s}
+  .seg button:hover{border-color:#9dbde8;background:#fff}
+  .seg button.on{background:var(--ac);border-color:var(--ac);color:#fff;font-weight:600}
+  .liq{display:flex;align-items:center;justify-content:center;gap:5px}
+  .liq .sw{width:13px;height:13px;border-radius:4px;border:1px solid rgba(0,0,0,.12);flex:none}
+  .chk{display:inline-flex;align-items:center;gap:6px;font-size:12px;color:#334155;cursor:pointer;user-select:none}
+  .chk input{accent-color:var(--ac);width:14px;height:14px;margin:0}
+
+  .stats{display:grid;grid-template-columns:repeat(4,1fr);gap:7px;flex:1}
+  .st{background:#f8fafc;border:1px solid var(--bd);border-radius:10px;padding:6px 8px;
+      display:flex;flex-direction:column;justify-content:center}
+  .st .k{font-size:11px;color:var(--mu);white-space:nowrap}
+  .st .v{font-size:16px;font-weight:600;font-variant-numeric:tabular-nums;line-height:1.35}
+  .st .v small{font-size:11px;font-weight:400;color:var(--mu);margin-left:1px}
+  .st.hl{background:#eef5ff;border-color:#c9ddfa}
+  .st.red .v{color:#c2410c}
+  .formula{margin-top:8px;background:#0f172a;color:#e2e8f0;border-radius:10px;padding:7px 11px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:12px;line-height:1.8}
+  .formula .g{color:#7dd3fc}.formula .r{color:#fca5a5}
+
+  svg#chart{width:100%;height:auto;display:block;flex:1;min-height:120px}
+  .cap{font-size:11.5px;color:var(--mu);line-height:1.5;margin-top:6px}
+  .tablebox{flex:1;min-height:118px;max-height:260px;overflow:auto}
+  table{width:100%;border-collapse:collapse;font-size:11.5px;font-variant-numeric:tabular-nums}
+  th,td{padding:4px 2px;text-align:center;border-bottom:1px solid #eef2f7}
+  th{color:var(--mu);font-weight:500;font-size:11px;position:sticky;top:0;background:#fff}
+  td:first-child,th:first-child{text-align:left;padding-left:2px}
+  .sw2{display:inline-block;width:8px;height:8px;border-radius:50%;margin-right:4px}
+  .empty{color:var(--mu);font-size:12px;text-align:center;padding:14px 0}
+  .btns{display:flex;gap:6px;margin-top:8px}
+  .btns button{flex:1;background:#f7fafd;border:1px solid var(--bd2);color:#334155;border-radius:8px;
+    padding:5px;font-size:12px;cursor:pointer;font-family:inherit}
+  .btns button:hover{background:#fff;border-color:#9dbde8}
+  .btns button.pri{background:var(--ac);border-color:var(--ac);color:#fff;font-weight:600}
+
+  ul.concl{margin:0;padding:0;list-style:none;font-size:12px;flex:1;display:flex;flex-direction:column;justify-content:space-between}
+  ul.concl li{display:flex;gap:8px;padding:2px 8px;border-radius:8px;border:1px solid transparent;color:#475569}
+  ul.concl li .i{flex:none;width:18px;height:18px;border-radius:50%;background:#eef2f7;color:#94a3b8;
+    font-size:11px;display:flex;align-items:center;justify-content:center;font-weight:600;margin-top:1px}
+  ul.concl li.on{background:#f0f7ff;border-color:#cfe0fa;color:#1e293b}
+  ul.concl li.on .i{background:var(--ac);color:#fff}
+  ul.concl li b{font-weight:600;color:var(--tx)}
+
+  .tabs{display:flex;gap:4px;margin-bottom:7px;background:#f1f5f9;border-radius:9px;padding:3px}
+  .tabs button{flex:1 1 0;min-width:0;background:none;border:none;border-radius:7px;padding:4px 1px;
+    font-size:11.8px;color:#475569;cursor:pointer;font-family:inherit;white-space:nowrap;transition:.15s}
+  .tabs button:hover{color:var(--ac)}
+  .tabs button.on{background:#fff;color:var(--ac);font-weight:600;box-shadow:0 1px 2px rgba(15,23,42,.09)}
+  .pane{flex:1;min-height:230px;max-height:300px;overflow:auto;display:none;
+        font-size:11.7px;color:#475569;line-height:1.55;padding-right:5px}
+  .pane.on{display:block}
+  .pane::-webkit-scrollbar{width:6px}
+  .pane::-webkit-scrollbar-thumb{background:#d4e0ec;border-radius:3px}
+  .pane p{margin:0 0 4px}
+  .pane h3{margin:7px 0 2px;font-size:11.9px;font-weight:600;color:var(--tx)}
+  .pane h3:first-child{margin-top:0}
+  .pane ul{margin:1px 0 4px;padding-left:16px}
+  .pane li{margin:0 0 2px}
+  .pane b{color:var(--tx);font-weight:600}
+  .pane code{background:#f1f5f9;border:1px solid var(--bd);border-radius:5px;padding:0 4px;
+    font-family:ui-monospace,SFMono-Regular,Menlo,Consolas,monospace;font-size:11.5px;color:#0f172a}
+  .pane .flow{background:#f8fafc;border:1px solid var(--bd);border-radius:9px;padding:6px 9px;margin-bottom:6px}
+  .pane .qbox{background:#fff8ec;border:1px solid #f6e2c0;border-radius:8px;padding:5px 9px;margin-top:6px;color:var(--warn)}
+  .pane .quiz{margin-top:8px;padding-top:6px;border-top:1px dashed var(--bd2);color:#334155}
+  .quiz .q{font-weight:600;color:var(--tx)}
+  .quiz button{margin-top:5px;background:#f7fafd;border:1px solid var(--bd2);border-radius:8px;padding:3px 10px;
+    font-size:12px;cursor:pointer;font-family:inherit;color:#334155}
+  .quiz button:hover{background:#fff;border-color:#9dbde8}
+  .quiz .a{margin-top:5px;background:#eef5ff;border:1px solid #c9ddfa;border-radius:8px;padding:5px 9px;color:#1e3a8a;display:none}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <header class="hero">
+    <div>
+      <h1>液体内部压强</h1>
+      <p>U 形管压强计 · 探究液体内部压强的特点</p>
+    </div>
+    <div class="chips">
+      <span class="chip o">转换法：看不见的压强 → 可见的高度差</span>
+      <span class="chip">p = ρ g h</span>
+      <span class="chip g">Δh = ρ液 h ÷ ρ水</span>
+    </div>
+  </header>
+
+  <div class="row1">
+    <!-- ============ 仿真场景 ============ -->
+    <section class="card stage">
+      <svg id="scene" viewBox="10 6 724 400" role="img" aria-label="U形管压强计实验仿真">
+        <title>U 形管压强计测量液体内部压强</title>
+        <defs>
+          <linearGradient id="gWater" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#a9d8f5"/><stop offset="1" stop-color="#3b83c0"/></linearGradient>
+          <linearGradient id="gSalt" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#a5ddd2"/><stop offset="1" stop-color="#2f9488"/></linearGradient>
+          <linearGradient id="gAlc" x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0" stop-color="#f7ddb2"/><stop offset="1" stop-color="#cf9648"/></linearGradient>
+          <linearGradient id="gMetal" x1="0" y1="0" x2="1" y2="0">
+            <stop offset="0" stop-color="#8b9aa8"/><stop offset=".45" stop-color="#dbe3ea"/>
+            <stop offset="1" stop-color="#7c8b99"/></linearGradient>
+          <marker id="mRed" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M0 0 L10 5 L0 10 Z" fill="#dc2626"/></marker>
+          <marker id="mOrg" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto">
+            <path d="M0 0 L10 5 L0 10 Z" fill="#f97316"/></marker>
+          <marker id="mSlate" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto">
+            <path d="M0 0 L10 5 L0 10 Z" fill="#334155"/></marker>
+        </defs>
+
+        <g id="ruler"></g>
+
+        <rect x="60" y="64" width="200" height="256" rx="4" fill="#fbfdff"/>
+        <rect id="liquid" x="66" y="90" width="188" height="224" fill="url(#gWater)"/>
+        <line x1="66" y1="90" x2="254" y2="90" stroke="#fff" stroke-width="2.5" opacity=".85"/>
+        <text x="246" y="85" text-anchor="end" font-size="12.5" fill="#eef6fd" stroke="#0f172a" stroke-width="3"
+              paint-order="stroke" font-weight="500">液面</text>
+        <path d="M63 64 V317 H257 V64" fill="none" stroke="#9cc7e2" stroke-width="6" stroke-linejoin="round" stroke-linecap="round"/>
+        <path d="M63 64 V317 H257 V64" fill="none" stroke="#6ea8cc" stroke-width="1.4" stroke-linejoin="round" opacity=".7"/>
+
+        <g id="iso">
+          <line id="isoLine" x1="66" y1="200" x2="254" y2="200" stroke="#0f172a" stroke-width="1.3" stroke-dasharray="6 5" opacity=".5"/>
+          <text id="isoText" x="70" y="214" text-anchor="start" font-size="12" fill="#0f172a"
+                stroke="#fff" stroke-width="3.2" paint-order="stroke" font-weight="500">等深线</text>
+        </g>
+
+        <g id="hInd">
+          <line id="hLine" x1="112" y1="90" x2="112" y2="200" stroke="#334155" stroke-width="1.7" marker-end="url(#mSlate)"/>
+          <line x1="103" y1="90" x2="121" y2="90" stroke="#334155" stroke-width="1.7"/>
+          <text id="hText" x="266" y="150" font-size="13" fill="#0f172a" stroke="#fff" stroke-width="3.6"
+                paint-order="stroke" font-weight="600">h = 0.0 cm</text>
+        </g>
+
+        <line id="rod" x1="160" y1="44" x2="160" y2="200" stroke="#7b8b99" stroke-width="7" stroke-linecap="round"/>
+        <line id="rodH" x1="158" y1="44" x2="158" y2="200" stroke="#c3ced8" stroke-width="2" stroke-linecap="round"/>
+        <rect x="146" y="34" width="28" height="13" rx="3" fill="#94a3b8" stroke="#64748b" stroke-width="1.2"/>
+
+        <path id="tube" d="" fill="none" stroke="#334155" stroke-width="6.5" stroke-linecap="round"/>
+        <path id="tubeH" d="" fill="none" stroke="#7b8b99" stroke-width="2" stroke-linecap="round"/>
+        <text x="278" y="19" text-anchor="middle" font-size="12" fill="#475569" font-weight="500">橡皮管</text>
+
+        <g id="arrows" transform="translate(160,200)"></g>
+
+        <g id="probe" transform="translate(160,200) rotate(0)" style="cursor:grab">
+          <path d="M-15,-3 L-15,11 Q-15,21 0,21 Q15,21 15,11 L15,-3 Z" fill="url(#gMetal)" stroke="#4d5c6a" stroke-width="1.5"/>
+          <path d="M-13,-3 Q0,5 13,-3 Z" fill="#fbd0da"/>
+          <path d="M-13,-3 Q0,5 13,-3" fill="none" stroke="#d9607c" stroke-width="2.6" stroke-linecap="round"/>
+          <rect x="-18" y="-9" width="6.5" height="7" rx="2" fill="url(#gMetal)" stroke="#4d5c6a" stroke-width="1.1"/>
+          <rect x="11.5" y="-9" width="6.5" height="7" rx="2" fill="url(#gMetal)" stroke="#4d5c6a" stroke-width="1.1"/>
+        </g>
+
+        <line id="dirLine" x1="160" y1="176" x2="160" y2="158" stroke="#334155" stroke-width="1.9" marker-end="url(#mSlate)"/>
+        <circle id="dirKnob" cx="160" cy="154" r="8.5" fill="#fff" stroke="#334155" stroke-width="2" style="cursor:grab"/>
+
+        <text x="656" y="24" text-anchor="end" font-size="13.5" fill="#334155" font-weight="600">U 形管压强计</text>
+        <text x="656" y="41" text-anchor="end" font-size="11.5" fill="#64748b">内装有色水，ρ水 = 1.0×10³ kg/m³</text>
+        <path d="M420 50 V336 A60 60 0 0 0 540 336 V50" fill="none" stroke="#dbe7f0" stroke-width="30"/>
+        <path d="M420 50 V336 A60 60 0 0 0 540 336 V50" fill="none" stroke="#b7cadb" stroke-width="30" opacity=".35"/>
+        <path d="M420 50 V336 A60 60 0 0 0 540 336 V50" fill="none" stroke="#f7fbfe" stroke-width="18"/>
+        <path id="uLiq" d="" fill="none" stroke="#e0453f" stroke-width="18" stroke-linecap="butt"/>
+        <ellipse id="menL" cx="420" cy="193" rx="9" ry="3.2" fill="#c9382f"/>
+        <ellipse id="menR" cx="540" cy="193" rx="9" ry="3.2" fill="#c9382f"/>
+        <path d="M420 50 V336 A60 60 0 0 0 540 336 V50" fill="none" stroke="#8fa8bd" stroke-width="1.2" opacity=".55"/>
+
+        <g id="dhG">
+          <line id="dhL" x1="558" y1="193" x2="640" y2="193" stroke="#dc2626" stroke-width="1.2" stroke-dasharray="5 4"/>
+          <line id="dhR" x1="558" y1="193" x2="640" y2="193" stroke="#dc2626" stroke-width="1.2" stroke-dasharray="5 4"/>
+          <line id="dhA" x1="626" y1="193" x2="626" y2="193" stroke="#dc2626" stroke-width="1.8"
+                marker-start="url(#mRed)" marker-end="url(#mRed)"/>
+          <text id="dhT" x="642" y="197" font-size="13" fill="#b91c1c" font-weight="600">Δh = 0.0 cm</text>
+          <text x="388" y="197" text-anchor="end" font-size="11.5" fill="#64748b">左液面</text>
+          <text x="572" y="197" text-anchor="start" font-size="11.5" fill="#64748b">右液面</text>
+        </g>
+
+        <text x="160" y="360" text-anchor="middle" font-size="12" fill="#475569">探头：金属盒 + 橡皮膜</text>
+        <text id="tankName" x="160" y="384" text-anchor="middle" font-size="13.5" fill="#334155" font-weight="600">透明容器 · 水</text>
+        <rect id="hit" x="60" y="64" width="200" height="256" fill="transparent" style="cursor:ns-resize"/>
+      </svg>
+      <div class="tip" id="tipBox"></div>
+    </section>
+
+    <!-- ============ 控制 + 读数 ============ -->
+    <div style="display:flex;flex-direction:column;gap:12px;min-width:0">
+      <div class="card" style="flex:1.18">
+        <h2><span class="n">1</span>实验控制<em>也可直接在图中拖动探头</em></h2>
+        <div class="ctl">
+          <div>
+            <div class="lab"><span>探头深度 h</span><b id="vH">14.0 cm</b></div>
+            <input type="range" id="sH" min="-2" max="28" step="0.5" value="14">
+            <div class="lab" style="margin-top:7px"><span>橡皮膜朝向</span><b id="vA">朝上 0°</b></div>
+            <input type="range" id="sA" min="0" max="359" step="1" value="0">
+            <div class="seg" style="margin-top:6px">
+              <button data-a="0">朝上</button><button data-a="90">朝右</button>
+              <button data-a="180">朝下</button><button data-a="270">朝左</button>
+            </div>
+          </div>
+          <div>
+            <div class="lab"><span>被测液体</span><b id="vR">1.0×10³ kg/m³</b></div>
+            <div class="seg">
+              <button data-l="water" class="on"><span class="liq"><i class="sw" style="background:#5aa3d8"></i>水</span></button>
+              <button data-l="salt"><span class="liq"><i class="sw" style="background:#2f9488"></i>盐水</span></button>
+              <button data-l="alc"><span class="liq"><i class="sw" style="background:#cf9648"></i>酒精</span></button>
+            </div>
+            <div class="lab" style="margin-top:8px"><span>取 g</span><b>重力与质量比值</b></div>
+            <div class="seg">
+              <button data-g="9.8" class="on">9.8 N/kg</button>
+              <button data-g="10">10 N/kg</button>
+            </div>
+            <div style="margin-top:9px"><label class="chk"><input type="checkbox" id="cArw" checked> 显示"各方向都有压强"箭头</label></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="card" style="flex:1">
+        <h2><span class="n">2</span>实时读数<em>深度 · 密度 · 压强 · 高度差</em></h2>
+        <div class="stats">
+          <div class="st"><div class="k">深度 h</div><div class="v" id="oH">14.0<small>cm</small></div></div>
+          <div class="st"><div class="k">密度 ρ</div><div class="v" id="oR">1.0<small>×10³</small></div></div>
+          <div class="st hl"><div class="k">压强 p</div><div class="v" id="oP">1372<small>Pa</small></div></div>
+          <div class="st red"><div class="k">高度差 Δh</div><div class="v" id="oD">14.0<small>cm</small></div></div>
+        </div>
+        <div class="formula" id="oF"></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="row2">
+    <div class="card">
+      <h2><span class="n">3</span>p – h 关系图</h2>
+      <svg id="chart" viewBox="0 0 300 170"></svg>
+      <div class="cap">三条虚线对应三种液体：同一深度上<b>图线越陡</b>说明密度 ρ 越大；图线<b>过原点</b>说明 h = 0 时 p = 0。</div>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">4</span>数据记录</h2>
+      <div class="tablebox" id="tblWrap"></div>
+      <div class="btns">
+        <button class="pri" id="bRec">记录当前</button>
+        <button id="bScan">自动扫描</button>
+        <button id="bClr">清空</button>
+      </div>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">5</span>实验结论</h2>
+      <ul class="concl">
+        <li id="c1"><i>1</i><div><b>向各个方向都有压强</b>：探头浸入后 U 形管两侧立即出现高度差。</div></li>
+        <li id="c2"><i>2</i><div><b>同深度各方向压强相等</b>：只转朝向、不改深度时 Δh 不变。</div></li>
+        <li id="c3"><i>3</i><div><b>深度越大压强越大</b>：p 与 h 成正比，图线过原点。</div></li>
+        <li id="c4"><i>4</i><div><b>密度越大压强越大</b>：同深度盐水 Δh 最大、酒精最小。</div></li>
+        <li id="c5"><i>5</i><div><b>转换法</b>：把看不见的压强转换成可见的高度差。</div></li>
+      </ul>
+    </div>
+
+    <div class="card">
+      <h2><span class="n">6</span>原理精讲</h2>
+      <div class="tabs">
+        <button class="on" data-t="p1">结构</button>
+        <button data-t="p2">原理</button>
+        <button data-t="p3">方法</button>
+        <button data-t="p4">推导</button>
+        <button data-t="p5">易错</button>
+      </div>
+
+      <div class="pane on" id="p1">
+        <p><b>金属盒（探头）</b>：一端蒙橡皮膜，浸入液体后膜被压得向内凹陷。</p>
+        <p><b>橡皮管</b>：柔软密封，只负责把盒内压强传递过去，本身不改变压强大小。</p>
+        <p><b>U 形管</b>：内装有色液体（本实验为水），把压强变成高度差。</p>
+        <div class="flow">
+          <b>测量链条：</b>液体压橡皮膜 → 橡皮膜内凹、压盒内空气 → 压强沿橡皮管传到左管 →
+          <b>左液面下降、右液面上升</b> → 出现高度差 Δh
+        </div>
+        <h3>为什么 U 形管里装水而不是水银？</h3>
+        <p>由 p = ρ₀gΔh，同样压强下管内液体密度 ρ₀ <b>越小，Δh 越大</b>，读数越灵敏。改用水银（ρ 为水的 13.6 倍），Δh 只剩 1/13.6，几乎看不出来。</p>
+      </div>
+
+      <div class="pane" id="p2">
+        <h3>转换法：把不可见变成可见</h3>
+        <p>液体内部的压强看不见、摸不着，但它能压橡皮膜、能推动 U 形管里的液面。于是用<b>两侧液面高度差 Δh</b> 来衡量压强大小 —— Δh 越大，说明此处压强越大。</p>
+        <h3>为什么两侧液面本来不必相平？</h3>
+        <p>连通器要求<b>两端都开口通大气</b>，静止时液面才相平。这里<b>右管开口通大气、左管被探头和橡皮管密封</b>，左管液面上方的气体压强已不再等于大气压，两侧液面因此不相平，被"挤"出的差值就是读数。</p>
+        <h3>实验前必须检查气密性</h3>
+        <p>用手轻压橡皮膜，两侧液面应能<b>灵活升降</b>，松手后<b>回到原高度</b>。若液面几乎不动或压差维持不住，说明漏气，读数不可信。</p>
+      </div>
+
+      <div class="pane" id="p3">
+        <p style="margin-bottom:4px">影响因素有<b>三个</b>：深度 h、朝向、液体密度 ρ。研究其中一个时保持另外两个不变 —— <b>控制变量法</b>。</p>
+        <h3>① 压强与深度</h3>
+        <p><b>同种液体、同一朝向</b>，只改变深度，比较 Δh。</p>
+        <h3>② 同一深度各方向</h3>
+        <p><b>同种液体、同一深度</b>，只旋转朝向。各方向 Δh 相同，说明<b>同深度各方向压强相等</b>。</p>
+        <h3>③ 压强与液体密度</h3>
+        <p><b>同一深度、同一朝向</b>，换用不同液体（水 / 盐水 / 酒精）比较 Δh。</p>
+        <h3>④ 为什么要测多组数据</h3>
+        <p>只做一次可能只是巧合。换深度、换液体<b>重复实验</b>才能排除偶然性，这也是 p–h 图要采集多组数据的原因。</p>
+        <div class="qbox">读数要等液面<b>稳定</b>后再读；视线与<b>液面（凹面底部）相平</b>，不可斜看。</div>
+      </div>
+
+      <div class="pane" id="p4">
+        <h3>一、p = ρgh 的由来</h3>
+        <p>取一段竖直液柱：底面积 S、高 h。</p>
+        <p><code>V = Sh</code>，<code>m = ρSh</code>，<code>G = ρShg</code>；液柱静止，底面所受压力等于它上方液体的重力 <code>F = G</code>，于是 <code>p = F/S = ρgh</code>。</p>
+        <p>S 被约掉了，说明压强<b>与容器形状、底面积、液体多少都无关</b>，只由 ρ 和 h 决定。</p>
+        <h3>二、Δh 与 h 的换算</h3>
+        <p>设管内液体密度 ρ₀。沿左液面所在水平面往右，要再往上走过整段 Δh 才到达通大气的右液面，于是：</p>
+        <p><code>p = ρ₀gΔh</code> → <code>Δh = p/(ρ₀g) = ρ液h/ρ₀</code>，两侧液面<b>各移动 Δh/2</b>。</p>
+        <h3>三、两个被约掉的量</h3>
+        <ul>
+          <li><b>g 被约掉</b>：Δh = ρ液h/ρ₀ 中不含 g，切换 g = 9.8 与 10 时<b>p 变而 Δh 不变</b>。</li>
+          <li><b>大气压被抵消</b>：U 形管比较的是两侧之差，大气压在两边同时出现而被减掉，它测到的是<b>超出大气压的那部分压强</b>。</li>
+        </ul>
+        <div class="qbox">被测液体是水、管内也装水时 Δh = h，这只是两个不同物理量的<b>数值巧合</b>。</div>
+      </div>
+
+      <div class="pane" id="p5">
+        <h3>1. h 是竖直深度</h3>
+        <p>h 是<b>被测点到自由液面的竖直距离</b>，既不是到容器底的距离，也不是到侧壁的距离。</p>
+        <h3>2. 与容器形状无关</h3>
+        <p>p = ρgh 里只有 ρ 和 h。容器粗细、斜正、液体多少都不影响该处压强。</p>
+        <h3>3. 压强 ≠ 压力</h3>
+        <p>压强是单位面积上的压力，压力还要乘面积：<code>F = pS</code>。同一深度压强相同，但面积不同的器壁所受压力不同。</p>
+        <h3>4. Δh 不是 h</h3>
+        <p>Δh 是 U 形管两侧液面高度差，h 是探头所处深度，是两个不同的量，只在同为水时才数值恰好相等。</p>
+        <h3>5. 转朝向 Δh 不变的原因</h3>
+        <p>不是橡皮膜没起作用，而是<b>同一深度各方向压强都相等</b>。探头提出液面后两侧相平，说明此时相对压强为零。</p>
+        <div class="quiz">
+          <div class="q">小测：水中 10 cm 处 Δh = 10 cm。下移到 20 cm 并把橡皮膜转成朝上，Δh 变为多少？</div>
+          <button id="qBtn">查看答案</button>
+          <div class="a" id="qAns">20 cm。Δh = ρ液h/ρ₀，与深度成正比、与朝向无关：深度变为 2 倍，高度差也变为 2 倍；单纯转动探头时读数不变。</div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  var PPM = 700, SURF = 90, PX = 160, MAXH = 0.28, MINH = -0.02;
+  var ARM_L = 420, ARM_R = 540, REST = 193;
+
+  var LIQ = {
+    water:{name:"水",   rho:1000, grad:"gWater", dot:"#5aa3d8", fmt:"1.0"},
+    salt: {name:"盐水", rho:1200, grad:"gSalt",  dot:"#2f9488", fmt:"1.2"},
+    alc:  {name:"酒精", rho:800,  grad:"gAlc",   dot:"#cf9648", fmt:"0.8"}
+  };
+
+  var S = { h:0.14, a:0, liq:"water", g:9.8, arrows:true, recs:[], last:"" };
+
+  var $ = function(id){ return document.getElementById(id); };
+  var svg = $("scene");
+  var clamp = function(v,a,b){ return v<a?a:(v>b?b:v); };
+  var rad = function(d){ return d*Math.PI/180; };
+
+  (function ruler(){
+    var s = "";
+    for(var d=0; d<=32; d+=2){
+      var y = SURF + d/100*PPM, major = (d%10===0);
+      s += '<line x1="'+(major?42:50)+'" y1="'+y+'" x2="58" y2="'+y+'" stroke="'+(major?"#94a3b8":"#cbd5e1")+'" stroke-width="1.3"/>';
+      if(major) s += '<text x="38" y="'+(y+4)+'" text-anchor="end" font-size="11" fill="#64748b">'+d+'</text>';
+    }
+    s += '<line x1="58" y1="'+SURF+'" x2="58" y2="'+(SURF+32/100*PPM)+'" stroke="#94a3b8" stroke-width="1.3"/>';
+    s += '<text x="26" y="'+(SURF-9)+'" text-anchor="end" font-size="11" fill="#94a3b8">cm</text>';
+    $("ruler").innerHTML = s;
+  })();
+
+  (function arrows(){
+    var s = "";
+    for(var i=0;i<8;i++){
+      var t = rad(i*45 + 22.5), c = Math.cos(t), n = Math.sin(t);
+      s += '<line x1="'+(52*c).toFixed(1)+'" y1="'+(52*n).toFixed(1)+
+           '" x2="'+(34*c).toFixed(1)+'" y2="'+(34*n).toFixed(1)+
+           '" stroke="#f97316" stroke-width="2.6" stroke-linecap="round" marker-end="url(#mOrg)" opacity=".95"/>';
+    }
+    $("arrows").innerHTML = s;
+  })();
+
+  function render(){
+    var L = LIQ[S.liq];
+    var h = Math.max(0, S.h);
+    var immersed = S.h > 0.001;
+    var p = L.rho * S.g * h;
+    var dh = L.rho * h / 1000;
+    var py = SURF + S.h * PPM;
+    var sn = Math.sin(rad(S.a)), cs = Math.cos(rad(S.a));
+
+    $("liquid").setAttribute("fill","url(#"+L.grad+")");
+    $("tankName").textContent = "透明容器 · " + L.name;
+
+    $("probe").setAttribute("transform","translate("+PX+","+py.toFixed(1)+") rotate("+S.a+")");
+    $("rod").setAttribute("y2", py.toFixed(1));
+    $("rodH").setAttribute("y2", py.toFixed(1));
+    var tube = "M "+(PX+9)+" "+(py-26).toFixed(1)+
+               " C "+(PX+18)+" "+Math.max(14, py-84).toFixed(1)+", 250 22, 330 28"+
+               " C 370 32, 398 44, 420 50";
+    $("tube").setAttribute("d", tube);
+    $("tubeH").setAttribute("d", tube);
+    $("arrows").setAttribute("transform","translate("+PX+","+py.toFixed(1)+")");
+    $("arrows").setAttribute("opacity", (S.arrows && immersed) ? 1 : 0);
+
+    $("dirLine").setAttribute("x1", (PX+22*sn).toFixed(1));
+    $("dirLine").setAttribute("y1", (py-22*cs).toFixed(1));
+    $("dirLine").setAttribute("x2", (PX+38*sn).toFixed(1));
+    $("dirLine").setAttribute("y2", (py-38*cs).toFixed(1));
+    $("dirKnob").setAttribute("cx", (PX+48*sn).toFixed(1));
+    $("dirKnob").setAttribute("cy", (py-48*cs).toFixed(1));
+
+    if(immersed){
+      $("iso").setAttribute("opacity",1);
+      $("isoLine").setAttribute("y1", py.toFixed(1));
+      $("isoLine").setAttribute("y2", py.toFixed(1));
+      $("isoText").setAttribute("y", (py+15).toFixed(1));
+      $("hInd").setAttribute("opacity",1);
+      $("hLine").setAttribute("y2", py.toFixed(1));
+      $("hText").setAttribute("y", ((SURF+py)/2+4).toFixed(1));
+      $("hText").textContent = "h = "+(h*100).toFixed(1)+" cm";
+      $("hText").setAttribute("opacity", h>=0.07 ? 1 : 0);
+    } else {
+      $("iso").setAttribute("opacity",0);
+      $("hInd").setAttribute("opacity",0);
+    }
+
+    var half = dh/2*PPM, ly = REST + half, ry = REST - half;
+    $("uLiq").setAttribute("d","M"+ARM_L+" "+ly.toFixed(1)+" V336 A60 60 0 0 0 "+ARM_R+" 336 V"+ry.toFixed(1));
+    $("menL").setAttribute("cy", ly.toFixed(1));
+    $("menR").setAttribute("cy", ry.toFixed(1));
+    $("dhL").setAttribute("y1", ly.toFixed(1)); $("dhL").setAttribute("y2", ly.toFixed(1));
+    $("dhR").setAttribute("y1", ry.toFixed(1)); $("dhR").setAttribute("y2", ry.toFixed(1));
+    $("dhA").setAttribute("y1", ly.toFixed(1)); $("dhA").setAttribute("y2", ry.toFixed(1));
+    $("dhT").setAttribute("y", ((ly+ry)/2+4).toFixed(1));
+    $("dhT").textContent = "Δh = "+(dh*100).toFixed(1)+" cm";
+    $("dhG").setAttribute("opacity", dh>0.002 ? 1 : 0.35);
+    var lt = $("dhG").querySelectorAll("text");
+    lt[1].setAttribute("y", (ly+4).toFixed(1));
+    lt[2].setAttribute("y", (ry+4).toFixed(1));
+
+    $("sH").value = (S.h*100).toFixed(1);
+    $("sA").value = S.a;
+    $("vH").textContent = (S.h*100).toFixed(1)+" cm";
+    $("vA").textContent = faceName(S.a)+" "+Math.round(S.a)+"°";
+    $("vR").textContent = L.fmt+"×10³ kg/m³";
+    $("oH").innerHTML = (h*100).toFixed(1)+"<small>cm</small>";
+    $("oR").innerHTML = L.fmt+"<small>×10³kg/m³</small>";
+    $("oP").innerHTML = Math.round(p)+"<small>Pa</small>";
+    $("oD").innerHTML = (dh*100).toFixed(1)+"<small>cm</small>";
+
+    $("oF").innerHTML =
+      "p = ρ g h = <span class='r'>"+L.fmt+"×10³</span> × <span class='g'>"+S.g+"</span> × "+
+      h.toFixed(3)+" m = <b>"+Math.round(p)+" Pa</b> ≈ "+(p/1000).toFixed(2)+" kPa<br>"+
+      "Δh = p ÷ (ρ水 g) = "+(dh*100).toFixed(1)+" cm"+
+      (dh>0.002 ? "（左降右升各 "+(dh*50).toFixed(1)+" cm）" : "（两侧液面相平）");
+
+    $("tipBox").innerHTML = tipText(L, immersed, dh);
+
+    setOn("c1", immersed);
+    setOn("c2", immersed && S.last==="rotate");
+    setOn("c3", immersed && S.h>=0.06);
+    setOn("c4", immersed && S.liq!=="water");
+    setOn("c5", true);
+
+    drawChart(L, h, p);
+  }
+
+  function setOn(id,on){ $(id).className = on ? "on" : ""; }
+
+  function faceName(a){
+    a = ((a%360)+360)%360;
+    if(a<45 || a>=315) return "朝上";
+    if(a<135) return "朝右";
+    if(a<225) return "朝下";
+    return "朝左";
+  }
+
+  function tipText(L, immersed, dh){
+    if(!immersed) return "<b>探头不在液面以下：</b>橡皮膜不受液体压强，两侧液面相平，Δh = 0。";
+    if(S.last==="rotate")
+      return "<b>只改朝向、深度不变：</b>Δh 始终为 "+(dh*100).toFixed(1)+" cm 不变 → 同一深度<b>各方向压强相等</b>。";
+    if(S.last==="liquid")
+      return "<b>换成"+L.name+"（ρ = "+L.fmt+"×10³）：</b>同深度 Δh = "+(dh*100).toFixed(1)+
+             " cm → 密度越<b>大</b>，压强越<b>大</b>。";
+    if(S.last==="depth")
+      return "<b>深度改变：</b>h 增大 → Δh 同步增大 → 压强随深度<b>增大</b>而<b>增大</b>（成正比）。";
+    return "<b>操作：</b>上下拖动探头改深度 · 拖动白色圆点转朝向 · 当前 Δh = "+(dh*100).toFixed(1)+" cm。";
+  }
+
+  var CH = {l:40, r:12, t:12, b:28, w:300, h:170, xmax:32, ymax:4};
+  function cx(cm){ return CH.l + cm/CH.xmax*(CH.w-CH.l-CH.r); }
+  function cy(kpa){ return CH.t + (CH.h-CH.t-CH.b) - kpa/CH.ymax*(CH.h-CH.t-CH.b); }
+
+  function drawChart(L, h, p){
+    var s = "";
+    s += '<rect x="'+CH.l+'" y="'+CH.t+'" width="'+(CH.w-CH.l-CH.r)+'" height="'+(CH.h-CH.t-CH.b)+
+         '" fill="#fbfdff" stroke="#e3ebf3"/>';
+    for(var k=0;k<=4;k++){
+      var y = cy(k);
+      s += '<line x1="'+CH.l+'" y1="'+y+'" x2="'+(CH.w-CH.r)+'" y2="'+y+'" stroke="#eef2f7"/>';
+      s += '<text x="'+(CH.l-6)+'" y="'+(y+3.5)+'" text-anchor="end" font-size="10" fill="#94a3b8">'+k+'</text>';
+    }
+    for(var d=0; d<=30; d+=10){
+      var x = cx(d);
+      s += '<line x1="'+x+'" y1="'+CH.t+'" x2="'+x+'" y2="'+(CH.h-CH.b)+'" stroke="#eef2f7"/>';
+      s += '<text x="'+x+'" y="'+(CH.h-CH.b+12)+'" text-anchor="middle" font-size="10" fill="#94a3b8">'+d+'</text>';
+    }
+    s += '<text x="'+((CH.l+CH.w-CH.r)/2)+'" y="'+(CH.h-2)+'" text-anchor="middle" font-size="10.5" fill="#64748b">深度 h / cm</text>';
+    var my = CH.t+(CH.h-CH.t-CH.b)/2;
+    s += '<text x="11" y="'+my+'" font-size="10.5" fill="#64748b" transform="rotate(-90 11 '+my+')" text-anchor="middle">p / kPa</text>';
+
+    var keys = ["water","salt","alc"];
+    keys.forEach(function(k){
+      var q = LIQ[k], cur = (k===S.liq);
+      var x2 = cx(32), y2 = cy(q.rho*S.g*0.32/1000);
+      s += '<line x1="'+cx(0)+'" y1="'+cy(0)+'" x2="'+x2+'" y2="'+y2+'" stroke="'+q.dot+'" stroke-width="'+
+           (cur?2.6:1.6)+'" opacity="'+(cur?1:0.4)+'"/>';
+      if(cur) s += '<text x="'+(x2-4)+'" y="'+(y2-6)+'" text-anchor="end" font-size="10.5" fill="'+q.dot+
+                   '" font-weight="600">'+q.name+'</text>';
+    });
+
+    S.recs.forEach(function(r){
+      s += '<circle cx="'+cx(r.h).toFixed(1)+'" cy="'+cy(r.p).toFixed(1)+'" r="3.6" fill="'+LIQ[r.liq].dot+
+           '" stroke="#fff" stroke-width="1.4"/>';
+    });
+    if(h>0.001)
+      s += '<circle cx="'+cx(h*100).toFixed(1)+'" cy="'+cy(p/1000).toFixed(1)+'" r="5.2" fill="none" stroke="#0f172a" stroke-width="2"/>';
+
+    var lx = CH.l+8, ly = CH.t+12;
+    keys.forEach(function(k,i){
+      s += '<circle cx="'+(lx+4)+'" cy="'+(ly+i*15)+'" r="4" fill="'+LIQ[k].dot+'"/>';
+      s += '<text x="'+(lx+13)+'" y="'+(ly+i*15+3.5)+'" font-size="10.5" fill="#475569">'+LIQ[k].name+'</text>';
+    });
+    $("chart").innerHTML = s;
+  }
+
+  function drawTable(){
+    var w = $("tblWrap");
+    if(!S.recs.length){ w.innerHTML = '<div class="empty">暂无记录，点击"记录当前"</div>'; return; }
+    var s = '<table><thead><tr><th>#</th><th>液体</th><th>h/cm</th><th>朝向</th><th>Δh/cm</th><th>p/kPa</th></tr></thead><tbody>';
+    S.recs.slice().reverse().forEach(function(r,i){
+      s += '<tr><td>'+(S.recs.length-i)+'</td><td><i class="sw2" style="background:'+LIQ[r.liq].dot+'"></i>'+LIQ[r.liq].name+
+           '</td><td>'+r.h.toFixed(1)+'</td><td>'+r.dir+'</td><td>'+r.dh.toFixed(1)+'</td><td>'+r.p.toFixed(2)+'</td></tr>';
+    });
+    w.innerHTML = s + '</tbody></table>';
+  }
+
+  function record(){
+    var L = LIQ[S.liq], h = Math.max(0,S.h), p = L.rho*S.g*h;
+    S.recs.push({liq:S.liq, h:h*100, dir:faceName(S.a), dh:L.rho*h/1000*100, p:p/1000});
+    if(S.recs.length>40) S.recs.shift();
+    drawTable(); render();
+  }
+
+  var mode = null;
+  function toSvg(e){
+    var m = svg.getScreenCTM().inverse();
+    var pt = svg.createSVGPoint(); pt.x = e.clientX; pt.y = e.clientY;
+    return pt.matrixTransform(m);
+  }
+  function knobPos(){
+    var py = SURF + S.h*PPM;
+    return {x:PX+48*Math.sin(rad(S.a)), y:py-48*Math.cos(rad(S.a))};
+  }
+  svg.addEventListener("pointerdown", function(e){
+    var p = toSvg(e), k = knobPos();
+    if(Math.hypot(p.x-k.x, p.y-k.y) < 18) mode = "rotate";
+    else if(p.x>=60 && p.x<=260 && p.y>=56 && p.y<=330){ mode = "move"; setFromY(p.y); }
+    else return;
+    svg.setPointerCapture(e.pointerId);
+    e.preventDefault();
+  });
+  svg.addEventListener("pointermove", function(e){
+    if(!mode) return;
+    var p = toSvg(e);
+    if(mode==="move") setFromY(p.y);
+    else {
+      var py = SURF + S.h*PPM;
+      var a = Math.atan2(p.x-PX, -(p.y-py))/Math.PI*180;
+      S.a = Math.round(((a%360)+360)%360); S.last = "rotate"; render();
+    }
+  });
+  function endDrag(){ mode = null; }
+  svg.addEventListener("pointerup", endDrag);
+  svg.addEventListener("pointercancel", endDrag);
+  function setFromY(y){ S.h = clamp((y-SURF)/PPM, MINH, MAXH); S.last="depth"; render(); }
+
+  $("sH").addEventListener("input", function(){ S.h = parseFloat(this.value)/100; S.last="depth"; render(); });
+  $("sA").addEventListener("input", function(){ S.a = parseInt(this.value,10); S.last="rotate"; render(); });
+  $("cArw").addEventListener("change", function(){ S.arrows = this.checked; render(); });
+  document.querySelectorAll(".tabs button").forEach(function(b){
+    b.addEventListener("click", function(){
+      document.querySelectorAll(".tabs button").forEach(function(x){ x.classList.toggle("on", x===b); });
+      document.querySelectorAll(".pane").forEach(function(p){ p.classList.toggle("on", p.id===b.dataset.t); });
+    });
+  });
+
+  $("qBtn").addEventListener("click", function(){
+    $("qAns").classList.toggle("show");
+    this.textContent = $("qAns").classList.contains("show") ? "收起答案" : "查看答案";
+  });
+
+  document.querySelectorAll("[data-a]").forEach(function(b){
+    b.addEventListener("click", function(){ S.a = parseInt(b.dataset.a,10); S.last="rotate"; render(); });
+  });
+  document.querySelectorAll("[data-l]").forEach(function(b){
+    b.addEventListener("click", function(){
+      S.liq = b.dataset.l; S.last = "liquid";
+      document.querySelectorAll("[data-l]").forEach(function(x){ x.classList.toggle("on", x===b); });
+      render();
+    });
+  });
+  document.querySelectorAll("[data-g]").forEach(function(b){
+    b.addEventListener("click", function(){
+      S.g = parseFloat(b.dataset.g);
+      document.querySelectorAll("[data-g]").forEach(function(x){ x.classList.toggle("on", x===b); });
+      render();
+    });
+  });
+
+  $("bRec").addEventListener("click", record);
+  $("bClr").addEventListener("click", function(){ S.recs = []; drawTable(); render(); });
+
+  var scanning = null;
+  $("bScan").addEventListener("click", function(){
+    if(scanning){ clearInterval(scanning); scanning = null; this.textContent="自动扫描"; return; }
+    var i = 0, btn = this; btn.textContent = "停止扫描";
+    scanning = setInterval(function(){
+      S.h = (2 + i*3.7)/100; S.last = "depth"; render(); record();
+      if(++i > 7){ clearInterval(scanning); scanning = null; btn.textContent = "自动扫描"; }
+    }, 230);
+  });
+
+  S.h = 0.14; S.a = 0;
+  [[0,"朝上"],[90,"朝右"],[180,"朝下"],[270,"朝左"]].forEach(function(v){
+    S.a = v[0];
+    S.recs.push({liq:"water", h:14, dir:v[1], dh:14, p:1000*9.8*0.14/1000});
+  });
+  S.a = 0;
+  drawTable();
+  render();
+})();
+</script>
+</body>
+</html>

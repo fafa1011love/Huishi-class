@@ -1,0 +1,675 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>音调与响度 · 频率与振幅的可视化探究（单文件版）</title>
+<style>
+:root{
+  --blue:#2563EB;
+  --blue-d:#1D4ED8;
+  --blue-l:#EFF4FF;
+  --green:#10B981;
+  --red:#EF4444;
+  --purple:#7C3AED;
+  --amber:#F59E0B;
+  --cyan:#22D3EE;
+  --ink:#1F2937;
+  --ink-2:#4B5563;
+  --ink-3:#6B7280;
+  --line:#E5E7EB;
+  --bg:#F5F7FB;
+  --card:#FFFFFF;
+  --radius:14px;
+  --shadow:0 1px 2px rgba(16,24,40,.04), 0 8px 24px rgba(16,24,40,.06);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:"Microsoft YaHei","PingFang SC","Hiragino Sans GB",system-ui,-apple-system,"Segoe UI",sans-serif;
+  background:var(--bg);color:var(--ink);line-height:1.65;-webkit-font-smoothing:antialiased;
+}
+
+/* ---------- header ---------- */
+.site-header{background:linear-gradient(135deg,#1E40AF 0%,#2563EB 55%,#3B82F6 100%);color:#fff;padding:26px 0 28px;}
+.header-inner{max-width:1140px;margin:0 auto;padding:0 24px;display:flex;align-items:center;justify-content:space-between;gap:20px;flex-wrap:wrap;}
+.header-text h1{margin:0;font-size:25px;letter-spacing:.4px;font-weight:700;}
+.header-text p{margin:6px 0 0;font-size:14px;opacity:.9;}
+.header-badge{border:1px solid rgba(255,255,255,.4);border-radius:999px;padding:7px 16px;font-size:13px;background:rgba(255,255,255,.12);white-space:nowrap;}
+
+/* ---------- layout ---------- */
+.wrap{max-width:1140px;margin:0 auto;padding:26px 24px 40px;}
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:24px;border:1px solid rgba(229,231,235,.7);margin-bottom:20px;}
+.card h2{margin:0 0 6px;font-size:19px;font-weight:700;}
+.lead{margin:0 0 18px;color:var(--ink-2);font-size:14px;}
+.lead b{color:var(--blue);}
+
+/* ---------- 实验区 ---------- */
+.exp{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:20px;align-items:start;}
+.exp > div{min-width:0;}
+@media(max-width:1040px){.exp{grid-template-columns:minmax(0,1fr);}}
+
+.stage-wrap{position:relative;}
+.stage{border:1px solid var(--line);border-radius:12px;background:#F8FAFC;padding:8px 6px 2px;overflow:hidden;}
+.stage svg{display:block;width:100%;height:auto;}
+
+.slow-btn{
+  position:absolute;top:12px;right:14px;z-index:2;
+  border:1px solid var(--line);background:rgba(255,255,255,.92);color:var(--ink-2);
+  border-radius:999px;padding:5px 13px;font-size:12px;cursor:pointer;font-family:inherit;
+  transition:.16s;backdrop-filter:blur(3px);
+}
+.slow-btn:hover{border-color:#93C5FD;color:var(--blue);}
+.slow-btn.on{background:var(--purple);border-color:var(--purple);color:#fff;font-weight:600;}
+
+/* ---------- 示波器 ---------- */
+.osc{margin-top:14px;background:#0B1220;border:1px solid #1E293B;border-radius:12px;overflow:hidden;}
+.osc-head{display:flex;align-items:center;gap:10px;flex-wrap:wrap;padding:9px 13px;border-bottom:1px solid #1E293B;}
+.osc-title{color:#E2E8F0;font-size:13px;font-weight:600;letter-spacing:.3px;}
+.osc-read{color:#22D3EE;font-size:12px;font-variant-numeric:tabular-nums;}
+.osc-k{color:#64748B;font-size:12px;}
+.osc-tools{margin-left:auto;display:flex;align-items:center;gap:8px;flex-wrap:wrap;}
+.osc-tools .tabs{display:flex;gap:5px;}
+.osc .tab{
+  border:1px solid #334155;background:#0F172A;color:#94A3B8;border-radius:7px;
+  padding:4px 11px;font-size:12px;cursor:pointer;font-family:inherit;transition:.15s;
+  font-variant-numeric:tabular-nums;
+}
+.osc .tab:hover{border-color:#22D3EE;color:#22D3EE;}
+.osc .tab.active{background:var(--cyan);border-color:var(--cyan);color:#0B1220;font-weight:700;}
+.osc .btn-sm{
+  border:1px solid #334155;background:#0F172A;color:#94A3B8;border-radius:7px;
+  padding:4px 11px;font-size:12px;cursor:pointer;font-family:inherit;transition:.15s;white-space:nowrap;
+}
+.osc .btn-sm:hover{border-color:var(--amber);color:var(--amber);}
+.osc .btn-sm.on{background:var(--amber);border-color:var(--amber);color:#0B1220;font-weight:700;}
+.osc-stage{padding:6px 6px 4px;}
+.osc-stage svg{display:block;width:100%;height:auto;}
+
+/* ---------- 控件 ---------- */
+.ctrl-block{margin-bottom:16px;}
+.ctrl-block > label{display:block;font-size:13px;color:var(--ink-2);margin-bottom:6px;}
+.ctrl-block > label b{color:var(--blue);font-variant-numeric:tabular-nums;font-size:14px;}
+.ctrl-block input[type=range]{width:100%;accent-color:var(--blue);cursor:pointer;}
+.tick{display:flex;justify-content:space-between;font-size:11px;color:var(--ink-3);margin-top:1px;}
+
+.btns{display:flex;flex-direction:column;gap:8px;margin:16px 0 14px;}
+.btn{border:1px solid var(--blue);background:#fff;color:var(--blue);border-radius:9px;padding:9px 14px;font-size:13px;cursor:pointer;font-family:inherit;transition:.15s;}
+.btn:hover{background:var(--blue-l);}
+.btn.primary{background:var(--blue);color:#fff;box-shadow:0 1px 2px rgba(37,99,235,.25);}
+.btn.primary:hover{background:var(--blue-d);}
+.btn.wide{width:100%;padding:11px 14px;font-size:14px;font-weight:600;letter-spacing:.5px;}
+.btn.live{background:var(--red);border-color:var(--red);color:#fff;box-shadow:0 1px 2px rgba(239,68,68,.3);}
+.btn.live:hover{background:#DC2626;}
+
+/* ---------- 读数 ---------- */
+.ro-wrap{border:1px solid var(--line);border-radius:10px;overflow:hidden;}
+.ro{display:flex;justify-content:space-between;padding:8px 14px;font-size:13.5px;border-bottom:1px solid var(--line);gap:10px;}
+.ro:last-child{border-bottom:none;}
+.ro span{color:var(--ink-3);white-space:nowrap;}
+.ro b{font-variant-numeric:tabular-nums;color:var(--ink);text-align:right;}
+.ro b.hl{color:var(--blue);}
+.ro b.low{color:var(--green);}
+.ro b.high{color:var(--purple);}
+
+.meters{margin-top:12px;display:flex;flex-direction:column;gap:9px;}
+.meter{display:flex;align-items:center;gap:8px;}
+.meter-k{color:var(--ink-3);font-size:12.5px;width:30px;flex:none;}
+.meter-track{flex:1;height:8px;border-radius:999px;background:#EDF1F7;overflow:hidden;}
+.meter-fill{height:100%;border-radius:999px;transition:width .18s cubic-bezier(.4,0,.2,1);}
+.meter-fill.pitch{background:linear-gradient(90deg,#93C5FD,#2563EB,#4C1D95);}
+.meter-fill.loud{background:linear-gradient(90deg,#DBEAFE,#2563EB);}
+.meter-v{width:42px;text-align:right;color:var(--ink);font-weight:600;font-size:12px;flex:none;}
+
+.tip{margin-top:14px;padding:10px 12px;background:#F8FAFC;border:1px dashed var(--line);border-radius:9px;font-size:13px;color:var(--ink-2);line-height:1.7;min-height:64px;}
+.tip b{color:var(--blue);}
+
+.keybar{
+  margin-top:18px;padding:13px 16px;border-radius:11px;
+  background:linear-gradient(90deg,#EFF6FF,#F5F3FF);border:1px solid #DBEAFE;
+  font-size:13.5px;color:#1E3A8A;line-height:1.75;
+}
+.keybar b{color:#1D4ED8;}
+.keybar .sep{color:#A5B4FC;margin:0 8px;}
+
+.site-footer{text-align:center;padding:22px 0 34px;color:var(--ink-3);font-size:12.5px;}
+
+@media(max-width:560px){
+  .osc-tools{margin-left:0;width:100%;justify-content:flex-end;}
+  .osc-head{padding:8px 10px;}
+  .card{padding:18px 15px;}
+  .wrap{padding:20px 14px 32px;}
+}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-text">
+      <h1>音调与响度 · 把振动"看见"</h1>
+      <p>初中物理 · 声音的特性 §2.2　|　频率和振幅都看不见，那就让波形替它们说话</p>
+    </div>
+    <div class="header-badge">可交互探究 · 拨钢尺 · 听音调 · 看波形</div>
+  </div>
+</header>
+
+<main class="wrap">
+
+  <!-- ============ 模块一：钢尺 + 示波器 ============ -->
+  <section class="card">
+    <h2>钢尺伸出桌边，拨一下</h2>
+    <p class="lead">同一把钢尺，伸出桌边多一点、少一点，声音的高低就完全不同。它到底"振动得多快"？眼睛看不出来 —— 所以我们在下面接了一台示波器，把钢尺的振动<b>画成波形</b>。先点「拨动钢尺」，再拖左边的滑块，一边听、一边看。</p>
+
+    <div class="exp">
+      <!-- 左：两个画面 -->
+      <div>
+        <div class="stage-wrap">
+          <div class="stage" id="rulerStage"></div>
+          <button class="slow-btn" id="slowBtn">频闪慢放 ×1/100</button>
+        </div>
+
+        <div class="osc">
+          <div class="osc-head">
+            <span class="osc-title">示波器</span>
+            <span class="osc-read" id="oscRead"></span>
+            <div class="osc-tools">
+              <span class="osc-k">屏宽</span>
+              <div class="tabs" id="tbTabs">
+                <button class="tab" data-tb="20">20 ms</button>
+                <button class="tab active" data-tb="10">10 ms</button>
+                <button class="tab" data-tb="5">5 ms</button>
+              </div>
+              <button class="btn-sm" id="lockBtn">锁定波形</button>
+            </div>
+          </div>
+          <div class="osc-stage" id="oscStage"></div>
+        </div>
+      </div>
+
+      <!-- 右：控制 -->
+      <div>
+        <div class="ctrl-block">
+          <label>钢尺伸出长度 L：<b id="vL">15.0</b> cm</label>
+          <input type="range" id="inL" min="8" max="30" step="0.1" value="15">
+          <div class="tick"><span>8 伸出短</span><span>30 伸出长</span></div>
+        </div>
+
+        <div class="ctrl-block">
+          <label>拨动力度：<b id="vF">50</b> %</label>
+          <input type="range" id="inF" min="0" max="100" step="1" value="50">
+          <div class="tick"><span>轻轻一拨</span><span>用力拨</span></div>
+        </div>
+
+        <div class="btns">
+          <button class="btn primary wide" id="soundBtn">▶ 拨动钢尺</button>
+        </div>
+
+        <div class="ro-wrap">
+          <div class="ro"><span>振动频率 f</span><b id="roF">311 Hz</b></div>
+          <div class="ro"><span>振动周期 T = 1/f</span><b id="roT">3.2 ms</b></div>
+          <div class="ro"><span>振幅 A</span><b id="roA">50 %</b></div>
+        </div>
+
+        <div class="meters">
+          <div class="meter">
+            <span class="meter-k">音调</span>
+            <div class="meter-track"><div class="meter-fill pitch" id="pitchFill" style="width:55%"></div></div>
+            <span class="meter-v" id="pitchTxt">中</span>
+          </div>
+          <div class="meter">
+            <span class="meter-k">响度</span>
+            <div class="meter-track"><div class="meter-fill loud" id="loudFill" style="width:41%"></div></div>
+            <span class="meter-v" id="loudTxt">中等</span>
+          </div>
+        </div>
+
+        <div class="tip" id="tip"></div>
+      </div>
+    </div>
+
+    <div class="keybar">
+      钢尺伸得<b>越短</b> → 振动<b>越快</b> → 频率<b>越高</b> → 音调<b>越高</b>
+      <span class="sep">｜</span>
+      拨得<b>越用力</b> → 振幅<b>越大</b> → 声音<b>越响</b>（音调一点没变）
+      <span class="sep">｜</span>
+      波形上：<b>疏密</b>看频率，<b>高矮</b>看振幅
+    </div>
+  </section>
+
+</main>
+
+<footer class="site-footer">物理可视化模型 · 声音的特性　|　单文件版，无需外部资源，双击即可打开</footer>
+
+<script>
+/* ============================================================
+   音调与响度 —— 把不可见的频率、振幅画成波形
+
+   状态 S 是唯一真相：伸出长度 L 与拨动力度 force 决定 f 与 A，
+   钢尺扇形、示波器波形、发声、读数全部由 S 派生。
+   ============================================================ */
+
+var $ = function (s, r) { return (r || document).querySelector(s); };
+var qa = function (s, r) { return Array.prototype.slice.call((r || document).querySelectorAll(s)); };
+var clamp = function (v, a, b) { return Math.min(b, Math.max(a, v)); };
+var FONT = "Microsoft YaHei, PingFang SC, sans-serif";
+
+/* ---------- 几何常量 ---------- */
+var SCALE = 14;        // px / cm
+var X_EDGE = 240;      // 桌沿 x（悬臂支点）
+var DESK_Y = 125;      // 桌面上表面 y
+var TH = 9;            // 钢尺厚度（px）
+var X0 = 44;           // 钢尺左端
+var STAGE_H = 252;
+
+/* ---------- 状态 ---------- */
+var S = {
+  L: 15,          // 伸出长度 cm
+  force: 0.5,     // 拨动力度 0~1
+  sound: false,   // 是否正在发声
+  tb: 10,         // 示波器屏宽 ms
+  slow: false,    // 频闪慢放
+  ref: null,      // 锁定的参考波形 {f, A}
+  phase: 0        // 慢放相位
+};
+
+/* ---------- 物理映射 ----------
+   悬臂梁一阶频率 f ∝ 1/L²，这里取系数使 L=15cm 时 f≈311Hz（真实钢尺量级） */
+function freqOf(Lcm) { return 7.0 / Math.pow(Lcm / 100, 2); }
+function ampOf(force) { return 0.15 + 0.85 * force; }
+
+/* 悬臂梁静挠曲线归一化：u=0 固定端，u=1 末端 */
+function cantilever(u) { return (3 * u * u - u * u * u) / 2; }
+
+/* ============================================================
+   发声引擎（Web Audio 实时合成，无需音频文件）
+   ============================================================ */
+var Snd = (function () {
+  var ctx = null, osc = null, g = null, on = false;
+
+  function ensure() {
+    if (!ctx) {
+      var AC = window.AudioContext || window.webkitAudioContext;
+      if (!AC) return null;
+      ctx = new AC();
+      g = ctx.createGain();
+      g.gain.value = 0;
+      g.connect(ctx.destination);
+      osc = ctx.createOscillator();
+      osc.type = "sine";
+      osc.frequency.value = 311;
+      osc.connect(g);
+      osc.start();
+    }
+    if (ctx.state === "suspended") ctx.resume();
+    return ctx;
+  }
+
+  function vol(A) { return 0.22 * Math.pow(A, 1.4); }
+
+  return {
+    start: function (f, A) {
+      if (!ensure()) return;
+      var t = ctx.currentTime;
+      osc.frequency.setTargetAtTime(f, t, 0.012);
+      g.gain.setTargetAtTime(vol(A), t, 0.03);
+      on = true;
+    },
+    update: function (f, A) {
+      if (!ctx || !on) return;
+      var t = ctx.currentTime;
+      osc.frequency.setTargetAtTime(f, t, 0.012);
+      g.gain.setTargetAtTime(vol(A), t, 0.035);
+    },
+    stop: function () {
+      if (!ctx || !on) return;
+      g.gain.setTargetAtTime(0, ctx.currentTime, 0.04);
+      on = false;
+    },
+    isOn: function () { return on; }
+  };
+})();
+
+/* ============================================================
+   钢尺舞台（720 × 300）
+   ============================================================ */
+var DEFS = ''
+  + '<defs>'
+  +   '<linearGradient id="steel" x1="0" y1="0" x2="0" y2="1">'
+  +     '<stop offset="0" stop-color="#D3DDEA"/>'
+  +     '<stop offset="0.44" stop-color="#9FAFC4"/>'
+  +     '<stop offset="1" stop-color="#76879C"/>'
+  +   '</linearGradient>'
+  + '</defs>';
+
+var RULER_STATIC = (function () {
+  var s = '';
+
+  /* 桌面剖面 */
+  s += '<rect x="0" y="' + DESK_Y + '" width="' + X_EDGE + '" height="19" fill="#E9EFF7" stroke="#C7D2E0" stroke-width="1"/>';
+  s += '<rect x="0" y="' + (DESK_Y + 19) + '" width="' + X_EDGE + '" height="7" fill="#CBD5E1"/>';
+  s += '<rect x="0" y="' + (DESK_Y + 26) + '" width="' + X_EDGE + '" height="3" fill="#DCE3ED"/>';
+  s += '<line x1="' + X_EDGE + '" y1="' + DESK_Y + '" x2="' + X_EDGE + '" y2="' + (DESK_Y + 29) + '" stroke="#8FA1B5" stroke-width="2.4"/>';
+  s += '<text x="14" y="' + (DESK_Y + 15) + '" font-size="11" fill="#94A3B8" font-family="' + FONT + '">桌面</text>';
+
+  /* 压块（把钢尺牢牢压在桌面上） */
+  var hy = DESK_Y - TH;
+  var bx = 58, bw = 132, bh = 34, by = hy - bh;
+  s += '<rect x="' + bx + '" y="' + by + '" width="' + bw + '" height="' + bh + '" rx="7" fill="#5A6C82"/>';
+  s += '<rect x="' + bx + '" y="' + by + '" width="' + bw + '" height="11" rx="7" fill="#75879D"/>';
+  s += '<rect x="' + bx + '" y="' + (by + 7) + '" width="' + bw + '" height="4" fill="#75879D"/>';
+  for (var j = 0; j < 3; j++) {
+    var gx = bx + 30 + j * 36;
+    s += '<line x1="' + gx + '" y1="' + (by + 16) + '" x2="' + gx + '" y2="' + (by + 26) + '" stroke="#7E90A6" stroke-width="3" stroke-linecap="round"/>';
+  }
+  s += '<text x="' + (bx + bw / 2) + '" y="' + (by - 7) + '" font-size="11" fill="#64748B" text-anchor="middle" font-family="' + FONT + '">按住尺身</text>';
+
+  return s;
+})();
+
+function rulerDyn() {
+  var Lpx = S.L * SCALE;
+  var X1 = X_EDGE + Lpx;
+  var A = ampOf(S.force);
+  var dMax = A * (18 + 1.2 * S.L);
+  var d = S.sound ? dMax : 0;
+
+  function shapeY(x, b) {
+    var u = clamp((x - X_EDGE) / Lpx, 0, 1);
+    return DESK_Y - TH + b * cantilever(u);
+  }
+
+  function band(b, fillOp, strokeOp, sw) {
+    var N = 18, top = '', bot = '', x, y, i;
+    for (i = 0; i <= N; i++) {
+      x = X0 + (X1 - X0) * i / N;
+      y = shapeY(x, b);
+      top += (i ? 'L' : 'M') + x.toFixed(1) + ' ' + y.toFixed(1);
+    }
+    for (i = N; i >= 0; i--) {
+      x = X0 + (X1 - X0) * i / N;
+      y = shapeY(x, b) + TH;
+      bot += 'L' + x.toFixed(1) + ' ' + y.toFixed(1);
+    }
+    return '<path d="' + top + bot + 'Z" fill="url(#steel)" fill-opacity="' + fillOp
+      + '" stroke="#6B7F96" stroke-opacity="' + strokeOp + '" stroke-width="' + sw + '"/>';
+  }
+
+  var s = '';
+
+  /* 钢尺：慢放时是一条清晰曲线，真实速度时是模糊的一片 */
+  if (S.slow) {
+    s += band(d * Math.sin(S.phase), 0.95, 0.9, 1.3);
+  } else if (d > 0.6) {
+    /* 钢尺在两端停留的时间更长，所以重影在上下极限处更密 —— 与真实观感一致 */
+    var K = 4;
+    for (var k = -K; k <= K; k++) {
+      s += band(d * Math.sin(k * Math.PI / (2 * K)), 0.15, 0.3, 0.8);
+    }
+  } else {
+    s += band(0, 0.95, 0.9, 1.3);
+  }
+
+  /* 伸出长度标注 */
+  var yb = 226;
+  var yEnd = shapeY(X1, S.slow ? d * Math.sin(S.phase) : d) + TH;
+  s += '<line x1="' + X_EDGE + '" y1="' + (DESK_Y + 23) + '" x2="' + X_EDGE + '" y2="' + (yb + 7) + '" stroke="#B6C2D2" stroke-width="1" stroke-dasharray="4 4"/>';
+  s += '<line x1="' + X1 + '" y1="' + (yEnd + 3) + '" x2="' + X1 + '" y2="' + (yb + 7) + '" stroke="#B6C2D2" stroke-width="1" stroke-dasharray="4 4"/>';
+  s += '<line x1="' + X_EDGE + '" y1="' + yb + '" x2="' + X1 + '" y2="' + yb + '" stroke="#2563EB" stroke-width="1.6"/>';
+  s += '<path d="M' + X_EDGE + ' ' + yb + ' l 9 -4.5 v 9 z" fill="#2563EB"/>';
+  s += '<path d="M' + X1 + ' ' + yb + ' l -9 -4.5 v 9 z" fill="#2563EB"/>';
+  s += '<text x="' + ((X_EDGE + X1) / 2) + '" y="' + (yb + 19) + '" font-size="12.5" font-weight="700" fill="#2563EB" text-anchor="middle" font-family="' + FONT + '">'
+    + 'L = ' + S.L.toFixed(1) + ' cm</text>';
+
+  return s;
+}
+
+/* ============================================================
+   示波器（720 × 200）
+   ============================================================ */
+var O_X0 = 56, O_X1 = 694, O_Y0 = 99, O_HA = 62;
+
+var OSC_STATIC = (function () {
+  var s = '';
+  s += '<rect x="0" y="0" width="720" height="200" fill="#0B1220"/>';
+  s += '<rect x="46" y="20" width="654" height="158" rx="4" fill="#070C16" stroke="#1E293B"/>';
+
+  /* 网格：10 竖格 × 6 横格 */
+  var i;
+  for (i = 0; i <= 10; i++) {
+    var gx = 52 + (688 - 52) * i / 10;
+    s += '<line x1="' + gx.toFixed(1) + '" y1="24" x2="' + gx.toFixed(1) + '" y2="174" stroke="#16233A" stroke-width="1"/>';
+  }
+  for (i = 0; i <= 6; i++) {
+    var gy = 26 + (172 - 26) * i / 6;
+    s += '<line x1="52" y1="' + gy.toFixed(1) + '" x2="688" y2="' + gy.toFixed(1) + '" stroke="' + (i === 3 ? '#22334F' : '#16233A') + '" stroke-width="1"/>';
+  }
+  s += '<text x="46" y="14" font-size="10.5" fill="#475569" font-family="' + FONT + '">振幅</text>';
+  s += '<text x="694" y="192" font-size="10.5" fill="#475569" text-anchor="end" font-family="' + FONT + '">时间</text>';
+  return s;
+})();
+
+function wavePath(f, A, tb, cls, dash) {
+  var N = 300, dd = '', i, t, y, x;
+  for (i = 0; i <= N; i++) {
+    t = tb * i / N;
+    y = O_Y0 - A * O_HA * Math.sin(2 * Math.PI * f * t / 1000);
+    x = O_X0 + (O_X1 - O_X0) * i / N;
+    dd += (i ? 'L' : 'M') + x.toFixed(1) + ' ' + y.toFixed(1);
+  }
+  return '<path d="' + dd + '" fill="none" stroke="' + cls + '" stroke-width="' + (dash ? 1.5 : 2)
+    + '" stroke-linejoin="round"' + (dash ? ' stroke-dasharray="6 5" opacity=".75"' : '') + '/>';
+}
+
+function oscDyn() {
+  var f = freqOf(S.L), A = ampOf(S.force), tb = S.tb;
+  var s = '';
+
+  if (S.ref) s += wavePath(S.ref.f, S.ref.A, tb, '#F59E0B', true);
+  s += wavePath(f, A, tb, '#22D3EE', false);
+
+  /* 时间轴刻度 */
+  s += '<text x="' + O_X0 + '" y="186" font-size="11" fill="#64748B" font-family="' + FONT + '">0</text>';
+  s += '<text x="' + O_X1 + '" y="186" font-size="11" fill="#64748B" text-anchor="end" font-family="' + FONT + '">' + tb + ' ms</text>';
+
+  return s;
+}
+
+/* ============================================================
+   读数与提示
+   ============================================================ */
+function pitchText(f) {
+  if (f < 120) return '很低';
+  if (f < 240) return '低';
+  if (f < 420) return '中';
+  if (f < 700) return '较高';
+  return '高';
+}
+function loudText(A) {
+  if (A < 0.3) return '很弱';
+  if (A < 0.5) return '较弱';
+  if (A < 0.72) return '中等';
+  if (A < 0.92) return '较强';
+  return '很强';
+}
+
+function updateReadouts() {
+  var f = freqOf(S.L), A = ampOf(S.force);
+
+  $('#roF').textContent = Math.round(f) + ' Hz';
+  $('#roT').textContent = (1000 / f).toFixed(2) + ' ms';
+  $('#roA').textContent = Math.round(A * 100) + ' %';
+
+  var lp = (Math.log(f) - Math.log(60)) / (Math.log(1200) - Math.log(60));
+  lp = clamp(lp, 0, 1);
+  $('#pitchFill').style.width = (lp * 100).toFixed(1) + '%';
+  $('#pitchTxt').textContent = pitchText(f);
+
+  var la = clamp((A - 0.15) / 0.85, 0, 1);
+  $('#loudFill').style.width = (la * 100).toFixed(1) + '%';
+  $('#loudTxt').textContent = loudText(A);
+}
+
+function updateTip() {
+  var f = freqOf(S.L), A = ampOf(S.force);
+  var t;
+
+  if (!S.sound) {
+    t = '现在钢尺是静止的。<b>先点「拨动钢尺」</b>，再拖下面的滑块 —— 一边听声音，一边看波形怎么变。';
+    if (S.slow) t += '<br>已经打开频闪慢放：你看到的那条清晰的钢尺，是把它每秒 ' + Math.round(f) + ' 次的振动放慢了 100 倍。';
+  } else if (S.L <= 12) {
+    t = '伸出只有 <b>' + S.L.toFixed(1) + ' cm</b>：每秒振动 <b>' + Math.round(f) + ' 次</b>，钢尺抖得几乎看不清 —— 振动快，音调就<b>高</b>，示波器上的波也挤得很<b>密</b>。';
+  } else if (S.L >= 24) {
+    t = '伸出 <b>' + S.L.toFixed(1) + ' cm</b>：每秒只振动 <b>' + Math.round(f) + ' 次</b>，钢尺晃晃悠悠 —— 振动慢，音调就<b>低</b>，波形也拉得很<b>疏</b>。';
+  } else {
+    t = '伸出 <b>' + S.L.toFixed(1) + ' cm</b>：每秒振动 <b>' + Math.round(f) + ' 次</b>。现在把长度一下子拖到 28 cm，听听音调掉了多少 —— 波形同时变疏了。';
+  }
+
+  if (S.sound && A > 0.8) t += '<br>力度已经很大：扇形张得很开、波峰很高 —— 响度大了，可是波的<b>疏密一点没变</b>，音调也就不变。';
+  else if (S.sound && A < 0.28) t += '<br>力度很小：扇形张角小、波峰矮 —— 声音很弱，但<b>疏密照样不变</b>。';
+
+  var periods = f * S.tb / 1000;
+  if (periods < 1.3) t += '<br><span style="color:var(--ink-3)">屏幕上不到一个完整周期了 —— 把屏宽切到 <b>20 ms</b> 就能看到整个波形。</span>';
+
+  $('#tip').innerHTML = t;
+}
+
+/* ============================================================
+   渲染调度
+   ============================================================ */
+var dirty = true;
+function markDirty() { dirty = true; }
+
+function syncAll() {
+  var rd = $('#rDyn'), od = $('#oDyn');
+  if (rd) rd.innerHTML = rulerDyn();
+  if (od) od.innerHTML = oscDyn();
+
+  var f = freqOf(S.L);
+  var txt = 'f = ' + Math.round(f) + ' Hz　T = ' + (1000 / f).toFixed(2) + ' ms';
+  if (S.ref) txt += '　<span style="color:#F59E0B">｜虚线＝锁定</span>';
+  $('#oscRead').innerHTML = txt;
+
+  updateReadouts();
+  updateTip();
+}
+
+function syncControls() {
+  $('#inL').value = S.L;
+  $('#vL').textContent = S.L.toFixed(1);
+  $('#inF').value = Math.round(S.force * 100);
+  $('#vF').textContent = Math.round(S.force * 100);
+}
+
+function syncButtons() {
+  var b = $('#soundBtn');
+  b.textContent = S.sound ? '■ 停止发声' : '▶ 拨动钢尺';
+  b.classList.toggle('live', S.sound);
+  var sb = $('#slowBtn');
+  sb.classList.toggle('on', S.slow);
+  sb.textContent = S.slow ? '频闪慢放 ×1/100 · 开' : '频闪慢放 ×1/100';
+}
+
+/* ============================================================
+   初始化
+   ============================================================ */
+function init() {
+  /* 两个舞台的静态外壳 */
+  $('#rulerStage').innerHTML = '<svg viewBox="0 0 720 ' + STAGE_H + '" xmlns="http://www.w3.org/2000/svg" role="img">'
+    + DEFS + RULER_STATIC + '<g id="rDyn"></g></svg>';
+  $('#oscStage').innerHTML = '<svg viewBox="0 0 720 200" xmlns="http://www.w3.org/2000/svg" role="img">'
+    + OSC_STATIC + '<g id="oDyn"></g></svg>';
+
+  /* --- 滑块 --- */
+  $('#inL').addEventListener('input', function () {
+    S.L = parseFloat(this.value);
+    S.phase = 0;
+    $('#vL').textContent = S.L.toFixed(1);
+    if (S.sound) Snd.update(freqOf(S.L), ampOf(S.force));
+    markDirty();
+  });
+
+  $('#inF').addEventListener('input', function () {
+    S.force = parseInt(this.value, 10) / 100;
+    $('#vF').textContent = Math.round(S.force * 100);
+    if (S.sound) Snd.update(freqOf(S.L), ampOf(S.force));
+    markDirty();
+  });
+
+  /* --- 拨动 --- */
+  $('#soundBtn').addEventListener('click', function () {
+    S.sound = !S.sound;
+    if (S.sound) {
+      Snd.start(freqOf(S.L), ampOf(S.force));
+      S.phase = 0;
+      this.textContent = '■ 停止发声';
+      this.classList.add('live');
+    } else {
+      Snd.stop();
+      this.textContent = '▶ 拨动钢尺';
+      this.classList.remove('live');
+    }
+    markDirty();
+  });
+
+  /* --- 频闪慢放 --- */
+  $('#slowBtn').addEventListener('click', function () {
+    S.slow = !S.slow;
+    this.classList.toggle('on', S.slow);
+    this.textContent = S.slow ? '频闪慢放 ×1/100 · 开' : '频闪慢放 ×1/100';
+    S.phase = 0;
+    markDirty();
+  });
+
+  /* --- 时基 --- */
+  qa('#tbTabs .tab').forEach(function (b) {
+    b.addEventListener('click', function () {
+      qa('#tbTabs .tab').forEach(function (x) { x.classList.remove('active'); });
+      b.classList.add('active');
+      S.tb = +b.dataset.tb;
+      markDirty();
+    });
+  });
+
+  /* --- 锁定参考波形 --- */
+  $('#lockBtn').addEventListener('click', function () {
+    if (S.ref) {
+      S.ref = null;
+      this.textContent = '锁定波形';
+      this.classList.remove('on');
+    } else {
+      S.ref = { f: freqOf(S.L), A: ampOf(S.force) };
+      this.textContent = '已锁定 · 点此清除';
+      this.classList.add('on');
+    }
+    markDirty();
+  });
+
+  /* --- 主循环 --- */
+  var last = 0;
+  function loop(ts) {
+    var dt = last ? Math.min(0.05, (ts - last) / 1000) : 0;
+    last = ts;
+
+    if (S.slow && S.sound) {
+      /* 视觉频率 = 真实频率 / 100，既看得清又保留"快慢"的差别 */
+      S.phase += 2 * Math.PI * (freqOf(S.L) / 100) * dt;
+      var rd = $('#rDyn');
+      if (rd) rd.innerHTML = rulerDyn();
+    }
+    if (dirty) { dirty = false; syncAll(); }
+
+    requestAnimationFrame(loop);
+  }
+
+  syncControls();
+  syncButtons();
+  syncAll();
+  requestAnimationFrame(loop);
+}
+
+document.addEventListener('DOMContentLoaded', init);
+</script>
+
+</body>
+</html>

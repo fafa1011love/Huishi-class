@@ -1,0 +1,2004 @@
+<!DOCTYPE html>
+<html lang="zh-CN" data-page-node-id="lxKhTNkcywzgT5Np35t3ZM">
+<head data-page-node-id="14S13aFjyfthsFWJnsNkqb">
+<meta charset="utf-8" data-page-node-id="SsIAYtu4mudf6pHiF310dh" />
+<meta name="viewport" content="width=device-width, initial-scale=1" data-page-node-id="qwsenCatMAhAapp1CFbMn0" />
+<title>模型43 · 重力势能 E_p = mgh 与重力做功与路径无关</title>
+<style>
+:root{
+  --bg:#eef2f7; --panel:#ffffff; --ink:#1f2937; --ink2:#5b6672; --line:#dbe3ec;
+  --brand:#1d4ed8; --brand2:#eff4ff;
+  --c-g:#f97316; --c-v:#2563eb; --c-ep:#16a34a; --c-epn:#dc2626; --c-epz:#9ca3af;
+  --c-ek:#eab308; --c-ref:#7c3aed; --c-equi:#06b6d4; --c-fric:#dc2626; --c-sand:#b45309; --c-mech:#0284c7;
+  --t1:#1e3a8a; --t2:#0f766e; --t3:#be185d; --t4:#4d7c0f;
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font:14px/1.55 "Microsoft YaHei","PingFang SC","Noto Sans CJK SC",system-ui,sans-serif}
+button,.btn,select,input{font-family:inherit;font-size:13px}
+button,.btn{border:1px solid var(--line);background:#fff;color:var(--ink);border-radius:7px;padding:5px 10px;cursor:pointer}
+button:hover{background:var(--brand2);border-color:#c7d7f5}
+button.primary{background:var(--brand);color:#fff;border-color:var(--brand)}
+button.primary:hover{background:#1740b0}
+button.on{background:#dcfce7;border-color:#86efac;color:#14532d}
+button.warn{background:#fef2f2;border-color:#fecaca;color:#991b1b}
+:focus-visible{outline:2px solid var(--brand);outline-offset:1px}
+header.app{position:sticky;top:0;z-index:40;background:#fff;border-bottom:1px solid var(--line);padding:7px 12px;display:flex;flex-wrap:wrap;gap:8px;align-items:center}
+.brand{font-weight:700;font-size:15px}
+.brand small{font-weight:400;color:var(--ink2);font-size:12px;margin-left:6px}
+.spacer{flex:1}
+.mini{font-size:12px;color:var(--ink2);display:flex;gap:4px;align-items:center}
+nav.tabs{display:flex;gap:6px;padding:8px 12px 0;flex-wrap:wrap}
+nav.tabs button{border-radius:999px;padding:6px 13px}
+nav.tabs button.active{background:var(--brand);color:#fff;border-color:var(--brand)}
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 352px;gap:10px;padding:8px 12px 12px}
+@media(max-width:1080px){.layout{grid-template-columns:1fr}}
+.panel{background:var(--panel);border:1px solid var(--line);border-radius:10px;padding:9px 10px}
+.panel h3{margin:0 0 6px;font-size:13px;color:var(--ink)}
+.panel h3 .hint{font-weight:400;color:var(--ink2);font-size:11px}
+.stage-wrap{position:relative}
+#stage{width:100%;height:min(56vh,530px);min-height:340px;display:block;background:linear-gradient(#f9fcff,#eaf1fa);border:1px solid var(--line);border-radius:10px;touch-action:none}
+#hotspots{position:absolute;inset:0;pointer-events:none}
+.hot{position:absolute;transform:translate(-50%,-50%);width:22px;height:22px;border-radius:50%;background:rgba(29,78,216,.9);color:#fff;border:2px solid #fff;box-shadow:0 1px 5px rgba(0,0,0,.35);pointer-events:auto;cursor:pointer;font-size:12px;padding:0;display:flex;align-items:center;justify-content:center;line-height:1}
+.hot:hover,.hot:focus{background:#f59e0b;transform:translate(-50%,-50%) scale(1.15)}
+.legend{display:flex;flex-wrap:wrap;gap:6px 12px;margin-top:6px;font-size:12px;color:var(--ink2)}
+.legend span{display:inline-flex;align-items:center;gap:4px}
+.legend i{width:14px;height:8px;border-radius:3px;display:inline-block}
+.side{display:flex;flex-direction:column;gap:10px}
+.ctl{display:grid;grid-template-columns:104px 1fr 62px;gap:6px;align-items:center;margin:4px 0}
+.ctl label{font-size:12px;color:var(--ink2)}
+.ctl output{font-variant-numeric:tabular-nums;font-size:12px;text-align:right;color:var(--ink)}
+.ctl input[type=range]{width:100%;min-width:0}
+.chk{display:flex;flex-wrap:wrap;gap:3px 10px;font-size:12px}
+.chk label{display:inline-flex;gap:4px;align-items:center;cursor:pointer}
+.rd{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:6px}
+.rd div{background:#f8fafc;border:1px solid var(--line);border-radius:8px;padding:4px 6px;overflow:hidden}
+.rd .k{font-size:11px;color:var(--ink2);white-space:nowrap}
+.rd .v{font-size:14px;font-variant-numeric:tabular-nums;font-weight:700}
+.rd .u{font-size:10px;color:var(--ink2);font-weight:400}
+.inv{box-shadow:0 0 0 2px #fde68a inset;background:#fffbeb !important}
+.btns{display:flex;flex-wrap:wrap;gap:5px;margin-top:5px}
+.btns button{font-size:12px;padding:4px 8px}
+select{width:100%;border:1px solid var(--line);border-radius:6px;padding:4px 6px;background:#fff}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{border:1px solid var(--line);padding:3px 5px;text-align:center;font-variant-numeric:tabular-nums}
+th{background:#f1f5f9}
+.scroll{max-height:230px;overflow:auto}
+#drawer{position:fixed;right:0;top:0;bottom:0;width:min(430px,94vw);background:#fff;border-left:1px solid var(--line);box-shadow:-6px 0 22px rgba(0,0,0,.14);z-index:60;transform:translateX(102%);transition:transform .22s ease;display:flex;flex-direction:column}
+#drawer.open{transform:none}
+#drawer header{display:flex;gap:6px;align-items:center;padding:9px 11px;border-bottom:1px solid var(--line);flex-wrap:wrap}
+#drawer .body{flex:1;overflow:auto;padding:9px 11px}
+.catbar{display:flex;flex-wrap:wrap;gap:4px}
+.catbar button{font-size:12px;padding:3px 8px;border-radius:999px}
+.catbar button.active{background:var(--brand);color:#fff;border-color:var(--brand)}
+.clist{display:grid;gap:6px;margin-top:8px}
+.citem{border:1px solid var(--line);border-radius:8px;padding:6px 8px;cursor:pointer;background:#fff}
+.citem:hover{background:var(--brand2)}
+.citem b{font-size:13px}
+.citem .tag{font-size:10px;background:#eef2ff;color:#3730a3;border-radius:4px;padding:1px 5px;margin-left:5px}
+#modal{position:fixed;inset:0;background:rgba(15,23,42,.45);z-index:80;display:none;align-items:center;justify-content:center;padding:14px}
+#modal.open{display:flex}
+#modal .box{background:#fff;border-radius:12px;max-width:560px;width:100%;max-height:88vh;overflow:auto;padding:14px 16px;box-shadow:0 12px 40px rgba(0,0,0,.3)}
+#modal h2{margin:0 0 4px;font-size:17px}
+#modal .sub{color:var(--ink2);font-size:12px;margin-bottom:8px}
+#modal .fml{background:#f8fafc;border:1px dashed #94a3b8;border-radius:8px;padding:7px 10px;font-size:15px;margin:8px 0;font-weight:600}
+#modal .mini{display:block;margin:6px auto;max-width:100%}
+#modal .row{display:flex;gap:6px;flex-wrap:wrap;margin-top:10px}
+.tagline{font-size:12px;padding:6px 9px;border-radius:8px;margin-top:7px}
+.tagline.demo{background:#eff6ff;border:1px solid #bfdbfe;color:#1e40af}
+.tagline.warn{background:#fef2f2;border:1px solid #fecaca;color:#991b1b}
+.face{background:#f8fafc;border:1px solid var(--line);border-radius:9px;padding:9px 11px;min-height:90px}
+#teach{position:fixed;left:12px;right:12px;bottom:10px;z-index:50;background:#fff;border:1px solid var(--line);border-radius:11px;box-shadow:0 6px 22px rgba(0,0,0,.16);padding:9px 12px;display:none;gap:10px;align-items:center;flex-wrap:wrap}
+#teach.open{display:flex}
+#teach .num{background:var(--brand);color:#fff;border-radius:999px;width:26px;height:26px;display:flex;align-items:center;justify-content:center;font-weight:700;flex:none}
+#teach .txt{flex:1;min-width:220px}
+#teach .q{color:#b45309;font-weight:600}
+.quiz>div>b{font-weight:600}
+.quiz .opt{display:block;border:1px solid var(--line);border-radius:8px;padding:6px 9px;margin:5px 0;cursor:pointer;background:#fff;text-align:left;width:100%}
+.quiz .opt:hover{background:var(--brand2)}
+.quiz .opt.right{background:#dcfce7;border-color:#86efac}
+.quiz .opt.wrong{background:#fee2e2;border-color:#fca5a5}
+.expl{font-size:12.5px;background:#f8fafc;border-left:3px solid var(--brand);padding:6px 9px;margin-top:6px;border-radius:0 7px 7px 0}
+.small{font-size:11.5px;color:var(--ink2)}
+details summary{cursor:pointer;font-size:12.5px;color:var(--brand);padding:3px 0}
+.kv{display:grid;grid-template-columns:auto 1fr;gap:2px 10px;font-size:12.5px}
+.pill{display:inline-block;font-size:10.5px;border-radius:999px;padding:1px 7px;border:1px solid var(--line);background:#f8fafc;color:var(--ink2)}
+.pill.ext{background:#fff7ed;border-color:#fed7aa;color:#9a3412}
+#toast{position:fixed;left:50%;transform:translateX(-50%);bottom:74px;z-index:90;background:#111827;color:#fff;border-radius:8px;padding:7px 14px;font-size:13px;display:none}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+</style>
+</head>
+<body data-page-node-id="j7b3uB3kCPnX9EPMCWInk7">
+<header class="app" data-page-node-id="Y46Wqd5NT4eKzhbGPToAlz">
+  <div class="brand" data-page-node-id="n2QzCMcQEmhpkfemCG7H9E">模型43 · 重力势能<small data-page-node-id="pHTFsOOwrbdWHUidEZoNR0">E_p = mgh 与重力做功与路径无关 · 高中物理实物演示型交互模型</small></div>
+  <div class="spacer" data-page-node-id="YWw0XQckz2Wsja8pOQHCs9"></div>
+  <label class="mini" data-page-node-id="bRywu1sJylUn1AzKfCPcGh">天体 g
+    <select id="sel-g" style="width:auto" data-page-node-id="FvQZyV2jcA9rAVAiu7TKxl"></select>
+  </label>
+  <button id="btn-play" class="primary" data-page-node-id="cPbopQPRgnKaN3xMA0vvlF">▶ 释放</button>
+  <button id="btn-pause" data-page-node-id="WIM9AXh49vVkeaA4z5ZGgI">⏸ 暂停</button>
+  <button id="btn-step" data-page-node-id="ZO39aY6cg67Hafw6F84sl7">⏭ 单步</button>
+  <button id="btn-reset" data-page-node-id="BQG7Yhw4dnA0XELp2OyjtR">↺ 重置</button>
+  <label class="mini" data-page-node-id="8jaJIJOfroEukkpMl82M8A">慢动作
+    <select id="sel-slow" style="width:auto" data-page-node-id="08mXVdFQRzj8HBS2U5EsSq"></select>
+  </label>
+  <button id="btn-cards" data-page-node-id="pDU5V6ILIXacpPCInuZyaf">📚 知识卡片库</button>
+  <button id="btn-teach" data-page-node-id="52wpXQaLRZIjQrjDqdcx8n">🎓 教学引导</button>
+</header>
+
+<nav class="tabs" id="tabs" role="tablist" aria-label="模块标签页" data-page-node-id="yQ7raExFypQOLf1FYbU4DR"></nav>
+
+<div class="layout" data-page-node-id="kOTcS71E64Nlj5zZ49D9BQ">
+  <div data-page-node-id="qnpsUSDlxKtp9oAaFttG7W">
+    <div class="stage-wrap" data-page-node-id="1OjuqROUKqRrWGzvyS3JYG">
+      <canvas id="stage" role="img" aria-label="实验装置示意图，可用键盘在右侧参数区操作，知识热点见下方按钮" data-page-node-id="a3zTWkStJeYHqq5bRCWbMC"></canvas>
+      <div id="hotspots" data-page-node-id="41YDYJbV14tK9rJDakmsZN"></div>
+    </div>
+    <div class="legend" id="legend" data-page-node-id="uCAf5q06UqSRyFlElHSeUP"></div>
+    <div class="sr" id="hotList" aria-label="画面热点（键盘可操作）" data-page-node-id="kAOanVZ9ejoMcEGl9c8Vdl"></div>
+    <div id="quizWrap" class="panel" hidden style="margin-top:8px" data-page-node-id="sR4iqxRkJABxwGj2kMOaSw"></div>
+  </div>
+  <aside class="side" data-page-node-id="pVFHIT9J7KBDDhdVPnKPJh">
+    <div class="panel" data-page-node-id="PNCglzHR4iUvKRhAHqzv6U">
+      <h3 data-page-node-id="sO2okZFGRacbVS5N4326yj">控制面板 <span class="hint" data-page-node-id="KPwRsqJ6RND8eTa0XbTed0">（自变量 / 控制变量）</span></h3>
+      <div id="ctlBox" data-page-node-id="RRiSZ3r2smxFf8qDWmFUr4"></div>
+    </div>
+    <div class="panel" data-page-node-id="NeP5C18BCpEZKXKmB6nBeH">
+      <h3 data-page-node-id="1AuD7XIE16zUn5AHLgoLbf">实时读数 <span class="hint" data-page-node-id="fx7byFNLjklMfOKezec5fp">（SI 单位）</span></h3>
+      <div class="rd" id="rdBox" data-page-node-id="xZD1ARFe2TQYyefrXgAAUC"></div>
+      <div class="btns" id="presetBox" data-page-node-id="6t5ddBAWXDucJ49pgas0yr"></div>
+    </div>
+    <div class="panel" data-page-node-id="JShUk6id7GkBo1w5sgBP3x">
+      <h3 data-page-node-id="ED0bz5bS0m06kNBDuQA8GD">图像 <span class="hint" data-page-node-id="sui1tpHkjvjq1TfM5CRaix">（带坐标轴 / 单位 / 拟合）</span></h3>
+      <div id="chartTabs" class="btns" data-page-node-id="GtjUOaLnvuvBCKy9ZnsEth"></div>
+      <canvas id="chA" style="width:100%;height:150px;display:block" data-page-node-id="nYE5OgKk6CHbKH5Id5QJbx"></canvas>
+      <canvas id="chB" style="width:100%;height:150px;display:block;margin-top:4px" data-page-node-id="L1KbjUMOZJOGFfxbd5vsgK"></canvas>
+      <div class="small" id="fitInfo" data-page-node-id="4RuZ0w7H2OXqMhgACfvS9d"></div>
+      <div class="btns" data-page-node-id="Z8bYvqJ2X2L9TizEa7wdbM"><button id="btn-fit" data-page-node-id="XWFZ08OvLa5diJd0fzIjA3">线性拟合</button><button id="btn-exportChart" data-page-node-id="Bz7fYO0XBhUbKQKSKwJKPl">导出图数据 CSV</button></div>
+    </div>
+  </aside>
+</div>
+
+<div class="panel" style="margin:0 12px 12px" data-page-node-id="QXBpDFDYyrUQ1tQiELkCaJ">
+  <h3 data-page-node-id="0orPZG5NvXwZDCrYawhhfH">实验数据记录 <span class="hint" data-page-node-id="ZE0WpGirhC16vLjOqmtp09">（每次实验追加一行）</span>
+    <button id="btn-csv" style="float:right" data-page-node-id="ZSn252FnnqvN8chyh3TaC0">导出 CSV</button>
+    <button id="btn-clear" style="float:right;margin-right:6px" data-page-node-id="6BtA6oNxBGjL5rY8zNuHoe">清空</button>
+  </h3>
+  <div class="scroll" data-page-node-id="D0AOtKwjUw4MYEjOZBGytC"><table id="tbl" data-page-node-id="He9yfm9IhPEg99Kw0tCXBx"></table></div>
+</div>
+
+<div class="panel" style="margin:0 12px 40px" data-page-node-id="Zxb3O3vHPWwjaZUJJCkQRb">
+  <details data-page-node-id="MF0eBsKeu150fFpEoZ65O2">
+    <summary data-page-node-id="uiPATSPe8iKFjjvMd778TF">⚠️ 安全与规范提示（点击展开）</summary>
+    <div class="kv" style="margin-top:6px" data-page-node-id="jKajQyZOwApvp3sBwT3x8W">
+      <span data-page-node-id="ZHfhoemvCTVCZ0mX9mpfzj">①</span><span data-page-node-id="QvmTPeuEGDLlXqwYWgsdRD">重球下落时<b data-page-node-id="A8gXsxhKtVOhUgwzqmvtu5">严禁用手接</b>，必须使用释放机构；演示区域设置挡板。</span>
+      <span data-page-node-id="TaAmA5gA6SoeHIMZw1B3Oo">②</span><span data-page-node-id="dVwAybiudloHG3zB58u0JU">沙面每次实验前需<b data-page-node-id="BPSwEVyyUX7Ch4eGk6x1Zf">刮平并换新沙面</b>，避免落点叠加使阻力变化。</span>
+      <span data-page-node-id="1VokMPyf7xtk99NQHR9SHH">③</span><span data-page-node-id="OHQBolvyBuakB24712cNVE">释放机构<b data-page-node-id="gOskQFPoeHuRkZgH7ymgCg">不得给初速度</b>（保证 v₀ = 0），否则 d ∝ mgh 不成立。</span>
+      <span data-page-node-id="uMAO9izXleIMQaFBU5mBn7">④</span><span data-page-node-id="Gxb69reUzUFux90XE1G9Ou">同一组对照实验必须使用<b data-page-node-id="OzRaDQ040EOar9vLglR2aI">同一球、同一姿态、同一沙层厚度</b>。</span>
+      <span data-page-node-id="2mjs5vw9YWi6cRmauqXNks">⑤</span><span data-page-node-id="rA44YecdJuyZOQ3WS9VHSN">记录数据用 SI 单位（kg、m、s、J、N），能量保留 2–3 位有效数字，深度读到 mm 并标注不确定度。</span>
+    </div>
+  </details>
+</div>
+
+<div id="drawer" role="dialog" aria-label="知识卡片库" aria-modal="false" data-page-node-id="rSsci0HFMlIqmgEHobJLZf">
+  <header data-page-node-id="iXBi2IW1j0F17A1txFKvkG">
+    <b data-page-node-id="uw3YhlGAGCCF89g0SlxlrK">📚 知识卡片库</b>
+    <button id="dPrev" data-page-node-id="paHPoY5BkQFyhveIE1Dw6R">←</button><button id="dNext" data-page-node-id="85EDAtVFjATK3tDXLmmYE3">→</button>
+    <span class="spacer" style="flex:1" data-page-node-id="Tl9OcmEmDQ71OpD0RMF0Ph"></span>
+    <button id="dClose" data-page-node-id="jH2AtGyq1FCxqJlR6CYzFX">关闭 ✕</button>
+  </header>
+  <div style="padding:7px 11px;border-bottom:1px solid var(--line)" data-page-node-id="8IAzjKr75Yts7ZbRpiMahG">
+    <input id="dSearch" placeholder="搜索关键词：参考面 / 路径 / 系统性 / 弹性…" style="width:100%;border:1px solid var(--line);border-radius:6px;padding:5px 8px" data-page-node-id="zQdYJMwqYjXxUIXy1ZBP1n" />
+    <div class="catbar" id="dCats" style="margin-top:6px" data-page-node-id="Q03DycIfZ46x3gnw1m3FCE"></div>
+  </div>
+  <div class="body" data-page-node-id="KBXeVqVF6YHMXVlAK7XEsT"><div class="clist" id="dList" data-page-node-id="WQ62Zd2SccafcxVWdz6Cwn"></div></div>
+</div>
+
+<div id="modal" role="dialog" aria-modal="true" aria-label="知识卡片" data-page-node-id="rK2daYHl99MCixoYPI2aAD">
+  <div class="box" id="mBox" data-page-node-id="RCNj929UB3ezlGeZvtqUkU"></div>
+</div>
+
+<div id="teach" role="region" aria-label="教学引导" data-page-node-id="S6Mt9CpdE9zFz15h86wOXG">
+  <div class="num" id="tNum" data-page-node-id="kk1RfW2AohRiDEFkHwZwpR">1</div>
+  <div class="txt" data-page-node-id="MwXQmZmNRCKjyN2R5NbY33"><div id="tText" data-page-node-id="KH3WrJMZRRKYq8njWfwh0h"></div><div class="q" id="tQ" data-page-node-id="ZEvHCPBgrLAmvrkCtenlK6"></div></div>
+  <div class="btns" data-page-node-id="Vo508Qu1uAHBcOKNXdtAYJ">
+    <button id="tPrev" data-page-node-id="7iyh4sQmaL3MMmodGA0i07">上一步</button><button id="tNext" class="primary" data-page-node-id="BAG2HgykdQyv2U2C1mTYnv">下一步</button>
+    <button id="tCard" data-page-node-id="jirmNLScvk4RMRZxaBdI8c">看卡片</button><button id="tClose" data-page-node-id="0ZjOgpSBYx8mG4eZOGtMvH">关闭引导</button>
+  </div>
+</div>
+<div id="toast" data-page-node-id="1i0WwT0Dxx8GHkel24dhS5"></div>
+
+<script>
+/* =======================================================================
+   模型43 · 重力势能 E_p = mgh 与重力做功与路径无关
+   单文件 / 零依赖 / 内联 CSS+JS。物理参数、预设、卡片集中在配置对象中。
+   ======================================================================= */
+'use strict';
+const $ = s => document.querySelector(s);
+const $$ = s => Array.prototype.slice.call(document.querySelectorAll(s));
+const clamp = (v,a,b) => v<a?a:(v>b?b:v);
+const fmt = (x,n=2) => { if(x===null||x===undefined||!isFinite(x)) return '—';
+  const a=Math.abs(x); if(a!==0 && (a<1e-4 || a>=1e6)) return x.toExponential(2);
+  return x.toFixed(n); };
+const REDUCED = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+/* ---------------- 0. 全局配置 ---------------- */
+const CFG = {
+  bodies:[{id:'earth',name:'地球 g = 9.8',g:9.8},{id:'moon',name:'月球 g ≈ 1.63（拓展）',g:1.63},{id:'mars',name:'火星 g ≈ 3.71（拓展）',g:3.71}],
+  tracks:[
+    {id:'vertical',label:'竖直直落',key:'t1'},
+    {id:'incline', label:'光滑斜面',key:'t2'},
+    {id:'arc',     label:'圆弧轨道',key:'t3'},
+    {id:'polyline',label:'折线轨道',key:'t4'}
+  ],
+  C:{ g:'#f97316', v:'#2563eb', ep:'#16a34a', epn:'#dc2626', epz:'#9ca3af', ek:'#eab308',
+      ref:'#7c3aed', equi:'#06b6d4', fric:'#dc2626', sand:'#b45309', mech:'#0284c7',
+      t1:'#1e3a8a', t2:'#0f766e', t3:'#be185d', t4:'#4d7c0f', ink:'#1f2937', ink2:'#5b6672', line:'#dbe3ec' }
+};
+const TABS = [
+  {n:'① 重力做功与路径无关（三轨道沙坑）'},
+  {n:'② E_p = mgh 与参考面相对性'},
+  {n:'③ W_G = −ΔE_p 功能关系'},
+  {n:'④ 弹性势能定性对比'},
+  {n:'⑤ 练习考核'}
+];
+
+/* ---------------- 1. 状态 ---------------- */
+const S = {
+  tab:0, m:2, h:1.5, hRef:0, theta:35, mu:0, air:false, airK:0.05,
+  ballD:0.08, Ff:490, kd:8000, sandModel:'linear',
+  g:9.8, on:{vertical:true, incline:true, arc:true, polyline:false},
+  vec:true, bars:true, equi:false, trail:true, strobe:false, refLine:true, noise:false, topView:false, noiseAmt:0.02,
+  kx:0.15, kk:200, springRun:false,
+  proc:'down', mode3:'process',
+  playing:false, slow:1, runners:[], t0:0, chart:'dh', teach:0, teachOn:false,
+  rows:[], pinned:[], lastScan:null, dragRef:false
+};
+
+/* ---------------- 2. 控件与读数配置 ---------------- */
+const CONTROLS = [
+  {t:'range',id:'m',    label:'质量 m',     unit:'kg',  min:0.1,max:5,  step:0.1,  val:2,    tabs:[0,1,2,3], fmt:v=>v.toFixed(2)},
+  {t:'range',id:'h',    label:'释放高度 h', unit:'m',   min:0.1,max:3,  step:0.05, val:1.5,  tabs:[0,1,2,3], fmt:v=>v.toFixed(2)},
+  {t:'range',id:'hRef', label:'参考面 h_ref',unit:'m',  min:-1, max:3.2,step:0.05, val:0,    tabs:[0,1,2],   fmt:v=>v.toFixed(2)},
+  {t:'range',id:'theta',label:'斜面倾角 θ',  unit:'°',  min:20, max:70, step:1,    val:35,   tabs:[0],      fmt:v=>v.toFixed(0)},
+  {t:'range',id:'mu',   label:'轨道摩擦 μ',  unit:'',   min:0,  max:0.6,step:0.01, val:0,    tabs:[0],      fmt:v=>v.toFixed(2)},
+  {t:'range',id:'ballD',label:'球直径 D',    unit:'m',  min:0.04,max:0.2,step:0.01,val:0.08, tabs:[0],      fmt:v=>v.toFixed(2)},
+  {t:'range',id:'Ff',   label:'沙面阻力 F_f',unit:'N',  min:50, max:1500,step:10,  val:490,  tabs:[0],      fmt:v=>v.toFixed(0)},
+  {t:'range',id:'kd',   label:'非线性 k_d',  unit:'N/m',min:1000,max:30000,step:500,val:8000,tabs:[0],      fmt:v=>v.toFixed(0)},
+  {t:'range',id:'kx',   label:'形变量 x',    unit:'m',  min:-0.3,max:0.3,step:0.01,val:0.15, tabs:[3],      fmt:v=>v.toFixed(2)},
+  {t:'range',id:'kk',   label:'劲度系数 k',  unit:'N/m',min:50, max:800,step:10,   val:200,  tabs:[3],      fmt:v=>v.toFixed(0)},
+  {t:'sel',  id:'sand', label:'沙坑模型', tabs:[0], opts:[['linear','恒定阻力 F_f'],['nonlinear','阻力随深度增大']]},
+  {t:'sel',  id:'proc', label:'演示过程', tabs:[2], opts:[['down','下降（自由下落）'],['up','上升（竖直上抛）'],['flat','水平移动']]},
+  {t:'check',id:'air',   label:'空气阻力', tabs:[0,2], val:false},
+  {t:'check',id:'vec',   label:'矢量',     tabs:[0,1,2], val:true},
+  {t:'check',id:'bars',  label:'能量条',   tabs:[0,1,2,3], val:true},
+  {t:'check',id:'equi',  label:'等势面',   tabs:[0,1,2], val:false},
+  {t:'check',id:'refLine',label:'参考面',  tabs:[0,1,2], val:true},
+  {t:'check',id:'trail', label:'轨迹残影', tabs:[0], val:true},
+  {t:'check',id:'strobe',label:'频闪标记', tabs:[0], val:false},
+  {t:'check',id:'noise', label:'误差模拟', tabs:[0], val:false},
+  {t:'check',id:'topView',label:'俯视图',  tabs:[0], val:false},
+  {t:'tracks',id:'trk',  label:'参演轨道', tabs:[0]},
+  {t:'btns', id:'refbtns', label:'一键换参考面', tabs:[1],
+   opts:[['0','沙面（0 m）'],['h','释放点（h）'],['h2','中点（h/2）'],['-0.5','参考面下方（−0.5 m）']]}
+];
+const READOUTS = [
+  {k:'m',    l:'m',      u:'kg'},
+  {k:'h',    l:'h',      u:'m'},
+  {k:'href', l:'h_ref',  u:'m'},
+  {k:'g',    l:'g',      u:'m/s²'},
+  {k:'ep',   l:'E_p(A)', u:'J'},
+  {k:'epc',  l:'E_p(C)', u:'J'},
+  {k:'dep',  l:'ΔE_p',   u:'J', inv:true},
+  {k:'wg',   l:'W_G',    u:'J', inv:true},
+  {k:'wf',   l:'W_f',    u:'J'},
+  {k:'v',    l:'v_末',   u:'m/s'},
+  {k:'d',    l:'d',      u:'cm'},
+  {k:'ff',   l:'F_f',    u:'N'},
+  {k:'eel',  l:'E_弹',   u:'J'},
+  {k:'em',   l:'E_机',   u:'J'},
+  {k:'drift',l:'能量漂移',u:'%'}
+];
+
+/* ---------------- 3. 预设方案 ---------------- */
+const PRESETS = [
+  {id:'p3s', name:'同一高度三轨道（光滑）', tab:0, run(){ S.mu=0; S.air=false; S.on={vertical:true,incline:true,arc:true,polyline:false}; S.h=1.5; S.m=2; S.Ff=490; S.sandModel='linear'; }},
+  {id:'p3f', name:'同一高度三轨道（有摩擦）', tab:0, run(){ S.mu=0.25; S.on={vertical:true,incline:true,arc:true,polyline:false}; S.h=1.5; S.m=2; }},
+  {id:'phs', name:'h 扫描（d–h 直线）', tab:0, run(){ S.mu=0; scan('h'); }},
+  {id:'pms', name:'m 扫描（d–m 直线）', tab:0, run(){ S.mu=0; scan('m'); }},
+  {id:'prs', name:'参考面扫描', tab:1, run(){ scan('ref'); }},
+  {id:'pcl', name:'闭合路径 W_G = 0', tab:2, run(){ S.mode3='closed'; }},
+  {id:'pmo', name:'月球 g 对照（拓展）', tab:1, run(){ S.g=1.63; syncSel('sel-g','moon'); }},
+  {id:'psp', name:'弹性势能拉伸/压缩', tab:3, run(){ S.kx=0.15; S.kk=200; }},
+  {id:'pnl', name:'非线性沙阻对照', tab:0, run(){ S.sandModel='nonlinear'; S.kd=8000; }}
+];
+
+/* ---------------- 4. 知识点卡片库 ---------------- */
+const SV = (inner,w) => '<svg class="mini" viewBox="0 0 150 64" width="100%" height="'+(w||72)+'" xmlns="http://www.w3.org/2000/svg" style="max-width:420px">'+inner+'</svg>';
+const CARDS = [
+/* ===== 概念卡 ===== */
+{id:'c-wg',cat:'概念',t:'重力做功 W_G',c:'重力对物体做的功只由初、末位置的高度差决定，W_G = mgΔh。',
+ f:'W_G = mg(h₁ − h₂) = mgΔh　（下降 W_G > 0）',
+ s:SV('<rect width="150" height="64" fill="#f8fafc"/><line x1="20" y1="14" x2="60" y2="14" stroke="#94a3b8" stroke-dasharray="3 3"/><line x1="20" y1="52" x2="60" y2="52" stroke="#94a3b8" stroke-dasharray="3 3"/><path d="M40 14 L40 52" stroke="#f97316" stroke-width="2"/><circle cx="40" cy="14" r="6" fill="#1e3a8a"/><circle cx="40" cy="52" r="6" fill="#1e3a8a"/><text x="46" y="36" font-size="11" fill="#1f2937">Δh</text><text x="96" y="36" font-size="13" fill="#f97316" font-weight="bold">W=mgΔh</text>'),
+ d:'标签页①：任选轨道 → 释放 → 读数区 W_G 恒等于 mgh。',w:'Δh 是初末位置的高度差，不是路程。'},
+{id:'c-dh',cat:'概念',t:'高度差 Δh',c:'Δh = h₁ − h₂，是竖直方向的位置差，与路径长短、形状完全无关。',
+ f:'Δh = h₁ − h₂　（单位 m；下降为正）',
+ s:SV('<rect width="150" height="64" fill="#f8fafc"/><path d="M22 12 L22 54" stroke="#94a3b8" stroke-width="2"/><path d="M18 12 L26 12 M18 54 L26 54" stroke="#94a3b8" stroke-width="2"/><path d="M40 12 L70 54 L100 54" stroke="#0f766e" stroke-width="2" fill="none"/><path d="M40 12 L40 54" stroke="#1e3a8a" stroke-width="2" stroke-dasharray="4 3"/><text x="46" y="36" font-size="11" fill="#1e3a8a">Δh</text><text x="106" y="34" font-size="10" fill="#0f766e">路程 s</text><text x="106" y="47" font-size="10" fill="#dc2626">≠ Δh</text>'),
+ d:'标签页①：改变斜面倾角 θ，路程 s 变了但 W_G 不变。',w:'路程 s 与高度差 Δh 是两个不同概念。'},
+{id:'c-ep',cat:'概念',t:'重力势能 E_p',c:'物体因被举高而具有的能量，E_p = mgh，是物体与地球组成的系统共有的。',
+ f:'E_p = mgh　（J；h 为相对参考面的高度）',
+ s:SV('<rect width="150" height="64" fill="#f8fafc"/><line x1="10" y1="54" x2="140" y2="54" stroke="#b45309" stroke-width="3"/><circle cx="60" cy="26" r="9" fill="#16a34a"/><path d="M60 26 L60 54" stroke="#16a34a" stroke-width="2"/><text x="68" y="30" font-size="11" fill="#16a34a">h</text><text x="100" y="30" font-size="13" fill="#16a34a" font-weight="bold">E=mgh</text>'),
+ d:'标签页②：拖动紫色参考面，看 E_p 数值随 h 变化。',w:'h 是相对参考面的高度，不是"离地高度"。'},
+{id:'c-ref',cat:'概念',t:'参考平面（零势能面）',c:'人为选定 E_p = 0 的水平面，可任选（地面/桌面/释放点/最低点），但全过程的计算必须统一。',
+ f:'E_p = mg(y − y_ref)　；在参考面上 E_p = 0',
+ s:SV('<rect width="150" height="64" fill="#f8fafc"/><line x1="8" y1="46" x2="142" y2="46" stroke="#7c3aed" stroke-width="2" stroke-dasharray="6 4"/><text x="10" y="60" font-size="10" fill="#7c3aed">参考面（E_p = 0）</text><circle cx="50" cy="20" r="8" fill="#16a34a"/><text x="62" y="24" font-size="11" fill="#16a34a">E_p&gt;0</text><circle cx="112" cy="56" r="7" fill="#dc2626"/><text x="122" y="48" font-size="11" fill="#dc2626">E_p&lt;0</text>'),
+ d:'标签页②：紫虚线可用鼠标拖动，也可一键切到沙面/释放点/中点。',w:'参考面之上 E_p 为正，之下为负，面上为零。'},
+{id:'c-rel',cat:'概念',t:'势能的相对性',c:'同一状态，选不同参考面得到不同的 E_p 数值（可正、可零、可负），但 ΔE_p 与 W_G 不受影响。',
+ f:'E_p′ = E_p − mg·Δy_ref　（整体加减同一个常数）',
+ s:SV('<rect width="150" height="64" fill="#f8fafc"/><circle cx="34" cy="18" r="8" fill="#16a34a"/><text x="46" y="22" font-size="11" fill="#16a34a">29.4 J</text><circle cx="34" cy="46" r="8" fill="#16a34a"/><text x="46" y="50" font-size="11" fill="#dc2626">19.6 J</text><text x="46" y="36" font-size="9" fill="#5b6672">换参考面→</text><text x="100" y="36" font-size="11" fill="#1d4ed8" font-weight="bold">ΔE_p 不变</text>'),
+ d:'标签页②：点"换参考面"动画，注意高亮的"不变量"读数框。',w:'数值变了不等于结论变了。'},
+{id:'c-sys',cat:'概念',t:'势能的系统性',c:'重力势能属于物体与地球组成的系统（相互作用势能），"物体的重力势能"只是简称。',
+ f:'E_p = E_p(物体 + 地球)　；单独一个物体无所谓重力势能',
+ s:SV('<rect width="150" height="64" fill="#f8fafc"/><circle cx="46" cy="24" r="10" fill="#1e3a8a"/><path d="M96 44 m-16 0 a16 16 0 1 0 32 0 a16 16 0 1 0 -32 0" fill="#0ea5e9"/><path d="M56 28 L82 38" stroke="#16a34a" stroke-width="2" stroke-dasharray="4 3"/><text x="56" y="20" font-size="9" fill="#16a34a">相互作用</text><text x="82" y="60" font-size="9" fill="#0ea5e9">地球</text>'),
+ d:'卡片库→辨析卡"物体拥有 vs 系统共有"；标签页②读数区脚注。',w:'离开地球谈重力势能是没有意义的。'},
+{id:'c-equi',cat:'概念',t:'等势面',c:'重力场中 E_p 相等的点构成的水平面族；重力垂直等势面，沿等势面移动重力不做功、E_p 不变。',
+ f:'沿等势面：W_G = 0，ΔE_p = 0',
+ s:SV('<rect width="150" height="64" fill="#f8fafc"/><line x1="10" y1="18" x2="140" y2="18" stroke="#06b6d4"/><line x1="10" y1="32" x2="140" y2="32" stroke="#06b6d4"/><line x1="10" y1="46" x2="140" y2="46" stroke="#06b6d4"/><path d="M28 18 L28 46" stroke="#f97316" stroke-width="2"/><path d="M60 32 L112 32" stroke="#2563eb" stroke-width="2"/><text x="66" y="27" font-size="9" fill="#2563eb">水平移动 W=0</text>'),
+ d:'标签页②：勾选"等势面"开关，显示青色等势线及 E_p 数值。',w:'等势面一定与重力方向垂直。'},
+{id:'c-cons',cat:'概念',t:'保守力（拓展）',c:'做功与路径无关、沿任意闭合路径做功为零的力，如重力、弹簧弹力、静电力。',
+ f:'∮ G·dl = 0　（等价表述：W 只由初末位置决定）',
+ s:SV('<rect width="150" height="64" fill="#f8fafc"/><path d="M30 40 C30 14 120 14 120 40 C120 60 30 60 30 40" stroke="#7c3aed" stroke-width="2" fill="none"/><circle cx="30" cy="40" r="4" fill="#dc2626"/><text x="52" y="30" font-size="11" fill="#7c3aed">闭合路径</text><text x="52" y="46" font-size="12" fill="#dc2626" font-weight="bold">W_G = 0</text>'),
+ d:'标签页③：点"闭合路径演示"，看分段 W_G 与累计值归零。',w:'摩擦力不是保守力。'},
+{id:'c-eel',cat:'概念',t:'弹性势能 E_弹',c:'发生弹性形变的物体（弹簧）具有的能量，与形变量有关；属于弹簧与物体组成的系统。',
+ f:'E_弹 = ½kx²　（教材只要求定性：形变量越大，弹性势能越大）',ext:true,
+ s:SV('<rect width="150" height="64" fill="#f8fafc"/><line x1="16" y1="14" x2="16" y2="52" stroke="#94a3b8" stroke-width="4"/><path d="M16 32 L34 22 L50 42 L66 22 L82 42 L98 32" stroke="#0f766e" stroke-width="2" fill="none"/><rect x="98" y="22" width="24" height="20" fill="#2563eb"/><text x="106" y="60" font-size="10" fill="#0f766e">x</text>'),
+ d:'标签页④：拖动"形变量 x"，看 E_弹 与能量条变化。',w:'自然长度处（无形变）取 E_弹 = 0。'},
+{id:'c-x',cat:'概念',t:'形变量 x',c:'弹簧相对自然长度的伸长量或压缩量，是决定弹性势能的唯一运动学量（k 一定时）。',
+ f:'x = |L − L₀|　（拉伸 x>0，压缩 x<0；E_弹 只与 |x| 有关）',
+ s:SV('<rect width="150" height="64" fill="#f8fafc"/><line x1="16" y1="14" x2="16" y2="52" stroke="#94a3b4" stroke-width="4"/><path d="M16 32 L36 32" stroke="#94a3b4" stroke-width="2"/><text x="16" y="60" font-size="9" fill="#5b6672">自然长</text><line x1="86" y1="14" x2="86" y2="52" stroke="#94a3b4" stroke-width="4"/><path d="M86 32 L96 24 L106 40 L116 24 L126 40 L134 32" stroke="#0f766e" stroke-width="2" fill="none"/><rect x="132" y="22" width="14" height="20" fill="#2563eb"/><text x="86" y="60" font-size="9" fill="#0f766e">伸长 x</text>'),
+ d:'标签页④：把 x 从 +0.15 拉到 −0.15，比较 E_弹 是否相同。',w:'拉伸与压缩对称：|x| 相同 ⇒ E_弹 相同。'},
+{id:'c-conv',cat:'概念',t:'转换法与放大法',c:'把看不见的能量转换成看得见的沙坑深度 d；再把微小的 d 放大显示，便于测量比较。',
+ f:'F_f·d ≈ mgh　⇒　d ≈ mgh / F_f ∝ mgh',
+ s:SV('<rect width="150" height="64" fill="#f8fafc"/><line x1="8" y1="34" x2="142" y2="34" stroke="#b45309" stroke-width="3"/><path d="M40 34 L40 50" stroke="#dc2626" stroke-width="2"/><circle cx="40" cy="50" r="7" fill="#1e3a8a"/><text x="52" y="52" font-size="11" fill="#dc2626">d</text><text x="86" y="24" font-size="10" fill="#5b6672">能量 → 深度</text><text x="86" y="40" font-size="10" fill="#5b6672">深度 → 读数</text>'),
+ d:'标签页①：沙坑区标注"深度放大 ×N"，读数区 d（cm）。',w:'d 正比于 mgh 只在沙阻恒定近似下成立。'},
+/* ===== 公式卡 ===== */
+{id:'f-wg',cat:'公式',t:'W_G = mgΔh',c:'近地表匀强重力场中，重力做功等于重力乘以初末位置的高度差，与路径无关。',
+ f:'W_G = mgh₁ − mgh₂ = mgΔh　[J = kg·m/s²·m]',
+ s:SV('<rect width="150" height="64" fill="#f8fafc"/><rect x="14" y="18" width="122" height="28" rx="6" fill="#eff6ff" stroke="#bfdbfe"/><text x="26" y="38" font-size="15" fill="#1e40af" font-weight="bold">W_G = m g Δh</text>'),
+ d:'标签页①：读数框 W_G；改轨道/倾角，数值不变。',w:'适用条件：g 视为恒定（h ≪ 地球半径）。'},
+{id:'f-wg2',cat:'公式',t:'W_G = GMm(1/r₂ − 1/r₁)（拓展）',c:'高度变化可与地球半径相比时，g 不再恒定，必须用万有引力形式。',
+ f:'W_G = GMm(1/r₂ − 1/r₁)　；mgh 只是它在 h ≪ R 下的一阶近似',ext:true,
+ s:SV('<rect width="150" height="64" fill="#f8fafc"/><circle cx="75" cy="32" r="16" fill="#0ea5e9" opacity=".25"/><circle cx="75" cy="32" r="8" fill="#0ea5e9"/><path d="M75 16 L75 8" stroke="#dc2626" stroke-width="2"/><circle cx="75" cy="6" r="3" fill="#dc2626"/><text x="92" y="16" font-size="9" fill="#dc2626">r₁</text><text x="92" y="34" font-size="9" fill="#5b6672">R</text>'),
+ d:'本演示范围之外（卡片标注"拓展"）；仅作认知边界提示。',w:'别把 mgh 用到卫星尺度。'},
+{id:'f-ep',cat:'公式',t:'E_p = mgh',c:'重力势能等于 mgh，其中 h 是相对所选参考平面的高度，可正可负。',
+ f:'E_p = mgh　[J]　；h < 0 时 E_p < 0',
+ s:SV('<rect width="150" height="64" fill="#f8fafc"/><rect x="14" y="18" width="122" height="28" rx="6" fill="#f0fdf4" stroke="#bbf7d0"/><text x="34" y="38" font-size="15" fill="#166534" font-weight="bold">E_p = m g h</text>'),
+ d:'标签页②：各标记点旁边直接标出 E_p = mgh 的数值与符号色。',w:'h 与参考面绑定，先定参考面再谈 E_p。'},
+{id:'f-rel',cat:'公式',t:'W_G = −ΔE_p',c:'重力做的功等于重力势能减少量的正值，即 W_G = E_p1 − E_p2 = −ΔE_p。',
+ f:'W_G = −ΔE_p = E_p1 − E_p2',
+ s:SV('<rect width="150" height="64" fill="#f8fafc"/><rect x="10" y="18" width="130" height="28" rx="6" fill="#fff7ed" stroke="#fed7aa"/><text x="30" y="38" font-size="15" fill="#9a3412" font-weight="bold">W_G = −ΔE_p</text>'),
+ d:'标签页③：下降/上升/水平三过程对照表自动验证（误差 < 1%）。',w:'正功对应势能减少，负功对应势能增加。'},
+{id:'f-v',cat:'公式',t:'v = √(2gh)',c:'只有重力做功、从静止释放时，末速率只由高度差决定，与路径形状无关。',
+ f:'½mv² = mgh　⇒　v = √(2gh)',
+ s:SV('<rect width="150" height="64" fill="#f8fafc"/><rect x="14" y="18" width="122" height="28" rx="6" fill="#f5f3ff" stroke="#ddd6fe"/><text x="30" y="38" font-size="14" fill="#5b21b6" font-weight="bold">v = √(2gh)</text>'),
+ d:'标签页①：三轨道柱状图 v_末；光滑时三者相同（误差<2%）。',w:'有摩擦/空气阻力时该式不成立。'},
+{id:'f-d',cat:'公式',t:'d ≈ mgh / F_f',c:'沙对球的平均阻力恒定时，陷入深度与 mgh 成正比，这是转换法的定量依据。',
+ f:'F_f·d ≈ mgh　⇒　d ≈ mgh/F_f　（斜率 = mg/F_f）',
+ s:SV('<rect width="150" height="64" fill="#f8fafc"/><line x1="20" y1="52" x2="132" y2="52" stroke="#94a3b8"/><line x1="20" y1="52" x2="20" y2="10" stroke="#94a3b8"/><path d="M20 52 L120 16" stroke="#dc2626" stroke-width="2"/><text x="104" y="46" font-size="10" fill="#dc2626">斜率 mg/F_f</text>'),
+ d:'标签页①：预设"h 扫描"，看 d–h 过原点直线与拟合斜率。',w:'前提：静止释放、沙阻恒定、同一球同一沙面。'},
+{id:'f-eel',cat:'公式',t:'E_弹 = ½kx²（拓展）',c:'弹性势能与劲度系数 k 成正比、与形变量的平方成正比；教材只要求定性。',
+ f:'E_弹 = ½kx²　；弹力 F = −kx',ext:true,
+ s:SV('<rect width="150" height="64" fill="#f8fafc"/><line x1="20" y1="52" x2="132" y2="52" stroke="#94a3b8"/><line x1="20" y1="52" x2="20" y2="10" stroke="#94a3b8"/><path d="M20 52 Q46 50 76 34 Q106 18 130 12" stroke="#0f766e" stroke-width="2" fill="none"/><text x="88" y="30" font-size="10" fill="#0f766e">∝ x²</text>'),
+ d:'标签页④：E_弹–x 抛物线图，验证"与形变量的平方成正比"。',w:'是"与 x 的平方成正比"，不是与 x 成正比。'},
+{id:'f-wel',cat:'公式',t:'W_弹 = ½kx₁² − ½kx₂²',c:'弹力做功等于弹性势能的减少量，弹力也是保守力，做功与路径无关。',
+ f:'W_弹 = ½kx₁² − ½kx₂² = −ΔE_弹',
+ s:SV('<rect width="150" height="64" fill="#f8fafc"/><line x1="16" y1="14" x2="16" y2="52" stroke="#94a3b4" stroke-width="4"/><path d="M16 32 L32 22 L48 42 L64 22 L80 42 L96 32" stroke="#0f766e" stroke-width="2" fill="none"/><rect x="96" y="22" width="20" height="20" fill="#2563eb"/><path d="M120 32 L136 32" stroke="#f97316" stroke-width="2"/>'),
+ d:'标签页④：弹射小车过程 E_弹 → E_k 的转化（能量条）。',w:'弹力做正功 ⇒ 弹性势能减少。'},
+/* ===== 规律卡 ===== */
+{id:'l-path',cat:'规律',t:'W_G 只与高度差有关、与路径无关',c:'竖直直落、光滑斜面、光滑圆弧，只要 h、m 相同，W_G 相同，光滑时末速率与陷入深度也相同。',
+ f:'W_G = mgΔh（与 s、θ、形状无关）',
+ s:SV('<rect width="150" height="64" fill="#f8fafc"/><path d="M26 12 L26 52" stroke="#1e3a8a" stroke-width="2"/><path d="M26 12 L70 52" stroke="#0f766e" stroke-width="2"/><path d="M26 12 C60 12 80 52 80 52" stroke="#be185d" stroke-width="2" fill="none"/><line x1="18" y1="52" x2="140" y2="52" stroke="#b45309" stroke-width="3"/><text x="98" y="30" font-size="10" fill="#1f2937">W 相同</text>'),
+ d:'标签页①：三轨道同屏对比 + 柱状图（d 与 v 三条等高）。',w:'路径长短不同不影响 W_G。'},
+{id:'l-closed',cat:'规律',t:'闭合路径 W_G = 0',c:'沿任意闭合路径移动一圈回到出发点，重力做的总功为零——重力是保守力。',
+ f:'∮ G·dl = 0　（分段求和：+mgΔh − mgΔh = 0）',
+ s:SV('<rect width="150" height="64" fill="#f8fafc"/><rect x="24" y="14" width="100" height="36" fill="none" stroke="#7c3aed" stroke-width="2" stroke-dasharray="5 3"/><circle cx="24" cy="14" r="4" fill="#dc2626"/><text x="52" y="36" font-size="12" fill="#7c3aed" font-weight="bold">ΣW = 0</text>'),
+ d:'标签页③：闭合路径演示，累计栏最终显示 0（误差 < 1e-9 量级）。',w:'若有力做功不为零，说明存在非保守力。'},
+{id:'l-inv',cat:'规律',t:'换参考面：E_p 变，ΔE_p 与 W_G 不变',c:'参考面上下平移，所有 E_p 同时加（减）同一个常数 mgΔy_ref，差值与功完全不变。',
+ f:'ΔE_p′ = ΔE_p　；　W_G′ = W_G',
+ s:SV('<rect width="150" height="64" fill="#f8fafc"/><rect x="12" y="10" width="60" height="18" rx="4" fill="#fef2f2" stroke="#fecaca"/><text x="20" y="23" font-size="9" fill="#991b1b">E_p 变了</text><rect x="12" y="36" width="60" height="18" rx="4" fill="#f0fdf4" stroke="#bbf7d0"/><text x="20" y="49" font-size="9" fill="#166534">ΔE_p 不变</text><rect x="80" y="36" width="58" height="18" rx="4" fill="#f0fdf4" stroke="#bbf7d0"/><text x="88" y="49" font-size="9" fill="#166534">W_G 不变</text>'),
+ d:'标签页②：读数框 ΔE_p 与 W_G 有黄色高亮"不变量"标记。',w:'物理结论只依赖差值与功。'},
+{id:'l-sign',cat:'规律',t:'下降/上升/水平的符号规律',c:'下降 W_G>0、E_p 减少；上升 W_G<0（克服重力做功）、E_p 增加；水平移动 W_G=0、E_p 不变。',
+ f:'下降：W_G = +mgΔh，ΔE_p < 0　　上升：W_G = −mgΔh，ΔE_p > 0　　水平：W_G = 0，ΔE_p = 0',
+ s:SV('<rect width="150" height="64" fill="#f8fafc"/><text x="8" y="18" font-size="10" fill="#16a34a">↓ W&gt;0, E_p↓</text><text x="8" y="36" font-size="10" fill="#dc2626">↑ W&lt;0, E_p↑</text><text x="8" y="54" font-size="10" fill="#5b6672">→ W=0, E_p 不变</text><circle cx="112" cy="24" r="10" fill="#16a34a"/><circle cx="112" cy="46" r="10" fill="#dc2626"/>'),
+ d:'标签页③：三过程符号对照表逐项验证。',w:'"克服重力做功 5 J" = "重力做功 −5 J"。'},
+{id:'l-eel',cat:'规律',t:'弹性势能与形变量（平方）有关、拉压对称',c:'形变量越大弹性势能越大；同样形变量的拉伸与压缩，弹性势能相同。',
+ f:'E_弹 ∝ x²　；E_弹(+x) = E_弹(−x)',ext:true,
+ s:SV('<rect width="150" height="64" fill="#f8fafc"/><line x1="75" y1="8" x2="75" y2="56" stroke="#94a3b4" stroke-dasharray="3 3"/><rect x="40" y="26" width="30" height="14" fill="#0f766e" opacity=".3"/><rect x="80" y="26" width="30" height="14" fill="#0f766e" opacity=".3"/><text x="44" y="54" font-size="10" fill="#0f766e">压缩</text><text x="88" y="54" font-size="10" fill="#0f766e">拉伸</text><text x="52" y="20" font-size="10" fill="#1f2937">E 相同</text>'),
+ d:'标签页④：+x 与 −x 对照，读数框 E_弹 数值相同。',w:'压缩也有弹性势能，且对称。'},
+/* ===== 方法卡 ===== */
+{id:'m-cv',cat:'方法',t:'控制变量法',c:'研究 d–h 时固定 m、轨道、沙面；研究 d–m 时固定 h、轨道、沙面；研究路径无关时固定 m、h 与光滑度。',
+ f:'一次只改变一个自变量',
+ s:SV('<rect width="150" height="64" fill="#f8fafc"/><rect x="10" y="12" width="40" height="40" rx="5" fill="#eff6ff" stroke="#bfdbfe"/><text x="18" y="36" font-size="10" fill="#1e40af">变 h</text><rect x="55" y="12" width="40" height="40" rx="5" fill="#f1f5f9" stroke="#cbd5e1"/><text x="63" y="36" font-size="10" fill="#5b6672">定 m</text><rect x="100" y="12" width="40" height="40" rx="5" fill="#f1f5f9" stroke="#cbd5e1"/><text x="106" y="36" font-size="10" fill="#5b6672">定轨道</text>'),
+ d:'标签页①：预设"h 扫描""m 扫描"即按此矩阵自动生成。',w:'对照实验必须"其他条件相同"。'},
+{id:'m-inv',cat:'方法',t:'不变量检验法',c:'主动改变参考面，检验哪些量变、哪些量不变——不变的才是物理实质（ΔE_p、W_G）。',
+ f:'E_p′ − E_p = −mg·Δy_ref（常数）；ΔE_p′ = ΔE_p',
+ s:SV('<rect width="150" height="64" fill="#f8fafc"/><line x1="10" y1="20" x2="140" y2="20" stroke="#7c3aed" stroke-dasharray="6 4"/><line x1="10" y1="44" x2="140" y2="44" stroke="#7c3aed" stroke-dasharray="6 4"/><path d="M75 20 L75 44" stroke="#f97316" stroke-width="2"/><text x="82" y="36" font-size="10" fill="#f97316">平移</text><text x="14" y="58" font-size="9" fill="#5b6672">↑ 换参考面，差值不变</text>'),
+ d:'标签页②：点"参考面扫描"，E_p–h_ref 为直线而 ΔE_p 恒为水平线。',w:'数值可变 ⇒ 相对量；差值不变 ⇒ 绝对量。'},
+{id:'m-bar',cat:'方法',t:'能量条分析法',c:'把 E_p、E_k、E_机 画成并排能量条，看"谁减少谁增加、总和是否恒定"。',
+ f:'无摩擦：E_p↓ = E_k↑，E_机 = 常量（机械能守恒）',
+ s:SV('<rect width="150" height="64" fill="#f8fafc"/><rect x="16" y="12" width="18" height="40" fill="#16a34a"/><rect x="44" y="30" width="18" height="22" fill="#eab308"/><rect x="72" y="12" width="18" height="40" fill="#0284c7"/><text x="12" y="60" font-size="9" fill="#5b6672">E_p</text><text x="42" y="60" font-size="9" fill="#5b6672">E_k</text><text x="70" y="60" font-size="9" fill="#5b6672">E_机</text><text x="98" y="36" font-size="10" fill="#0284c7">守恒</text>'),
+ d:'勾选"能量条"开关，标签页①③均可观察。',w:'开空气阻力后 E_机 条会缩短 ⇒ 不守恒。'},
+{id:'m-err',cat:'方法',t:'误差归因法',c:'出现异常数据先查：沙阻是否恒定、是否有初速度、空气阻力、轨道摩擦、球姿态与接触面积。',
+ f:'W_G 恒等于 mgΔh；若末动能偏小 ⇒ 找做负功的力（摩擦/阻力）',
+ s:SV('<rect width="150" height="64" fill="#f8fafc"/><rect x="12" y="10" width="126" height="44" rx="6" fill="#fef2f2" stroke="#fecaca"/><text x="20" y="28" font-size="10" fill="#991b1b">末动能偏小 → 谁做了负功？</text><text x="20" y="44" font-size="10" fill="#991b1b">摩擦 μ / 空气阻力 / 沙阻变化</text>'),
+ d:'标签页①：开"轨道摩擦"会自动弹出该卡片。',w:'W_G 没变，变的是 W_f。'},
+/* ===== 辨析卡 ===== */
+{id:'d-wgep',cat:'辨析',t:'重力做功 vs 重力势能',c:'W_G 是过程量（与路径上的位移有关），E_p 是状态量（与参考面选取有关）；二者由 W_G = −ΔE_p 联系。',
+ f:'W_G：过程量，J　　E_p：状态量，J（相对参考面）',
+ s:SV('<rect width="150" height="64" fill="#f8fafc"/><rect x="10" y="14" width="60" height="36" rx="5" fill="#fff7ed" stroke="#fed7aa"/><text x="18" y="38" font-size="10" fill="#9a3412">W_G 过程</text><rect x="80" y="14" width="60" height="36" rx="5" fill="#f0fdf4" stroke="#bbf7d0"/><text x="88" y="38" font-size="10" fill="#166534">E_p 状态</text>'),
+ d:'标签页③对照表同时列出两者的数值与符号。',w:'"做了多少功"与"具有多少势能"不是一回事。'},
+{id:'d-relabs',cat:'辨析',t:'E_p 的相对性 vs ΔE_p 的绝对性',c:'E_p 数值依赖参考面（相对），ΔE_p 与 W_G 不依赖参考面（绝对）；物理规律建立在绝对量上。',
+ f:'E_p 可变（±常数）　　ΔE_p、W_G 不可变',
+ s:SV('<rect width="150" height="64" fill="#f8fafc"/><circle cx="40" cy="20" r="9" fill="#9ca3af"/><circle cx="40" cy="46" r="9" fill="#9ca3af"/><path d="M56 20 L56 46" stroke="#dc2626" stroke-width="2"/><text x="62" y="36" font-size="10" fill="#dc2626">ΔE_p 固定</text><text x="104" y="20" font-size="9" fill="#5b6672">E_p 随参考面</text><text x="104" y="34" font-size="9" fill="#5b6672">上下平移</text>'),
+ d:'标签页②：拖动参考面，两个黄色高亮框数值纹丝不动。',w:'别因为"数值会变"就认为势能没有意义。'},
+{id:'d-ownsys',cat:'辨析',t:'物体拥有 vs 系统共有',c:'严格地说重力势能是物体与地球系统共有的相互作用势能，"物体的重力势能"是习惯简称。',
+ f:'E_p ∈（物体 + 地球）系统',
+ s:SV('<rect width="150" height="64" fill="#f8fafc"/><circle cx="40" cy="32" r="12" fill="#1e3a8a"/><text x="30" y="58" font-size="9" fill="#1e3a8a">物体</text><path d="M104 32 m-14 0 a14 14 0 1 0 28 0 a14 14 0 1 0 -28 0" fill="#0ea5e9"/><text x="94" y="58" font-size="9" fill="#0ea5e9">地球</text><path d="M54 32 L88 32" stroke="#16a34a" stroke-width="2" stroke-dasharray="4 3"/><text x="58" y="24" font-size="9" fill="#16a34a">共有 E_p</text>'),
+ d:'标签页②脚注与卡片库"系统性"卡片。',w:'弹性势能同理，属弹簧与物体系统。'},
+{id:'d-pathv',cat:'辨析',t:'路径无关（做功） vs 末速率与路径无关',c:'重力做功与路径无关是无条件成立的；末速率与路径无关只在"只有重力做功"时才成立。',
+ f:'W_G = mgΔh（恒成立）　　v = √(2gh)（须只有重力做功）',
+ s:SV('<rect width="150" height="64" fill="#f8fafc"/><text x="8" y="18" font-size="10" fill="#16a34a">✓ 做功与路径无关：恒成立</text><path d="M8 30 L142 30" stroke="#cbd5e1"/><text x="8" y="46" font-size="10" fill="#dc2626">△ 末速率相同：须光滑无阻</text><text x="8" y="58" font-size="9" fill="#5b6672">有摩擦 ⇒ v 变小，但 W_G 不变</text>'),
+ d:'标签页①：开"轨道摩擦 μ"后，v 与 d 下降而 W_G 不变。',w:'这是本模型最关键的精确化区分。'},
+{id:'d-ge',cat:'辨析',t:'重力势能 vs 弹性势能',c:'一个由高度差和 mg 决定、零势能面可任选；一个由形变量和 k 决定、零势能固定在自然长度处。',
+ f:'E_p = mgh（零面任意）　E_弹 = ½kx²（零面 = 自然长度）',ext:true,
+ s:SV('<rect width="150" height="64" fill="#f8fafc"/><rect x="8" y="10" width="64" height="44" rx="5" fill="#f0fdf4" stroke="#bbf7d0"/><text x="14" y="28" font-size="9" fill="#166534">重力：m,g,h</text><text x="14" y="44" font-size="9" fill="#166534">零面任意</text><rect x="78" y="10" width="64" height="44" rx="5" fill="#ecfeff" stroke="#a5f3fc"/><text x="84" y="28" font-size="9" fill="#0e7490">弹性：k,x</text><text x="84" y="44" font-size="9" fill="#0e7490">零面=自然长</text>'),
+ d:'标签页④底部"重力势能 vs 弹性势能"对照表。',w:'共同点：都是势能、系统共有、做功与路径无关。'},
+{id:'d-neg',cat:'辨析',t:'克服重力做功 vs 重力做负功',c:'"克服重力做功 5 J"与"重力做功 −5 J"是同一件事的两种说法，都对应重力势能增加 5 J。',
+ f:'W_G = −5 J　⇔　克服重力做功 5 J　⇔　ΔE_p = +5 J',
+ s:SV('<rect width="150" height="64" fill="#f8fafc"/><rect x="12" y="16" width="126" height="32" rx="6" fill="#fff7ed" stroke="#fed7aa"/><text x="20" y="30" font-size="10" fill="#9a3412">克服重力做功 5 J = 重力做功 −5 J</text><text x="20" y="43" font-size="10" fill="#9a3412">⇒ E_p 增加 5 J</text>'),
+ d:'标签页③选"上升"过程，看 W_G 为负、E_p 增加。',w:'符号不要漏，单位都是 J。'},
+/* ===== 易错卡 ===== */
+{id:'e1',cat:'易错',t:'易错①："重力势能是物体自己具有的"',c:'错在忽略地球。重力势能是物体与地球组成的系统共有的相互作用势能。',
+ f:'正确说法：E_p 属于"物体 + 地球"系统',
+ s:SV('<rect width="150" height="64" fill="#fef2f2"/><circle cx="40" cy="32" r="12" fill="#1e3a8a"/><path d="M104 32 m-14 0 a14 14 0 1 0 28 0 a14 14 0 1 0 -28 0" fill="#0ea5e9"/><path d="M54 32 L88 32" stroke="#16a34a" stroke-width="2" stroke-dasharray="4 3"/><text x="20" y="58" font-size="9" fill="#991b1b">缺了地球就不成立</text>'),
+ d:'标签页②脚注；卡片"系统性"。',w:'一句话记忆：势能不能"单方面拥有"。'},
+{id:'e2',cat:'易错',t:'易错②："E_p = mgh 中 h 就是离地高度"',c:'错。h 是相对所选参考平面的高度，可以取正值、零甚至负值。',
+ f:'E_p = mg(y − y_ref)，y_ref 由你选定',
+ s:SV('<rect width="150" height="64" fill="#fef2f2"/><line x1="10" y1="30" x2="140" y2="30" stroke="#7c3aed" stroke-dasharray="6 4"/><circle cx="60" cy="16" r="8" fill="#16a34a"/><circle cx="60" cy="48" r="8" fill="#dc2626"/><text x="74" y="20" font-size="9" fill="#16a34a">h&gt;0</text><text x="74" y="52" font-size="9" fill="#dc2626">h&lt;0</text>'),
+ d:'标签页②把参考面拖到球上方，E_p 立刻变负（红色）。',w:'一句话记忆：h 是"相对高度"不是"离地高度"。'},
+{id:'e3',cat:'易错',t:'易错③："零势能面必须选地面"',c:'错。地面、桌面、释放点、最低点都可以，只要全过程统一即可。',
+ f:'任选 + 统一 = 合法',
+ s:SV('<rect width="150" height="64" fill="#fef2f2"/><line x1="10" y1="18" x2="140" y2="18" stroke="#7c3aed" stroke-dasharray="5 3"/><line x1="10" y1="34" x2="140" y2="34" stroke="#7c3aed" stroke-dasharray="5 3"/><line x1="10" y1="50" x2="140" y2="50" stroke="#7c3aed" stroke-dasharray="5 3"/><text x="18" y="62" font-size="9" fill="#991b1b">选哪个都行，选定就别改</text>'),
+ d:'标签页②"一键切换参考面"四个按钮。',w:'一句话记忆：可任选，但须统一。'},
+{id:'e4',cat:'易错',t:'易错④："参考面不同结论不同，所以势能没意义"',c:'错。E_p 数值变，但 ΔE_p 与 W_G 完全不变，物理结论不依赖参考面。',
+ f:'ΔE_p′ = ΔE_p，W_G′ = W_G',
+ s:SV('<rect width="150" height="64" fill="#fef2f2"/><rect x="12" y="14" width="56" height="36" rx="5" fill="#fff" stroke="#fecaca"/><text x="18" y="38" font-size="9" fill="#991b1b">E_p 变了</text><rect x="76" y="14" width="62" height="36" rx="5" fill="#f0fdf4" stroke="#bbf7d0"/><text x="82" y="32" font-size="9" fill="#166534">ΔE_p 不变</text><text x="82" y="44" font-size="9" fill="#166534">W_G 不变</text>'),
+ d:'标签页②高亮"不变量"读数框。',w:'一句话记忆：变的只是"零点"，不是"物理"。'},
+{id:'e5',cat:'易错',t:'易错⑤："重力做正功，重力势能增加"',c:'错。重力做正功（下降）时重力势能减少，W_G = −ΔE_p。',
+ f:'W_G > 0 ⇒ ΔE_p < 0（E_p 减少）',
+ s:SV('<rect width="150" height="64" fill="#fef2f2"/><circle cx="40" cy="14" r="8" fill="#1e3a8a"/><path d="M40 22 L40 46" stroke="#f97316" stroke-width="2"/><circle cx="40" cy="52" r="8" fill="#1e3a8a"/><text x="54" y="32" font-size="10" fill="#991b1b">下降：E_p 减少</text><text x="54" y="46" font-size="10" fill="#166534">W_G &gt; 0</text>'),
+ d:'标签页③"下降"过程对照表。',w:'一句话记忆：正功"消耗"势能。'},
+{id:'e6',cat:'易错',t:'易错⑥："斜面路程更长，重力做功更多"',c:'错。重力做功只看竖直高度差，与路程、倾角、轨道形状无关。',
+ f:'W_G = mgΔh，不含 s 与 θ',
+ s:SV('<rect width="150" height="64" fill="#fef2f2"/><path d="M20 12 L20 52" stroke="#1e3a8a" stroke-width="2"/><path d="M20 12 L74 52" stroke="#0f766e" stroke-width="2"/><line x1="14" y1="52" x2="140" y2="52" stroke="#b45309" stroke-width="3"/><text x="96" y="30" font-size="10" fill="#991b1b">W 相同</text><text x="96" y="44" font-size="9" fill="#5b6672">s 不同</text>'),
+ d:'标签页①：三轨道并列显示"路程 s"与"W_G"两栏。',w:'一句话记忆：重力只认"高度差"。'},
+{id:'e7',cat:'易错',t:'易错⑦："沿不同轨道下落末速度一定相同"',c:'不严谨。只有在轨道光滑、无空气阻力（只有重力做功）时才相同。',
+ f:'只有重力做功：v = √(2gh)；有摩擦：v 变小',
+ s:SV('<rect width="150" height="64" fill="#fef2f2"/><rect x="10" y="12" width="62" height="40" rx="5" fill="#f0fdf4" stroke="#bbf7d0"/><text x="16" y="30" font-size="9" fill="#166534">光滑：v 相同</text><text x="16" y="44" font-size="9" fill="#166534">d 相同</text><rect x="78" y="12" width="62" height="40" rx="5" fill="#fff" stroke="#fecaca"/><text x="84" y="30" font-size="9" fill="#991b1b">有摩擦：v 变小</text><text x="84" y="44" font-size="9" fill="#991b1b">但 W_G 不变</text>'),
+ d:'标签页①开 μ 前后对比 v 柱状图与 W_G 读数。',w:'一句话记忆：做功无关路径 ≠ 末速无关路径。'},
+{id:'e8',cat:'易错',t:'易错⑧："沿闭合路径走一圈重力做功不为零"',c:'错。重力是保守力，沿任意闭合路径做功严格为零。',
+ f:'∮ G·dl = 0',
+ s:SV('<rect width="150" height="64" fill="#fef2f2"/><rect x="30" y="14" width="90" height="36" fill="none" stroke="#7c3aed" stroke-width="2" stroke-dasharray="5 3"/><circle cx="30" cy="14" r="4" fill="#dc2626"/><text x="56" y="38" font-size="11" fill="#7c3aed" font-weight="bold">ΣW = 0</text>'),
+ d:'标签页③：闭合路径演示（拓展）。',w:'一句话记忆：绕一圈回到原点，重力不"收利息"。'},
+{id:'e9',cat:'易错',t:'易错⑨："沙坑深度一定与高度成正比"',c:'不严谨。只有沙的平均阻力恒定、静止释放、同一球同一沙面时才近似成正比。',
+ f:'F_f 恒定：d ≈ mgh/F_f ∝ h；F_f = k_d·d：d = √(2E_k/k_d)',
+ s:SV('<rect width="150" height="64" fill="#fef2f2"/><line x1="20" y1="52" x2="132" y2="52" stroke="#94a3b8"/><line x1="20" y1="52" x2="20" y2="10" stroke="#94a3b8"/><path d="M20 52 L124 14" stroke="#16a34a" stroke-width="2"/><path d="M20 52 Q70 50 124 26" stroke="#dc2626" stroke-width="2" fill="none" stroke-dasharray="4 3"/><text x="84" y="44" font-size="9" fill="#dc2626">非线性</text>'),
+ d:'标签页①沙坑模型切到"阻力随深度增大"，看 d–h 变弯。',w:'一句话记忆：正比是近似，功才是根本。'},
+{id:'e10',cat:'易错',t:'易错⑩："弹簧只有拉伸才有弹性势能"',c:'错。压缩同样有弹性势能，且同样形变量下拉伸与压缩的弹性势能相同。',
+ f:'E_弹(+x) = E_弹(−x) = ½kx²',ext:true,
+ s:SV('<rect width="150" height="64" fill="#fef2f2"/><line x1="75" y1="8" x2="75" y2="56" stroke="#94a3b4" stroke-dasharray="3 3"/><rect x="38" y="26" width="32" height="14" fill="#0f766e" opacity=".35"/><rect x="80" y="26" width="32" height="14" fill="#0f766e" opacity=".35"/><text x="42" y="54" font-size="9" fill="#0f766e">压缩有</text><text x="88" y="54" font-size="9" fill="#0f766e">拉伸有</text>'),
+ d:'标签页④：x 取负值，E_弹 数值不变。',w:'一句话记忆：有形变就有能，不论拉压。'},
+{id:'e11',cat:'易错',t:'易错⑪："弹性势能与形变量成正比"',c:'错。是"与形变量的平方成正比"（拓展公式），形变量加倍、势能变四倍。',
+ f:'E_弹 = ½kx²　（x → 2x，E_弹 → 4E_弹）',ext:true,
+ s:SV('<rect width="150" height="64" fill="#fef2f2"/><line x1="20" y1="52" x2="132" y2="52" stroke="#94a3b8"/><line x1="20" y1="52" x2="20" y2="10" stroke="#94a3b8"/><path d="M20 52 Q50 50 76 36 Q102 22 128 12" stroke="#0f766e" stroke-width="2" fill="none"/><text x="90" y="34" font-size="9" fill="#991b1b">抛物线</text>'),
+ d:'标签页④：E_弹–x 图为抛物线，非直线。',w:'一句话记忆：平方关系，不是线性关系。'},
+{id:'e12',cat:'易错',t:'易错⑫："在高处的物体势能一定更大"',c:'不严谨。必须同参考面、同质量、同 g 才能只比高度；否则无法比较。',
+ f:'比较 E_p = mgh 必须"三同"：同参考面、同 m、同 g',
+ s:SV('<rect width="150" height="64" fill="#fef2f2"/><circle cx="36" cy="18" r="7" fill="#1e3a8a"/><circle cx="36" cy="46" r="11" fill="#be185d"/><text x="50" y="22" font-size="9" fill="#5b6672">高处小球</text><text x="50" y="50" font-size="9" fill="#991b1b">低处大球？</text><text x="104" y="36" font-size="9" fill="#991b1b">要看 mgh</text>'),
+ d:'标签页②：改 m 或换月球 g，看 E_p 如何随 m、g 线性变化。',w:'一句话记忆：比 E_p 先比"三同"。'},
+{id:'e13',cat:'易错',t:'易错⑬："机械能一定守恒"',c:'错。只有重力或弹力做功时机械能才守恒；有摩擦、空气阻力时机械能减少。',
+ f:'守恒条件：只有重力（或系统内弹力）做功',
+ s:SV('<rect width="150" height="64" fill="#fef2f2"/><rect x="16" y="12" width="18" height="40" fill="#0284c7"/><rect x="44" y="12" width="18" height="40" fill="#0284c7"/><text x="14" y="60" font-size="9" fill="#0284c7">守恒</text><rect x="90" y="12" width="18" height="40" fill="#0284c7"/><rect x="112" y="24" width="18" height="28" fill="#0284c7" opacity=".45"/><text x="88" y="60" font-size="9" fill="#991b1b">不守恒</text>'),
+ d:'标签页③：开"空气阻力"，E_机 条缩短并提示不守恒。',w:'一句话记忆：守恒是有条件的。'},
+/* ===== 应用卡 ===== */
+{id:'a-pile',cat:'应用',t:'打桩机重锤',c:'重锤质量越大、举得越高，mgh 越大，桩被打入越深（d ∝ mgh）。',
+ f:'d ≈ mgh / F_f　⇒　m↑、h↑ ⇒ d↑',
+ s:SV('<rect width="150" height="64" fill="#f8fafc"/><rect x="60" y="10" width="30" height="18" fill="#1e3a8a"/><path d="M75 28 L75 40" stroke="#f97316" stroke-width="2"/><line x1="10" y1="42" x2="140" y2="42" stroke="#b45309" stroke-width="3"/><rect x="72" y="42" width="6" height="16" fill="#78716c"/>'),
+ d:'标签页①：调大 m 或 h，观察 d 读数与 d–m、d–h 斜率。',w:'实际中桩阻力并非恒定，只是近似。'},
+{id:'a-hydro',cat:'应用',t:'水电站与水头高度',c:'水位差（水头）h 越大，单位质量水放出的重力势能 mgh 越多，发电能力越强。',
+ f:'P ∝ ρQgh　（水头 h 是关键变量）',
+ s:SV('<rect width="150" height="64" fill="#f8fafc"/><rect x="8" y="10" width="60" height="20" fill="#38bdf8" opacity=".5"/><path d="M68 20 L110 44" stroke="#0ea5e9" stroke-width="3"/><rect x="110" y="40" width="32" height="18" fill="#94a3b8"/><text x="14" y="46" font-size="9" fill="#0e7490">水头 h</text>'),
+ d:'标签页②：把 h 理解为"上下游水位差"形式的高度差。',w:'水头对应的是 Δh，不是路径长度。'},
+{id:'a-roller',cat:'应用',t:'过山车与摆的往复',c:'只有重力做功时，过山车在等高处的速率相同，E_p 与 E_k 反复转化而机械能守恒。',
+ f:'E_p + E_k = 常量；等高 ⇒ 等速',
+ s:SV('<rect width="150" height="64" fill="#f8fafc"/><path d="M10 46 Q40 12 70 40 Q100 12 140 44" stroke="#7c3aed" stroke-width="2" fill="none"/><circle cx="70" cy="40" r="6" fill="#be185d"/><text x="20" y="60" font-size="9" fill="#5b6672">E_p ⇄ E_k</text>'),
+ d:'标签页③：能量条看 E_p 与 E_k 的此消彼长。',w:'实际有摩擦，需不断补充能量。'},
+{id:'a-bungee',cat:'应用',t:'蹦极与撑杆跳（弹性势能）',c:'蹦极绳、撑杆发生弹性形变储存弹性势能，再转化为人的动能与重力势能。',
+ f:'E_弹 = ½kx² → E_k + E_p',
+ s:SV('<rect width="150" height="64" fill="#f8fafc"/><line x1="75" y1="8" x2="75" y2="20" stroke="#94a3b4" stroke-width="3"/><path d="M75 20 L75 40" stroke="#0f766e" stroke-width="2"/><circle cx="75" cy="46" r="7" fill="#be185d"/><text x="88" y="34" font-size="9" fill="#0f766e">绳伸长 x</text>'),
+ d:'标签页④：弹射小车演示 E_弹 → E_k。',w:'绳/杆与人体组成系统共有弹性势能。'},
+{id:'a-store',cat:'应用',t:'重力储能与月球重力差异',c:'用电把重物举高储存 mgh，需要时放下发电；同一物体在月球上（g≈1.63）势能小得多。',
+ f:'E_p = mgh ∝ g　；g_月 ≈ g_地/6',
+ s:SV('<rect width="150" height="64" fill="#f8fafc"/><rect x="14" y="30" width="24" height="24" fill="#1e3a8a"/><path d="M44 30 L44 16" stroke="#16a34a" stroke-width="2"/><text x="52" y="26" font-size="9" fill="#16a34a">举高蓄能</text><text x="90" y="26" font-size="9" fill="#5b6672">地球</text><text x="90" y="42" font-size="9" fill="#5b6672">月球 g/6</text>'),
+ d:'标签页②：顶部"天体 g"切到月球，看 E_p 随 g 线性缩小。',w:'g 随纬度、高度略有变化（9.78–9.83）。'},
+/* ===== 误差卡 ===== */
+{id:'r-sand',cat:'误差',t:'误差①：沙面阻力非恒定',c:'沙被压实后阻力随深度增大，d 与 mgh 不再成正比，但"W_G = 克服阻力做的功"仍成立。',
+ f:'F_f = k_d·d ⇒ d = √(2E_k/k_d)（非线性）',
+ s:SV('<rect width="150" height="64" fill="#fffbeb"/><line x1="20" y1="52" x2="132" y2="52" stroke="#94a3b8"/><path d="M20 52 L124 14" stroke="#16a34a" stroke-width="2"/><path d="M20 52 Q70 50 124 26" stroke="#b45309" stroke-width="2" fill="none" stroke-dasharray="4 3"/><text x="60" y="44" font-size="9" fill="#b45309">实测偏离线</text>'),
+ d:'标签页①沙坑模型切"阻力随深度增大"。',w:'每次换新沙面、刮平，可减小此项误差。'},
+{id:'r-v0',cat:'误差',t:'误差②：释放时给了初速度',c:'若释放机构给了初速度，末动能不再是 mgh，d 偏大，d ∝ mgh 的关系被破坏。',
+ f:'½mv² = mgh + ½mv₀²　（v₀ ≠ 0 时失效）',
+ s:SV('<rect width="150" height="64" fill="#fffbeb"/><circle cx="34" cy="18" r="9" fill="#1e3a8a"/><path d="M44 18 L62 18" stroke="#f97316" stroke-width="2"/><text x="66" y="22" font-size="9" fill="#f97316">v₀≠0</text><text x="24" y="46" font-size="9" fill="#b45309">✗ 不允许</text>'),
+ d:'标签页①预设说明与"安全与规范提示"卡第③条。',w:'必须用释放机构，从静止释放。'},
+{id:'r-air',cat:'误差',t:'误差③：空气阻力与轨道摩擦',c:'它们做负功使末动能、末速率、深度变小，但重力做功 W_G = mgΔh 丝毫不变。',
+ f:'E_k末 = mgh + W_f + W_阻　；W_G 不变',
+ s:SV('<rect width="150" height="64" fill="#fffbeb"/><path d="M20 12 L74 52" stroke="#dc2626" stroke-width="2" stroke-dasharray="4 3"/><circle cx="74" cy="52" r="7" fill="#1e3a8a"/><text x="88" y="30" font-size="9" fill="#dc2626">μ&gt;0</text><text x="88" y="44" font-size="9" fill="#b45309">v、d 变小</text>'),
+ d:'标签页①开"轨道摩擦 μ""空气阻力"开关。',w:'归因时看 W_f，不要改 W_G。'},
+{id:'r-pose',cat:'误差',t:'误差④：球姿态与接触面积',c:'球的着地姿态、接触面积不同会改变沙的阻力，应保证同一球、同一姿态、同一沙层。',
+ f:'控制变量：同一球、同一姿态、同一沙面',
+ s:SV('<rect width="150" height="64" fill="#fffbeb"/><circle cx="40" cy="34" r="11" fill="#1e3a8a"/><line x1="10" y1="48" x2="140" y2="48" stroke="#b45309" stroke-width="3"/><path d="M34 44 L46 44" stroke="#dc2626" stroke-width="2"/><text x="60" y="34" font-size="9" fill="#b45309">接触面积要一致</text>'),
+ d:'标签页①"球直径 D"滑块与规范提示卡第④条。',w:'换球即换实验条件，需重新扫描。'}
+];
+/* ---------------- 5. 画布 / 视图变换 ---------------- */
+let V = {s:1,ox:0,oy:0,w:600,h:400,X:x=>x,Y:y=>y,L:d=>d,box:{x0:0,x1:1,y0:0,y1:1}};
+function fitCanvas(cv){
+  const dpr = Math.min(2, window.devicePixelRatio||1);
+  const w = cv.clientWidth||600, h = cv.clientHeight||400;
+  if(cv.width !== Math.round(w*dpr) || cv.height !== Math.round(h*dpr)){
+    cv.width = Math.round(w*dpr); cv.height = Math.round(h*dpr);
+  }
+  const ctx = cv.getContext('2d');
+  ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,w,h);
+  return ctx;
+}
+/* 世界坐标 → 屏幕像素，自适应缩放，保持等比
+   reserve：底部为「能量条坞」预留的像素高度，保证绘图不被能量条遮挡 */
+function setView(box, reserve){
+  const cv=$('#stage'), w=cv.clientWidth||600, h=cv.clientHeight||400;
+  const pl=48, pr=18, pt=26, pb=32+(reserve||0);
+  const bw=Math.max(0.001,box.x1-box.x0), bh=Math.max(0.001,box.y1-box.y0);
+  const s=Math.min((w-pl-pr)/bw, (h-pt-pb)/bh);
+  const ox=pl+((w-pl-pr)-s*bw)/2 - s*box.x0;
+  const oy=pt+((h-pt-pb)-s*bh)/2 + s*box.y1;
+  V={s,ox,oy,w,h,box, X:x=>ox+s*x, Y:y=>oy-s*y, L:d=>s*d, invY:py=>(oy-py)/s};
+}
+/* 绘图基元（世界坐标） */
+function wline(ctx,x1,y1,x2,y2,col,w,dash){
+  ctx.save(); ctx.beginPath(); ctx.strokeStyle=col; ctx.lineWidth=w||1.5;
+  if(dash) ctx.setLineDash(dash);
+  ctx.moveTo(V.X(x1),V.Y(y1)); ctx.lineTo(V.X(x2),V.Y(y2)); ctx.stroke(); ctx.restore();
+}
+function wcirc(ctx,x,y,r,fill,stroke,lw){
+  ctx.save(); ctx.beginPath(); ctx.arc(V.X(x),V.Y(y),Math.max(1,V.L(r)),0,6.2832);
+  if(fill){ctx.fillStyle=fill;ctx.fill();}
+  if(stroke){ctx.strokeStyle=stroke;ctx.lineWidth=lw||1.5;ctx.stroke();} ctx.restore();
+}
+function warrow(ctx,x1,y1,x2,y2,col,w){
+  const X1=V.X(x1),Y1=V.Y(y1),X2=V.X(x2),Y2=V.Y(y2);
+  const ang=Math.atan2(Y2-Y1,X2-X1), L=Math.hypot(X2-X1,Y2-Y1);
+  if(L<1) return;
+  ctx.save(); ctx.strokeStyle=col; ctx.fillStyle=col; ctx.lineWidth=w||2.4;
+  ctx.beginPath(); ctx.moveTo(X1,Y1); ctx.lineTo(X2,Y2); ctx.stroke();
+  const a=Math.min(9,L*0.42);
+  ctx.beginPath(); ctx.moveTo(X2,Y2);
+  ctx.lineTo(X2-a*Math.cos(ang-0.42), Y2-a*Math.sin(ang-0.42));
+  ctx.lineTo(X2-a*Math.cos(ang+0.42), Y2-a*Math.sin(ang+0.42));
+  ctx.closePath(); ctx.fill(); ctx.restore();
+}
+function wtxt(ctx,x,y,txt,col,size,align,weight){
+  ctx.save(); ctx.fillStyle=col||CFG.C.ink; ctx.font=(weight||'')+' '+(size||12)+'px "Microsoft YaHei",sans-serif';
+  ctx.textAlign=align||'left'; ctx.textBaseline='middle';
+  ctx.fillText(txt,V.X(x),V.Y(y)); ctx.restore();
+}
+function ptxt(ctx,px,py,txt,col,size,align,weight){
+  ctx.save(); ctx.fillStyle=col||CFG.C.ink; ctx.font=(weight||'')+' '+(size||12)+'px "Microsoft YaHei",sans-serif';
+  ctx.textAlign=align||'left'; ctx.textBaseline='middle'; ctx.fillText(txt,px,py); ctx.restore();
+}
+function drawBars(ctx,px,py,w,h,items,title){
+  const n=items.length, gap=6, bw=(w-gap*(n-1))/Math.max(1,n);
+  ctx.save();
+  ctx.fillStyle='rgba(255,255,255,.86)'; ctx.strokeStyle=CFG.C.line; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.roundRect ? ctx.roundRect(px-8,py-18,w+16,h+40,8) : ctx.rect(px-8,py-18,w+16,h+40);
+  ctx.fill(); ctx.stroke();
+  if(title) ptxt(ctx,px-4,py-10,title,CFG.C.ink2,11);
+  items.forEach((it,i)=>{
+    const x=px+i*(bw+gap), frac=clamp(it.v/Math.max(1e-9,it.max),0,1), bh=h*frac;
+    ctx.fillStyle='#eef2f7'; ctx.fillRect(x,py,bw,h);
+    ctx.fillStyle=it.c; ctx.fillRect(x,py+h-bh,bw,bh);
+    ctx.strokeStyle=CFG.C.line; ctx.strokeRect(x,py,bw,h);
+    ptxt(ctx,x+bw/2,py+h+9,it.k,CFG.C.ink2,10,'center');
+    /* 数值：满格时收进条内顶部，加白色描边保证可读 */
+    const vy=Math.max(py+8,py+h-bh-8);
+    ctx.save(); ctx.font='bold 10.5px "Microsoft YaHei",sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.lineWidth=3; ctx.strokeStyle='rgba(255,255,255,.92)'; ctx.lineJoin='round';
+    ctx.strokeText(fmt(it.v,2),x+bw/2,vy);
+    ctx.fillStyle=it.c===CFG.C.ek?'#a16207':CFG.C.ink; ctx.fillText(fmt(it.v,2),x+bw/2,vy);
+    ctx.restore();
+  });
+  ctx.restore();
+}
+
+/* 能量条坞：在画布底部预留一条独立横带，能量条只画在这条带内，不再压住装置图 */
+const DOCK=106;                 // 坞高度（像素）：含标题、条体与刻度文字
+function dockBase(){ return V.h-DOCK; }
+function drawDock(ctx, label){
+  ctx.save();
+  ctx.fillStyle='rgba(248,250,252,.97)'; ctx.fillRect(0,dockBase(),V.w,DOCK);
+  ctx.strokeStyle='#dbe3ee'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(0,dockBase()+.5); ctx.lineTo(V.w,dockBase()+.5); ctx.stroke();
+  if(label) ptxt(ctx,10,dockBase()+11,label,CFG.C.ink2,10.5);
+  ctx.restore();
+}
+
+/* 文字排印辅助：测宽 / 白描边（压线时可读）/ 一维防重叠排布 */
+function textW(ctx,txt,font){ ctx.save(); ctx.font=font; const w=ctx.measureText(txt).width; ctx.restore(); return w; }
+function ptxtHalo(ctx,px,py,txt,col,size,align,weight){
+  ctx.save(); ctx.font=(weight||'')+' '+(size||12)+'px "Microsoft YaHei",sans-serif';
+  ctx.textAlign=align||'left'; ctx.textBaseline='middle';
+  ctx.lineWidth=3; ctx.strokeStyle='rgba(255,255,255,.88)'; ctx.lineJoin='round';
+  ctx.strokeText(txt,px,py); ctx.restore();
+  ptxt(ctx,px,py,txt,col,size,align,weight);
+}
+/* items:[{x(像素中心),w(像素宽)}]：保证相邻文字不叠压，并夹取在画布内 */
+function spreadX(items,gap,minX,maxX){
+  const ord=items.map((_,i)=>i).sort((a,b)=>items[a].x-items[b].x);
+  for(let k=1;k<ord.length;k++){
+    const a=items[ord[k-1]], b=items[ord[k]];
+    const need=a.x+(a.w+b.w)/2+gap;
+    if(b.x<need) b.x=need;
+  }
+  const last=items[ord[ord.length-1]];
+  const over=last.x+last.w/2-maxX;
+  if(over>0) items.forEach(it=>{ it.x-=over; });
+  const first=items[ord[0]];
+  const under=minX-(first.x-first.w/2);
+  if(under>0) items.forEach(it=>{ it.x+=under; });
+  return items.map(it=>it.x);
+}
+
+/* ---------------- 6. 轨道几何（解析） ---------------- *//* 每条轨道用弧长 s 参数化：at(s) → {x,y,tx,ty,cosA,invR}
+   tx,ty：单位切向量（沿 s 增大方向）；cosA=|tx|（切向与水平夹角余弦）；invR=1/R（直线为 0） */
+function buildTrack(type,h,o){
+  o=o||{}; const x0=o.x0!==undefined?o.x0:0.7;
+  if(type==='vertical'){
+    return {id:'vertical',len:h,at(s){
+      const d=clamp(s,0,h); return {x:x0,y:h-d,tx:0,ty:-1,cosA:0,invR:0}; }};
+  }
+  if(type==='incline'){
+    const th=(o.theta!==undefined?o.theta:S.theta)*Math.PI/180, L=h/Math.sin(th);
+    return {id:'incline',len:L,at(s){
+      const d=clamp(s,0,L); return {x:x0+d*Math.cos(th),y:h-d*Math.sin(th),tx:Math.cos(th),ty:-Math.sin(th),cosA:Math.cos(th),invR:0}; }};
+  }
+  if(type==='arc'){
+    /* 凹形圆弧（谷形）：起点切向 α1=80°（陡），终点切向 α2=25°，总落差恰为 h。
+       弧长参数化：α(s)=α1−s/R；法向力 N=m(g·cosα+v²/R) 恒为正（球始终贴合轨道）。 */
+    const a1=80*Math.PI/180, a2=25*Math.PI/180;
+    const R=Math.max(1e-3, h/(Math.cos(a2)-Math.cos(a1)));
+    const L=R*(a1-a2);
+    return {id:'arc',len:L,at(s){
+      const al=clamp(a1-clamp(s,0,L)/R, a2, a1);
+      return {x:x0+R*(Math.sin(a1)-Math.sin(al)), y:h+R*(Math.cos(a1)-Math.cos(al)),
+              tx:Math.cos(al), ty:-Math.sin(al), cosA:Math.cos(al), invR:1/R}; }};
+  }
+  /* 折线：两段直线，路程明显更长 */
+  const A=[x0,h], B=[x0+0.95*h,0.55*h], C=[x0+1.55*h,0];
+  const L1=Math.hypot(B[0]-A[0],B[1]-A[1]), L2=Math.hypot(C[0]-B[0],C[1]-B[1]);
+  return {id:'polyline',len:L1+L2,at(s){
+    let d=clamp(s,0,L1+L2);
+    if(d<=L1){const u=d/L1;return {x:A[0]+(B[0]-A[0])*u,y:A[1]+(B[1]-A[1])*u,tx:(B[0]-A[0])/L1,ty:(B[1]-A[1])/L1,cosA:Math.abs(B[0]-A[0])/L1,invR:0};}
+    const u=(d-L1)/L2; return {x:B[0]+(C[0]-B[0])*u,y:B[1]+(C[1]-B[1])*u,tx:(C[0]-B[0])/L2,ty:(C[1]-B[1])/L2,cosA:Math.abs(C[0]-B[0])/L2,invR:0}; }};
+}
+function trackColor(id){ const t=CFG.tracks.find(t=>t.id===id); return CFG.C[t?t.key:'t1']; }
+function trackLabel(id){ const t=CFG.tracks.find(t=>t.id===id); return t?t.label:id; }
+
+/* ---------------- 7. 物理：切向动力学 + RK4 固定步长积分 ---------------- */
+/* a_t = g·t̂ − μ(g·cosA + v²/R)·sign(v) − c_air·v|v|    （P={g,mu,air,airK}） */
+function accelAt(tr,s,v,P){
+  const q=tr.at(s);
+  let a=-P.g*q.ty;                                   // 重力沿切向的分量
+  if(P.mu>0){ const N=P.g*q.cosA + v*v*q.invR; if(N>0) a -= P.mu*N*(v>=0?1:-1); }
+  if(P.air){ a -= P.airK*v*Math.abs(v); }
+  return a;
+}
+function rk4(tr,s,v,dt,P){
+  const f=(ss,vv)=>accelAt(tr,ss,vv,P);
+  const k1s=v,            k1v=f(s,v);
+  const k2s=v+k1v*dt/2,   k2v=f(s+k1s*dt/2, v+k1v*dt/2);
+  const k3s=v+k2v*dt/2,   k3v=f(s+k2s*dt/2, v+k2v*dt/2);
+  const k4s=v+k3v*dt,     k4v=f(s+k3s*dt,   v+k3v*dt);
+  return {s:s+dt*(k1s+2*k2s+2*k3s+k4s)/6, v:v+dt*(k1v+2*k2v+2*k3v+k4v)/6};
+}
+/* 无动画快速积分（用于扫描与预设）：返回末速率、摩擦功、沙坑深度等 */
+function simulate(id,m,h,P){
+  P=P||{}; const p={g:P.g!==undefined?P.g:S.g, mu:P.mu!==undefined?P.mu:S.mu, air:!!P.air, airK:S.airK,
+    theta:P.theta!==undefined?P.theta:S.theta};
+  const tr=buildTrack(id,h,{x0:0.7,theta:p.theta});
+  const dt=5e-4; let s=0,v=0,Wf=0,Wair=0,guard=0;
+  while(s<tr.len && guard++<80000){
+    /* 末步收紧：避免越过轨道终点造成能量虚增 */
+    let h=dt; if(v>0){ const rem=tr.len-s; if(v*h>rem) h=Math.max(1e-7,rem/v); }
+    const st=rk4(tr,s,v,h,p), ds=st.s-s;
+    if(ds>0){
+      if(p.mu>0){ const qm=tr.at(s+ds/2), vm=(v+st.v)/2; const Nm=p.g*qm.cosA+vm*vm*qm.invR; Wf += -p.mu*Nm*m*ds; }
+      if(p.air){ const vm=(v+st.v)/2; Wair += -p.airK*vm*Math.abs(vm)*m*ds; }
+    }
+    s=st.s; v=st.v;
+    if(v<=0){ v=0; break; }
+  }
+  if(s<tr.len && v<=0) v=0;                     // 摩擦过大而停滞
+  const Ek=0.5*m*v*v, Ep0=m*p.g*h;
+  const Ff=P.Ff!==undefined?P.Ff:S.Ff, kd=P.kd!==undefined?P.kd:S.kd;
+  const depth = P.sand==='nonlinear' ? Math.sqrt(2*Ek/Math.max(1e-9,kd)) : Ek/Math.max(1e-9,Ff);
+  const drift = Math.abs((Ek+0)-Ep0-Wf-Wair)/Math.max(1e-9,Ep0)*100;
+  return {vExit:v,Wf,Wair,len:tr.len,depth,Ek,drift,tr,Ep0};
+}
+function params(){ return {g:S.g,mu:S.mu,air:S.air,airK:S.airK,theta:S.theta,Ff:S.Ff,kd:S.kd,sand:S.sandModel}; }
+
+/* ---------------- 8. 实验运行体 ---------------- */
+function resetSim(keepRows){
+  const ids=CFG.tracks.filter(t=>S.on[t.id]).map(t=>t.id);
+  if(!ids.length) ids.push('vertical');
+  S.runners=ids.map(id=>{
+    const tr=buildTrack(id,S.h,{x0:0.7,theta:S.theta}), q0=tr.at(0);
+    return {id,tr,label:trackLabel(id),color:trackColor(id),s:0,v:0,x:q0.x,y:q0.y,
+      phase:'track',depth:0,vExit:0,Ek:0,Wf:0,Wair:0,dTarget:0,t:0,trail:[],strobe:[],nextStrobe:0,drift:0};
+  });
+  S.playing=false; S.t0=0;
+  if(!keepRows) { /* 不清数据 */ }
+  updateReadouts(); updateCharts();
+}
+function stepRunner(r,dt){
+  const P=params();
+  if(r.phase==='track'){
+    const v0=r.v, s0=r.s;
+    let h=dt;
+    if(r.v>0){ const rem=r.tr.len-r.s; if(r.v*h>rem) h=Math.max(1e-7,rem/r.v); }
+    const st=rk4(r.tr,r.s,r.v,h,P), ds=st.s-r.s;
+    if(ds>0){
+      if(P.mu>0){ const qm=r.tr.at(r.s+ds/2), vm=(v0+st.v)/2; const Nm=P.g*qm.cosA+vm*vm*qm.invR; r.Wf += -P.mu*Nm*S.m*ds; }
+      if(P.air){ const vm=(v0+st.v)/2; r.Wair += -P.airK*vm*Math.abs(vm)*S.m*ds; }
+    }
+    r.s=st.s; r.v=st.v; r.t+=dt;
+    if(r.s>=r.tr.len){
+      r.s=r.tr.len; r.vExit=Math.max(r.v,0); r.Ek=0.5*S.m*r.vExit*r.vExit;
+      r.phase='sand'; r.depth=0;
+      r.dTarget = P.sand==='nonlinear' ? Math.sqrt(2*r.Ek/Math.max(1e-9,P.kd)) : r.Ek/Math.max(1e-9,P.Ff);
+      if(S.noise) r.dTarget *= (1+(Math.random()*2-1)*S.noiseAmt);
+      const q=r.tr.at(r.tr.len); r.x=q.x; r.y=q.y;
+    }else if(r.v<=0){ r.phase='stall'; }
+    else { const q=r.tr.at(r.s); r.x=q.x; r.y=q.y; }
+  }else if(r.phase==='sand'){
+    const a = P.sand==='nonlinear' ? -P.kd*r.depth/S.m : -P.Ff/S.m;
+    r.depth += r.v*dt; r.v += a*dt; r.t+=dt;
+    if(r.v<=0){ r.v=0; r.phase='done'; }
+  }
+  r.t+=0;
+  if(S.trail && r.phase!=='done'){ r.trail.push([r.x, r.phase==='sand'? -r.depth : r.y]); if(r.trail.length>160) r.trail.shift(); }
+  if(S.strobe && r.t>=r.nextStrobe){ r.strobe.push([r.x, r.phase==='sand'? -r.depth : r.y]); r.nextStrobe=r.t+0.1; }
+}
+function allDone(){ return S.runners.length>0 && S.runners.every(r=>r.phase==='done'||r.phase==='stall'); }
+function pushRow(){
+  const g=S.g,m=S.m,h=S.h;
+  S.runners.forEach(r=>{
+    const d=r.phase==='sand'||r.phase==='done' ? r.dTarget : null;
+    S.rows.push({track:r.label,m:m,h:h,hRef:S.hRef,mu:S.mu,Ff:S.sandModel==='nonlinear'?('k_d='+S.kd):S.Ff,
+      Wg:m*g*h, dep:-m*g*h, v:r.vExit, d:d, note:(S.mu>0?'有摩擦':(S.air?'有空气阻力':'光滑'))+(REDUCED?'/静态帧':'')});
+  });
+  renderTable();
+}
+
+/* ---------------- 9. 标签页①：三轨道沙坑实验 ---------------- */
+function drawTab1(ctx){
+  let maxEnd=1.2;
+  S.runners.forEach(r=>{ maxEnd=Math.max(maxEnd,r.tr.at(r.tr.len).x); });
+  /* 沙坑深度的最大显示值与放大倍数（上限压低，防止埋沙小球的 mg 箭头伸进能量条坞） */
+  let maxD=0.01; S.runners.forEach(r=>{ maxD=Math.max(maxD,r.dTarget||0); });
+  const dScale=clamp(0.32/maxD,1,30);
+  const box={x0:0.15, x1:maxEnd+0.75, y0:-0.68, y1:S.h+0.55};
+  setView(box, S.bars?DOCK:0);
+  const H=S.h, x0=0.7;
+  /* 地面与沙坑 */
+  ctx.save();
+  ctx.fillStyle='#fdf6e7'; ctx.fillRect(V.X(box.x0),V.Y(0),V.L(box.x1-box.x0),V.L(0.52));
+  ctx.fillStyle='#e7d3ae'; ctx.fillRect(V.X(box.x0),V.Y(0),V.L(box.x1-box.x0),V.L(0.06));
+  ctx.restore();
+  /* 等势面 */
+  if(S.equi){
+    for(let y=-0.25;y<=H+0.001;y+=0.25){
+      if(y<-0.5) continue;
+      wline(ctx,box.x0,y,box.x1,y,CFG.C.equi,1,[5,4]);
+      /* 高度标尺整数刻度、Δh 标注（h/2）与释放平台附近不放数值，避免叠压 */
+      /* 地下（y<0）的等势线只画线不放数值，避免压住沙面下的轨道标签 */
+      if(y<-0.01) continue;
+      if(Math.abs(y/0.5-Math.round(y/0.5))<1e-6 || Math.abs(y-H)<0.14 || Math.abs(y-H/2)<0.14) continue;
+      ptxtHalo(ctx,V.X(box.x0)+4,V.Y(y)-8,'E_p='+fmt(S.m*S.g*(y-S.hRef),1)+' J',CFG.C.equi,9.5);
+    }
+  }
+  /* 参考面 */
+  if(S.refLine && S.hRef>box.y0 && S.hRef<H+0.4){
+    wline(ctx,box.x0,S.hRef,box.x1,S.hRef,CFG.C.ref,2,[8,5]);
+    ptxtHalo(ctx,V.X(box.x1)-6,V.Y(S.hRef)-9,'参考面（零势能面） h_ref = '+fmt(S.hRef,2)+' m',CFG.C.ref,11,'right','bold');
+  }
+  /* 高度标尺 + Δh */
+  const rx=box.x0+0.06;
+  wline(ctx,rx,0,rx,H,CFG.C.ink2,1.5);
+  for(let y=0;y<=H+1e-9;y+=0.5){ wline(ctx,rx-0.04,y,rx+0.04,y,CFG.C.ink2,1); ptxt(ctx,V.X(rx)-8,V.Y(y),fmt(y,1),CFG.C.ink2,9.5,'right'); }
+  warrow(ctx,rx+0.14,H,rx+0.14,0,CFG.C.g,2);
+  ptxt(ctx,V.X(rx)+13,V.Y(H/2),'Δh = '+fmt(H,2)+' m',CFG.C.g,11,'left','bold');
+  /* 释放平台 */
+  ctx.save(); ctx.fillStyle='#94a3b8';
+  ctx.fillRect(V.X(x0-0.28),V.Y(H),V.L(0.56),Math.max(3,V.L(0.045))); ctx.restore();
+  wtxt(ctx,x0-0.34,H+0.13,'释放机构（v₀ = 0）',CFG.C.ink2,10.5,'left');
+  /* 轨道 */
+  S.runners.forEach(r=>{
+    const N=90, dash=(S.mu>0?[7,5]:null), col=(S.mu>0?CFG.C.fric:r.color);
+    ctx.save(); ctx.beginPath(); ctx.strokeStyle=col; ctx.lineWidth=Math.max(2.2,V.L(0.035));
+    if(dash) ctx.setLineDash(dash);
+    for(let i=0;i<=N;i++){ const q=r.tr.at(r.tr.len*i/N); const px=V.X(q.x),py=V.Y(q.y); i?ctx.lineTo(px,py):ctx.moveTo(px,py); }
+    ctx.stroke(); ctx.restore();
+  });
+  /* 轨道标签（颜色固定，常驻）：先按像素宽度做一维防重叠排布，再带白描边绘制 */
+  const lab1=S.runners.map(r=>({txt:r.label+'  s='+fmt(r.tr.len,2)+'m', x:V.X(r.tr.at(r.tr.len).x), col:(S.mu>0?CFG.C.fric:r.color)}));
+  const lab2=S.runners.map((r,i)=>({txt:'W_G='+fmt(S.m*S.g*H,1)+'J  d='+(r.dTarget?fmt(r.dTarget*100,2):'—')+'cm', x:lab1[i].x, col:lab1[i].col}));
+  lab1.forEach(o=>o.w=textW(ctx,o.txt,'bold 10.5px "Microsoft YaHei",sans-serif'));
+  lab2.forEach(o=>o.w=textW(ctx,o.txt,'10px "Microsoft YaHei",sans-serif'));
+  const xs1=spreadX(lab1,8,34,V.w-34), xs2=spreadX(lab2,8,34,V.w-34);
+  S.runners.forEach((r,i)=>{
+    ptxtHalo(ctx,xs1[i],V.Y(0)+16,lab1[i].txt,lab1[i].col,10.5,'center','bold');
+    ptxtHalo(ctx,xs2[i],V.Y(0)+30,lab2[i].txt,lab2[i].col,10,'center');
+  });
+  /* 沙坑表面线 */
+  wline(ctx,box.x0,0,box.x1,0,'#b45309',2.5);
+  /* 落点、深度标尺 */
+  const anns=[];
+  S.runners.forEach(r=>{
+    const qe=r.tr.at(r.tr.len), xe=qe.x;
+    if(r.dTarget>0){
+      const zb=-r.dTarget*dScale;
+      ctx.save(); ctx.fillStyle='rgba(180,83,9,.22)';
+      ctx.fillRect(V.X(xe)-V.L(S.ballD/2),V.Y(0),V.L(S.ballD),V.L(-zb)); ctx.restore();
+      wline(ctx,xe,0,xe,zb,CFG.C.fric,2.5);
+      wline(ctx,xe-0.05,zb,xe+0.05,zb,CFG.C.fric,1.5);
+      anns.push({txt:'d='+fmt(r.dTarget*100,2)+'cm', x:Math.min(V.X(xe)+V.L(0.09),V.w-8), y:V.Y(0)+46});
+    }
+  });
+  anns.forEach(o=>o.w=textW(ctx,o.txt,'bold 10.5px "Microsoft YaHei",sans-serif'));
+  anns.sort((a,b)=>a.x-b.x);
+  anns.forEach((o,i)=>{
+    /* 落点相邻、深度标注会互相叠压时逐个下移错开（避开 Y+16/Y+30 两行轨道标签） */
+    if(i>0 && o.x<anns[i-1].x+anns[i-1].w+8 && Math.abs(o.y-anns[i-1].y)<12) o.y=anns[i-1].y+14;
+    ptxtHalo(ctx,o.x,o.y,o.txt,CFG.C.fric,10.5,'left','bold');
+  });
+  ptxtHalo(ctx,V.X(box.x0)+4,V.Y(-0.60),'沙坑深度放大 ×'+fmt(dScale,1)+' 显示（放大法）',CFG.C.sand,10,'left');
+  /* 残影 / 频闪 */
+  S.runners.forEach(r=>{
+    if(S.trail&&r.trail.length>1){
+      ctx.save(); ctx.strokeStyle=r.color; ctx.globalAlpha=.28; ctx.lineWidth=1.6; ctx.beginPath();
+      r.trail.forEach((p,i)=>{ const px=V.X(p[0]),py=V.Y(p[1]); i?ctx.lineTo(px,py):ctx.moveTo(px,py); });
+      ctx.stroke(); ctx.restore();
+    }
+    if(S.strobe) r.strobe.forEach(p=>wcirc(ctx,p[0],p[1],0.022,r.color,'#fff',1));
+  });
+  /* 球、矢量 */
+  S.runners.forEach(r=>{
+    const y = r.phase==='sand'||r.phase==='done' ? -r.depth*dScale : r.y;
+    wcirc(ctx,r.x,y,S.ballD/2,r.color,'#fff',1.6);
+    if(S.vec){
+      const q=r.tr.at(Math.min(r.s,r.tr.len));
+      /* mg 箭头长度按剩余空间收紧，埋沙后不伸进底部能量条坞 */
+      const aLen=Math.min(0.34, y-(box.y0+0.08));
+      if(aLen>0.1){
+        warrow(ctx,r.x,y,r.x,y-aLen,CFG.C.g,2.2);
+        ptxtHalo(ctx,V.X(r.x)+7,V.Y(y-aLen*0.5),'mg',CFG.C.g,10.5,'left','bold');
+      }
+      if(r.v>0.05&&r.phase==='track'){
+        const L=clamp(r.v*0.075,0.12,0.55);
+        warrow(ctx,r.x,y,r.x+q.tx*L,y+q.ty*L,CFG.C.v,2.2);
+        ptxt(ctx,V.X(r.x+q.tx*L)+6,V.Y(y+q.ty*L)-6,'v='+fmt(r.v,2)+' m/s',CFG.C.v,10.5,'left','bold');
+      }
+    }
+  });
+  /* 能量条：每条轨道一组，统一画在底部专属坞带内（不遮挡装置） */
+  if(S.bars){
+    drawDock(ctx,'能量条（J）· 三条轨道各一组，共用同一标尺，可横向对比 E_p / E_k / E_机');
+    const n=S.runners.length;
+    /* 统一标尺：E_机 的最大可能值（以当前参考面计） */
+    const Emax=Math.max(1e-6,S.m*S.g*Math.max(0.2,S.h-S.hRef));
+    const bw=Math.min(128,Math.max(78,(V.w-28)/n-14));
+    S.runners.forEach((r,i)=>{
+      const y=(r.phase==='sand'||r.phase==='done')?-r.depth*dScale:r.y;
+      const Ep=S.m*S.g*(Math.max(y,0)-S.hRef), Ek=0.5*S.m*r.v*r.v, Em=Ep+Ek;
+      const px=14+i*(bw+12);
+      drawBars(ctx,px,V.h-62,bw,40,[
+        {k:'E_p',v:Ep,max:Emax,c:Ep>=0?CFG.C.ep:CFG.C.epn},
+        {k:'E_k',v:Ek,max:Emax,c:CFG.C.ek},
+        {k:'E_机',v:Em,max:Emax,c:CFG.C.mech}
+      ],r.label);
+    });
+  }
+  /* 顶部结论条（宽度随文字自适应，避免文字溢出白底） */
+  const concl='W_G = mgΔh = '+fmt(S.m*S.g*H,2)+' J（三轨道相同：与路径无关）　|　路程 s 分别为 '+
+    S.runners.map(r=>fmt(r.tr.len,2)).join(' / ')+' m';
+  const cw=Math.min(V.w-16,textW(ctx,concl,'11.5px "Microsoft YaHei",sans-serif')+18);
+  ctx.save(); ctx.fillStyle='rgba(255,255,255,.9)'; ctx.strokeStyle=CFG.C.line;
+  ctx.beginPath(); ctx.rect(8,8,cw,26); ctx.fill(); ctx.stroke(); ctx.restore();
+  ptxt(ctx,16,21,concl,CFG.C.ink,11.5);
+  if(S.mu>0) ptxt(ctx,16,44,'μ = '+fmt(S.mu,2)+'：斜面/圆弧/折线受摩擦做负功，v 与 d 明显减小；竖直轨道为自由落体（N = 0）不受轨道摩擦影响。W_G 仍为 '+fmt(S.m*S.g*H,2)+' J。',CFG.C.fric,10.5);
+  hotspots1();
+}
+/* 俯视图 */
+function drawTab1Top(ctx){
+  const ids=S.runners.map(r=>r.id);
+  let maxEnd=1.2; S.runners.forEach(r=>{ maxEnd=Math.max(maxEnd,r.tr.at(r.tr.len).x); });
+  const box={x0:0.1,x1:maxEnd+0.6,y0:-1.0,y1:1.0}; setView(box);
+  ptxt(ctx,V.X(box.x0)+4,V.Y(0.9),'俯视图：三条轨道的水平投影与落点（圈越大＝陷入越深）',CFG.C.ink2,11.5);
+  S.runners.forEach((r,i)=>{
+    const yTop=0.62-i*0.62;
+    wline(ctx,0.7,yTop,r.tr.at(r.tr.len).x,yTop,r.color,3,[1,0]);
+    wcirc(ctx,0.7,yTop,0.05,r.color,'#fff',1.4);
+    ptxt(ctx,V.X(0.7)-V.L(0.09),V.Y(yTop),r.label,r.color,10.5,'right','bold');
+    const xe=r.tr.at(r.tr.len).x;
+    const rr=clamp(0.06+r.dTarget*3.2,0.06,0.42);
+    wcirc(ctx,xe,yTop,rr,'rgba(180,83,9,.35)',CFG.C.fric,1.6);
+    ptxt(ctx,V.X(xe),V.Y(yTop-0.02)-V.L(rr)-8,'d='+(r.dTarget?fmt(r.dTarget*100,2):'—')+'cm',CFG.C.fric,10,'center','bold');
+  });
+  hotspots1();
+}
+/* ---------------- 10. 标签页②：E_p = mgh 与参考面相对性 ---------------- */
+function epAt(y){ return S.m*S.g*(y-S.hRef); }
+function drawTab2(ctx){
+  const H=S.h;
+  const yLo=Math.min(-0.9, S.hRef-0.75);
+  /* 参考面被移到释放点上方（乃至 h 之上）时同样纳入视野，保持可见、可拖动 */
+  const yHi=Math.max(H+0.45, S.hRef+0.35);
+  const box={x0:0.2, x1:4.3, y0:yLo, y1:yHi}; setView(box, DOCK);
+  const minGapY=18/V.s;   /* 标记点标签的最小竖直间距（像素 → 世界单位） */
+  const rx=0.62;
+  /* 等势面 */
+  if(S.equi){ for(let y=Math.ceil(yLo*4)/4;y<=H+1e-9;y+=0.25){
+    wline(ctx,box.x0,y,box.x1,y,CFG.C.equi,1,[5,4]);
+    /* 参考面附近不放数值，避免与"⇕ 拖动我"手柄文字叠压 */
+    if(Math.abs(y-S.hRef)<minGapY*1.6) continue;
+    ptxtHalo(ctx,V.X(box.x1)-4,V.Y(y)-7,'E_p='+fmt(epAt(y),1)+' J',CFG.C.equi,9.5,'right'); } }
+  /* 竖直标尺 */
+  wline(ctx,rx,yLo,rx,H,CFG.C.ink2,1.6);
+  for(let y=Math.ceil(yLo*2)/2;y<=H+1e-9;y+=0.5){ wline(ctx,rx-0.05,y,rx+0.05,y,CFG.C.ink2,1);
+    ptxt(ctx,V.X(rx)-8,V.Y(y),fmt(y,1)+' m',CFG.C.ink2,9.5,'right'); }
+  /* 标记点：A 释放点 / B 中点 / C 沙面 / D 参考面下方（位置重合时标签逐个下移错开） */
+  const marks=[{k:'A 释放点',y:H},{k:'B 中点',y:H/2},{k:'C 沙面（y=0）',y:0},{k:'D 参考面下方 0.5 m',y:S.hRef-0.5}];
+  marks.forEach((m,i)=>{
+    let c=0; for(let j=0;j<i;j++){ if(Math.abs(marks[j].y-m.y)<minGapY) c++; }
+    m.dpx=c*32;   /* 与上方标记重合时的像素下移量 */
+  });
+  marks.forEach(m=>{
+    if(m.y<box.y0-0.05||m.y>box.y1+0.05) return;
+    const e=epAt(m.y), col=e>1e-9?CFG.C.ep:(e<-1e-9?CFG.C.epn:CFG.C.epz);
+    wline(ctx,rx,m.y,4.0,m.y,col,1.6,[6,4]);
+    wcirc(ctx,rx,m.y,0.045,col,'#fff',1.6);
+    ptxtHalo(ctx,V.X(rx)+12,V.Y(m.y)-8+m.dpx,m.k+'　E_p = '+fmt(e,2)+' J',col,11,'left','bold');
+    ptxtHalo(ctx,V.X(rx)+12,V.Y(m.y)+8+m.dpx,'h = '+fmt(m.y-S.hRef,2)+' m（相对参考面）',CFG.C.ink2,9.5,'left');
+  });
+  /* 参考面（可拖动） */
+  if(S.hRef>=box.y0-0.01 && S.hRef<=box.y1+0.01){
+    wline(ctx,box.x0,S.hRef,box.x1,S.hRef,CFG.C.ref,2.4,[9,5]);
+    wcirc(ctx,3.9,S.hRef,0.07,CFG.C.ref,'#fff',2);
+    ptxtHalo(ctx,V.X(3.9),V.Y(S.hRef)-16,'⇕ 拖动我',CFG.C.ref,10.5,'center','bold');
+    /* 与标记点（A/B/C/D）标签重合时下移，避开其第二行文字 */
+    const nearMark=marks.some(m=>Math.abs(m.y-S.hRef)<minGapY*1.5);
+    const refDy=nearMark?32:11;
+    ptxtHalo(ctx,V.X(box.x0)+4,V.Y(S.hRef)+refDy,'零势能面 h_ref = '+fmt(S.hRef,2)+' m　（该面上 E_p = 0）',CFG.C.ref,11,'left','bold');
+  }
+  /* 球（在 A 与 C） */
+  wcirc(ctx,1.55,H,S.ballD/2,'#1e3a8a','#fff',1.6);
+  wcirc(ctx,1.55,0,S.ballD/2,'#1e3a8a','#fff',1.6);
+  if(S.vec){ warrow(ctx,1.55,H,1.55,H-0.36,CFG.C.g,2.2); ptxt(ctx,V.X(1.55)+7,V.Y(H-0.18),'mg',CFG.C.g,10.5,'left','bold'); }
+  /* ΔE_p 与 W_G（箭头左移至 x=2.45，避开右侧等势面数值标签；文字加白描边） */
+  const dH=0-H, dep=S.m*S.g*dH, wg=-dep;
+  warrow(ctx,2.45,H,2.45,0,CFG.C.g,2.2);
+  ptxtHalo(ctx,V.X(2.45)+10,V.Y(H/2)+8,'W_G = mgΔh = '+fmt(wg,2)+' J',CFG.C.g,11.5,'left','bold');
+  ptxtHalo(ctx,V.X(2.45)+10,V.Y(H/2)-8,'ΔE_p = '+fmt(dep,2)+' J',CFG.C.ep,11.5,'left','bold');
+  /* 不变量提示（底部坞带左侧） */
+  const flash=S.invFlash && (window.performance?performance.now():Date.now())<S.invFlash;
+  const barsOn=S.bars, dk=dockBase();
+  if(barsOn) drawDock(ctx,'E_p 随参考面整体平移；ΔE_p 与 W_G 不变（不变量）');
+  ctx.save(); ctx.fillStyle=flash?'#fef9c3':'#fffbeb'; ctx.strokeStyle=flash?'#f59e0b':'#fde68a'; ctx.lineWidth=flash?3:2;
+  /* 宽度受右侧能量条约束；顶部与坞带标题行错开，避免压住标题文字 */
+  const availW=barsOn?(V.w-176-26):(V.w-24);
+  const iw=Math.max(150,Math.min(Math.max(240,V.w-430),availW));
+  ctx.beginPath(); ctx.rect(10,barsOn?dk+20:V.h-74,iw,barsOn?DOCK-26:58); ctx.fill(); ctx.stroke(); ctx.restore();
+  const ly0=barsOn?dk+36:V.h-56;
+  ptxt(ctx,18,ly0,'★ 不变量：ΔE_p = '+fmt(dep,3)+' J　W_G = '+fmt(wg,3)+' J（拖动参考面，数值不变）',CFG.C.ink,11.5,'left','bold');
+  ptxt(ctx,18,ly0+18,'E_p 整体平移 −mg·Δy_ref = '+fmt(-S.m*S.g*S.hRef,2)+' J（斜率 = −mg = '+fmt(-S.m*S.g,2)+' J/m）',CFG.C.ink2,11);
+  ptxt(ctx,18,ly0+36,'g = '+fmt(S.g,2)+' m/s²　重力势能属于「物体 + 地球」系统；E_p 可为负值（红色）',CFG.C.ink2,10.5);
+  if(S.bars){
+    const Ep=epAt(H), Emax=Math.max(1e-6,Math.abs(Ep),Math.abs(epAt(0)))*1.1;
+    drawBars(ctx,V.w-176,V.h-62,160,40,[
+      {k:'E_p(A)',v:Ep,max:Emax,c:Ep>=0?CFG.C.ep:CFG.C.epn},
+      {k:'E_p(C)',v:epAt(0),max:Emax,c:epAt(0)>=0?CFG.C.ep:CFG.C.epn},
+      {k:'|ΔE_p|',v:Math.abs(dep),max:Emax,c:CFG.C.mech}],'能量（J，相对参考面）');
+  }
+  hotspots2();
+}
+/* ---------------- 11. 标签页③：W_G = −ΔE_p 功能关系 ---------------- */
+const PROC = {
+  down:{y1:1.7,y2:0.4,x1:1.0,x2:1.0},
+  up  :{y1:0.4,y2:1.7,x1:1.0,x2:1.0},
+  flat:{y1:1.0,y2:1.0,x1:0.8,x2:3.4}
+};
+let procT=0;
+function procData(){
+  const p=PROC[S.proc], m=S.m, g=S.g;
+  const dh=p.y2-p.y1;                     // 末 − 初
+  const Wg = m*g*(-dh);                   // W_G = mg(h1-h2) = -mg*dh
+  const dep = m*g*dh;                     // ΔE_p = Ep2-Ep1 = mg*dh
+  let Ek1,Ek2;
+  if(S.proc==='down'){ Ek1=0; Ek2=Math.max(0,m*g*(-dh)); }
+  else if(S.proc==='up'){ Ek1=Math.max(0,m*g*dh); Ek2=0; }
+  else { Ek1=0.5*m*2*2; Ek2=Ek1; }
+  let Wair=0;
+  if(S.air){ Wair=-0.08*m*g*Math.max(0.05,Math.abs(dh)+ (S.proc==='flat'?1.0:0)); }
+  Ek2=Math.max(0,Ek2+Wair);
+  const Ep1=m*g*(p.y1-S.hRef), Ep2=m*g*(p.y2-S.hRef);
+  const Em1=Ep1+Ek1, Em2=Ep2+Ek2;
+  return {p,Wg,dep,Ek1,Ek2,Ep1,Ep2,Em1,Em2,Wair,dh};
+}
+function drawTab3(ctx){
+  if(S.mode3==='closed'){ drawClosed(ctx); return; }
+  const d=procData(), p=d.p;
+  const box={x0:0.2,x1:4.2,y0:-0.35,y1:2.15}; setView(box, DOCK);
+  /* 等势面 / 参考面 */
+  if(S.equi){ for(let y=0;y<=2.0;y+=0.25){ wline(ctx,box.x0,y,box.x1,y,CFG.C.equi,1,[5,4]); } }
+  if(S.refLine&&S.hRef>box.y0){ wline(ctx,box.x0,S.hRef,box.x1,S.hRef,CFG.C.ref,2,[9,5]);
+    ptxt(ctx,V.X(box.x1)-4,V.Y(S.hRef)+10,'参考面 h_ref='+fmt(S.hRef,2)+' m',CFG.C.ref,10.5,'right','bold'); }
+  /* 起末位置水平线 */
+  wline(ctx,0.55,p.y1,3.6,p.y1,'#94a3b8',1.4,[6,4]);
+  wline(ctx,0.55,p.y2,3.6,p.y2,'#94a3b8',1.4,[6,4]);
+  ptxt(ctx,V.X(0.58),V.Y(p.y1)+10,'初态 ① y₁='+fmt(p.y1,2)+' m',CFG.C.ink2,10.5,'left','bold');
+  ptxt(ctx,V.X(0.58),V.Y(p.y2)+10,'末态 ② y₂='+fmt(p.y2,2)+' m',CFG.C.ink2,10.5,'left','bold');
+  /* 运动中的球 */
+  const u=clamp(procT,0,1);
+  let bx,by,bv;
+  if(S.proc==='down'){ by=p.y1+(p.y2-p.y1)*u*u; bx=p.x1; bv=Math.sqrt(Math.max(0,2*S.g*(p.y1-by))); }
+  else if(S.proc==='up'){ by=p.y1+(p.y2-p.y1)*(1-(1-u)*(1-u)); bx=p.x1; bv=Math.sqrt(Math.max(0,2*S.g*(p.y2-by))); }
+  else { by=p.y1; bx=p.x1+(p.x2-p.x1)*u; bv=2; }
+  wcirc(ctx,bx,by,S.ballD/2,'#1e3a8a','#fff',1.6);
+  if(S.proc!=='flat'){ warrow(ctx,bx,by,bx,by-0.36,CFG.C.g,2.2); ptxt(ctx,V.X(bx)+7,V.Y(by-0.18),'mg',CFG.C.g,10.5,'left','bold'); }
+  if(bv>0.05){
+    const dir = S.proc==='flat'?1:(S.proc==='down'?-1:1);
+    const L=clamp(bv*0.08,0.14,0.6);
+    warrow(ctx,bx,by,bx+(S.proc==='flat'?L:0),by+(S.proc==='flat'?0:dir*L),CFG.C.v,2.2);
+    ptxt(ctx,V.X(bx)+10,V.Y(by)+(S.proc==='flat'?-14:dir*V.L(L)*0.6),'v='+fmt(bv,2)+' m/s',CFG.C.v,10.5,'left','bold');
+  }
+  /* 竖直位移箭头 */
+  if(S.proc!=='flat'){
+    warrow(ctx,3.0,p.y1,3.0,p.y2,CFG.C.ep,2);
+    ptxt(ctx,V.X(3.0)+8,V.Y((p.y1+p.y2)/2),'Δh = '+fmt(d.dh,2)+' m',CFG.C.ep,11,'left','bold');
+  }
+  /* 符号对照表 + 数值验证 + 初/末态能量条：统一排在底部坞带内，不遮挡装置 */
+  const rows=[['下降','W_G > 0','ΔE_p < 0','E_p 减少'],['上升','W_G < 0','ΔE_p > 0','E_p 增加'],['水平','W_G = 0','ΔE_p = 0','E_p 不变']];
+  const dk=dockBase();
+  drawDock(ctx,'W_G = −ΔE_p：符号对照、数值验证与初/末态能量条');
+  const wbC=118, minVerW=164;
+  let tw=clamp(V.w*0.28,220,300);
+  const overflow=V.w-12-(14+tw+14)-12-2*wbC-minVerW;
+  if(overflow<0) tw=Math.max(176,tw+overflow);
+  const tx=14, ty=dk+6;
+  ctx.save(); ctx.fillStyle='rgba(255,255,255,.97)'; ctx.strokeStyle=CFG.C.line; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.rect(tx,ty,tw,DOCK-12); ctx.fill(); ctx.stroke(); ctx.restore();
+  ptxt(ctx,tx+7,ty+12,'过程符号对照表',CFG.C.ink,10,'left','bold');
+  rows.forEach((r,i)=>{
+    const yy=ty+31+i*17;
+    const cur=(S.proc==='down'&&i===0)||(S.proc==='up'&&i===1)||(S.proc==='flat'&&i===2);
+    if(cur){ ctx.save(); ctx.fillStyle='#fff7ed'; ctx.fillRect(tx+3,yy-8,tw-6,16); ctx.restore(); }
+    ptxt(ctx,tx+7,yy,r[0],CFG.C.ink,9.5,'left',cur?'bold':'');
+    ptxt(ctx,tx+tw*0.24,yy,r[1],CFG.C.g,9.5,'left',cur?'bold':'');
+    ptxt(ctx,tx+tw*0.50,yy,r[2],CFG.C.ep,9.5,'left',cur?'bold':'');
+    if(tw>=210) ptxt(ctx,tx+tw-6,yy,r[3],CFG.C.ink2,9.5,'right',cur?'bold':'');
+  });
+  ptxt(ctx,tx+7,ty+DOCK-30,'上升＝“克服重力做功”⇔ 重力做负功',CFG.C.ink2,9,'left');
+  /* 数值验证（窄屏时自动省略，读数面板仍可见） */
+  const err=Math.abs(d.Wg+d.dep)/Math.max(1e-9,Math.abs(d.Wg),1e-9)*100;
+  const vx=tx+tw+12;
+  const wb=S.bars?clamp((V.w-12-vx-10-12)/2,78,wbC+12):0;
+  const verW=V.w-12-(2*wb+10)-vx-8;
+  if(verW>=150){
+    ptxt(ctx,vx,dk+15,'W_G = −ΔE_p　验证',CFG.C.ink,10,'left','bold');
+    ptxt(ctx,vx,dk+31,'W_G = '+fmt(d.Wg,3)+' J　ΔE_p = '+fmt(d.dep,3)+' J',CFG.C.ink,10);
+    ptxt(ctx,vx,dk+47,'W_G + ΔE_p = '+fmt(d.Wg+d.dep,6)+' J（误差 '+fmt(err,4)+' %）',CFG.C.ep,10);
+    ptxt(ctx,vx,dk+63,S.air?('空气阻力：E_机 '+fmt(d.Em1,2)+' → '+fmt(d.Em2,2)+' J，不守恒')
+        :('只有重力做功：E_机 = '+fmt(d.Em1,2)+' J 恒定，机械能守恒'),S.air?CFG.C.fric:CFG.C.mech,10,'left','bold');
+    ptxt(ctx,vx,dk+81,'例：克服重力做功 5 J ⇔ W_G = −5 J（E_p 增加 5 J）',CFG.C.ink2,9);
+  }
+  if(S.bars){
+    const Emax=Math.max(1e-6,Math.abs(d.Ep1),Math.abs(d.Ep2),d.Ek1,d.Ek2)*1.15;
+    const bx1=V.w-12-(2*wb+10), bx2=bx1+wb+10;
+    drawBars(ctx,bx1,dk+30,wb,40,[
+      {k:'E_p',v:d.Ep1,max:Emax,c:d.Ep1>=0?CFG.C.ep:CFG.C.epn},
+      {k:'E_k',v:d.Ek1,max:Emax,c:CFG.C.ek},
+      {k:'E_机',v:d.Em1,max:Emax,c:CFG.C.mech}],'初态（J）');
+    drawBars(ctx,bx2,dk+30,wb,40,[
+      {k:'E_p',v:d.Ep2,max:Emax,c:d.Ep2>=0?CFG.C.ep:CFG.C.epn},
+      {k:'E_k',v:d.Ek2,max:Emax,c:CFG.C.ek},
+      {k:'E_机',v:d.Em2,max:Emax,c:CFG.C.mech}],'末态（J）');
+  }
+  hotspots3();
+}
+/* 闭合路径演示 */
+const CLOSED={ p:[[0.9,1.5],[0.9,0.35],[3.1,0.35],[3.1,1.5],[0.9,1.5]],
+  seg:['① 竖直下降','② 水平右移','③ 竖直上升','④ 水平左移'] };
+function closedSegs(){
+  const m=S.m,g=S.g,out=[];let acc=0;
+  for(let i=0;i<4;i++){
+    const a=CLOSED.p[i], b=CLOSED.p[i+1];
+    const W=m*g*(a[1]-b[1]);           // W = mg(y_a - y_b)
+    acc+=W; out.push({name:CLOSED.seg[i],W:W,acc:acc});
+  }
+  return out;
+}
+function drawClosed(ctx){
+  const box={x0:0.3,x1:3.9,y0:-0.1,y1:1.9}; setView(box, 148);
+  const segs=closedSegs();
+  /* 路径 */
+  ctx.save(); ctx.strokeStyle=CFG.C.ref; ctx.lineWidth=2.6; ctx.setLineDash([7,4]); ctx.beginPath();
+  CLOSED.p.forEach((p,i)=>{ const X=V.X(p[0]),Y=V.Y(p[1]); i?ctx.lineTo(X,Y):ctx.moveTo(X,Y); });
+  ctx.closePath(); ctx.stroke(); ctx.restore();
+  CLOSED.p.forEach((p,i)=>{ if(i<4){ wcirc(ctx,p[0],p[1],0.04,CFG.C.ref,'#fff',1.6);
+    ptxt(ctx,V.X(p[0])-10,V.Y(p[1])-10,'P'+i,CFG.C.ref,10,'right','bold'); } });
+  /* 运动点 */
+  const u=clamp(procT,0,1);
+  const lens=[0,0,0,0]; let tot=0;
+  for(let i=0;i<4;i++){ lens[i]=Math.hypot(CLOSED.p[i+1][0]-CLOSED.p[i][0],CLOSED.p[i+1][1]-CLOSED.p[i][1]); tot+=lens[i]; }
+  let d=u*tot, idx=0; while(idx<3 && d>lens[idx]){ d-=lens[idx]; idx++; }
+  const a=CLOSED.p[idx], b=CLOSED.p[idx+1], t=clamp(d/Math.max(1e-9,lens[idx]),0,1);
+  const cx=a[0]+(b[0]-a[0])*t, cy=a[1]+(b[1]-a[1])*t;
+  wcirc(ctx,cx,cy,S.ballD/2,'#1e3a8a','#fff',1.8);
+  const cumBefore = idx>0?segs[idx-1].acc:0;
+  const Wnow = S.m*S.g*((CLOSED.p[idx][1])-cy) + cumBefore;
+  ptxt(ctx,V.X(cx)+12,V.Y(cy)-10,'累计 W_G = '+fmt(Wnow,2)+' J',CFG.C.g,11,'left','bold');
+  /* 分段表（置于底部专属带内，不压住路径图） */
+  const tx=14,ty=V.h-144;
+  ctx.save(); ctx.fillStyle='rgba(248,250,252,.97)'; ctx.fillRect(0,V.h-148,V.w,148);
+  ctx.strokeStyle='#dbe3ee'; ctx.lineWidth=1; ctx.beginPath(); ctx.moveTo(0,V.h-147.5); ctx.lineTo(V.w,V.h-147.5); ctx.stroke(); ctx.restore();
+  ctx.save(); ctx.fillStyle='rgba(255,255,255,.99)'; ctx.strokeStyle=CFG.C.line; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.rect(tx,ty,300,132); ctx.fill(); ctx.stroke(); ctx.restore();
+  ptxt(ctx,tx+8,ty+14,'闭合路径分段做功（拓展：保守力）',CFG.C.ink,11,'left','bold');
+  segs.forEach((s,i)=>{ const yy=ty+36+i*22;
+    ptxt(ctx,tx+10,yy,s.name,CFG.C.ink2,10.5,'left');
+    ptxt(ctx,tx+108,yy,'W='+fmt(s.W,3)+' J',s.W>1e-9?CFG.C.ep:(s.W<-1e-9?CFG.C.epn:CFG.C.ink2),10.5,'left','bold');
+    ptxt(ctx,tx+200,yy,'累计 '+fmt(s.acc,3)+' J',CFG.C.ink,10.5,'left');
+  });
+  ptxt(ctx,tx+8,ty+126,'∮ G·dl = '+fmt(segs[3].acc,9)+' J ≈ 0　⇒ 重力是保守力',CFG.C.ref,11.5,'left','bold');
+  ptxt(ctx,V.w-8,ty+14,'（下降 +mgΔh 与上升 −mgΔh 恰好抵消）',CFG.C.ink2,10.5,'right');
+  hotspots3();
+}
+/* ---------------- 12. 标签页④：弹性势能定性对比 ---------------- */
+let springT=0;
+function springGeom(){ const L0=1.0, x=S.kx; return {L0,x,end:1.0+L0+x}; }
+function drawSpring(ctx,x0,y0,x1,y1,coils,col){
+  const X0=V.X(x0),Y0=V.Y(y0),X1=V.X(x1),Y1=V.Y(y1);
+  const n=coils||9, dx=(X1-X0)/n, amp=Math.max(4,V.L(0.09));
+  ctx.save(); ctx.strokeStyle=col; ctx.lineWidth=2; ctx.beginPath(); ctx.moveTo(X0,Y0);
+  for(let i=1;i<n;i++){ ctx.lineTo(X0+dx*i, Y0 + (i%2?amp:-amp)); }
+  ctx.lineTo(X1,Y1); ctx.stroke(); ctx.restore();
+}
+function drawTab4(ctx){
+  const g=springGeom();
+  const box={x0:0.2,x1:4.2,y0:-1.95,y1:1.5}; setView(box, S.bars?DOCK:0);
+  const wallX=0.6, baseY=0.35, L0=g.L0;
+  /* 地面 */
+  wline(ctx,box.x0,baseY-S.ballD/2,box.x1,baseY-S.ballD/2,'#b45309',2);
+  ctx.save(); ctx.fillStyle='#94a3b8'; ctx.fillRect(V.X(wallX)-V.L(0.09),V.Y(0.85),V.L(0.09),V.L(1.3)); ctx.restore();
+  /* 自然长度参考线 */
+  wline(ctx,wallX+L0,baseY+0.34,wallX+L0,baseY-0.34,CFG.C.epz,1.6,[5,4]);
+  ptxt(ctx,V.X(wallX+L0),V.Y(baseY+0.42),'自然长度（E_弹 = 0）',CFG.C.epz,10,'center','bold');
+  /* 弹簧 + 小车 */
+  let x=S.kx;
+  if(S.springRun){ const w=Math.sqrt(S.kk/S.m); x=S.kx*Math.cos(w*springT); }
+  const cartX=wallX+L0+x;
+  drawSpring(ctx,wallX,baseY,cartX-S.ballD/2,baseY,10,Math.abs(x)<1e-4?CFG.C.epz:(x>0?CFG.C.t2:CFG.C.t3));
+  ctx.save(); ctx.fillStyle='#2563eb'; ctx.fillRect(V.X(cartX-S.ballD/2),V.Y(baseY)-V.L(S.ballD/2),V.L(S.ballD),V.L(S.ballD)); ctx.restore();
+  /* 形变箭头 */
+  wline(ctx,wallX+L0,baseY+0.6,cartX,baseY+0.6,CFG.C.fric,1.6);
+  warrow(ctx,wallX+L0,baseY+0.6,cartX,baseY+0.6,CFG.C.fric,2);
+  ptxt(ctx,V.X((wallX+L0+cartX)/2),V.Y(baseY+0.6)-11,'x = '+fmt(x,3)+' m（'+(x>=0?'拉伸':'压缩')+'）',CFG.C.fric,11,'center','bold');
+  const Eel=0.5*S.kk*x*x;
+  ptxt(ctx,V.X(cartX)+12,V.Y(baseY)-8,'E_弹 = ½kx² = '+fmt(Eel,3)+' J',CFG.C.t2,12,'left','bold');
+  ptxt(ctx,V.X(cartX)+12,V.Y(baseY)+24,'（拓展公式，教材只要求定性：形变量越大，弹性势能越大）',CFG.C.ink2,10,'left');
+  /* 拉伸 / 压缩对称对照（下移并与结论行留出间距，避免文字叠字） */
+  const sy=-0.62, ax=Math.abs(x)||0.15;
+  [['拉伸 +x',1],['压缩 −x',-1]].forEach((c,i)=>{
+    const yy=sy-i*0.58, sx=0.9+i*1.9;
+    wline(ctx,sx,sy+0.35,sx+0.55,sy+0.35,'#94a3b8',1.4);
+    drawSpring(ctx,sx,yy,sx+0.55+c[1]*ax*0.6,yy,7,c[1]>0?CFG.C.t2:CFG.C.t3);
+    ctx.save(); ctx.fillStyle='#2563eb'; ctx.fillRect(V.X(sx+0.55+c[1]*ax*0.6),V.Y(yy)-8,16,16); ctx.restore();
+    const e=0.5*S.kk*ax*ax;
+    ptxt(ctx,V.X(sx),V.Y(yy)-16,c[0]+'：|x|='+fmt(ax,2)+' m',c[1]>0?CFG.C.t2:CFG.C.t3,10.5,'left','bold');
+    ptxt(ctx,V.X(sx),V.Y(yy)+16,'E_弹 = '+fmt(e,3)+' J',CFG.C.ink,10.5,'left','bold');
+  });
+  const e1=0.5*S.kk*ax*ax, e2=e1;
+  ptxt(ctx,V.X(1.85),V.Y(-1.72),'拉伸与压缩对称：E_弹(+x) = '+fmt(e1,3)+' J = E_弹(−x) = '+fmt(e2,3)+' J（相对误差 '+fmt(Math.abs(e1-e2)/Math.max(1e-9,e1)*100,4)+' %）',CFG.C.t2,11,'center','bold');
+  if(S.bars){
+    drawDock(ctx,'能量条（J）· 弹簧与物体系统：E_弹 与 E_k 相互转化，E_总 守恒');
+    const v=S.springRun?Math.abs(-S.kx*Math.sqrt(S.kk/S.m)*Math.sin(Math.sqrt(S.kk/S.m)*springT)):0;
+    const Ek=0.5*S.m*v*v, Etot=Math.max(1e-6,0.5*S.kk*S.kx*S.kx);
+    drawBars(ctx,14,V.h-62,190,40,[
+      {k:'E_弹',v:Eel,max:Etot,c:CFG.C.t2},
+      {k:'E_k',v:Ek,max:Etot,c:CFG.C.ek},
+      {k:'E_总',v:Eel+Ek,max:Etot,c:CFG.C.mech}]);
+  }
+  /* 系统归属脚注移到顶部空白区，避免与"拉伸与压缩对称"结论行重叠 */
+  ptxt(ctx,V.X(box.x0)+2,V.Y(1.40),'弹性势能属于「弹簧 + 物体」组成的系统；无形变（自然长度）处取 E_弹 = 0',CFG.C.ink2,10.5,'left');
+  hotspots4();
+}
+/* ---------------- 13. 通用图表引擎 ---------------- */
+function drawChart(cv,opt){
+  const ctx=fitCanvas(cv); const w=cv.clientWidth, h=cv.clientHeight;
+  const pl=46,pr=10,pt=22,pb=30;
+  let xs=[],ys=[];
+  (opt.series||[]).forEach(s=>(s.pts||[]).forEach(p=>{xs.push(p[0]);ys.push(p[1]);}));
+  if(!xs.length){ ptxt(ctx,w/2,h/2,'（暂无数据：点“释放”或运行扫描）',CFG.C.ink2,12,'center'); return; }
+  let x0=Math.min.apply(null,xs), x1=Math.max.apply(null,xs);
+  let y0=Math.min.apply(null,ys), y1=Math.max.apply(null,ys);
+  if(opt.zero) { y0=Math.min(y0,0); y1=Math.max(y1,0); }
+  if(y1-y0<1e-9){ y1=y0+1; }
+  const px0=Math.min(0,x0), px1=Math.max(0,x1);
+  if(x1-x0<1e-9){ x1=x0+1; }
+  const sx=v=>pl+(v-x0)/(x1-x0)*(w-pl-pr), sy=v=>(h-pb)-(v-y0)/(y1-y0)*(h-pb-pt);
+  ctx.save();
+  ctx.fillStyle='#fff'; ctx.fillRect(0,0,w,h);
+  /* 网格与轴 */
+  ctx.strokeStyle='#eef2f7'; ctx.lineWidth=1;
+  for(let i=0;i<=4;i++){ const yy=pt+(h-pt-pb)*i/4; ctx.beginPath(); ctx.moveTo(pl,yy); ctx.lineTo(w-pr,yy); ctx.stroke(); }
+  ctx.strokeStyle='#94a3b8';
+  ctx.beginPath(); ctx.moveTo(pl,pt); ctx.lineTo(pl,h-pb); ctx.lineTo(w-pr,h-pb); ctx.stroke();
+  ctx.fillStyle=CFG.C.ink2; ctx.font='10px "Microsoft YaHei",sans-serif';
+  for(let i=0;i<=4;i++){
+    /* 柱状图的横坐标是分类序号，改画分类名（见下方 bar 分支），不画无意义的数字刻度 */
+    if(!opt.barLabels){ const v=x0+(x1-x0)*i/4; ctx.textAlign='center'; ctx.fillText(fmt(v,2),sx(v),h-pb+12); }
+    const v2=y0+(y1-y0)*i/4; ctx.textAlign='right'; ctx.fillText(fmt(v2,2),pl-4,pt+(h-pt-pb)*(4-i)/4+3);
+  }
+  ctx.textAlign='center'; ctx.fillStyle=CFG.C.ink; ctx.font='11px "Microsoft YaHei",sans-serif';
+  ctx.fillText(opt.xlabel||'x',(pl+w-pr)/2,h-4);
+  ctx.save(); ctx.translate(11,(pt+h-pb)/2); ctx.rotate(-Math.PI/2); ctx.fillText(opt.ylabel||'y',0,0); ctx.restore();
+  if(opt.title){ ctx.textAlign='left'; ctx.font='bold 11px "Microsoft YaHei",sans-serif'; ctx.fillText(opt.title,pl,11); }
+  /* 数据系列 */
+  (opt.series||[]).forEach(s=>{
+    const pts=s.pts||[]; if(!pts.length) return;
+    ctx.strokeStyle=s.color; ctx.fillStyle=s.color; ctx.lineWidth=s.lw||2;
+    if(s.dash) ctx.setLineDash(s.dash); else ctx.setLineDash([]);
+    if(s.type==='bar'){
+      const bw=Math.max(6,Math.min(38,(w-pl-pr)/Math.max(1,pts.length)-8));
+      pts.forEach(p=>{ const X=sx(p[0]), Y=sy(p[1]), Y0=sy(0);
+        ctx.fillRect(X-bw/2,Math.min(Y,Y0),bw,Math.abs(Y0-Y));
+        ctx.textAlign='center'; ctx.font='bold 10px "Microsoft YaHei",sans-serif';
+        ctx.fillText(fmt(p[1],3),X,Math.min(Y,Y0)-5); });
+      /* 分类名与柱子共用同一横坐标 sx(p[0])，保证严格对齐 */
+      if(opt.barLabels){
+        ctx.font='10px "Microsoft YaHei",sans-serif'; ctx.fillStyle=CFG.C.ink2; ctx.textAlign='center';
+        pts.forEach((p,k)=>{ if(opt.barLabels[k]) ctx.fillText(opt.barLabels[k],sx(p[0]),h-18); });
+        ctx.fillStyle=s.color;
+      }
+    }else if(s.type==='pts'){
+      pts.forEach(p=>{ ctx.beginPath(); ctx.arc(sx(p[0]),sy(p[1]),3.6,0,6.2832); ctx.fill(); });
+    }else{
+      ctx.beginPath(); pts.forEach((p,i)=>{ i?ctx.lineTo(sx(p[0]),sy(p[1])):ctx.moveTo(sx(p[0]),sy(p[1])); }); ctx.stroke();
+      if(s.dots) pts.forEach(p=>{ ctx.beginPath(); ctx.arc(sx(p[0]),sy(p[1]),3,0,6.2832); ctx.fill(); });
+    }
+    ctx.setLineDash([]);
+  });
+  /* 拟合线 */
+  if(opt.fitline){ const f=opt.fitline;
+    ctx.strokeStyle=f.color||'#dc2626'; ctx.lineWidth=1.6; ctx.setLineDash([6,4]); ctx.beginPath();
+    ctx.moveTo(sx(x0),sy(f.b+f.k*x0)); ctx.lineTo(sx(x1),sy(f.b+f.k*x1)); ctx.stroke(); ctx.setLineDash([]); }
+  /* 图例 */
+  let lx=pl+ (opt.title? ctx.measureText(opt.title).width+14 : 0);
+  (opt.series||[]).forEach(s=>{ if(!s.name) return;
+    ctx.fillStyle=s.color; ctx.fillRect(lx,5,10,8);
+    ctx.fillStyle=CFG.C.ink2; ctx.textAlign='left'; ctx.font='10px "Microsoft YaHei",sans-serif';
+    ctx.fillText(s.name,lx+13,11); lx+=ctx.measureText(s.name).width+26; });
+  ctx.restore();
+}
+function linfit(pts){
+  const n=pts.length; if(n<2) return null;
+  let sx=0,sy=0,sxx=0,sxy=0;
+  pts.forEach(p=>{sx+=p[0];sy+=p[1];sxx+=p[0]*p[0];sxy+=p[0]*p[1];});
+  const k=(n*sxy-sx*sy)/(n*sxx-sx*sx), b=(sy-k*sx)/n;
+  let ss=0,st=0; const my=sy/n;
+  pts.forEach(p=>{const yp=k*p[0]+b; ss+=(p[1]-yp)*(p[1]-yp); st+=(p[1]-my)*(p[1]-my);});
+  return {k:k,b:b,r2: st>1e-12 ? 1-ss/st : 1};
+}
+/* ---------------- 14. 热点（统一排在画布右缘，细引线连到对应对象，不遮挡装置） ---------------- */
+let hotEls={};
+let HS_LINES=[]; /* 引线缓存：[{bx,by,ax,ay}]，由 render() 在画布上绘制 */
+function setHotspots(list){
+  const box=$('#hotspots'), lst=$('#hotList');
+  const sig=list.map(h=>h.id+':'+h.card).join('|');
+  if(sig!==Object.keys(hotEls).map(k=>k).join('|') || Object.keys(hotEls).length!==list.length){
+    box.innerHTML=''; lst.innerHTML=''; hotEls={};
+    list.forEach(h=>{
+      const b=document.createElement('button'); b.className='hot'; b.type='button'; b.textContent=h.n||'●';
+      b.setAttribute('aria-label','画面热点：'+h.title+'，按回车打开对应知识卡片');
+      b.onclick=()=>openCard(h.card); box.appendChild(b);
+      hotEls[h.id+':'+h.card]=b;
+      const kb=document.createElement('button'); kb.type='button'; kb.className='sr';
+      kb.textContent='打开卡片：'+h.title; kb.onclick=()=>openCard(h.card); lst.appendChild(kb);
+    });
+  }
+  /* 按钮统一排在画布右缘竖列；锚点(ax,ay)为原 px/py（对应对象位置），引线由画布绘制 */
+  const n=list.length;
+  const colX=V.w-22;
+  const top=44, bottom=V.h-52;
+  const span=Math.max(bottom-top, n*30);
+  const gap=n>1?Math.min(40,span/(n-1)):0;
+  const y0=top+Math.max(0,(span-(n-1)*gap)/2);
+  HS_LINES=[];
+  list.forEach((h,i)=>{
+    const b=hotEls[h.id+':'+h.card];
+    const by=y0+i*gap;
+    if(b){ b.style.left=colX+'px'; b.style.top=by+'px'; }
+    /* 锚点若越出画布则夹取，引线仍可见 */
+    HS_LINES.push({bx:colX, by:by, ax:clamp(h.px,10,V.w-34), ay:clamp(h.py,12,V.h-12)});
+  });
+}
+/* 在画布上绘制热点引线（按钮 → 对应对象），置于装置图层之上、视觉轻量 */
+function drawHotLines(ctx){
+  ctx.save();
+  ctx.strokeStyle='rgba(29,78,216,.55)'; ctx.lineWidth=1.2; ctx.setLineDash([3,3]);
+  HS_LINES.forEach(l=>{
+    const ex=l.bx-12; /* 从按钮左缘出发 */
+    ctx.beginPath(); ctx.moveTo(ex,l.by); ctx.lineTo(l.ax,l.ay); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.beginPath(); ctx.arc(l.ax,l.ay,2.4,0,Math.PI*2); ctx.fillStyle='rgba(29,78,216,.75)'; ctx.fill();
+    ctx.setLineDash([3,3]);
+  });
+  ctx.restore();
+}
+function hotspots1(){
+  if(S.topView){ setHotspots([{id:'tv',card:'l-path',title:'三轨道路径无关',n:'1',px:V.X(1.2),py:V.Y(0.62)}]); return; }
+  const L=[];
+  S.runners.forEach((r,i)=>{ const q=r.tr.at(r.tr.len);
+    L.push({id:'t'+i,card:(S.mu>0?'e7':'l-path'),title:r.label+'轨道出口（W_G 与路径无关）',n:String(i+1),px:V.X(q.x),py:V.Y(0)-6}); });
+  const r0=S.runners[0]; if(r0){ const q=r0.tr.at(r0.tr.len);
+    L.push({id:'sand',card:'c-conv',title:'沙坑深度标尺（转换法与放大法）',n:'·',px:V.X(q.x)+V.L(0.09),py:V.Y(-0.2)}); }
+  L.push({id:'ref',card:'c-ref',title:'参考面（零势能面）',n:'R',px:V.X(V.box.x1)-14,py:V.Y(S.hRef)});
+  L.push({id:'bar',card:'m-bar',title:'能量条（每条轨道一组）',n:'E',px:V.w-140,py:V.h-70});
+  if(S.equi) L.push({id:'eq',card:'c-equi',title:'等势面',n:'≈',px:V.X(V.box.x0)+18,py:V.Y(Math.min(S.h,S.hRef+0.25))});
+  setHotspots(L);
+}
+function hotspots2(){
+  setHotspots([
+    {id:'a',card:'f-ep',title:'E_p = mgh 读数',n:'A',px:V.X(0.62)+16,py:V.Y(S.h)},
+    {id:'c',card:'c-ref',title:'参考平面（零势能面）',n:'R',px:V.X(3.9),py:V.Y(S.hRef)},
+    {id:'d',card:'d-relabs',title:'E_p 相对性 vs ΔE_p 绝对性',n:'Δ',px:V.X(2.45),py:V.Y(S.h/2)},
+    {id:'e',card:'c-sys',title:'势能的系统性',n:'S',px:V.X(1.55),py:V.Y(S.h/2)},
+    {id:'q',card:'c-equi',title:'等势面',n:'≈',px:V.X(2.6),py:V.Y(S.hRef+0.5)}
+  ]);
+}
+function hotspots3(){
+  if(S.mode3==='closed'){ setHotspots([{id:'cl',card:'c-cons',title:'闭合路径与保守力',n:'∮',px:V.X(2.0),py:V.Y(1.0)}]); return; }
+  const d=procData();
+  setHotspots([
+    {id:'p',card:'f-rel',title:'W_G = −ΔE_p',n:'W',px:V.X(d.p.x1),py:V.Y((d.p.y1+d.p.y2)/2)},
+    {id:'t',card:'l-sign',title:'符号对照表',n:'±',px:150,py:V.h-56},
+    {id:'b',card:'m-bar',title:'能量条',n:'E',px:V.w-240,py:V.h-70}
+  ]);
+}
+function hotspots4(){
+  setHotspots([
+    {id:'s',card:'c-eel',title:'弹性势能与形变量',n:'k',px:V.X(1.6),py:V.Y(0.35)},
+    {id:'y',card:'l-eel',title:'拉伸与压缩对称',n:'=',px:V.X(1.85),py:V.Y(-0.91)},
+    {id:'c',card:'d-ge',title:'重力势能 vs 弹性势能',n:'↔',px:V.X(3.6),py:V.Y(1.2)}
+  ]);
+}
+/* ---------------- 15. 主循环 ---------------- */
+let lastTs=0;
+/* 换参考面动画：E_p 数值整体平移，ΔE_p 与 W_G 保持锁定 */
+function animateRef(target){
+  S.refAnim={from:S.hRef, to:clamp(target,-1,3.2), t0:(window.performance?performance.now():Date.now()), dur:800};
+  S.invFlash=(window.performance?performance.now():Date.now())+1600;
+}
+function tickRefAnim(now){
+  if(!S.refAnim) return;
+  const k=clamp((now-S.refAnim.t0)/S.refAnim.dur,0,1);
+  const e=k<0.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+  S.hRef=clamp(S.refAnim.from+(S.refAnim.to-S.refAnim.from)*e,-1,3.2);
+  const el=ctlEls.hRef; if(el){ el.value=S.hRef; el.dispatchEvent(new Event('input')); }
+  if(k>=1) S.refAnim=null;
+}
+function finishRun(){                        /* 静态分帧（尊重 prefers-reduced-motion） */
+  const P=params();
+  S.runners.forEach(r=>{
+    const res=simulate(r.id,S.m,S.h,P);
+    r.vExit=res.vExit; r.Ek=res.Ek; r.Wf=res.Wf; r.Wair=res.Wair; r.dTarget=res.depth; r.depth=res.depth;
+    r.phase='done'; r.s=r.tr.len; const q=r.tr.at(r.tr.len); r.x=q.x; r.y=0; r.trail=[];
+    for(let i=0;i<=24;i++){ const q2=r.tr.at(r.tr.len*i/24); r.trail.push([q2.x,q2.y]); }
+    for(let i=1;i<=5;i++){ const q3=r.tr.at(r.tr.len*i/6); r.strobe.push([q3.x,q3.y]); }
+  });
+  S.playing=false; pushRow(); S.rowPushed=true;
+  if(S.mu>0) openCard('d-pathv');
+}
+function loop(ts){
+  requestAnimationFrame(loop);
+  const dtReal=Math.min(0.05,((ts-lastTs)/1000)||0); lastTs=ts;
+  tickRefAnim(window.performance?performance.now():Date.now());
+  if(S.playing){
+    const dt=dtReal*S.slow;
+    if(S.tab===0){
+      let acc=dt, guard=0; const sub=8e-4;
+      while(acc>1e-9 && guard++<800){ const st=Math.min(sub,acc); S.runners.forEach(r=>stepRunner(r,st)); acc-=st; }
+      if(allDone()){ S.playing=false; if(!S.rowPushed){ pushRow(); S.rowPushed=true; if(S.mu>0) openCard('d-pathv'); } }
+    }else if(S.tab===2){
+      procT=clamp(procT+dt/(S.mode3==='closed'?4.0:1.8),0,1);
+      if(procT>=1) S.playing=false;
+    }else if(S.tab===3){ springT+=dt; }
+  }
+  render();
+}
+function render(){
+  const cv=$('#stage');
+  if(S.tab===4){ cv.style.display='none'; $('#legend').style.display='none'; $('#hotspots').innerHTML=''; hotEls={}; HS_LINES=[]; return; }
+  cv.style.display='block'; $('#legend').style.display='flex';
+  const ctx=fitCanvas(cv);
+  if(S.tab===0){ S.topView?drawTab1Top(ctx):drawTab1(ctx); }
+  else if(S.tab===1){ drawTab2(ctx); }
+  else if(S.tab===2){ drawTab3(ctx); }
+  else if(S.tab===3){ drawTab4(ctx); }
+  drawHotLines(ctx);
+  updateReadouts();
+}
+
+/* ---------------- 16. 读数 ---------------- */
+const rdEls={};
+function buildReadouts(){
+  const box=$('#rdBox'); box.innerHTML='';
+  READOUTS.forEach(r=>{
+    const d=document.createElement('div'); if(r.inv) d.className='inv';
+    d.innerHTML='<div class="k" data-k="'+r.k+'">'+r.l+'</div><div class="v"><span data-v="'+r.k+'">—</span> <span class="u">'+r.u+'</span></div>';
+    box.appendChild(d);
+    rdEls[r.k]={k:d.querySelector('[data-k]'), v:d.querySelector('[data-v]'), box:d};
+  });
+}
+function setRd(k,val,invHi){
+  const e=rdEls[k]; if(!e) return;
+  e.v.textContent = (val===null||val===undefined)?'—':fmt(val,2);
+  if(invHi!==undefined) e.box.className = invHi?'inv':'';
+}
+function updateReadouts(){
+  const m=S.m,g=S.g,h=S.h,r0=S.runners[0];
+  const Ep1=m*g*(h-S.hRef), Ep2=m*g*(0-S.hRef), dep=Ep2-Ep1, wg=-dep;
+  setRd('m',m); setRd('h',h); setRd('href',S.hRef); setRd('g',g);
+  setRd('ep',Ep1); setRd('epc',Ep2);
+  if(rdEls.dep) rdEls.dep.k.textContent='ΔE_p（不变量）';
+  if(rdEls.wg) rdEls.wg.k.textContent='W_G（不变量）';
+  setRd('dep',dep,true); setRd('wg',wg,true);
+  let Wf=0,drift=null,v=null,d=null;
+  if(S.tab===0&&r0){
+    Wf=r0.Wf+r0.Wair; v=r0.vExit; d=r0.dTarget*100;
+    const vs=S.runners.map(r=>r.vExit).filter(x=>x>0);
+    if(vs.length>1){ const mx=Math.max.apply(null,vs),mn=Math.min.apply(null,vs); drift=(mx-mn)/mx*100; }
+    if(rdEls.drift) rdEls.drift.k.textContent='三轨道 v 偏差';
+  }else if(S.tab===2){ const d3=procData(); Wf=d3.Wair; v=Math.sqrt(Math.max(0,2*d3.Ek2/S.m)); d=null;
+    if(rdEls.drift) rdEls.drift.k.textContent='W_G+ΔE_p'; drift=Math.abs(d3.Wg+d3.dep); }
+  else if(S.tab===3){ drift=null; }
+  setRd('wf',Wf); setRd('v',v); setRd('d',d); setRd('ff',S.sandModel==='nonlinear'?S.kd:S.Ff);
+  setRd('eel',0.5*S.kk*S.kx*S.kx);
+  const eel=0.5*S.kk*S.kx*S.kx;
+  setRd('em', S.tab===3?eel:(S.tab===2?procData().Em1:m*g*(h-S.hRef)));
+  setRd('drift',drift);
+}
+
+/* ---------------- 17. 扫描 / 图表 ---------------- */
+const CHART_TABS=[{id:'compare',n:'轨道对比'},{id:'dh',n:'d–h 扫描'},{id:'dm',n:'d–m 扫描'},{id:'ref',n:'参考面扫描'},{id:'eel',n:'E_弹–x'}];
+function activeIds(){ const a=CFG.tracks.filter(t=>S.on[t.id]).map(t=>t.id); return a.length?a:['vertical']; }
+function scan(kind){
+  const P=params(), ids=activeIds();
+  const out={kind:kind,series:[]};
+  ids.forEach(id=>out.series.push({id:id,label:trackLabel(id),color:trackColor(id),pts:[]}));
+  if(kind==='h'){
+    const hs=[0.25,0.5,0.75,1.0,1.25,1.5,2.0,2.5].filter(x=>x<=Math.max(3,S.h));
+    hs.forEach(hh=>out.series.forEach(s=>{ const r=simulate(s.id,S.m,hh,P); s.pts.push([hh,r.depth*100]); s.v=(s.v||[]).concat([[hh,r.vExit]]); }));
+  }else if(kind==='m'){
+    const ms=[0.5,1,1.5,2,2.5,3,4,5];
+    ms.forEach(mm=>out.series.forEach(s=>{ const r=simulate(s.id,mm,S.h,P); s.pts.push([mm,r.depth*100]); }));
+  }else if(kind==='ref'){
+    /* 参考面扫描与轨道无关，只保留一条 E_p(A) 系列，避免三条完全重合的图例 */
+    const rs=[-1,-0.5,0,0.5,1,1.5,2,2.5,3];
+    const one={id:'ref',label:'E_p(A)',color:CFG.C.ref,pts:[]};
+    rs.forEach(rr=>one.pts.push([rr,S.m*S.g*(S.h-rr)]));
+    out.series=[one];
+  }
+  /* 扫描种类 → 图表页签 id（页签 id 是 dh/dm/ref，不能直接用 h/m） */
+  S.lastScan=out; S.chart=({h:'dh',m:'dm',ref:'ref'})[kind]||kind; renderChartTabs(); updateCharts();
+}
+function chartOpts(){
+  const A={},B={}; const P=params();
+  if(S.chart==='compare'){
+    const ids=activeIds(); const dd=[],vv=[];
+    ids.forEach(id=>{ const r=simulate(id,S.m,S.h,P); dd.push([id,r.depth*100]); vv.push([id,r.vExit]); });
+    A.title='陷入深度 d 对比（同 m、同 h）'; A.xlabel='轨道类型'; A.ylabel='d / cm'; A.zero=true;
+    A.series=[{name:'d',color:'#dc2626',type:'bar',pts:dd.map((p,i)=>[i,p[1]])}];
+    A.barLabels=dd.map(p=>trackLabel(p[0]));
+    B.title='末速率 v 对比（光滑时 v=√(2gh)）'; B.xlabel='轨道类型'; B.ylabel='v / m·s⁻¹'; B.zero=true;
+    B.series=[{name:'v',color:'#2563eb',type:'bar',pts:vv.map((p,i)=>[i,p[1]])}];
+    B.barLabels=vv.map(p=>trackLabel(p[0]));
+  }else if(S.chart==='dh'){
+    if(!S.lastScan||S.lastScan.kind!=='h') scan('h');
+    const sc=S.lastScan;
+    A.title='d–h 关系（转换法）'; A.xlabel='h / m'; A.ylabel='d / cm'; A.zero=true;
+    A.series=sc.series.map(s=>({name:s.label,color:s.color,type:'line',dots:true,pts:s.pts}));
+    const all=[].concat.apply([],sc.series.map(s=>s.pts)); const f=linfit(all);
+    if(f) A.fitline={k:f.k,b:f.b,color:'#dc2626'};
+    B.title='v–h 关系（验证 v = √(2gh)）'; B.xlabel='h / m'; B.ylabel='v / m·s⁻¹'; B.zero=true;
+    const th=[]; for(let i=0;i<=40;i++){ const x=i/40*2.6; th.push([x,Math.sqrt(2*S.g*x)]); }
+    B.series=[{name:'理论 √(2gh)',color:'#94a3b8',type:'line',dash:[5,4],pts:th}];
+    sc.series.forEach(s=>{ if(s.v) B.series.push({name:s.label,color:s.color,type:'pts',pts:s.v}); });
+  }else if(S.chart==='dm'){
+    if(!S.lastScan||S.lastScan.kind!=='m') scan('m');
+    const sc=S.lastScan;
+    A.title='d–m 关系'; A.xlabel='m / kg'; A.ylabel='d / cm'; A.zero=true;
+    A.series=sc.series.map(s=>({name:s.label,color:s.color,type:'line',dots:true,pts:s.pts}));
+    const all=[].concat.apply([],sc.series.map(s=>s.pts)); const f=linfit(all);
+    if(f) A.fitline={k:f.k,b:f.b,color:'#dc2626'};
+    B.title='W_G–Δh 关系'; B.xlabel='Δh / m'; B.ylabel='W_G / J'; B.zero=true;
+    const pts=[]; for(let i=0;i<=8;i++){ const x=i/8*3; pts.push([x,S.m*S.g*x]); }
+    B.series=[{name:'W_G=mgΔh',color:CFG.C.g,type:'line',pts:pts}];
+  }else if(S.chart==='ref'){
+    if(!S.lastScan||S.lastScan.kind!=='ref') scan('ref');
+    const sc=S.lastScan;
+    A.title='E_p(A) – h_ref（斜率 = −mg）'; A.xlabel='h_ref / m'; A.ylabel='E_p(A) / J';
+    A.series=sc.series.map(s=>({name:s.label,color:s.color,type:'line',dots:true,pts:s.pts}));
+    B.title='不变量检验：ΔE_p 与 W_G 对 h_ref'; B.xlabel='h_ref / m'; B.ylabel='J';
+    const rs=[-1,-0.5,0,0.5,1,1.5,2,2.5,3], d1=rs.map(x=>[x,-S.m*S.g*S.h]), w1=rs.map(x=>[x,S.m*S.g*S.h]);
+    B.series=[{name:'ΔE_p',color:CFG.C.ep,type:'line',pts:d1},{name:'W_G',color:CFG.C.g,type:'line',dash:[6,4],pts:w1}];
+  }else{
+    A.title='E_弹–x（抛物线：与 x² 成正比）'; A.xlabel='x / m'; A.ylabel='E_弹 / J'; A.zero=true;
+    const pts=[]; for(let i=-30;i<=30;i++){ const x=i/100; pts.push([x,0.5*S.kk*x*x]); }
+    A.series=[{name:'E_弹=½kx²',color:CFG.C.t2,type:'line',pts:pts}];
+    B.title='拉伸 / 压缩对称性'; B.xlabel=''; B.ylabel='E_弹 / J'; B.zero=true;
+    const ax=Math.abs(S.kx)||0.15;
+    B.series=[{name:'E_弹',color:CFG.C.t2,type:'bar',pts:[[0,0.5*S.kk*ax*ax],[1,0.5*S.kk*ax*ax]]}];
+    B.barLabels=['压缩 −x','拉伸 +x'];
+  }
+  return {A:A,B:B};
+}
+function updateCharts(){
+  const o=chartOpts();
+  drawChart($('#chA'),o.A); drawChart($('#chB'),o.B);
+  /* 拟合信息 */
+  let info='';
+  if(S.chart==='dh'){
+    if(!S.lastScan) scan('h');
+    const all=[].concat.apply([],S.lastScan.series.map(s=>s.pts)); const f=linfit(all);
+    const th=S.m*S.g/S.Ff*100;
+    if(S.sandModel==='nonlinear'){
+      if(f) info='（非线性沙阻）d = √(2mgh/k_d) 与 h 不成正比：拟合斜率 '+fmt(f.k,4)+' cm/m、R²='+fmt(f.r2,4)+'，直线拟合已失效——见易错⑨。';
+    }else if(f) info='d–h 拟合斜率 = '+fmt(f.k,4)+' cm/m，理论 mg/F_f = '+fmt(th,4)+' cm/m，相对误差 '+fmt(Math.abs(f.k-th)/Math.max(1e-9,th)*100,2)+' %，R²='+fmt(f.r2,4);
+  }else if(S.chart==='dm'){
+    if(!S.lastScan) scan('m');
+    const all=[].concat.apply([],S.lastScan.series.map(s=>s.pts)); const f=linfit(all);
+    const th=S.g*S.h/S.Ff*100;
+    if(S.sandModel==='nonlinear'){
+      if(f) info='（非线性沙阻）d 与 m 不成正比：拟合斜率 '+fmt(f.k,4)+' cm/kg，直线拟合已失效——见易错⑨。';
+    }else if(f) info='d–m 拟合斜率 = '+fmt(f.k,4)+' cm/kg，理论 gh/F_f = '+fmt(th,4)+' cm/kg，相对误差 '+fmt(Math.abs(f.k-th)/Math.max(1e-9,th)*100,2)+' %';
+  }else if(S.chart==='compare'){
+    const ids=activeIds(); const vs=ids.map(id=>simulate(id,S.m,S.h,params()).vExit).filter(x=>x>0);
+    const mx=Math.max.apply(null,vs), mn=Math.min.apply(null,vs);
+    info='三轨道末速率 '+vs.map(v=>fmt(v,3)).join(' / ')+' m/s，最大相对偏差 '+fmt((mx-mn)/Math.max(1e-9,mx)*100,3)+' %（要求 < 2 %）；W_G 恒为 '+fmt(S.m*S.g*S.h,3)+' J';
+  }else if(S.chart==='ref'){
+    info='E_p(A) 随 h_ref 线性变化（斜率 = −mg = '+fmt(-S.m*S.g,3)+' J/m），而 ΔE_p = '+fmt(-S.m*S.g*S.h,4)+' J、W_G = '+fmt(S.m*S.g*S.h,4)+' J 始终不变。';
+  }else{ info='E_弹 = ½kx²（拓展）：x 加倍 ⇒ E_弹 变 4 倍；拉伸与压缩 E_弹 相同。'; }
+  $('#fitInfo').textContent=info;
+}
+
+/* ---------------- 18. 数据记录 ---------------- */
+function renderTable(){
+  const t=$('#tbl');
+  let h='<tr><th>轨道</th><th>m/kg</th><th>h/m</th><th>h_ref/m</th><th>μ</th><th>F_f 或 k_d</th><th>W_G/J</th><th>ΔE_p/J</th><th>v/(m/s)</th><th>d/cm</th><th>备注</th></tr>';
+  S.rows.forEach(r=>{ h+='<tr><td>'+r.track+'</td><td>'+fmt(r.m,2)+'</td><td>'+fmt(r.h,2)+'</td><td>'+fmt(r.hRef,2)+'</td><td>'+fmt(r.mu,2)+'</td><td>'+r.Ff+'</td><td>'+fmt(r.Wg,2)+'</td><td>'+fmt(r.dep,2)+'</td><td>'+fmt(r.v,3)+'</td><td>'+(r.d===null?'—':fmt(r.d,2))+'</td><td>'+r.note+'</td></tr>'; });
+  t.innerHTML=h;
+}
+function download(name,text){
+  const b=new Blob(['\ufeff'+text],{type:'text/csv;charset=utf-8'});
+  const u=URL.createObjectURL(b), a=document.createElement('a');
+  a.href=u; a.download=name; document.body.appendChild(a); a.click();
+  setTimeout(()=>{URL.revokeObjectURL(u);a.remove();},300);
+}
+function exportRows(){
+  let c='轨道,m/kg,h/m,h_ref/m,μ,F_f或k_d,W_G/J,ΔE_p/J,v(m/s),d/cm,备注\n';
+  S.rows.forEach(r=>{ c+=[r.track,r.m,r.h,r.hRef,r.mu,r.Ff,fmt(r.Wg,4),fmt(r.dep,4),fmt(r.v,4),(r.d===null?'':fmt(r.d,3)),r.note].join(',')+'\n'; });
+  download('模型43_实验数据.csv',c); toast('已导出 '+S.rows.length+' 行数据');
+}
+function exportChart(){
+  if(!S.lastScan){ toast('请先运行扫描'); return; }
+  let c='系列,'+S.lastScan.kind+',值\n';
+  S.lastScan.series.forEach(s=>s.pts.forEach(p=>{ c+=s.label+','+p[0]+','+fmt(p[1],5)+'\n'; }));
+  download('模型43_图数据_'+S.lastScan.kind+'.csv',c); toast('已导出当前图数据');
+}
+let toastTimer=null;
+function toast(msg){ const t=$('#toast'); t.textContent=msg; t.style.display='block';
+  clearTimeout(toastTimer); toastTimer=setTimeout(()=>t.style.display='none',1900); }
+
+/* ---------------- 19. 知识卡片 UI ---------------- */
+let curCat='全部', curList=[], curIdx=0, lastFocus=null;
+const CATS=['全部','概念','公式','规律','方法','辨析','易错','应用','误差'];
+function filtered(){
+  const q=($('#dSearch').value||'').trim();
+  let l=CARDS.filter(c=>(curCat==='全部'||c.cat===curCat));
+  if(q) l=l.filter(c=>(c.t+c.c+c.f+c.d+(c.w||'')).indexOf(q)>=0);
+  return l;
+}
+function renderDrawer(){
+  curList=filtered();
+  $('#dCats').innerHTML=CATS.map(c=>'<button type="button" data-c="'+c+'" class="'+(c===curCat?'active':'')+'">'+c+'（'+CARDS.filter(x=>c==='全部'||x.cat===c).length+'）</button>').join('');
+  Array.prototype.forEach.call($('#dCats').children,b=>b.onclick=()=>{curCat=b.dataset.c;renderDrawer();});
+  const pin=S.pinned.map(id=>CARDS.find(c=>c.id===id)).filter(Boolean);
+  const rest=curList.filter(c=>S.pinned.indexOf(c.id)<0);
+  const html=(pin.concat(rest)).map(c=>'<div class="citem" data-id="'+c.id+'" tabindex="0" role="button">'+
+    '<b>'+c.t+'</b><span class="tag">'+c.cat+'</span>'+(S.pinned.indexOf(c.id)>=0?'<span class="tag">📌</span>':'')+
+    (c.ext?'<span class="tag" style="background:#fff7ed;color:#9a3412">拓展</span>':'')+
+    '<div class="small" style="color:#5b6672">'+c.c+'</div></div>').join('');
+  $('#dList').innerHTML=html||'<div class="small">未找到匹配卡片</div>';
+  Array.prototype.forEach.call($('#dList').children,el=>{
+    if(el.dataset.id){ el.onclick=()=>openCard(el.dataset.id);
+      el.onkeydown=e=>{ if(e.key==='Enter'||e.key===' '){e.preventDefault();openCard(el.dataset.id);} }; }
+  });
+}
+function cardIndex(id){ const i=curList.findIndex(c=>c.id===id); return i; }
+function openCard(id){
+  const c=CARDS.find(x=>x.id===id); if(!c) return;
+  lastFocus=document.activeElement;
+  if(curList.indexOf(c)<0){ curCat='全部'; renderDrawer(); }
+  curIdx=Math.max(0,cardIndex(id));
+  showCard(c);
+  $('#modal').classList.add('open');
+  $('#mBox').focus();
+}
+function showCard(c){
+  $('#mBox').innerHTML=
+    '<h2>'+c.t+' <span class="pill">'+c.cat+'卡</span>'+(c.ext?' <span class="pill ext">拓展（教材只要求定性/超出演示范围）</span>':'')+'</h2>'+
+    '<div class="sub">'+c.c+'</div>'+
+    '<div class="fml">'+(c.f||'')+'</div>'+
+    '<div id="mFace">'+c.s+
+      '<div class="tagline demo">🔍 <b>在本 Demo 中怎么看：</b>'+c.d+'</div>'+
+      (c.w?'<div class="tagline warn">⚠️ <b>易错提醒：</b>'+c.w+'</div>':'')+
+    '</div>'+
+    '<div id="mBack" hidden>'+
+      '<div class="face"><b>推导 / 复现要点</b>'+
+      '<ol style="margin:6px 0 0 18px;padding:0;font-size:12.5px">'+
+      '<li>明确研究对象与过程（谁在做功？初末位置在哪里？）</li>'+
+      '<li>写出判据：<b>'+(c.f||'见正面')+'</b>，确认各符号物理意义与单位</li>'+
+      '<li>选定参考面（涉及 E_p 时）并全程统一，注意正负号</li>'+
+      '<li>用本 Demo 复现：'+c.d+'</li>'+
+      '<li>检验：换参考面看 ΔE_p 与 W_G 是否不变（不变量检验法）</li>'+
+      '</ol></div>'+
+      (c.w?'<div class="tagline warn">⚠️ '+c.w+'</div>':'')+
+    '</div>'+
+    '<div class="row">'+
+      '<button type="button" id="mFlip">🔄 翻转（推导）</button>'+
+      '<button type="button" id="mPin">'+(S.pinned.indexOf(c.id)>=0?'📌 取消钉住':'📌 钉住常驻')+'</button>'+
+      '<button type="button" id="mPrev">← 上一张</button>'+
+      '<button type="button" id="mNext">下一张 →</button>'+
+      '<span class="small" style="align-self:center">共 '+CARDS.length+' 张（当前第 '+(curIdx+1)+'/'+curList.length+'）</span>'+
+      '<button type="button" id="mClose" style="margin-left:auto">关闭 ✕</button>'+
+    '</div>';
+  $('#mBox').setAttribute('tabindex','-1');
+  $('#mClose').onclick=closeCard;
+  $('#mFlip').onclick=()=>{ const f=$('#mFace'),b=$('#mBack'); b.hidden=!b.hidden; f.hidden=!f.hidden; };
+  $('#mPin').onclick=()=>{ const i=S.pinned.indexOf(c.id); if(i>=0)S.pinned.splice(i,1); else S.pinned.push(c.id); renderDrawer(); showCard(c); };
+  $('#mPrev').onclick=()=>{ curIdx=(curIdx-1+curList.length)%curList.length; showCard(curList[curIdx]); };
+  $('#mNext').onclick=()=>{ curIdx=(curIdx+1)%curList.length; showCard(curList[curIdx]); };
+}
+function closeCard(){ $('#modal').classList.remove('open'); if(lastFocus&&lastFocus.focus) lastFocus.focus(); }
+function openDrawer(){ $('#drawer').classList.add('open'); renderDrawer(); $('#dSearch').focus(); }
+
+/* ---------------- 20. 练习与考核 ---------------- */
+const QUIZ=[
+ {q:'同一重球从同一高度 h 由静止释放，分别沿竖直、光滑斜面、光滑圆弧落入沙坑（阻力恒定），关于重力做功 W_G 的说法正确的是？',
+  o:['三条轨道 W_G 相同，都等于 mgh','斜面路程最长，W_G 最大','竖直下落 W_G 最大','圆弧轨道 W_G 最小'],a:0,
+  e:'重力是恒力（近地表 g 恒定），W_G = mg·Δh 只与初末高度差有关，与路径长度、形状、倾角都无关。',c:'l-path'},
+ {q:'把参考平面（零势能面）从沙面移到释放点上方 0.5 m，下列物理量中会发生变化的是？',
+  o:['E_p 的数值','ΔE_p','W_G','ΔE_p 与 W_G 都不变'],a:0,
+  e:'E_p = mgh 中的 h 相对参考面，换参考面后所有 E_p 整体加减同一常数；但两点间的 ΔE_p 与重力做功 W_G 只由高度差决定，严格不变。',c:'d-relabs'},
+ {q:'物体下降过程中，重力做功 W_G = +20 J，则重力势能的变化是？',
+  o:['E_p 减少 20 J，ΔE_p = −20 J','E_p 增加 20 J','E_p 不变','无法判断'],a:0,
+  e:'W_G = −ΔE_p。重力做正功 20 J ⇒ ΔE_p = −20 J ⇒ 重力势能减少 20 J（转化为动能或其他形式能量）。',c:'f-rel'},
+ {q:'关于重力势能的归属，最严谨的表述是？',
+  o:['重力势能属于物体与地球组成的系统','重力势能是物体单独具有的','重力势能属于地球','重力势能属于释放机构'],a:0,
+  e:'重力势能源于物体与地球之间的相互作用，是系统共有的相互作用势能；"物体的重力势能"只是习惯简称。',c:'c-sys'},
+ {q:'沿不同轨道从同一高度由静止下落，末速率一定相同吗？',
+  o:['不一定，只有在轨道光滑、无空气阻力（只有重力做功）时才相同','一定相同，与轨道无关','一定不同','无法判断'],a:0,
+  e:'"重力做功与路径无关"无条件成立；但"末速率与路径无关"需要"只有重力做功"这一前提。有摩擦时摩擦力做负功，末速率变小，而 W_G 仍是 mgΔh。',c:'d-pathv'},
+ {q:'同一弹簧，形变量的绝对值相同，一次拉伸、一次压缩，弹性势能的大小关系是？',
+  o:['两次相同','拉伸时更大','压缩时更大','压缩时为零'],a:0,
+  e:'弹性势能与形变量的平方有关（拓展 E_弹 = ½kx²），拉伸与压缩对称：|x| 相同则 E_弹 相同，压缩时同样具有弹性势能。',c:'l-eel'}
+];
+let qState={};
+function buildQuiz(){
+  const w=$('#quizWrap');
+  const order=QUIZ.map((_,i)=>i);
+  if(qState.random) order.sort(()=>Math.random()-0.5);
+  w.innerHTML='<h3>练习与考核 <span class="hint">（6 道即时反馈选择题）</span>'+
+    '<button id="qTeacher" style="float:right">教师模式：'+(qState.teacher?'开':'关')+'</button>'+
+    '<button id="qReset" style="float:right;margin-right:6px">重新抽题</button></h3>'+
+    order.map(i=>{
+      const q=QUIZ[i];
+      return '<div class="quiz" data-q="'+i+'" style="margin-top:10px"><div><b>'+(order.indexOf(i)+1)+'. </b>'+q.q+'</div>'+
+        q.o.map((t,j)=>'<button type="button" class="opt" data-j="'+j+'">'+'ABCD'[j]+'. '+t+'</button>').join('')+
+        '<div class="eres"></div></div>';
+    }).join('')+
+    '<div class="small" style="margin-top:10px">成绩：<b id="qScore">0 / '+QUIZ.length+'</b>　'+
+    '<button type="button" id="qShow">显示/隐藏答案</button>'+
+    '<button type="button" id="qExport">导出答题记录</button></div>';
+  Array.prototype.forEach.call(w.querySelectorAll('.quiz'),box=>{
+    const i=parseInt(box.dataset.q,10);
+    Array.prototype.forEach.call(box.querySelectorAll('.opt'),b=>{
+      b.onclick=()=>{
+        const j=parseInt(b.dataset.j,10), q=QUIZ[i];
+        if(qState.teacher&&!qState.show){ qState.ans=qState.ans||{}; qState.ans[i]=j;
+          Array.prototype.forEach.call(box.querySelectorAll('.opt'),x=>x.classList.remove('right','wrong'));
+          b.classList.add('right'); box.querySelector('.eres').innerHTML='<div class="expl">已选择，点"显示/隐藏答案"后判分。</div>'; return; }
+        Array.prototype.forEach.call(box.querySelectorAll('.opt'),x=>x.classList.remove('right','wrong'));
+        b.classList.add(j===q.a?'right':'wrong');
+        if(j!==q.a) box.querySelectorAll('.opt')[q.a].classList.add('right');
+        qState.ans=qState.ans||{}; if(qState.ans[i]===undefined) qState.ans[i]=j;
+        box.querySelector('.eres').innerHTML='<div class="expl">'+(j===q.a?'✅ 正确。':'❌ 不正确。')+q.e+
+          ' <button type="button" class="gocard" data-c="'+q.c+'">查看对应卡片</button></div>';
+        box.querySelectorAll('.gocard')[0].onclick=()=>openCard(q.c);
+        updScore();
+      };
+    });
+  });
+  $('#qTeacher').onclick=()=>{ qState.teacher=!qState.teacher; buildQuiz(); };
+  $('#qReset').onclick=()=>{ qState.ans={}; qState.random=true; buildQuiz(); };
+  $('#qShow').onclick=()=>{ qState.show=!qState.show;
+    if(qState.show){ QUIZ.forEach((q,i)=>{ const box=w.querySelector('.quiz[data-q="'+i+'"]'); if(!box) return;
+      Array.prototype.forEach.call(box.querySelectorAll('.opt'),(x,j)=>{x.classList.remove('right','wrong'); if(j===q.a)x.classList.add('right');});
+      box.querySelector('.eres').innerHTML='<div class="expl">答案：'+'ABCD'[q.a]+'。'+q.e+
+        ' <button type="button" class="gocard" data-c="'+q.c+'">查看对应卡片</button></div>';
+      box.querySelectorAll('.gocard')[0].onclick=()=>openCard(q.c); }); }
+    else { Array.prototype.forEach.call(w.querySelectorAll('.opt'),x=>x.classList.remove('right','wrong'));
+      Array.prototype.forEach.call(w.querySelectorAll('.eres'),x=>x.innerHTML=''); }
+    updScore(); };
+  $('#qExport').onclick=()=>{ let c='题号,题目,作答,正确,是否正确\n';
+    QUIZ.forEach((q,i)=>{ const a=qState.ans? qState.ans[i]:undefined;
+      c+=[i+1,'"'+q.q+'"',(a===undefined?'未作答':'ABCD'[a]),'ABCD'[q.a],(a===q.a?'是':(a===undefined?'—':'否'))].join(',')+'\n'; });
+    download('模型43_答题记录.csv',c); toast('已导出答题记录'); };
+  updScore();
+}
+function updScore(){ let s=0; QUIZ.forEach((q,i)=>{ if(qState.ans&&qState.ans[i]===q.a) s++; });
+  const el=$('#qScore'); if(el) el.textContent=s+' / '+QUIZ.length; }
+
+/* ---------------- 21. 教学引导 ---------------- */
+const TEACH=[
+ {tip:'同一重球从同一高度 h 由静止释放，沿竖直、光滑斜面、光滑圆弧三条轨道落入沙坑。',
+  q:'三条轨道的陷入深度为什么相同？',tab:0,card:'l-path',preset:'p3s'},
+ {tip:'打开"轨道摩擦 μ"，重做一次：末速率与深度都明显减小。',
+  q:'是重力做功变小了吗？如果不是，是谁做了负功？',tab:0,card:'d-pathv',preset:'p3f'},
+ {tip:'进入标签页②，拖动紫色参考面（零势能面）。',
+  q:'把参考面移到球的上方，E_p 变成什么符号？',tab:1,card:'c-ref'},
+ {tip:'继续拖动参考面，注意读数区两个黄色高亮框。',
+  q:'ΔE_p 会随参考面改变吗？W_G 呢？',tab:1,card:'d-relabs',preset:'prs'},
+ {tip:'进入标签页③，分别演示下降、上升、水平三个过程。',
+  q:'W_G 与 ΔE_p 的符号关系是什么？',tab:2,card:'f-rel'},
+ {tip:'进入标签页④，把形变量 x 从正值调到负值。',
+  q:'拉伸与压缩的弹性势能相同吗？与形变量是什么关系？',tab:3,card:'l-eel',preset:'psp'},
+ {tip:'打开卡片库，逐条浏览"易错卡"。',
+  q:'哪些说法看似正确其实不严谨？',tab:4,card:'e7'}
+];
+function renderTeach(){
+  const t=TEACH[S.teach];
+  $('#tNum').textContent=(S.teach+1);
+  $('#tText').innerHTML='<b>'+t.tip+'</b>';
+  $('#tQ').textContent='❓ '+t.q;
+  $('#teach').classList.toggle('open',S.teachOn);
+}
+function teachGo(i){
+  S.teach=clamp(i,0,TEACH.length-1);
+  const t=TEACH[S.teach];
+  if(t.preset){ const p=PRESETS.find(p=>p.id===t.preset); if(p){ p.run(); } }
+  setTab(t.tab); renderTeach();
+}
+function nextTeach(){ if(S.teach>=TEACH.length-1){ S.teachOn=false; renderTeach();
+  openCard('f-rel'); toast('教学流程完成：W_G = mgΔh、E_p = mgh、W_G = −ΔE_p'); return; } teachGo(S.teach+1); }
+
+/* ---------------- 22. 控件构建与事件 ---------------- */
+const ctlEls={};
+function buildControls(){
+  const box=$('#ctlBox'); box.innerHTML='';
+  CONTROLS.forEach(c=>{
+    const row=document.createElement('div'); row.className='ctl'; row.dataset.id=c.id;
+    if(c.t==='range'){
+      row.innerHTML='<label for="c_'+c.id+'">'+c.label+'</label>'+
+        '<input type="range" id="c_'+c.id+'" min="'+c.min+'" max="'+c.max+'" step="'+c.step+'" value="'+(S[c.id]!==undefined?S[c.id]:c.val)+'">'+
+        '<output id="o_'+c.id+'"></output>';
+      box.appendChild(row);
+      const inp=row.querySelector('input'), out=row.querySelector('output');
+      ctlEls[c.id]=inp;
+      const upd=()=>{ const v=parseFloat(inp.value); S[c.id]=v; out.textContent=(c.fmt?c.fmt(v):v.toFixed(2))+(c.unit?' '+c.unit:'');
+        if(['m','h','theta'].indexOf(c.id)>=0) resetSim();
+        if(c.id==='hRef'||c.id==='kx'||c.id==='kk') { /* 不需重置 */ }
+        updateReadouts(); if(c.id==='hRef'||c.id==='kx'||c.id==='kk') updateCharts();
+      };
+      inp.addEventListener('input',upd);
+      /* 拖动结束（change）才重算扫描曲线，避免滑动过程卡顿 */
+      inp.addEventListener('change',()=>{ S.lastScan=null; updateCharts(); });
+      upd();
+    }else if(c.t==='sel'){
+      row.innerHTML='<label for="c_'+c.id+'">'+c.label+'</label><select id="c_'+c.id+'" style="grid-column:2/4">'+
+        c.opts.map(o=>'<option value="'+o[0]+'">'+o[1]+'</option>').join('')+'</select>';
+      box.appendChild(row); const sel=row.querySelector('select'); ctlEls[c.id]=sel;
+      sel.value=S[c.id==='sand'?'sandModel':c.id]||c.opts[0][0];
+      sel.onchange=()=>{ if(c.id==='sand'){S.sandModel=sel.value; resetSim();} else {S[c.id]=sel.value; procT=0; S.playing=false;}
+        S.lastScan=null; updateReadouts(); updateCharts(); };
+    }else if(c.t==='check'){
+      row.style.gridTemplateColumns='auto 1fr';
+      row.innerHTML='<label><input type="checkbox" id="c_'+c.id+'"> '+c.label+'</label>';
+      box.appendChild(row); const cb=row.querySelector('input'); ctlEls[c.id]=cb;
+      cb.checked=!!S[c.id];
+      cb.onchange=()=>{ S[c.id]=cb.checked; if(c.id==='topView'){} updateReadouts(); };
+    }else if(c.t==='btns'){
+      row.style.gridTemplateColumns='104px 1fr';
+      row.innerHTML='<label>'+c.label+'</label><div class="btns" style="margin:0">'+
+        c.opts.map(o=>'<button type="button" data-v="'+o[0]+'">'+o[1]+'</button>').join('')+'</div>';
+      box.appendChild(row);
+      Array.prototype.forEach.call(row.querySelectorAll('button'),b=>{
+        b.onclick=()=>{ const v=b.dataset.v;
+          const target = v==='h'?S.h : (v==='h2'?S.h/2 : parseFloat(v));
+          animateRef(target); };
+      });
+    }else if(c.t==='tracks'){
+      row.style.gridTemplateColumns='1fr';
+      row.innerHTML='<div class="chk">'+CFG.tracks.map(t=>'<label><input type="checkbox" data-t="'+t.id+'"> '+t.label+'</label>').join('')+'</div>';
+      box.appendChild(row);
+      Array.prototype.forEach.call(row.querySelectorAll('input'),cb=>{
+        cb.checked=!!S.on[cb.dataset.t];
+        cb.onchange=()=>{ S.on[cb.dataset.t]=cb.checked; if(!activeIds().length){S.on[cb.dataset.t]=true;cb.checked=true;} resetSim(); };
+      });
+    }
+  });
+  /* 预设按钮 */
+  $('#presetBox').innerHTML='<div class="small" style="width:100%;margin-bottom:2px">预设与扫描：</div>'+
+    PRESETS.map(p=>'<button type="button" data-p="'+p.id+'">'+p.name+'</button>').join('');
+  Array.prototype.forEach.call($('#presetBox').querySelectorAll('button'),b=>{
+    b.onclick=()=>{ const p=PRESETS.find(x=>x.id===b.dataset.p); if(!p) return; p.run(); syncControls(); applyTab(p.tab); resetSim(); toast('已载入预设：'+p.name); };
+  });
+  /* 图表切换 */
+  renderChartTabs();
+}
+function renderChartTabs(){
+  $('#chartTabs').innerHTML=CHART_TABS.map(c=>'<button type="button" data-c="'+c.id+'" class="'+(S.chart===c.id?'on':'')+'">'+c.n+'</button>').join('');
+  Array.prototype.forEach.call($('#chartTabs').children,b=>{ b.onclick=()=>{ S.chart=b.dataset.c;
+    if(b.dataset.c==='dh') scan('h'); else if(b.dataset.c==='dm') scan('m'); else if(b.dataset.c==='ref') scan('ref');
+    renderChartTabs(); updateCharts(); }; });
+}
+function syncControls(){
+  CONTROLS.forEach(c=>{
+    const el=ctlEls[c.id]; if(!el) return;
+    if(c.t==='range'){ const v=S[c.id]; if(v!==undefined){ el.value=v; el.dispatchEvent(new Event('input')); } }
+    else if(c.t==='sel'){ const v=(c.id==='sand')?S.sandModel:S[c.id]; if(v) el.value=v; }
+    else if(c.t==='check'){ el.checked=!!S[c.id]; }
+  });
+  Array.prototype.forEach.call($('#ctlBox').querySelectorAll('input[data-t]'),cb=>{ cb.checked=!!S.on[cb.dataset.t]; });
+}
+function syncSel(id,val){ const el=$(id); if(el) el.value=val; }
+function showControlsForTab(){
+  CONTROLS.forEach(c=>{ const row=$('#ctlBox').querySelector('.ctl[data-id="'+c.id+'"]'); if(row) row.style.display=(c.tabs.indexOf(S.tab)>=0?'':'none'); });
+}
+function setTab(i){
+  S.tab=i; S.playing=false; S.rowPushed=false; procT=0; springT=0;
+  /* 离开标签页③时复位演示模式，避免"闭合路径"预设把状态永久锁死 */
+  if(i!==2) S.mode3='process';
+  Array.prototype.forEach.call($('#tabs').children,(b,j)=>{ b.classList.toggle('active',j===i); b.setAttribute('aria-selected',j===i?'true':'false'); });
+  $('#quizWrap').hidden=(i!==4);
+  showControlsForTab();
+  if(i===0) resetSim();
+  if(i===4) buildQuiz();
+  updateCharts();
+}
+function applyTab(t){ if(t!==undefined&&t!==S.tab) setTab(t); }
+
+/* ---------------- 23. 画布交互（拖动参考面） ---------------- */
+function bindCanvas(){
+  const cv=$('#stage');
+  const toWorld=e=>{ const r=cv.getBoundingClientRect(); return {x:(e.clientX-r.left), y:(e.clientY-r.top)}; };
+  cv.addEventListener('pointerdown',e=>{
+    if(S.tab!==1) return;
+    const p=toWorld(e), wy=V.invY(p.y);
+    if(Math.abs(wy-S.hRef)<Math.max(0.16,12/V.s)){ S.dragRef=true; cv.setPointerCapture(e.pointerId); }
+  });
+  cv.addEventListener('pointermove',e=>{
+    if(!S.dragRef) return;
+    const p=toWorld(e), wy=V.invY(p.y);
+    S.hRef=clamp(Math.round(wy*20)/20,-1,3.2);
+    const el=ctlEls.hRef; if(el){ el.value=S.hRef; el.dispatchEvent(new Event('input')); }
+  });
+  cv.addEventListener('pointerup',e=>{ S.dragRef=false; });
+  cv.addEventListener('pointercancel',()=>{ S.dragRef=false; });
+}
+
+/* ---------------- 24. 初始化 ---------------- */
+function buildTabs(){
+  $('#tabs').innerHTML=TABS.map((t,i)=>'<button type="button" role="tab" aria-selected="'+(i===0)+'">'+t.n+'</button>').join('');
+  Array.prototype.forEach.call($('#tabs').children,(b,i)=>b.onclick=()=>setTab(i));
+}
+function buildLegend(){
+  const C=CFG.C;
+  $('#legend').innerHTML=[
+    ['重力 mg',C.g],['速度 v',C.v],['E_p（正）',C.ep],['E_p（负）',C.epn],['E_k',C.ek],
+    ['参考面',C.ref],['等势面',C.equi],['摩擦轨道/深度',C.fric],['沙坑',C.sand],['机械能',C.mech],
+    ['竖直轨道',C.t1],['斜面轨道',C.t2],['圆弧轨道',C.t3],['折线轨道',C.t4]
+  ].map(x=>'<span><i style="background:'+x[1]+'"></i>'+x[0]+'</span>').join('');
+}
+function buildSelects(){
+  $('#sel-g').innerHTML=CFG.bodies.map(b=>'<option value="'+b.id+'">'+b.name+'</option>').join('');
+  $('#sel-g').onchange=()=>{ const b=CFG.bodies.find(x=>x.id===$('#sel-g').value); S.g=b.g; S.lastScan=null; resetSim(); updateCharts();
+    toast(b.id==='earth'?'已切换：地球 g = 9.8 m/s²':'（拓展）已切换：'+b.name+'，E_p 随 g 线性变化'); };
+  const sl=[['0.1','0.1×（极慢）'],['0.25','0.25×'],['0.5','0.5×'],['1','1×（正常）'],['2','2×'],['5','5×']];
+  $('#sel-slow').innerHTML=sl.map(s=>'<option value="'+s[0]+'">'+s[1]+'</option>').join('');
+  $('#sel-slow').value='1';
+  $('#sel-slow').onchange=()=>{ S.slow=parseFloat($('#sel-slow').value); };
+}
+function init(){
+  buildTabs(); buildReadouts(); buildControls(); buildLegend(); buildSelects(); bindCanvas();
+  $('#btn-play').onclick=()=>{
+    if(S.tab===0){ if(S.runners.every(r=>r.phase==='done')) { resetSim(); S.rowPushed=false; }
+      if(REDUCED){ finishRun(); } else { S.playing=true; S.rowPushed=false; } }
+    else if(S.tab===2){ procT=0; S.playing=true; }
+    else if(S.tab===3){ S.springRun=true; springT=0; S.playing=true; }
+    else toast('该标签页无需释放动作');
+  };
+  $('#btn-pause').onclick=()=>{ S.playing=false; };
+  $('#btn-step').onclick=()=>{
+    if(S.tab===0){ const st=0.02; S.runners.forEach(r=>{ for(let i=0;i<25;i++) stepRunner(r,st/25); });
+      if(allDone()&&!S.rowPushed){pushRow();S.rowPushed=true;} }
+    else if(S.tab===2){ procT=clamp(procT+0.1,0,1); }
+    else if(S.tab===3){ springT+=0.05; }
+  };
+  $('#btn-reset').onclick=()=>{ resetSim(); procT=0; springT=0; S.springRun=false; S.rowPushed=false; toast('已重置'); };
+  $('#btn-cards').onclick=()=>{ const d=$('#drawer'); d.classList.contains('open')?d.classList.remove('open'):openDrawer(); };
+  $('#dClose').onclick=()=>$('#drawer').classList.remove('open');
+  $('#dPrev').onclick=()=>{ curIdx=(curIdx-1+curList.length)%curList.length; const c=curList[curIdx]; if(c){ renderDrawer(); openCard(c.id); } };
+  $('#dNext').onclick=()=>{ curIdx=(curIdx+1)%curList.length; const c=curList[curIdx]; if(c){ renderDrawer(); openCard(c.id); } };
+  $('#dSearch').addEventListener('input',renderDrawer);
+  $('#btn-teach').onclick=()=>{ S.teachOn=!S.teachOn; if(S.teachOn){ S.teach=0; renderTeach(); } else $('#teach').classList.remove('open'); };
+  $('#tNext').onclick=nextTeach;
+  $('#tPrev').onclick=()=>teachGo(S.teach-1);
+  $('#tCard').onclick=()=>openCard(TEACH[S.teach].card);
+  $('#tClose').onclick=()=>{ S.teachOn=false; $('#teach').classList.remove('open'); };
+  $('#btn-csv').onclick=exportRows;
+  $('#btn-clear').onclick=()=>{ S.rows=[]; renderTable(); toast('已清空数据'); };
+  $('#btn-fit').onclick=()=>{ if(S.chart==='compare'){ scan('h'); } else updateCharts(); toast('已执行线性拟合并标注理论值'); };
+  $('#btn-exportChart').onclick=exportChart;
+  document.addEventListener('keydown',e=>{
+    if(e.key==='Escape'){ if($('#modal').classList.contains('open')) closeCard();
+      else if($('#drawer').classList.contains('open')) $('#drawer').classList.remove('open'); }
+    if($('#modal').classList.contains('open')){
+      if(e.key==='ArrowRight'){ const b=$('#mNext'); if(b) b.click(); }
+      if(e.key==='ArrowLeft'){ const b=$('#mPrev'); if(b) b.click(); }
+    }
+  });
+  window.addEventListener('resize',()=>{ updateCharts(); });
+  if(typeof ResizeObserver!=='undefined'){ new ResizeObserver(()=>updateCharts()).observe($('#chA').parentNode); }
+  setTab(0);
+  if(REDUCED){ S.slow=1; toast('已检测到"减少动效"偏好：释放后将直接给出静态分帧结果'); }
+  requestAnimationFrame(loop);
+}
+if(document.readyState==='loading') document.addEventListener('DOMContentLoaded',init); else init();
+
+
+
+
+</script>
+</body>
+</html>

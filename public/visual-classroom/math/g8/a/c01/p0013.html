@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>13.2 与三角形有关的线段 · 互动实验</title>
+<style>
+  :root{
+    --bg:#f5f7fa; --panel:#ffffff; --line:#e2e8f0;
+    --text:#1e293b; --muted:#64748b;
+    --blue:#2563eb; --red:#dc2626; --green:#059669; --orange:#d97706; --purple:#7c3aed;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{
+    font-family:"Microsoft YaHei","PingFang SC",sans-serif;
+    background:var(--bg); color:var(--text);
+    min-height:100vh; display:flex; flex-direction:column; align-items:center;
+    padding:18px; -webkit-user-select:none; user-select:none;
+  }
+  header{text-align:center; margin-bottom:14px;}
+  header h1{font-size:22px; font-weight:700;}
+  header p{font-size:13px; color:var(--muted); margin-top:4px;}
+  .tabs{display:flex; gap:8px; margin-bottom:12px; flex-wrap:wrap; justify-content:center;}
+  .tab{
+    padding:8px 18px; border-radius:20px; border:1px solid var(--line);
+    background:var(--panel); cursor:pointer; font-size:14px; transition:.2s;
+  }
+  .tab:hover{border-color:var(--blue);}
+  .tab.active{background:var(--blue); color:#fff; border-color:var(--blue);}
+  .stage{width:min(1080px,100%); background:var(--panel); border:1px solid var(--line);
+    border-radius:14px; box-shadow:0 4px 16px rgba(15,23,42,.06); overflow:hidden;}
+  .panel{display:none; padding:16px;}
+  .panel.active{display:flex; gap:16px; flex-wrap:wrap;}
+  .svg-wrap{flex:1 1 560px; min-width:300px;}
+  svg{width:100%; height:auto; display:block; background:#fafcff; border:1px solid var(--line);
+    border-radius:10px; touch-action:none;}
+  .h{cursor:grab;}
+  .h:active{cursor:grabbing;}
+  #labels1 text, #gAllMid text, #gAllAlt text, #gAllBis text{
+    paint-order:stroke; stroke:#fff; stroke-width:3px; stroke-linejoin:round;
+  }
+  .side{flex:0 1 300px; min-width:258px; display:flex; flex-direction:column; gap:10px;}
+  .card{background:#f8fafc; border:1px solid var(--line); border-radius:10px; padding:12px;
+    font-size:13px; line-height:1.72;}
+  .card h3{font-size:14px; margin-bottom:6px; color:var(--blue);}
+  .btn-row{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
+  button.op{padding:7px 14px; border-radius:8px; border:1px solid var(--line); background:#fff;
+    cursor:pointer; font-size:13px; transition:.15s; font-family:inherit;}
+  button.op:hover{border-color:var(--blue); color:var(--blue);}
+  button.op.on{background:var(--blue); color:#fff; border-color:var(--blue);}
+  button.play{padding:9px 22px; border-radius:8px; border:none; cursor:pointer;
+    background:var(--green); color:#fff; font-size:14px; font-weight:600; font-family:inherit;}
+  button.play.pause{background:var(--orange);}
+  select{padding:6px 8px; border-radius:8px; border:1px solid var(--line); font-size:13px;
+    font-family:inherit; background:#fff; color:var(--text); width:100%;}
+  label.chk{display:flex; align-items:center; gap:6px; cursor:pointer; font-size:13px;}
+  .readout{font-variant-numeric:tabular-nums;}
+  .ok{color:var(--green); font-weight:600;}
+  .bad{color:var(--red); font-weight:600;}
+  .note{font-size:12px; color:var(--muted);}
+  .kv{display:flex; justify-content:space-between;}
+  .hint{font-size:12px; color:var(--orange); margin-top:6px;}
+</style>
+</head>
+<body>
+<header>
+  <h1>13.2 与三角形有关的线段 · 互动实验</h1>
+  <p>三边关系 ｜ 高、中线、角平分线 ｜ 三角形稳定性（输电塔钢架） · 可拖拽操作，也可自动播放</p>
+</header>
+
+<div class="tabs">
+  <div class="tab active" data-p="0">① 三边关系 · 路线比较</div>
+  <div class="tab" data-p="1">② 高 · 中线 · 角平分线</div>
+  <div class="tab" data-p="2">③ 三角形稳定性 · 输电塔钢架</div>
+</div>
+
+<div class="stage">
+
+  <!-- ============ Panel 0 ============ -->
+  <div class="panel active" id="p0">
+    <div class="svg-wrap">
+      <svg id="s0" viewBox="0 0 760 480">
+        <line x1="60" y1="400" x2="700" y2="400" stroke="#cbd5e1" stroke-width="1" stroke-dasharray="6 4"/>
+        <text x="62" y="420" font-size="11" fill="#94a3b8">基线（两点之间，线段最短）</text>
+        <polygon id="tri0" fill="rgba(37,99,235,.10)" stroke="#2563eb" stroke-width="2.5" stroke-linejoin="round"/>
+        <path id="route0" fill="none" stroke="#d97706" stroke-width="3" stroke-linejoin="round" opacity=".9"/>
+        <line id="base0" x1="120" y1="400" x2="640" y2="400" stroke="#2563eb" stroke-width="3.5"/>
+        <g font-size="13" font-weight="700">
+          <text id="labAC" fill="#d97706"></text>
+          <text id="labCB" fill="#d97706"></text>
+          <text id="labAB" x="380" y="424" fill="#2563eb" text-anchor="middle"></text>
+        </g>
+        <g id="warn0" visibility="hidden">
+          <text x="380" y="322" font-size="19" font-weight="700" fill="#dc2626" text-anchor="middle">⚠ 两边之和 = 第三边，不能构成三角形</text>
+        </g>
+        <g cx="120">
+          <circle cx="120" cy="400" r="7" fill="#2563eb" stroke="#fff" stroke-width="2"/>
+          <text x="120" y="384" text-anchor="middle" font-size="14" font-weight="700" fill="#2563eb">A</text>
+          <circle cx="640" cy="400" r="7" fill="#2563eb" stroke="#fff" stroke-width="2"/>
+          <text x="640" y="384" text-anchor="middle" font-size="14" font-weight="700" fill="#2563eb">B</text>
+        </g>
+        <g id="hC0" class="h">
+          <circle class="hit" r="24" fill="#000" opacity="0"/>
+          <circle r="11" fill="#d97706" stroke="#fff" stroke-width="2.5"/>
+          <text dy="4.5" text-anchor="middle" font-size="12" font-weight="700" fill="#fff" pointer-events="none">C</text>
+          <circle r="18" fill="none" stroke="#d97706" stroke-width="1" opacity=".45"/>
+        </g>
+      </svg>
+    </div>
+    <div class="side">
+      <div class="card">
+        <h3>📌 实验说明</h3>
+        拖动橙点 <b>C</b>，比较两条路线：折线 <b style="color:var(--orange)">A→C→B</b> 与线段 <b style="color:var(--blue)">A→B</b>。
+        由「两点之间线段最短」得 <b>AC + CB &gt; AB</b>；把 C 压到基线上时两边之和 = 第三边，三角形退化。
+      </div>
+      <div class="card readout" id="ro0"></div>
+      <div class="card">
+        <h3>🎮 控制</h3>
+        <div class="btn-row">
+          <button class="play" id="play0">▶ 自动播放</button>
+          <button class="op" id="reset0">↺ 重置</button>
+        </div>
+        <p class="hint">提示：按住彩色圆点拖动</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ Panel 1 ============ -->
+  <div class="panel" id="p1">
+    <div class="svg-wrap">
+      <svg id="s1" viewBox="0 0 760 480">
+        <polygon id="tri1" fill="rgba(124,58,237,.06)" stroke="#334155" stroke-width="2.5" stroke-linejoin="round"/>
+        <g id="gAllMid"></g>
+        <g id="gAllAlt"></g>
+        <g id="gAllBis"></g>
+        <g id="gMed" stroke="#059669" stroke-width="3" fill="none"></g>
+        <g id="gAlt" stroke="#dc2626" stroke-width="3" fill="none"></g>
+        <g id="gBis" stroke="#d97706" stroke-width="3" fill="none"></g>
+        <g id="marks1"></g>
+        <g id="labels1" font-size="12" font-weight="600"></g>
+        <g font-size="14" font-weight="700" fill="#334155">
+          <text id="tA1" text-anchor="middle">A</text>
+          <text id="tB1" text-anchor="middle">B</text>
+          <text id="tC1" text-anchor="middle">C</text>
+        </g>
+        <g id="hA1" class="h"><circle class="hit" r="24" fill="#000" opacity="0"/><circle r="11" fill="#7c3aed" stroke="#fff" stroke-width="2.5"/></g>
+        <g id="hB1" class="h"><circle class="hit" r="24" fill="#000" opacity="0"/><circle r="11" fill="#7c3aed" stroke="#fff" stroke-width="2.5"/></g>
+        <g id="hC1" class="h"><circle class="hit" r="24" fill="#000" opacity="0"/><circle r="11" fill="#7c3aed" stroke="#fff" stroke-width="2.5"/></g>
+      </svg>
+    </div>
+    <div class="side">
+      <div class="card">
+        <h3>📌 实验说明</h3>
+        拖动紫色顶点改变三角形，观察三条特殊线段是否始终<b>平分对边</b>／<b>垂直于对边</b>／<b>平分内角</b>。
+      </div>
+      <div class="card">
+        <h3>👁 显示</h3>
+        <label class="chk"><input type="checkbox" id="cbMid" checked> <span style="color:var(--green);font-weight:600">■</span> 中线（对边中点）</label>
+        <label class="chk" style="margin-top:4px"><input type="checkbox" id="cbAlt" checked> <span style="color:var(--red);font-weight:600">■</span> 高（垂直对边）</label>
+        <label class="chk" style="margin-top:4px"><input type="checkbox" id="cbBis" checked> <span style="color:var(--orange);font-weight:600">■</span> 角平分线</label>
+        <div class="btn-row" style="margin-top:8px">
+          <span class="note">顶点</span>
+          <button class="op on" id="vA">A</button>
+          <button class="op" id="vB">B</button>
+          <button class="op" id="vC">C</button>
+        </div>
+        <div style="margin-top:8px">
+          <span class="note">三线共点（综合与实践）</span>
+          <select id="conc">
+            <option value="none">不显示</option>
+            <option value="mid">三条中线 → 重心 G</option>
+            <option value="alt">三条高 → 垂心 H</option>
+            <option value="bis">三条角平分线 → 内心 I</option>
+          </select>
+        </div>
+      </div>
+      <div class="card readout" id="ro1"></div>
+      <div class="card">
+        <h3>🎮 控制</h3>
+        <div class="btn-row">
+          <button class="play" id="play1">▶ 自动播放</button>
+          <button class="op" id="reset1">↺ 重置</button>
+        </div>
+        <p class="hint">提示：按住紫色顶点拖动</p>
+      </div>
+    </div>
+  </div>
+
+  <!-- ============ Panel 2 ============ -->
+  <div class="panel" id="p2">
+    <div class="svg-wrap">
+      <svg id="s2" viewBox="0 0 760 480">
+        <line x1="40" y1="432" x2="720" y2="432" stroke="#cbd5e1" stroke-width="2"/>
+        <text x="46" y="452" font-size="11" fill="#94a3b8">地面</text>
+        <g id="tower" stroke="#2563eb" stroke-width="3" fill="none" stroke-linejoin="round" stroke-linecap="round"></g>
+        <text x="228" y="42" text-anchor="middle" font-size="14" font-weight="700" fill="#2563eb">输电塔钢架（三角形结构）</text>
+        <text id="towerState" x="228" y="62" text-anchor="middle" font-size="12" font-weight="700" fill="#059669">✓ 形状不改变</text>
+        <g id="quad" stroke="#dc2626" stroke-width="3" fill="none" stroke-linejoin="round"></g>
+        <text x="556" y="42" text-anchor="middle" font-size="14" font-weight="700" fill="#dc2626">四边形框架</text>
+        <text id="quadState" x="556" y="62" text-anchor="middle" font-size="12" font-weight="700" fill="#059669">✓ 形状不改变</text>
+        <g id="forceArrows"></g>
+      </svg>
+    </div>
+    <div class="side">
+      <div class="card">
+        <h3>📌 实验说明</h3>
+        对两个框架施加同样的风力：三角形三边一旦确定，形状大小就<b>唯一确定</b> → 稳固；四边形四边确定形状仍不唯一，一推就歪。所以输电塔、屋顶钢架都做成三角形。
+      </div>
+      <div class="card readout" id="ro2"></div>
+      <div class="card">
+        <h3>🎮 控制</h3>
+        <div class="btn-row">
+          <button class="play" id="play2">▶ 自动播放</button>
+          <button class="op" id="push2">💨 施加风力</button>
+          <button class="op" id="reset2">↺ 复位</button>
+        </div>
+        <p class="hint">提示：观察蓝色钢架与红色框架的差异</p>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+"use strict";
+const NS = "http://www.w3.org/2000/svg";
+const $ = id => document.getElementById(id);
+const SVG_W = 760, SVG_H = 480;
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const dist = (p, q) => Math.hypot(p.x - q.x, p.y - q.y);
+const fmt = n => n.toFixed(1);
+const lerp = (a, b, t) => a + (b - a) * t;
+const mid = (p, q) => ({x: (p.x + q.x) / 2, y: (p.y + q.y) / 2});
+const easeInOut = k => k < .5 ? 2 * k * k : 1 - Math.pow(-2 * k + 2, 2) / 2;
+
+function el(tag, attrs, parent) {
+  const e = document.createElementNS(NS, tag);
+  for (const k in attrs) e.setAttribute(k, attrs[k]);
+  if (parent) parent.appendChild(e);
+  return e;
+}
+function clear(g) { while (g.firstChild) g.removeChild(g.firstChild); }
+
+/* ---------- 单一动画调度器 ---------- */
+const Ticker = {
+  id: null, btn: null,
+  stop() {
+    if (this.id) { cancelAnimationFrame(this.id); this.id = null; }
+    if (this.btn) { this.btn.textContent = "▶ 自动播放"; this.btn.classList.remove("pause"); this.btn = null; }
+  },
+  start(btn, fn) {
+    this.stop();
+    this.btn = btn;
+    btn.textContent = "⏸ 暂停";
+    btn.classList.add("pause");
+    const t0 = performance.now();
+    let last = t0;
+    const step = now => {
+      const t = (now - t0) / 1000, dt = (now - last) / 1000;
+      last = now;
+      if (fn(t, dt) === false) { this.stop(); return; }
+      this.id = requestAnimationFrame(step);
+    };
+    this.id = requestAnimationFrame(step);
+  },
+  toggle(btn, fn) {
+    if (this.id && this.btn === btn) this.stop();
+    else this.start(btn, fn);
+  }
+};
+
+/* ---------- 拖拽（事件委托 + 窗口级监听，兼容所有浏览器） ---------- */
+function enableDrag(svg, handles, onMove) {
+  const toVB = e => {
+    const m = svg.getScreenCTM();
+    if (!m) return {x: 0, y: 0};
+    const p = svg.createSVGPoint();
+    p.x = e.clientX; p.y = e.clientY;
+    const q = p.matrixTransform(m.inverse());
+    return {x: q.x, y: q.y};
+  };
+  let active = -1;
+
+  svg.addEventListener("pointerdown", e => {
+    const g = e.target.closest ? e.target.closest(".h") : null;
+    if (!g) return;
+    const i = handles.indexOf(g);
+    if (i < 0) return;
+    active = i;
+    Ticker.stop();
+    e.preventDefault();
+    onMove(i, toVB(e));       // 立即响应一次，避免“点了没动”
+  }, {passive: false});
+
+  window.addEventListener("pointermove", e => {
+    if (active < 0) return;
+    e.preventDefault();
+    onMove(active, toVB(e));
+  }, {passive: false});
+
+  const end = () => { active = -1; };
+  window.addEventListener("pointerup", end);
+  window.addEventListener("pointercancel", end);
+  window.addEventListener("blur", end);
+}
+
+/* =========================================================
+   Panel 0 — 三边关系
+========================================================= */
+const P0 = (() => {
+  const svg = $("s0");
+  const A = {x: 120, y: 400}, B = {x: 640, y: 400};
+  const HOME = {x: 380, y: 165};
+  let C = {...HOME};
+
+  const tri = $("tri0"), route = $("route0"), warn = $("warn0"), hC = $("hC0");
+
+  function render() {
+    tri.setAttribute("points", `${A.x},${A.y} ${B.x},${B.y} ${C.x},${C.y}`);
+    route.setAttribute("d", `M ${A.x} ${A.y} L ${C.x} ${C.y} L ${B.x} ${B.y}`);
+    hC.setAttribute("transform", `translate(${C.x},${C.y})`);
+
+    const ab = dist(A, B), ac = dist(A, C), bc = dist(B, C);
+    const degener = Math.abs(ac + bc - ab) < 2;
+
+    $("labAC").setAttribute("x", (A.x + C.x) / 2 - 34);
+    $("labAC").setAttribute("y", (A.y + C.y) / 2 - 6);
+    $("labAC").textContent = `AC=${fmt(ac)}`;
+    $("labCB").setAttribute("x", (B.x + C.x) / 2 + 8);
+    $("labCB").setAttribute("y", (B.y + C.y) / 2 - 6);
+    $("labCB").textContent = `CB=${fmt(bc)}`;
+    $("labAB").textContent = `AB=${fmt(ab)}`;
+
+    warn.setAttribute("visibility", degener ? "visible" : "hidden");
+    tri.setAttribute("fill", degener ? "rgba(220,38,38,.16)" : "rgba(37,99,235,.10)");
+    tri.setAttribute("stroke", degener ? "#dc2626" : "#2563eb");
+
+    $("ro0").innerHTML =
+      `<div class="kv"><span>AB（底边）</span><b>${fmt(ab)}</b></div>
+       <div class="kv"><span>AC</span><b>${fmt(ac)}</b></div>
+       <div class="kv"><span>BC</span><b>${fmt(bc)}</b></div>
+       <hr style="border:none;border-top:1px dashed #cbd5e1;margin:6px 0">
+       <div class="kv"><span>AC + BC</span><b>${fmt(ac + bc)}</b></div>
+       <div>${ac + bc > ab + 0.05 ? '<span class="ok">✓ 两边之和 &gt; 第三边</span>' : '<span class="bad">✗ 等于第三边（退化）</span>'}</div>
+       <div class="kv"><span>|AC − BC|</span><b>${fmt(Math.abs(ac - bc))}</b></div>
+       <div>${Math.abs(ac - bc) < ab - 0.05 ? '<span class="ok">✓ 两边之差 &lt; 第三边</span>' : '<span class="bad">✗ 不小于第三边</span>'}</div>`;
+  }
+
+  enableDrag(svg, [hC], (i, pt) => {
+    C = {x: clamp(pt.x, 15, 745), y: clamp(pt.y, 20, 460)};
+    render();
+  });
+
+  $("reset0").addEventListener("click", () => { Ticker.stop(); C = {...HOME}; render(); });
+
+  $("play0").addEventListener("click", () => Ticker.toggle($("play0"), t => {
+    const T = 8, k = (t % T) / T;
+    let e;
+    if (k < 0.34) e = easeInOut(k / 0.34);                    // 下落
+    else if (k < 0.46) e = 1;                                  // 停在基线上（退化）
+    else e = 1 - easeInOut((k - 0.46) / 0.54);                // 抬起
+    C = {x: lerp(380, 470, Math.sin(t * 0.9) * 0.5 + 0.5) * (1 - e) + 420 * e,
+         y: lerp(398, HOME.y, e)};
+    render();
+  }));
+
+  render();
+  return {render};
+})();
+
+/* =========================================================
+   Panel 1 — 高 / 中线 / 角平分线
+========================================================= */
+const P1 = (() => {
+  const svg = $("s1");
+  const HOME = {A: {x: 190, y: 120}, B: {x: 630, y: 190}, C: {x: 290, y: 400}};
+  let A = {...HOME.A}, B = {...HOME.B}, C = {...HOME.C};
+  let vtx = "A";
+  const prog = {mid: 1, alt: 1, bis: 1};
+
+  const tri = $("tri1"), gMed = $("gMed"), gAlt = $("gAlt"), gBis = $("gBis");
+  const gAllMid = $("gAllMid"), gAllAlt = $("gAllAlt"), gAllBis = $("gAllBis");
+  const marks = $("marks1"), labels = $("labels1");
+  const handles = [$("hA1"), $("hB1"), $("hC1")];
+
+  function verts() { return {A, B, C}; }
+  function vertex() { return verts()[vtx]; }
+  function opposite() {
+    if (vtx === "A") return [B, C];
+    if (vtx === "B") return [A, C];
+    return [A, B];
+  }
+  function footPerp(P, U, V) {
+    const vx = V.x - U.x, vy = V.y - U.y, L2 = vx * vx + vy * vy || 1e-6;
+    const t = ((P.x - U.x) * vx + (P.y - U.y) * vy) / L2;
+    return {x: U.x + t * vx, y: U.y + t * vy, on: t >= 0 && t <= 1, t};
+  }
+  function footBis(P, U, V) {
+    const a = dist(P, U), b = dist(P, V);
+    return {x: (b * U.x + a * V.x) / (a + b), y: (b * U.y + a * V.y) / (a + b)};
+  }
+  function cevianFoot(type, from, U, V) {
+    if (type === "mid") return mid(U, V);
+    if (type === "alt") return footPerp(from, U, V);
+    return footBis(from, U, V);
+  }
+  function drawSeg(g, p, q, frac, dashed) {
+    clear(g);
+    const e = el("line", {
+      x1: p.x, y1: p.y,
+      x2: p.x + (q.x - p.x) * frac, y2: p.y + (q.y - p.y) * frac
+    }, g);
+    if (dashed) e.setAttribute("stroke-dasharray", "6 5");
+    return e;
+  }
+  function lineInter(p1, p2, p3, p4) {
+    const d = (p2.x - p1.x) * (p4.y - p3.y) - (p2.y - p1.y) * (p4.x - p3.x);
+    if (Math.abs(d) < 1e-9) return null;
+    const ua = ((p3.x - p1.x) * (p4.y - p3.y) - (p3.y - p1.y) * (p4.x - p3.x)) / d;
+    return {x: p1.x + ua * (p2.x - p1.x), y: p1.y + ua * (p2.y - p1.y)};
+  }
+
+  const COLORS = {mid: "#059669", alt: "#dc2626", bis: "#d97706"};
+  const NAMES = {mid: "重心 G", alt: "垂心 H", bis: "内心 I"};
+
+  function render() {
+    tri.setAttribute("points", `${A.x},${A.y} ${B.x},${B.y} ${C.x},${C.y}`);
+    handles[0].setAttribute("transform", `translate(${A.x},${A.y})`);
+    handles[1].setAttribute("transform", `translate(${B.x},${B.y})`);
+    handles[2].setAttribute("transform", `translate(${C.x},${C.y})`);
+    $("tA1").setAttribute("x", A.x); $("tA1").setAttribute("y", A.y - 20);
+    $("tB1").setAttribute("x", B.x); $("tB1").setAttribute("y", B.y - 20);
+    $("tC1").setAttribute("x", C.x); $("tC1").setAttribute("y", C.y + 26);
+
+    clear(labels); clear(marks);
+    const P = vertex(), [U, V] = opposite();
+
+    /* ---- 单条线段 ---- */
+    // 中线
+    if ($("cbMid").checked) {
+      const M = mid(U, V);
+      drawSeg(gMed, P, M, prog.mid);
+      if (prog.mid > 0.98) {
+        el("circle", {cx: M.x, cy: M.y, r: 5, fill: COLORS.mid, stroke: "#fff", "stroke-width": 1.5}, marks);
+        el("text", {x: M.x + 9, y: M.y - 7, fill: COLORS.mid}, labels).textContent = "中点";
+      }
+    } else clear(gMed);
+
+    // 高
+    if ($("cbAlt").checked) {
+      const F = footPerp(P, U, V);
+      clear(gAlt);
+      el("line", {x1: P.x, y1: P.y, x2: lerp(P.x, F.x, prog.alt), y2: lerp(P.y, F.y, prog.alt)}, gAlt);
+      if (!F.on && prog.alt > 0.98) {  // 延长线
+        el("line", {x1: U.x, y1: U.y, x2: F.x, y2: F.y, "stroke-dasharray": "5 5", "stroke-width": 1.5, opacity: .6}, gAlt);
+      }
+      if (prog.alt > 0.98) {
+        const ux = F.x - P.x, uy = F.y - P.y, ul = Math.hypot(ux, uy) || 1;
+        const nx = -uy / ul, ny = ux / ul, s = 13;
+        const q1 = {x: F.x + nx * s, y: F.y + ny * s};
+        const q2 = {x: q1.x - ux / ul * s, y: q1.y - uy / ul * s};
+        const q3 = {x: F.x - ux / ul * s, y: F.y - uy / ul * s};
+        el("path", {d: `M ${q1.x} ${q1.y} L ${q2.x} ${q2.y} L ${q3.x} ${q3.y}`,
+          fill: "none", stroke: COLORS.alt, "stroke-width": 1.6}, marks);
+        el("circle", {cx: F.x, cy: F.y, r: 4, fill: COLORS.alt}, marks);
+        el("text", {x: F.x + 9, y: F.y + (F.on ? -7 : 16), fill: COLORS.alt}, labels)
+          .textContent = F.on ? "垂足" : "垂足（在延长线上）";
+      }
+    } else clear(gAlt);
+
+    // 角平分线
+    if ($("cbBis").checked) {
+      const F = footBis(P, U, V);
+      drawSeg(gBis, P, F, prog.bis);
+      if (prog.bis > 0.98) {
+        el("circle", {cx: F.x, cy: F.y, r: 4, fill: COLORS.bis}, marks);
+        el("text", {x: F.x + 9, y: F.y - 7, fill: COLORS.bis}, labels).textContent = "交点";
+        let a1 = Math.atan2(U.y - P.y, U.x - P.x), a2 = Math.atan2(V.y - P.y, V.x - P.x);
+        let d = a2 - a1;
+        while (d > Math.PI) d -= 2 * Math.PI;
+        while (d < -Math.PI) d += 2 * Math.PI;
+        [24, 34].forEach(r => {
+          el("path", {
+            d: `M ${P.x + r * Math.cos(a1)} ${P.y + r * Math.sin(a1)}
+                A ${r} ${r} 0 ${Math.abs(d) > Math.PI ? 1 : 0} ${d > 0 ? 1 : 0}
+                ${P.x + r * Math.cos(a1 + d / 2)} ${P.y + r * Math.sin(a1 + d / 2)}`,
+            fill: "none", stroke: COLORS.bis, "stroke-width": 1.8
+          }, marks);
+          el("path", {
+            d: `M ${P.x + r * Math.cos(a1 + d / 2)} ${P.y + r * Math.sin(a1 + d / 2)}
+                A ${r} ${r} 0 ${Math.abs(d) > Math.PI ? 1 : 0} ${d > 0 ? 1 : 0}
+                ${P.x + r * Math.cos(a1 + d)} ${P.y + r * Math.sin(a1 + d)}`,
+            fill: "none", stroke: COLORS.bis, "stroke-width": 1.8
+          }, marks);
+        });
+      }
+    } else clear(gBis);
+
+    /* ---- 三线共点 ---- */
+    clear(gAllMid); clear(gAllAlt); clear(gAllBis);
+    const mode = $("conc").value;
+    const target = {mid: gAllMid, alt: gAllAlt, bis: gAllBis}[mode];
+    if (target) {
+      const col = COLORS[mode];
+      const pts = [];
+      [["A", A, B, C], ["B", B, A, C], ["C", C, A, B]].forEach(([nm, p, u, v]) => {
+        const f = cevianFoot(mode, p, u, v);
+        pts.push([p, f]);
+        el("line", {x1: p.x, y1: p.y, x2: f.x, y2: f.y, stroke: col, "stroke-width": 2,
+          "stroke-dasharray": "7 4", opacity: .85}, target);
+        el("circle", {cx: f.x, cy: f.y, r: 3.5, fill: col}, target);
+      });
+      const X = lineInter(pts[0][0], pts[0][1], pts[1][0], pts[1][1]);
+      if (X) {
+        el("circle", {cx: X.x, cy: X.y, r: 6, fill: "#7c3aed", stroke: "#fff", "stroke-width": 2}, target);
+        el("text", {x: X.x + 10, y: X.y + 5, "font-size": 13, "font-weight": 700, fill: "#7c3aed",
+          stroke: "#fff", "stroke-width": 3, "paint-order": "stroke"}, target).textContent = NAMES[mode];
+      }
+    }
+
+    /* ---- 读数 ---- */
+    const ab = dist(A, B), bc = dist(B, C), ca = dist(C, A);
+    const F = footPerp(vertex(), opposite()[0], opposite()[1]);
+    $("ro1").innerHTML =
+      `<div class="kv"><span>从顶点</span><b>${vtx}</b></div>
+       <div class="kv"><span>对边</span><b>${vtx === "A" ? "BC" : vtx === "B" ? "AC" : "AB"}</b></div>
+       <div class="kv"><span>AB ｜ BC ｜ CA</span><b>${fmt(ab)} ｜ ${fmt(bc)} ｜ ${fmt(ca)}</b></div>
+       <div style="margin-top:6px">高的垂足：${F.on ? '<span class="ok">落在对边上</span>' : '<span class="bad">落在对边延长线上</span>'}</div>
+       <p class="note" style="margin-top:6px">每个三角形都有三条中线、三条高、三条角平分线，且各自交于一点。</p>`;
+  }
+
+  enableDrag(svg, handles, (i, pt) => {
+    const p = {x: clamp(pt.x, 30, 730), y: clamp(pt.y, 40, 445)};
+    if (i === 0) A = p; else if (i === 1) B = p; else C = p;
+    render();
+  });
+
+  ["vA", "vB", "vC"].forEach((id, k) => {
+    $(id).addEventListener("click", () => {
+      vtx = ["A", "B", "C"][k];
+      ["vA", "vB", "vC"].forEach((x, j) => $(x).classList.toggle("on", j === k));
+      render();
+    });
+  });
+  ["cbMid", "cbAlt", "cbBis", "conc"].forEach(id => $(id).addEventListener("change", render));
+
+  $("reset1").addEventListener("click", () => {
+    Ticker.stop();
+    A = {...HOME.A}; B = {...HOME.B}; C = {...HOME.C};
+    prog.mid = prog.alt = prog.bis = 1;
+    render();
+  });
+
+  $("play1").addEventListener("click", () => Ticker.toggle($("play1"), t => {
+    const order = ["A", "B", "C"];
+    const round = Math.floor(t / 5.4) % 3;
+    const local = t % 5.4;
+    vtx = order[round];
+    ["vA", "vB", "vC"].forEach((x, j) => $(x).classList.toggle("on", j === round));
+    $("cbMid").checked = $("cbAlt").checked = $("cbBis").checked = true;
+    const keys = ["mid", "alt", "bis"];
+    prog.mid = prog.alt = prog.bis = 0;
+    const active = Math.min(2, Math.floor(local / 1.6));
+    for (let i = 0; i <= active; i++) {
+      const p = clamp((local - i * 1.6) / 1.2, 0, 1);
+      prog[keys[i]] = easeInOut(p);
+    }
+    render();
+  }));
+
+  render();
+  return {render};
+})();
+
+/* =========================================================
+   Panel 2 — 三角形稳定性
+========================================================= */
+const P2 = (() => {
+  const gTower = $("tower"), gQuad = $("quad"), gForce = $("forceArrows");
+  let force = 0, skew = 0;
+
+  // 塔：底 (150,432)-(310,432)，顶 (214,120)-(246,120)
+  const T = {
+    bl: {x: 150, y: 432}, br: {x: 310, y: 432},
+    tl: {x: 206, y: 120}, tr: {x: 254, y: 120}
+  };
+  const L1 = 0.34, L2 = 0.66;
+  const at = t => ({
+    l: {x: lerp(T.bl.x, T.tl.x, t), y: lerp(T.bl.y, T.tl.y, t)},
+    r: {x: lerp(T.br.x, T.tr.x, t), y: lerp(T.br.y, T.tr.y, t)}
+  });
+  const n1 = at(L1), n2 = at(L2);
+
+  function draw() {
+    clear(gTower); clear(gQuad); clear(gForce);
+
+    const segs = [
+      [T.bl, T.tl], [T.br, T.tr],                 // 塔身两斜边
+      [T.bl, T.br],                               // 底
+      [n1.l, n1.r], [n2.l, n2.r], [T.tl, T.tr],   // 横杆
+      [T.bl, n1.r], [n1.r, n1.l], [n1.l, T.br],   // 第一层 X 撑（三角形）
+      [n1.l, n2.r], [n2.r, n2.l], [n2.l, n1.r],   // 第二层
+      [n2.l, T.tr], [T.tr, T.tl], [T.tl, n2.r],   // 顶层
+    ];
+    segs.forEach(([p, q]) => el("line", {x1: p.x, y1: p.y, x2: q.x, y2: q.y}, gTower));
+
+    // 横担（输电塔横臂）
+    [[150, 118], [118, 160]].forEach(([half, y]) => {
+      const yl = lerp(T.tl.y, T.bl.y, 0);
+      el("line", {x1: 230 - half, y1: y, x2: 230 + half, y2: y, "stroke-width": 3.5}, gTower);
+      [230 - half, 230 + half].forEach(x => {
+        el("circle", {cx: x, cy: y, r: 3.5, fill: "#2563eb", stroke: "none"}, gTower);
+      });
+    });
+    // 塔基
+    el("line", {x1: 138, y1: 432, x2: 322, y2: 432, "stroke-width": 5}, gTower);
+
+    // 四边形框架（底部固定，顶部被剪切）
+    const qx = 470, qy = 150, w = 150, h = 282;
+    const d = skew * 105;
+    const p1 = {x: qx, y: qy + h}, p2 = {x: qx + w, y: qy + h};
+    const p3 = {x: qx + w + d, y: qy}, p4 = {x: qx + d, y: qy};
+    [[p1, p2], [p2, p3], [p3, p4], [p4, p1]].forEach(([a, b]) =>
+      el("line", {x1: a.x, y1: a.y, x2: b.x, y2: b.y}, gQuad));
+    // 对角线（示意四边形可动）
+    el("line", {x1: p1.x, y1: p1.y, x2: p3.x, y2: p3.y, "stroke-dasharray": "6 5",
+      "stroke-width": 1.5, opacity: .55}, gQuad);
+    [p1, p2].forEach(p => el("circle", {cx: p.x, cy: p.y, r: 4.5, fill: "#dc2626", stroke: "none"}, gQuad));
+
+    // 风力箭头
+    if (force > 0.03) {
+      const arrow = (x, y, len, col) => {
+        el("path", {
+          d: `M ${x} ${y} L ${x + len} ${y} M ${x + len} ${y} l -9 -6 M ${x + len} ${y} l -9 6`,
+          stroke: col, "stroke-width": 3, fill: "none", "stroke-linecap": "round"
+        }, gForce);
+      };
+      arrow(30 - force * 8, 300, 24 + force * 46, "#0891b2");
+      arrow(360 - force * 8, 300, 24 + force * 46, "#0891b2");
+      el("text", {x: 30, y: 288, "font-size": 12, fill: "#0891b2", "font-weight": 700}, gForce).textContent = "风力";
+      el("text", {x: 360, y: 288, "font-size": 12, fill: "#0891b2", "font-weight": 700}, gForce).textContent = "风力";
+    }
+
+    // 状态文字
+    $("towerState").textContent = force > 0.05 ? "✓ 形状不改变" : "— 未受力";
+    $("towerState").setAttribute("fill", "#059669");
+    $("quadState").textContent = skew > 0.06 ? "✗ 越来越歪（平行四边形化）" : "✓ 形状不改变";
+    $("quadState").setAttribute("fill", skew > 0.06 ? "#dc2626" : "#059669");
+
+    $("ro2").innerHTML =
+      `<div class="kv"><span>风力强度</span><b>${Math.round(force * 100)}%</b></div>
+       <div class="kv"><span>三角形塔顶位移</span><b class="ok">0 px</b></div>
+       <div class="kv"><span>四边形顶边偏移</span><b class="${skew > 0.06 ? "bad" : "ok"}">${Math.round(d)} px</b></div>
+       <p class="note" style="margin-top:8px">三角形三边确定 ⇒ 形状、大小唯一确定 ⇒ 稳定；四边形则不然。</p>`;
+  }
+
+  $("reset2").addEventListener("click", () => { Ticker.stop(); force = 0; skew = 0; draw(); });
+
+  $("push2").addEventListener("click", () => {
+    Ticker.start($("push2"), t => {
+      const dur = 2.6, k = t / dur;
+      if (k >= 1) { force = 0; skew = 0; draw(); return false; }
+      force = k < 0.25 ? k / 0.25 : 1 - (k - 0.25) / 0.75;
+      force = clamp(force, 0, 1);
+      skew = force;
+      draw();
+    });
+    // push 按钮不进入“暂停”态，恢复显示
+    const b = $("push2");
+    setTimeout(() => { b.textContent = "💨 施加风力"; }, 0);
+  });
+
+  $("play2").addEventListener("click", () => Ticker.toggle($("play2"), t => {
+    const T2 = 6, tt = t % T2;
+    if (tt < 1.8) force = tt / 1.8;
+    else if (tt < 3.6) force = 1;
+    else force = clamp(1 - (tt - 3.6) / 1.8, 0, 1);
+    skew = force;
+    draw();
+  }));
+
+  draw();
+  return {draw};
+})();
+
+/* ---------- 标签页切换 ---------- */
+const tabs = [...document.querySelectorAll(".tab")];
+const panels = [$("p0"), $("p1"), $("p2")];
+tabs.forEach(tab => tab.addEventListener("click", () => {
+  Ticker.stop();
+  tabs.forEach(t => t.classList.remove("active"));
+  tab.classList.add("active");
+  const i = +tab.dataset.p;
+  panels.forEach((p, j) => p.classList.toggle("active", j === i));
+}));
+
+// 调试钩子（便于自动化测试）
+window.__demo = {P0, P1, P2, Ticker};
+</script>
+</body>
+</html>

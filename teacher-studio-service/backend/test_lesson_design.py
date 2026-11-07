@@ -9,12 +9,31 @@ import server
 
 FALLBACK = (None, {
     "engine": "builtin-template",
-    "model": "qwen3:4b",
+    "model": "test-model",
     "message": "测试环境使用本地模板回退",
 })
 
 
 class LessonDesignWorkflowTests(unittest.TestCase):
+    def setUp(self):
+        # 测试环境不能真连云端：把云端适配器标记为未配置，
+        # 需要 AI 结果的用例再单独 mock lesson_ai_adapter 的生成方法。
+        cloud = patch(
+            "lesson_design.lesson_ai_adapter.status",
+            return_value={
+                "available": False,
+                "configured": False,
+                "serviceReachable": None,
+                "engine": "responses",
+                "model": "test-model",
+                "message": "测试环境不连接云端 AI",
+            },
+        )
+        cloud.start()
+        self.addCleanup(cloud.stop)
+        lesson_design.clear_teacher_lesson_cache()
+        self.addCleanup(lesson_design.clear_teacher_lesson_cache)
+
     def generate(self, topic, duration, model_key, level="基础层", model=None):
         request = {
             "stage": "本科",
@@ -24,7 +43,7 @@ class LessonDesignWorkflowTests(unittest.TestCase):
             "abilityLevel": level,
             "modelKey": model_key,
         }
-        with patch("lesson_design.ollama_adapter.generate_lesson_content", return_value=(None, FALLBACK[1])):
+        with patch("lesson_design.lesson_ai_adapter.generate_lesson_content", return_value=(None, FALLBACK[1])):
             return lesson_design.generate_draft(request, "quick", model)
 
     def data(self, workflow, step_id):
@@ -105,17 +124,71 @@ class LessonDesignWorkflowTests(unittest.TestCase):
             "homework": ["完成心脏结构标注图，并用箭头标出血流方向。"],
             "blackboardDesign": ["结构 → 连接 → 血流方向 → 功能"],
         }
-        with patch("lesson_design.ollama_adapter.generate_json", return_value=(ai_draft, None)):
+        with patch("lesson_design.lesson_ai_adapter.generate_json", return_value=(ai_draft, None)):
             prepared = lesson_design.prepare_teacher_lesson({"lessonPlan": approved})
         self.assertTrue(prepared["quality"]["valid"])
         self.assertEqual(len(prepared["draft"]["process"]), len(phases))
         self.assertEqual(sum(item["minutes"] for item in prepared["draft"]["process"]), 40)
 
         ai_draft["overview"] = "本课介绍循环系统。学生观察结构图并完成学习任务，最后用自己的话说明观察结果和判断依据。"
-        with patch("lesson_design.ollama_adapter.generate_json", return_value=(None, "格式校验失败")):
+        lesson_design.clear_teacher_lesson_cache()
+        with patch("lesson_design.lesson_ai_adapter.generate_json", return_value=(None, "格式校验失败")):
             failed = lesson_design.prepare_teacher_lesson({"lessonPlan": approved})
         self.assertIsNone(failed["draft"])
         self.assertEqual(failed["generation"]["engine"], "unavailable")
+
+    def approved_heart_lesson(self):
+        result = self.generate("心脏血流与心脏结构", 40, "heart")
+        return lesson_design.validate_payload({
+            "workflow": result["workflow"], "request": result["lessonPlan"]["request"],
+            "forExport": True, "approveAll": True,
+        })["lessonPlan"]
+
+    def manuscript(self, approved, overview="本课围绕心脏血流与心脏结构展开，学生将通过观察结构图、梳理血流方向和解释结构功能关系完成学习。"):
+        phases = approved["designWorkflow"]["phases"]
+        return {
+            "overview": overview,
+            "objectives": [f"能够完成第{index}项课堂观察并说明依据。" for index, _ in enumerate(approved["designWorkflow"]["selectedObjectives"], 1)],
+            "keyPoints": ["心脏主要结构", "血流方向与结构功能关系"],
+            "difficulties": ["依据结构证据解释血流方向"],
+            "teacherPreparation": ["准备心脏结构图和课堂任务单"],
+            "studentPreparation": ["回顾循环系统基本组成"],
+            "process": [{"name": item["name"], "minutes": item["time"], "teacherActivity": "出示材料并引导学生观察、记录关键证据。", "studentActivity": "独立完成标注后与同伴核对并提交记录。", "question": "你的判断依据是什么？", "check": "检查结构标注和方向说明是否一致。"} for item in phases],
+            "homework": ["完成心脏结构标注图，并用箭头标出血流方向。"],
+            "blackboardDesign": ["结构 → 连接 → 血流方向 → 功能"],
+        }
+
+    def test_teacher_manuscript_is_cached_and_failures_are_not(self):
+        approved = self.approved_heart_lesson()
+        with patch("lesson_design.lesson_ai_adapter.generate_json", return_value=(None, "超时")) as failing:
+            self.assertIsNone(lesson_design.prepare_teacher_lesson({"lessonPlan": approved})["draft"])
+        ai_draft = self.manuscript(approved)
+        with patch("lesson_design.lesson_ai_adapter.generate_json", return_value=(ai_draft, None)) as ai:
+            first = lesson_design.prepare_teacher_lesson({"lessonPlan": copy.deepcopy(approved)})
+            first["draft"]["overview"] = "调用方修改不应污染缓存"
+            second = lesson_design.prepare_teacher_lesson({"lessonPlan": copy.deepcopy(approved)})
+        self.assertEqual(failing.call_count, 1)
+        self.assertEqual(ai.call_count, 1)
+        self.assertEqual(second["draft"]["overview"], ai_draft["overview"])
+
+    def test_teacher_manuscript_schedule_and_topic_are_fixed_locally(self):
+        approved = self.approved_heart_lesson()
+        phases = approved["designWorkflow"]["phases"]
+        ai_draft = self.manuscript(approved, overview="本课从一个血流方向判断问题出发，学生观察结构图、标注结构并说明判断依据，最后形成结构功能关系图。")
+        ai_draft["process"][0]["name"] += "环节"
+        ai_draft["process"][0]["minutes"] += 1
+        ai_draft["keyPoints"] += ["要点三", "要点四", "要点五"]
+
+        def generate_json(system_prompt, user_prompt, validator=None, **kwargs):
+            return (ai_draft, None) if validator(ai_draft) is None else (None, "校验失败")
+
+        with patch("lesson_design.lesson_ai_adapter.generate_json", side_effect=generate_json):
+            prepared = lesson_design.prepare_teacher_lesson({"lessonPlan": approved})
+        self.assertTrue(prepared["quality"]["valid"])
+        self.assertEqual([item["name"] for item in prepared["draft"]["process"]], [item["name"] for item in phases])
+        self.assertEqual(sum(item["minutes"] for item in prepared["draft"]["process"]), 40)
+        self.assertEqual(len(prepared["draft"]["keyPoints"]), 4)
+        self.assertIn("心脏血流与心脏结构", prepared["draft"]["overview"])
 
     def test_teacher_edit_is_preserved_and_remains_stale(self):
         result = self.generate("心脏血流与心脏结构", 40, "heart")
@@ -124,7 +197,7 @@ class LessonDesignWorkflowTests(unittest.TestCase):
         path_step["source"] = "teacher-edited"
         path_step["status"] = "stale"
         path_step["data"]["path"]["questions"][0]["question"] = "教师自定义问题"
-        with patch("lesson_design.ollama_adapter.generate_lesson_content", return_value=(None, FALLBACK[1])):
+        with patch("lesson_design.lesson_ai_adapter.generate_lesson_content", return_value=(None, FALLBACK[1])):
             synced = lesson_design.sync_downstream({
                 "workflow": workflow,
                 "request": result["lessonPlan"]["request"],
@@ -203,9 +276,9 @@ class LessonDesignWorkflowTests(unittest.TestCase):
         revised_data["path"]["questions"][0]["question"] = "先观察血流方向，再判断结构之间的连接关系。"
         ai_result = (
             {"data": revised_data, "summary": "问题链增加观察起点"},
-            {"engine": "ollama", "model": "qwen3:4b", "message": "已使用 qwen3:4b 编辑"},
+            {"engine": "responses", "model": "test-model", "message": "已使用 test-model 编辑"},
         )
-        with patch("lesson_design.ollama_adapter.revise_lesson_step", return_value=ai_result):
+        with patch("lesson_design.lesson_ai_adapter.revise_lesson_step", return_value=ai_result):
             edited = lesson_design.edit_step({
                 "workflow": workflow,
                 "request": result["lessonPlan"]["request"],
@@ -215,7 +288,7 @@ class LessonDesignWorkflowTests(unittest.TestCase):
         edited_step = edited["workflow"]["steps"][2]
         self.assertEqual(edited_step["source"], "teacher-edited")
         self.assertFalse(edited_step["approved"])
-        self.assertEqual(edited["generation"]["model"], "qwen3:4b")
+        self.assertEqual(edited["generation"]["model"], "test-model")
         self.assertTrue(all(item["status"] == "stale" for item in edited["workflow"]["steps"][3:]))
 
     def test_ai_edit_contract_rejects_removed_fields(self):
@@ -263,7 +336,7 @@ class WarmupQuestionTests(unittest.TestCase):
         questions = server.generate_warmup_questions({"lessonPlan": self.lesson})
         self.assertTrue(all(item["modelPartKeys"] == [] for item in questions))
 
-    def test_warmup_ollama_output_is_five_structured_questions(self):
+    def test_warmup_ai_output_is_five_structured_questions(self):
         model = {
             "glbUrl": "/api/models/heart/files/glb",
             "parts": [{"partKey": "left_atrium", "partLabel": "左心房"}, {"partKey": "left_ventricle", "partLabel": "左心室"}],
@@ -275,17 +348,17 @@ class WarmupQuestionTests(unittest.TestCase):
             {"type": "结构与功能", "question": "如何解释结构功能？", "options": ["结合位置形态连接", "只看颜色", "只看大小", "直接猜测"], "correctIndex": 0, "explanation": "结构功能需要多项证据。", "difficulty": "进阶", "partKeys": ["left_ventricle"]},
             {"type": "机制迁移", "question": "如何完成迁移判断？", "options": ["结构机制证据对应", "凭印象", "只找熟词", "忽略反例"], "correctIndex": 0, "explanation": "迁移要逐项对应证据。", "difficulty": "进阶", "partKeys": ["left_atrium"]},
         ]}
-        with patch("server.ollama_adapter.generate_json", return_value=(ai, None)):
-            items, generation, warnings = server.generate_warmup_with_ollama({"lessonPlan": self.lesson, "model": model})
+        with patch("server.lesson_ai_adapter.generate_json", return_value=(ai, None)):
+            items, generation, warnings = server.generate_warmup_with_ai({"lessonPlan": self.lesson, "model": model})
         self.assertEqual(len(items), 5)
-        self.assertEqual(generation["engine"], "ollama")
-        self.assertEqual(generation["model"], "qwen3:4b")
+        self.assertEqual(generation["engine"], "responses")
+        self.assertEqual(generation["model"], server.lesson_ai_adapter.DEFAULT_MODEL)
         self.assertEqual(warnings, [])
         self.assertEqual(items[0]["partKeys"], ["left_atrium"])
 
-    def test_warmup_ollama_fallback_is_explicit(self):
-        with patch("server.ollama_adapter.generate_json", return_value=(None, "格式错误")):
-            items, generation, warnings = server.generate_warmup_with_ollama({"lessonPlan": self.lesson})
+    def test_warmup_ai_fallback_is_explicit(self):
+        with patch("server.lesson_ai_adapter.generate_json", return_value=(None, "格式错误")):
+            items, generation, warnings = server.generate_warmup_with_ai({"lessonPlan": self.lesson})
         self.assertEqual(len(items), 5)
         self.assertEqual(generation["engine"], "builtin-template")
         self.assertIn("格式错误", generation["message"])
@@ -296,19 +369,33 @@ class WarmupQuestionTests(unittest.TestCase):
         current[1]["source"] = "teacher-edited"
         current[1]["question"] = "教师修改的第二题"
         ai = {"questions": [{"type": "位置或连接关系", "question": "新第二题", "options": ["A", "B", "C", "D"], "correctIndex": 1, "explanation": "新解析", "difficulty": "基础", "partKeys": []}]}
-        with patch("server.ollama_adapter.generate_json", return_value=(ai, None)):
-            items, _generation, _warnings = server.generate_warmup_with_ollama({"lessonPlan": self.lesson, "currentQuestions": current}, regenerate_index=1)
+        with patch("server.lesson_ai_adapter.generate_json", return_value=(ai, None)):
+            items, _generation, _warnings = server.generate_warmup_with_ai({"lessonPlan": self.lesson, "currentQuestions": current}, regenerate_index=1)
         self.assertEqual(items[1]["question"], "新第二题")
         self.assertEqual(items[0]["question"], current[0]["question"])
         self.assertEqual(items[2]["question"], current[2]["question"])
+
+    def test_single_question_regeneration_passes_real_validation(self):
+        ai = {"questions": [{"type": "位置或连接关系", "question": "新第二题", "options": ["A", "B", "C", "D"], "correctIndex": 1, "explanation": "新解析", "difficulty": "基础", "partKeys": []}]}
+        calls = []
+
+        def generate_json(system_prompt, user_prompt, validator=None, format_schema=None, **kwargs):
+            calls.append(format_schema["properties"]["questions"]["maxItems"])
+            return (ai, None) if validator(ai) is None else (None, validator(ai))
+
+        with patch("server.lesson_ai_adapter.generate_json", side_effect=generate_json):
+            items, generation, _warnings = server.generate_warmup_with_ai({"lessonPlan": self.lesson}, regenerate_index=1)
+        self.assertEqual(calls, [1])
+        self.assertEqual(generation["engine"], "responses")
+        self.assertEqual(items[1]["question"], "新第二题")
 
     def test_ai_answers_are_spread_across_options(self):
         ai = {"questions": [
             {"type": item_type, "question": f"问题{index}", "options": ["正确", "干扰一", "干扰二", "干扰三"], "correctIndex": 0, "explanation": "解析", "difficulty": "基础", "partKeys": []}
             for index, item_type in enumerate(server.WARMUP_TYPES)
         ]}
-        with patch("server.ollama_adapter.generate_json", return_value=(ai, None)):
-            items, _generation, _warnings = server.generate_warmup_with_ollama({"lessonPlan": self.lesson})
+        with patch("server.lesson_ai_adapter.generate_json", return_value=(ai, None)):
+            items, _generation, _warnings = server.generate_warmup_with_ai({"lessonPlan": self.lesson})
         self.assertEqual([item["correctIndex"] for item in items], [0, 1, 2, 3, 1])
 
 

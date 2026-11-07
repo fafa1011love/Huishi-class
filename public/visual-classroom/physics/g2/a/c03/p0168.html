@@ -1,0 +1,777 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>11.5　实验：练习使用多用电表 ｜ 人教版物理必修第三册</title>
+<style>
+  :root{
+    --blue:#1d4ed8; --blue-soft:#eff6ff; --blue-line:#bfdbfe;
+    --ink:#1e293b; --sub:#64748b; --line:#e2e8f0;
+    --amber-bg:#fffbeb; --amber-line:#fcd34d; --amber-ink:#92400e;
+    --green:#059669; --red:#dc2626;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:#f3f5f9; color:var(--ink);
+    font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif; padding:18px 12px 40px;}
+  .wrap{max-width:1060px; margin:0 auto;}
+  header{background:#fff; border:1px solid var(--line); border-left:6px solid var(--blue);
+    border-radius:12px; padding:16px 22px; box-shadow:0 1px 3px rgba(15,23,42,.06);}
+  header h1{font-size:22px; color:var(--ink);}
+  header .meta{margin-top:6px; font-size:12.5px; color:var(--sub); line-height:1.7;}
+  .mod{background:#fff; border:1px solid var(--line); border-radius:12px;
+    padding:16px 20px 18px; margin-top:16px; box-shadow:0 1px 3px rgba(15,23,42,.05);}
+  .mod-h{display:flex; align-items:center; gap:10px; margin-bottom:10px;}
+  .mod-h .no{background:var(--blue); color:#fff; font-size:12px; border-radius:6px;
+    padding:2px 8px; white-space:nowrap;}
+  .mod-h h2{font-size:16.5px;}
+  .mod-h .kp{margin-left:auto; font-size:12px; color:var(--sub); white-space:nowrap;}
+  .think{background:var(--blue-soft); border:1px solid var(--blue-line); border-radius:8px;
+    padding:8px 12px; font-size:12.5px; color:#1e40af; margin-bottom:10px; line-height:1.7;}
+  .think b{color:var(--blue);}
+  canvas.stage{display:block; width:100%; background:#fbfdff;
+    border:1px solid var(--line); border-radius:10px;}
+  .ctrl{display:flex; flex-wrap:wrap; gap:8px 18px; align-items:center; margin-top:10px;}
+  .row{display:flex; align-items:center; gap:8px; font-size:13px;}
+  .row label{color:var(--sub); white-space:nowrap;}
+  .row input[type=range]{width:150px; accent-color:var(--blue);}
+  .row .val{min-width:64px; font-variant-numeric:tabular-nums; color:var(--ink); font-weight:600;}
+  .btn{border:1px solid var(--blue); color:var(--blue); background:#fff; border-radius:7px;
+    padding:4px 12px; font-size:12.5px; cursor:pointer;}
+  .btn:hover{background:var(--blue-soft);}
+  .btn.on{background:var(--blue); color:#fff;}
+  .note{margin-top:10px; background:var(--amber-bg); border:1px solid var(--amber-line);
+    border-radius:8px; padding:8px 12px; font-size:12.5px; color:var(--amber-ink); line-height:1.8;}
+  .note b{color:#b45309;}
+  footer{margin-top:20px; text-align:center; font-size:12px; color:#94a3b8;}
+  .seg{display:inline-flex; border:1px solid var(--blue); border-radius:8px; overflow:hidden;}
+  .seg button{border:none; background:#fff; color:var(--blue); padding:4px 12px;
+    font-size:12.5px; cursor:pointer;}
+  .seg button.on{background:var(--blue); color:#fff;}
+  .inp{border:1px solid var(--line); border-radius:7px; padding:4px 8px; font-size:13px;
+    width:104px; font-family:Consolas,Menlo,monospace; color:var(--ink);}
+  .read{display:grid; grid-template-columns:repeat(4,1fr); gap:6px; margin-top:10px;}
+  .read div{background:#f8fafc; border:1px solid var(--line); border-radius:7px;
+    padding:5px 9px; font-size:11.5px; color:var(--sub);}
+  .read div b{display:block; color:var(--ink); font-size:14px; font-weight:700;
+    font-variant-numeric:tabular-nums;}
+  .fb{margin-top:8px; font-size:13px; line-height:1.7; min-height:22px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>11.5　实验：练习使用多用电表</h1>
+  <div class="meta">人教版《物理》必修第三册 · 第十一章 电路及其应用 · 教材 P72–P77 ｜
+    覆盖知识点：欧姆挡原理（内部含电源、中值电阻＝内阻）与欧姆调零、表盘读数与量程（倍率）选择、二极管正反向电阻测量 ｜
+    易错点：<b>黑表笔接内部电池正极</b>、换倍率后必须重新欧姆调零、测电阻必须断电</div>
+</header>
+
+<div class="mod">
+  <div class="mod-h"><span class="no">模块 1</span><h2>欧姆挡原理与欧姆调零</h2><span class="kp">交互仿真</span></div>
+  <div class="think"><b>先想一想：</b>欧姆挡为什么要先"短接表笔调零"？指针满偏时对应待测电阻是多少？中值电阻跟电表内阻有什么关系？</div>
+  <canvas class="stage" id="cv1" style="height:380px;"></canvas>
+  <div class="read">
+    <div>表内电流 I<b id="r1i">—</b></div>
+    <div>偏转角比例 I/I<sub>g</sub><b id="r1f">—</b></div>
+    <div>中值电阻 R内<b id="r1m">—</b></div>
+    <div>刻度读数 Rx<b id="r1x">—</b></div>
+  </div>
+  <div class="ctrl">
+    <div class="row"><label>待测电阻 Rx</label><input type="range" id="x1" min="0" max="6000" step="10" value="1500"><span class="val" id="x1v"></span></div>
+    <div class="row"><label>电池电压 E</label><input type="range" id="e1" min="1" max="3" step="0.1" value="1.5"><span class="val" id="e1v"></span></div>
+    <button class="btn" id="z1">短接表笔并欧姆调零</button>
+    <button class="btn" id="p1a">Rx = 0（短接）</button>
+    <button class="btn" id="p1b">Rx = R内（中值）</button>
+    <button class="btn" id="p1c">Rx = 6 kΩ（接近断路）</button>
+    <button class="btn" id="p1d">换电池（E 改变后不调零）</button>
+  </div>
+  <div class="note"><b>观察要点：</b>欧姆挡内部是<b>电池 E + 表头 + 调零电阻 R₀</b>串联，红表笔接内部<b>负极</b>、黑表笔接内部<b>正极</b>。
+    短接（Rx＝0）时调 R₀ 使电流满偏 → 指针指到刻度<b>最右端的 0 Ω</b>；接入 Rx 后 I＝E/(R内＋Rx)，
+    偏转角 I/I<sub>g</sub>＝R内/(R内＋Rx)。所以 <b>Rx＝R内 时指针正指中央</b> —— <b>中值电阻就等于电表内阻</b>；
+    刻度由此<b>左密右疏、方向与电压电流刻度相反</b>（左端 ∞，右端 0）。电池电压一变就必须<b>重新欧姆调零</b>，否则读数偏错。</div>
+</div>
+
+<div class="mod">
+  <div class="mod-h"><span class="no">模块 2</span><h2>表盘读数与量程选择</h2><span class="kp">虚拟实验 · 读数训练</span></div>
+  <div class="think"><b>先想一想：</b>测一个约 4.5 V 的电压，用 10 V 挡还是 250 V 挡更准？指针指在哪里读数最可靠？先选挡，再读数。</div>
+  <canvas class="stage" id="cv2" style="height:400px;"></canvas>
+  <div class="read">
+    <div>当前挡位<b id="r2g">—</b></div>
+    <div>指针偏转<b id="r2f">—</b></div>
+    <div>指针指示值<b id="r2p">—</b></div>
+    <div>真实值<b id="r2t">（点"随机一题"后隐藏）</b></div>
+  </div>
+  <div class="ctrl">
+    <div class="row"><label>挡位</label>
+      <span class="seg" id="g2">
+        <button data-i="0" class="on">欧姆 Ω</button><button data-i="1">直流电压 V</button><button data-i="2">直流电流 mA</button>
+      </span>
+    </div>
+    <div class="row"><label>量程／倍率</label>
+      <span class="seg" id="s2"></span>
+    </div>
+    <div class="row"><label>你的读数</label><input class="inp" id="a2" type="number" step="0.01"><span class="val" id="u2"></span></div>
+    <button class="btn" id="ck2">校验</button>
+    <button class="btn" id="an2">显示答案</button>
+    <button class="btn" id="rd2">随机一题</button>
+  </div>
+  <div class="fb" id="fb2"></div>
+  <div class="note"><b>观察要点：</b>选量程的原则是让指针尽量指在<b>刻度中段到 2/3 以上</b>：偏角太小读数误差大，超过满偏会"打表"损坏电表。
+    测电阻读的是<b>最上面那条 Ω 刻度</b>（读数 ＝ 指针示数 × 倍率），并且<b>每换一次倍率都要重新欧姆调零</b>；
+    电压、电流读<b>均匀刻度</b>（读数 ＝ 指针格数／满偏格数 × 量程）。测量前先看清挡位，测电阻必须<b>把待测电阻与外电路断开</b>。</div>
+</div>
+
+<div class="mod">
+  <div class="mod-h"><span class="no">模块 3</span><h2>二极管的正反向电阻</h2><span class="kp">交互仿真</span></div>
+  <div class="think"><b>先想一想：</b>用欧姆挡测二极管，两个方向测出来的电阻一样吗？为什么<b>黑表笔</b>接二极管某一端时电阻特别小？</div>
+  <canvas class="stage" id="cv3" style="height:400px;"></canvas>
+  <div class="read">
+    <div>接法<b id="r3m">—</b></div>
+    <div>二极管电流<b id="r3i">—</b></div>
+    <div>二极管两端电压 U<b id="r3u">—</b></div>
+    <div>欧姆挡读数<b id="r3r">—</b></div>
+  </div>
+  <div class="ctrl">
+    <div class="row"><label>接法</label>
+      <span class="seg" id="m3">
+        <button data-i="0" class="on">正向（黑接正极）</button><button data-i="1">反向（黑接负极）</button>
+      </span>
+    </div>
+    <div class="row"><label>欧姆挡倍率</label>
+      <span class="seg" id="s3">
+        <button data-i="0">×1</button><button data-i="1" class="on">×10</button><button data-i="2">×100</button><button data-i="3">×1k</button>
+      </span>
+    </div>
+    <button class="btn" id="p3a">换成反向接法</button>
+  </div>
+  <div class="note"><b>观察要点：</b>多用电表欧姆挡<b>黑表笔接内部电池的正极</b>（红表笔接负极）—— 这一点最容易记反！
+    <b>黑表笔接二极管正极</b>时二极管正向导通，读数只有几百欧；<b>反过来</b>二极管反向截止，读数几乎是 ∞（指针几乎不动）。
+    因此可用欧姆挡判断二极管的好坏与极性。另外注意：用<b>不同倍率</b>挡测正向电阻，读数并<b>不相同</b>（倍率越大挡内阻越大、工作电流越小，二极管越靠近死区电压）—— 所以测二极管通常固定用 ×10 或 ×100 挡比较。</div>
+</div>
+
+<footer>人教版高中物理必修第三册 · 可视化交互课件 ｜ 单文件离线运行，双击即可使用</footer>
+</div>
+
+<script>
+(function(){
+'use strict';
+/* ========== 通用工具 ========== */
+function $(id){ return document.getElementById(id); }
+function fmt(x, d){
+  if (d === undefined) d = 2;
+  if (!isFinite(x)) return '—';
+  var a = Math.abs(x);
+  if (a >= 10000 || (a > 0 && a < 0.01)) return x.toExponential(2);
+  return (+x.toFixed(d)).toString();
+}
+function stage(id){
+  var cv = $(id);
+  var o = { cv:cv, ctx:cv.getContext('2d'), w:0, h:0 };
+  o.clear = function(){
+    var dpr = window.devicePixelRatio || 1;
+    var w = cv.clientWidth || 800, h = cv.clientHeight || 340;
+    if (cv.width !== Math.round(w*dpr) || cv.height !== Math.round(h*dpr)){
+      cv.width = Math.round(w*dpr); cv.height = Math.round(h*dpr);
+    }
+    o.ctx.setTransform(dpr,0,0,dpr,0,0);
+    o.w = w; o.h = h;
+    var c = o.ctx;
+    c.clearRect(0,0,w,h);
+    c.fillStyle = '#fbfdff'; c.fillRect(0,0,w,h);
+    return c;
+  };
+  return o;
+}
+function bind(id, fn, disp){
+  var el = $(id), v = $(id + 'v');
+  function go(){ var x = parseFloat(el.value); if (v) v.textContent = disp ? disp(x) : el.value; fn(x); }
+  el.addEventListener('input', go); go();
+  return el;
+}
+function setR(id, val){ var el = $(id); el.value = val; el.dispatchEvent(new Event('input')); }
+function arrow(ctx, x1, y1, x2, y2, color, w){
+  ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = w || 2;
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  var a = Math.atan2(y2 - y1, x2 - x1), s = 7;
+  ctx.beginPath(); ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - s * Math.cos(a - 0.42), y2 - s * Math.sin(a - 0.42));
+  ctx.lineTo(x2 - s * Math.cos(a + 0.42), y2 - s * Math.sin(a + 0.42));
+  ctx.closePath(); ctx.fill();
+}
+function T(c, s, x, y, col, f, al, bl){
+  c.font = f || '12px "Microsoft YaHei",sans-serif';
+  c.fillStyle = col || '#334155';
+  c.textAlign = al || 'left'; c.textBaseline = bl || 'alphabetic';
+  c.fillText(s, x, y);
+}
+function box(c, x, y, w, h, fill, stroke){
+  var r = 8;
+  c.beginPath();
+  c.moveTo(x+r, y); c.lineTo(x+w-r, y); c.quadraticCurveTo(x+w, y, x+w, y+r);
+  c.lineTo(x+w, y+h-r); c.quadraticCurveTo(x+w, y+h, x+w-r, y+h);
+  c.lineTo(x+r, y+h); c.quadraticCurveTo(x, y+h, x, y+h-r);
+  c.lineTo(x, y+r); c.quadraticCurveTo(x, y, x+r, y);
+  c.closePath();
+  if (fill){ c.fillStyle = fill; c.fill(); }
+  if (stroke){ c.strokeStyle = stroke; c.lineWidth = 1.2; c.stroke(); }
+}
+function segBind(wrapId, fn){
+  var bs = $(wrapId).getElementsByTagName('button'), i;
+  for (i = 0; i < bs.length; i++){
+    (function(k){
+      bs[k].addEventListener('click', function(){
+        var all = $(wrapId).getElementsByTagName('button'), j;
+        for (j = 0; j < all.length; j++) all[j].classList.toggle('on', j === k);
+        fn(k);
+      });
+    })(i);
+  }
+}
+function meterSym(c, x, y, sym, txt, r){
+  r = r || 19;
+  c.save();
+  c.beginPath(); c.arc(x, y, r, 0, 6.2832);
+  c.fillStyle = '#fff'; c.fill(); c.strokeStyle = '#0f172a'; c.lineWidth = 2; c.stroke();
+  c.restore();
+  T(c, sym, x, y, '#0f172a', 'bold 13px Consolas,monospace', 'center', 'middle');
+  if (txt) T(c, txt, x, y+r+5, '#b45309', '11.5px Consolas,monospace', 'center', 'top');
+}
+function resistorSym(c, x, y, w, h, label){
+  c.save();
+  c.fillStyle = '#fff'; c.strokeStyle = '#0f172a'; c.lineWidth = 2.2;
+  c.beginPath(); c.rect(x-w/2, y-h/2, w, h); c.fill(); c.stroke();
+  c.restore();
+  T(c, label, x, y, '#0f172a', '11px Consolas,monospace', 'center', 'middle');
+}
+function batteryH(c, x, y){
+  c.save();
+  c.strokeStyle = '#0f172a'; c.lineWidth = 3; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(x-5, y-19); c.lineTo(x-5, y+19); c.stroke();
+  c.beginPath(); c.moveTo(x+6, y-11); c.lineTo(x+6, y+11); c.stroke();
+  c.restore();
+  T(c, '+', x-15, y-25, '#dc2626', 'bold 12px Consolas,monospace', 'center', 'middle');
+  T(c, '−', x+16, y-25, '#1d4ed8', 'bold 12px Consolas,monospace', 'center', 'middle');
+}
+/* 二极管符号：dir = 1 表示电流从左到右导通 */
+function diodeSym(c, x, y, dir){
+  var s = 13;
+  c.save();
+  c.strokeStyle = '#0f172a'; c.lineWidth = 2;
+  var d = dir || 1;
+  c.beginPath();
+  c.moveTo(x - s*d, y - s); c.lineTo(x + s*d, y); c.lineTo(x - s*d, y + s); c.closePath();
+  c.fillStyle = '#1d4ed8'; c.fill(); c.stroke();
+  c.beginPath(); c.moveTo(x + s*d, y - s); c.lineTo(x + s*d, y + s); c.stroke();
+  c.restore();
+}
+var dash = 0;
+/* ========== 表盘工具 ========== */
+var A0 = -Math.PI/2 - Math.PI/3, A1 = -Math.PI/2 + Math.PI/3;
+function ang(f){ return A0 + (A1-A0)*Math.max(0, Math.min(1, f)); }
+function dialPlate(c, cx, cy, rr){
+  c.save();
+  c.beginPath(); c.arc(cx, cy, rr+22, Math.PI, 2*Math.PI); c.closePath();
+  c.fillStyle = '#fbfdff'; c.fill();
+  c.strokeStyle = '#e2e8f0'; c.lineWidth = 1.2; c.stroke();
+  c.restore();
+}
+function dialArc(c, cx, cy, rr){
+  c.strokeStyle = '#334155'; c.lineWidth = 1.6;
+  c.beginPath(); c.arc(cx, cy, rr, Math.PI*1.1667, Math.PI*1.8333); c.stroke();
+}
+function tick(c, cx, cy, rr, f, len, col, w){
+  var a = ang(f), ca = Math.cos(a), sa = Math.sin(a);
+  c.strokeStyle = col || '#334155'; c.lineWidth = w || 1.2;
+  c.beginPath();
+  c.moveTo(cx + ca*rr, cy + sa*rr);
+  c.lineTo(cx + ca*(rr-len), cy + sa*(rr-len));
+  c.stroke();
+}
+function tickLabel(c, cx, cy, rr, f, s, col, font){
+  var a = ang(f), ca = Math.cos(a), sa = Math.sin(a);
+  T(c, s, cx + ca*rr, cy + sa*rr, col, font || '10px Consolas,monospace', 'center', 'middle');
+}
+function pointer(c, cx, cy, rr, f){
+  var a = ang(f);
+  c.save();
+  c.strokeStyle = '#dc2626'; c.lineWidth = 2.6; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(cx, cy); c.lineTo(cx + Math.cos(a)*(rr-6), cy + Math.sin(a)*(rr-6)); c.stroke();
+  c.beginPath(); c.arc(cx, cy, 5, 0, 6.2832); c.fillStyle = '#dc2626'; c.fill();
+  c.restore();
+}
+
+/* ================= 模块 1：欧姆挡原理 ================= */
+var S1 = stage('cv1');
+var IG = 1.0e-3, RG = 100;        // 表头：Ig = 1.00 mA，Rg = 100 Ω
+var E1 = 1.5, Rx1 = 1500, R0set = 1400, Ez = 1.5;   // Ez：上次调零时的电池电压
+function Rin(){ return RG + R0set; }                // 电表内阻（由调零电阻决定）
+function calc1(){
+  var Rin0 = Rin();
+  var I = E1/(Rin0 + Rx1);
+  var frac = I/IG;
+  var reading = (frac > 1e-9) ? Rin0*(1/Math.min(frac, 1) - 1) : Infinity;
+  return { I:I, frac:frac, Rin:Rin0, reading:reading };
+}
+function draw1(){
+  var c = S1.clear(), W = S1.w, H = S1.h;
+  var d = calc1();
+  var CW = W*0.52;
+  T(c, '欧姆挡内部电路（红进黑出？——注意：欧姆挡电流从黑表笔流出！）', 40, 24,
+    '#334155', '13px "Microsoft YaHei",sans-serif', 'left', 'middle');
+  /* 内部电路：电池 + 表头 G + 调零电阻 R₀ 串联；左边"断开"，由两只表笔引出去夹 Rx */
+  var yT = 96, yB = 236, xA = 150, xB = CW - 30, xp = xA - 52;
+  c.strokeStyle = '#334155'; c.lineWidth = 3; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(xA, yT); c.lineTo(xB, yT); c.stroke();          // 上边：表头
+  c.beginPath(); c.moveTo(xB, yT); c.lineTo(xB, yB); c.stroke();          // 右边
+  c.beginPath(); c.moveTo(xB, yB); c.lineTo(xA, yB); c.stroke();          // 下边：电池 + R₀
+  meterSym(c, (xA+xB)/2 + 30, yT, 'G', 'Ig=' + (IG*1000).toFixed(2) + ' mA，Rg=' + RG + ' Ω', 22);
+  batteryH(c, xB - 70, yB);
+  T(c, 'E = ' + E1.toFixed(2) + ' V', xB - 70, yB + 34, '#334155', '11.5px Consolas,monospace', 'center', 'top');
+  resistorSym(c, (xA+xB)/2 - 40, yB, 92, 26, 'R₀ = ' + R0set.toFixed(0) + ' Ω');
+  /* 两只表笔（左端引出） */
+  c.strokeStyle = '#334155'; c.lineWidth = 2.6;
+  c.beginPath(); c.moveTo(xA, yT); c.lineTo(xp, yT); c.lineTo(xp, yT+38); c.stroke();   // 红
+  c.beginPath(); c.moveTo(xA, yB); c.lineTo(xp, yB); c.lineTo(xp, yB-38); c.stroke();   // 黑
+  /* Rx 竖接在两表笔之间 */
+  c.strokeStyle = '#334155'; c.lineWidth = 2.6;
+  c.beginPath(); c.moveTo(xp, yT+38); c.lineTo(xp, (yT+yB)/2-42); c.stroke();
+  c.beginPath(); c.moveTo(xp, yB-38); c.lineTo(xp, (yT+yB)/2+42); c.stroke();
+  resistorSym(c, xp, (yT+yB)/2, 30, 84, 'Rx');
+  T(c, 'Rx = ' + fmt(Rx1, 0) + ' Ω', xp - 22, (yT+yB)/2, '#0f172a', '11.5px Consolas,monospace', 'right', 'middle');
+  /* 表笔颜色与极性 */
+  c.fillStyle = '#dc2626'; c.fillRect(xp-8, yT+18, 16, 20);
+  c.fillStyle = '#0f172a'; c.fillRect(xp-8, yB-38, 16, 20);
+  T(c, '红表笔（接内部负极）', xp, yT+50, '#dc2626', '11px "Microsoft YaHei",sans-serif', 'center', 'top');
+  T(c, '黑表笔（接内部正极）', xp, yB-46, '#0f172a', '11px "Microsoft YaHei",sans-serif', 'center', 'bottom');
+  /* 电流（琥珀色粒子），方向：电池+ → R₀ → 黑表笔 → Rx → 红表笔 → G → 电池− */
+  c.save();
+  c.strokeStyle = 'rgba(245,158,11,.95)'; c.lineWidth = 3.2;
+  c.setLineDash([9, 13]); c.lineDashOffset = -dash*(0.2 + Math.min(d.frac, 1.2)*3);
+  c.beginPath();
+  c.moveTo(xB-70, yB); c.lineTo(xA, yB); c.lineTo(xp, yB); c.lineTo(xp, yT); c.lineTo(xA, yT);
+  c.lineTo(xB, yT); c.lineTo(xB, yB); c.lineTo(xB-70, yB);
+  c.stroke();
+  c.restore();
+  arrow(c, xp - 30, (yT+yB)/2 + 30, xp - 30, (yT+yB)/2 - 30, '#b45309', 2.2);
+  T(c, '电流：电池+ → 黑表笔 → Rx（自下而上）→ 红表笔 → 回到电池−', xA + 10, yT - 22, '#b45309',
+    '11.5px "Microsoft YaHei",sans-serif', 'left', 'middle');
+
+  /* 表盘（Ω 刻度） */
+  var cx = CW + (W-CW)/2, cy = H*0.60, rr = Math.min((W-CW)/2 - 26, H*0.40, 118);
+  if (rr < 60) rr = 60;
+  dialPlate(c, cx, cy, rr);
+  dialArc(c, cx, cy, rr);
+  var ratios = [0, 0.1, 0.2, 0.5, 1, 2, 5, 10, 50];
+  var i, rv, fv;
+  for (i = 0; i <= 50; i++){
+    tick(c, cx, cy, rr, i/50, (i % 5 === 0) ? 9 : 5, '#94a3b8', (i % 5 === 0) ? 1.4 : 0.9);
+  }
+  for (i = 0; i < ratios.length; i++){
+    rv = ratios[i];                         // Rx / R内
+    fv = 1/(1+rv);
+    tick(c, cx, cy, rr, fv, 14, rv === 1 ? '#dc2626' : '#334155', rv === 1 ? 2.2 : 1.6);
+    tickLabel(c, cx, cy, rr-26, fv, rv === 0 ? '0' : (rv === 1 ? fmt(d.Rin, 0) : fmt(d.Rin*rv, 0)),
+      rv === 1 ? '#dc2626' : '#334155', rv === 1 ? 'bold 11px Consolas,monospace' : '10px Consolas,monospace');
+  }
+  tickLabel(c, cx, cy, rr-26, 0, '∞', '#334155', 'bold 11px Consolas,monospace');
+  T(c, 'Ω 刻度（反向、左密右疏）', cx, cy - rr - 8, '#334155', '11.5px "Microsoft YaHei",sans-serif', 'center', 'middle');
+  T(c, '中值 ' + fmt(d.Rin, 0) + ' Ω', cx, cy - rr*0.42, '#dc2626', '11px Consolas,monospace', 'center', 'middle');
+  pointer(c, cx, cy, rr, Math.min(d.frac, 1));
+  T(c, 'I/Ig = ' + d.frac.toFixed(3) + '（' + (d.frac*100).toFixed(1) + '% 偏转）', cx, cy + 26, '#dc2626',
+    '12.5px Consolas,monospace', 'center', 'middle');
+  T(c, '读数 Rx = ' + fmt(d.reading, 1) + ' Ω', cx, cy + 48, '#b45309', 'bold 13px Consolas,monospace', 'center', 'middle');
+
+  /* 底部提示 */
+  var fy = H - 58;
+  var ok = Math.abs(E1 - Ez) < 0.02;
+  box(c, 40, fy, W-80, 46, ok ? '#ecfdf5' : '#fffbeb', ok ? '#a7f3d0' : '#fcd34d');
+  if (ok){
+    T(c, '已调零：R₀ = ' + R0set.toFixed(0) + ' Ω，电表内阻 R内 = Rg + R₀ = ' + d.Rin.toFixed(0) + ' Ω ＝ 中值电阻。'
+      + 'Rx = R内 时指针正指中央（此时 I = Ig/2）。', 56, fy+23, '#065f46', '12.5px "Microsoft YaHei",sans-serif', 'left', 'middle');
+  } else {
+    T(c, '⚠ 电池电压已由 ' + Ez.toFixed(2) + ' V 变成 ' + E1.toFixed(2) + ' V，但 R₀ 没重调 —— 短接时指针'
+      + (d.frac > 1 ? '超过满偏' : '不满偏') + '，读数已经不准！必须重新欧姆调零。',
+      56, fy+23, '#92400e', 'bold 12.5px "Microsoft YaHei",sans-serif', 'left', 'middle');
+  }
+
+  $('r1i').textContent = (d.I*1000).toFixed(3) + ' mA';
+  $('r1f').textContent = d.frac.toFixed(3);
+  $('r1m').textContent = fmt(d.Rin, 0) + ' Ω';
+  $('r1x').textContent = fmt(d.reading, 1) + ' Ω';
+}
+function zero1(){
+  R0set = Math.max(0, E1/IG - RG);
+  Ez = E1;
+}
+$('z1').addEventListener('click', function(){ zero1(); setR('x1', 0); });
+$('p1a').addEventListener('click', function(){ setR('x1', 0); });
+$('p1b').addEventListener('click', function(){ setR('x1', Math.round(Rin())); });
+$('p1c').addEventListener('click', function(){ setR('x1', 6000); });
+$('p1d').addEventListener('click', function(){
+  var nv = E1 > 2 ? 1.2 : (E1 < 1.3 ? 2.6 : 1.2);
+  setR('e1', nv);      // 只换电池，不重新调零
+});
+bind('x1', function(x){ Rx1 = x; draw1(); }, function(x){ return fmt(x, 0) + ' Ω'; });
+bind('e1', function(x){ E1 = x; draw1(); }, function(x){ return x.toFixed(2) + ' V'; });
+zero1();
+
+/* ================= 模块 2：读数与量程选择 ================= */
+var S2 = stage('cv2');
+var MID = 20;                                   // Ω 刻度中值数字
+var RANGES = [
+  { name:'Ω',  list:[ { t:'×1', v:1 }, { t:'×10', v:10 }, { t:'×100', v:100 }, { t:'×1k', v:1000 } ] },
+  { name:'V',  list:[ { t:'2.5 V', v:2.5 }, { t:'10 V', v:10 }, { t:'50 V', v:50 }, { t:'250 V', v:250 } ] },
+  { name:'mA', list:[ { t:'1 mA', v:1 }, { t:'10 mA', v:10 }, { t:'100 mA', v:100 }, { t:'500 mA', v:500 } ] }
+];
+var g2 = 0, s2 = 1, truth = 0, fb2 = null, shown2 = false;
+function buildRangeSeg(){
+  var wrap = $('s2'), i, b;
+  wrap.innerHTML = '';
+  var list = RANGES[g2].list;
+  for (i = 0; i < list.length; i++){
+    b = document.createElement('button');
+    b.textContent = list[i].t;
+    if (i === s2) b.className = 'on';
+    /* jshint 兼容写法：用立即函数保存索引 */
+    (function(k){
+      b.addEventListener('click', function(){
+        var all = wrap.getElementsByTagName('button'), j;
+        for (j = 0; j < all.length; j++) all[j].classList.remove('on');
+        all[k].classList.add('on');
+        s2 = k; fb2 = null; $('fb2').innerHTML = ''; draw2();
+      });
+    })(i);
+    wrap.appendChild(b);
+  }
+}
+function rangeObj(){ return RANGES[g2].list[Math.min(s2, RANGES[g2].list.length-1)]; }
+function frac2(){
+  var r = rangeObj();
+  if (g2 === 0){
+    var Rin2 = MID*r.v;              // 该倍率下的电表内阻
+    return Rin2/(Rin2 + truth);
+  }
+  return truth/r.v;
+}
+function indicated(){                // 指针指示值（未乘倍率前 / 直接读数）
+  var r = rangeObj();
+  if (g2 === 0){
+    var Rin2 = MID*r.v;
+    var f = Rin2/(Rin2 + truth);
+    var val = (f > 1e-9) ? MID*(1/f - 1) : Infinity;   // 刻度示数
+    return val*r.v;                                    // × 倍率
+  }
+  return truth;
+}
+function fmtVal(v, unit){
+  if (!isFinite(v)) return '∞ ' + unit;
+  if (unit === 'Ω'){
+    if (v >= 1000) return (v/1000).toFixed(2) + ' kΩ';
+    return v.toFixed(1) + ' Ω';
+  }
+  return fmt(v, v >= 100 ? 1 : 2) + ' ' + unit;
+}
+function unit2(){ return g2 === 0 ? 'Ω' : (g2 === 1 ? 'V' : 'mA'); }
+function draw2(){
+  var c = S2.clear(), W = S2.w, H = S2.h;
+  var f = frac2(), r = rangeObj();
+  var over = f > 1;
+  var fshow = Math.min(f, 1.02);
+  var cx = W*0.40, cy = H*0.52, rr = Math.min(W*0.30, H*0.42, 140);
+  dialPlate(c, cx, cy, rr);
+  /* 第 1 条：Ω 刻度（外） */
+  dialArc(c, cx, cy, rr);
+  var ratios = [0, 0.2, 0.5, 1, 2, 5, 10, 50], i, rv, fv;
+  for (i = 0; i < ratios.length; i++){
+    rv = ratios[i]; fv = 1/(1+rv);
+    tick(c, cx, cy, rr, fv, 13, rv === 1 ? '#dc2626' : '#334155', rv === 1 ? 2.2 : 1.5);
+    tickLabel(c, cx, cy, rr-24, fv, rv === 0 ? '0' : String(MID*rv), rv === 1 ? '#dc2626' : '#334155',
+      rv === 1 ? 'bold 10.5px Consolas,monospace' : '9.5px Consolas,monospace');
+  }
+  tickLabel(c, cx, cy, rr-24, 0, '∞', '#334155', 'bold 10.5px Consolas,monospace');
+  for (i = 0; i <= 50; i++) tick(c, cx, cy, rr, i/50, (i % 5 === 0) ? 8 : 4.5, '#cbd5e1', 1);
+  T(c, 'Ω（读数 × 倍率）', cx, cy - rr - 6, '#334155', '11px "Microsoft YaHei",sans-serif', 'center', 'middle');
+  /* 第 2 条：0–50 均匀（直流 V / mA 主用） */
+  dialArc(c, cx, cy, rr-34);
+  for (i = 0; i <= 50; i++){
+    tick(c, cx, cy, rr-34, i/50, (i % 10 === 0) ? 11 : ((i % 5 === 0) ? 7 : 4),
+      '#334155', (i % 10 === 0) ? 1.8 : 1);
+    if (i % 10 === 0) tickLabel(c, cx, cy, rr-34-16, i/50, String(i), '#334155', '10px Consolas,monospace');
+  }
+  T(c, '0–50 均匀刻度（V / mA）', cx, cy - rr + 46, '#334155', '10.5px "Microsoft YaHei",sans-serif', 'center', 'middle');
+  /* 第 3 条：0–10 均匀（2.5 V 交流等） */
+  dialArc(c, cx, cy, rr-66);
+  for (i = 0; i <= 10; i++){
+    tick(c, cx, cy, rr-66, i/10, (i % 2 === 0) ? 9 : 5, '#64748b', (i % 2 === 0) ? 1.4 : 0.9);
+    if (i % 2 === 0) tickLabel(c, cx, cy, rr-66-14, i/10, String(i), '#64748b', '9.5px Consolas,monospace');
+  }
+  pointer(c, cx, cy, rr, fshow);
+  T(c, over ? '⚠ 超过满偏（打表）！' : '偏转 ' + (f*100).toFixed(1) + '%',
+    cx, cy + 30, over ? '#dc2626' : '#334155', 'bold 13px "Microsoft YaHei",sans-serif', 'center', 'middle');
+  /* 机械零点与量程标注 */
+  T(c, '挡位：' + RANGES[g2].name + '　量程／倍率：' + r.t, cx, cy + 54, '#1d4ed8',
+    '13px Consolas,monospace', 'center', 'middle');
+
+  /* 右侧：选择开关旋钮 + 提示 */
+  var kx = W*0.80, ky = H*0.42, kr = 62;
+  c.beginPath(); c.arc(kx, ky, kr, 0, 6.2832);
+  c.fillStyle = '#f8fafc'; c.fill(); c.strokeStyle = '#94a3b8'; c.lineWidth = 2; c.stroke();
+  var idx = (g2 === 0 ? 0 : (g2 === 1 ? 4 : 8)) + Math.min(s2, 3);
+  var j;
+  for (j = 0; j < 12; j++){
+    var a = Math.PI*1.15 + (Math.PI*0.7)*j/11;
+    var ca = Math.cos(a), sa = Math.sin(a);
+    c.strokeStyle = (j === idx) ? '#dc2626' : '#cbd5e1';
+    c.lineWidth = (j === idx) ? 3 : 1.6;
+    c.beginPath();
+    c.moveTo(kx + ca*(kr-8), ky + sa*(kr-8));
+    c.lineTo(kx + ca*(kr-20), ky + sa*(kr-20));
+    c.stroke();
+  }
+  var pa = Math.PI*1.15 + (Math.PI*0.7)*idx/11;
+  c.strokeStyle = '#dc2626'; c.lineWidth = 3; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(kx, ky); c.lineTo(kx + Math.cos(pa)*(kr-26), ky + Math.sin(pa)*(kr-26)); c.stroke();
+  c.beginPath(); c.arc(kx, ky, 7, 0, 6.2832); c.fillStyle = '#dc2626'; c.fill();
+  T(c, RANGES[g2].name + ' ' + r.t, kx, ky + kr + 20, '#1d4ed8', 'bold 13px Consolas,monospace', 'center', 'middle');
+  T(c, '选择开关', kx, ky - kr - 14, '#64748b', '12px "Microsoft YaHei",sans-serif', 'center', 'middle');
+
+  /* 被测对象与提示 */
+  var py = H - 96;
+  box(c, 40, py, W-80, 80, '#fffbeb', '#fcd34d');
+  T(c, '被测对象（未知）：' + (shown2 ? fmtVal(truth, unit2()) : '？？？  —— 请选好挡位后读表盘'),
+    56, py+22, '#92400e', '13px "Microsoft YaHei",sans-serif', 'left', 'middle');
+  var tip = '';
+  if (over) tip = '指针打表！被测值超过本量程，应立即换更大量程（换挡后欧姆挡要重新调零）。';
+  else if (g2 === 0){
+    if (f < 0.3) tip = '偏角太小：Ω 刻度此处太密，读数误差很大 —— 应换<b>更大倍率</b>（如 ×100），使指针靠近中央。';
+    else if (f > 0.78) tip = '偏角太大：靠近 0 Ω 处刻度稀疏尚可，但换<b>更小倍率</b>会更准。';
+    else tip = '指针在中值附近 —— 这正是欧姆挡最准确的区域，读数 × 倍率即可。';
+  } else {
+    if (f < 0.25) tip = '偏角太小：读数相对误差过大 —— 应换<b>更小的量程</b>，让指针偏到 2/3 以上。';
+    else if (f > 0.95) tip = '接近满偏，注意别超过量程。';
+    else tip = '偏角合适 —— 读数 ＝ 指针格数／满偏格数 × 量程。';
+  }
+  T(c, tip.replace(/<[^>]+>/g, ''), 56, py+46, '#64748b', '12.5px "Microsoft YaHei",sans-serif', 'left', 'middle');
+  T(c, g2 === 0 ? '提醒：换倍率后必须重新欧姆调零！' : '提醒：电流从红表笔流入、黑表笔流出（红进黑出）。',
+    56, py+66, '#b45309', '12px "Microsoft YaHei",sans-serif', 'left', 'middle');
+
+  $('r2g').textContent = RANGES[g2].name + ' ' + r.t;
+  $('r2f').textContent = over ? '超量程' : (f*100).toFixed(1) + ' %';
+  $('r2p').textContent = over ? '——' : fmtVal(indicated(), unit2());
+  $('r2t').textContent = shown2 ? fmtVal(truth, unit2()) : '？ ？ ？';
+  $('u2').textContent = unit2();
+}
+function newQuestion(){
+  if (g2 === 0) truth = Math.round(Math.pow(10, 0.7 + Math.random()*3.0));       // 5 ~ 5000 Ω
+  else if (g2 === 1) truth = +(0.4 + Math.random()*199).toFixed(2);               // 0.4 ~ 200 V
+  else truth = +(0.4 + Math.random()*399).toFixed(1);                             // 0.4 ~ 400 mA
+  shown2 = false; fb2 = null;
+  $('fb2').innerHTML = '';
+  $('a2').value = '';
+  draw2();
+}
+$('ck2').addEventListener('click', function(){
+  var a = parseFloat($('a2').value);
+  var f = frac2();
+  if (!isFinite(a)){ $('fb2').innerHTML = '<span style="color:#b91c1c">请先输入你从表盘上读出的数值</span>'; return; }
+  var rel = Math.abs(a - truth)/Math.max(truth, 1e-9);
+  var okVal = rel <= 0.04;
+  var okRange = !(f > 1) && f >= 0.22 && f <= 0.99;
+  var good = okVal && okRange;
+  var s = good ? '<span style="color:#047857">✓ 读数正确！</span>'
+               : '<span style="color:#b91c1c">✗ 不正确</span>';
+  var det = '真实值 ' + fmtVal(truth, unit2()) + '，你读 ' + fmt(a, 2) + ' ' + unit2()
+    + '（相对偏差 ' + (rel*100).toFixed(1) + '%）';
+  var rng = okRange ? '挡位选择合适（偏转 ' + (f*100).toFixed(0) + '%）。'
+    : (f > 1 ? '挡位太小，超量程打表！' : '挡位太大，偏转仅 ' + (f*100).toFixed(0) + '%，读数误差大。');
+  $('fb2').innerHTML = s + ' ' + det + '；' + rng;
+  shown2 = true;
+  draw2();
+});
+$('an2').addEventListener('click', function(){
+  shown2 = true;
+  $('fb2').innerHTML = '<span style="color:#b45309">正确答案：' + fmtVal(truth, unit2())
+    + '（指针偏转 ' + (frac2()*100).toFixed(1) + '%）</span>';
+  draw2();
+});
+$('rd2').addEventListener('click', function(){ newQuestion(); });
+segBind('g2', function(k){
+  g2 = Math.max(0, Math.min(k, RANGES.length-1));
+  s2 = Math.min(s2, RANGES[g2].list.length-1);
+  buildRangeSeg(); newQuestion();
+});
+buildRangeSeg();
+newQuestion();
+
+/* ================= 模块 3：二极管正反向电阻 ================= */
+var S3 = stage('cv3');
+var U0D = 0.5, RD = 20, ILEAK = 2e-6;     // 二极管模型：U>0.5 V 后按 20 Ω 线性导通；反向漏电流 2 µA
+var ED = 1.5, MID3 = 20;                  // 欧姆挡电池 1.5 V，中值刻度数字 20
+var dir3 = 0, mul3 = 10;                  // dir3: 0 正向（黑接正极），1 反向
+function calc3(){
+  var Rin3 = MID3*mul3;
+  var Ig3 = ED/Rin3;
+  var U, I;
+  if (dir3 === 0){
+    U = (RD*ED + Rin3*U0D)/(RD + Rin3);
+    I = Math.max((U - U0D)/RD, 0);
+  } else {
+    I = ILEAK;
+    U = -(ED - I*Rin3);                   // 二极管反向承压（负值）
+  }
+  var f = I/Ig3;
+  var reading = (f > 1e-9) ? Rin3*(1/Math.min(f, 1) - 1) : Infinity;
+  return { Rin:Rin3, Ig:Ig3, U:U, I:I, f:f, reading:reading };
+}
+function draw3(){
+  var c = S3.clear(), W = S3.w, H = S3.h;
+  var d = calc3();
+  var GW = W*0.50;
+  /* 左：二极管伏安特性 */
+  var gx = 70, gy = H - 60, gx1 = GW - 20, gy1 = 54;
+  var Um = 1.6, ImA = Math.max(ED/(MID3*mul3)*1000, 1);
+  c.strokeStyle = '#cbd5e1'; c.lineWidth = 1;
+  var i, k, gxx, gyy;
+  for (k = 0; k <= 4; k++){
+    gxx = gx + (gx1-gx)*k/4;
+    c.beginPath(); c.moveTo(gxx, gy1); c.lineTo(gxx, gy); c.stroke();
+    gyy = gy - (gy-gy1)*k/4;
+    c.beginPath(); c.moveTo(gx, gyy); c.lineTo(gx1, gyy); c.stroke();
+  }
+  c.strokeStyle = '#334155'; c.lineWidth = 1.6;
+  c.beginPath(); c.moveTo(gx, gy1); c.lineTo(gx, gy); c.lineTo(gx1, gy); c.stroke();
+  var PX = function(u){ return gx + (gx1-gx)*(u + Um)/(2*Um); };
+  var PY = function(imA){ return gy - (gy-gy1)*(imA + ImA*0.4)/(ImA*1.4); };
+  var zeroX = PX(0), zeroY = PY(0);
+  c.strokeStyle = '#94a3b8'; c.lineWidth = 1;
+  c.beginPath(); c.moveTo(zeroX, gy1); c.lineTo(zeroX, gy); c.stroke();
+  c.beginPath(); c.moveTo(gx, zeroY); c.lineTo(gx1, zeroY); c.stroke();
+  for (k = -4; k <= 4; k++){
+    T(c, (Um*k/4).toFixed(2), PX(Um*k/4), gy+14, '#64748b', '9.5px Consolas,monospace', 'center', 'top');
+  }
+  for (k = 0; k <= 4; k++){
+    T(c, (ImA*1.4*k/4 - ImA*0.4).toFixed(1), gx-4, gy - (gy-gy1)*k/4, '#64748b', '9.5px Consolas,monospace', 'right', 'middle');
+  }
+  T(c, 'U / V', gx1, gy+14, '#334155', '11px Consolas,monospace', 'right', 'top');
+  T(c, 'I / mA', gx-4, gy1+8, '#334155', '11px Consolas,monospace', 'right', 'bottom');
+  /* 特性曲线：正向 */
+  c.strokeStyle = '#1d4ed8'; c.lineWidth = 2.4;
+  c.beginPath();
+  for (i = 0; i <= 60; i++){
+    var u = Um*i/60;
+    var imA = (u > U0D) ? (u - U0D)/RD*1000 : 0;
+    if (i === 0) c.moveTo(PX(u), PY(imA)); else c.lineTo(PX(u), PY(imA));
+  }
+  c.stroke();
+  /* 反向：几乎贴横轴 */
+  c.strokeStyle = '#1d4ed8'; c.lineWidth = 2;
+  c.beginPath();
+  for (i = 0; i <= 40; i++){
+    var u2 = -Um*i/40;
+    c.lineTo(PX(u2), PY(-ILEAK*1000));
+  }
+  c.stroke();
+  T(c, '二极管伏安特性（正向 0.5 V 后导通）', (gx+gx1)/2, gy1-14, '#334155',
+    '11.5px "Microsoft YaHei",sans-serif', 'center', 'middle');
+  /* 欧姆挡负载线：I = (E − U)/R内 */
+  var uEnd = Math.min(Um, ED);
+  c.save();
+  c.strokeStyle = '#dc2626'; c.lineWidth = 1.8; c.setLineDash([5,4]);
+  c.beginPath();
+  c.moveTo(PX(0), PY(ED/d.Rin*1000));
+  c.lineTo(PX(uEnd), PY((ED - uEnd)/d.Rin*1000));
+  c.stroke();
+  c.restore();
+  T(c, '欧姆挡负载线（斜率 = −1/R内）', PX(uEnd) - 6, PY((ED - uEnd*0.4)/d.Rin*1000), '#dc2626',
+    '10.5px "Microsoft YaHei",sans-serif', 'right', 'bottom');
+  /* 工作点 */
+  var wx = PX(d.U), wy = PY(d.I*1000);
+  c.beginPath(); c.arc(wx, wy, 5.5, 0, 6.2832);
+  c.fillStyle = '#b45309'; c.fill(); c.strokeStyle = '#fff'; c.lineWidth = 1.6; c.stroke();
+  T(c, '工作点 ' + d.U.toFixed(3) + ' V，' + (d.I*1000).toFixed(3) + ' mA', wx+8, wy-8, '#b45309',
+    '11px Consolas,monospace', 'left', 'bottom');
+
+  /* 右上：欧姆挡内部电路 + 表笔接法 */
+  var RX = GW + 10, RY = 54, RW = W - RX - 30;
+  box(c, RX, RY, RW, 150, '#f8fafc', '#e2e8f0');
+  T(c, '欧姆挡接二极管', RX+RW/2, RY+16, '#334155', '12.5px "Microsoft YaHei",sans-serif', 'center', 'middle');
+  var yA = RY+56, yB = RY+112, xL2 = RX+34, xR2 = RX+RW-34;
+  c.strokeStyle = '#334155'; c.lineWidth = 2.6; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(xL2, yA); c.lineTo(xR2, yA); c.stroke();
+  c.beginPath(); c.moveTo(xR2, yA); c.lineTo(xR2, yB); c.stroke();
+  c.beginPath(); c.moveTo(xR2, yB); c.lineTo(xL2, yB); c.stroke();
+  c.beginPath(); c.moveTo(xL2, yB); c.lineTo(xL2, yA); c.stroke();
+  batteryH(c, xL2+40, yB);
+  meterSym(c, (xL2+xR2)/2 - 10, yA, 'G', null, 18);
+  resistorSym(c, (xL2+xR2)/2 + 40, yB, 74, 24, 'R内=' + fmt(d.Rin, 0) + 'Ω');
+  var dx = (xL2+xR2)/2 + 40, dy = yA;
+  c.strokeStyle = '#334155'; c.lineWidth = 2.6;
+  c.beginPath(); c.moveTo(dx-40, yA); c.lineTo(dx-18, dy); c.stroke();
+  c.beginPath(); c.moveTo(dx+18, dy); c.lineTo(dx+40, yA); c.stroke();
+  diodeSym(c, dx, dy, dir3 === 0 ? 1 : -1);
+  /* 电流方向 */
+  c.save();
+  c.strokeStyle = 'rgba(245,158,11,.95)'; c.lineWidth = 3;
+  c.setLineDash([8, 12]);
+  c.lineDashOffset = -dash*(dir3 === 0 ? 2.2 : 0.05);
+  c.beginPath();
+  c.moveTo(xL2, yA); c.lineTo(xR2, yA); c.lineTo(xR2, yB); c.lineTo(xL2, yB); c.lineTo(xL2, yA);
+  c.stroke();
+  c.restore();
+  T(c, '黑表笔（内部电池 +）→ 二极管 ' + (dir3 === 0 ? '正极' : '负极') + ' → 红表笔',
+    RX+RW/2, yB+32, '#b45309', '11.5px "Microsoft YaHei",sans-serif', 'center', 'middle');
+
+  /* 右下：指针与读数 */
+  var cx2 = RX + RW/2, cy2 = RY + 244, rr2 = 70;
+  dialPlate(c, cx2, cy2, rr2);
+  dialArc(c, cx2, cy2, rr2);
+  var ratios2 = [0, 1, 2, 5, 10, 50], j2;
+  for (j2 = 0; j2 < ratios2.length; j2++){
+    var rv2 = ratios2[j2], fv2 = 1/(1+rv2);
+    tick(c, cx2, cy2, rr2, fv2, 12, rv2 === 1 ? '#dc2626' : '#334155', rv2 === 1 ? 2 : 1.4);
+    tickLabel(c, cx2, cy2, rr2-20, fv2, rv2 === 0 ? '0' : String(MID3*rv2), rv2 === 1 ? '#dc2626' : '#334155', '9.5px Consolas,monospace');
+  }
+  tickLabel(c, cx2, cy2, rr2-20, 0, '∞', '#334155', 'bold 10px Consolas,monospace');
+  pointer(c, cx2, cy2, rr2, Math.min(d.f, 1));
+  T(c, '倍率 ×' + (mul3 === 1000 ? '1k' : mul3) + '，中值电阻 ' + fmt(d.Rin, 0) + ' Ω',
+    cx2, cy2 + 24, '#64748b', '11.5px Consolas,monospace', 'center', 'middle');
+  T(c, '读数 R = ' + (isFinite(d.reading) ? fmtVal(d.reading, 'Ω') : '∞（指针几乎不动）'),
+    cx2, cy2 + 46, dir3 === 0 ? '#b45309' : '#1d4ed8', 'bold 13px Consolas,monospace', 'center', 'middle');
+
+  /* 底部结论 */
+  var fy2 = H - 40;
+  box(c, 40, fy2, W-80, 32, dir3 === 0 ? '#ecfdf5' : '#eff6ff', dir3 === 0 ? '#a7f3d0' : '#bfdbfe');
+  T(c, dir3 === 0
+    ? '正向接法：黑表笔接二极管正极（黑表笔＝内部电池正极），二极管导通 → 读数只有 ' + fmtVal(d.reading, 'Ω') + '。'
+    : '反向接法：二极管反向截止，电流约 ' + (ILEAK*1e6).toFixed(1) + ' µA → 读数接近 ∞，指针几乎不动。',
+    56, fy2+16, dir3 === 0 ? '#065f46' : '#1e40af', '12.5px "Microsoft YaHei",sans-serif', 'left', 'middle');
+
+  $('r3m').textContent = dir3 === 0 ? '正向（黑接正极）' : '反向（黑接负极）';
+  $('r3i').textContent = (d.I*1000).toFixed(3) + ' mA';
+  $('r3u').textContent = d.U.toFixed(3) + ' V';
+  $('r3r').textContent = isFinite(d.reading) ? fmtVal(d.reading, 'Ω') : '∞';
+}
+segBind('m3', function(k){ dir3 = k; draw3(); });
+segBind('s3', function(k){
+  var arr = [1, 10, 100, 1000];
+  mul3 = arr[Math.min(k, 3)];
+  draw3();
+});
+$('p3a').addEventListener('click', function(){
+  var bs = $('m3').getElementsByTagName('button');
+  bs[1].click();
+});
+
+/* ================= 动画 ================= */
+function loop(){
+  dash += 1.0;
+  draw1();
+  requestAnimationFrame(loop);
+}
+draw1(); draw2(); draw3();
+requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

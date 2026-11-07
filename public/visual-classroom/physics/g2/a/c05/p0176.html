@@ -1,0 +1,673 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>13.4　电磁波的发现及应用 ｜ 人教版物理必修第三册</title>
+<style>
+  :root{
+    --blue:#1d4ed8; --blue-soft:#eff6ff; --blue-line:#bfdbfe;
+    --ink:#1e293b; --sub:#64748b; --line:#e2e8f0;
+    --amber-bg:#fffbeb; --amber-line:#fcd34d; --amber-ink:#92400e;
+    --green:#059669; --red:#dc2626;
+    --purple:#7c3aed; --purple-soft:#f5f3ff;
+    --amber:#f59e0b;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{background:#f3f5f9; color:var(--ink);
+    font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif; padding:18px 12px 40px;}
+  .wrap{max-width:1060px; margin:0 auto;}
+  header{background:#fff; border:1px solid var(--line); border-left:6px solid var(--purple);
+    border-radius:12px; padding:16px 22px; box-shadow:0 1px 3px rgba(15,23,42,.06);}
+  header h1{font-size:22px; color:var(--ink);}
+  header .meta{margin-top:6px; font-size:12.5px; color:var(--sub); line-height:1.7;}
+  .mod{background:#fff; border:1px solid var(--line); border-radius:12px;
+    padding:16px 20px 18px; margin-top:16px; box-shadow:0 1px 3px rgba(15,23,42,.05);}
+  .mod-h{display:flex; align-items:center; gap:10px; margin-bottom:10px;}
+  .mod-h .no{background:var(--purple); color:#fff; font-size:12px; border-radius:6px;
+    padding:2px 8px; white-space:nowrap;}
+  .mod-h h2{font-size:16.5px;}
+  .mod-h .kp{margin-left:auto; font-size:12px; color:var(--sub); white-space:nowrap;}
+  .think{background:var(--blue-soft); border:1px solid var(--blue-line); border-radius:8px;
+    padding:8px 12px; font-size:12.5px; color:#1e40af; margin-bottom:10px; line-height:1.7;}
+  .think b{color:var(--blue);}
+  canvas.stage{display:block; width:100%; background:#fbfdff;
+    border:1px solid var(--line); border-radius:10px;}
+  .ctrl{display:flex; flex-wrap:wrap; gap:8px 18px; align-items:center; margin-top:10px;}
+  .row{display:flex; align-items:center; gap:8px; font-size:13px;}
+  .row label{color:var(--sub); white-space:nowrap;}
+  .row input[type=range]{width:150px; accent-color:var(--purple);}
+  .row .val{min-width:64px; font-variant-numeric:tabular-nums; color:var(--ink); font-weight:600;}
+  .btn{border:1px solid var(--purple); color:var(--purple); background:#fff; border-radius:7px;
+    padding:4px 12px; font-size:12.5px; cursor:pointer;}
+  .btn:hover{background:var(--purple-soft);}
+  .btn.on{background:var(--purple); color:#fff;}
+  .note{margin-top:10px; background:var(--amber-bg); border:1px solid var(--amber-line);
+    border-radius:8px; padding:8px 12px; font-size:12.5px; color:var(--amber-ink); line-height:1.8;}
+  .note b{color:#b45309;}
+  footer{margin-top:20px; text-align:center; font-size:12px; color:#94a3b8;}
+  .seg{display:inline-flex; border:1px solid var(--purple); border-radius:8px; overflow:hidden;}
+  .seg button{border:none; background:#fff; color:var(--purple); padding:4px 12px;
+    font-size:12.5px; cursor:pointer;}
+  .seg button.on{background:var(--purple); color:#fff;}
+</style>
+</head>
+<body>
+<div class="wrap">
+<header>
+  <h1>13.4　电磁波的发现及应用</h1>
+  <div class="meta">人教版《物理》必修第三册 · 第十三章 电磁感应与电磁波初步 · 教材 P119–P123 ｜ 覆盖知识点：麦克斯韦电磁场理论、赫兹实验验证、电磁波谱、E/B/v 三者的方向关系</div>
+</header>
+
+<div class="mod">
+  <div class="mod-h"><span class="no">模块 1</span><h2>麦克斯韦电磁场理论：变化的场互相激发</h2><span class="kp">动画演示</span></div>
+  <div class="think"><b>先想一想：</b>电场最强的时候，它激发出来的磁场也最强吗？（提示：产生磁场的是<b>电场的变化率</b>，不是电场本身）</div>
+  <canvas class="stage" id="cv1" style="height:340px;"></canvas>
+  <div class="ctrl">
+    <button class="btn on" id="b1play">⏸ 暂停</button>
+    <div class="row"><label>变化快慢</label><input type="range" id="r1w" min="0.3" max="2.5" step="0.1" value="1"><span class="val" id="r1wv"></span></div>
+  </div>
+  <div class="note"><b>观察要点：</b>① 变化的电场产生磁场（左图）② 变化的磁场产生电场（右图）——两者<b>交替激发、由近及远传播</b>，就形成了电磁波。注意关键细节：<b>电场最大的瞬间，磁场恰好为零；电场过零、变化最快的瞬间，磁场最强</b>——因为 B ∝ dE/dt。</div>
+</div>
+
+<div class="mod">
+  <div class="mod-h"><span class="no">模块 2</span><h2>赫兹实验：捕捉电磁波</h2><span class="kp">动画演示</span></div>
+  <div class="think"><b>先想一想：</b>发射端刚打出火花的那一瞬间，接收端会同时冒火花吗？（提示：电磁波跑得再快也是<b>有限速度</b>）</div>
+  <canvas class="stage" id="cv2" style="height:340px;"></canvas>
+  <div class="ctrl">
+    <button class="btn on" id="b2play">⏸ 暂停</button>
+    <button class="btn" id="b2fire">重新发射</button>
+    <div class="row"><label>距离 d</label><input type="range" id="r2d" min="1" max="10" step="0.5" value="4"><span class="val" id="r2dv"></span></div>
+  </div>
+  <div class="note"><b>观察要点：</b>发射端火花隙打火 → 电磁波以<b>有限速度</b>飞出去 → <b>过一会儿</b>接收环的间隙才冒出火花。赫兹正是用这个实验第一次证实了电磁波的存在，还测出它的速度<b>等于光速 c</b>，验证了麦克斯韦的预言。</div>
+</div>
+
+<div class="mod">
+  <div class="mod-h"><span class="no">模块 3</span><h2>电磁波谱</h2><span class="kp">交互图表</span></div>
+  <div class="think"><b>先想一想：</b>可见光在整条电磁波谱里占的比例，是"一大段"还是"一丁点"？拖动游标找出红光的波长。</div>
+  <canvas class="stage" id="cv3" style="height:380px;"></canvas>
+  <div class="ctrl">
+    <div class="row"><label>波长 λ（对数）</label><input type="range" id="r3l" min="-12" max="5" step="0.01" value="-6.5"><span class="val" id="r3lv"></span></div>
+    <button class="btn" id="b3a">可见光（红光 700nm）</button>
+    <button class="btn" id="b3b">微波（WiFi 12cm）</button>
+    <button class="btn" id="b3c">X 射线（0.1nm）</button>
+  </div>
+  <div class="note"><b>观察要点：</b>按波长由长到短：无线电波 → 微波 → 红外线 → 可见光 → 紫外线 → X 射线 → γ 射线。波长越短，频率越高，能量越强（ε＝hν）。<b>可见光只占极窄的一小段</b>；所有电磁波在真空中都以 c＝3×10⁸ m/s 传播，满足 <b>c＝λf</b>。</div>
+</div>
+
+<div class="mod">
+  <div class="mod-h"><span class="no">模块 4</span><h2>E、B、v 三者的方向关系</h2><span class="kp">动画演示 · 可拖动</span></div>
+  <div class="think"><b>先想一想：</b>电场 E 上下振动、磁场 B 前后振动，那电磁波是朝<b>哪个方向</b>跑的？和 E、B 都垂直吗？</div>
+  <canvas class="stage" id="cv4" style="height:380px;"></canvas>
+  <div class="ctrl">
+    <button class="btn on" id="b4play">⏸ 暂停</button>
+    <div class="row"><label>传播速度</label><input type="range" id="r4v" min="0.2" max="3" step="0.1" value="1"><span class="val" id="r4vv"></span></div>
+    <div class="row"><label>观察位置 x</label><input type="range" id="r4x" min="0" max="100" step="1" value="35"><span class="val" id="r4xv"></span></div>
+  </div>
+  <div class="note"><b>观察要点：</b>电磁波是<b>横波</b>：E（红，上下）、B（蓝，前后）都与传播方向 v 垂直，而且 <b>E、B 同相</b>（同时为零、同时最大）。传播方向由 <b>v ＝ E × B</b> 决定——右手四指由 E 转向 B，拇指就是 v 的方向。</div>
+</div>
+
+<footer>人教版高中物理必修第三册 · 可视化交互课件 ｜ 单文件离线运行，双击即可使用</footer>
+</div>
+
+<script>
+(function(){
+'use strict';
+/* ========== 通用工具 ========== */
+function $(id){ return document.getElementById(id); }
+function fmt(x, d){
+  if (d === undefined) d = 2;
+  if (!isFinite(x)) return '—';
+  var a = Math.abs(x);
+  if (a >= 10000 || (a > 0 && a < 0.01)) return x.toExponential(2);
+  return (+x.toFixed(d)).toString();
+}
+function fit(cv){
+  var dpr = window.devicePixelRatio || 1;
+  var w = cv.clientWidth, h = cv.clientHeight;
+  if (w < 10) w = 900;
+  cv.width = Math.round(w * dpr); cv.height = Math.round(h * dpr);
+  var ctx = cv.getContext('2d');
+  ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return ctx;
+}
+function bindRange(id, fn){
+  var el = $(id), v = $(id + 'v');
+  function go(){ if (v) v.textContent = el.value; fn(parseFloat(el.value)); }
+  el.addEventListener('input', go); go();
+  return el;
+}
+function arrow(ctx, x1, y1, x2, y2, color, w){
+  ctx.strokeStyle = color; ctx.fillStyle = color; ctx.lineWidth = w || 2;
+  ctx.beginPath(); ctx.moveTo(x1, y1); ctx.lineTo(x2, y2); ctx.stroke();
+  var a = Math.atan2(y2 - y1, x2 - x1), s = 7;
+  ctx.beginPath(); ctx.moveTo(x2, y2);
+  ctx.lineTo(x2 - s * Math.cos(a - 0.42), y2 - s * Math.sin(a - 0.42));
+  ctx.lineTo(x2 - s * Math.cos(a + 0.42), y2 - s * Math.sin(a + 0.42));
+  ctx.closePath(); ctx.fill();
+}
+function txt(c, s, x, y, col, font, al, bl){
+  c.fillStyle = col || '#334155';
+  c.font = font || '12px "Microsoft YaHei",sans-serif';
+  c.textAlign = al || 'left'; c.textBaseline = bl || 'middle';
+  c.fillText(s, x, y);
+}
+function rr(c, x, y, w, h, r){
+  r = Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2);
+  c.beginPath();
+  c.moveTo(x + r, y);
+  c.arcTo(x + w, y, x + w, y + h, r);
+  c.arcTo(x + w, y + h, x, y + h, r);
+  c.arcTo(x, y + h, x, y, r);
+  c.arcTo(x, y, x + w, y, r);
+  c.closePath();
+}
+var TAU = Math.PI * 2, PURPLE = '#7c3aed', AMBER = '#f59e0b', RED = '#dc2626', BLU = '#2563eb';
+var CL = 3.0e8;      /* 真空光速 m/s */
+var HH = 6.63e-34;   /* 普朗克常量 J·s */
+var SU = {'-':'⁻','0':'⁰','1':'¹','2':'²','3':'³','4':'⁴','5':'⁵','6':'⁶','7':'⁷','8':'⁸','9':'⁹'};
+function sup(n){
+  var s = String(n), o = '';
+  for (var i = 0; i < s.length; i++) o += (SU[s.charAt(i)] || s.charAt(i));
+  return o;
+}
+
+/* ==================================================================
+   模块 1：麦克斯韦电磁场理论
+   E = E0 sin(ωt)，B ∝ dE/dt = B0 cos(ωt)
+   ================================================================== */
+var cv1 = $('cv1'), c1 = null, W1 = 0, H1 = 0;
+var M1 = {play:true, t:0, w:1};
+function prep1(){ c1 = fit(cv1); W1 = cv1.clientWidth; H1 = cv1.clientHeight; }
+/* 水平面上的圆环（环绕竖直轴），斜二测下为扁椭圆 */
+function ringH(c, cx, cy, r, alpha, col, dir){
+  c.strokeStyle = col; c.globalAlpha = alpha; c.lineWidth = 1.8;
+  c.beginPath();
+  for (var i = 0; i <= 48; i++){
+    var u = i / 48 * TAU;
+    var x = cx + r * Math.cos(u), y = cy + r * 0.34 * Math.sin(u);
+    if (i === 0) c.moveTo(x, y); else c.lineTo(x, y);
+  }
+  c.stroke();
+  if (alpha > 0.12){
+    var ua = 0.6, ub = 0.6 + dir * 0.55;
+    var x1 = cx + r * Math.cos(ua), y1 = cy + r * 0.34 * Math.sin(ua);
+    var x2 = cx + r * Math.cos(ub), y2 = cy + r * 0.34 * Math.sin(ub);
+    arrow(c, x1, y1, x2, y2, col, 2);
+  }
+  c.globalAlpha = 1;
+}
+/* 竖直面上的圆环（环绕水平轴），斜二测下为竖长椭圆 */
+function ringV(c, cx, cy, r, alpha, col, dir){
+  c.strokeStyle = col; c.globalAlpha = alpha; c.lineWidth = 1.8;
+  c.beginPath();
+  for (var i = 0; i <= 48; i++){
+    var u = i / 48 * TAU;
+    var x = cx + r * 0.34 * Math.sin(u), y = cy + r * Math.cos(u);
+    if (i === 0) c.moveTo(x, y); else c.lineTo(x, y);
+  }
+  c.stroke();
+  if (alpha > 0.12){
+    var ua = 0.6, ub = 0.6 + dir * 0.55;
+    var x1 = cx + r * 0.34 * Math.sin(ua), y1 = cy + r * Math.cos(ua);
+    var x2 = cx + r * 0.34 * Math.sin(ub), y2 = cy + r * Math.cos(ub);
+    arrow(c, x1, y1, x2, y2, col, 2);
+  }
+  c.globalAlpha = 1;
+}
+function barMeter(c, x, y, w, h, v, col, label){
+  c.fillStyle = '#f1f5f9'; rr(c, x, y, w, h, h / 2); c.fill();
+  var hw = w / 2;
+  c.fillStyle = col;
+  if (v >= 0){ rr(c, x + hw, y, Math.max(2, hw * v), h, h / 2); c.fill(); }
+  else { rr(c, x + hw - Math.max(2, hw * (-v)), y, Math.max(2, hw * (-v)), h, h / 2); c.fill(); }
+  c.strokeStyle = '#94a3b8'; c.lineWidth = 1;
+  c.beginPath(); c.moveTo(x + hw, y - 3); c.lineTo(x + hw, y + h + 3); c.stroke();
+  txt(c, label, x - 6, y + h / 2, '#64748b', '11.5px "Microsoft YaHei"', 'right');
+}
+function draw1(){
+  prep1();
+  var c = c1, i;
+  c.clearRect(0, 0, W1, H1); c.fillStyle = '#fbfdff'; c.fillRect(0, 0, W1, H1);
+  var E = Math.sin(M1.t), B = Math.cos(M1.t);        /* B ∝ dE/dt */
+  var half = W1 / 2;
+  /* ---- 左：变化的电场 → 磁场 ---- */
+  var ox = half * 0.5, oy = H1 * 0.46;
+  c.fillStyle = '#faf5ff'; c.strokeStyle = '#e2e8f0'; c.lineWidth = 1;
+  rr(c, 14, 20, half - 28, H1 - 60, 10); c.fill(); c.stroke();
+  txt(c, '① 变化的电场产生磁场', ox, 36, '#b91c1c', 'bold 13px "Microsoft YaHei"', 'center');
+  var EA = 96;
+  /* 电场箭头（竖直） */
+  arrow(c, ox, oy, ox, oy - EA * E, RED, 4);
+  txt(c, 'E', ox + 14, oy - EA * E / 2, '#b91c1c', 'bold 14px "Microsoft YaHei"');
+  c.setLineDash([4, 4]); c.strokeStyle = 'rgba(148,163,184,.7)'; c.lineWidth = 1;
+  c.beginPath(); c.moveTo(ox, oy + 26); c.lineTo(ox, oy - EA - 16); c.stroke(); c.setLineDash([]);
+  /* 环绕的磁场环 */
+  for (i = 0; i < 3; i++){
+    var rr1 = 46 + i * 34;
+    var yy = oy - EA * 0.55 + i * 8;
+    ringH(c, ox, yy, rr1, 0.15 + 0.72 * Math.abs(B), BLU, B >= 0 ? 1 : -1);
+  }
+  txt(c, 'B（环绕电场的磁感线）', ox + 8, oy + 54, '#1d4ed8', '12px "Microsoft YaHei"', 'center');
+  barMeter(c, ox - 92, H1 - 46, 184, 12, B, BLU, 'B');
+  barMeter(c, ox - 92, H1 - 28, 184, 12, E, RED, 'E');
+  /* ---- 右：变化的磁场 → 电场 ---- */
+  var ox2 = half + half * 0.5, oy2 = H1 * 0.46;
+  c.fillStyle = '#faf5ff'; c.strokeStyle = '#e2e8f0';
+  rr(c, half + 14, 20, half - 28, H1 - 60, 10); c.fill(); c.stroke();
+  txt(c, '② 变化的磁场产生电场', ox2, 36, '#1d4ed8', 'bold 13px "Microsoft YaHei"', 'center');
+  var BA = 96;
+  arrow(c, ox2, oy2, ox2 + BA * 0.5 * B, oy2, BLU, 4);
+  txt(c, 'B', ox2 + BA * 0.25 * B, oy2 - 16, '#1d4ed8', 'bold 14px "Microsoft YaHei"', 'center');
+  c.setLineDash([4, 4]); c.strokeStyle = 'rgba(148,163,184,.7)'; c.lineWidth = 1;
+  c.beginPath(); c.moveTo(ox2 - BA / 2 - 16, oy2); c.lineTo(ox2 + BA / 2 + 16, oy2); c.stroke(); c.setLineDash([]);
+  /* 环绕的电场环：E ∝ −dB/dt，取 B＝B0cos(ωt) 时 E ∝ sin(ωt)，与左图同一列波 */
+  for (i = 0; i < 3; i++){
+    ringV(c, ox2 + BA * 0.25 * B, oy2, 42 + i * 30, 0.15 + 0.72 * Math.abs(E), RED, E >= 0 ? 1 : -1);
+  }
+  txt(c, 'E（环绕磁场的电场线）', ox2, oy2 + 54, '#b91c1c', '12px "Microsoft YaHei"', 'center');
+  barMeter(c, ox2 - 92, H1 - 46, 184, 12, B, BLU, 'B');
+  barMeter(c, ox2 - 92, H1 - 28, 184, 12, E, RED, 'E');
+  /* 中间：交替激发的箭头 */
+  var my = H1 * 0.5;
+  txt(c, '↻', half - 12, my - 40, PURPLE, 'bold 22px "Microsoft YaHei"', 'center');
+  txt(c, '交替激发', half, my - 12, '#6d28d9', 'bold 12.5px "Microsoft YaHei"', 'center');
+  txt(c, '由近及远', half, my + 8, '#6d28d9', 'bold 12.5px "Microsoft YaHei"', 'center');
+  txt(c, '传播出去', half, my + 28, '#6d28d9', 'bold 12.5px "Microsoft YaHei"', 'center');
+  /* 顶部结论 */
+  var msg = Math.abs(E) > 0.92 ? '此刻 E 最大，但 dE/dt＝0 → B＝0'
+          : (Math.abs(E) < 0.08 ? '此刻 E ＝ 0，但变化最快 → B 最大' : 'E 变化得越快，激发的 B 越强');
+  txt(c, msg, W1 / 2, H1 - 8, '#b45309', 'bold 12.5px "Microsoft YaHei"', 'center');
+}
+$('b1play').addEventListener('click', function(){
+  M1.play = !M1.play;
+  this.textContent = M1.play ? '⏸ 暂停' : '▶ 播放';
+  this.className = M1.play ? 'btn on' : 'btn';
+});
+bindRange('r1w', function(v){ M1.w = v; draw1(); });
+
+/* ==================================================================
+   模块 2：赫兹实验
+   ================================================================== */
+var cv2 = $('cv2'), c2 = null, W2 = 0, H2 = 0;
+var M2 = {play:true, t:0, d:4, fired:0};
+var T_FIRE = 0.18, T_GAP = 0.55;              /* 火花持续时间 / 每轮间隔（动画秒） */
+function prep2(){ c2 = fit(cv2); W2 = cv2.clientWidth; H2 = cv2.clientHeight; }
+function spark(c, x, y, seed, scale){
+  var i, n = 7;
+  c.strokeStyle = '#f59e0b'; c.lineWidth = 2.2; c.beginPath();
+  c.moveTo(x, y);
+  for (i = 1; i <= n; i++){
+    var rnd = Math.sin(seed * 7.1 + i * 3.7) * 43758.5453;
+    var r1 = rnd - Math.floor(rnd);
+    c.lineTo(x + (r1 - 0.5) * 13 * scale, y + (i / n) * 26 * scale);
+  }
+  c.stroke();
+  c.fillStyle = '#fbbf24';
+  c.beginPath(); c.arc(x, y + 26 * scale, 4 * scale, 0, TAU); c.fill();
+}
+function draw2(){
+  prep2();
+  var c = c2, i;
+  c.clearRect(0, 0, W2, H2); c.fillStyle = '#fbfdff'; c.fillRect(0, 0, W2, H2);
+  var tx = 118, rx = Math.min(W2 - 90, 118 + M2.d * 62), y0 = H2 * 0.42;
+  var cycle = (ZR2() + T_GAP);
+  var tt = M2.t % cycle;
+  var vwave = (rx - tx) / ZR2();                    /* px / 动画秒 */
+  /* 传播轴线 */
+  c.setLineDash([6, 5]); c.strokeStyle = 'rgba(148,163,184,.6)'; c.lineWidth = 1;
+  c.beginPath(); c.moveTo(tx, y0); c.lineTo(rx, y0); c.stroke(); c.setLineDash([]);
+  /* 发射端：感应线圈 + 火花隙 */
+  txt(c, '发射端（赫兹振荡器）', tx, y0 - 96, '#334155', 'bold 12px "Microsoft YaHei"', 'center');
+  c.strokeStyle = '#475569'; c.lineWidth = 3; c.lineCap = 'round';
+  c.beginPath(); c.moveTo(tx, y0 - 46); c.lineTo(tx, y0 - 14); c.stroke();
+  c.beginPath(); c.moveTo(tx, y0 + 14); c.lineTo(tx, y0 + 46); c.stroke();
+  c.fillStyle = '#94a3b8';
+  c.beginPath(); c.arc(tx, y0 - 12, 6, 0, TAU); c.fill();
+  c.beginPath(); c.arc(tx, y0 + 12, 6, 0, TAU); c.fill();
+  /* 感应线圈 */
+  c.strokeStyle = '#64748b'; c.lineWidth = 2;
+  for (i = 0; i < 4; i++){
+    c.beginPath(); c.arc(tx - 40, y0 + 46 + i * 8, 12 - i, 0, TAU); c.stroke();
+  }
+  c.beginPath(); c.moveTo(tx - 40, y0 + 82); c.lineTo(tx - 40, y0 + 46); c.stroke();
+  c.beginPath(); c.moveTo(tx - 40, y0 + 46); c.lineTo(tx, y0 + 46); c.stroke();
+  txt(c, '感应圈', tx - 42, y0 + 92, '#64748b', '11px "Microsoft YaHei"', 'center');
+  /* 天线上的电荷振荡（发射机制：振荡的电场激起电磁波） */
+  var firing = tt < T_FIRE;
+  var osc = firing ? Math.sin(tt / T_FIRE * Math.PI * 3) : 0;
+  if (Math.abs(osc) > 0.08){
+    var sg2 = osc > 0 ? 1 : -1, k2;
+    txt(c, sg2 > 0 ? '＋' : '－', tx, y0 - 32, sg2 > 0 ? RED : BLU, 'bold 16px "Microsoft YaHei"', 'center');
+    txt(c, sg2 > 0 ? '－' : '＋', tx, y0 + 32, sg2 > 0 ? BLU : RED, 'bold 16px "Microsoft YaHei"', 'center');
+    c.strokeStyle = 'rgba(220,38,38,.45)'; c.lineWidth = 1.4;
+    for (k2 = -2; k2 <= 2; k2++){
+      if (k2 === 0) continue;
+      c.beginPath();
+      c.moveTo(tx, y0 - 13);
+      c.quadraticCurveTo(tx + k2 * 30, y0, tx, y0 + 13);
+      c.stroke();
+    }
+    txt(c, '振荡的电场', tx + 52, y0 - 4, '#b91c1c', '11px "Microsoft YaHei"', 'center');
+  }
+  /* 接收端：环 + 火花隙 */
+  txt(c, '接收端（谐振环）', rx, y0 - 96, '#334155', 'bold 12px "Microsoft YaHei"', 'center');
+  c.strokeStyle = '#475569'; c.lineWidth = 3;
+  c.beginPath();
+  for (i = 0; i <= 40; i++){
+    var u = i / 40 * TAU;
+    var px = rx + 30 * Math.cos(u), py = y0 + 34 * Math.sin(u);
+    if (i === 0) c.moveTo(px, py); else c.lineTo(px, py);
+  }
+  c.stroke();
+  c.fillStyle = '#fbfdff'; rr(c, rx - 5, y0 - 8, 10, 16, 2); c.fill();
+  c.strokeStyle = '#475569'; c.lineWidth = 2;
+  c.beginPath(); c.moveTo(rx, y0 - 7); c.lineTo(rx, y0 - 3); c.stroke();
+  c.beginPath(); c.moveTo(rx, y0 + 3); c.lineTo(rx, y0 + 7); c.stroke();
+  /* 火花 */
+  var front = (tt - T_FIRE) * vwave;
+  var arrived = tt > T_FIRE && front >= (rx - tx);
+  if (firing) spark(c, tx, y0 - 2, M2.fired + Math.floor(M2.t / cycle) * 3.3, 1);
+  if (arrived && tt < T_FIRE + ZR2() + 0.5) spark(c, rx, y0, 7.7 + Math.floor(M2.t / cycle) * 2.1, 0.6);
+  /* 波前 */
+  if (!firing && front > 0){
+    for (i = 0; i < 5; i++){
+      var fx = tx + front - i * 34;
+      if (fx < tx + 4) break;
+      var al = 0.75 - i * 0.14;
+      if (al <= 0) break;
+      c.strokeStyle = 'rgba(124,58,237,' + al.toFixed(2) + ')'; c.lineWidth = 2.4;
+      c.beginPath();
+      for (var k = -1; k <= 1; k += 2){
+        c.moveTo(fx, y0 - 70);
+        c.quadraticCurveTo(fx + k * 18, y0, fx, y0 + 70);
+      }
+      c.stroke();
+    }
+    /* 传播方向箭头 */
+    if (front < rx - tx){
+      arrow(c, tx + front - 46, y0 - 84, tx + front - 8, y0 - 84, PURPLE, 2.4);
+      txt(c, '电磁波 c', tx + front - 30, y0 - 98, '#6d28d9', '11.5px "Microsoft YaHei"', 'center');
+    }
+  }
+  /* 距离标注 */
+  c.strokeStyle = '#94a3b8'; c.lineWidth = 1;
+  c.beginPath(); c.moveTo(tx, y0 + 108); c.lineTo(rx, y0 + 108); c.stroke();
+  txt(c, 'd = ' + M2.d.toFixed(1) + ' m', (tx + rx) / 2, y0 + 122, '#475569', '12px "Microsoft YaHei"', 'center');
+  /* 状态与读数 */
+  var dt = M2.d / CL;
+  var st, col;
+  if (firing){ st = '发射端正在打火（火花隙放电）'; col = '#b45309'; }
+  else if (front > 0 && !arrived){ st = '电磁波正在飞向接收端…'; col = '#6d28d9'; }
+  else if (arrived){ st = '接收端火花隙冒出火花 —— 收到电磁波了！'; col = '#059669'; }
+  else { st = '等待下一次发射'; col = '#64748b'; }
+  var px0 = W2 * 0.52, py0 = 24, pw = W2 * 0.48 - 26;
+  c.fillStyle = 'rgba(255,255,255,.95)'; c.strokeStyle = '#e2e8f0'; c.lineWidth = 1;
+  rr(c, px0, py0, pw, 96, 9); c.fill(); c.stroke();
+  txt(c, st, px0 + 14, py0 + 20, col, 'bold 12.5px "Microsoft YaHei"');
+  txt(c, '传播距离 d', px0 + 14, py0 + 44, '#64748b', '12px "Microsoft YaHei"');
+  txt(c, M2.d.toFixed(1) + ' m', px0 + pw - 14, py0 + 44, '#334155', 'bold 12.5px "Microsoft YaHei"', 'right');
+  txt(c, '真实延迟 Δt = d/c', px0 + 14, py0 + 66, '#64748b', '12px "Microsoft YaHei"');
+  txt(c, (dt * 1e9).toFixed(2) + ' ns', px0 + pw - 14, py0 + 66, '#b91c1c', 'bold 13px "Microsoft YaHei"', 'right');
+  txt(c, '（动画把时间放大了约 10⁸ 倍，肉眼才看得见）', px0 + 14, py0 + 86, '#94a3b8', '11px "Microsoft YaHei"');
+}
+function ZR2(){ return 1.5; }        /* 波走完全程用的动画秒数 */
+$('b2play').addEventListener('click', function(){
+  M2.play = !M2.play;
+  this.textContent = M2.play ? '⏸ 暂停' : '▶ 播放';
+  this.className = M2.play ? 'btn on' : 'btn';
+});
+$('b2fire').addEventListener('click', function(){ M2.t = 0; draw2(); });
+bindRange('r2d', function(v){ M2.d = v; draw2(); });
+
+/* ==================================================================
+   模块 3：电磁波谱
+   ================================================================== */
+var cv3 = $('cv3'), c3 = null, W3 = 0, H3 = 0;
+var M3 = {lg:-6.5};
+var BANDS = [
+  {n:'无线电波', lo:1e-1, hi:1e5, app:'广播 · 电视 · 移动通信 · 导航', col:'#f59e0b'},
+  {n:'微波', lo:1e-3, hi:1e-1, app:'微波炉 · WiFi · 蓝牙 · 卫星通信', col:'#fbbf24'},
+  {n:'红外线', lo:7.6e-7, hi:1e-3, app:'遥控器 · 热成像 · 红外测温', col:'#f87171'},
+  {n:'可见光', lo:4.0e-7, hi:7.6e-7, app:'照明 · 成像 · 光合作用', col:'rainbow'},
+  {n:'紫外线', lo:1e-8, hi:4.0e-7, app:'灭菌消毒 · 验钞 · 光刻', col:'#a78bfa'},
+  {n:'X 射线', lo:1e-10, hi:1e-8, app:'医学透视 · 安检 · 晶体结构分析', col:'#60a5fa'},
+  {n:'γ 射线', lo:1e-12, hi:1e-10, app:'放疗 · 工业探伤 · 核物理研究', col:'#34d399'}
+];
+function prep3(){ c3 = fit(cv3); W3 = cv3.clientWidth; H3 = cv3.clientHeight; }
+function lamStr(l){
+  if (l >= 1) return fmt(l, 2) + ' m';
+  if (l >= 1e-2) return fmt(l * 100, 2) + ' cm';
+  if (l >= 1e-3) return fmt(l * 1e3, 2) + ' mm';
+  if (l >= 1e-6) return fmt(l * 1e6, 2) + ' μm';
+  if (l >= 1e-9) return fmt(l * 1e9, 2) + ' nm';
+  return fmt(l * 1e12, 2) + ' pm';
+}
+function freStr(f){
+  if (f >= 1e18) return fmt(f / 1e18, 2) + ' EHz';
+  if (f >= 1e15) return fmt(f / 1e15, 2) + ' PHz';
+  if (f >= 1e12) return fmt(f / 1e12, 2) + ' THz';
+  if (f >= 1e9) return fmt(f / 1e9, 2) + ' GHz';
+  if (f >= 1e6) return fmt(f / 1e6, 2) + ' MHz';
+  if (f >= 1e3) return fmt(f / 1e3, 2) + ' kHz';
+  return fmt(f, 2) + ' Hz';
+}
+function bandOf(l){
+  for (var i = 0; i < BANDS.length; i++) if (l >= BANDS[i].lo && l < BANDS[i].hi) return BANDS[i];
+  if (l < 1e-12) return BANDS[BANDS.length - 1];
+  return BANDS[0];
+}
+function draw3(){
+  prep3();
+  var c = c3, i;
+  c.clearRect(0, 0, W3, H3); c.fillStyle = '#fbfdff'; c.fillRect(0, 0, W3, H3);
+  var lo = -12, hi = 5;
+  var x0 = 58, x1 = W3 - 30, yb = H3 * 0.52, hb = 62;
+  function Xof(lg){ return x0 + (x1 - x0) * (lg - lo) / (hi - lo); }
+  /* 波段条 */
+  for (i = 0; i < BANDS.length; i++){
+    var b = BANDS[i];
+    var ax = Xof(Math.log10(b.lo)), bx = Xof(Math.log10(b.hi));
+    if (bx <= ax) continue;
+    if (b.col === 'rainbow'){
+      var g = c.createLinearGradient(ax, 0, bx, 0);
+      g.addColorStop(0, '#7c2d92'); g.addColorStop(0.2, '#2563eb'); g.addColorStop(0.38, '#16a34a');
+      g.addColorStop(0.55, '#facc15'); g.addColorStop(0.75, '#f97316'); g.addColorStop(1, '#dc2626');
+      c.fillStyle = g;
+    } else c.fillStyle = b.col;
+    rr(c, ax, yb - hb / 2, bx - ax, hb, 4); c.fill();
+    c.strokeStyle = 'rgba(15,23,42,.25)'; c.lineWidth = 1; c.stroke();
+    var mid = (ax + bx) / 2, wide = bx - ax;
+    var fs = wide > 70 ? 12.5 : (wide > 34 ? 10.5 : 9);
+    c.font = 'bold ' + fs + 'px "Microsoft YaHei"';
+    c.textAlign = 'center'; c.textBaseline = 'middle';
+    c.fillStyle = '#fff';
+    c.fillText(b.n, mid, yb);
+    if (wide > 120) txt(c, lamStr(b.lo) + ' ~ ' + lamStr(b.hi), mid, yb + 18, 'rgba(255,255,255,.92)', '10.5px "Microsoft YaHei"', 'center');
+  }
+  /* 坐标轴 */
+  c.strokeStyle = '#334155'; c.lineWidth = 1.4;
+  c.beginPath(); c.moveTo(x0, yb + hb / 2 + 6); c.lineTo(x1, yb + hb / 2 + 6); c.stroke();
+  for (i = lo; i <= hi; i += 1){
+    var tx2 = Xof(i);
+    c.strokeStyle = '#cbd5e1'; c.lineWidth = 1;
+    c.beginPath(); c.moveTo(tx2, yb + hb / 2 + 6); c.lineTo(tx2, yb + hb / 2 + 12); c.stroke();
+    if ((i % 2 === 0) || (hi - lo) < 20)
+      txt(c, '10' + sup(i), tx2, yb + hb / 2 + 24, '#94a3b8', '10.5px "Microsoft YaHei"', 'center');
+  }
+  txt(c, '波长 λ / m（对数轴，越往右越长）', (x0 + x1) / 2, yb + hb / 2 + 44, '#475569', '12px "Microsoft YaHei"', 'center');
+  txt(c, '频率 f / Hz（越往右越低，f = c/λ）', (x0 + x1) / 2, yb - hb / 2 - 34, '#475569', '12px "Microsoft YaHei"', 'center');
+  arrow(c, x0, yb - hb / 2 - 24, x1, yb - hb / 2 - 24, '#94a3b8', 1.4);
+  arrow(c, x1, yb - hb / 2 - 24, x0, yb - hb / 2 - 24, '#94a3b8', 1.4);
+  /* 频率刻度（f = c/λ） */
+  for (i = lo; i <= hi; i += 2){
+    txt(c, '3×10' + sup(8 - i), Xof(i), yb - hb / 2 - 8, '#94a3b8', '10px "Microsoft YaHei"', 'center');
+  }
+  /* 游标 */
+  var lam = Math.pow(10, M3.lg), f = CL / lam, bd = bandOf(lam);
+  var mx = Xof(M3.lg);
+  c.strokeStyle = RED; c.lineWidth = 2.2;
+  c.beginPath(); c.moveTo(mx, yb - hb / 2 - 12); c.lineTo(mx, yb + hb / 2 + 12); c.stroke();
+  c.fillStyle = RED;
+  c.beginPath(); c.moveTo(mx, yb - hb / 2 - 12); c.lineTo(mx - 7, yb - hb / 2 - 24); c.lineTo(mx + 7, yb - hb / 2 - 24);
+  c.closePath(); c.fill();
+  /* 读数面板 */
+  var py0 = H3 - 104;
+  c.fillStyle = 'rgba(255,255,255,.96)'; c.strokeStyle = '#e2e8f0'; c.lineWidth = 1;
+  rr(c, x0 - 30, py0, W3 - 60, 90, 9); c.fill(); c.stroke();
+  txt(c, '波段：' + bd.n, x0 - 16, py0 + 20, '#6d28d9', 'bold 14px "Microsoft YaHei"');
+  txt(c, '波长 λ = ' + lamStr(lam), x0 + 120, py0 + 20, '#334155', '12.5px "Microsoft YaHei"');
+  txt(c, '频率 f = c/λ = ' + freStr(f), x0 + 320, py0 + 20, '#334155', '12.5px "Microsoft YaHei"');
+  txt(c, '光子能量 ε = hν = ' + fmt(HH * f, 2) + ' J（' + fmt(HH * f / 1.6e-19, 2) + ' eV）',
+      x0 + 560, py0 + 20, '#b45309', '12.5px "Microsoft YaHei"');
+  txt(c, '典型应用：' + bd.app, x0 - 16, py0 + 48, '#475569', '12.5px "Microsoft YaHei"');
+  txt(c, '真空中所有电磁波的速度都一样：c = λf = 3.0×10⁸ m/s', x0 - 16, py0 + 74, '#6d28d9', '12px "Microsoft YaHei"');
+  var visFrac = (Math.log10(7.6e-7) - Math.log10(4.0e-7)) / (hi - lo) * 100;
+  txt(c, '可见光只占整条谱的 ' + visFrac.toFixed(1) + '%（波长从 400nm 到 760nm，还不到 2 倍）',
+      x0 + 330, py0 + 74, '#b45309', '11.5px "Microsoft YaHei"');
+}
+bindRange('r3l', function(v){ M3.lg = v; draw3(); });
+function setLam(l){
+  M3.lg = Math.log10(l);
+  $('r3l').value = M3.lg.toFixed(2); $('r3lv').textContent = M3.lg.toFixed(2);
+  draw3();
+}
+$('b3a').addEventListener('click', function(){ setLam(7.0e-7); });
+$('b3b').addEventListener('click', function(){ setLam(0.12); });
+$('b3c').addEventListener('click', function(){ setLam(1.0e-10); });
+function mx3(ev){
+  var r = cv3.getBoundingClientRect();
+  return {x:(ev.clientX - r.left) * W3 / r.width, y:(ev.clientY - r.top) * H3 / r.height};
+}
+var drag3 = false;
+cv3.addEventListener('mousedown', function(){ drag3 = true; });
+cv3.addEventListener('mousemove', function(ev){
+  if (!drag3) return;
+  var p = mx3(ev), x0 = 58, x1 = W3 - 30;
+  var lg = -12 + (5 + 12) * (p.x - x0) / (x1 - x0);
+  M3.lg = Math.max(-12, Math.min(5, lg));
+  $('r3l').value = M3.lg.toFixed(2); $('r3lv').textContent = M3.lg.toFixed(2);
+  draw3();
+});
+window.addEventListener('mouseup', function(){ drag3 = false; });
+cv3.style.cursor = 'ew-resize';
+
+/* ==================================================================
+   模块 4：E、B、v 三者的方向关系
+   ================================================================== */
+var cv4 = $('cv4'), c4 = null, W4 = 0, H4 = 0;
+var M4 = {play:true, t:0, v:1, px:35};
+function prep4(){ c4 = fit(cv4); W4 = cv4.clientWidth; H4 = cv4.clientHeight; }
+function draw4(){
+  prep4();
+  var c = c4, i;
+  c.clearRect(0, 0, W4, H4); c.fillStyle = '#fbfdff'; c.fillRect(0, 0, W4, H4);
+  var x0 = 46, x1 = W4 - 46, yc = H4 * 0.52;
+  var A = Math.min(78, (yc - 60));
+  var k = 3.2 * TAU;                                   /* 全屏显示 3.2 个波长 */
+  var ph = M4.t * M4.v * TAU * 0.7;
+  function Ef(u){ return Math.sin(k * u - ph); }        /* u∈[0,1] */
+  function Xof(u){ return x0 + (x1 - x0) * u; }
+  /* 传播方向 */
+  arrow(c, x0, yc - A - 34, x1, yc - A - 34, '#059669', 3);
+  txt(c, '传播方向 v ＝ E × B（沿 +x）', (x0 + x1) / 2, yc - A - 46, '#059669', 'bold 12.5px "Microsoft YaHei"', 'center');
+  /* 轴 */
+  c.strokeStyle = '#cbd5e1'; c.lineWidth = 1.2;
+  c.beginPath(); c.moveTo(x0, yc); c.lineTo(x1, yc); c.stroke();
+  txt(c, 'x', x1 + 8, yc, '#94a3b8', '12px "Microsoft YaHei"');
+  /* E 的包络线 + 箭头（竖直，红色） */
+  c.strokeStyle = 'rgba(220,38,38,.35)'; c.lineWidth = 1.4;
+  c.beginPath();
+  for (i = 0; i <= 200; i++){
+    var u = i / 200, yy = yc - A * Ef(u);
+    if (i === 0) c.moveTo(Xof(u), yy); else c.lineTo(Xof(u), yy);
+  }
+  c.stroke();
+  /* B 的包络线（沿纵深方向 z，投影后为斜向）+ 箭头 */
+  var zs = 0.42;                       /* 纵深在屏幕上的投影系数 */
+  c.strokeStyle = 'rgba(37,99,235,.35)'; c.lineWidth = 1.4;
+  c.beginPath();
+  for (i = 0; i <= 200; i++){
+    var u2 = i / 200, e2 = Ef(u2);
+    var bxx = Xof(u2) + A * zs * 0.62 * e2, byy = yc + A * zs * 0.46 * e2;
+    if (i === 0) c.moveTo(bxx, byy); else c.lineTo(bxx, byy);
+  }
+  c.stroke();
+  /* 箭头 */
+  var NP = 26;
+  for (i = 0; i <= NP; i++){
+    var u3 = i / NP, xx = Xof(u3), ev = Ef(u3);
+    if (Math.abs(ev) < 0.06) continue;
+    var len = A * 0.62;
+    arrow(c, xx, yc, xx, yc - len * ev, RED, 2);
+    var ex2 = xx + len * zs * 0.62 * ev, ey2 = yc + len * zs * 0.46 * ev;
+    arrow(c, xx, yc, ex2, ey2, BLU, 2);
+  }
+  /* 观察位置 */
+  var up = M4.px / 100;
+  var mxv = Xof(up), ev3 = Ef(up);
+  c.strokeStyle = 'rgba(15,23,42,.45)'; c.lineWidth = 1.4; c.setLineDash([4, 3]);
+  c.beginPath(); c.moveTo(mxv, yc - A - 16); c.lineTo(mxv, yc + A + 16); c.stroke(); c.setLineDash([]);
+  arrow(c, mxv, yc, mxv, yc - A * 0.78 * ev3, RED, 4);
+  arrow(c, mxv, yc, mxv + A * 0.78 * zs * 0.62 * ev3, yc + A * 0.78 * zs * 0.46 * ev3, BLU, 4);
+  txt(c, 'E', mxv + 10, yc - A * 0.78 * ev3 - 10, '#b91c1c', 'bold 13px "Microsoft YaHei"');
+  txt(c, 'B', mxv + A * 0.78 * zs * 0.62 * ev3 + 8, yc + A * 0.78 * zs * 0.46 * ev3 + 10, '#1d4ed8', 'bold 13px "Microsoft YaHei"');
+  /* 波长标注（一个完整波长对应的宽度） */
+  var lamU = 1 / k * TAU;                       /* 一个波长对应的 u 跨度 */
+  var lx0 = Xof(0.06), lx1 = Xof(0.06 + lamU);
+  if (lx1 < x1){
+    c.strokeStyle = '#94a3b8'; c.lineWidth = 1.2;
+    c.beginPath(); c.moveTo(lx0, yc + A + 26); c.lineTo(lx1, yc + A + 26); c.stroke();
+    c.beginPath(); c.moveTo(lx0, yc + A + 21); c.lineTo(lx0, yc + A + 31);
+    c.moveTo(lx1, yc + A + 21); c.lineTo(lx1, yc + A + 31); c.stroke();
+    txt(c, '一个波长 λ', (lx0 + lx1) / 2, yc + A + 38, '#475569', '11.5px "Microsoft YaHei"', 'center');
+  }
+  /* 右下：三方向直角示意 */
+  var tx0 = W4 - 148, ty0 = 74;
+  c.fillStyle = 'rgba(255,255,255,.94)'; c.strokeStyle = '#e2e8f0'; c.lineWidth = 1;
+  rr(c, tx0 - 14, ty0 - 22, 148, 116, 8); c.fill(); c.stroke();
+  txt(c, '三者互相垂直', tx0 + 60, ty0 - 8, '#334155', 'bold 12px "Microsoft YaHei"', 'center');
+  arrow(c, tx0 + 34, ty0 + 66, tx0 + 34, ty0 + 14, RED, 3);
+  txt(c, 'E', tx0 + 44, ty0 + 22, '#b91c1c', 'bold 12px "Microsoft YaHei"');
+  arrow(c, tx0 + 34, ty0 + 66, tx0 + 34 + 26, ty0 + 66 + 19, BLU, 3);
+  txt(c, 'B', tx0 + 62, ty0 + 88, '#1d4ed8', 'bold 12px "Microsoft YaHei"');
+  arrow(c, tx0 + 34, ty0 + 66, tx0 + 96, ty0 + 66, '#059669', 3);
+  txt(c, 'v', tx0 + 96, ty0 + 52, '#059669', 'bold 12px "Microsoft YaHei"');
+  /* 底部读数 */
+  txt(c, 'E ⊥ B ⊥ v，E 与 B 同相（同时为零、同时最大）；v 的方向由 E × B 决定（右手定则）',
+      x0, H4 - 18, '#475569', '12.5px "Microsoft YaHei"');
+  txt(c, '该处 E ' + (ev3 >= 0 ? '向上 ↑' : '向下 ↓') + '，B ' + (ev3 >= 0 ? '指向纸外' : '指向纸内') + '，v 始终向右',
+      x0, H4 - 38, '#6d28d9', 'bold 12.5px "Microsoft YaHei"');
+}
+$('b4play').addEventListener('click', function(){
+  M4.play = !M4.play;
+  this.textContent = M4.play ? '⏸ 暂停' : '▶ 播放';
+  this.className = M4.play ? 'btn on' : 'btn';
+});
+bindRange('r4v', function(v){ M4.v = v; draw4(); });
+bindRange('r4x', function(v){ M4.px = v; draw4(); });
+
+/* ==================================================================
+   主循环
+   ================================================================== */
+var last = 0;
+function frame(ts){
+  if (!last) last = ts;
+  var dt = Math.min(0.05, (ts - last) / 1000);
+  last = ts;
+  if (M1.play){ M1.t += dt * M1.w * 1.6; draw1(); }
+  if (M2.play){ M2.t += dt; draw2(); }
+  if (M4.play){ M4.t += dt; draw4(); }
+  requestAnimationFrame(frame);
+}
+draw1(); draw2(); draw3(); draw4();
+requestAnimationFrame(frame);
+var rt = 0;
+window.addEventListener('resize', function(){
+  clearTimeout(rt);
+  rt = setTimeout(function(){ draw1(); draw2(); draw3(); draw4(); }, 120);
+});
+})();
+</script>
+</body>
+</html>

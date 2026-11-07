@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>18.5 分式方程 · 去分母与验根 演示</title>
+<style>
+  :root{
+    --ink:#1e293b; --sub:#64748b; --line:#e2e8f0; --paper:#f8fafc;
+    --accent:#2563eb; --accent-soft:#dbeafe;
+    --red:#dc2626; --teal:#0d9488; --green:#16a34a; --amber:#d97706; --purple:#7c3aed;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  body{font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif; background:var(--paper); color:var(--ink); padding:22px 16px 44px;}
+  .wrap{max-width:1080px; margin:0 auto;}
+  header{text-align:center; margin-bottom:16px;}
+  header h1{font-size:25px; font-weight:800;}
+  header p{color:var(--sub); margin-top:6px; font-size:14px;}
+  .card{background:#fff; border:1px solid var(--line); border-radius:16px; padding:16px 20px; box-shadow:0 1px 3px rgba(15,23,42,.05); margin-bottom:14px;}
+  .card h3{font-size:15px; margin-bottom:10px;}
+  .tabs{display:flex; gap:8px; justify-content:center; margin:14px 0;}
+  .tab-btn{padding:9px 22px; border:1.5px solid var(--line); background:#fff; border-radius:999px; font-size:15px; font-weight:600; color:var(--sub); cursor:pointer; transition:.15s;}
+  .tab-btn.active{background:var(--accent); border-color:var(--accent); color:#fff;}
+  section{display:none;} section.active{display:block;}
+  /* 流程图 */
+  .flow{display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap;}
+  .fnode{padding:10px 16px; border-radius:12px; font-size:14px; font-weight:700; border:2px solid;}
+  .fnode.a{background:#eff6ff; border-color:#93c5fd; color:var(--accent);}
+  .fnode.b{background:#f5f3ff; border-color:#c4b5fd; color:var(--purple);}
+  .fnode.c{background:#f0fdf4; border-color:#86efac; color:var(--green);}
+  .fnode.d{background:#fef2f2; border-color:#fca5a5; color:var(--red);}
+  .farr{font-size:20px; color:#94a3b8; font-weight:800;}
+  .warn{margin-top:12px; background:#fef2f2; border-left:4px solid var(--red); border-radius:0 10px 10px 0; padding:9px 14px; font-size:13.5px; line-height:1.8; color:#7f1d1d;}
+  .koujue{margin-top:12px; background:#f0fdf4; border-left:4px solid var(--green); border-radius:0 10px 10px 0; padding:9px 14px; font-size:13.5px; line-height:1.8;}
+  /* 例题与输入 */
+  .exrow{display:flex; gap:8px; flex-wrap:wrap; align-items:center;}
+  .mini{padding:8px 14px; border-radius:10px; border:1.5px solid var(--line); background:#fff; font-size:13.5px; font-weight:700; cursor:pointer; color:var(--ink); transition:.15s;}
+  .mini:hover{background:var(--paper);}
+  .mini.on{border-color:var(--accent); color:var(--accent); background:var(--accent-soft);}
+  .inrow{display:flex; gap:8px; align-items:center; flex-wrap:wrap; margin-top:10px;}
+  .inrow input{flex:1 1 200px; min-width:170px; padding:9px 12px; border:1.5px solid var(--line); border-radius:10px; font-size:15px; font-family:"Cambria Math",Cambria,Georgia,serif; font-weight:700;}
+  .inrow input:focus{outline:none; border-color:#93c5fd; box-shadow:0 0 0 3px #dbeafe;}
+  .inrow .mini.primary{background:var(--accent); border-color:var(--accent); color:#fff;}
+  .fmt{font-size:12px; color:#94a3b8; margin-top:6px;}
+  .err{display:none; font-size:13px; color:var(--red); font-weight:700; margin-top:6px;}
+  /* 舞台 */
+  .stage{display:flex; gap:18px; flex-wrap:wrap;}
+  .main{flex:1 1 580px; min-width:420px;}
+  .side{flex:1 1 270px; min-width:250px;}
+  .expr-wrap{background:#fff; border:1px solid var(--line); border-radius:14px; padding:30px 18px; min-height:300px;}
+  .ctx{display:inline-block; font-size:13px; font-weight:700; color:var(--accent); background:var(--accent-soft); border-radius:999px; padding:4px 14px; margin-bottom:18px;}
+  .math{font-family:"Cambria Math",Cambria,Georgia,"Times New Roman",serif; font-size:clamp(24px,3.6vw,36px); line-height:2.1; text-align:center; animation:fadein .45s ease;}
+  .math .small{font-size:.62em; color:var(--sub);}
+  .math .lbl{display:block; font-size:.5em; font-family:inherit; color:var(--sub); font-weight:700; letter-spacing:1px; margin-top:14px;}
+  @keyframes fadein{from{opacity:0; transform:translateY(8px);}to{opacity:1; transform:none;}}
+  .frac{display:inline-flex; flex-direction:column; align-items:center; vertical-align:middle; margin:0 4px;}
+  .frac .fn{padding:0 8px 1px;}
+  .frac .fd{border-top:2.5px solid currentColor; padding:1px 8px 0;}
+  .cd{display:inline-block; border:2.5px solid var(--purple); color:var(--purple); background:#f5f3ff; border-radius:12px; padding:1px 12px; animation:pulse 2s ease-in-out infinite;}
+  @keyframes pulse{0%,100%{box-shadow:0 0 0 0 rgba(124,58,237,.22);}50%{box-shadow:0 0 0 9px rgba(124,58,237,0);}}
+  .chip{display:inline-block; font-size:.55em; font-family:"Microsoft YaHei",sans-serif; font-weight:700; border:1.5px solid #cbd5e1; color:var(--sub); border-radius:999px; padding:4px 12px; margin:0 4px; background:#fff;}
+  /* 板书旁批：分母档案（一路保留） */
+  .trace{margin-top:20px; padding-top:14px; border-top:1.5px dashed #cbd5e1; font-family:"Microsoft YaHei",sans-serif; animation:fadein .5s ease;}
+  .trace .th{font-size:12.5px; font-weight:800; color:#64748b; letter-spacing:.4px; margin-bottom:9px;}
+  .trace .th b{color:#334155;}
+  .trace .line{display:flex; align-items:center; flex-wrap:wrap; gap:9px; margin-bottom:7px; min-height:30px;}
+  .trace .k{flex:0 0 auto; font-size:12px; font-weight:800; color:#475569; background:#f1f5f9; border:1px solid #e2e8f0; border-radius:7px; padding:2px 9px;}
+  .trace .hint{font-size:12.5px; color:#94a3b8; line-height:1.7;}
+  .trace .hint.warn{color:var(--amber); font-weight:700;}
+  .trace .chip.den{font-size:15px; font-weight:700; font-family:"Cambria Math",Cambria,Georgia,serif; padding:2px 12px; transition:.35s;}
+  .trace .chip.den.gone{color:#475569; background:#f8fafc; border-style:dashed; text-decoration:line-through; text-decoration-thickness:1.5px; text-decoration-color:#94a3b8;}
+  .vbox .recall{font-size:12.5px; margin-bottom:5px;}
+  .trace .chip.const{font-family:"Microsoft YaHei",sans-serif; color:#94a3b8; background:#f8fafc;}
+  .limit{display:inline-flex; align-items:center; gap:7px; font-family:"Cambria Math",Cambria,Georgia,serif; font-size:17px; font-weight:800; border-radius:9px; padding:2px 13px; border:2px solid; transition:.35s;}
+  .limit.gray{border-color:#cbd5e1; color:#94a3b8; background:#f8fafc;}
+  .limit.blue{border-color:#93c5fd; color:var(--accent); background:#eff6ff;}
+  .limit.amber{border-color:#fcd34d; color:var(--amber); background:#fffbeb;}
+  .limit.red{border-color:var(--red); color:var(--red); background:#fef2f2; animation:shake .5s ease, glowR 2s ease-in-out infinite;}
+  .limit.green{border-color:var(--green); color:var(--green); background:#f0fdf4; animation:glowG 2s ease-in-out infinite;}
+  @keyframes shake{0%,100%{transform:translateX(0);}25%{transform:translateX(-5px);}75%{transform:translateX(5px);}}
+  .trace .verdict{font-size:14px; font-weight:800; line-height:1.75; border-radius:10px; padding:8px 14px; display:inline-block;}
+  .trace .verdict.red{color:var(--red); background:#fef2f2; border:2px solid #fca5a5;}
+  .trace .verdict.green{color:var(--green); background:#f0fdf4; border:2px solid #86efac;}
+  .trace .verdict.amber{color:var(--amber); background:#fffbeb; border:2px solid #fcd34d;}
+  .recall{display:block; font-size:.48em; font-family:"Microsoft YaHei",sans-serif; color:#94a3b8; font-weight:700; margin-bottom:8px; letter-spacing:.3px;}
+  .recall .chip.den{font-size:13px; vertical-align:middle;}
+  /* 验根高亮框 */
+  .vbox{display:block; font-family:"Microsoft YaHei",sans-serif; font-size:clamp(14px,1.6vw,17px); font-weight:800; line-height:1.9; border-radius:12px; padding:12px 18px; margin-top:16px; text-align:left; animation:fadein .45s ease;}
+  .vbox .row{font-family:"Cambria Math",Cambria,Georgia,serif; font-size:1.05em;}
+  .vbox.green{background:#f0fdf4; border:2.5px solid var(--green); color:var(--green); animation:fadein .45s ease, glowG 2s ease-in-out infinite;}
+  .vbox.red{background:#fef2f2; border:2.5px solid var(--red); color:var(--red); animation:fadein .45s ease, glowR 2s ease-in-out infinite;}
+  .vbox.amber{background:#fffbeb; border:2.5px solid var(--amber); color:var(--amber); animation:fadein .45s ease, glowA 2s ease-in-out infinite;}
+  @keyframes glowG{0%,100%{box-shadow:0 0 0 0 rgba(22,163,74,0);}50%{box-shadow:0 0 0 8px rgba(22,163,74,.16);}}
+  @keyframes glowR{0%,100%{box-shadow:0 0 0 0 rgba(220,38,38,0);}50%{box-shadow:0 0 0 8px rgba(220,38,38,.16);}}
+  @keyframes glowA{0%,100%{box-shadow:0 0 0 0 rgba(217,119,6,0);}50%{box-shadow:0 0 0 8px rgba(217,119,6,.16);}}
+  /* ===== 连续板书（累加式，不擦不换页） ===== */
+  .board-wrap{background:#fff; border:1px solid var(--line); border-radius:16px; padding:18px 22px 14px; max-height:66vh; overflow-y:auto; scroll-behavior:smooth;}
+  .board{position:relative; padding-left:104px;}
+  .board::before{content:""; position:absolute; left:96px; top:10px; bottom:12px; width:2px; background:#e8edf4; border-radius:2px;}
+  .bl{position:relative; padding:6px 0; animation:writeIn .4s cubic-bezier(.2,.7,.3,1) both;}
+  .bl .tag{position:absolute; left:-104px; top:9px; width:88px; text-align:right; font-size:12.5px; font-weight:800; color:#94a3b8; font-family:"Microsoft YaHei",sans-serif; letter-spacing:.3px;}
+  .bl .body{font-family:"Cambria Math",Cambria,Georgia,"Times New Roman",serif; font-size:clamp(19px,2.15vw,25px); line-height:1.62; color:var(--ink);}
+  .bl.q{padding:10px 0 12px;}
+  .bl.q .tag{color:var(--accent);}
+  .bl.q .body{font-size:clamp(21px,2.5vw,29px);}
+  .bl.act .body{font-family:"Microsoft YaHei",sans-serif; font-size:13.5px; font-weight:700; color:var(--purple); line-height:1.7;}
+  .bl.res{padding-top:10px;}
+  .bl.dim .body{opacity:.55;}
+  @keyframes writeIn{from{opacity:0; transform:translateY(-9px);}to{opacity:1; transform:none;}}
+  /* 分母高亮 → 被划掉（永久痕迹） */
+  .fd{position:relative;}
+  .fd.hi{color:var(--purple); background:#f5f3ff; border-radius:5px; box-shadow:0 0 0 2px #ddd6fe; transition:.35s;}
+  .fd.crossed::after{content:""; position:absolute; left:-4px; right:-4px; top:52%; height:2.5px; background:#ef4444; border-radius:2px; transform-origin:left center; animation:cross .5s cubic-bezier(.4,0,.2,1) both;}
+  @keyframes cross{from{transform:scaleX(0) rotate(-2deg);}to{transform:scaleX(1) rotate(-2deg);}}
+  .mult{display:inline-block; font-family:"Microsoft YaHei",sans-serif; font-size:13px; font-weight:800; color:var(--accent); margin:0 4px 0 3px; vertical-align:super; animation:popIn .4s .3s both;}
+  @keyframes popIn{from{opacity:0; transform:translateY(10px) scale(.7);}to{opacity:1; transform:none;}}
+  .plain{position:relative;}
+  /* 分母/限制条 */
+  .denbar{display:flex; align-items:center; gap:8px; flex-wrap:wrap; font-family:"Microsoft YaHei",sans-serif; font-size:13.5px; font-weight:700; color:var(--sub);}
+  .denbar .lbl2{font-size:12px; background:#f1f5f9; border:1px solid #e2e8f0; border-radius:6px; padding:2px 8px; color:#475569;}
+  .denbar .cd{font-family:"Cambria Math",Cambria,Georgia,serif; font-size:17px; padding:1px 12px;}
+  .limit-note{font-family:"Microsoft YaHei",sans-serif; font-size:13px; font-weight:800; border-radius:8px; padding:3px 11px; border:2px dashed #fcd34d; color:var(--amber); background:#fffbeb; transition:.45s;}
+  .limit-note.hot{border-style:solid; border-color:var(--red); color:var(--red); background:#fef2f2; animation:shake .5s ease, glowR 2s ease-in-out infinite;}
+  .limit-note.ok{border-style:solid; border-color:var(--green); color:var(--green); background:#f0fdf4; animation:glowG 2s ease-in-out infinite;}
+  .bl.noanim{animation:none;}
+  .bl.noanim .fd.crossed::after{animation:none; transform:scaleX(1) rotate(-2deg);}
+  .bl.noanim .mult{animation:none;}
+  .subst-pair{display:inline-flex; align-items:baseline; gap:5px; font-family:"Cambria Math",Cambria,serif; font-size:17px; font-weight:700; background:#f8fafc; border:1.5px solid #e2e8f0; border-radius:8px; padding:2px 10px; margin:2px 4px 2px 0;}
+  .board-note{font-family:"Microsoft YaHei",sans-serif; font-size:12.5px; color:#94a3b8; margin-left:12px;}
+  /* 行目录 */
+  .toc{list-style:none;}
+  .toc li{display:flex; align-items:center; gap:8px; padding:6px 10px; border-radius:9px; font-size:12.5px; color:#94a3b8; margin-bottom:3px; border:1px solid transparent; transition:.25s;}
+  .toc li .d{width:8px; height:8px; border-radius:50%; background:#cbd5e1; flex:0 0 8px;}
+  .toc li.done{color:#475569;}
+  .toc li.done .d{background:#94a3b8;}
+  .toc li.cur{background:#fff; border-color:var(--line); color:var(--ink); font-weight:800; box-shadow:0 1px 3px rgba(15,23,42,.06);}
+  .toc li.cur .d{background:var(--accent); box-shadow:0 0 0 4px rgba(37,99,235,.15);}
+  /* 步骤控件 */
+  .ctrl{display:flex; gap:10px; justify-content:center; margin-top:16px;}
+  .ctrl button{padding:10px 24px; border-radius:12px; border:1.5px solid var(--line); background:#fff; font-size:15px; font-weight:700; cursor:pointer; transition:.15s; color:var(--ink);}
+  .ctrl button.primary{background:var(--accent); border-color:var(--accent); color:#fff;}
+  .ctrl button:hover:not(:disabled){filter:brightness(.96);}
+  .ctrl button:disabled{opacity:.45; cursor:not-allowed;}
+  .dots{display:flex; gap:8px; justify-content:center; margin-top:11px;}
+  .dots i{width:10px; height:10px; border-radius:50%; background:#cbd5e1; transition:.3s;}
+  .dots i.on{background:var(--accent); transform:scale(1.25);}
+  .step-callout{border-radius:12px; padding:13px 16px; min-height:104px; border:1.5px solid var(--line); transition:background .4s, border-color .4s;}
+  .step-callout .st{font-size:14.5px; font-weight:800; margin-bottom:5px;}
+  .step-callout .sd{font-size:13.5px; line-height:1.75;}
+  .step-callout.k0{background:#fff;}
+  .step-callout.k1{background:#eff6ff; border-color:var(--accent);} .step-callout.k1 .st{color:var(--accent);}
+  .step-callout.k2{background:#f5f3ff; border-color:var(--purple);} .step-callout.k2 .st{color:var(--purple);}
+  .step-callout.k3{background:#fffbeb; border-color:var(--amber);} .step-callout.k3 .st{color:var(--amber);}
+  .step-callout.k4{background:#fef2f2; border-color:var(--red);} .step-callout.k4 .st{color:var(--red);}
+  .steps{list-style:none;}
+  .steps li{display:flex; align-items:flex-start; gap:9px; padding:8px 11px; border-radius:10px; font-size:13.5px; color:var(--sub); margin-bottom:5px; border:1px solid transparent; transition:.3s;}
+  .steps .dot{flex:0 0 12px; height:12px; border-radius:50%; margin-top:4px; background:#cbd5e1; transition:.3s;}
+  .steps li.cur{background:#fff; border-color:var(--line); color:var(--ink); font-weight:700; box-shadow:0 1px 3px rgba(15,23,42,.06);}
+  .steps li.cur .dot{background:var(--c); box-shadow:0 0 0 4px rgba(148,163,184,.18);}
+  .steps li.done{color:var(--c);} .steps li.done .dot{background:var(--c);}
+  .steps li.done::after{content:"✓"; margin-left:auto; font-weight:800;}
+  /* 应用题 */
+  .app{border:1.5px solid var(--line); border-radius:14px; padding:14px 18px; margin-bottom:12px; background:#fff;}
+  .app h4{font-size:15px; margin-bottom:6px;}
+  .app .q{font-size:14px; line-height:1.9; color:var(--ink);}
+  .app .eq{font-family:"Cambria Math",Cambria,Georgia,serif; font-size:19px; text-align:center; margin:10px 0; color:var(--accent); font-weight:700;}
+  .app .foot{display:flex; justify-content:space-between; align-items:center; gap:10px; flex-wrap:wrap;}
+  .app .ans{font-size:13px; color:var(--sub); line-height:1.8;}
+  .btnrow{display:flex; gap:8px; margin-top:14px; flex-wrap:wrap;}
+  footer{text-align:center; color:#94a3b8; font-size:12px; margin-top:22px;}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header>
+    <h1>18.5 分式方程 · 去分母与验根演示</h1>
+    <p>人教版八年级上册 ｜ 去分母 → 整式方程 → 必须验根（增根）｜ 应用题：工程 / 行程 / 浓度</p>
+  </header>
+
+  <div class="tabs">
+    <button class="tab-btn active" data-tab="t1">① 解方程分步演示</button>
+    <button class="tab-btn" data-tab="t2">② 应用题（工程/行程/浓度）</button>
+  </div>
+
+  <!-- Tab1 -->
+  <section id="t1" class="active">
+    <div class="card">
+      <h3>解题流程（口诀：一化二解三检验）</h3>
+      <div class="flow">
+        <span class="fnode a">分式方程</span><span class="farr">→</span>
+        <span class="fnode b">去分母<br><small style="font-weight:500">两边同乘最简公分母</small></span><span class="farr">→</span>
+        <span class="fnode b">整式方程</span><span class="farr">→</span>
+        <span class="fnode c">解得 x＝a</span><span class="farr">→</span>
+        <span class="fnode d">必须验根！</span>
+      </div>
+      <div class="koujue"><b>为什么要验根？</b>去分母时，两边同乘了含未知数的式子，扩大了未知数的取值范围——使最简公分母为 0 的根不是原方程的根，叫做<b>增根</b>，必须舍去。</div>
+      <div class="warn"><b>⚠ 易错警示：</b>忘记验根直接写答案，是本章<b>失分重灾区</b>！验根方法：把根代入<b>最简公分母</b>，看是否为 0。</div>
+    </div>
+
+    <div class="card">
+      <h3>选一道题开始（或自己输入）</h3>
+      <div class="exrow" id="exrow">
+        <button class="mini on" data-ex="0">例1：1/(x−2)＋3＝(x−1)/(x−2)（增根经典）</button>
+        <button class="mini" data-ex="1">例2：2/(x＋1)＝3/(x−1)（有解）</button>
+        <button class="mini" data-ex="2">例3：6/10＋6/x＝1（工程）</button>
+      </div>
+      <div class="inrow">
+        <input id="inL" spellcheck="false" value="1/(x-2)+3" placeholder="左边，如 1/(x-2)+3">
+        <span style="font-weight:800; font-size:18px;">＝</span>
+        <input id="inR" spellcheck="false" value="(x-1)/(x-2)" placeholder="右边，如 (x-1)/(x-2)">
+        <button class="mini primary" id="btnGo">▶ 用我的方程演示</button>
+      </div>
+      <div class="fmt">支持写法：<b>1/(x-2)</b>、<b>(x-1)/(x-2)</b>、<b>2/x</b>、<b>6/10</b>、<b>2x</b>、<b>3</b>；分母用括号或直接写均可，多项相加用 ＋/－ 连接。</div>
+      <div class="err" id="err"></div>
+    </div>
+
+    <div class="card">
+      <div class="stage">
+        <div class="main">
+          <div class="board-wrap" id="boardWrap">
+            <span class="ctx" id="ctx" style="margin-bottom:10px;"></span>
+            <div class="board" id="board"></div>
+          </div>
+          <div class="ctrl">
+            <button id="btnPrev">⏮ 撤销一行</button>
+            <button id="btnNext" class="primary">下一步 ▶ 写下一行</button>
+            <button id="btnReset">🔁 从头再讲</button>
+          </div>
+          <div class="dots" id="dots"></div>
+        </div>
+        <div class="side">
+          <div class="step-callout k0" id="callout"></div>
+          <ul class="toc" id="toc"></ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <!-- Tab2 应用题 -->
+  <section id="t2">
+    <div class="card">
+      <h3>工程问题</h3>
+      <div class="app">
+        <h4>🏗 合作完工</h4>
+        <div class="q">一项工程，甲队单独做 <b>10 天</b>完成，乙队单独做 <b>x 天</b>完成。现两队合作 <b>6 天</b>完成。求乙队单独做需要的天数。<br>💡 工作量观点：甲每天做 1/10，乙每天做 1/x，合作 6 天恰好完成整个工程"1"。</div>
+        <div class="eq">6/10 ＋ 6/x ＝ 1</div>
+        <div class="foot">
+          <span class="ans">去分母：6x＋60＝10x → x＝15；验根：x＝15 时 x≠0 ✔ 是根。乙队单独做需 15 天。</span>
+          <button class="mini" data-load="6/10+6/x" data-r="1" data-ctx="工程问题：甲 10 天、乙 x 天，合作 6 天完成">▶ 分步演示此题</button>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>行程问题</h3>
+      <div class="app">
+        <h4>🚴 往返骑行</h4>
+        <div class="q">小明骑自行车到 30 km 外的营地，去程速度 <b>x km/h</b>；返程沿原路骑回，速度是去程的 <b>2 倍</b>。已知返程比去程<b>少用 1 小时</b>，求去程速度。<br>💡 时间＝路程÷速度：去程 30/x 小时，返程 30/(2x) 小时，时间差为 1。</div>
+        <div class="eq">30/x － 30/(2x) ＝ 1</div>
+        <div class="foot">
+          <span class="ans">去分母：30−15＝x → x＝15；验根：x＝15≠0 ✔ 是根。去程速度 15 km/h。</span>
+          <button class="mini" data-load="30/x-30/(2x)" data-r="1" data-ctx="行程问题：30 km，返速 2 倍，少用 1 h">▶ 分步演示此题</button>
+        </div>
+      </div>
+    </div>
+    <div class="card">
+      <h3>浓度问题</h3>
+      <div class="app">
+        <h4>🧂 配制盐水</h4>
+        <div class="q">在 <b>100 g 水</b>中加入 <b>x g 盐</b>，充分搅拌后全部溶解，要使盐水的含盐率为 <b>20%</b>，求加入的盐的质量。<br>💡 浓度＝盐÷盐水：盐 x g，盐水 (100＋x) g，含盐率 20%＝1/5。</div>
+        <div class="eq">x/(100＋x) ＝ 1/5</div>
+        <div class="foot">
+          <span class="ans">去分母：5x＝100＋x → x＝25；验根：100＋25＝125≠0 ✔ 是根。需加盐 25 g。</span>
+          <button class="mini" data-load="x/(100+x)" data-r="1/5" data-ctx="浓度问题：100 g 水加盐 x g，含盐率 20%">▶ 分步演示此题</button>
+        </div>
+      </div>
+    </div>
+    <div class="note card" style="font-size:13.5px; line-height:1.9; color:var(--sub);">
+      📌 应用题口诀：<b>设</b>（设未知数）→ <b>列</b>（找等量关系，列分式方程）→ <b>解</b>（去分母化整式方程）→ <b>验</b>（验根：既验是否为增根，也要验是否符合实际意义）→ <b>答</b>。
+    </div>
+  </section>
+
+  <footer>教学演示用 · 18.5 分式方程 · 去分母 / 验根 / 增根高亮 · 适合投影</footer>
+</div>
+
+<script>
+"use strict";
+/* ============ 一次多项式 [常数项, 一次项系数] ============ */
+const fmtNum=n=>Number.isInteger(n)?String(n).replace('-','−'):String(parseFloat(n.toFixed(4))).replace('-','−');
+function parsePoly(s0){
+  const s=String(s0).replace(/\s+/g,'').replace(/−/g,'-').replace(/＋/g,'+');
+  if(!s)throw new Error('空式子');
+  const tokens=s.match(/[+-]?[^+-]+/g)||[];
+  const p=[0,0];
+  for(const tk of tokens){
+    let m;
+    if((m=tk.match(/^([+-]?[0-9]*\.?[0-9]*)\*?x$/))){
+      const c=m[1];
+      const v=(c===''||c==='+')?1:(c==='-'?-1:parseFloat(c));
+      if(!isFinite(v))throw new Error('无法识别「'+tk+'」');
+      p[1]+=v;
+    }else if((m=tk.match(/^([+-]?)([0-9]*\.?[0-9]+)$/))){
+      p[0]+=parseFloat((m[1]||'')+m[2]);
+    }else throw new Error('无法识别「'+tk+'」（目前支持一次式，如 2x、x-1、3）');
+  }
+  return p;
+}
+const pAdd=(a,b)=>[a[0]+b[0],a[1]+b[1]];
+const pScale=(a,k)=>[a[0]*k,a[1]*k];
+const pMul=(a,b)=>[a[0]*b[0],a[0]*b[1]+a[1]*b[0],a[1]*b[1]]; // 可达二次
+function polyStr(p){
+  const [c,b]=p; let out='';
+  if(b!==0)out+=(b===1?'':b===-1?'−':fmtNum(b))+'x';
+  if(c!==0){
+    if(out==='')out+=(c<0?'−':'')+fmtNum(Math.abs(c));
+    else out+=(c>0?' ＋ ':' − ')+fmtNum(Math.abs(c));
+  }
+  return out||'0';
+}
+function polyWrap(p){return (p[0]!==0&&p[1]!==0)?'('+polyStr(p)+')':polyStr(p);}
+const pKey=p=>p[0]+','+p[1];
+const gcd2=(a,b)=>{a=Math.abs(a);b=Math.abs(b);while(b){const t=a%b;a=b;b=t;}return a||1;};
+
+/* ============ 解析方程 ============ */
+function parseSide(s0){
+  const s=String(s0).replace(/\s+/g,'').replace(/−/g,'-').replace(/＋/g,'+');
+  if(!s)throw new Error('有一边是空的');
+  const raw=[]; let depth=0,cur='';
+  for(const ch of s){
+    if(ch==='(')depth++;
+    if(ch===')')depth--;
+    if(depth<0)throw new Error('括号不匹配');
+    if(depth===0&&(ch==='+'||ch==='-')&&cur!==''&&cur!=='+'&&cur!=='-'){raw.push(cur);cur=ch;}
+    else cur+=ch;
+  }
+  if(cur)raw.push(cur);
+  return raw.map(tok=>{
+    let sign=1;
+    if(tok[0]==='+')tok=tok.slice(1);
+    else if(tok[0]==='-'){sign=-1;tok=tok.slice(1);}
+    if(!tok)throw new Error('有多余的运算符');
+    // 顶层 '/' 分出分子分母
+    let depth=0,slash=-1;
+    for(let i=0;i<tok.length;i++){
+      if(tok[i]==='(')depth++;
+      else if(tok[i]===')')depth--;
+      else if(tok[i]==='/'&&depth===0){slash=i;break;}
+    }
+    if(slash>=0){
+      let numStr=tok.slice(0,slash),denStr=tok.slice(slash+1);
+      const strip=s=>{s=s.trim();if(s[0]==='('&&s[s.length-1]===')'){let d=0;for(let i=0;i<s.length;i++){if(s[i]==='(')d++;else if(s[i]===')'){d--;if(d===0&&i!==s.length-1)return s;}}return s.slice(1,-1);}return s;};
+      const den=parsePoly(strip(denStr));
+      if(den[0]===0&&den[1]===0)throw new Error('分母不能为 0');
+      return{sign,num:parsePoly(strip(numStr)),den};
+    }
+    return{sign,num:parsePoly(tok),den:null};
+  });
+}
+
+/* ============ 方程求解分析 ============ */
+function analyzeEq(left,right){
+  // 最简公分母 = 不同分母的乘积
+  const fu=[]; const seen=new Set();
+  for(const t of[...left,...right]){
+    if(!t.den)continue;
+    const k=pKey(t.den);
+    if(!seen.has(k)){seen.add(k);fu.push(t.den);}
+  }
+  if(fu.length===0)throw new Error('方程里没有分母（不含 x 的分母不算），请输入分式方程');
+  const factorsStr=p=>p[1]===0?fmtNum(p[0]):polyWrap(p);
+  const cdStr=fu.map(factorsStr).join('');
+  const multFor=t=>{ // 该项去分母后剩余的乘式
+    if(!t.den)return fu.map(factorsStr).join('');
+    const k=pKey(t.den);
+    return fu.filter(f=>pKey(f)!==k).map(factorsStr).join('');
+  };
+  const multPolyFor=t=>{
+    if(!t.den)return fu.reduce((a,f)=>pMul(a,f),[1,0]);
+    const k=pKey(t.den);
+    return fu.filter(f=>pKey(f)!==k).reduce((a,f)=>pMul(a,f),[1,0]);
+  };
+  let L=[0,0],R=[0,0];
+  for(const t of left)L=pAdd(L,pScale(pMul(t.num,multPolyFor(t)),t.sign));
+  for(const t of right)R=pAdd(R,pScale(pMul(t.num,multPolyFor(t)),t.sign));
+  return{fu,cdStr,multFor,multPolyFor,L,R};
+}
+
+/* ============ 状态 ============ */
+const board=document.getElementById('board'), boardWrap=document.getElementById('boardWrap');
+const ctxEl=document.getElementById('ctx'), callout=document.getElementById('callout');
+const tocEl=document.getElementById('toc'), dotsEl=document.getElementById('dots');
+const btnPrev=document.getElementById('btnPrev'), btnNext=document.getElementById('btnNext');
+const errBox=document.getElementById('err');
+let EQ=null, LINES=[], written=0;
+
+/* 把值写成漂亮的形式（整数 / 最简分数） */
+function niceNum(v){
+  if(!isFinite(v))return fmtNum(v);
+  if(Number.isInteger(v))return fmtNum(v);
+  let den=1;
+  while(Math.abs(v*den-Math.round(v*den))>1e-9&&den<200)den++;
+  let num=Math.round(v*den);
+  const g=gcd2(num,den); num/=g; den/=g;
+  if(den<0){num=-num;den=-den;}
+  if(den===1)return fmtNum(num);
+  return (num<0?'−':'')+Math.abs(num)+'/'+den;
+}
+/* 把多项式里的 x 代成具体数值：x−2，代 x＝2 → "2 − 2" */
+function substStr(p,root){
+  const [c,b]=p;
+  let out='';
+  if(b!==0){
+    const coef=b===1?'':b===-1?'−':fmtNum(b);
+    const needParen=(Math.abs(b)!==1);
+    out+=coef+(root<0&&needParen?'('+fmtNum(root)+')':fmtNum(root));
+  }
+  if(c!==0){
+    if(out==='')out+=fmtNum(c);
+    else out+=(c>0?' ＋ ':' − ')+fmtNum(Math.abs(c));
+  }
+  return out||'0';
+}
+
+const PRESETS=[
+  {l:'1/(x-2)+3',r:'(x-1)/(x-2)',ctx:'例1（增根经典题）'},
+  {l:'2/(x+1)',r:'3/(x-1)',ctx:'例2（有解）'},
+  {l:'6/10+6/x',r:'1',ctx:'工程问题：甲 10 天、乙 x 天，合作 6 天完成'},
+];
+
+/* 分数/项的 HTML（分母可被标记、可被划掉；项带 data-mult 记录乘上的因式） */
+function frac(numStr,denStr,mult){
+  return `<span class="frac"${mult?` data-mult="${mult}"`:''}><span class="fn">${numStr}</span><span class="fd">${denStr}</span></span>`;
+}
+function sideHTML(terms){
+  return terms.map((t,i)=>{
+    const op=i===0?(t.sign<0?'−':''):(t.sign<0?' − ':' ＋ ');
+    let body;
+    if(t.den){
+      const m=(EQ&&EQ.multFor(t))||(EQ?EQ.cdStr:'');
+      body=frac(polyStr(t.num),polyStr(t.den),m);
+    }else{
+      body=`<span class="plain"${EQ&&EQ.cdStr?` data-mult="${EQ.cdStr}"`:''}>${polyStr(t.num)}</span>`;
+    }
+    return op+body;
+  }).join('');
+}
+function eqHTML(){return sideHTML(EQ.left)+' ＝ '+sideHTML(EQ.right);}
+
+/* 多项式的项拆解：[c,b] → [{s,str}] */
+function polyItems(p){
+  const out=[];
+  if(p[1]!==0)out.push({s:Math.sign(p[1]), str:(Math.abs(p[1])===1?'x':Math.abs(p[1])+'x')});
+  if(p[0]!==0)out.push({s:Math.sign(p[0]), str:fmtNum(Math.abs(p[0]))});
+  return out;
+}
+function joinItems(items){
+  if(!items.length)return '0';
+  return items.map((it,i)=>i===0?((it.s<0?'−':'')+it.str):((it.s<0?' − ':' ＋ ')+it.str)).join('');
+}
+/* ③ 约去分母后的样子：分子 × 剩余因式（3(x−2)） */
+function reducedHTML(){
+  const one=terms=>terms.map((t,i)=>{
+    const op=i===0?(t.sign<0?'−':''):(t.sign<0?' − ':' ＋ ');
+    const m=EQ.multFor(t), n=polyStr(t.num);
+    return op+(m? (m.startsWith('(')?n+m:n+'·'+m) : n);
+  }).join('');
+  return one(EQ.left)+' ＝ '+one(EQ.right);
+}
+/* ④ 逐括号展开后的样子：1 ＋ 3x − 6 */
+function expandedHTML(){
+  const one=terms=>{
+    const items=[];
+    terms.forEach(t=>{
+      const p=pScale(pMul(t.num,EQ.multPolyFor(t)),t.sign);
+      polyItems(p).forEach(it=>items.push(it));
+    });
+    return joinItems(items);
+  };
+  return one(EQ.left)+' ＝ '+one(EQ.right);
+}
+
+/* 求解（只算数值与结论，板书由 buildLines 逐行生成） */
+function buildSolve(){
+  const s=EQ;
+  const a=s.L[1]-s.R[1], b=s.L[0]-s.R[0], rhs=-b;
+  if(a===0){
+    if(b===0){s.root=null; s.kind='ident'; s.verifyHTML=`<span class="vbox amber">⚠ 恒等式：去掉分母后两边完全相同。答案要写成"x 为任意使分母不为 0 的数"，同样不能忽略分母限制！</span>`;}
+    else{s.root=null; s.kind='none'; s.verifyHTML=`<span class="vbox amber">✔ 结论：0·x ＝ ${fmtNum(rhs)} 矛盾，整式方程无解 → 原分式方程无解（无需验根）。</span>`;}
+    return;
+  }
+  s.root=rhs/a;
+  // 逐个分母代入
+  const rows=[]; let bad=false;
+  for(const f of s.fu){
+    if(f[1]===0)continue;                       // 常数分母恒不为 0
+    const v=f[0]+f[1]*s.root;
+    const isZero=Math.abs(v)<1e-9;
+    if(isZero){bad=true; s.badDen=f; s.badVal=v;}
+    rows.push({poly:f,v,isZero});
+  }
+  s.rootRows=rows;
+  s.kind=bad?'extra':'ok';
+}
+
+/* ============ 板书渲染：只追加，不擦 ============ */
+function appendLine(Ld){
+  const d=document.createElement('div');
+  d.className='bl '+(Ld.cls||'');
+  d.innerHTML=`<span class="tag">${Ld.tag||''}</span><div class="body">${Ld.html}</div>`;
+  board.appendChild(d);
+  if(Ld.after)Ld.after(d);
+  updateUI();
+  boardWrap.scrollTop=boardWrap.scrollHeight;
+}
+function renderTo(n,animate){
+  board.innerHTML='';
+  for(let i=0;i<=n;i++){
+    const Ld=LINES[i];
+    const d=document.createElement('div');
+    d.className='bl '+(Ld.cls||'')+((animate&&i===n)?'':' noanim');
+    d.innerHTML=`<span class="tag">${Ld.tag||''}</span><div class="body">${Ld.html}</div>`;
+    board.appendChild(d);
+    if(Ld.after)Ld.after(d);
+  }
+  updateUI();
+}
+/* 在原题上划掉分母、浮出乘上的因式（痕迹永久保留） */
+function crossAll(){
+  document.querySelectorAll('.bl.q .frac').forEach(f=>{
+    const fd=f.querySelector('.fd');
+    if(!fd||fd.classList.contains('crossed'))return;
+    fd.classList.add('crossed');
+    addMult(f,f.dataset.mult);
+  });
+  document.querySelectorAll('.bl.q .plain').forEach(p=>{
+    if(p.dataset.done)return;
+    p.dataset.done='1';
+    addMult(p,p.dataset.mult);
+  });
+}
+function addMult(node,txt){
+  if(!txt)return;
+  const m=document.createElement('span');
+  m.className='mult'; m.textContent='×'+txt;
+  node.after(m);
+}
+function buildToc(){
+  tocEl.innerHTML=LINES.map(Ld=>`<li><span class="d"></span>${Ld.tag}</li>`).join('');
+  dotsEl.innerHTML=LINES.map(()=>'<i></i>').join('');
+}
+function updateUI(){
+  const Ld=LINES[written]||{desc:{k:'k0',t:'',d:''}};
+  callout.className='step-callout '+(Ld.desc.k||'k0');
+  callout.innerHTML=`<div class="st">${Ld.desc.t}</div><div class="sd">${Ld.desc.d}</div>`;
+  [...tocEl.children].forEach((li,i)=>{
+    li.classList.toggle('done',i<written);
+    li.classList.toggle('cur',i===written);
+  });
+  [...dotsEl.children].forEach((d,i)=>d.classList.toggle('on',i<=written));
+  ctxEl.textContent=EQ.ctx;
+  btnPrev.disabled=written===0;
+  btnNext.disabled=written>=LINES.length-1;
+}
+
+/* ============ 生成板书：一整块，逐行往下写，写过的都留着 ============ */
+function buildLines(){
+  const s=EQ, cd=s.cdStr, L=[];
+  const lims=s.fu.filter(f=>f[1]!==0);
+  const limTxt=lims.map(f=>`${polyWrap(f)} ≠ 0 ⟹ x ≠ ${niceNum(-f[0]/f[1])}`).join('；');
+  const denChips=s.fu.map(f=>`<span class="chip den">${polyWrap(f)}</span>`).join(' ');
+
+  L.push({tag:'原题', cls:'q', html:eqHTML(),
+    desc:{k:'k0',t:'原题｜先看清楚',d:'先整体看一眼：分母里都有 x，所以最后一定要验根。下面每一步都写在同一块板上，写过的不会擦掉。'}});
+
+  L.push({tag:'① 看分母',
+    html:`<div class="denbar"><span class="lbl2">各分母</span>${denChips}<span>→</span><span class="lbl2">最简公分母</span><span class="cd">${cd}</span>${limTxt?`<span class="limit-note" id="limitNote">限制　${limTxt}</span>`:''}</div>`,
+    desc:{k:'k1',t:'第 1 步｜看分母，顺手记下限制',d:`分母里含 x，先圈出来（紫色）。各取一次相乘，最简公分母是 ${cd}。旁边那张黄便签写的限制，就是最后验根的依据——它会一直挂在板上。`},
+    after:()=>{document.querySelectorAll('.bl.q .fd').forEach(fd=>fd.classList.add('hi'));}});
+
+  L.push({tag:'② 去分母', cls:'act',
+    html:`两边同乘 <b style="color:#6d28d9">${cd}</b>　→　原题上的分母被逐条划掉，分子旁浮出乘上的因式；不含分母的项也要乘，别漏乘！`,
+    desc:{k:'k2',t:'第 2 步｜去分母（两边同乘 '+cd+'）',d:'看上方的原题：分母被红线一条条划掉——划掉不等于不存在，痕迹就留在原处。分子旁浮出的 ×'+cd+'，才是"约分"真正发生的过程。'},
+    after:()=>crossAll()});
+
+  L.push({tag:'③ 约去分母', html:reducedHTML(),
+    desc:{k:'k2',t:'第 3 步｜约去分母',d:'分母约掉后，分数变成整式。注意第 2 项 3 也乘了 '+cd+'——含分母、不含分母的项都要乘，才不会漏。'}});
+
+  L.push({tag:'④ 展开括号', html:expandedHTML(),
+    desc:{k:'k3',t:'第 4 步｜展开括号',d:'把每个括号都乘开，为合并同类项做准备。'}});
+
+  const mergedHTML=joinItems(polyItems(s.L))+' ＝ '+joinItems(polyItems(s.R));
+  const noMerge=expandedHTML()===mergedHTML;
+  L.push({tag:'⑤ 合并', html:mergedHTML+(noMerge?'<span class="board-note">（这一步两边没有同类项可合并）</span>':''),
+    desc:{k:'k3',t:'第 5 步｜合并同类项',d:noMerge?'展开后两边已经没有同类项可合并，直接进入移项。':'x 的项与 x 的项合并，常数与常数合并，两边都变干净了。'}});
+
+  if(s.root===null){
+    L.push({tag:'⑥ 结论', cls:'res', html:s.verifyHTML||'',
+      desc:{k:'k4',t:'第 6 步｜结论',d:'整式方程'+(s.kind==='ident'?'恒成立，答案要写明分母限制':'已经矛盾，原分式方程无解')+'。'}});
+    return L;
+  }
+
+  const lx=s.L[1], rx=s.R[1], lc=s.L[0], rc=s.R[0];
+  const xterm=v=>(Math.abs(v)===1?'x':Math.abs(v)+'x');
+  const li=[], ri=[];
+  if(lx!==0)li.push({s:Math.sign(lx),str:xterm(lx)});
+  if(rx!==0)li.push({s:-Math.sign(rx),str:xterm(rx)});
+  if(rc!==0)ri.push({s:Math.sign(rc),str:fmtNum(Math.abs(rc))});
+  if(lc!==0)ri.push({s:-Math.sign(lc),str:fmtNum(Math.abs(lc))});
+  L.push({tag:'⑥ 移项', html:joinItems(li)+' ＝ '+joinItems(ri),
+    desc:{k:'k3',t:'第 6 步｜移项（过等号要变号）',d:'含 x 的项搬到左边，常数搬到右边——上一行的 x 和 −5 都换了位置，符号跟着变。'}});
+
+  const a=s.L[1]-s.R[1], rhs=s.R[0]-s.L[0];
+  const aStr=Math.abs(a)===1?(a<0?'−':'')+'x':fmtNum(a)+'x';
+  L.push({tag:'⑦ 合并', html:`${aStr} ＝ ${fmtNum(rhs)}`,
+    desc:{k:'k3',t:'第 7 步｜再合并一次',d:'两边各自合并，化成 ax＝b 的标准形状。'}});
+
+  L.push({tag:'⑧ 系数化为 1', html:`x ＝ ${niceNum(s.root)}`,
+    desc:{k:'k3',t:'第 8 步｜系数化为 1',d:`两边同除以 ${fmtNum(a)}，得到 x＝${niceNum(s.root)}。注意：这只是整式方程的根，还没结束！`}});
+
+  const bad=s.kind==='extra';
+  const subst=lims.map(f=>{
+    const v=f[0]+f[1]*s.root;
+    return `<span class="subst-pair">${polyWrap(f)}：${substStr(f,s.root)} ＝ ${fmtNum(v)} ${Math.abs(v)<1e-9?'✘':'✔'}</span>`;
+  }).join('');
+  L.push({tag:'⑨ 验根', cls:'res',
+    html:`<div class="denbar" style="margin-bottom:9px;"><span class="lbl2">代回 ① 记下的分母</span><span style="font-family:'Cambria Math',Cambria,serif;font-size:19px;">x＝${niceNum(s.root)}</span>${subst}</div>`
+      +(bad
+        ?`<span class="vbox red">✘ 增根！分母 ＝ 0，分式没有意义 → x＝${niceNum(s.root)} 是增根，必须舍去 → 原分式方程<b>无解</b></span>`
+        :`<span class="vbox green">✔ 各分母都不为 0 → x＝${niceNum(s.root)} 是原分式方程的根</span>`),
+    desc:{k:'k4',t:'第 9 步｜必须验根！',d:bad
+      ?'不必重算，回到 ① 那张黄便签：把根代进分母，正好等于 0 → 增根，舍去 → 原方程无解。'
+      :'回到 ① 那张便签：把根代进每个分母，都不为 0 → 这个根是原方程的根。'},
+    after:()=>{const n=document.getElementById('limitNote'); if(n)n.classList.add(bad?'hot':'ok');}});
+
+  return L;
+}
+
+/* 入口：设置方程 → 求解 → 生成整块板书 */
+function setEquation(l,r,ctxText){
+  errBox.style.display='none';
+  try{
+    const left=parseSide(l),right=parseSide(r);
+    EQ={left,right,...analyzeEq(left,right),ctx:ctxText||''};
+    buildSolve();
+    LINES=buildLines();
+    buildToc();
+    written=0;
+    renderTo(0,false);
+  }catch(e){
+    errBox.textContent='⚠ '+e.message;
+    errBox.style.display='block';
+  }
+}
+
+/* 事件：下一步＝往下写一行（旧行不动，痕迹保留）；撤销＝删掉最后一行 */
+btnNext.onclick=()=>{
+  if(written<LINES.length-1){written++; appendLine(LINES[written]);}
+};
+btnPrev.onclick=()=>{
+  if(written>0){written--; renderTo(written,false);}
+};
+document.getElementById('btnReset').onclick=()=>{written=0; renderTo(0,false);};
+document.querySelectorAll('[data-ex]').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('[data-ex]').forEach(x=>x.classList.toggle('on',x===b));
+  const p=PRESETS[+b.dataset.ex];
+  document.getElementById('inL').value=p.l; document.getElementById('inR').value=p.r;
+  setEquation(p.l,p.r,p.ctx);
+});
+document.getElementById('btnGo').onclick=()=>{
+  document.querySelectorAll('[data-ex]').forEach(x=>x.classList.remove('on'));
+  setEquation(document.getElementById('inL').value,document.getElementById('inR').value,'我的方程');
+};
+document.querySelectorAll('[data-load]').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.tab-btn')[0].click();
+  document.querySelectorAll('[data-ex]').forEach(x=>x.classList.remove('on'));
+  document.getElementById('inL').value=b.dataset.load;
+  document.getElementById('inR').value=b.dataset.r;
+  setEquation(b.dataset.load,b.dataset.r,b.dataset.ctx);
+});
+document.querySelectorAll('.tab-btn').forEach(b=>b.onclick=()=>{
+  document.querySelectorAll('.tab-btn').forEach(x=>x.classList.toggle('active',x===b));
+  document.querySelectorAll('section').forEach(sec=>sec.classList.toggle('active',sec.id===b.dataset.tab));
+});
+if(location.hash==='#t2')document.querySelector('.tab-btn[data-tab="t2"]').click();
+
+/* 启动 */
+const P0=PRESETS[0];
+setEquation(P0.l,P0.r,P0.ctx);
+</script>
+</body>
+</html>

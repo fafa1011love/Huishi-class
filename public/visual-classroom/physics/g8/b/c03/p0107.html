@@ -1,0 +1,469 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>称重法测浮力 · 物理可视化仿真</title>
+<style>
+  :root{
+    --bg:#eef2f7; --panel:#ffffff; --ink:#1f2d3d; --muted:#6b7a8d;
+    --accent:#2b7de9; --line:#dbe3ec;
+    --grav:#e63946; --tens:#2b7de9; --buoy:#1faa59;
+  }
+  *{box-sizing:border-box}
+  body{margin:0;font-family:"PingFang SC","Microsoft YaHei",system-ui,sans-serif;
+       background:var(--bg);color:var(--ink);line-height:1.5}
+  .wrap{max-width:960px;margin:0 auto;padding:14px 14px 26px}
+  h1{font-size:18px;margin:2px 0 8px}
+  h1 small{color:var(--muted);font-size:12.5px;font-weight:400;margin-left:6px}
+  /* 顶部紧凑工具条 */
+  .toolbar{display:flex;gap:14px;align-items:center;flex-wrap:wrap;
+           background:var(--panel);border:1px solid var(--line);border-radius:12px;
+           padding:10px 14px;margin-bottom:12px}
+  .liqrow{display:flex;gap:8px;flex-wrap:wrap}
+  .liq{display:flex;align-items:center;gap:7px;padding:6px 11px;border:1.5px solid var(--line);
+       border-radius:9px;cursor:pointer;background:#fff;font-size:13px;user-select:none;transition:.15s}
+  .liq:hover{border-color:#bcd4f5}
+  .liq.active{border-color:var(--accent);background:#eef5ff;font-weight:600}
+  .swatch{width:14px;height:14px;border-radius:4px;border:1px solid rgba(0,0,0,.12)}
+  .ctrl{display:flex;align-items:center;gap:16px;flex-wrap:wrap;margin-left:auto}
+  .slider{display:flex;align-items:center;gap:8px;font-size:13px;color:var(--muted)}
+  .slider input{width:120px}
+  .slider b{color:var(--ink);font-variant-numeric:tabular-nums}
+  .mini{display:flex;gap:6px}
+  .mbtn{padding:6px 12px;border:1px solid var(--line);background:#fff;border-radius:8px;
+        cursor:pointer;font-size:13px;transition:.15s}
+  .mbtn:hover{border-color:var(--accent);color:var(--accent)}
+  /* 画布容器：实验 + 数据同框 */
+  .stage{background:var(--panel);border:1px solid var(--line);border-radius:12px;
+         padding:8px;box-shadow:0 2px 10px rgba(30,60,110,.05)}
+  canvas{display:block;width:100%;height:auto;border-radius:8px;background:#fbfdff;cursor:grab;touch-action:none}
+  canvas.drag{cursor:grabbing}
+  .legend{display:flex;gap:16px;flex-wrap:wrap;font-size:12.5px;color:var(--muted);
+          margin-top:8px;justify-content:center}
+  .legend span{display:inline-flex;align-items:center;gap:6px}
+  .dot{width:14px;height:5px;border-radius:3px;display:inline-block}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <h1>称重法测浮力 <small>F<sub>浮</sub> = G − F<sub>拉</sub> · 拖动方块改变浸入体积，切换液体看读数</small></h1>
+
+  <div class="toolbar">
+    <div class="liqrow" id="liquids"></div>
+    <div class="ctrl">
+      <div class="slider">物体密度
+        <input type="range" id="rho" min="0.8" max="8" step="0.1" value="2.5">
+        <b id="rhoVal">2.5</b> g/cm³
+      </div>
+      <div class="mini">
+        <button class="mbtn" id="bIn">完全浸入</button>
+        <button class="mbtn" id="bOut">完全提出</button>
+        <button class="mbtn" id="bReset">重置</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="stage">
+    <canvas id="cv" width="900" height="520"></canvas>
+  </div>
+  <div class="legend">
+    <span><i class="dot" style="background:var(--grav)"></i>重力 G（向下）</span>
+    <span><i class="dot" style="background:var(--tens)"></i>拉力 F<sub>拉</sub>（向上）</span>
+    <span><i class="dot" style="background:var(--buoy)"></i>浮力 F<sub>浮</sub>（向上）</span>
+    <span style="color:var(--accent)">点击右侧「知识讲解」看完整讲解（可滚轮滚动）</span>
+  </div>
+</div>
+
+<script>
+(function(){
+  "use strict";
+  const cv = document.getElementById('cv');
+  const ctx = cv.getContext('2d');
+  const W = 900, H = 520;
+  const dpr = Math.max(1, window.devicePixelRatio || 1);
+  cv.width = W*dpr; cv.height = H*dpr;
+  ctx.scale(dpr, dpr);
+
+  // ---------- 几何 ----------
+  const cx = 285;                 // 实验区水平中心
+  const supportY = 30;            // 支架顶
+  const housingBottom = 80;       // 测力计外壳底
+  const beakerTop = 232;
+  const liquidY = 300;            // 液面
+  const contLeft = 125, contRight = 445, contBottom = 476;
+  const ow = 72, oh = 80;         // 物体尺寸
+  const objTopMin = liquidY - 22 - oh;   // 完全提出
+  const objTopMax = liquidY + 10;        // 完全浸入
+  const g = 10, Vtotal = 1e-4;    // g=10, V=100cm³
+
+  // ---------- 状态 ----------
+  const liquids = [
+    {name:'酒精', rho:800,  color:'#f7ecc6', edge:'#e3cf86'},
+    {name:'清水', rho:1000, color:'#c4e6f7', edge:'#8fcdec'},
+    {name:'盐水', rho:1200, color:'#a9d8ef', edge:'#6fb6dd'},
+    {name:'水银', rho:13600,color:'#d3dae1', edge:'#9aa6b2'}
+  ];
+  let liq = liquids[1];
+  let rhoObj = 2500;
+  let objTop = 256;
+  let dragging = false, grabDY = 0;
+  let panelTab = 0;               // 0=实时数据 1=知识讲解
+  let teachScroll = 0;            // 讲解面板滚动位移
+  let panelDrag = false, panelLastY = 0;
+
+  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+  const FS = 18, FCAP = 190;
+  const getCss=v=>getComputedStyle(document.documentElement).getPropertyValue(v).trim();
+
+  // ---------- 物理 ----------
+  function physics(){
+    const objBottom = objTop + oh;
+    let f = 0;
+    if (objBottom > liquidY) f = clamp((objBottom - liquidY)/oh, 0, 1);
+    const G  = rhoObj * Vtotal * g;
+    const Vd = f * Vtotal;
+    const Fb = liq.rho * Vd * g;
+    const Fla = G - Fb;
+    const floating = Fla < 0;
+    return {objBottom, f, G, Vd, Fb, Fla, floating, reading: floating?0:Fla};
+  }
+
+  // ---------- 绘图基础 ----------
+  function roundRect(x,y,w,h,r){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y); ctx.arcTo(x+w,y,x+w,y+h,r);
+    ctx.arcTo(x+w,y+h,x,y+h,r); ctx.arcTo(x,y+h,x,y,r);
+    ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+  }
+  function spring(x,y1,y2,coils,color){
+    const len=y2-y1, amp=8, seg=coils*2;
+    ctx.strokeStyle=color; ctx.lineWidth=2.2; ctx.lineJoin='round';
+    ctx.beginPath(); ctx.moveTo(x,y1);
+    for(let i=1;i<seg;i++){const t=i/seg,yy=y1+len*t,xx=x+((i%2)?amp:-amp);ctx.lineTo(xx,yy);}
+    ctx.lineTo(x,y2); ctx.stroke();
+  }
+  function arrow(x,y,ux,uy,len,color,label,lx,ly){
+    if(len<3) return;
+    const ex=x+ux*len, ey=y+uy*len;
+    ctx.strokeStyle=color; ctx.fillStyle=color; ctx.lineWidth=3.5;
+    ctx.beginPath(); ctx.moveTo(x,y); ctx.lineTo(ex,ey); ctx.stroke();
+    const ah=10,aw=6,px=-uy,py=ux;
+    ctx.beginPath(); ctx.moveTo(ex,ey);
+    ctx.lineTo(ex-ux*ah+px*aw, ey-uy*ah+py*aw);
+    ctx.lineTo(ex-ux*ah-px*aw, ey-uy*ah-py*aw);
+    ctx.closePath(); ctx.fill();
+    if(label){ ctx.fillStyle=color; ctx.font='bold 14px sans-serif'; ctx.fillText(label,lx,ly); }
+  }
+  // 自动换行排版；render=false 时只测量高度，不实际绘制
+  function drawWrapped(text,x,y,maxW,lh,render){
+    const doDraw = (render !== false);
+    let line='';
+    for(const ch of text){
+      const test=line+ch;
+      if(ctx.measureText(test).width>maxW && line){ if(doDraw) ctx.fillText(line,x,y); line=ch; y+=lh; }
+      else line=test;
+    }
+    if(line){ if(doDraw) ctx.fillText(line,x,y); y+=lh; }
+    return y;
+  }
+
+  // ---------- 渲染 ----------
+  function render(){
+    const P = physics();
+    ctx.clearRect(0,0,W,H);
+
+    // 烧杯
+    ctx.fillStyle='#fff';
+    ctx.strokeStyle='#c4cedb'; ctx.lineWidth=2.5;
+    ctx.beginPath();
+    ctx.moveTo(contLeft, beakerTop);
+    ctx.lineTo(contLeft, contBottom);
+    ctx.lineTo(contRight, contBottom);
+    ctx.lineTo(contRight, beakerTop);
+    ctx.stroke();
+
+    // 液体（带波纹）
+    const grad=ctx.createLinearGradient(0,liquidY,0,contBottom);
+    grad.addColorStop(0,liq.color); grad.addColorStop(1,liq.edge);
+    ctx.fillStyle=grad;
+    ctx.beginPath(); ctx.moveTo(contLeft,liquidY);
+    const t=performance.now()/600;
+    for(let x=contLeft;x<=contRight;x+=6){
+      ctx.lineTo(x, liquidY+Math.sin(x*0.06+t)*2);
+    }
+    ctx.lineTo(contRight,contBottom); ctx.lineTo(contLeft,contBottom); ctx.closePath(); ctx.fill();
+
+    // 支架 + 测力计
+    ctx.fillStyle='#7a8696';
+    ctx.fillRect(cx-66, supportY-12, 132, 10);
+    ctx.fillRect(cx-3, supportY-2, 6, 12);
+    ctx.fillStyle='#eef3f8'; ctx.strokeStyle='#9fb0c2'; ctx.lineWidth=2;
+    roundRect(cx-28, supportY, 56, housingBottom-supportY, 8); ctx.fill(); ctx.stroke();
+    // 表盘
+    const dcx=cx, dcy=supportY+26, R=15;
+    ctx.strokeStyle='#5b6b7d'; ctx.lineWidth=1.4;
+    ctx.beginPath(); ctx.arc(dcx,dcy,R,Math.PI,2*Math.PI); ctx.stroke();
+    for(let i=0;i<=4;i++){const a=Math.PI+(i/4)*Math.PI;
+      ctx.beginPath();
+      ctx.moveTo(dcx+Math.cos(a)*(R-3), dcy+Math.sin(a)*(R-3));
+      ctx.lineTo(dcx+Math.cos(a)*R, dcy+Math.sin(a)*R); ctx.stroke();}
+    const frac=clamp(P.reading/P.G,0,1), na=Math.PI+frac*Math.PI;
+    ctx.strokeStyle='#e63946'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(dcx,dcy);
+    ctx.lineTo(dcx+Math.cos(na)*(R-3), dcy+Math.sin(na)*(R-3)); ctx.stroke();
+    ctx.fillStyle='#5b6b7d'; ctx.font='bold 11px sans-serif'; ctx.textAlign='center';
+    ctx.fillText(P.reading.toFixed(2)+'N', dcx, supportY+46); ctx.textAlign='left';
+
+    // 弹簧
+    spring(cx, housingBottom, objTop, 8, '#8a98a8');
+
+    // 物体
+    const ox=cx-ow/2;
+    const og=ctx.createLinearGradient(ox,0,ox+ow,0);
+    og.addColorStop(0,'#b9c2cc'); og.addColorStop(.5,'#dde4ec'); og.addColorStop(1,'#aab4c0');
+    ctx.fillStyle=og; ctx.strokeStyle='#7d8896'; ctx.lineWidth=2;
+    roundRect(ox,objTop,ow,oh,7); ctx.fill(); ctx.stroke();
+    if(P.f>0){
+      ctx.save(); roundRect(ox,objTop,ow,oh,7); ctx.clip();
+      ctx.fillStyle='rgba(40,130,200,0.22)'; ctx.fillRect(ox,liquidY,ow,oh); ctx.restore();
+    }
+    if(!dragging){
+      ctx.fillStyle='rgba(40,60,90,.5)'; ctx.font='12px sans-serif'; ctx.textAlign='center';
+      ctx.fillText('↕ 拖动', cx, objTop+oh/2+4); ctx.textAlign='left';
+    }
+
+    // 受力箭头
+    const cyObj=objTop+oh/2;
+    arrow(cx, cyObj, 0,1, Math.min(P.G*FS,FCAP), getCss('--grav'),'G', cx+12, cyObj+Math.min(P.G*FS,FCAP)-6);
+    const tx=cx-18;
+    if(!P.floating)
+      arrow(tx,objTop,0,-1, Math.min(P.reading*FS,FCAP), getCss('--tens'),'F拉', tx-42, objTop-Math.min(P.reading*FS,FCAP)+13);
+    else { ctx.fillStyle=getCss('--tens'); ctx.font='bold 12px sans-serif'; ctx.fillText('松弛',tx-30,objTop-6); }
+    if(P.f>0){
+      const by=(liquidY+P.objBottom)/2, bx=cx+18;
+      arrow(bx,by,0,-1, Math.min(P.Fb*FS,FCAP), getCss('--buoy'),'F浮', bx+6, by-Math.min(P.Fb*FS,FCAP)+13);
+    }
+
+    drawPanel(P);
+    requestAnimationFrame(render);
+  }
+
+  // ---------- 右侧面板（同框）：实时数据 / 知识讲解 双标签 ----------
+  const PANEL = {x0:590, y0:22, w:290, h:476};
+  function tabRects(){
+    const tw=(PANEL.w-32)/2;
+    return [
+      {x:PANEL.x0+16,      y:PANEL.y0+14, w:tw, h:26, label:'实时数据'},
+      {x:PANEL.x0+16+tw,   y:PANEL.y0+14, w:tw, h:26, label:'知识讲解'}
+    ];
+  }
+  function drawPanel(P){
+    const {x0,y0,w,h}=PANEL;
+    ctx.fillStyle='#ffffff'; ctx.strokeStyle='#dbe3ec'; ctx.lineWidth=1.5;
+    roundRect(x0,y0,w,h,12); ctx.fill(); ctx.stroke();
+    tabRects().forEach((t,i)=>{
+      const on = (i===panelTab);
+      ctx.fillStyle   = on ? '#eef5ff' : '#f7f9fb';
+      ctx.strokeStyle = on ? getCss('--accent') : '#e3e9f0';
+      ctx.lineWidth   = 1.3;
+      roundRect(t.x,t.y,t.w,t.h,7); ctx.fill(); ctx.stroke();
+      ctx.fillStyle = on ? getCss('--accent') : '#8a97a6';
+      ctx.font = (on?'bold ':'')+'12.5px sans-serif'; ctx.textAlign='center';
+      ctx.fillText(t.label, t.x+t.w/2, t.y+17); ctx.textAlign='left';
+    });
+    if(panelTab===0) drawData(P); else drawTeach();
+  }
+
+  // —— 标签①：实时数据 ——
+  function drawData(P){
+    const {x0,y0,w}=PANEL;
+    let y=y0+60; const step=30;
+    const row=(k,v,vc)=>{
+      ctx.fillStyle='#6b7a8d'; ctx.font='12.5px sans-serif'; ctx.textAlign='left';
+      ctx.fillText(k,x0+16,y);
+      ctx.fillStyle=vc||'#1f2d3d'; ctx.font='bold 13.5px sans-serif'; ctx.textAlign='right';
+      ctx.fillText(v,x0+w-16,y); ctx.textAlign='left'; y+=step;
+    };
+    row('液体密度 ρ液', (liq.rho/1000).toFixed(2)+' g/cm³');
+    row('排开体积 V排', (P.Vd*1e6).toFixed(1)+' cm³');
+    row('浸入比例',     (P.f*100).toFixed(0)+' %');
+    row('空气中重 G',   P.G.toFixed(2)+' N');
+    row('测力计读数 F拉', P.reading.toFixed(2)+' N', P.floating?getCss('--grav'):null);
+    row('浮力 F浮=G−F拉', (P.G-P.reading).toFixed(2)+' N', getCss('--buoy'));
+    row('理论 F浮=ρVg',  P.Fb.toFixed(2)+' N', getCss('--buoy'));
+
+    y+=2;
+    ctx.fillStyle='#f7faff'; ctx.strokeStyle='#c9dbf5'; ctx.lineWidth=1;
+    roundRect(x0+14,y,w-28,56,8); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#2b7de9'; ctx.font='bold 12px sans-serif'; ctx.textAlign='left';
+    ctx.fillText('F浮 = G − F拉', x0+24, y+19);
+    ctx.fillText('= '+P.G.toFixed(2)+' − '+P.reading.toFixed(2)+' = '+(P.G-P.reading).toFixed(2)+' N', x0+24, y+36);
+    ctx.fillText('F浮 = ρ液·V排·g = '+P.Fb.toFixed(2)+' N', x0+24, y+52);
+    y+=64;
+
+    ctx.font='11.5px sans-serif';
+    const note = P.floating
+      ? '⚠ 浮力 > 重力：物体上浮，弹簧松弛、读数为 0。该液体密度远大于物体，浮力极大。'
+      : '浸入越深（V排 越大）或液体密度越大 → 浮力越大，测力计读数越小。';
+    ctx.fillStyle = P.floating ? getCss('--grav') : '#6b7a8d';
+    drawWrapped(note, x0+16, y+6, w-32, 16);
+  }
+
+  // —— 标签②：知识讲解（详讲版，可滚动） ——
+  const TEACH_TOP = 48, TEACH_VIEW = 400;   // 相对面板的视口
+  function teachLayout(startY, render){
+    const {x0,w}=PANEL, maxW=w-38, x=x0+16, draw=(render===true), LH=15.5;
+    let y=startY;
+    ctx.textAlign='left';
+    const put=(t,fnt,col,ind)=>{
+      ctx.font=fnt;
+      if(draw) ctx.fillStyle=col;
+      y = drawWrapped(t, x+(ind||0), y, maxW-(ind||0), LH, draw);
+    };
+    const gap=v=>{ y+=v; };
+    const h1=t=>{ gap(15); put(t,'bold 13px sans-serif',getCss('--accent')); gap(3); };
+    const p  =t=>{ put(t,'11.5px sans-serif','#5a6675'); gap(1); };
+    const bul=t=>{ put('· '+t,'11.5px sans-serif','#5a6675'); gap(1); };
+    const stp=(n,t)=>{ put(n+' '+t,'11.5px sans-serif','#5a6675'); gap(1); };
+    const strong=t=>{ put(t,'bold 11.5px sans-serif',getCss('--buoy')); gap(1); };
+
+    // 顶部核心公式卡
+    if(draw){
+      ctx.fillStyle='#f7faff'; ctx.strokeStyle='#c9dbf5'; ctx.lineWidth=1;
+      roundRect(x0+14,y,w-28,50,8); ctx.fill(); ctx.stroke();
+      ctx.fillStyle=getCss('--buoy'); ctx.font='bold 12.5px sans-serif';
+      ctx.fillText('F浮 = G − F拉   称重法（差值）', x0+24, y+20);
+      ctx.fillText('F浮 = ρ液 · g · V排   决定式',   x0+24, y+39);
+    }
+    y+=56;
+
+    h1('一、实验思路：为什么用"称重"测浮力？');
+    p('浮力看不见摸不着，无法直接测量，只能用间接测量——差值法。');
+    p('物体在空气中静止时，弹簧测力计的读数就是物体的重力 G。');
+    p('把物体浸入液体后，液体向上托住物体，替弹簧分担了一部分力，弹簧就"轻松"了，读数随之变小，记为拉力 F拉。');
+    p('被液体"分担"掉的那一部分，正是浮力：');
+    strong('F浮 = G − F拉');
+    p('这种先测 G、再测 F拉、两者相减求浮力的方法叫称重法，是初中测量浮力的基本方法。');
+
+    h1('二、实验过程（可对照左侧仿真）');
+    stp('①','在空气中：物体未接触液体，V排 = 0，F浮 = 0，此时读数 F拉 = G。');
+    stp('②','部分浸入：读数变小为 F拉1，求出 F浮1 = G − F拉1。');
+    stp('③','继续加深：V排 变大，读数继续变小，算出的 F浮 也变大。');
+    stp('④','完全浸没：V排 = V物，读数达到最小，F浮 达到最大。');
+    stp('⑤','浸没后继续加深：V排 不再变化，读数不变 → 浮力与深度无关。');
+    stp('⑥','换成密度更大的液体：同一 V排 下读数更小 → 浮力更大。');
+    p('动手验证：拖动方块改变浸入体积，切换清水／盐水／酒精／水银改变液体密度。');
+
+    h1('三、实验结论');
+    bul('浮力大小与排开液体的体积 V排 有关：V排 越大，浮力越大。');
+    bul('浮力大小还与液体密度 ρ液 有关：ρ液 越大，浮力越大。');
+    bul('物体完全浸没后，浮力大小与所处深度无关。');
+    p('综合以上两点就是阿基米德原理：');
+    strong('F浮 = ρ液 · g · V排');
+
+    h1('四、易错提醒（高频考点）');
+    bul('F浮 只由 ρ液 和 V排 决定，与物体的重力、密度、形状、材料都无关。铁块和铝块只要 V排 相同、液体相同，浮力就相同。');
+    bul('注意"浸入"不等于"浸没"：部分浸入时 V排 < V物，只有完全浸没才有 V排 = V物。');
+    bul('代入公式必须用 V排，不能图省事直接代入 V物。');
+    bul('读数变小的原因不是重力变小了！重力 G 始终不变，变小的是弹簧的拉力 F拉。');
+    bul('单位要换算：ρ 用 kg/m³、V 用 m³、g 取 10 N/kg，结果才是 N。1 g/cm³ = 1000 kg/m³，1 cm³ = 10⁻⁶ m³。');
+
+    h1('五、典型例题');
+    p('物体在空气中称得 G = 2.50 N，完全浸入水中后读数 F拉 = 1.50 N，求浮力、物体体积和密度。（本仿真的默认参数正是此题）');
+    p('解：F浮 = G − F拉 = 2.50 − 1.50 = 1.00 N');
+    p('浸没时 V物 = V排，由 F浮 = ρ水 g V排 得：');
+    p('V物 = F浮 / (ρ水 g) = 1.00 / (1.0×10³ × 10) = 1.0×10⁻⁴ m³ = 100 cm³');
+    p('m = G / g = 2.50 / 10 = 0.25 kg');
+    p('ρ物 = m / V = 0.25 / 1.0×10⁻⁴ = 2.5×10³ kg/m³ = 2.5 g/cm³');
+    p('对照仿真：切换到"实时数据"，完全浸入清水，读数应显示 1.50 N、浮力 1.00 N。');
+
+    return y;
+  }
+  function drawTeach(){
+    const {x0,y0,w,h}=PANEL;
+    const top = y0+TEACH_TOP, viewH = TEACH_VIEW;
+    const contentH = teachLayout(top, false) - top;          // 先测量
+    teachScroll = clamp(teachScroll, 0, Math.max(0, contentH-viewH));
+    ctx.save();
+    ctx.beginPath(); ctx.rect(x0+4, top-4, w-8, viewH+6); ctx.clip();
+    ctx.translate(0, -teachScroll);
+    teachLayout(top, true);
+    ctx.restore();
+    if(contentH > viewH){
+      const tx=x0+w-9, th=viewH;
+      ctx.fillStyle='#eef2f7'; roundRect(tx,top,4,th,2); ctx.fill();
+      const thumbH=Math.max(34, th*viewH/contentH);
+      const thumbY=top+(th-thumbH)*(teachScroll/(contentH-viewH));
+      ctx.fillStyle='#b9c7d6'; roundRect(tx,thumbY,4,thumbH,2); ctx.fill();
+      ctx.fillStyle='#a8b4c2'; ctx.font='10.5px sans-serif'; ctx.textAlign='right';
+      ctx.fillText('滚轮 / 拖动滚动查看全文', x0+w-14, y0+h-9); ctx.textAlign='left';
+    }
+  }
+
+  // ---------- 交互 ----------
+  function canvasPos(e){
+    const r=cv.getBoundingClientRect();
+    return {x:(e.clientX-r.left)*(W/r.width), y:(e.clientY-r.top)*(H/r.height)};
+  }
+  cv.addEventListener('pointerdown', e=>{
+    const p=canvasPos(e);
+    // 先判断是否点击面板标签
+    const tabs=tabRects();
+    for(let i=0;i<tabs.length;i++){
+      const t=tabs[i];
+      if(p.x>t.x && p.x<t.x+t.w && p.y>t.y && p.y<t.y+t.h){
+        panelTab=i; e.preventDefault(); return;
+      }
+    }
+    // 点击讲解面板内部 → 拖动滚动（支持触屏）
+    if(panelTab===1 && p.x>PANEL.x0+4 && p.x<PANEL.x0+PANEL.w-4 &&
+       p.y>PANEL.y0+TEACH_TOP-4 && p.y<PANEL.y0+TEACH_TOP+TEACH_VIEW+2){
+      panelDrag=true; panelLastY=p.y; e.preventDefault(); return;
+    }
+    const ox=cx-ow/2;
+    if(p.x>ox-6 && p.x<ox+ow+6 && p.y>objTop-30 && p.y<objTop+oh+6){
+      dragging=true; grabDY=p.y-objTop; cv.classList.add('drag');
+      cv.setPointerCapture && cv.setPointerCapture(e.pointerId); e.preventDefault();
+    }
+  });
+  cv.addEventListener('pointermove', e=>{
+    const p=canvasPos(e);
+    if(panelDrag){ teachScroll -= (p.y-panelLastY); panelLastY=p.y; e.preventDefault(); return; }
+    if(!dragging) return;
+    objTop=clamp(p.y-grabDY, objTopMin, objTopMax); e.preventDefault();
+  });
+  // 滚轮滚动讲解面板
+  cv.addEventListener('wheel', e=>{
+    if(panelTab!==1) return;
+    const p=canvasPos(e);
+    if(p.x>PANEL.x0 && p.x<PANEL.x0+PANEL.w && p.y>PANEL.y0 && p.y<PANEL.y0+PANEL.h){
+      teachScroll += e.deltaY; e.preventDefault();
+    }
+  }, {passive:false});
+  window.addEventListener('pointerup', ()=>{dragging=false; panelDrag=false; cv.classList.remove('drag');});
+
+  // ---------- 控制 ----------
+  const lq=document.getElementById('liquids');
+  liquids.forEach((L,i)=>{
+    const d=document.createElement('div');
+    d.className='liq'+(L===liq?' active':'');
+    d.innerHTML='<span class="swatch" style="background:'+L.color+'"></span>'+L.name+
+                '<span style="color:#8a97a6;margin-left:2px">'+(L.rho/1000).toFixed(2)+'</span>';
+    d.onclick=()=>{liq=L;[...lq.children].forEach(c=>c.classList.remove('active'));d.classList.add('active');};
+    lq.appendChild(d);
+  });
+  const rhoS=document.getElementById('rho'), rhoV=document.getElementById('rhoVal');
+  rhoS.oninput=()=>{rhoObj=parseFloat(rhoS.value)*1000; rhoV.textContent=parseFloat(rhoS.value).toFixed(1);};
+  document.getElementById('bIn').onclick=()=>objTop=objTopMax;
+  document.getElementById('bOut').onclick=()=>objTop=objTopMin;
+  document.getElementById('bReset').onclick=()=>{
+    objTop=256; liq=liquids[1]; rhoS.value=2.5; rhoObj=2500; rhoV.textContent='2.5';
+    [...lq.children].forEach((c,i)=>c.classList.toggle('active',i===1));
+  };
+
+  render();
+})();
+</script>
+</body>
+</html>

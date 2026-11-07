@@ -1,0 +1,433 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>压力的作用效果（压强）</title>
+<style>
+  :root{
+    --bg:#f5f7fa; --card:#ffffff; --ink:#1f2933; --sub:#5b6b7b;
+    --line:#e3e8ef; --accent:#2f6df0; --accent2:#ff7043; --good:#2bb673;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0 auto; max-width:1240px;
+    font-family:"PingFang SC","Microsoft YaHei",system-ui,-apple-system,Segoe UI,Roboto,sans-serif;
+    background:var(--bg); color:var(--ink); padding:18px; line-height:1.6;
+  }
+  h1{font-size:21px; margin:0 0 4px;}
+  .lead{color:var(--sub); font-size:13.5px; margin:0 0 16px; max-width:880px;}
+  /* 实验下方的说明条 */
+  .note-strip{background:#eef4ff; border:1px solid #cfe0ff; border-left:4px solid var(--accent);
+              border-radius:8px; padding:9px 13px; font-size:12.5px; color:#2b3a52;
+              line-height:1.7; margin-top:10px;}
+  .note-strip b{color:var(--accent);}
+  .note-strip code{background:#dfe9ff;}
+  .wrap{display:flex; gap:16px; flex-wrap:wrap; align-items:flex-start;}
+  .card{background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px;
+        box-shadow:0 2px 10px rgba(20,40,80,.05);}
+  .stage{flex:2 1 460px; min-width:340px;}
+  .panel{flex:1 1 290px; min-width:280px; display:flex; flex-direction:column; gap:14px;}
+  canvas{width:100%; height:auto; display:block; border-radius:10px; background:#f0f4f9;}
+  .ctrl{margin-bottom:6px;}
+  .ctrl > label{display:block; font-size:13px; font-weight:600; margin-bottom:6px;}
+  .ctrl .val{color:var(--accent);}
+  input[type=range]{width:100%; accent-color:var(--accent);}
+  .seg{display:flex; gap:8px;}
+  .seg button{flex:1; padding:9px 0; border:1px solid var(--line); background:#fff; border-radius:10px;
+              font-size:14px; cursor:pointer; transition:.15s; color:var(--ink);}
+  .seg button.on{background:var(--accent); color:#fff; border-color:var(--accent); font-weight:600;}
+  .seg button:hover{border-color:var(--accent);}
+  .reads{display:grid; grid-template-columns:repeat(3,1fr); gap:10px;}
+  .read{background:#f7f9fc; border:1px solid var(--line); border-radius:10px; padding:10px;text-align:center;}
+  .read .k{font-size:12px; color:var(--sub);}
+  .read .v{font-size:20px; font-weight:700; margin-top:2px;}
+  .read .u{font-size:11px; color:var(--sub);}
+  .pwrap{grid-column:1 / -1; background:linear-gradient(135deg,#eaf1ff,#f3f8ff);}
+  .pwrap .v{font-size:30px; color:var(--accent);}
+  .bar{height:8px; border-radius:4px; background:var(--accent); margin-top:8px;}
+
+  /* 计算过程卡片 */
+  .calc{padding:12px;}
+  .calc-h{font-size:12px; color:var(--sub); margin-bottom:8px; font-weight:600;}
+  .calc-line{font-family:"SFMono-Regular",Consolas,"Liberation Mono",monospace; background:#f7f9fc;
+             border:1px solid var(--line); border-left:3px solid var(--accent);
+             border-radius:8px; padding:7px 10px; margin-bottom:7px; line-height:1.5; font-size:13px;}
+  .calc-line b{color:var(--accent);}
+  .calc-line .mut{color:var(--sub);}
+
+  /* 知识点讲解 */
+  .explain{margin-top:12px;}
+  .explain h2{font-size:17px; margin:0 0 10px;}
+  .def{background:#f7f9fc; border:1px solid var(--line); border-left:4px solid var(--accent);
+       border-radius:8px; padding:10px 12px; font-size:13.5px; margin-bottom:12px;}
+  .def b{color:var(--accent);}
+  .areanote{background:#fff8ec; border:1px solid #ffe2b0; border-radius:8px; padding:10px 12px;
+            font-size:13.5px; color:#7a5410; margin-bottom:14px;}
+  .areanote b{color:#b9690a;}
+
+  .rules3{display:grid; grid-template-columns:repeat(3,1fr); gap:12px;}
+  .rule{border:1px solid var(--line); border-radius:12px; padding:12px; background:#fff;
+        display:flex; flex-direction:column;}
+  .rule .num{display:inline-block; width:22px; height:22px; line-height:22px; text-align:center;
+             background:var(--accent); color:#fff; border-radius:50%; font-size:13px; font-weight:700; margin-right:8px;}
+  .rule h3{font-size:14px; margin:0 0 8px; display:flex; align-items:center;}
+  .rule p{font-size:13px; color:#3a4754; margin:0 0 10px; flex:1;}
+  .rule .btn{padding:8px 10px; border:1px solid var(--line); background:#fff; border-radius:10px;
+             font-size:12.5px; cursor:pointer; color:var(--ink);}
+  .rule .btn:hover{border-color:var(--accent); color:var(--accent);}
+  .rule .btn.alt{background:var(--accent); color:#fff; border-color:var(--accent);}
+
+  .status{margin-top:12px; font-size:13px; color:#0f6b3a; background:#eafaf1; border:1px solid #bfe9cf;
+          border-radius:8px; padding:9px 12px;}
+
+  code{background:#eef2f7; padding:1px 6px; border-radius:6px; font-size:12px;}
+  @media(max-width:760px){ .rules3{grid-template-columns:1fr;} .reads{grid-template-columns:repeat(2,1fr);} }
+</style>
+</head>
+<body>
+  <h1>压力的作用效果（压强）</h1>
+  <p class="lead">小桌 + 砝码 + 海绵。拖动「砝码质量」滑块改变 <b>压力 F</b>，点击「正放 / 倒放」改变 <b>受力面积 S</b>，观察海绵凹陷深度与压强 <code>P = F / S</code> 的变化。</p>
+
+  <div class="wrap">
+    <div class="card stage">
+      <canvas id="cv" width="720" height="512"></canvas>
+      <div class="note-strip">
+        <b>说明</b>：小桌自重取 <code>m桌 = 0.2 kg</code>，重力 <code>g = 10 N/kg</code>；总压力 <code>F = (m桌 + m砝码)·g</code>。
+        正放时两条桌腿接触（<code>S ≈ 100 cm²</code>），倒放时桌面接触（<code>S ≈ 400 cm²</code>）。海绵凹陷深度按压强大小线性映射，仅用于直观演示，不代表真实形变量。
+      </div>
+    </div>
+
+    <div class="panel">
+      <div class="card">
+        <div class="ctrl">
+          <label>砝码质量 m：<span class="val" id="mLabel">0.50 kg</span></label>
+          <input type="range" id="mass" min="0" max="2" step="0.1" value="0.5" />
+        </div>
+        <div class="ctrl" style="margin-top:12px">
+          <label>小桌放置方式（改变受力面积）</label>
+          <div class="seg">
+            <button id="btnUp" class="on">正放（小面积）</button>
+            <button id="btnDown">倒放（大面积）</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="card calc">
+        <div class="calc-h">计算过程（砝码质量变化时实时代入公式）</div>
+        <div class="calc-line" id="calcF">—</div>
+        <div class="calc-line" id="calcS">—</div>
+        <div class="calc-line" id="calcP">—</div>
+      </div>
+
+      <div class="card reads">
+        <div class="read"><div class="k">压力 F</div><div class="v" id="vF">—</div><div class="u">N（牛）</div></div>
+        <div class="read"><div class="k">受力面积 S</div><div class="v" id="vS">—</div><div class="u">cm²</div></div>
+        <div class="read"><div class="k">海绵凹陷深度</div><div class="v" id="vD">—</div><div class="u">相对深度</div></div>
+        <div class="read pwrap"><div class="k">压强 P = F / S</div><div class="v" id="vP">—</div><div class="u">Pa（帕）</div>
+          <div class="bar" id="bar"></div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div class="card explain">
+    <h2>知识点讲解</h2>
+
+    <div class="def">
+      <b>压强</b>：物体所受压力的大小与受力面积之比叫作压强，即
+      <code>p = F / S</code>。压强的单位是<b>帕斯卡</b>（简称帕，符号 <b>Pa</b>），
+      <code>1 Pa = 1 N/m²</code>。压强表示压力的作用效果——压强越大，作用效果越明显（海绵凹陷越深）。
+    </div>
+
+    <div class="areanote">
+      <b>受力面积到底是什么？</b> 受力面积是指两个物体<b>真正相互接触</b>的那部分面积，而不是某个物体的全部表面积。<br>
+      在本实验中：<b>正放</b>时小桌用<b>两条桌腿</b>压在海绵上，接触面积小（S ≈ 100 cm²）；<b>倒放</b>时小桌的<b>桌面</b>朝下压在海绵上，接触面积大（S ≈ 400 cm²）。画布上蓝色高亮区域即为当前的受力面积。
+    </div>
+
+    <div class="rules3">
+      <div class="rule">
+        <h3><span class="num">1</span>压力相同 · 比面积</h3>
+        <p>保持砝码质量不变（压力 F 相同），切换正放 / 倒放。会看到：<b>正放（面积小）</b>海绵凹陷更深、压强更大；<b>倒放（面积大）</b>凹陷更浅、压强更小。<br><br>
+          <b>结论：压力一定时，受力面积越小，压力作用效果越明显。</b></p>
+        <button class="btn alt" id="p1">① 一键演示（固定压力）</button>
+      </div>
+
+      <div class="rule">
+        <h3><span class="num">2</span>面积相同 · 比压力</h3>
+        <p>保持正放不变（受力面积 S 相同），改变砝码质量。会看到：<b>砝码越重</b>，海绵凹陷越深、压强越大；砝码越轻，凹陷越浅、压强越小。<br><br>
+          <b>结论：受力面积一定时，压力越大，压力作用效果越明显。</b></p>
+        <button class="btn alt" id="p2">② 一键演示（固定面积）</button>
+      </div>
+
+      <div class="rule">
+        <h3><span class="num">★</span>探究结论</h3>
+        <p>压力的作用效果（压强）同时与<b>压力大小</b>和<b>受力面积大小</b>有关：<br>
+          · 受力面积一定，压力越大，效果越明显；<br>
+          · 压力一定，受力面积越小，效果越明显。</p>
+        <button class="btn" id="reset">重置参数</button>
+      </div>
+    </div>
+
+    <div class="status" id="status">提示：在上方拖动「砝码质量」滑块、点击「正放 / 倒放」，画布右侧"计算过程"会随砝码质量实时代入公式，算出压力 F 与压强 P。</div>
+  </div>
+
+<script>
+(function(){
+  const cv = document.getElementById('cv');
+  const ctx = cv.getContext('2d');
+  const W = cv.width, H = cv.height;
+
+  // 物理常量
+  const g = 10;            // N/kg
+  const mTable = 0.2;      // kg
+  const S_UP = 0.01,  S_UP_CM = 100;    // 正放 小面积
+  const S_DOWN = 0.04, S_DOWN_CM = 400; // 倒放 大面积
+
+  // 场景几何
+  const cx = 360;
+  const spongeTopY = 301, spongeBottomY = 466;
+  const spongeL = 60, spongeR = 660;
+  const maxDepth = 70;
+  const P_MAX = (mTable + 2.0) * g / S_UP;
+
+  // 桌腿位置与宽度：正放时真正的受力面积就是这两个脚底
+  const LEG_X = [-56, 56], LEG_W = 12;
+  // 受力面积半宽（画布像素）：倒放 = 桌面宽度；正放仅用于计算海绵形变扩散范围
+  const DOWN_HALF = 120, UP_HALF = 64;
+
+  const state = { mode:'up', mWeight:0.5, dCur:0, dTar:0 };
+
+  const clamp=(v,a,b)=>Math.max(a,Math.min(b,v));
+  function smooth(t){t=clamp(t,0,1);return t*t*(3-2*t);}
+
+  function physics(){
+    const F = (mTable + state.mWeight) * g;
+    const S = state.mode==='up'? S_UP : S_DOWN;
+    const Scm = state.mode==='up'? S_UP_CM : S_DOWN_CM;
+    const P = F / S;
+    return {F,S,Scm,P};
+  }
+
+  // 真正的受力面积（与海绵接触的部分）：
+  // 正放 = 两条桌腿的两个脚底（两个小块）；倒放 = 整个桌面（一整块）
+  function contactBoxes(){
+    return state.mode==='up'
+      ? LEG_X.map(lx => [cx + lx - LEG_W/2, cx + lx + LEG_W/2])
+      : [[cx - DOWN_HALF, cx + DOWN_HALF]];
+  }
+
+  // 海绵只在真正被压到的位置下陷：
+  // 正放 → 两条腿脚下各一个小坑，两腿之间不下陷；倒放 → 桌面下一整个大坑
+  function topYAt(x, d){
+    const trans = 42;
+    let f = 0;
+    contactBoxes().forEach(([x0,x1])=>{
+      let g;
+      if(x >= x0 && x <= x1) g = 1;
+      else {
+        const dist = x < x0 ? x0 - x : x - x1;
+        g = dist >= trans ? 0 : 1 - smooth(dist/trans);
+      }
+      if(g > f) f = g;
+    });
+    return spongeTopY + d*f;
+  }
+
+  function roundRect(x,y,w,h,r){
+    ctx.beginPath();
+    ctx.moveTo(x+r,y);
+    ctx.arcTo(x+w,y,x+w,y+h,r);
+    ctx.arcTo(x+w,y+h,x,y+h,r);
+    ctx.arcTo(x,y+h,x,y,r);
+    ctx.arcTo(x,y,x+w,y,r);
+    ctx.closePath();
+  }
+
+  // 画两条腿的小桌（与课本一致：两条细桌腿 + 一块台面）
+  function drawTable(baseY){
+    const Ht = 168;          // 桌高（台面到接触面）
+    const plateW = 240, plateH = 14;
+    const legs = LEG_X, legW = LEG_W;   // 与受力面积高亮框严格对齐
+    ctx.save();
+    ctx.lineWidth = 2; ctx.strokeStyle = '#a9703a';
+    ctx.fillStyle = '#b97d40';
+
+    if(state.mode==='up'){
+      const plateTop = baseY - Ht;
+      // 两条腿（向下接触海绵）
+      legs.forEach((lx)=>{
+        ctx.fillRect(cx+lx-legW/2, plateTop+plateH, legW, Ht-plateH);
+        ctx.strokeRect(cx+lx-legW/2, plateTop+plateH, legW, Ht-plateH);
+      });
+      // 台面
+      ctx.fillStyle = '#c98a4b';
+      roundRect(cx-plateW/2, plateTop, plateW, plateH, 5); ctx.fill(); ctx.stroke();
+      drawWeight(cx, plateTop);
+    } else {
+      const plateTop = baseY - plateH;   // 宽台面在底部接触海绵
+      const topY = baseY - Ht;          // 顶部（两条腿上端）
+      // 两条腿（向上）
+      legs.forEach((lx)=>{
+        ctx.fillStyle = '#b97d40';
+        ctx.fillRect(cx+lx-legW/2, topY, legW, Ht-plateH);
+        ctx.strokeRect(cx+lx-legW/2, topY, legW, Ht-plateH);
+      });
+      // 底部宽台面（受力面积）
+      ctx.fillStyle = '#c98a4b';
+      roundRect(cx-plateW/2, plateTop, plateW, plateH, 5); ctx.fill(); ctx.stroke();
+      // 顶部小平台（放砝码）
+      roundRect(cx-UP_HALF, topY-plateH, UP_HALF*2, plateH, 5); ctx.fill(); ctx.stroke();
+      drawWeight(cx, topY-plateH);
+    }
+    ctx.restore();
+  }
+
+  function drawWeight(cxTop, topY){
+    const wW = 116, wH = 44;
+    const x = cxTop - wW/2, y = topY - wH;
+    const F = physics().F;
+    const aLen = clamp(26 + F*1.6, 42, 62);
+    ctx.strokeStyle = '#e15554'; ctx.fillStyle='#e15554'; ctx.lineWidth=4;
+    const ax = cxTop, ay0 = y - aLen - 10, ay1 = y - 8;
+    ctx.beginPath(); ctx.moveTo(ax,ay0); ctx.lineTo(ax,ay1); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(ax,ay1); ctx.lineTo(ax-6,ay1-10); ctx.lineTo(ax+6,ay1-10); ctx.closePath(); ctx.fill();
+
+    const grad = ctx.createLinearGradient(x,0,x+wW,0);
+    grad.addColorStop(0,'#aab4bf'); grad.addColorStop(.5,'#cfd6dd'); grad.addColorStop(1,'#9aa6b2');
+    ctx.fillStyle = grad; ctx.strokeStyle='#7c8896'; ctx.lineWidth=2;
+    roundRect(x,y,wW,wH,6); ctx.fill(); ctx.stroke();
+    ctx.strokeStyle='rgba(255,255,255,.6)'; ctx.lineWidth=2;
+    ctx.beginPath(); ctx.moveTo(x+12,y+7); ctx.lineTo(x+wW-12,y+7); ctx.stroke();
+  }
+
+  function drawSponge(d){
+    // 未受压顶面对比虚线
+    ctx.strokeStyle='rgba(90,110,130,.45)'; ctx.setLineDash([6,5]); ctx.lineWidth=1.5;
+    ctx.beginPath(); ctx.moveTo(spongeL, spongeTopY); ctx.lineTo(spongeR, spongeTopY); ctx.stroke();
+    ctx.setLineDash([]);
+
+    // 海绵主体
+    ctx.beginPath();
+    ctx.moveTo(spongeL, spongeBottomY);
+    ctx.lineTo(spongeL, topYAt(spongeL,d));
+    for(let x=spongeL; x<=spongeR; x+=4){ ctx.lineTo(x, topYAt(x,d)); }
+    ctx.lineTo(spongeR, spongeBottomY);
+    ctx.closePath();
+    const sg = ctx.createLinearGradient(0,spongeTopY,0,spongeBottomY);
+    sg.addColorStop(0,'#ffe9a8'); sg.addColorStop(1,'#f3cf72');
+    ctx.fillStyle = sg; ctx.fill();
+    ctx.strokeStyle='#e0b94e'; ctx.lineWidth=1.5; ctx.stroke();
+
+    // 纹理点
+    ctx.fillStyle='rgba(214,170,70,.4)';
+    for(let gx=spongeL+14; gx<spongeR; gx+=26){
+      for(let gy=spongeTopY+24; gy<spongeBottomY-8; gy+=24){
+        const yy = Math.max(topYAt(gx,d)+10, gy);
+        ctx.beginPath(); ctx.arc(gx, yy, 2, 0, Math.PI*2); ctx.fill();
+      }
+    }
+
+    // 受力面积高亮：正放只框出两条桌腿的脚底，倒放框出整个桌面
+    ctx.fillStyle='rgba(47,109,240,.30)';
+    ctx.strokeStyle='rgba(47,109,240,.9)'; ctx.setLineDash([4,3]); ctx.lineWidth=2;
+    contactBoxes().forEach(([x0,x1])=>{
+      ctx.fillRect(x0, spongeTopY+d, x1-x0, 14);
+      ctx.strokeRect(x0, spongeTopY+d, x1-x0, 14);
+    });
+    ctx.setLineDash([]);
+
+    // 文字标注
+    ctx.fillStyle='#7a5a18'; ctx.font='13px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('海绵', cx, spongeBottomY-8);
+    ctx.fillStyle='#5b6b7b'; ctx.font='12px sans-serif'; ctx.textAlign='left';
+    ctx.fillText('虚线 = 未受压时的顶面', spongeL+4, spongeTopY-10);
+
+    // 受力面积说明（海绵下方）
+    const {Scm} = physics();
+    ctx.textAlign='center';
+    ctx.fillStyle='#2f6df0'; ctx.font='bold 13px sans-serif';
+    ctx.fillText('受力面积 S = ' + Scm + ' cm²', cx, spongeBottomY+22);
+    ctx.fillStyle='#5b6b7b'; ctx.font='11px sans-serif';
+    ctx.fillText(state.mode==='up'? '（两条桌腿与海绵的接触面）' : '（桌面与海绵的接触面）', cx, spongeBottomY+38);
+  }
+
+  function draw(){
+    ctx.clearRect(0,0,W,H);
+    ctx.fillStyle='#eef3f9'; ctx.fillRect(0, spongeBottomY, W, H-spongeBottomY);
+    const d = state.dCur;
+    const baseY = spongeTopY + d;
+    drawSponge(d);
+    drawTable(baseY);
+    requestAnimationFrame(loop);
+  }
+
+  function loop(){
+    const {P} = physics();
+    state.dTar = clamp((P / P_MAX) * maxDepth, 2, maxDepth);
+    state.dCur += (state.dTar - state.dCur) * 0.16;
+    updateReads();
+    draw();
+  }
+
+  function updateReads(){
+    const {F,S,Scm,P} = physics();
+    const m = state.mWeight;
+    document.getElementById('vF').textContent = F.toFixed(1);
+    document.getElementById('vS').textContent = Scm;
+    document.getElementById('vP').textContent = Math.round(P);
+    const depthPct = clamp((P/P_MAX)*100, 3, 100);
+    document.getElementById('vD').textContent = depthPct.toFixed(0) + '%';
+    const bar = document.getElementById('bar');
+    bar.style.flex = 1;
+    const t = clamp(P/P_MAX,0,1);
+    const r = Math.round(47 + t*(225-47));
+    const gg = Math.round(109 + t*(85-109));
+    const b = Math.round(240 + t*(84-240));
+    bar.style.background = `rgb(${r},${gg},${b})`;
+    bar.style.width = (depthPct) + '%';
+
+    // 计算过程：代入数值，不能凭空出现
+    document.getElementById('calcF').innerHTML =
+      `F = (m<sub>桌</sub> + m<sub>砝码</sub>)·g = (0.2 + <b>${m.toFixed(2)}</b>) × 10 = <b>${F.toFixed(1)} N</b>`;
+    document.getElementById('calcS').innerHTML =
+      `S = <b>${Scm} cm²</b> = <b>${S.toFixed(2)} m²</b>`;
+    document.getElementById('calcP').innerHTML =
+      `P = F / S = ${F.toFixed(1)} / ${S.toFixed(2)} = <b>${Math.round(P)} Pa</b>`;
+  }
+
+  // 交互
+  const mass = document.getElementById('mass');
+  const mLabel = document.getElementById('mLabel');
+  const status = document.getElementById('status');
+  mass.addEventListener('input', ()=>{
+    state.mWeight = parseFloat(mass.value);
+    mLabel.textContent = state.mWeight.toFixed(2) + ' kg';
+  });
+
+  function setMode(m){
+    state.mode = m;
+    document.getElementById('btnUp').classList.toggle('on', m==='up');
+    document.getElementById('btnDown').classList.toggle('on', m==='down');
+  }
+  document.getElementById('btnUp').addEventListener('click', ()=>setMode('up'));
+  document.getElementById('btnDown').addEventListener('click', ()=>setMode('down'));
+
+  document.getElementById('p1').addEventListener('click', ()=>{
+    mass.value = 1.0; state.mWeight = 1.0; mLabel.textContent = '1.00 kg';
+    status.textContent = '① 演示中：砝码固定 1.00 kg（压力相同）。请点击上方「正放 / 倒放」——面积越小（正放），海绵凹陷越深、压强越大。右侧"计算过程"会随之重算。';
+  });
+  document.getElementById('p2').addEventListener('click', ()=>{
+    setMode('up');
+    status.textContent = '② 演示中：保持正放（面积相同）。请拖动「砝码质量」滑块——压力越大，海绵凹陷越深、压强越大。';
+  });
+  document.getElementById('reset').addEventListener('click', ()=>{
+    mass.value = 0.5; state.mWeight = 0.5; mLabel.textContent = '0.50 kg'; setMode('up');
+    status.textContent = '已重置。先拖动「砝码质量」滑块，再点击「正放 / 倒放」，对比海绵凹陷与压强的不同。';
+  });
+
+  loop();
+})();
+</script>
+</body>
+</html>

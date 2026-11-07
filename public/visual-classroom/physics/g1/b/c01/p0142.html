@@ -1,0 +1,2029 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>模型25 · 可调发射角斜抛运动</title>
+<style>
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:#edf1f7;color:#1e293b;font:14px/1.55 system-ui,-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;-webkit-font-smoothing:antialiased}
+
+/* ---------- 顶栏 ---------- */
+.topbar{position:sticky;top:0;z-index:30;display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+  padding:10px 16px;background:rgba(255,255,255,.96);backdrop-filter:blur(6px);border-bottom:1px solid #dbe3ef}
+.brand{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap}
+.badge{background:#2563eb;color:#fff;font-size:11px;padding:2px 9px;border-radius:999px;letter-spacing:.6px}
+.brand h1{font-size:17px;margin:0;font-weight:650;letter-spacing:.3px}
+.brand .sub{font-size:12px;color:#64748b}
+.steps{margin-left:auto;display:flex;gap:6px;flex-wrap:wrap}
+.steps button{border:1px solid #dbe3ef;background:#f8fafc;color:#475569;padding:5px 11px;border-radius:999px;
+  font-size:12.5px;cursor:pointer;transition:.15s}
+.steps button:hover{border-color:#93c5fd;color:#1d4ed8}
+.steps button.on{background:#2563eb;border-color:#2563eb;color:#fff;box-shadow:0 2px 10px rgba(37,99,235,.28)}
+
+/* ---------- 教学提示条 ---------- */
+.tipbar{padding:8px 16px;background:#fffbeb;border-bottom:1px solid #fde68a;color:#78350f;font-size:13px;
+  display:flex;gap:12px;align-items:flex-start;flex-wrap:wrap}
+.tipbar b{color:#b45309;white-space:nowrap}
+.tipbar .q{color:#92400e;background:#fef3c7;border:1px solid #fcd34d;border-radius:6px;padding:1px 9px;font-size:12px}
+.tipbar .txt{flex:1;min-width:240px}
+
+/* ---------- 主布局 ---------- */
+.layout{display:grid;grid-template-columns:minmax(0,1fr) 356px;gap:12px;padding:12px 12px 0;align-items:start}
+.stage{position:relative;background:#fff;border:1px solid #dbe3ef;border-radius:14px;overflow:hidden;
+  box-shadow:0 4px 18px rgba(15,23,42,.06)}
+#scene{display:block;width:100%;height:clamp(360px,52vh,580px)}
+
+/* 画布叠加层 */
+.legend{position:absolute;top:10px;right:10px;background:rgba(255,255,255,.92);border:1px solid #e2e8f0;
+  border-radius:10px;padding:7px 10px;font-size:11.5px;line-height:1.75;color:#334155;pointer-events:none;
+  box-shadow:0 2px 10px rgba(15,23,42,.06)}
+.legend i{display:inline-block;width:14px;height:3px;border-radius:2px;margin-right:6px;vertical-align:3px}
+.legend i.dot{width:8px;height:8px;border-radius:50%;vertical-align:1px}
+
+.readout{position:absolute;top:10px;left:10px;background:rgba(255,255,255,.93);border:1px solid #e2e8f0;
+  border-radius:10px;padding:7px 11px;font:12px/1.7 ui-monospace,Consolas,"Courier New",monospace;color:#0f172a;
+  pointer-events:none;box-shadow:0 2px 10px rgba(15,23,42,.06);min-width:190px}
+.readout .k{color:#64748b}
+.readout b{font-weight:600}
+
+.resultcard{position:absolute;left:10px;bottom:10px;background:rgba(240,253,244,.96);border:1px solid #bbf7d0;
+  border-radius:10px;padding:7px 11px;font-size:12px;color:#14532d;line-height:1.75;display:none;
+  box-shadow:0 2px 10px rgba(15,23,42,.06);max-width:min(420px,72%)}
+.resultcard.show{display:block}
+.resultcard b{color:#166534}
+.resultcard .err{color:#b45309}
+
+.scaleTag{position:absolute;right:10px;bottom:10px;background:rgba(255,255,255,.9);border:1px solid #e2e8f0;
+  border-radius:8px;padding:3px 8px;font-size:11px;color:#64748b;pointer-events:none}
+
+/* ---------- 控制面板 ---------- */
+.panel{display:flex;flex-direction:column;gap:10px;max-height:calc(clamp(360px,52vh,580px) - 4px);overflow-y:auto;
+  padding-right:3px;scrollbar-width:thin}
+.panel::-webkit-scrollbar{width:7px}
+.panel::-webkit-scrollbar-thumb{background:#cbd5e1;border-radius:4px}
+.sec{background:#fff;border:1px solid #dbe3ef;border-radius:12px;padding:9px 11px 11px;
+  box-shadow:0 2px 8px rgba(15,23,42,.04)}
+.sec h3{margin:0 0 8px;font-size:12.5px;font-weight:650;color:#334155;letter-spacing:.4px;
+  display:flex;align-items:center;gap:6px}
+.sec h3::before{content:"";width:3px;height:12px;background:#2563eb;border-radius:2px}
+.row{display:flex;align-items:center;justify-content:space-between;gap:8px;margin:6px 0 2px;font-size:12.5px;color:#475569}
+.val{font:600 12.5px ui-monospace,Consolas,monospace;color:#1d4ed8;background:#eff6ff;border:1px solid #dbeafe;
+  border-radius:6px;padding:1px 7px;min-width:66px;text-align:center}
+input[type=range]{width:100%;accent-color:#2563eb;height:20px;cursor:pointer}
+.chk{display:flex;align-items:center;gap:6px;font-size:12.5px;color:#475569;cursor:pointer;margin-top:6px}
+.chk input{accent-color:#2563eb;width:14px;height:14px;cursor:pointer}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:2px 10px}
+.grid2 .chk{margin-top:4px}
+
+.btns{display:flex;flex-wrap:wrap;gap:6px}
+button{font-family:inherit}
+.btns button{border:1px solid #dbe3ef;background:#f8fafc;color:#334155;padding:5px 10px;border-radius:8px;
+  font-size:12.5px;cursor:pointer;transition:.15s}
+.btns button:hover{background:#eff6ff;border-color:#93c5fd;color:#1d4ed8}
+.btns button:active{transform:translateY(1px)}
+.btns button.primary{background:#2563eb;border-color:#2563eb;color:#fff;font-weight:600;box-shadow:0 2px 8px rgba(37,99,235,.28)}
+.btns button.primary:hover{background:#1d4ed8}
+.btns button:disabled{opacity:.45;cursor:not-allowed;transform:none}
+.seg{display:inline-flex;border:1px solid #dbe3ef;border-radius:8px;overflow:hidden;background:#f8fafc}
+.seg button{border:0;background:transparent;padding:4px 9px;font-size:12px;color:#475569;cursor:pointer}
+.seg button.on{background:#2563eb;color:#fff}
+.seg button:hover:not(.on){background:#eff6ff;color:#1d4ed8}
+
+.concl{font-size:12.3px;color:#334155;line-height:1.75}
+.concl .hl{color:#b45309;font-weight:600}
+.concl .num{font:600 12px ui-monospace,Consolas,monospace;color:#1d4ed8}
+.concl .warn{color:#b91c1c}
+.concl hr{border:0;border-top:1px dashed #e2e8f0;margin:7px 0}
+
+/* ---------- 图表 ---------- */
+.charts{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px;padding:12px}
+.card{background:#fff;border:1px solid #dbe3ef;border-radius:12px;padding:8px 10px 6px;
+  box-shadow:0 2px 8px rgba(15,23,42,.04);min-width:0}
+.card h3{margin:0 0 3px;font-size:12.5px;font-weight:600;color:#334155;display:flex;justify-content:space-between;
+  align-items:baseline;gap:6px}
+.card h3 em{font-style:normal;font-weight:400;color:#94a3b8;font-size:11px;white-space:nowrap}
+.card canvas{display:block;width:100%;height:168px}
+
+/* ---------- 底部：数据表 + 测验 ---------- */
+.bottom{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(0,1fr);gap:10px;padding:0 12px 18px}
+.tablewrap{max-height:230px;overflow:auto;border:1px solid #e2e8f0;border-radius:8px}
+table{width:100%;border-collapse:collapse;font-size:12px}
+th,td{padding:4px 6px;text-align:right;white-space:nowrap;border-bottom:1px solid #eef2f7}
+th{position:sticky;top:0;background:#f8fafc;color:#475569;font-weight:600;font-size:11.5px;z-index:1}
+td:first-child,th:first-child{text-align:center;color:#94a3b8}
+tbody tr:hover{background:#f8fbff}
+tbody tr.mark{background:#fffbeb}
+tbody tr.mark td{color:#b45309;font-weight:600}
+.empty{padding:18px;text-align:center;color:#94a3b8;font-size:12px}
+
+.quiz .q{margin-bottom:10px;padding-bottom:9px;border-bottom:1px dashed #e2e8f0}
+.quiz .q:last-child{border-bottom:0;margin-bottom:2px}
+.quiz .qt{font-size:12.8px;color:#1e293b;margin-bottom:5px;font-weight:600}
+.opt{display:block;width:100%;text-align:left;border:1px solid #e2e8f0;background:#fbfdff;color:#334155;
+  padding:5px 9px;border-radius:8px;margin:3px 0;font-size:12.3px;cursor:pointer;transition:.12s}
+.opt:hover{border-color:#93c5fd;background:#eff6ff}
+.opt.correct{background:#f0fdf4;border-color:#86efac;color:#166534;font-weight:600}
+.opt.wrong{background:#fef2f2;border-color:#fca5a5;color:#991b1b}
+.opt:disabled{cursor:default;opacity:1}
+.exp{display:none;margin-top:5px;font-size:12px;color:#7c2d12;background:#fffbeb;border:1px solid #fde68a;
+  border-radius:8px;padding:6px 9px;line-height:1.7}
+.exp.show{display:block}
+
+/* ---------- 响应式 ---------- */
+@media (max-width:1080px){
+  .layout{grid-template-columns:minmax(0,1fr)}
+  .panel{max-height:none;overflow:visible}
+  .charts{grid-template-columns:repeat(2,minmax(0,1fr))}
+  .bottom{grid-template-columns:minmax(0,1fr)}
+}
+@media (max-width:640px){
+  .brand h1{font-size:15px}
+  .brand .sub{display:none}
+  .charts{grid-template-columns:minmax(0,1fr)}
+  #scene{height:clamp(300px,44vh,420px)}
+  .legend{font-size:10.5px;padding:5px 7px}
+  .readout{font-size:11px;min-width:0;padding:5px 8px}
+  .resultcard{font-size:11px;max-width:88%}
+}
+</style>
+</head>
+<body>
+
+<!-- ================= 顶栏 ================= -->
+<header class="topbar">
+  <div class="brand">
+    <span class="badge">模型 25</span>
+    <h1>可调发射角斜抛运动</h1>
+    <span class="sub">交互式演示 · 单文件零依赖</span>
+  </div>
+  <nav class="steps" id="steps">
+    <button data-step="0" class="on">① 猜想</button>
+    <button data-step="1">② 实验</button>
+    <button data-step="2">③ 数据</button>
+    <button data-step="3">④ 结论</button>
+  </nav>
+</header>
+
+<!-- ================= 教学提示 ================= -->
+<div class="tipbar" id="tipbar">
+  <b id="tipTitle">① 猜想</b>
+  <span class="txt" id="tipText">先别急着发射：把 θ 依次设为 30°、45°、60° 各发射一次，再点「一键扫描」，观察落点标记板上的针脚。</span>
+  <span class="q" id="tipQ">待答：你认为哪个角度射得最远？为什么？</span>
+</div>
+
+<!-- ================= 主区 ================= -->
+<main class="layout">
+  <section class="stage">
+    <canvas id="scene"></canvas>
+
+    <div class="readout" id="readout">
+      <div><span class="k">t</span> = <b id="ro-t">0.00</b> s　<span class="k">x</span> = <b id="ro-x">0.00</b> m　<span class="k">y</span> = <b id="ro-y">0.00</b> m</div>
+      <div><span class="k">vₓ</span> = <b id="ro-vx">0.00</b> m/s　<span class="k">v_y</span> = <b id="ro-vy">0.00</b> m/s</div>
+      <div><span class="k">v</span> = <b id="ro-v">0.00</b> m/s　<span class="k">方向</span> = <b id="ro-ang">0.0</b>°</div>
+    </div>
+
+    <div class="legend">
+      <div><i style="background:#2563eb"></i>水平分运动 vₓ（等间距）</div>
+      <div><i style="background:#dc2626"></i>竖直分运动 v_y（对称变化）</div>
+      <div><i style="background:#f59e0b"></i>合速度 v（黄）</div>
+      <div><i style="background:#16a34a"></i>加速度 a = g（恒向下）</div>
+      <div><i class="dot" style="background:#334155"></i>轨迹 / 最高点 / 落点针</div>
+    </div>
+
+    <div class="resultcard" id="resultcard"></div>
+    <div class="scaleTag" id="scaleTag">比例 1 m ≈ 30 px</div>
+  </section>
+
+  <aside class="panel">
+    <!-- 发射参数 -->
+    <div class="sec">
+      <h3>发射参数（受控变量）</h3>
+      <div class="row"><label>发射角 θ</label><span class="val" id="vTheta">45°</span></div>
+      <input type="range" id="rTheta" min="0" max="90" step="1" value="45">
+      <label class="chk"><input type="checkbox" id="cSnap" checked>吸附到 5° 整数倍</label>
+
+      <div class="row"><label>初速度 v₀</label><span class="val" id="vV0">15.0 m/s</span></div>
+      <input type="range" id="rV0" min="5" max="30" step="0.5" value="15">
+
+      <div class="row"><label>发射台高 h₀</label><span class="val" id="vH0">0.0 m</span></div>
+      <input type="range" id="rH0" min="0" max="8" step="0.5" value="0">
+
+      <div class="row"><label>重力加速度 g</label>
+        <div class="seg" id="segG"><button data-g="9.8" class="on">9.8</button><button data-g="10">10</button></div>
+      </div>
+    </div>
+
+    <!-- 播放控制 -->
+    <div class="sec">
+      <h3>播放控制</h3>
+      <div class="btns" style="margin-bottom:7px">
+        <button id="bLaunch" class="primary">发射</button>
+        <button id="bPause">暂停</button>
+        <button id="bStep">单步</button>
+        <button id="bReset">重置</button>
+      </div>
+      <div class="row"><label>慢动作</label>
+        <div class="seg" id="segSpeed">
+          <button data-s="0.25">0.25×</button><button data-s="0.5">0.5×</button><button data-s="1" class="on">1×</button>
+        </div>
+      </div>
+    </div>
+
+    <!-- 图层 -->
+    <div class="sec">
+      <h3>图层显示</h3>
+      <div class="grid2">
+        <label class="chk"><input type="checkbox" id="cTrail" checked>轨迹线</label>
+        <label class="chk"><input type="checkbox" id="cStrobe">频闪残影</label>
+        <label class="chk"><input type="checkbox" id="cVel" checked>速度矢量</label>
+        <label class="chk"><input type="checkbox" id="cAcc" checked>加速度矢量</label>
+        <label class="chk"><input type="checkbox" id="cAxis" checked>对称轴</label>
+        <label class="chk"><input type="checkbox" id="cEq" checked>等高点辅助线</label>
+        <label class="chk"><input type="checkbox" id="cRuler" checked>地面刻度尺</label>
+        <label class="chk"><input type="checkbox" id="cHist" checked>落点历史</label>
+        <label class="chk"><input type="checkbox" id="cSound">落地提示音</label>
+        <label class="chk"><input type="checkbox" id="cReal">真实情境（空气阻力）</label>
+      </div>
+    </div>
+
+    <!-- 对比模式 -->
+    <div class="sec">
+      <h3>固定 v₀ · 改变 θ 对比</h3>
+      <div class="btns" style="margin-bottom:7px">
+        <button id="bScan">一键扫描 θ</button>
+        <button id="bComp">互余角对比</button>
+        <button id="bClearOv">清除叠加</button>
+      </div>
+      <div class="concl" id="compareBox">互余角对比将叠加 <span class="hl">θ</span> 与 <span class="hl">90°−θ</span> 两条轨迹，验证射程相同、T 与 H 不同。</div>
+    </div>
+
+    <!-- 预设 -->
+    <div class="sec">
+      <h3>极限角度预设</h3>
+      <div class="btns">
+        <button data-preset="45">45°</button>
+        <button data-preset="30">30°</button>
+        <button data-preset="60">60°</button>
+        <button data-preset="0">0°（平抛）</button>
+        <button data-preset="90">90°（竖直上抛）</button>
+      </div>
+    </div>
+
+    <!-- 结论 -->
+    <div class="sec">
+      <h3>核心结论（自动同步）</h3>
+      <div class="concl" id="conclusionBox"></div>
+    </div>
+  </aside>
+</main>
+
+<!-- ================= 图表 ================= -->
+<section class="charts">
+  <div class="card"><h3>射程 X – 角度 θ<em id="chRangeNote">v₀ 固定</em></h3><canvas id="chRange"></canvas></div>
+  <div class="card"><h3>x – t<em>水平：匀速</em></h3><canvas id="chX"></canvas></div>
+  <div class="card"><h3>y – t<em>竖直：匀变速</em></h3><canvas id="chY"></canvas></div>
+  <div class="card"><h3>v_y – t<em>斜率恒为 −g</em></h3><canvas id="chVy"></canvas></div>
+</section>
+
+<!-- ================= 数据表 + 测验 ================= -->
+<section class="bottom">
+  <div class="card">
+    <h3>数据记录表<em id="recCount">共 0 条</em></h3>
+    <div class="tablewrap">
+      <table>
+        <thead><tr>
+          <th>#</th><th>θ(°)</th><th>v₀(m/s)</th><th>g</th><th>h₀(m)</th>
+          <th>T(s)</th><th>H(m)</th><th>X(m)</th><th>落点(cm)</th>
+        </tr></thead>
+        <tbody id="recBody"><tr><td colspan="9" class="empty">还没有数据，先发射一发吧</td></tr></tbody>
+      </table>
+    </div>
+    <div class="btns" style="margin-top:8px">
+      <button id="bCsv">导出 CSV</button>
+      <button id="bClearRec">清空记录</button>
+    </div>
+  </div>
+
+  <div class="card quiz" id="quizBox">
+    <h3>即时反馈 · 3 题<em>点选项立即判定</em></h3>
+    <div id="quizList"></div>
+  </div>
+</section>
+
+<script>
+(function () {
+  "use strict";
+
+  /* =====================================================================
+     1. 配置与物理参数（集中管理）
+     ===================================================================== */
+  const CONFIG = {
+    dt: 1 / 240,                 // 固定物理步长（秒），保证不同帧率结果一致
+    strobeDt: 0.1,               // 频闪时间间隔（秒）
+    v0Min: 5, v0Max: 30, v0Step: 0.5,
+    h0Min: 0, h0Max: 8, h0Step: 0.5,
+    defaultV0: 15, defaultTheta: 45, defaultG: 9.8, defaultH0: 0,
+    scanAngles: [10, 20, 30, 40, 45, 50, 60, 70, 80],
+    maxRecord: 40
+  };
+
+  // 运行参数 P：全部可调物理量集中在此
+  const P = {
+    theta: CONFIG.defaultTheta,  // 发射角（°）
+    v0: CONFIG.defaultV0,        // 初速度（m/s）
+    g: CONFIG.defaultG,          // 重力加速度（m/s²）
+    h0: CONFIG.defaultH0,        // 发射台高度（m）
+    speed: 1,                    // 播放倍速
+    snap: true                   // 角度吸附 5°
+  };
+
+  const REDUCE = window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches;
+
+  /* ---------- 颜色（视觉编码固定不变） ---------- */
+  const COL = {
+    vx: "#2563eb",      // 水平分运动：蓝
+    vy: "#dc2626",      // 竖直分运动：红
+    vsum: "#f59e0b",    // 合速度：黄
+    acc: "#16a34a",     // 加速度：绿
+    path: "#334155",    // 轨迹：深灰
+    axis: "#7c3aed",    // 对称轴 / 等高点：紫
+    text: "#1e293b",
+    muted: "#64748b",
+    grid: "#e5ecf6",
+    ground: "#94a3b8"
+  };
+
+  /* =====================================================================
+     2. 物理引擎（解析 + 定步长精确积分）
+     ===================================================================== */
+  const rad = d => d * Math.PI / 180;
+  const TAU = Math.PI * 2;
+
+  /** 任意时刻的运动学量（解析解，用于预测轨迹、绘图、频闪） */
+  function phys(th, v0, g, h0, t) {
+    const vx = v0 * Math.cos(rad(th));
+    const vy0 = v0 * Math.sin(rad(th));
+    return {
+      x: vx * t,
+      y: h0 + vy0 * t - 0.5 * g * t * t,
+      vx: vx,
+      vy: vy0 - g * t
+    };
+  }
+
+  /** 三个关键量：飞行时间 T、最大高度 H、水平射程 X */
+  function calc(th, v0, g, h0) {
+    th = (th === undefined) ? P.theta : th;
+    v0 = (v0 === undefined) ? P.v0 : v0;
+    g = (g === undefined) ? P.g : g;
+    h0 = (h0 === undefined) ? P.h0 : h0;
+    const vy0 = v0 * Math.sin(rad(th));
+    const vx = v0 * Math.cos(rad(th));
+    const T = (vy0 + Math.sqrt(Math.max(0, vy0 * vy0 + 2 * g * h0))) / g;
+    const H = h0 + vy0 * vy0 / (2 * g);
+    const X = vx * T;
+    return { th, v0, g, h0, T, H, X, vx, vy0, tApex: vy0 / g };
+  }
+
+  /** 数值搜索最优发射角（h₀>0 时不再严格等于 45°） */
+  function bestAngle(v0, g, h0) {
+    let bk = 45, bx = -1;
+    for (let a = 0.5; a <= 89.5; a += 0.25) {
+      const x = calc(a, v0, g, h0).X;
+      if (x > bx) { bx = x; bk = a; }
+    }
+    return { ang: bk, X: bx };
+  }
+
+  /* =====================================================================
+     3. 运行状态
+     ===================================================================== */
+  const S = {
+    launched: false,   // 是否已发射
+    running: false,    // 是否在飞
+    landed: false,     // 是否已落地
+    t: 0, x: 0, y: 0, vx: 0, vy: 0,
+    samples: [],       // 轨迹采样点
+    peak: 0,           // 飞行过程中记录到的最大高度
+    history: [],       // 已完成实验（落点标记 + 数据表）
+    scan: [],          // 扫描叠加轨迹
+    compare: [],       // 互余角对比轨迹
+    scanning: false,
+    step: 0,           // 教学流程步骤
+    simT: 0, simH: 0, simX: 0,
+    show: {
+      trail: true, strobe: false, vel: true, acc: true,
+      axis: true, eq: true, ruler: true, hist: true,
+      sound: false, real: false
+    }
+  };
+
+  /* =====================================================================
+     4. DOM 引用
+     ===================================================================== */
+  const $ = id => document.getElementById(id);
+  const scene = $("scene");
+  const ctx = scene.getContext("2d");
+
+  /* =====================================================================
+     5. 视图变换（世界坐标 → 屏幕坐标，自适应缩放）
+     ===================================================================== */
+  const PAD = { l: 64, r: 30, t: 36, b: 58 };
+  const V = { W: 0, H: 0, dpr: 1, s: 30, ox: PAD.l, oy: 400, maxX: 20, maxY: 10 };
+
+  function resizeScene() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = scene.clientWidth || 800;
+    const h = scene.clientHeight || 480;
+    if (scene.width !== Math.round(w * dpr) || scene.height !== Math.round(h * dpr)) {
+      scene.width = Math.round(w * dpr);
+      scene.height = Math.round(h * dpr);
+    }
+    V.W = w; V.H = h; V.dpr = dpr;
+  }
+
+  /** 依据当前/叠加轨迹包围盒计算等比例缩放，轨迹超出视野时自动缩放 */
+  function computeView() {
+    let maxX = 2, maxY = 1.6;
+    const c = calc();
+    if (P.theta > 0.001) { maxX = Math.max(maxX, c.X); maxY = Math.max(maxY, c.H); }
+    maxY = Math.max(maxY, P.h0 + 0.5);
+    for (let i = 0; i < S.scan.length; i++) {
+      maxX = Math.max(maxX, S.scan[i].X); maxY = Math.max(maxY, S.scan[i].H);
+    }
+    for (let i = 0; i < S.compare.length; i++) {
+      maxX = Math.max(maxX, S.compare[i].X); maxY = Math.max(maxY, S.compare[i].H);
+    }
+    for (let i = 0; i < S.history.length; i++) maxX = Math.max(maxX, S.history[i].X);
+
+    maxX = maxX * 1.10 + 0.7;
+    maxY = maxY * 1.18 + 0.45;
+
+    const availW = Math.max(120, V.W - PAD.l - PAD.r);
+    const availH = Math.max(100, V.H - PAD.t - PAD.b);
+    let s = Math.min(availW / maxX, availH / maxY);
+    s = Math.max(6, Math.min(s, 130));
+
+    V.s = s;
+    V.maxX = maxX; V.maxY = maxY;
+    V.ox = PAD.l + Math.max(0, (availW - maxX * s) / 2);
+    V.oy = V.H - PAD.b;
+    $("scaleTag").textContent = "等比例 · 1 m ≈ " + s.toFixed(0) + " px";
+  }
+
+  const px = x => V.ox + x * V.s;
+  const py = y => V.oy - y * V.s;
+
+  /* =====================================================================
+     6. 通用绘图工具
+     ===================================================================== */
+  function roundRect(c, x, y, w, h, r) {
+    r = Math.min(r, Math.abs(w) / 2, Math.abs(h) / 2);
+    c.beginPath();
+    c.moveTo(x + r, y);
+    c.lineTo(x + w - r, y);
+    c.quadraticCurveTo(x + w, y, x + w, y + r);
+    c.lineTo(x + w, y + h - r);
+    c.quadraticCurveTo(x + w, y + h, x + w - r, y + h);
+    c.lineTo(x + r, y + h);
+    c.quadraticCurveTo(x, y + h, x, y + h - r);
+    c.lineTo(x, y + r);
+    c.quadraticCurveTo(x, y, x + r, y);
+    c.closePath();
+  }
+
+  /** 带底色的画布文字标签 */
+  function label(text, x, y, o) {
+    o = o || {};
+    const size = o.size || 12;
+    const weight = o.weight || 500;
+    const pad = o.pad === undefined ? 4 : o.pad;
+    ctx.save();
+    ctx.font = weight + " " + size + 'px system-ui,"Microsoft YaHei",sans-serif';
+    ctx.textBaseline = "middle";
+    const w = ctx.measureText(text).width;
+    let bx = x;
+    if (o.align === "center") bx = x - w / 2;
+    else if (o.align === "right") bx = x - w;
+    if (o.bg !== false) {
+      ctx.fillStyle = o.bg || "rgba(255,255,255,.88)";
+      roundRect(ctx, bx - pad, y - size * 0.72, w + pad * 2, size * 1.44, 4);
+      ctx.fill();
+    }
+    ctx.fillStyle = o.color || COL.text;
+    ctx.textAlign = "left";
+    ctx.fillText(text, bx, y);
+    ctx.restore();
+  }
+
+  /** 箭头 */
+  function arrow(x1, y1, x2, y2, color, width, head) {
+    head = head || 7;
+    const dx = x2 - x1, dy = y2 - y1;
+    const L = Math.hypot(dx, dy);
+    if (L < 1.2) return;
+    const ux = dx / L, uy = dy / L;
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = width || 2;
+    ctx.lineCap = "round";
+    ctx.beginPath();
+    ctx.moveTo(x1, y1);
+    ctx.lineTo(x2 - ux * head * 0.85, y2 - uy * head * 0.85);
+    ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(x2, y2);
+    ctx.lineTo(x2 - ux * head + uy * head * 0.42, y2 - uy * head - ux * head * 0.42);
+    ctx.lineTo(x2 - ux * head - uy * head * 0.42, y2 - uy * head + ux * head * 0.42);
+    ctx.closePath();
+    ctx.fill();
+    ctx.restore();
+  }
+
+  /** 挑选合适的刻度步长，保证屏幕上间距不小于 minPx */
+  function niceStep(scale, minPx) {
+    const cands = [0.1, 0.2, 0.25, 0.5, 1, 2, 2.5, 5, 10, 20, 25, 50, 100];
+    for (let i = 0; i < cands.length; i++) if (cands[i] * scale >= minPx) return cands[i];
+    return 100;
+  }
+
+  const fmt = (n, d) => (Math.abs(n) < 1e-9 ? 0 : n).toFixed(d === undefined ? 2 : d);
+
+  /* =====================================================================
+     7. 场景绘制
+     ===================================================================== */
+  function drawBackground() {
+    const gd = ctx.createLinearGradient(0, 0, 0, V.H);
+    gd.addColorStop(0, "#f4f8ff");
+    gd.addColorStop(0.62, "#fdfeff");
+    gd.addColorStop(1, "#f7f9fc");
+    ctx.fillStyle = gd;
+    ctx.fillRect(0, 0, V.W, V.H);
+  }
+
+  /** 网格 + 坐标轴 */
+  function drawGrid() {
+    const stepX = niceStep(V.s, 52);
+    const stepY = niceStep(V.s, 44);
+
+    ctx.save();
+    ctx.strokeStyle = COL.grid;
+    ctx.lineWidth = 1;
+    ctx.setLineDash([]);
+
+    // 竖网格
+    for (let x = 0; x <= V.maxX; x += stepX) {
+      const X = px(x);
+      if (X > V.W - PAD.r + 1) break;
+      ctx.beginPath(); ctx.moveTo(X, PAD.t - 8); ctx.lineTo(X, V.oy); ctx.stroke();
+    }
+    // 横网格
+    for (let y = 0; y <= V.maxY; y += stepY) {
+      const Y = py(y);
+      if (Y < PAD.t - 8) break;
+      ctx.beginPath(); ctx.moveTo(V.ox, Y); ctx.lineTo(V.W - PAD.r + 10, Y); ctx.stroke();
+    }
+
+    // 纵轴（高度）
+    ctx.strokeStyle = "#cbd5e1";
+    ctx.beginPath(); ctx.moveTo(V.ox, V.oy); ctx.lineTo(V.ox, PAD.t - 10); ctx.stroke();
+    ctx.fillStyle = COL.muted;
+    ctx.font = '11px system-ui,"Microsoft YaHei",sans-serif';
+    ctx.textAlign = "right"; ctx.textBaseline = "middle";
+    for (let y = 0; y <= V.maxY; y += stepY) {
+      const Y = py(y);
+      if (Y < PAD.t - 10) break;
+      ctx.fillText(y.toFixed(stepY < 1 ? 1 : 0), V.ox - 8, Y);
+      ctx.beginPath(); ctx.moveTo(V.ox - 4, Y); ctx.lineTo(V.ox, Y); ctx.stroke();
+    }
+    label("y / m", V.ox - 8, PAD.t - 20, { align: "right", size: 11, color: COL.muted, bg: false });
+    ctx.restore();
+  }
+
+  /** 地面 + 落点标记板（米尺刻度） */
+  function drawGround() {
+    const gy = V.oy;
+
+    // 地面板
+    ctx.save();
+    const gd = ctx.createLinearGradient(0, gy, 0, V.H);
+    gd.addColorStop(0, "#e8eef6");
+    gd.addColorStop(1, "#dde5ef");
+    ctx.fillStyle = gd;
+    ctx.fillRect(0, gy, V.W, V.H - gy);
+
+    // 地面线
+    ctx.strokeStyle = "#7d8fa6";
+    ctx.lineWidth = 2.5;
+    ctx.beginPath(); ctx.moveTo(0, gy); ctx.lineTo(V.W, gy); ctx.stroke();
+
+    if (S.show.ruler) {
+      // 主刻度（带数字）与最小分度（细分刻度）
+      const major = niceStep(V.s, 46);
+      const minor = Math.max(0.1, Math.min(major, niceStep(V.s, 4)));
+
+      ctx.strokeStyle = "#94a3b8";
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      for (let i = 0; i * minor <= V.maxX * 1.02; i++) {
+        const x = i * minor;
+        const X = px(x);
+        if (X > V.W - 4) break;
+        const isMajor = Math.abs(x / major - Math.round(x / major)) < 1e-6;
+        ctx.moveTo(X, gy);
+        ctx.lineTo(X, gy + (isMajor ? 9 : 3.5));
+      }
+      ctx.stroke();
+
+      // 主刻度数字
+      ctx.fillStyle = "#475569";
+      ctx.font = '10.5px system-ui,"Microsoft YaHei",sans-serif';
+      ctx.textAlign = "center";
+      ctx.textBaseline = "top";
+      for (let i = 0; i * major <= V.maxX * 1.02; i++) {
+        const x = i * major;
+        const X = px(x);
+        if (X > V.W - 6) break;
+        ctx.fillText((Math.round(x * 100) / 100).toString(), X, gy + 12);
+      }
+      ctx.textAlign = "left";
+      label("落点标记板 · 米尺（最小分度 " + minor.toFixed(minor < 1 ? 1 : 0) + " m）",
+        Math.max(V.ox, 8), gy + 34, { size: 10.5, color: COL.muted });
+    }
+    ctx.restore();
+  }
+
+  /** 叠加：扫描轨迹 */
+  function drawScanTracks() {
+    for (let i = 0; i < S.scan.length; i++) {
+      const e = S.scan[i];
+      drawOverlayTrack(e, false);
+    }
+  }
+
+  function drawCompareTracks() {
+    for (let i = 0; i < S.compare.length; i++) drawOverlayTrack(S.compare[i], true);
+  }
+
+  function drawOverlayTrack(e, dashed) {
+    if (!e.pts || e.pts.length < 2) return;
+    const n = Math.max(2, Math.ceil(e.pts.length * e.reveal));
+    ctx.save();
+    ctx.globalAlpha = 0.9;
+    ctx.strokeStyle = e.color;
+    ctx.lineWidth = dashed ? 2 : 1.8;
+    if (dashed) ctx.setLineDash([7, 5]);
+    ctx.beginPath();
+    for (let i = 0; i < n; i++) {
+      const p = e.pts[i];
+      const X = px(p.x), Y = py(p.y);
+      if (i === 0) ctx.moveTo(X, Y); else ctx.lineTo(X, Y);
+    }
+    ctx.stroke();
+    ctx.restore();
+
+    // 落点针 + 标签
+    if (e.reveal > 0.55) {
+      const X = px(e.X);
+      // 相邻角度的标签上下错开，避免重叠
+      const dy = 30 + (Math.round(e.th / 10) % 3) * 13;
+      drawPin(X, V.oy, e.color, e.label, e.reveal > 0.95, dy);
+    }
+  }
+
+  /** 地面上的一枚标记针 */
+  function drawPin(X, gy, color, text, withText, dy) {
+    dy = dy === undefined ? 22 : dy;
+    ctx.save();
+    ctx.strokeStyle = color;
+    ctx.fillStyle = color;
+    ctx.lineWidth = 2;
+    ctx.beginPath(); ctx.moveTo(X, gy); ctx.lineTo(X, gy - dy); ctx.stroke();
+    ctx.beginPath();
+    ctx.moveTo(X, gy - dy - 6);
+    ctx.lineTo(X + 9, gy - dy - 2);
+    ctx.lineTo(X, gy - dy + 2);
+    ctx.closePath(); ctx.fill();
+    ctx.beginPath(); ctx.arc(X, gy, 2.4, 0, TAU); ctx.fill();
+    ctx.restore();
+    if (withText) {
+      label(text, X, gy - dy - 14, { align: "center", size: 10.5, color: color, weight: 600 });
+    }
+  }
+
+  /** 历史落点（保留以便对比） */
+  function drawHistory() {
+    if (!S.show.hist) return;
+    for (let i = 0; i < S.history.length; i++) {
+      const h = S.history[i];
+      drawPin(px(h.X), V.oy, "rgba(71,85,105,.55)", "", false);
+    }
+  }
+
+  /** 理论轨迹（虚线预览） */
+  function drawPredictedPath() {
+    const c = calc();
+    if (c.T <= 0) return;
+    const N = 160;
+    ctx.save();
+    ctx.strokeStyle = "rgba(245,158,11,.55)";
+    ctx.lineWidth = 1.6;
+    ctx.setLineDash([5, 5]);
+    ctx.beginPath();
+    for (let i = 0; i <= N; i++) {
+      const p = phys(c.th, c.v0, c.g, c.h0, c.T * i / N);
+      const X = px(p.x), Y = py(p.y);
+      if (i === 0) ctx.moveTo(X, Y); else ctx.lineTo(X, Y);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  /** 已飞行轨迹（实线） */
+  function drawTrail() {
+    if (!S.show.trail || S.samples.length < 2) return;
+    ctx.save();
+    ctx.strokeStyle = COL.path;
+    ctx.lineWidth = 2.6;
+    ctx.lineJoin = "round";
+    ctx.lineCap = "round";
+    ctx.shadowColor = "rgba(51,65,85,.22)";
+    ctx.shadowBlur = 5;
+    ctx.beginPath();
+    for (let i = 0; i < S.samples.length; i++) {
+      const p = S.samples[i];
+      const X = px(p.x), Y = py(p.y);
+      if (i === 0) ctx.moveTo(X, Y); else ctx.lineTo(X, Y);
+    }
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  /** 频闪残影：等时间间隔取样 */
+  function drawStrobe() {
+    const c = calc();
+    if (c.T <= 0) return;
+    const tEnd = S.launched ? Math.min(S.t, c.T) : c.T;
+    const n = Math.floor(tEnd / CONFIG.strobeDt + 1e-6);
+
+    ctx.save();
+    for (let k = 0; k <= n; k++) {
+      const t = k * CONFIG.strobeDt;
+      const p = phys(c.th, c.v0, c.g, c.h0, t);
+      const X = px(p.x), Y = py(p.y);
+
+      // 残影球
+      ctx.beginPath();
+      ctx.arc(X, Y, 3.2, 0, TAU);
+      ctx.fillStyle = "rgba(51,65,85,.30)";
+      ctx.fill();
+
+      // 地面投影：水平等间距
+      ctx.strokeStyle = "rgba(37,99,235,.55)";
+      ctx.lineWidth = 1.4;
+      ctx.beginPath(); ctx.moveTo(X, V.oy); ctx.lineTo(X, V.oy + 6); ctx.stroke();
+
+      // 左侧高度投影：竖直先减速后加速
+      ctx.strokeStyle = "rgba(220,38,38,.45)";
+      ctx.beginPath(); ctx.moveTo(V.ox, Y); ctx.lineTo(V.ox - 5, Y); ctx.stroke();
+    }
+    ctx.restore();
+  }
+
+  /** 对称轴（最高点所在竖直线） */
+  function drawSymmetry() {
+    const c = calc();
+    if (c.tApex <= 0) return;
+    const xApex = c.vx * c.tApex;      // 最高点的水平坐标（h₀>0 时不再等于 X/2）
+    const xA = px(xApex);
+    ctx.save();
+    ctx.strokeStyle = COL.axis;
+    ctx.lineWidth = 1.6;
+    ctx.setLineDash([8, 6]);
+    ctx.beginPath(); ctx.moveTo(xA, V.oy); ctx.lineTo(xA, PAD.t + 4); ctx.stroke();
+    ctx.restore();
+    // 标签放在画布顶部，避开最高点标注，避免重叠
+    label("对称轴（最高点竖直线）x = " + fmt(xApex, 2) + " m", xA + 8, PAD.t + 2,
+      { size: 10.5, color: COL.axis, weight: 600 });
+  }
+
+  /** 等高点辅助线：同一高度上升/下降两点，速度大小相等、方向角相反 */
+  function drawEqualHeight() {
+    const c = calc();
+    if (c.vy0 <= 0 || c.H <= c.h0 + 0.05) return;
+
+    const yEq = c.h0 + (c.H - c.h0) * 0.55;
+    const dy = yEq - c.h0;
+    const disc = c.vy0 * c.vy0 - 2 * c.g * dy;
+    if (disc <= 0) return;
+    const r = Math.sqrt(disc);
+    const t1 = (c.vy0 - r) / c.g;
+    const t2 = (c.vy0 + r) / c.g;
+    const p1 = phys(c.th, c.v0, c.g, c.h0, t1);
+    const p2 = phys(c.th, c.v0, c.g, c.h0, t2);
+    const X1 = px(p1.x), X2 = px(p2.x), Y = py(yEq);
+
+    const speed = Math.hypot(p1.vx, p1.vy);
+    const ang = Math.atan2(Math.abs(p1.vy), p1.vx) * 180 / Math.PI;
+
+    ctx.save();
+    // 等高线
+    ctx.strokeStyle = COL.axis;
+    ctx.lineWidth = 1.4;
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(X1, Y); ctx.lineTo(X2, Y); ctx.stroke();
+
+    // 两点
+    [p1, p2].forEach(function (p) {
+      ctx.beginPath();
+      ctx.arc(px(p.x), py(p.y), 4, 0, TAU);
+      ctx.fillStyle = "#fff"; ctx.fill();
+      ctx.lineWidth = 2; ctx.strokeStyle = COL.axis; ctx.stroke();
+    });
+
+    // 到对称轴的距离标注（对称）
+    const xA = px(c.vx * c.tApex);
+    ctx.setLineDash([2, 3]);
+    ctx.strokeStyle = "rgba(124,58,237,.55)";
+    ctx.beginPath(); ctx.moveTo(X1, Y + 12); ctx.lineTo(xA, Y + 12); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(xA, Y + 12); ctx.lineTo(X2, Y + 12); ctx.stroke();
+    ctx.restore();
+
+    label("等高 h = " + fmt(yEq, 2) + " m：v = " + fmt(speed, 2) + " m/s，与水平夹角 ±" + fmt(ang, 1) + "°",
+      (X1 + X2) / 2, Y - 14, { align: "center", size: 11, color: COL.axis, weight: 600 });
+    label("等距", (X1 + xA) / 2, Y + 24, { align: "center", size: 10, color: COL.axis, bg: false });
+  }
+
+  /** 弹射器：量角器 + 可调炮管 + 固定压缩量弹簧 */
+  function drawLauncher() {
+    const cx = px(0), cy = py(P.h0);
+    const th = P.theta;
+    const rP = Math.max(34, Math.min(46, V.s * 1.15));
+
+    ctx.save();
+
+    // 发射台立柱
+    if (P.h0 > 0.01) {
+      const topY = cy;
+      ctx.fillStyle = "#dbe3ef";
+      ctx.strokeStyle = "#94a3b8";
+      ctx.lineWidth = 1.5;
+      const wHalf = 13;
+      ctx.beginPath();
+      ctx.rect(cx - wHalf, topY, wHalf * 2, V.oy - topY);
+      ctx.fill(); ctx.stroke();
+      // 斜撑
+      ctx.strokeStyle = "rgba(148,163,184,.6)";
+      ctx.beginPath();
+      ctx.moveTo(cx - wHalf, V.oy);
+      ctx.lineTo(cx, topY + (V.oy - topY) * 0.55);
+      ctx.lineTo(cx + wHalf, V.oy);
+      ctx.stroke();
+      label("h₀ = " + fmt(P.h0, 1) + " m", cx + wHalf + 8, (topY + V.oy) / 2,
+        { size: 10.5, color: COL.muted });
+    }
+
+    // 量角器刻度盘
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.strokeStyle = "#cbd5e1";
+    ctx.lineWidth = 1;
+    for (let a = 0; a <= 90; a += 5) {
+      const ang = -rad(a);
+      const isMajor = a % 15 === 0;
+      const r1 = rP, r2 = rP + (isMajor ? 8 : 4.5);
+      ctx.beginPath();
+      ctx.moveTo(Math.cos(ang) * r1, Math.sin(ang) * r1);
+      ctx.lineTo(Math.cos(ang) * r2, Math.sin(ang) * r2);
+      ctx.strokeStyle = isMajor ? "#94a3b8" : "#d5dfea";
+      ctx.stroke();
+      if (isMajor) {
+        ctx.fillStyle = "#94a3b8";
+        ctx.font = '9.5px system-ui,"Microsoft YaHei",sans-serif';
+        ctx.textAlign = "center";
+        ctx.textBaseline = "middle";
+        const rr = rP + 18;
+        ctx.fillText(a + "°", Math.cos(ang) * rr, Math.sin(ang) * rr);
+      }
+    }
+    // 当前 θ 扇形
+    ctx.beginPath();
+    ctx.moveTo(0, 0);
+    ctx.arc(0, 0, rP, -rad(th), 0, false);
+    ctx.closePath();
+    ctx.fillStyle = "rgba(37,99,235,.10)";
+    ctx.fill();
+
+    // 水平基准线
+    ctx.strokeStyle = "rgba(148,163,184,.9)";
+    ctx.setLineDash([4, 4]);
+    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(rP + 10, 0); ctx.stroke();
+    ctx.restore();
+
+    // 炮管（背向发射方向，弹丸从管口即原点射出）
+    ctx.save();
+    ctx.translate(cx, cy);
+    ctx.rotate(-rad(th));
+    // 弹簧（同一压缩量 → 同一 v₀）
+    ctx.strokeStyle = "#f59e0b";
+    ctx.lineWidth = 2;
+    ctx.beginPath();
+    for (let i = 0; i <= 12; i++) {
+      const bx = -46 + i * 1.9;
+      const by = (i % 2 === 0 ? -5 : 5);
+      if (i === 0) ctx.moveTo(bx, 0); else ctx.lineTo(bx, by);
+    }
+    ctx.stroke();
+    // 管身
+    ctx.fillStyle = "#e2e8f0";
+    ctx.strokeStyle = "#64748b";
+    ctx.lineWidth = 1.6;
+    roundRect(ctx, -14, -7.5, 22, 15, 4);
+    ctx.fill(); ctx.stroke();
+    ctx.fillStyle = "#475569";
+    ctx.fillRect(-14, -7.5, 4, 15);
+    ctx.restore();
+
+    // 底座
+    ctx.fillStyle = "#94a3b8";
+    ctx.beginPath();
+    ctx.arc(cx, cy, 4.2, 0, TAU);
+    ctx.fill();
+
+    // 待发射时，弹丸停在管口（原点）处
+    if (!S.launched) {
+      ctx.beginPath();
+      ctx.arc(cx, cy, 6, 0, TAU);
+      ctx.fillStyle = "#64748b";
+      ctx.fill();
+      ctx.strokeStyle = "#334155";
+      ctx.lineWidth = 1;
+      ctx.stroke();
+    }
+
+    // θ 读数
+    ctx.save();
+    ctx.translate(cx, cy);
+    const midA = -rad(th / 2);
+    label("θ = " + P.theta + "°", Math.cos(midA) * (rP + 6) + 6, Math.sin(midA) * (rP + 6) - 6,
+      { size: 11.5, color: COL.vx, weight: 700 });
+    ctx.restore();
+
+    // 初速度与压缩量说明
+    label("同一压缩量 → 同一 v₀", cx + 10, V.oy - 9,
+      { size: 10.5, color: "#b45309", weight: 600 });
+
+    ctx.restore();
+  }
+
+  /** 最高点标记 */
+  function drawApex() {
+    const c = calc();
+    if (c.vy0 <= 0) return;
+    const xA = px(c.vx * c.tApex), yA = py(c.H);
+    if (yA < PAD.t - 20) return;
+    ctx.save();
+    ctx.beginPath(); ctx.arc(xA, yA, 4.5, 0, TAU);
+    ctx.fillStyle = "#fff"; ctx.fill();
+    ctx.lineWidth = 2; ctx.strokeStyle = COL.path; ctx.stroke();
+    ctx.restore();
+
+    const vAtApex = Math.abs(c.vx);
+    // 顶点很高时把标注放到顶点下方，避开右上角图例
+    const ly = (yA - 20 < 150) ? yA + 24 : yA - 20;
+    label("最高点 H = " + fmt(c.H, 2) + " m　v_y = 0，v = v₀cosθ = " + fmt(vAtApex, 2) + " m/s，a = g",
+      xA + 10, ly, { size: 10.8, color: COL.path, weight: 600 });
+  }
+
+  /** 弹丸 */
+  function drawBall() {
+    const X = px(S.x), Y = py(S.y);
+    ctx.save();
+    const gd = ctx.createRadialGradient(X - 2, Y - 2, 1, X, Y, 7.5);
+    gd.addColorStop(0, "#f8fafc");
+    gd.addColorStop(0.45, "#94a3b8");
+    gd.addColorStop(1, "#334155");
+    ctx.beginPath(); ctx.arc(X, Y, 7, 0, TAU);
+    ctx.fillStyle = gd; ctx.fill();
+    ctx.strokeStyle = "#1e293b"; ctx.lineWidth = 1; ctx.stroke();
+    ctx.restore();
+  }
+
+  /** 速度矢量与加速度矢量 */
+  function drawVectors() {
+    if (!S.launched) return;
+    const X = px(S.x), Y = py(S.y);
+    const k = Math.max(1.6, 62 / Math.max(P.v0, 1)); // 速度比例尺（px per m/s）
+
+    if (S.show.vel) {
+      // 水平分量（蓝，长度恒定）
+      arrow(X, Y, X + S.vx * k, Y, COL.vx, 2.2, 7);
+      if (Math.abs(S.vx) * k > 26) {
+        label("vₓ=" + fmt(S.vx, 1), X + S.vx * k + 4, Y + 12, { size: 10, color: COL.vx, bg: false });
+      }
+      // 竖直分量（红）
+      const vyLen = S.vy * k;
+      if (Math.abs(vyLen) > 5) {
+        arrow(X, Y, X, Y - vyLen, COL.vy, 2.2, 7);
+        label("v_y=" + fmt(S.vy, 1), X + 6, Y - vyLen + (vyLen > 0 ? -10 : 10),
+          { size: 10, color: COL.vy, bg: false });
+      }
+      // 合速度（黄）
+      arrow(X, Y, X + S.vx * k, Y - S.vy * k, COL.vsum, 2.8, 9);
+      // 合速度虚线平行四边形
+      ctx.save();
+      ctx.strokeStyle = "rgba(245,158,11,.35)";
+      ctx.setLineDash([3, 3]);
+      ctx.lineWidth = 1;
+      ctx.beginPath();
+      ctx.moveTo(X + S.vx * k, Y);
+      ctx.lineTo(X + S.vx * k, Y - S.vy * k);
+      ctx.moveTo(X, Y - S.vy * k);
+      ctx.lineTo(X + S.vx * k, Y - S.vy * k);
+      ctx.stroke();
+      ctx.restore();
+    }
+
+    if (S.show.acc) {
+      // 加速度恒为竖直向下
+      arrow(X, Y, X, Y + 42, COL.acc, 3, 9);
+      label("a = g = " + fmt(P.g, P.g === 10 ? 0 : 1) + " m/s²", X + 6, Y + 48,
+        { size: 10.5, color: COL.acc, weight: 700 });
+    }
+  }
+
+  /** 空气阻力示意层（定性）。轨迹只随 (θ, v₀, g, h₀) 变化，故按参数缓存，避免每帧重复积分 */
+  let realCache = null;
+  function drawRealLayer() {
+    if (!S.show.real) return;
+    const c = calc();
+    if (c.T <= 0) return;
+    const key = [P.theta, P.v0, P.g, P.h0].join("|");
+
+    if (!realCache || realCache.key !== key) {
+      // 简单的二次阻尼数值积分
+      const k = 0.055;
+      let x = 0, y = P.h0, vx = c.vx, vy = c.vy0, t = 0;
+      const dt = 1 / 480;
+      const pts = [{ x: 0, y: y }];
+      while (y > 0 && t < 20) {
+        const v = Math.hypot(vx, vy) || 1e-6;
+        vx += (-k * v * vx) * dt;
+        vy += (-P.g - k * v * vy) * dt;
+        x += vx * dt; y += vy * dt; t += dt;
+        if (pts.length < 4000) pts.push({ x: x, y: y });
+      }
+      realCache = { key: key, pts: pts, x: x };
+    }
+
+    const pts = realCache.pts;
+    if (pts.length < 2) return;
+    ctx.save();
+    ctx.strokeStyle = "rgba(239,68,68,.75)";
+    ctx.lineWidth = 1.8;
+    ctx.setLineDash([6, 4]);
+    ctx.beginPath();
+    for (let i = 0; i < pts.length; i++) {
+      const X = px(pts[i].x), Y = py(Math.max(pts[i].y, 0));
+      if (i === 0) ctx.moveTo(X, Y); else ctx.lineTo(X, Y);
+    }
+    ctx.stroke();
+    ctx.restore();
+    label("含空气阻力（定性）：轨迹不再对称、落点变近、最优角 < 45°",
+      px(realCache.x) + 6, py(0) - 34, { size: 10.5, color: "#dc2626", weight: 600, align: "right" });
+  }
+
+  /** 主绘制入口 */
+  function drawScene() {
+    resizeScene();
+    ctx.setTransform(V.dpr, 0, 0, V.dpr, 0, 0);
+    ctx.clearRect(0, 0, V.W, V.H);
+    drawBackground();
+    computeView();
+    drawGrid();
+    drawGround();
+    drawScanTracks();
+    drawCompareTracks();
+    drawHistory();
+    if (S.show.axis) drawSymmetry();
+    if (S.show.eq) drawEqualHeight();
+    drawPredictedPath();
+    drawTrail();
+    if (S.show.strobe) drawStrobe();
+    drawRealLayer();
+    drawLauncher();
+    drawApex();
+    if (S.launched) drawBall();
+    drawVectors();
+  }
+
+  /* =====================================================================
+     8. 小型图表（x–t / y–t / v_y–t / X–θ）
+     ===================================================================== */
+  function prepCanvas(cv) {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+    const w = cv.clientWidth || 300, h = cv.clientHeight || 168;
+    if (cv.width !== Math.round(w * dpr) || cv.height !== Math.round(h * dpr)) {
+      cv.width = Math.round(w * dpr);
+      cv.height = Math.round(h * dpr);
+    }
+    const c = cv.getContext("2d");
+    c.setTransform(dpr, 0, 0, dpr, 0, 0);
+    c.clearRect(0, 0, w, h);
+    return { c: c, w: w, h: h };
+  }
+
+  /** 绘制坐标系，返回映射函数 */
+  function frame(c, w, h, xMax, yMin, yMax, xLab, yLab, xTicks, yTicks) {
+    const box = { x: 44, y: 14, w: w - 44 - 12, h: h - 14 - 26 };
+    const X = v => box.x + (v / xMax) * box.w;
+    const Y = v => box.y + box.h - ((v - yMin) / (yMax - yMin)) * box.h;
+
+    c.save();
+    c.strokeStyle = "#eef2f7";
+    c.lineWidth = 1;
+    for (let i = 0; i <= yTicks; i++) {
+      const yy = box.y + box.h * i / yTicks;
+      c.beginPath(); c.moveTo(box.x, yy); c.lineTo(box.x + box.w, yy); c.stroke();
+    }
+    // 坐标轴
+    c.strokeStyle = "#cbd5e1";
+    c.beginPath();
+    c.moveTo(box.x, box.y); c.lineTo(box.x, box.y + box.h); c.lineTo(box.x + box.w, box.y + box.h);
+    c.stroke();
+
+    c.fillStyle = "#94a3b8";
+    c.font = '10px system-ui,"Microsoft YaHei",sans-serif';
+    c.textAlign = "right"; c.textBaseline = "middle";
+    for (let i = 0; i <= yTicks; i++) {
+      const v = yMin + (yMax - yMin) * i / yTicks;
+      c.fillText(fmt(v, Math.abs(yMax - yMin) < 8 ? 1 : 0), box.x - 5, Y(v));
+    }
+    c.textAlign = "center"; c.textBaseline = "top";
+    for (let i = 0; i <= xTicks; i++) {
+      const v = xMax * i / xTicks;
+      c.fillText(fmt(v, xMax < 6 ? 1 : 2).replace(/\.?0+$/, ""), X(v), box.y + box.h + 5);
+    }
+    c.textAlign = "right";
+    c.fillText(xLab, box.x + box.w, box.y - 3);
+    c.textAlign = "left";
+    c.fillText(yLab, 4, box.y - 3);
+    c.restore();
+    return { X: X, Y: Y, box: box };
+  }
+
+  function drawCurve(c, f, fn, color, n, width, dash) {
+    c.save();
+    c.strokeStyle = color;
+    c.lineWidth = width || 2;
+    if (dash) c.setLineDash(dash);
+    c.beginPath();
+    for (let i = 0; i <= n; i++) {
+      const v = i / n;
+      const p = fn(v);
+      const X = f.X(p[0]), Y = f.Y(p[1]);
+      if (i === 0) c.moveTo(X, Y); else c.lineTo(X, Y);
+    }
+    c.stroke();
+    c.restore();
+  }
+
+  /** x–t 图 */
+  function drawChartX() {
+    const cv = $("chX");
+    const p = prepCanvas(cv);
+    const c = p.c, w = p.w, h = p.h;
+    const cc = calc();
+    if (cc.T <= 0) { c.fillStyle = "#94a3b8"; c.font = '12px system-ui'; c.fillText("θ = 0° 且 h₀ = 0：无飞行过程", 20, h / 2); return; }
+    const f = frame(c, w, h, cc.T, 0, Math.max(cc.X, 0.1) * 1.06, "t / s", "x / m", 4, 4);
+    drawCurve(c, f, v => [v * cc.T, cc.vx * v * cc.T], COL.vx, 80, 2.2);
+    // 当前点
+    if (S.launched) {
+      c.beginPath();
+      c.arc(f.X(S.t), f.Y(S.x), 3.6, 0, TAU);
+      c.fillStyle = COL.vx; c.fill();
+    }
+    // 匀速说明
+    c.fillStyle = COL.vx;
+    c.font = '10px system-ui,"Microsoft YaHei",sans-serif';
+    c.textAlign = "left";
+    c.fillText("斜率 = v₀cosθ 恒定", 50, 12);
+  }
+
+  /** y–t 图 */
+  function drawChartY() {
+    const cv = $("chY");
+    const p = prepCanvas(cv);
+    const c = p.c, w = p.w, h = p.h;
+    const cc = calc();
+    if (cc.T <= 0) return;
+    const yTop = Math.max(cc.H, 0.1) * 1.08;
+    const f = frame(c, w, h, cc.T, Math.min(0, 0), yTop, "t / s", "y / m", 4, 4);
+    drawCurve(c, f, v => {
+      const pp = phys(cc.th, cc.v0, cc.g, cc.h0, v * cc.T);
+      return [v * cc.T, Math.max(pp.y, 0)];
+    }, COL.vy, 90, 2.2);
+    // 对称轴（抛物线的最高点时刻 t = v₀sinθ/g；h₀ > 0 时不再等于 T/2）
+    if (cc.tApex > 0) {
+      c.save();
+      c.strokeStyle = COL.axis;
+      c.setLineDash([4, 4]);
+      c.lineWidth = 1.2;
+      c.beginPath();
+      c.moveTo(f.X(cc.tApex), f.box.y);
+      c.lineTo(f.X(cc.tApex), f.box.y + f.box.h);
+      c.stroke();
+      c.restore();
+    }
+    // 最高点
+    c.beginPath();
+    c.arc(f.X(cc.tApex), f.Y(cc.H), 3.4, 0, TAU);
+    c.fillStyle = COL.axis; c.fill();
+    if (S.launched) {
+      c.beginPath();
+      c.arc(f.X(S.t), f.Y(Math.max(S.y, 0)), 3.6, 0, TAU);
+      c.fillStyle = COL.vy; c.fill();
+    }
+  }
+
+  /** v_y–t 图（过零点 = 最高点，斜率恒为 −g） */
+  function drawChartVy() {
+    const cv = $("chVy");
+    const p = prepCanvas(cv);
+    const c = p.c, w = p.w, h = p.h;
+    const cc = calc();
+    if (cc.T <= 0) return;
+    const vTop = Math.max(cc.vy0, 0.1) * 1.1;
+    const vBot = -Math.max(cc.vy0 + P.g * (cc.T - cc.tApex), 0.1) * 1.1;
+    const f = frame(c, w, h, cc.T, vBot, vTop, "t / s", "v_y / (m/s)", 4, 4);
+
+    // 零线
+    c.save();
+    c.strokeStyle = "#cbd5e1";
+    c.lineWidth = 1.2;
+    c.beginPath(); c.moveTo(f.box.x, f.Y(0)); c.lineTo(f.box.x + f.box.w, f.Y(0)); c.stroke();
+    c.restore();
+
+    drawCurve(c, f, v => {
+      const t = v * cc.T;
+      return [t, cc.vy0 - cc.g * t];
+    }, COL.vy, 90, 2.2);
+
+    // 过零点
+    if (cc.tApex > 0) {
+      c.save();
+      c.setLineDash([4, 4]);
+      c.strokeStyle = "rgba(124,58,237,.6)";
+      c.beginPath();
+      c.moveTo(f.X(cc.tApex), f.Y(0));
+      c.lineTo(f.X(cc.tApex), f.box.y + f.box.h);
+      c.stroke();
+      c.restore();
+      c.beginPath();
+      c.arc(f.X(cc.tApex), f.Y(0), 4, 0, TAU);
+      c.fillStyle = "#fff"; c.fill();
+      c.lineWidth = 2; c.strokeStyle = COL.axis; c.stroke();
+      c.fillStyle = COL.axis;
+      c.font = '10px system-ui,"Microsoft YaHei",sans-serif';
+      c.textAlign = "left";
+      c.fillText("过零 = 最高点", f.X(cc.tApex) + 6, f.Y(0) - 14);
+    }
+    if (S.launched) {
+      c.beginPath();
+      c.arc(f.X(S.t), f.Y(S.vy), 3.6, 0, TAU);
+      c.fillStyle = COL.vy; c.fill();
+    }
+    c.fillStyle = COL.vy;
+    c.font = '10px system-ui,"Microsoft YaHei",sans-serif';
+    c.textAlign = "right";
+    c.fillText("斜率 = −g", f.box.x + f.box.w, f.box.y + 8);
+  }
+
+  /** X–θ 图：曲线的峰值就是 45° */
+  function drawChartRange() {
+    const cv = $("chRange");
+    const p = prepCanvas(cv);
+    const c = p.c, w = p.w, h = p.h;
+
+    let xMaxV = 0;
+    for (let a = 0; a <= 90; a += 1) xMaxV = Math.max(xMaxV, calc(a).X);
+    xMaxV = Math.max(xMaxV, 0.5) * 1.12;
+
+    const f = frame(c, w, h, 90, 0, xMaxV, "θ / °", "X / m", 6, 4);
+
+    // 扫描柱状
+    for (let i = 0; i < S.scan.length; i++) {
+      const e = S.scan[i];
+      if (e.reveal <= 0.05) continue;
+      const X = f.X(e.th);
+      const Y = f.Y(e.X * e.reveal);
+      const bw = Math.max(4, (f.box.w / 90) * 2.6);
+      const bh = f.Y(0) - Y;
+      // 用 globalAlpha 上色：e.color 可能是 hsl() 也可能是 #hex，字符串拼接 alpha 会得到非法颜色
+      if (bh > 0) {
+        c.save();
+        c.globalAlpha = 0.2;
+        c.fillStyle = e.color;
+        c.fillRect(X - bw / 2, Y, bw, bh);
+        c.restore();
+      }
+      c.strokeStyle = e.color;
+      c.lineWidth = 1;
+      c.strokeRect(X - bw / 2, Y, bw, bh);
+    }
+
+    // 理论曲线（固定 v₀ 扫角）
+    drawCurve(c, f, v => [v * 90, calc(v * 90).X], "#0f172a", 120, 2);
+
+    // 峰值
+    const best = bestAngle(P.v0, P.g, P.h0);
+    c.save();
+    c.setLineDash([4, 4]);
+    c.strokeStyle = "rgba(220,38,38,.75)";
+    c.lineWidth = 1.4;
+    c.beginPath();
+    c.moveTo(f.X(best.ang), f.Y(best.X));
+    c.lineTo(f.X(best.ang), f.Y(0));
+    c.stroke();
+    c.restore();
+    c.beginPath();
+    c.arc(f.X(best.ang), f.Y(best.X), 4, 0, TAU);
+    c.fillStyle = "#dc2626"; c.fill();
+    c.fillStyle = "#dc2626";
+    c.font = '600 10.5px system-ui,"Microsoft YaHei",sans-serif';
+    c.textAlign = best.ang > 60 ? "right" : "left";
+    c.fillText(fmt(best.ang, P.h0 > 0 ? 1 : 0) + "° 最大 " + fmt(best.X, 2) + " m",
+      f.X(best.ang) + (best.ang > 60 ? -8 : 8), f.Y(best.X) - 8);
+
+    // 当前 θ 竖线
+    c.save();
+    c.strokeStyle = COL.vx;
+    c.lineWidth = 1.2;
+    c.beginPath();
+    c.moveTo(f.X(P.theta), f.box.y);
+    c.lineTo(f.X(P.theta), f.box.y + f.box.h);
+    c.stroke();
+    c.restore();
+  }
+
+  function drawCharts() {
+    drawChartRange();
+    drawChartX();
+    drawChartY();
+    drawChartVy();
+  }
+
+  /* =====================================================================
+     9. 仿真循环（固定步长）
+     ===================================================================== */
+  const DT = CONFIG.dt;
+  let lastTime = 0, accTime = 0;
+
+  function resetShot() {
+    S.launched = false; S.running = false; S.landed = false;
+    S.t = 0; S.x = 0; S.y = P.h0;
+    S.vx = P.v0 * Math.cos(rad(P.theta));
+    S.vy = P.v0 * Math.sin(rad(P.theta));
+    S.samples = [{ t: 0, x: 0, y: P.h0, vy: S.vy, vx: S.vx }];
+    S.peak = P.h0;
+    S.simT = 0; S.simH = 0; S.simX = 0;
+    accTime = 0;
+    $("resultcard").classList.remove("show");
+    $("bPause").textContent = "暂停";   // 同步播放按钮文案，避免停留在“继续”
+    updateReadout();
+  }
+
+  function launch() {
+    const c = calc();
+    if (P.theta <= 0.001 && P.h0 <= 0.001) {
+      flashTip("θ = 0° 且 h₀ = 0：弹丸无法离地做抛体运动。请抬高发射台（点「0°（平抛）」预设会自动设 h₀ = 4 m）。");
+      return false;
+    }
+    resetShot();
+    S.launched = true; S.running = true; S.landed = false;
+    S.vx = c.vx; S.vy = c.vy0;
+    S.x = 0; S.y = P.h0;
+    ensureAudio();
+    return true;
+  }
+
+  /** 单步推进（1/60 s） */
+  function singleStep() {
+    if (!S.launched) { if (!launch()) return; S.running = false; }
+    if (S.landed) return;
+    const n = Math.round((1 / 60) / DT);
+    for (let i = 0; i < n && !S.landed; i++) stepPhysics(DT);
+  }
+
+  /** 一个固定步长的物理积分（常加速度泰勒展开，对匀加速无截断误差） */
+  function stepPhysics(dt) {
+    if (S.landed) return;
+    const x0 = S.x, y0 = S.y;
+    S.x += S.vx * dt;
+    S.y += S.vy * dt - 0.5 * P.g * dt * dt;
+    S.vy -= P.g * dt;
+    S.t += dt;
+    if (S.y > S.peak) S.peak = S.y;
+
+    S.samples.push({ t: S.t, x: S.x, y: S.y, vy: S.vy, vx: S.vx });
+
+    // 落地判定（线性插值到 y = 0）
+    if (S.y <= 0 && S.t > 1e-6) {
+      const f = y0 / (y0 - S.y);
+      const tLand = S.t - dt + f * dt;
+      const xLand = x0 + (S.x - x0) * f;
+      S.x = xLand; S.t = tLand; S.y = 0;
+      S.vy = calc().vy0 - P.g * tLand;
+      S.samples.push({ t: S.t, x: S.x, y: 0, vy: S.vy, vx: S.vx });
+      finish();
+    }
+  }
+
+  /** 落地结算：记录数据、提示音、数据表 */
+  function finish() {
+    S.landed = true; S.running = false;
+    $("bPause").textContent = "暂停";
+    const c = calc();
+    S.simT = S.t; S.simX = S.x; S.simH = S.peak;
+
+    const errT = c.T > 0 ? Math.abs(S.simT - c.T) / c.T * 100 : 0;
+    const errH = c.H > 0 ? Math.abs(S.simH - c.H) / c.H * 100 : 0;
+    const errX = c.X > 0 ? Math.abs(S.simX - c.X) / c.X * 100 : 0;
+
+    const rc = $("resultcard");
+    rc.classList.add("show");
+    rc.innerHTML =
+      "<b>落点结算</b>　θ = " + P.theta + "°，v₀ = " + fmt(P.v0, 1) + " m/s，g = " + P.g + " m/s²<br>" +
+      "T：理论 " + fmt(c.T, 3) + " s / 仿真 " + fmt(S.simT, 3) + " s　<span class='err'>误差 " + fmt(errT, 2) + "%</span><br>" +
+      "H：理论 " + fmt(c.H, 3) + " m / 仿真 " + fmt(S.simH, 3) + " m　<span class='err'>误差 " + fmt(errH, 2) + "%</span><br>" +
+      "X：理论 " + fmt(c.X, 3) + " m / 仿真 " + fmt(S.simX, 3) + " m　<span class='err'>误差 " + fmt(errX, 2) + "%</span>";
+
+    addRecord({
+      th: P.theta, v0: P.v0, g: P.g, h0: P.h0,
+      T: c.T, H: c.H, X: c.X, src: "单发"
+    });
+
+    beep();
+  }
+
+  function updateReadout() {
+    $("ro-t").textContent = fmt(S.t, 2);
+    $("ro-x").textContent = fmt(S.x, 2);
+    $("ro-y").textContent = fmt(Math.max(S.y, 0), 2);
+    $("ro-vx").textContent = fmt(S.vx, 2);
+    $("ro-vy").textContent = fmt(S.vy, 2);
+    const v = Math.hypot(S.vx, S.vy);
+    $("ro-v").textContent = fmt(v, 2);
+    const ang = Math.atan2(S.vy, S.vx) * 180 / Math.PI;
+    $("ro-ang").textContent = fmt(Math.abs(ang) < 1e-9 ? 0 : ang, 1);
+  }
+
+  let drawPending = false;
+  function loop(now) {
+    if (!lastTime) lastTime = now;
+    let real = (now - lastTime) / 1000;
+    lastTime = now;
+    if (real > 0.08) real = 0.08; // 防止切后台后大跳
+
+    if (S.running && S.launched && !S.landed) {
+      accTime += real * P.speed;
+      let guard = 0;
+      while (accTime >= DT && guard < 900 && !S.landed) { stepPhysics(DT); accTime -= DT; guard++; }
+    }
+
+    // 叠加轨迹的渐显动画
+    let need = false;
+    const list = S.scan.concat(S.compare);
+    for (let i = 0; i < list.length; i++) {
+      if (list[i].reveal < 1) {
+        list[i].reveal = Math.min(1, list[i].reveal + real * 2.6);
+        need = true;
+      }
+    }
+
+    updateReadout();
+    drawScene();
+    if (need || S.running || drawPending) drawCharts();
+
+    requestAnimationFrame(loop);
+  }
+
+  /* =====================================================================
+     10. 叠加对比：一键扫描 / 互余角
+     ===================================================================== */
+  function angleColor(a) {
+    // 10° 蓝 → 45° 青绿 → 80° 红，按角度渐变
+    const h = 215 - (a / 90) * 215;
+    return "hsl(" + h.toFixed(0) + ",78%,45%)";
+  }
+
+  function makeTrack(th, color, labelTxt) {
+    const c = calc(th);
+    const N = 140;
+    const pts = [];
+    for (let i = 0; i <= N; i++) {
+      const p = phys(th, P.v0, P.g, P.h0, c.T * i / N);
+      pts.push({ x: p.x, y: Math.max(p.y, 0) });
+    }
+    return {
+      th: th, v0: P.v0, g: P.g, h0: P.h0,
+      X: c.X, T: c.T, H: c.H, pts: pts, color: color,
+      reveal: REDUCE ? 1 : 0,
+      label: "θ=" + th + "° X=" + fmt(c.X, 2) + "m"
+    };
+  }
+
+  let scanTimer = null;
+  function clearOverlay() {
+    S.scan = [];
+    S.compare = [];
+    if (scanTimer) { clearTimeout(scanTimer); scanTimer = null; }
+    S.scanning = false;
+    $("bScan").disabled = false;
+    $("bScan").textContent = "一键扫描 θ";
+    $("compareBox").innerHTML = '互余角对比将叠加 <span class="hl">θ</span> 与 <span class="hl">90°−θ</span> 两条轨迹，验证射程相同、T 与 H 不同。';
+    drawCharts();
+  }
+
+  function startScan() {
+    if (S.scanning) return;
+    S.scan = [];
+    S.compare = [];
+    S.scanning = true;
+    $("bScan").disabled = true;
+    $("bScan").textContent = "扫描中…";
+    const angs = CONFIG.scanAngles;
+    let i = 0;
+
+    (function next() {
+      if (i >= angs.length) {
+        S.scanning = false;
+        $("bScan").disabled = false;
+        $("bScan").textContent = "一键扫描 θ";
+        const best = bestAngle(P.v0, P.g, P.h0);
+        const list = S.scan.slice().sort((a, b) => b.X - a.X);
+        $("compareBox").innerHTML =
+          "<b>扫描完成</b>：最远落点 <span class='num'>" + list[0].label + "</span><br>" +
+          "理论峰值角 <span class='hl'>" + fmt(best.ang, P.h0 > 0 ? 1 : 0) + "°</span>，X_max = <span class='num'>" + fmt(best.X, 2) + " m</span>" +
+          (P.h0 > 0 ? "<br><span class='warn'>注意：发射台抬高（h₀ = " + fmt(P.h0, 1) + " m）后，45° 不再严格最优。</span>"
+            : "<br>同高度起落、不计阻力时 45° 严格最优，X_max = v₀²/g。");
+        drawCharts();
+        return;
+      }
+      const a = angs[i++];
+      const e = makeTrack(a, angleColor(a));
+      S.scan.push(e);
+      // 同步写入数据表，便于课后比对
+      addRecordSilent({ th: a, v0: P.v0, g: P.g, h0: P.h0, T: e.T, H: e.H, X: e.X, src: "扫描" });
+      if (REDUCE) next();
+      else scanTimer = setTimeout(next, 280);
+    })();
+  }
+
+  function compareComplement() {
+    const a = P.theta;
+    const b = 90 - a;
+    S.compare = [];
+    S.compare.push(makeTrack(a, "#7c3aed"));
+    S.compare.push(makeTrack(b, "#0891b2"));
+    const ca = calc(a), cb = calc(b);
+    const sameX = Math.abs(ca.X - cb.X) < 0.005;
+    $("compareBox").innerHTML =
+      "<b>互余角对比</b>（v₀ = " + fmt(P.v0, 1) + " m/s）<br>" +
+      "θ₁ = " + a + "°：X = <span class='num'>" + fmt(ca.X, 2) + " m</span>，T = " + fmt(ca.T, 2) + " s，H = " + fmt(ca.H, 2) + " m<br>" +
+      "θ₂ = " + b + "°：X = <span class='num'>" + fmt(cb.X, 2) + " m</span>，T = " + fmt(cb.T, 2) + " s，H = " + fmt(cb.H, 2) + " m<br>" +
+      (a === b ? "<span class='warn'>θ = 45°，互余角退化为同一个角；建议用 30° 与 60° 对比。</span>"
+        : (sameX ? "<span class='hl'>射程相同 ✔</span>（sin2θ 相等），但 T 与 H 明显不同。" : "")) +
+      (P.h0 > 0.01 ? "<br><span class='warn'>h₀ > 0 时互余角等射程不再成立——前提是「同高度起落」。</span>" : "");
+    drawCharts();
+  }
+
+  /* =====================================================================
+     11. 数据记录表 / CSV
+     ===================================================================== */
+  function addRecordSilent(r) {
+    S.history.push(r);
+    if (S.history.length > CONFIG.maxRecord) S.history.shift();
+    renderTable();
+  }
+
+  function addRecord(r) {
+    addRecordSilent(r);
+    // 高亮最新一行
+    const body = $("recBody");
+    const rows = body.querySelectorAll("tr");
+    if (rows.length) rows[rows.length - 1].classList.add("mark");
+  }
+
+  function renderTable() {
+    const body = $("recBody");
+    $("recCount").textContent = "共 " + S.history.length + " 条";
+    if (!S.history.length) {
+      body.innerHTML = '<tr><td colspan="9" class="empty">还没有数据，先发射一发吧</td></tr>';
+      return;
+    }
+    let html = "";
+    for (let i = 0; i < S.history.length; i++) {
+      const r = S.history[i];
+      html += "<tr>" +
+        "<td>" + (i + 1) + "</td>" +
+        "<td>" + r.th + "</td>" +
+        "<td>" + fmt(r.v0, 1) + "</td>" +
+        "<td>" + r.g + "</td>" +
+        "<td>" + fmt(r.h0, 1) + "</td>" +
+        "<td>" + fmt(r.T, 3) + "</td>" +
+        "<td>" + fmt(r.H, 2) + "</td>" +
+        "<td>" + fmt(r.X, 2) + "</td>" +
+        "<td>" + fmt(r.X * 100, 0) + "</td>" +
+        "</tr>";
+    }
+    body.innerHTML = html;
+  }
+
+  function exportCSV() {
+    if (!S.history.length) { flashTip("还没有数据可导出，先发射几发吧。"); return; }
+    let csv = "\ufeff序号,θ(°),v₀(m/s),g(m/s²),h₀(m),T(s),H(m),X(m),落点(cm)\n";
+    for (let i = 0; i < S.history.length; i++) {
+      const r = S.history[i];
+      csv += [i + 1, r.th, fmt(r.v0, 1), r.g, fmt(r.h0, 1),
+      fmt(r.T, 3), fmt(r.H, 2), fmt(r.X, 2), fmt(r.X * 100, 0)].join(",") + "\n";
+    }
+    const blob = new Blob([csv], { type: "text/csv;charset=utf-8" });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url;
+    a.download = "斜抛运动_数据记录.csv";
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    setTimeout(function () { URL.revokeObjectURL(url); }, 1200);
+  }
+
+  /* =====================================================================
+     12. 音效
+     ===================================================================== */
+  let audioCtx = null;
+  function ensureAudio() {
+    if (!S.show.sound) return;
+    if (!audioCtx) {
+      try { audioCtx = new (window.AudioContext || window.webkitAudioContext)(); } catch (e) { audioCtx = null; }
+    }
+    if (audioCtx && audioCtx.state === "suspended") audioCtx.resume();
+  }
+  function beep() {
+    if (!S.show.sound || !audioCtx) return;
+    try {
+      const t = audioCtx.currentTime;
+      const o = audioCtx.createOscillator();
+      const g = audioCtx.createGain();
+      o.type = "sine";
+      o.frequency.setValueAtTime(560, t);
+      o.frequency.exponentialRampToValueAtTime(180, t + 0.17);
+      g.gain.setValueAtTime(0.16, t);
+      g.gain.exponentialRampToValueAtTime(0.0008, t + 0.26);
+      o.connect(g); g.connect(audioCtx.destination);
+      o.start(t); o.stop(t + 0.27);
+    } catch (e) { /* 忽略音频异常 */ }
+  }
+
+  /* =====================================================================
+     13. 界面同步：参数面板 / 结论
+     ===================================================================== */
+  function syncPanel() {
+    $("vTheta").textContent = P.theta + "°";
+    $("vV0").textContent = fmt(P.v0, 1) + " m/s";
+    $("vH0").textContent = fmt(P.h0, 1) + " m";
+    $("rTheta").value = P.theta;
+    $("rV0").value = P.v0;
+    $("rH0").value = P.h0;
+    const segG = $("segG").querySelectorAll("button");
+    for (let i = 0; i < segG.length; i++) {
+      segG[i].classList.toggle("on", parseFloat(segG[i].dataset.g) === P.g);
+    }
+    $("chRangeNote").textContent = "v₀ = " + fmt(P.v0, 1) + " m/s 固定";
+    updateConclusion();
+  }
+
+  function updateConclusion() {
+    const c = calc();
+    const best = bestAngle(P.v0, P.g, P.h0);
+    const comp = 90 - P.theta;
+    const cc = (P.theta > 0 && P.theta < 90) ? calc(comp) : null;
+    let html = "";
+    html += "当前：θ = <span class='num'>" + P.theta + "°</span>，v₀ = <span class='num'>" + fmt(P.v0, 1) +
+      " m/s</span>，g = <span class='num'>" + P.g + "</span>，h₀ = <span class='num'>" + fmt(P.h0, 1) + " m</span><br>";
+    html += (P.h0 <= 0.01 ? "T = 2v₀sinθ/g = " : "T = ") + "<span class='num'>" + fmt(c.T, 3) + " s</span>　H = <span class='num'>" + fmt(c.H, 2) +
+      " m</span>　X = <span class='num'>" + fmt(c.X, 2) + " m</span>";
+    html += "<hr>";
+    if (P.h0 <= 0.01) {
+      html += "① <span class='hl'>轨迹对称</span>：以 x = X/2 =" + fmt(c.X / 2, 2) +
+        " m 的竖直线为对称轴，上升段与下降段形状镜像；t_上 = t_下 = v₀sinθ/g = " + fmt(c.tApex, 3) + " s。<br>";
+      if (c.tApex > 0.02) {
+        const tau = c.tApex * 0.5;
+        const p1 = phys(c.th, c.v0, c.g, c.h0, c.tApex - tau);
+        const p2 = phys(c.th, c.v0, c.g, c.h0, c.tApex + tau);
+        html += "　镜像校验：t = " + fmt(c.tApex - tau, 2) + " s 与 " + fmt(c.tApex + tau, 2) +
+          " s 两点 y 均为 <span class='num'>" + fmt(p1.y, 3) + " m</span>，v 均为 <span class='num'>" +
+          fmt(Math.hypot(p1.vx, p1.vy), 3) + " m/s</span>（差 " + fmt(Math.abs(p1.y - p2.y), 3) + " / " +
+          fmt(Math.abs(Math.hypot(p1.vx, p1.vy) - Math.hypot(p2.vx, p2.vy)), 3) + "）。<br>";
+      }
+      html += "② <span class='hl'>45° 射程最大</span>：X ∝ sin2θ，θ=45° 时 X_max = v₀²/g = <span class='num'>" +
+        fmt(P.v0 * P.v0 / P.g, 2) + " m</span>。<br>";
+      if (cc) {
+        if (Math.abs(P.theta - comp) < 0.5) {
+          html += "③ <span class='hl'>互余角等射程</span>：θ = 45° 时互余角退化为自身——把 θ 改为 30°（或 60°）即可看到两角射程相同、而 T 与 H 明显不同。<br>";
+        } else {
+          html += "③ <span class='hl'>互余角等射程</span>：θ=" + P.theta + "° 与 " + comp + "° 的 X 均为 <span class='num'>" +
+            fmt(c.X, 2) + " m</span>，但 T 分别 " + fmt(c.T, 2) + " s / " + fmt(cc.T, 2) + " s，H 分别 " +
+            fmt(c.H, 2) + " m / " + fmt(cc.H, 2) + " m。<br>";
+        }
+      }
+      html += "④ <span class='hl'>最高点</span>：v_y = 0，v = v₀cosθ = <span class='num'>" + fmt(Math.abs(c.vx), 2) +
+        " m/s</span>，a 仍为 g（不为 0）。";
+    } else {
+      html += "<span class='warn'>发射台已抬高（h₀ = " + fmt(P.h0, 1) + " m）：</span>上下两段不再对称，" +
+        "最优角约 <span class='num'>" + fmt(best.ang, 1) + "°</span>（< 45°），" +
+        "互余角等射程也不再严格成立——45° 最优的前提是「同高度起落」。<br>";
+      html += "当前 X = <span class='num'>" + fmt(c.X, 2) + " m</span>，H = <span class='num'>" + fmt(c.H, 2) + " m</span>。";
+    }
+    $("conclusionBox").innerHTML = html;
+  }
+
+  /* =====================================================================
+     14. 教学流程
+     ===================================================================== */
+  const STEP_TEXT = [
+    {
+      t: "① 猜想",
+      txt: "先别急着发射：把 θ 依次设为 30°、45°、60° 各发射一次，再点「一键扫描」，观察落点标记板上的针脚。",
+      q: "待答：你认为哪个角度射得最远？为什么？"
+    },
+    {
+      t: "② 实验",
+      txt: "v₀ 由弹簧压缩量决定（同一压缩量 → 同一 v₀），全程固定，只改变 θ。盯住最高点两侧的轨迹形状。",
+      q: "待答：上升段与下降段关于最高点竖直线对称吗？"
+    },
+    {
+      t: "③ 数据",
+      txt: "记录每次的 T、H、X：先比 30° 与 60°（互余角），再看 X–θ 曲线的峰值位置。",
+      q: "待答：30° 与 60° 的射程相同吗？T 与 H 呢？"
+    },
+    {
+      t: "④ 结论",
+      txt: "对称性：上升 = 下降（时间、高度、速率）；最优性：X ∝ sin2θ → 45° 最大。前提：同高度起落、不计空气阻力。",
+      q: "待答：如果抬高发射台，45° 还最优吗？"
+    }
+  ];
+
+  function setStep(i) {
+    S.step = i;
+    const btns = $("steps").querySelectorAll("button");
+    for (let k = 0; k < btns.length; k++) btns[k].classList.toggle("on", k === i);
+    $("tipTitle").textContent = STEP_TEXT[i].t;
+    $("tipText").textContent = STEP_TEXT[i].txt;
+    $("tipQ").textContent = STEP_TEXT[i].q;
+    if (i === 3) {
+      const box = $("conclusionBox");
+      box.style.transition = "background .3s";
+      box.style.background = "#fffbeb";
+      setTimeout(function () { box.style.background = ""; }, 900);
+    }
+  }
+
+  function flashTip(msg) {
+    const el = $("tipText");
+    const old = el.textContent;
+    el.textContent = msg;
+    $("tipbar").style.background = "#fef2f2";
+    setTimeout(function () {
+      el.textContent = old;
+      $("tipbar").style.background = "";
+    }, 4200);
+  }
+
+  /* =====================================================================
+     15. 测验
+     ===================================================================== */
+  const QUIZ = [
+    {
+      q: "1. 斜抛运动到达最高点时，下列说法正确的是（　）",
+      opts: [
+        "速度为零，加速度也为零",
+        "速度为零，加速度为 g",
+        "竖直分速度为零，合速度等于 v₀cosθ，加速度仍为 g",
+        "加速度方向变为竖直向下，大小小于 g"
+      ],
+      ans: 2,
+      exp: "最高点只是竖直分速度减为 0，水平分速度 v₀cosθ 全程不变，所以合速度不为零；重力加速度 g 全程恒定（大小不变、方向竖直向下），最高点也不例外。"
+    },
+    {
+      q: "2. 同一 v₀（不计阻力、同高度起落）下，θ=30° 与 θ=60° 两发弹丸相比（　）",
+      opts: [
+        "60° 射程更大",
+        "30° 射程更大",
+        "射程相同，60° 的飞行时间更长、最大高度更大",
+        "射程相同，飞行时间也相同"
+      ],
+      ans: 2,
+      exp: "X = v₀²sin2θ/g，sin60° 与 sin120° 相等 → 射程相同；但 T = 2v₀sinθ/g、H = v₀²sin²θ/(2g) 随 sinθ 单调增大，故 60° 飞得更久、飞得更高。"
+    },
+    {
+      q: "3. 固定 v₀，把发射角从 30° 增大到 60°，飞行时间 T（　）",
+      opts: ["变小", "不变", "变大", "先变大后变小"],
+      ans: 2,
+      exp: "T = 2v₀sinθ/g 在 0°~90° 内随 θ 单调增大：sin30° = 0.5 < sin60° ≈ 0.866，所以 T 变大（但射程不变，因为 sin2θ 相等）。"
+    }
+  ];
+
+  function buildQuiz() {
+    const box = $("quizList");
+    let html = "";
+    for (let i = 0; i < QUIZ.length; i++) {
+      const q = QUIZ[i];
+      html += '<div class="q" data-i="' + i + '">';
+      html += '<div class="qt">' + q.q + "</div>";
+      for (let k = 0; k < q.opts.length; k++) {
+        html += '<button class="opt" data-k="' + k + '">' + String.fromCharCode(65 + k) + ". " + q.opts[k] + "</button>";
+      }
+      html += '<div class="exp"></div></div>';
+    }
+    box.innerHTML = html;
+
+    box.addEventListener("click", function (ev) {
+      const btn = ev.target.closest(".opt");
+      if (!btn || btn.disabled) return;
+      const qd = btn.closest(".q");
+      const qi = +qd.dataset.i;
+      const k = +btn.dataset.k;
+      const q = QUIZ[qi];
+      const opts = qd.querySelectorAll(".opt");
+      for (let i = 0; i < opts.length; i++) opts[i].disabled = true;
+      if (k === q.ans) {
+        btn.classList.add("correct");
+        qd.querySelector(".exp").innerHTML = "✔ 正确。" + q.exp;
+      } else {
+        btn.classList.add("wrong");
+        opts[q.ans].classList.add("correct");
+        qd.querySelector(".exp").innerHTML = "✘ 再想想。" + q.exp;
+      }
+      qd.querySelector(".exp").classList.add("show");
+    });
+  }
+
+  /* =====================================================================
+     16. 事件绑定
+     ===================================================================== */
+  function bindUI() {
+    // θ
+    $("rTheta").addEventListener("input", function () {
+      let v = parseInt(this.value, 10);
+      if (P.snap) v = Math.round(v / 5) * 5;
+      P.theta = Math.max(0, Math.min(90, v));
+      this.value = P.theta;
+      syncPanel();
+      resetShot();
+      drawCharts();
+    });
+    $("cSnap").addEventListener("change", function () {
+      P.snap = this.checked;
+      if (P.snap) {
+        P.theta = Math.round(P.theta / 5) * 5;
+        syncPanel(); resetShot(); drawCharts();
+      }
+    });
+    // v0
+    $("rV0").addEventListener("input", function () {
+      P.v0 = parseFloat(this.value);
+      syncPanel(); resetShot(); drawCharts();
+    });
+    // h0
+    $("rH0").addEventListener("input", function () {
+      P.h0 = parseFloat(this.value);
+      syncPanel(); resetShot(); drawCharts();
+    });
+    // g
+    $("segG").addEventListener("click", function (ev) {
+      const b = ev.target.closest("button");
+      if (!b) return;
+      P.g = parseFloat(b.dataset.g);
+      syncPanel(); resetShot(); drawCharts();
+    });
+    // 速度
+    $("segSpeed").addEventListener("click", function (ev) {
+      const b = ev.target.closest("button");
+      if (!b) return;
+      P.speed = parseFloat(b.dataset.s);
+      const bs = $("segSpeed").querySelectorAll("button");
+      for (let i = 0; i < bs.length; i++) bs[i].classList.toggle("on", bs[i] === b);
+    });
+    // 播放控制
+    $("bLaunch").addEventListener("click", function () {
+      if (launch()) { S.running = true; drawCharts(); }
+    });
+    $("bPause").addEventListener("click", function () {
+      if (!S.launched || S.landed) return;
+      S.running = !S.running;
+      this.textContent = S.running ? "暂停" : "继续";
+    });
+    $("bStep").addEventListener("click", function () {
+      S.running = false;
+      $("bPause").textContent = "暂停";
+      singleStep();
+      drawCharts();
+    });
+    $("bReset").addEventListener("click", function () {
+      $("bPause").textContent = "暂停";
+      resetShot();
+      drawCharts();
+    });
+    // 图层开关
+    const map = {
+      cTrail: "trail", cStrobe: "strobe", cVel: "vel", cAcc: "acc",
+      cAxis: "axis", cEq: "eq", cRuler: "ruler", cHist: "hist",
+      cSound: "sound", cReal: "real"
+    };
+    Object.keys(map).forEach(function (id) {
+      $(id).addEventListener("change", function () {
+        S.show[map[id]] = this.checked;
+        if (id === "cSound" && this.checked) { ensureAudio(); beep(); }
+      });
+    });
+    // 对比
+    $("bScan").addEventListener("click", startScan);
+    $("bComp").addEventListener("click", compareComplement);
+    $("bClearOv").addEventListener("click", clearOverlay);
+    // 预设
+    document.querySelectorAll("[data-preset]").forEach(function (b) {
+      b.addEventListener("click", function () {
+        const a = parseInt(b.dataset.preset, 10);
+        P.theta = a;
+        if (a === 0 && P.h0 <= 0.01) P.h0 = 4;      // 平抛需要一定高度
+        if (a === 0) { /* 保持 */ }
+        syncPanel(); resetShot(); drawCharts();
+        if (a === 0) flashTip("θ = 0°：斜抛退化为平抛（已把发射台抬到 4 m，否则弹丸贴着地面无法做抛体运动）。");
+        if (a === 90) flashTip("θ = 90°：斜抛退化为竖直上抛，射程 X = 0，仍满足 T = 2v₀/g。");
+        if (a === 45) flashTip("θ = 45°：同高度起落、不计阻力时射程最大，X_max = v₀²/g。");
+      });
+    });
+    // 数据表
+    $("bCsv").addEventListener("click", exportCSV);
+    $("bClearRec").addEventListener("click", function () {
+      S.history = [];
+      renderTable();
+      drawCharts();
+    });
+    // 教学流程
+    $("steps").addEventListener("click", function (ev) {
+      const b = ev.target.closest("button");
+      if (!b) return;
+      setStep(parseInt(b.dataset.step, 10));
+    });
+
+    // 键盘
+    window.addEventListener("keydown", function (e) {
+      if (e.target && /INPUT|TEXTAREA|SELECT/.test(e.target.tagName)) return;
+      if (e.code === "Space") {
+        e.preventDefault();
+        if (!S.launched || S.landed) { if (launch()) S.running = true; }
+        else { S.running = !S.running; $("bPause").textContent = S.running ? "暂停" : "继续"; }
+      } else if (e.key === "r" || e.key === "R") {
+        resetShot(); drawCharts();
+      } else if (e.key === "ArrowRight") {
+        e.preventDefault(); singleStep(); drawCharts();
+      }
+    });
+
+    // 尺寸变化
+    if (window.ResizeObserver) {
+      const ro = new ResizeObserver(function () { drawScene(); drawCharts(); });
+      ro.observe(scene);
+    }
+    window.addEventListener("resize", function () { drawScene(); drawCharts(); });
+  }
+
+  /* =====================================================================
+     17. 初始化
+     ===================================================================== */
+  function init() {
+    buildQuiz();
+    bindUI();
+    if (REDUCE) {
+      S.show.strobe = true;
+      $("cStrobe").checked = true;
+    }
+    syncPanel();
+    resetShot();
+    renderTable();
+    setStep(0);
+    drawCharts();
+    requestAnimationFrame(loop);
+  }
+
+  init();
+})();
+</script>
+</body>
+</html>

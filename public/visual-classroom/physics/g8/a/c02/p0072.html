@@ -1,0 +1,997 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>探究光的直线传播与光线模型 · 交互式可视化（人教版八年级上册 §4.1）</title>
+<style>
+:root{
+  --blue:#2563EB; --blue-d:#1D4ED8; --blue-l:#EFF4FF;
+  --green:#10B981; --red:#EF4444; --amber:#F59E0B; --cyan:#06B6D4;
+  --ink:#1F2937; --ink-2:#4B5563; --ink-3:#6B7280;
+  --line:#E5E7EB; --bg:#F5F7FB; --card:#FFFFFF;
+  --radius:14px;
+  --shadow:0 1px 2px rgba(16,24,40,.04), 0 10px 28px -14px rgba(16,24,40,.26);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:"Microsoft YaHei","PingFang SC","Hiragino Sans GB",system-ui,-apple-system,"Segoe UI",sans-serif;
+  background:var(--bg);color:var(--ink);line-height:1.68;-webkit-font-smoothing:antialiased;
+}
+svg{display:block;font-family:inherit;}
+
+.site-header{background:linear-gradient(120deg,#1D4ED8,#2563EB 55%,#3B82F6);color:#fff;padding:22px 0 24px;}
+.header-inner{max-width:1120px;margin:0 auto;padding:0 22px;display:flex;justify-content:space-between;align-items:flex-end;gap:18px;flex-wrap:wrap;}
+.header-text h1{margin:0;font-size:24px;font-weight:700;letter-spacing:.5px;}
+.header-text p{margin:6px 0 0;font-size:13.5px;color:rgba(255,255,255,.88);}
+.header-nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.header-link{border:1px solid rgba(255,255,255,.45);border-radius:999px;padding:7px 16px;font-size:13px;color:#fff;text-decoration:none;background:rgba(255,255,255,.08);white-space:nowrap;}
+.header-link:hover{background:rgba(255,255,255,.2);}
+.header-badge{border:1px solid rgba(255,255,255,.4);border-radius:999px;padding:7px 16px;font-size:13px;background:rgba(255,255,255,.12);white-space:nowrap;}
+
+.wrap{max-width:1120px;margin:0 auto;padding:24px 22px 40px;}
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:24px 26px;margin-bottom:20px;border:1px solid rgba(229,231,235,.7);}
+.chead{display:flex;gap:14px;align-items:flex-start;margin-bottom:18px;}
+.idx{flex:0 0 auto;width:34px;height:34px;border-radius:11px;background:var(--blue-l);color:var(--blue);font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;margin-top:2px;}
+.chead h2{margin:0 0 3px;font-size:19px;font-weight:700;letter-spacing:.2px;}
+.chead p{margin:0;color:var(--ink-3);font-size:13.3px;}
+
+.split{display:grid;grid-template-columns:minmax(0,1.08fr) minmax(285px,.92fr);gap:26px;align-items:start;}
+@media(max-width:900px){.split{grid-template-columns:1fr;}}
+.stage{border:1px solid var(--line);border-radius:12px;background:#FBFcFE;padding:6px;overflow:hidden;}
+.stage svg{width:100%;height:auto;border-radius:8px;touch-action:none;}
+
+.panel{display:flex;flex-direction:column;gap:15px;}
+.ctl label{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--ink-3);margin-bottom:6px;}
+.ctl label b{color:var(--ink);font-size:14.5px;font-variant-numeric:tabular-nums;font-weight:700;}
+input[type=range]{width:100%;height:24px;accent-color:var(--blue);cursor:pointer;margin:0;background:transparent;}
+.tick{display:flex;justify-content:space-between;font-size:11px;color:var(--ink-3);margin-top:1px;}
+.seg{display:flex;gap:8px;flex-wrap:wrap;}
+.seg button{border:1px solid var(--line);background:#fff;color:var(--ink-2);border-radius:9px;padding:6px 14px;font-size:12.5px;cursor:pointer;font-family:inherit;transition:.15s;}
+.seg button:hover{border-color:#BFDBFE;background:#F8FAFF;}
+.seg button.on{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600;}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;}
+.tabs button{border:1px solid var(--line);background:#fff;color:var(--ink-2);border-radius:999px;padding:6px 16px;font-size:13px;cursor:pointer;font-family:inherit;transition:.15s;}
+.tabs button:hover{border-color:#BFDBFE;}
+.tabs button.on{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600;}
+.btn{border:1px solid var(--blue);background:#fff;color:var(--blue);border-radius:9px;padding:7px 15px;font-size:13px;cursor:pointer;font-family:inherit;transition:.15s;white-space:nowrap;}
+.btn:hover{background:var(--blue-l);}
+.btn.primary{background:var(--blue);color:#fff;}
+.btn.primary:hover{background:var(--blue-d);}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;}
+.hide{display:none;}
+
+.rows{border:1px solid var(--line);border-radius:11px;overflow:hidden;background:#FCFDFF;}
+.row{display:flex;justify-content:space-between;gap:10px;padding:8px 13px;font-size:13px;border-bottom:1px solid var(--line);}
+.row:last-child{border-bottom:0;}
+.row span{color:var(--ink-3);}
+.row b{font-variant-numeric:tabular-nums;font-weight:700;}
+
+.tagline{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--ink-2);flex-wrap:wrap;}
+.tag{font-size:11.5px;font-weight:700;border-radius:999px;padding:2px 10px;letter-spacing:.3px;white-space:nowrap;}
+.tag.b{background:#E4F9F0;color:#0E9F6E;}
+.tag.r{background:#FEECEC;color:#DC2626;}
+.tag.a{background:#FFF6E5;color:#B45309;}
+.tag.g{background:#EFF4FF;color:#1D4ED8;}
+
+.note{margin:0;font-size:13.2px;color:var(--ink-2);line-height:1.72;background:#F6F9FF;border-left:3px solid var(--blue);border-radius:0 10px 10px 0;padding:11px 14px;}
+.note em{font-style:normal;font-weight:700;color:var(--blue-d);}
+.note em.r{color:#DC2626;}
+
+footer{text-align:center;color:#93A2B8;font-size:12.3px;padding:6px 0 0;}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-text">
+      <h1>探究光的直线传播与光线模型</h1>
+      <p>光真的永远走直线吗？把「同种·均匀介质」这个前提拖出来看</p>
+    </div>
+    <div class="header-nav">
+      <a class="header-link" href="#">« 返回实验目录</a>
+      <span class="header-badge">八年级物理 · 光学 · §4.1</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- ============ ① 直线传播的条件 ============ -->
+  <section class="card">
+    <div class="chead">
+      <div class="idx">01</div>
+      <div>
+        <h2>光在什么条件下才沿直线传播</h2>
+        <p>同一支激光笔、同一个水槽，只改一个条件：水是搅匀的，还是静置分层的。</p>
+      </div>
+    </div>
+    <div class="split">
+      <div class="stage">
+        <svg id="svg1" viewBox="0 0 660 400" role="img" aria-label="激光在水槽中的光路"></svg>
+      </div>
+      <div class="panel">
+        <div class="seg" id="seg1">
+          <button data-m="uniform" class="on">同种均匀</button>
+          <button data-m="layered">同种不均匀</button>
+          <button data-m="interface">不同介质界面</button>
+        </div>
+
+        <div class="ctl" id="wrap1a">
+          <label>牛奶静置分层程度 <b id="v1s">0%</b></label>
+          <input id="r1s" type="range" min="0" max="100" step="1" value="0">
+          <div class="tick"><span>搅匀</span><span>严重分层</span></div>
+        </div>
+        <div class="ctl hide" id="wrap1b">
+          <label>入射角 i（空气侧） <b id="v1i">45°</b></label>
+          <input id="r1i" type="range" min="10" max="78" step="1" value="45">
+          <div class="tick"><span>10°</span><span>78°</span></div>
+        </div>
+
+        <div class="rows">
+          <div class="row"><span>是否同种介质</span><b id="o1same">—</b></div>
+          <div class="row"><span>是否均匀</span><b id="o1unif">—</b></div>
+          <div class="row"><span>上下层折射率差 Δn</span><b id="o1dn">—</b></div>
+          <div class="row"><span>光路末端偏离直线</span><b id="o1dev">—</b></div>
+        </div>
+        <div class="tagline" id="o1tag"></div>
+        <p class="note" id="o1note"></p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ② 光线模型 ============ -->
+  <section class="card">
+    <div class="chead">
+      <div class="idx">02</div>
+      <div>
+        <h2>从真实光束到光线模型</h2>
+        <p>真实的光束是一整片；把它抽象成带箭头的直线，就得到了「光线」。</p>
+      </div>
+    </div>
+    <div class="split">
+      <div class="stage">
+        <svg id="svg2" viewBox="0 0 660 340" role="img" aria-label="光束到光线模型的抽象"></svg>
+      </div>
+      <div class="panel">
+        <div class="seg" id="seg2">
+          <button data-k="parallel" class="on">平行光束（激光）</button>
+          <button data-k="point">点光源</button>
+        </div>
+        <div class="ctl">
+          <label>建模程度 <b id="v2m">0%</b></label>
+          <input id="r2m" type="range" min="0" max="100" step="1" value="0">
+          <div class="tick"><span>真实光束</span><span>光线模型</span></div>
+        </div>
+        <div class="btn-row">
+          <button class="btn" data-m2="0">回到真实光束</button>
+          <button class="btn primary" data-m2="100">建立光线模型</button>
+        </div>
+        <div class="rows">
+          <div class="row"><span>画出来的是</span><b id="o2what">真实光束</b></div>
+          <div class="row"><span>有没有粗细</span><b id="o2width">有粗细</b></div>
+          <div class="row"><span>方向怎么表示</span><b id="o2arrow">光束的走向</b></div>
+        </div>
+        <p class="note"><em>光线</em>是为了研究方便建立的<em>物理模型</em>，实际并不存在一根根细线；箭头表示的是<em>光的传播方向</em>。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ③ 影子 · 日食 · 月食 ============ -->
+  <section class="card">
+    <div class="chead">
+      <div class="idx">03</div>
+      <div>
+        <h2>影子 · 日食 · 月食</h2>
+        <p>光沿直线传播最直接的证据：光源边缘发出的两条光线，就把影子的范围定死了。</p>
+      </div>
+    </div>
+    <div class="tabs" id="tabs3">
+      <button data-t="shadow" class="on">影子与本影半影</button>
+      <button data-t="solar">日食</button>
+      <button data-t="lunar">月食</button>
+    </div>
+    <div class="split">
+      <div class="stage">
+        <svg id="svg3" viewBox="0 0 660 400" role="img" aria-label="影子与日月食"></svg>
+      </div>
+      <div class="panel">
+        <div class="ctl hide" id="w3a">
+          <label>光源大小 <b id="v3a">30</b></label>
+          <input id="r3a" type="range" min="0" max="72" step="1" value="30">
+          <div class="tick"><span>点光源</span><span>大面光源</span></div>
+        </div>
+        <div class="ctl hide" id="w3b">
+          <label>光屏到光源的距离 <b id="v3b">470</b></label>
+          <input id="r3b" type="range" min="380" max="600" step="2" value="470">
+        </div>
+        <div class="ctl hide" id="w3c">
+          <label>月地距离 <b id="v3c">368000</b> km</label>
+          <input id="r3c" type="range" min="356700" max="406700" step="100" value="368000">
+          <div class="tick"><span>近地点 356700</span><span>远地点 406700</span></div>
+        </div>
+        <div class="ctl hide" id="w3d">
+          <label id="lab3d">月球横向位置 <b id="v3d">0</b> km</label>
+          <input id="r3d" type="range" min="-9000" max="9000" step="50" value="-9000">
+        </div>
+        <div class="btn-row" id="w3play">
+          <button class="btn primary" id="btn3play">▶ 播放</button>
+        </div>
+        <div class="rows" id="rows3"></div>
+        <div class="tagline" id="tag3"></div>
+        <p class="note" id="note3"></p>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<footer>物理可视化模型 · 光的直线传播与光线模型　|　单文件版，CSS 与 JS 全部内嵌，可离线双击使用</footer>
+
+<script>
+(function () {
+"use strict";
+
+/* ================= 通用工具 ================= */
+const $ = id => document.getElementById(id);
+const RAD = Math.PI / 180;
+const clamp = (v, a, b) => v < a ? a : (v > b ? b : v);
+const fmt = (n, d) => Number(n).toFixed(d === undefined ? 2 : d);
+const FONT = "Microsoft YaHei, PingFang SC, sans-serif";
+const esc = s => String(s).replace(/&/g, "&amp;").replace(/</g, "&lt;");
+
+function setTxt(id, v) { const e = $(id); if (e) e.textContent = v; }
+function setHtml(id, v) { const e = $(id); if (e) e.innerHTML = v; }
+function setSVG(id, v) { const e = $(id); if (e) e.innerHTML = v; }
+
+function T(x, y, s, o) {
+  o = o || {};
+  return '<text x="' + x + '" y="' + y + '" font-size="' + (o.size || 13) + '" fill="' + (o.fill || "#1F2937") +
+    '" font-weight="' + (o.w || 400) + '" text-anchor="' + (o.a || "start") +
+    '" font-family="' + FONT + '"' + (o.op !== undefined ? ' opacity="' + o.op + '"' : "") + '>' + s + '</text>';
+}
+function line(x1, y1, x2, y2, o) {
+  o = o || {};
+  return '<line x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 +
+    '" stroke="' + (o.c || "#64748B") + '" stroke-width="' + (o.w || 1.5) + '"' +
+    (o.d ? ' stroke-dasharray="' + o.d + '"' : "") + (o.op !== undefined ? ' opacity="' + o.op + '"' : "") +
+    (o.cap ? ' stroke-linecap="' + o.cap + '"' : "") + '/>';
+}
+const dist = (a, b) => Math.hypot(b.x - a.x, b.y - a.y);
+
+/* ============================================================
+   ① 光沿直线传播的条件 —— 水槽 + 牛奶，判定「同种 / 均匀」
+   折射率随深度连续变化时，光线满足不变量 n(y)·cos φ = 常数
+   ============================================================ */
+const TK = { x0: 132, y0: 96, x1: 626, y1: 350 };          // 水槽外壁
+const IN = { x0: 138, y0: 102, x1: 620, y1: 344 };          // 水槽内壁
+const YW = 216;                                            // 半箱模式的水面
+const N_WATER = 1.333;
+const DN_MAX = 0.16;                                       // 分层时上下最大折射率差（示意放大）
+const PHI0 = 9 * RAD;                                      // 入射光与水平面的夹角（向下为正）
+const Y_SRC = 178;                                         // 激光头所在高度（px）
+
+const M1 = { mode: "uniform", strat: 0, inc: 45 };
+
+function nAt(y) {
+  if (M1.mode !== "layered") return N_WATER;
+  const s = M1.strat / 100;
+  return N_WATER + DN_MAX * s * (y - IN.y0) / (IN.y1 - IN.y0);
+}
+
+/* 在分层介质中逐段追迹：n·cos φ 守恒，φ 为与水平方向夹角（向下为正） */
+function traceBeam(x0, y0, phi0, xEnd) {
+  const C = nAt(y0) * Math.cos(phi0);
+  const pts = [[x0, y0]];
+  let x = x0, y = y0;
+  const dx = 3;
+  while (x < xEnd) {
+    const n = nAt(y);
+    const phi = Math.acos(clamp(C / n, -1, 1));
+    y += Math.tan(phi) * dx;
+    x += dx;
+    if (y > IN.y1 + 30) break;
+    pts.push([x, y]);
+  }
+  return pts;
+}
+
+/* 伪随机牛奶微粒（固定种子，保证每帧位置稳定） */
+function milkDots(count) {
+  let seed = 20241030;
+  const rnd = () => { seed = (seed * 1103515245 + 12345) & 0x7fffffff; return seed / 0x7fffffff; };
+  let s = "";
+  for (let i = 0; i < count; i++) {
+    const x = IN.x0 + 6 + rnd() * (IN.x1 - IN.x0 - 12);
+    const u = rnd();                                  // 越靠底部颗粒越多
+    const yfill = M1.mode === "interface" ? YW : IN.y0;
+    const yBot = IN.y1;
+    const y = yfill + 4 + Math.pow(u, M1.mode === "layered" ? 0.55 : 1) * (yBot - yfill - 8);
+    const r = 0.9 + rnd() * 1.5;
+    const op = 0.18 + rnd() * 0.35;
+    s += '<circle cx="' + fmt(x, 1) + '" cy="' + fmt(y, 1) + '" r="' + fmt(r, 1) + '" fill="#E8F3FF" opacity="' + fmt(op, 2) + '"/>';
+  }
+  return s;
+}
+
+function drawM1() {
+  try {
+    const g = [];
+    g.push('<rect x="0" y="0" width="660" height="400" fill="#FBFcFE"/>');
+
+    /* 桌面 */
+    g.push(line(40, TK.y1, 640, TK.y1, { c: "#94A3B8", w: 3 }));
+    g.push(line(40, TK.y1 + 4, 640, TK.y1 + 4, { c: "#CBD5E1", w: 5 }));
+
+    const isInter = M1.mode === "interface";
+    const yTop = isInter ? YW : IN.y0;
+    const isFull = !isInter;
+
+    /* 槽内介质 */
+    if (isInter) {
+      g.push('<rect x="' + IN.x0 + '" y="' + IN.y0 + '" width="' + (IN.x1 - IN.x0) + '" height="' + (YW - IN.y0) + '" fill="#F1F5F9"/>');
+      g.push(T(IN.x0 + 8, IN.y0 + 22, "空气  n = 1.00", { size: 12.5, fill: "#64748B", w: 700 }));
+    }
+    g.push('<defs><linearGradient id="wg" x1="0" y1="0" x2="0" y2="1">' +
+      '<stop offset="0" stop-color="#3B82F6" stop-opacity="' + (M1.mode === "layered" ? 0.20 : 0.28) + '"/>' +
+      '<stop offset="1" stop-color="#1E40AF" stop-opacity="' + (M1.mode === "layered" ? 0.52 : 0.34) + '"/>' +
+      '</linearGradient></defs>');
+    g.push('<rect x="' + IN.x0 + '" y="' + yTop + '" width="' + (IN.x1 - IN.x0) + '" height="' + (IN.y1 - yTop) +
+      '" fill="url(#wg)" rx="3"/>');
+    if (M1.mode === "layered") g.push(milkDots(150));
+    else g.push(milkDots(60));
+    g.push(T(IN.x0 + 8, IN.y1 - 12, M1.mode === "layered" ? "水 + 牛奶（已静置分层）" : "水 + 牛奶（搅匀）  n = 1.333",
+      { size: 12.5, fill: "#DBEAFE", w: 700 }));
+    if (M1.mode === "layered") {
+      for (let i = 1; i <= 3; i++) {
+        const yy = IN.y0 + (IN.y1 - IN.y0) * i / 4;
+        g.push(line(IN.x0, yy, IN.x1, yy, { c: "#93C5FD", w: 0.8, d: "5 6", op: 0.5 }));
+      }
+      g.push(T(IN.x1 - 8, IN.y0 + 18, "浓度上稀 → 下浓", { size: 11.5, fill: "#BFDBFE", a: "end" }));
+    }
+
+    /* 参考直线（假定介质不改变方向） */
+    const refEnd = [IN.x1, Y_SRC + Math.tan(PHI0) * (IN.x1 - IN.x0)];
+
+    if (isInter) {
+      /* ---- 不同介质界面：空气 → 水 ---- */
+      const i1 = M1.inc * RAD;
+      const xTop = 250;                                  // 入射光与水面交点的横坐标
+      const yAir_top = 120;
+      const hit = { x: xTop, y: YW };
+      const startX = hit.x - (hit.y - yAir_top) / Math.tan(90 * RAD - i1);
+      const p0 = { x: startX, y: yAir_top };
+      const r1 = Math.asin(Math.sin(i1) / N_WATER);      // 折射角
+      const dirR = { x: Math.sin(r1), y: Math.cos(r1) }; // 水中方向（向下为正）
+      const dirI = { x: Math.sin(i1), y: Math.cos(i1) }; // 入射方向（向下为正）
+      const clipY = IN.y1;
+      /* 「假如不折射」：沿入射方向一直走，同样截断在槽内 */
+      const tGhost = Math.min((IN.x1 - hit.x) / dirI.x, (clipY - hit.y) / dirI.y);
+      const pGhost = { x: hit.x + dirI.x * tGhost, y: hit.y + dirI.y * tGhost };
+      const tHit = (clipY - hit.y) / dirR.y;
+      const pEnd = { x: hit.x + dirR.x * tHit, y: clipY };
+
+      g.push(line(p0.x, p0.y, hit.x, hit.y, { c: "#DC2626", w: 2.6, cap: "round" }));           // 入射光
+      g.push(line(hit.x, YW, hit.x, IN.y1 - 6, { c: "#94A3B8", w: 1.2, d: "5 5" }));          // 法线
+      g.push(line(hit.x - 200, YW, IN.x1, YW, { c: "#CBD5E1", w: 6, op: 0.55 }));             // 水面
+      g.push(line(hit.x, hit.y, pGhost.x, pGhost.y, { c: "#64748B", w: 1.2, d: "6 5", op: 0.8 })); // 假如不折射
+      g.push(line(hit.x, hit.y, pEnd.x, pEnd.y, { c: "#DC2626", w: 2.6, cap: "round" }));       // 折射光
+
+      /* 入射角 / 折射角标记 */
+      g.push('<path d="M' + (hit.x - 34) + ' ' + YW + ' A 34 34 0 0 1 ' + (hit.x - 34 * Math.cos(i1)) + ' ' + (YW - 34 * Math.sin(i1)) + '" fill="none" stroke="#EF4444" stroke-width="1.4"/>');
+      g.push(T(hit.x - 42, YW - 12, "i", { size: 13, fill: "#EF4444", w: 700, a: "end" }));
+      const rr = 30;
+      const ax1 = hit.x + rr * Math.sin(r1), ay1 = YW + rr * Math.cos(r1);
+      g.push('<path d="M' + hit.x + ' ' + (YW + rr) + ' A ' + rr + ' ' + rr + ' 0 0 0 ' + ax1 + ' ' + ay1 + '" fill="none" stroke="#BFDBFE" stroke-width="1.6"/>');
+      g.push(T(ax1 + 8, ay1 + 6, "r", { size: 14, fill: "#F8FAFC", w: 700 }));
+
+      g.push('<' + 'circle cx="' + hit.x + '" cy="' + YW + '" r="3.5" fill="#1D4ED8"/>');
+      g.push(T(p0.x - 6, p0.y - 8, "激光笔", { size: 12, fill: "#DC2626", w: 700, a: "end" }));
+      g.push(T(Math.min(pGhost.x + 10, 470), pGhost.y - 4, "假如不折射", { size: 11.5, fill: "#CBD5E1" }));
+
+      setTxt("o1same", "否（空气 / 水）");
+      setTxt("o1unif", "各自都均匀");
+      setTxt("o1dn", "界面处突变 1.00 → 1.33");
+      setTxt("o1dev", "界面处偏折 " + fmt(M1.inc - r1 / RAD, 1) + "°");
+      setHtml("o1tag", '<span class="tag a">界面处改变方向</span><span>但每一段内部仍是直线</span>');
+      setHtml("o1note", "两种介质里都各自沿直线走，方向只在<em>界面上</em>改变一次 —— 所以「光沿直线传播」要加上前提：<em>在同一种介质中</em>。");
+    } else {
+      /* ---- 同种介质：均匀 / 分层 ---- */
+      const y0 = Y_SRC;
+      const pts = traceBeam(IN.x0, y0, PHI0, IN.x1);
+      const end = pts[pts.length - 1];
+      const strEndY = y0 + Math.tan(PHI0) * (end[0] - IN.x0);
+
+      g.push(line(IN.x0, y0, refEnd[0], Math.min(refEnd[1], IN.y1), { c: "#64748B", w: 1.2, d: "6 5", op: 0.75 }));
+      const ps = pts.map(p => fmt(p[0], 1) + "," + fmt(p[1], 1)).join(" ");
+      g.push('<polyline points="' + ps + '" fill="none" stroke="#DC2626" stroke-width="3" stroke-linejoin="round" stroke-linecap="round"/>');
+      g.push('<polyline points="' + ps + '" fill="none" stroke="#FCA5A5" stroke-width="7" opacity="0.35" stroke-linejoin="round" stroke-linecap="round"/>');
+
+      /* 激光头（置于水中） */
+      g.push('<rect x="' + IN.x0 + '" y="' + (y0 - 13) + '" width="26" height="26" rx="5" fill="#1F2937"/>');
+      g.push('<rect x="' + (IN.x0 + 22) + '" y="' + (y0 - 5) + '" width="8" height="10" rx="2" fill="#DC2626"/>');
+      g.push(T(IN.x0 - 4, y0 - 20, "激光头（置于水中）", { size: 11.5, fill: "#94A3B8", a: "end" }));
+
+      /* 偏离直线 Δh */
+      const dev = end[1] - strEndY;
+      const devPct = dev / (IN.y1 - IN.y0) * 100;
+      if (dev > 2) {
+        const xx = IN.x1 - 26;
+        const yy1 = Math.min(strEndY, IN.y1), yy2 = Math.min(end[1], IN.y1);
+        g.push(line(xx, yy1, xx, yy2, { c: "#7C3AED", w: 1.8 }));
+        g.push('<path d="M' + xx + ' ' + yy1 + ' l -4 7 h 8 z M' + xx + ' ' + yy2 + ' l -4 -7 h 8 z" fill="#7C3AED"/>');
+        g.push(T(xx - 8, (yy1 + yy2) / 2 + 4, "Δh", { size: 12, fill: "#7C3AED", w: 700, a: "end" }));
+        g.push(T(xx - 8, (yy1 + yy2) / 2 + 18, "水深的 " + fmt(devPct, 1) + "%", { size: 11, fill: "#7C3AED", a: "end" }));
+      }
+      const rx = IN.x0 + 0.52 * (IN.x1 - IN.x0);
+      g.push(T(rx, Y_SRC + Math.tan(PHI0) * (rx - IN.x0) - 9, "若介质均匀，应沿这条虚线走", { size: 11.5, fill: "#64748B", a: "middle" }));
+
+      const layered = M1.mode === "layered";
+      setTxt("o1same", "是（同一种水）");
+      setTxt("o1unif", layered ? "否（浓度上稀下浓）" : "是");
+      setTxt("o1dn", layered ? fmt(DN_MAX * M1.strat / 100, 4) : "0.0000");
+      setTxt("o1dev", dev > 2 ? fmt(devPct, 1) + "% 水深" : "0（笔直）");
+      if (layered && M1.strat > 4) {
+        setHtml("o1tag", '<span class="tag r">光路弯曲</span><span>同种但不均匀 → 不沿直线</span>');
+        setHtml("o1note", "还是同一种介质，只是<em>不均匀</em>，光线就一直向浓度大的一侧弯曲。<em class=\"r\">光沿直线传播的完整条件是：在同种、均匀介质中。</em>");
+      } else {
+        setHtml("o1tag", '<span class="tag b">光沿直线传播</span><span>同种 + 均匀 ✓</span>');
+        setHtml("o1note", "同一种介质且各处完全相同，光线才是直的。把滑块往「分层」方向拖动，直线立刻弯下去。");
+      }
+    }
+
+    /* 玻璃槽壁 */
+    g.push('<rect x="' + TK.x0 + '" y="' + TK.y0 + '" width="' + (TK.x1 - TK.x0) + '" height="' + (TK.y1 - TK.y0) +
+      '" fill="none" stroke="#64748B" stroke-width="2.5" rx="4"/>');
+    setSVG("svg1", g.join(""));
+  } catch (e) { }
+}
+
+/* ============================================================
+   ② 光线模型 —— 真实光束 ⇄ 带箭头的直线
+   ============================================================ */
+const M2 = { kind: "parallel", model: 0 };
+
+function arrowDef(id, color, sc) {
+  return '<marker id="' + id + '" viewBox="0 0 10 10" refX="8.5" refY="5" markerWidth="' + (7 * (sc || 1)) +
+    '" markerHeight="' + (7 * (sc || 1)) + '" orient="auto-start-reverse">' +
+    '<path d="M0 0 L10 5 L0 10 z" fill="' + color + '"/></marker>';
+}
+
+function drawM2() {
+  try {
+    const m = M2.model / 100;
+    const g = [];
+    g.push('<rect x="0" y="0" width="660" height="340" fill="#FBFcFE"/>');
+    g.push('<defs>' +
+      arrowDef("arw", "#1D4ED8", 1.15) +
+      '<linearGradient id="beam" x1="0" y1="0" x2="1" y2="0">' +
+      '<stop offset="0" stop-color="#22D3EE" stop-opacity=".85"/>' +
+      '<stop offset="1" stop-color="#34D399" stop-opacity=".45"/></linearGradient>' +
+      '<radialGradient id="spread" cx="0" cy=".5" r="1">' +
+      '<stop offset="0" stop-color="#22D3EE" stop-opacity=".8"/>' +
+      '<stop offset="1" stop-color="#34D399" stop-opacity=".25"/></radialGradient>' +
+      '<filter id="glow" x="-30%" y="-60%" width="160%" height="220%">' +
+      '<feGaussianBlur stdDeviation="4" result="b"/><feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge></filter>' +
+      '</defs>');
+
+    const xEnd = 620;
+
+    if (M2.kind === "parallel") {
+      const y0 = 150, w0 = 22, wEnd = 30;
+      /* 真实光束 */
+      if (m < 0.995) {
+        const op = 1 - m;
+        g.push('<polygon points="' + 62 + ',' + (y0 - w0 / 2) + ' ' + xEnd + ',' + (y0 - wEnd / 2) + ' ' + xEnd + ',' + (y0 + wEnd / 2) + ' ' + 62 + ',' + (y0 + w0 / 2) +
+          '" fill="url(#beam)" opacity="' + fmt(op, 3) + '"/>');
+        g.push('<line x1="62" y1="' + y0 + '" x2="' + xEnd + '" y2="' + y0 + '" stroke="#06B6D4" stroke-width="3" opacity="' + fmt(op, 3) + '" filter="url(#glow)"/>');
+      }
+      /* 光线模型 */
+      if (m > 0.005) {
+        for (let k = 0; k < 3; k++) {
+          const yy = y0 + (k - 1) * 42;
+          g.push('<line x1="62" y1="' + yy + '" x2="' + xEnd + '" y2="' + yy +
+            '" stroke="' + (k === 1 ? "#2563EB" : "#93C5FD") + '" stroke-width="' + (k === 1 ? 2.4 : 1.6) +
+            '" opacity="' + fmt(m * (k === 1 ? 1 : 0.55), 3) + '" marker-end="url(#arw)"/>');
+        }
+      }
+      /* 激光器 */
+      g.push('<rect x="24" y="' + (y0 - 17) + '" width="40" height="34" rx="6" fill="#334155"/>');
+      g.push('<rect x="60" y="' + (y0 - 8) + '" width="8" height="16" rx="2" fill="#0EA5E"/>');
+      g.push(T(44, y0 + 36, "激光器", { size: 12, fill: "#475569", w: 700, a: "middle" }));
+
+      g.push(T(62, 74, "真实光束", { size: 13, fill: "#0891B2", w: 700, op: fmt(1 - m, 3) }));
+      g.push(T(62, 92, "一条有粗细的光柱", { size: 11.5, fill: "#64748B", op: fmt(1 - m, 3) }));
+      g.push(T(xEnd, 74, "光线（模型）", { size: 13, fill: "#1D4ED8", w: 700, a: "end", op: fmt(m, 3) }));
+      g.push(T(xEnd, 92, "带箭头的直线，箭头指向传播方向", { size: 11.5, fill: "#64748B", a: "end", op: fmt(m, 3) }));
+      if (m > 0.5) g.push(T(340, y0 + 74, "同一束光可以画出许多条平行的光线", { size: 11.5, fill: "#60A5FA", a: "middle", op: fmt((m - 0.5) * 2, 3) }));
+    } else {
+      const cx = 74, cy = 158, R = 500, spread = 26 * RAD;
+      /* 真实光束 */
+      if (m < 0.995) {
+        const op = 1 - m;
+        const e1 = { x: cx + R * Math.cos(-spread), y: cy + R * Math.sin(-spread) };
+        const e2 = { x: cx + R * Math.cos(spread), y: cy + R * Math.sin(spread) };
+        g.push('<path d="M' + cx + ' ' + cy + ' L' + fmt(e1.x, 1) + ' ' + fmt(e1.y, 1) +
+          ' A ' + R + ' ' + R + ' 0 0 1 ' + fmt(e2.x, 1) + ' ' + fmt(e2.y, 1) + ' Z" fill="url(#spread)" opacity="' + fmt(op, 3) + '"/>');
+      }
+      /* 光线模型 */
+      if (m > 0.005) {
+        const N = 7;
+        for (let k = 0; k < N; k++) {
+          const ang = (-spread) + (2 * spread) * k / (N - 1);
+          const ex = cx + 430 * Math.cos(ang), ey = cy + 430 * Math.sin(ang);
+          const mid = (k === (N - 1) / 2);
+          g.push('<line x1="' + cx + '" y1="' + cy + '" x2="' + fmt(ex, 1) + '" y2="' + fmt(ey, 1) +
+            '" stroke="' + (mid ? "#2563EB" : "#93C5FD") + '" stroke-width="' + (mid ? 2.4 : 1.6) +
+            '" opacity="' + fmt(m * (mid ? 1 : 0.8), 3) + '" marker-end="url(#arw)"/>');
+        }
+      }
+      /* 点光源 */
+      g.push('<circle cx="' + cx + '" cy="' + cy + '" r="11" fill="#FDE68A" stroke="#F59E0B" stroke-width="2.5"/>');
+      g.push('<circle cx="' + cx + '" cy="' + cy + '" r="20" fill="#F59E0B" opacity=".16"/>');
+      g.push(T(cx, cy + 44, "点光源", { size: 12, fill: "#B45309", w: 700, a: "middle" }));
+
+      g.push(T(cx - 6, 74, "真实光束", { size: 13, fill: "#0891B2", w: 700, op: fmt(1 - m, 3) }));
+      g.push(T(cx - 6, 92, "由光源向各方向散开的一整片光", { size: 11.5, fill: "#64748B", op: fmt(1 - m, 3) }));
+      g.push(T(xEnd, 74, "光线（模型）", { size: 13, fill: "#1D4ED8", w: 700, a: "end", op: fmt(m, 3) }));
+      g.push(T(xEnd, 92, "从一点画出若干条带箭头的直线", { size: 11.5, fill: "#64748B", a: "end", op: fmt(m, 3) }));
+      if (m > 0.5) g.push(T(360, 320, "画出的光线越多，越接近真实的那一片光", { size: 11.5, fill: "#60A5FA", a: "middle", op: fmt((m - 0.5) * 2, 3) }));
+    }
+
+    setSVG("svg2", g.join(""));
+    setTxt("o2what", m < 0.35 ? "真实光束" : (m > 0.7 ? "光线模型" : "正在抽象"));
+    setTxt("o2width", m < 0.35 ? "有粗细" : (m > 0.7 ? "理想细线，无粗细" : "逐渐收细"));
+    setTxt("o2arrow", m < 0.35 ? "靠光束的走向看出来" : (m > 0.7 ? "用箭头标明方向" : "正在长出箭头"));
+  } catch (e) { }
+}
+
+/* ============================================================
+   ③ 影子 / 日食 / 月食
+   几何核心：两圆的外公切线定本影，内公切线定半影
+   ============================================================ */
+function circleTangents(A, ra, B, rb) {
+  const dx = B.x - A.x, dy = B.y - A.y;
+  const d = Math.hypot(dx, dy);
+  const beta = Math.atan2(dy, dx);
+  const out = { d: d, umb: null, pen: null };
+  /* 外公切线 —— 围出本影 */
+  if (d > Math.abs(ra - rb) + 1e-9) {
+    const gd = Math.acos(clamp((ra - rb) / d, -1, 1));
+    out.umb = [beta + gd, beta - gd].map(function (ang) {
+      const nx = Math.cos(ang), ny = Math.sin(ang);
+      return { p1: { x: A.x + ra * nx, y: A.y + ra * ny }, p2: { x: B.x + rb * nx, y: B.y + rb * ny } };
+    });
+  }
+  /* 内公切线 —— 围出半影 */
+  if (d > ra + rb + 1e-9) {
+    const gi = Math.acos(clamp((ra + rb) / d, -1, 1));
+    out.pen = [beta + gi, beta - gi].map(function (ang) {
+      const nx = Math.cos(ang), ny = Math.sin(ang);
+      return { p1: { x: A.x + ra * nx, y: A.y + ra * ny }, p2: { x: B.x - rb * nx, y: B.y - rb * ny } };
+    });
+  }
+  return out;
+}
+function yAtX(seg, x) {
+  const dx = seg.p2.x - seg.p1.x;
+  if (Math.abs(dx) < 1e-9) return null;
+  return seg.p1.y + (x - seg.p1.x) * (seg.p2.y - seg.p1.y) / dx;
+}
+/* 两圆重叠面积占「第一个圆」的比例（角度小的时候即遮蔽比例） */
+function overlapFrac(r1, r2, dd) {
+  if (r2 >= r1 && dd <= Math.abs(r1 - r2)) return 1;
+  if (r1 > r2 && dd <= Math.abs(r1 - r2)) return (r2 * r2) / (r1 * r1);
+  if (dd >= r1 + r2) return 0;
+  const a1 = Math.acos(clamp((dd * dd + r1 * r1 - r2 * r2) / (2 * dd * r1), -1, 1));
+  const a2 = Math.acos(clamp((dd * dd + r2 * r2 - r1 * r1) / (2 * dd * r2), -1, 1));
+  const tri = 0.5 * Math.sqrt(Math.max(0, (-dd + r1 + r2) * (dd + r1 - r2) * (dd - r1 + r2) * (dd + r1 + r2)));
+  const area = a1 * r1 * r1 + a2 * r2 * r2 - tri;
+  return clamp(area / (Math.PI * r1 * r1), 0, 1);
+}
+function fracBlocked(Q, S, rs, O, ro) {
+  const as = Math.asin(clamp(rs / dist(Q, S), -1, 1));
+  const ao = Math.asin(clamp(ro / dist(Q, O), -1, 1));
+  const a1 = Math.atan2(S.y - Q.y, S.x - Q.x);
+  const a2 = Math.atan2(O.y - Q.y, O.x - Q.x);
+  let sep = Math.abs(a1 - a2); if (sep > Math.PI) sep = 2 * Math.PI - sep;
+  return overlapFrac(as, ao, sep);
+}
+
+const M3 = { tab: "shadow", Rs: 30, screenX: 470, moonDist: 368000, lat: -9000, playing: false };
+
+function drawShadowTab() {
+  const g = [];
+  const S = { x: 88, y: 196 }, Ro = 46, D = 210, B = { x: S.x + D, y: 196 };
+  const Rs = M3.Rs;
+  const L = M3.screenX;
+  g.push('<rect x="0" y="0" width="660" height="400" fill="#FBFcFE"/>');
+
+  const tg = circleTangents(S, Math.max(Rs, 0.0001), B, Ro);
+
+  /* 本影锥（外公切线围成） */
+  if (tg.umb) {
+    const apexX = Rs > 0 ? (Rs * tg.d) / (Rs - Ro) : null;
+    const reachX = (apexX === null || apexX <= 0) ? L : Math.min(L, S.x + apexX);
+    if (reachX > B.x) {
+      g.push('<polygon points="' + B.x + ',' + (B.y - Ro) + ' ' + reachX + ',' + fmt(yAtX(tg.umb[0], reachX), 1) + ' ' +
+        reachX + ',' + fmt(yAtX(tg.umb[1], reachX), 1) + ' ' + B.x + ',' + (B.y + Ro) + '" fill="#1E293B" opacity=".16"/>');
+    }
+    tg.umb.forEach(function (s) {
+      const yy = yAtX(s, reachX);
+      if (yy !== null) g.push(line(s.p1.x, s.p1.y, reachX, yy, { c: "#DC2626", w: 1.5, d: "7 4", op: 0.85 }));
+    });
+    if (apexX !== null && S.x + apexX < L && apexX > 0) {
+      g.push('<' + 'circle cx="' + fmt(S.x + apexX, 1) + '" cy="196" r="3.5" fill="#7C3AED"/>');
+      g.push(T(S.x + apexX + 6, 178, "本影锥到此结束", { size: 11, fill: "#7C3AED", w: 700 }));
+    }
+  }
+  /* 半影（内公切线围成） */
+  if (tg.pen) {
+    tg.pen.forEach(function (s) {
+      const yy = yAtX(s, L);
+      if (yy !== null) g.push(line(s.p1.x, s.p1.y, L, yy, { c: "#F59E0B", w: 1.2, d: "4 5", op: 0.75 }));
+    });
+  }
+
+  /* 光屏：按遮蔽比例逐段上色 */
+  const half = 180;
+  for (let yy = 196 - half; yy < 196 + half; yy += 3) {
+    const fr = fracBlocked({ x: L, y: yy }, S, Math.max(Rs, 0.0001), B, Ro);
+    if (fr < 0.005) continue;
+    let col = "#CBD5E1";
+    if (fr > 0.995) col = "#111827";
+    else {
+      const v = Math.round(220 - fr * 175);
+      col = "rgb(" + v + "," + v + "," + v + ")";
+    }
+    g.push('<rect x="' + L + '" y="' + fmt(yy, 1) + '" width="13" height="3.4" fill="' + col + '"/>');
+  }
+  g.push(line(L, 196 - half - 12, L, 196 + half + 12, { c: "#94A3B8", w: 2.5 }));
+  g.push(T(L + 20, 196 - half + 4, "光屏", { size: 12.5, fill: "#475569", w: 700 }));
+
+  /* 光源 / 遮挡球 */
+  if (Rs > 1) {
+    g.push('<circle cx="' + S.x + '" cy="196" r="' + Rs + '" fill="#FDE68A" stroke="#F59E0B" stroke-width="2.5"/>');
+    g.push('<circle cx="' + S.x + '" cy="196" r="' + (Rs + 12) + '" fill="#F59E0B" opacity=".12"/>');
+  } else {
+    g.push('<circle cx="' + S.x + '" cy="196" r="5" fill="#F59E0B" stroke="#B45309" stroke-width="2"/>');
+  }
+  g.push(T(S.x, 196 + Math.max(Rs, 6) + 22, Rs > 1 ? "面光源" : "点光源", { size: 12, fill: "#B45309", w: 700, a: "middle" }));
+  g.push('<circle cx="' + B.x + '" cy="196" r="' + Ro + '" fill="#475569"/>');
+  g.push(T(B.x, 196 + Ro + 20, "遮挡球", { size: 12, fill: "#475569", w: 700, a: "middle" }));
+
+  /* 标尺注释 */
+  g.push(line(S.x, 356, L, 356, { c: "#94A3B8", w: 1 }));
+  g.push(T(S.x, 374, "光源", { size: 11, fill: "#6B7280", a: "middle" }));
+  g.push(T(B.x, 374, "球", { size: 11, fill: "#6B7280", a: "middle" }));
+  g.push(T(L, 374, "屏", { size: 11, fill: "#6B7280", a: "middle" }));
+
+  /* 本影/半影标注 */
+  const fU = fracBlocked({ x: L, y: 196 }, S, Math.max(Rs, 0.0001), B, Ro);
+  const uEdge = tg.umb ? Math.abs(yAtX(tg.umb[0], L) - 196) : 0;
+  const pEdge = tg.pen ? Math.abs(yAtX(tg.pen[0], L) - 196) : uEdge;
+  if (uEdge > 3 && fU > 0.99) {
+    g.push(line(L + 16, 196 - uEdge, L + 16, 196 + uEdge, { c: "#7C3AED", w: 1.6 }));
+    g.push(T(L + 24, 196, "本影", { size: 12, fill: "#4C1D95", w: 700 }));
+  }
+  if (pEdge > uEdge + 4) {
+    g.push(line(L + 16, 196 - pEdge, L + 16, 196 - uEdge, { c: "#B45309", w: 1.6 }));
+    g.push(line(L + 16, 196 + uEdge, L + 16, 196 + pEdge, { c: "#B45309", w: 1.6 }));
+    g.push(T(L + 24, 196 - (pEdge + uEdge) / 2, "半影", { size: 12, fill: "#B45309", w: 700 }));
+  }
+
+  setSVG("svg3", g.join(""));
+  const apexabs = tg.umb && Rs > 0 ? Rs * tg.d / (Rs - Ro) : null;
+  const rows = [];
+  rows.push('<div class="row"><span>本影锥长度</span><b>' + (apexabs === null ? "无限长（点光源）" : (apexabs <= 0 ? "一直张开，越远越宽" : fmt(apexabs - D, 0) + " px")) + '</b></div>');
+  rows.push('<div class="row"><span>屏上本影宽度</span><b>' + (fU > 0.99 ? fmt(uEdge * 2, 0) + " px" : "0 —— 本影锥够不到屏") + '</b></div>');
+  rows.push('<div class="row"><span>屏上半影宽度</span><b>' + (Rs > 1 ? fmt((pEdge - (fU > 0.99 ? uEdge : 0)) * 2, 0) + " px" : "0（无半影）") + '</b></div>');
+  rows.push('<div class="row"><span>中心处被遮住的比例</span><b>' + fmt(fU * 100, 1) + '%</b></div>');
+  setHtml("rows3", rows.join(""));
+
+  if (Rs > 1 && fU < 0.99) setHtml("tag3", '<span class="tag a">屏上只剩半影</span><span>光源太大，本影锥在屏前就结束了</span>');
+  else if (Rs > 1) setHtml("tag3", '<span class="tag g">本影 + 半影</span><span>边缘模糊 = 半影</span>');
+  else setHtml("tag3", '<span class="tag b">边缘清晰</span><span>点光源：只有本影，边界笔直</span>');
+  setHtml("note3", "影子的边界由光源边缘发出的两条<em>光线</em>决定 —— 它们各自沿直线走，影子范围就一次性定死。这正是光沿直线传播最直接的证据。");
+}
+
+/* ---------- 日食 / 月食 ---------- */
+const R_SUN = 696000, R_EARTH = 6371, R_MOON = 1737, D_SE = 149600000;
+
+function drawSolarTab() {
+  const g = [];
+  const d = M3.moonDist, lat = M3.lat;
+
+  /* ---- 真实数据（km） ---- */
+  const dSM = D_SE - d;                                   // 太阳到月球
+  const coneLen = R_MOON * dSM / (R_SUN - R_MOON);        // 月球本影锥长度（自月球算起）
+  const tObs = d - R_EARTH;                               // 月球到地面观察者
+  const as = Math.asin(R_SUN / (D_SE - R_EARTH));         // 太阳视角半径
+  const am = Math.asin(R_MOON / Math.hypot(tObs, lat));   // 月球视角半径
+  const sep = Math.abs(Math.atan2(Math.abs(lat), tObs));   // 视角间隔
+  const fr = overlapFrac(as, am, sep);
+
+  /* ---- 判据 ---- */
+  let kind, cls, sub;
+  if (sep >= as + am) { kind = "没有日食"; cls = "g"; sub = "月球偏离轴线，地面上什么也看不到"; }
+  else if (am >= as && sep <= am - as) { kind = "日全食"; cls = "r"; sub = "月球视角更大，太阳整个被盖住"; }
+  else if (am < as && sep <= as - am) { kind = "日环食"; cls = "a"; sub = "月球视角更小，太阳边缘露出一圈"; }
+  else { kind = "日偏食"; cls = "a"; sub = "只挡住太阳的一部分"; }
+
+  /* ---- 画面布局（轴向压缩、纵向放大） ---- */
+  const sunX = 40, sunY = 200, sunR = 56;
+  const earthX = 566, earthY = 200, earthR = 36;
+  const moonX = 330, moonR = 15;
+  const xsurf = earthX - earthR;                          // 观察者所在的地面点
+  const dysp = (lat / 9000) * 74;                         // 月球偏离轴线（纵向放大）
+  const tipX = moonX + (coneLen / tObs) * (xsurf - moonX); // 本影锥顶点（同一仿射下的位置）
+  const halfAt = x => moonR * (tipX - x) / (tipX - moonX);
+
+  g.push('<rect x="0" y="0" width="660" height="400" fill="#0B1220"/>');
+  g.push('<defs>' +
+    '<radialGradient id="sg1"><stop offset="0" stop-color="#FEF3C7" stop-opacity=".95"/><stop offset="1" stop-color="#F59E0B" stop-opacity=".04"/></radialGradient>' +
+    '<clipPath id="cSun"><circle cx="440" cy="76" r="42"/></clipPath>' +
+    '</defs>');
+  g.push('<circle cx="' + sunX + '" cy="' + sunY + '" r="120" fill="url(#sg1)"/>');
+  g.push('<circle cx="' + sunX + '" cy="' + sunY + '" r="' + sunR + '" fill="#FDE68A" stroke="#F59E0B" stroke-width="3"/>');
+  for (let k = -2; k <= 2; k++) {
+    g.push('<path d="M' + (sunX + sunR + 6) + ' ' + (sunY + k * 22) + ' L' + (moonX - 26) + ' ' + (sunY + k * 22) +
+      '" stroke="#FDE68A" stroke-width="1.1" opacity=".28" marker-end="none"/>');
+  }
+  g.push(T(sunX, sunY + sunR + 26, "太阳", { size: 13, fill: "#FCD34D", w: 700, a: "middle" }));
+
+  /* 月球本影锥 */
+  if (tipX > xsurf) {
+    const hw = Math.max(0, halfAt(xsurf));
+    g.push('<polygon points="' + moonX + ',' + fmt(sunY + dysp - moonR, 1) + ' ' + xsurf + ',' + fmt(sunY + dysp - hw, 1) + ' ' +
+      xsurf + ',' + fmt(sunY + dysp + hw, 1) + ' ' + moonX + ',' + fmt(sunY + dysp + moonR, 1) + '" fill="#000" opacity=".62"/>');
+    g.push(line(moonX, sunY + dysp - moonR, Math.max(xsurf, tipX > xsurf ? xsurf : tipX), sunY + dysp - hw, { c: "#FCA5A5", w: 1.3, d: "6 4", op: 0.9 }));
+    g.push(line(moonX, sunY + dysp + moonR, Math.max(xsurf, tipX > xsurf ? xsurf : tipX), sunY + dysp + hw, { c: "#FCA5A5", w: 1.3, d: "6 4", op: 0.9 }));
+  } else {
+    /* 锥尖到不了地面 → 地面落在伪本影里 */
+    g.push('<polygon points="' + moonX + ',' + fmt(sunY + dysp - moonR, 1) + ' ' + fmt(tipX, 1) + ',' + fmt(sunY + dysp, 1) + ' ' +
+      moonX + ',' + fmt(sunY + dysp + moonR, 1) + '" fill="#000" opacity=".55"/>');
+    const hw2 = -halfAt(xsurf);
+    g.push('<polygon points="' + fmt(tipX, 1) + ',' + fmt(sunY + dysp, 1) + ' ' + xsurf + ',' + fmt(sunY + dysp - hw2, 1) + ' ' +
+      xsurf + ',' + fmt(sunY + dysp + hw2, 1) + '" fill="#000" opacity=".22"/>');
+    /* 边界光线画到锥尖外，看得出来它「交叉了」 */
+    g.push(line(moonX, sunY + dysp - moonR, xsurf, sunY + dysp - hw2, { c: "#FCA5A5", w: 1.3, d: "6 4", op: 0.9 }));
+    g.push(line(moonX, sunY + dysp + moonR, xsurf, sunY + dysp + hw2, { c: "#FCA5A5", w: 1.3, d: "6 4", op: 0.9 }));
+    g.push(T(tipX - 10, sunY + dysp + 52, "本影锥尖 ▲ 停在地面之前", { size: 11.5, fill: "#FCA5A5", w: 700, a: "middle" }));
+    g.push(T(tipX - 10, sunY + dysp + 68, "→ 伪本影区：日环食", { size: 11.5, fill: "#FBBF24", w: 700, a: "middle" }));
+  }
+
+  /* 月球 / 地球 / 观察者 */
+  g.push('<circle cx="' + moonX + '" cy="' + fmt(sunY + dysp, 1) + '" r="' + moonR + '" fill="#94A3B8" stroke="#CBD5E1" stroke-width="1.6"/>');
+  g.push(T(moonX, sunY + dysp - moonR - 12, "月球", { size: 12.5, fill: "#CBD5E1", w: 700, a: "middle" }));
+  g.push('<circle cx="' + earthX + '" cy="' + earthY + '" r="' + earthR + '" fill="#1E40AF" stroke="#60A5FA" stroke-width="2"/>');
+  g.push(T(earthX, earthY + earthR + 22, "地球", { size: 12.5, fill: "#93C5FD", w: 700, a: "middle" }));
+  g.push('<circle cx="' + xsurf + '" cy="' + earthY + '" r="4" fill="#FDE68A" stroke="#F59E0B" stroke-width="1.6"/>');
+  g.push(T(xsurf - 8, earthY - 12, "观察者", { size: 11.5, fill: "#FCD34D", a: "end", w: 700 }));
+  g.push(line(0, sunY, 660, sunY, { c: "#1E293B", w: 1, d: "4 6", op: 0.9 }));
+  g.push(T(196, sunY + 16, "轴线：太阳—地球中心连线（纵向已放大）", { size: 11, fill: "#475569" }));
+
+  /* 右上角插图：观察者看到的画面 */
+  const Ri = 42, ix = 440, iy = 76;
+  g.push('<circle cx="' + ix + '" cy="' + iy + '" r="' + (Ri + 9) + '" fill="#131C2E" stroke="#1E293B"/>');
+  g.push('<circle cx="' + ix + '" cy="' + iy + '" r="' + Ri + '" fill="#FDE68A"/>');
+  const rm = Ri * (am / as);
+  const off = Ri * (sep / as) * (lat > 0 ? 1 : -1);
+  g.push('<g clip-path="url(#cSun)"><circle cx="' + ix + '" cy="' + fmt(iy + off, 1) + '" r="' + fmt(rm, 2) + '" fill="#0B1220"/></g>');
+  g.push(T(ix, iy + Ri + 24, "观察者看到的太阳", { size: 11.5, fill: "#94A3B8", a: "middle" }));
+
+  g.push(T(12, 382, "示意图：轴向大幅压缩，纵向已放大", { size: 11, fill: "#334155" }));
+
+  setSVG("svg3", g.join(""));
+  const rows = [];
+  rows.push('<div class="row"><span>太阳视角半径</span><b>' + fmt(as / RAD, 4) + '°</b></div>');
+  rows.push('<div class="row"><span>月球视角半径</span><b>' + fmt(am / RAD, 4) + '°</b></div>');
+  rows.push('<div class="row"><span>月球本影锥长度</span><b>' + fmt(coneLen, 0) + ' km</b></div>');
+  rows.push('<div class="row"><span>本影够不够到地面</span><b>' + (coneLen > tObs ? "够到（差 " + fmt(coneLen - tObs, 0) + " km）" : "差 " + fmt(tObs - coneLen, 0) + " km 够不到") + '</b></div>');
+  rows.push('<div class="row"><span>太阳被遮住</span><b>' + fmt(fr * 100, 1) + '%</b></div>');
+  setHtml("rows3", rows.join(""));
+  setHtml("tag3", '<span class="tag ' + cls + '">' + kind + '</span><span>' + sub + '</span>');
+  setHtml("note3", "月球轨道是椭圆：近地点时它<em>看起来比太阳大</em> → 日全食；远地点时<em>看起来比太阳小</em> → 日环食。2019 拖动「月地距离」就能在同一页看到这两种结果。");
+}
+
+function drawLunarTab() {
+  const g = [];
+  const lat = M3.lat;
+  const t = 384400;                                       // 月球所在轴向距离
+  const Lcone = R_EARTH * D_SE / (R_SUN - R_EARTH);        // 本影锥长度（自地球中心算起）
+  const penBack = D_SE - R_SUN * D_SE / (R_SUN + R_EARTH); // 半影张开中心在地球后方的距离
+  const rUmb = R_EARTH * (1 - t / Lcone);                  // 月球处本影半径
+  const rPen = R_EARTH * (1 + t / penBack);                // 月球处半影半径
+  const frU = overlapFrac(R_MOON, rUmb, Math.abs(lat));
+
+  let kind, cls, sub;
+  if (Math.abs(lat) > rPen + R_MOON) { kind = "没有月食"; cls = "g"; sub = "月球还在半影之外，满月"; }
+  else if (frU > 0.995) { kind = "月全食"; cls = "r"; sub = "月球整个钻进地球本影"; }
+  else if (frU > 0.005) { kind = "月偏食"; cls = "a"; sub = "月球只有一部分在本影里"; }
+  else { kind = "半影月食"; cls = "a"; sub = "只进入半影，肉眼几乎看不出"; }
+
+  /* ---- 布局：纵向按同一比例尺放大，轴向大幅压缩 ---- */
+  const VS = 0.0065;                                        // px per km（纵向）
+  const Ex = 215, Ey = 200;
+  const reP = R_EARTH * VS;                                 // 地球显示半径 ≈ 41
+  const Mx = 565, rmP = R_MOON * VS;                        // 月球显示半径 ≈ 11
+  const umbP = rUmb * VS, penP = rPen * VS;
+  const My = Ey + lat * VS;
+
+  g.push('<rect x="0" y="0" width="660" height="400" fill="#0B1220"/>');
+  g.push('<defs>' +
+    '<radialGradient id="sg2"><stop offset="0" stop-color="#FEF3C7" stop-opacity=".95"/><stop offset="1" stop-color="#F59E0B" stop-opacity=".04"/></radialGradient>' +
+    '<clipPath id="cMoon"><circle cx="' + (Ex + 300) + '" cy="76" r="40"/></clipPath>' +
+    '</defs>');
+
+  /* 太阳（未按距离比例） */
+  g.push('<circle cx="36" cy="' + Ey + '" r="86" fill="url(#sg2)"/>');
+  g.push('<circle cx="36" cy="' + Ey + '" r="30" fill="#FDE68A" stroke="#F59E0B" stroke-width="2.5"/>');
+  g.push(T(36, Ey + 50, "太阳", { size: 12.5, fill: "#FCD34D", w: 700, a: "middle" }));
+  for (let k = -3; k <= 3; k++) {
+    g.push('<line x1="72" y1="' + (Ey + k * 15) + '" x2="150" y2="' + (Ey + k * 15) +
+      '" stroke="#FDE68A" stroke-width="1.2" opacity=".3"/>');
+  }
+  g.push(T(76, Ey - 56, "阳光（平行光）", { size: 11.5, fill: "#A16207" }));
+
+  /* 本影 / 半影锥 */
+  const xEnd = 660;
+  const kU = (umbP - reP) / (Mx - Ex), kP = (penP - reP) / (Mx - Ex);
+  const uE = reP + kU * (xEnd - Ex), pE = reP + kP * (xEnd - Ex);
+  g.push('<polygon points="' + Ex + ',' + fmt(Ey - reP, 1) + ' ' + xEnd + ',' + fmt(Ey - pE, 1) + ' ' +
+    xEnd + ',' + fmt(Ey + pE, 1) + ' ' + Ex + ',' + fmt(Ey + reP, 1) + '" fill="#1E293B" opacity=".85"/>');
+  g.push('<polygon points="' + Ex + ',' + fmt(Ey - reP, 1) + ' ' + xEnd + ',' + fmt(Ey - uE, 1) + ' ' +
+    xEnd + ',' + fmt(Ey + uE, 1) + ' ' + Ex + ',' + fmt(Ey + reP, 1) + '" fill="#020617"/>');
+  g.push(line(Ex, Ey - reP, xEnd, Ey - uE, { c: "#FCA5A5", w: 1.2, d: "6 4", op: 0.75 }));
+  g.push(line(Ex, Ey + reP, xEnd, Ey + uE, { c: "#FCA5A5", w: 1.2, d: "6 4", op: 0.75 }));
+  g.push(T(628, Ey - (uE + pE) / 2, "半影", { size: 12, fill: "#94A3B8", w: 700, a: "middle" }));
+  g.push(T(628, Ey, "本影", { size: 12, fill: "#E2E8F0", w: 700, a: "middle" }));
+
+  /* 地球 */
+  g.push('<circle cx="' + Ex + '" cy="' + Ey + '" r="' + fmt(reP, 1) + '" fill="#1E40AF" stroke="#60A5FA" stroke-width="2"/>');
+  g.push(T(Ex, Ey + reP + 22, "地球", { size: 12.5, fill: "#93C5FD", w: 700, a: "middle" }));
+
+  /* 月球轨道与月球 */
+  g.push(line(Mx, Ey - 120, Mx, Ey + 120, { c: "#475569", w: 1.2, d: "5 5" }));
+  g.push(T(Mx, Ey - 128, "月球轨道位置", { size: 11.5, fill: "#64748B", a: "middle" }));
+  g.push('<circle cx="' + Mx + '" cy="' + fmt(My, 1) + '" r="' + fmt(rmP, 2) + '" fill="#E5E7EB"/>');
+  g.push(T(Mx - rmP - 8, My + 4, "月球", { size: 12, fill: "#CBD5E1", w: 700, a: "end" }));
+
+  /* 插图：地球上看到的月面 */
+  const Ri = 40, ix = Ex + 300, iy = 76;
+  g.push('<circle cx="' + ix + '" cy="' + iy + '" r="' + (Ri + 9) + '" fill="#131C2E" stroke="#1E293B"/>');
+  g.push('<circle cx="' + ix + '" cy="' + iy + '" r="' + Ri + '" fill="#E5E7EB"/>');
+  const shR = Ri * (rUmb / R_MOON);
+  const shOff = -lat * (Ri / R_MOON);
+  if (shR > 0.2) g.push('<g clip-path="url(#cMoon)"><circle cx="' + ix + '" cy="' + fmt(iy + fmt(shOff, 1) * 1, 1) + '" r="' + fmt(shR, 1) + '" fill="#0B1220"/></g>');
+  g.push(T(ix, iy + Ri + 24, "看到的月面", { size: 11.5, fill: "#94A3B8", a: "middle" }));
+
+  g.push(T(12, 382, "纵向按同一比例尺放大，轴向大幅压缩", { size: 11, fill: "#334155" }));
+
+  setSVG("svg3", g.join(""));
+  const rows = [];
+  rows.push('<div class="row"><span>月球处本影半径</span><b>' + fmt(rUmb, 0) + ' km</b></div>');
+  rows.push('<div class="row"><span>月球半径</span><b>' + R_MOON + ' km</b></div>');
+  rows.push('<div class="row"><span>本影够不够大</span><b>' + fmt(rUmb / R_MOON, 2) + ' 倍月球</b></div>');
+  rows.push('<div class="row"><span>月球偏离轴线</span><b>' + fmt(Math.abs(lat), 0) + ' km</b></div>');
+  rows.push('<div class="row"><span>月面进入本影</span><b>' + fmt(frU * 100, 1) + '%</b></div>');
+  setHtml("rows3", rows.join(""));
+  setHtml("tag3", '<span class="tag ' + cls + '">' + kind + '</span><span>' + sub + '</span>');
+  setHtml("note3", "地球挡住阳光，背后拖出一条长约 <em>" + fmt(Lcone / 10000, 1) + " 万 km</em> 的本影锥，而月地距离只有 38 万 km —— 所以月球一定会被吞进去。<em>月食</em>和桌面上的<em>影子</em>是同一回事。");
+}
+
+function drawM3() {
+  try {
+    if (M3.tab === "shadow") drawShadowTab();
+    else if (M3.tab === "solar") drawSolarTab();
+    else drawLunarTab();
+  } catch (e) { }
+}
+
+/* ============================================================
+   绑定
+   ============================================================ */
+function bindSeg(id, attr, cb) {
+  const box = $(id);
+  if (!box) return;
+  Array.prototype.forEach.call(box.querySelectorAll("button"), function (b) {
+    b.onclick = function () {
+      Array.prototype.forEach.call(box.querySelectorAll("button"), function (x) { x.classList.remove("on"); });
+      b.classList.add("on");
+      cb(b.dataset[attr]);
+    };
+  });
+}
+
+/* ---- ① ---- */
+function refresh1() {
+  drawM1();
+}
+bindSeg("seg1", "m", function (m) {
+  M1.mode = m;
+  $("wrap1a").classList.toggle("hide", m !== "layered");
+  $("wrap1b").classList.toggle("hide", m !== "interface");
+  refresh1();
+});
+if ($("r1s")) $("r1s").oninput = function () { M1.strat = +this.value; setTxt("v1s", this.value + "%"); refresh1(); };
+if ($("r1i")) $("r1i").oninput = function () { M1.inc = +this.value; setTxt("v1i", this.value + "°"); refresh1(); };
+
+/* ---- ② ---- */
+bindSeg("seg2", "k", function (k) { M2.kind = k; drawM2(); });
+if ($("r2m")) $("r2m").oninput = function () { M2.model = +this.value; setTxt("v2m", this.value + "%"); drawM2(); };
+Array.prototype.forEach.call(document.querySelectorAll("[data-m2]"), function (b) {
+  b.onclick = function () {
+    M2.model = +b.dataset.m2;
+    if ($("r2m")) $("r2m").value = M2.model;
+    setTxt("v2m", M2.model + "%");
+    drawM2();
+  };
+});
+
+/* ---- ③ ---- */
+let playRAF = null;
+function stopPlay() {
+  if (playRAF) { cancelAnimationFrame(playRAF); playRAF = null; }
+  M3.playing = false;
+  const b = $("btn3play");
+  if (b) { b.textContent = "▶ 播放"; b.classList.add("primary"); }
+}
+function startPlay() {
+  stopPlay();
+  const r = $("r3d");
+  if (!r) return;
+  M3.playing = true;
+  const b = $("btn3play");
+  if (b) { b.textContent = "⏸ 暂停"; }
+  const lo = +r.min, hi = +r.max;
+  r.value = lo;
+  M3.lat = lo;
+  const T = 7000, t0 = performance.now();
+  const step = function (now) {
+    const p = Math.min(1, (now - t0) / T);
+    const v = Math.round(lo + (hi - lo) * p);
+    r.value = v;
+    M3.lat = v;
+    setTxtLabel();
+    drawM3();
+    if (p < 1 && M3.playing) playRAF = requestAnimationFrame(step);
+    else stopPlay();
+  };
+  playRAF = requestAnimationFrame(step);
+}
+function setTxtLabel() {
+  if (M3.tab === "solar") setTxt("v3d", fmt(M3.lat, 0));
+  else if (M3.tab === "lunar") setTxt("v3d", fmt(M3.lat, 0));
+}
+bindSeg("tabs3", "t", function (t) {
+  stopPlay();
+  M3.tab = t;
+  const sh = t === "shadow", so = t === "solar", lu = t === "lunar";
+  $("w3a").classList.toggle("hide", !sh);
+  $("w3b").classList.toggle("hide", !sh);
+  $("w3c").classList.toggle("hide", !so);
+  $("w3d").classList.toggle("hide", sh);
+  $("w3play").classList.toggle("hide", sh);
+  if (lu) { $("r3d").min = -13000; $("r3d").max = 13000; $("r3d").value = -13000; M3.lat = -13000; setHtml("lab3d", '月球横向位置 <b id="v3d">-13000</b> km'); }
+  if (so) { $("r3d").min = -9000; $("r3d").max = 9000; $("r3d").value = -9000; M3.lat = -9000; setHtml("lab3d", '月球横向位置 <b id="v3d">-9000</b> km'); }
+  drawM3();
+});
+if ($("r3a")) $("r3a").oninput = function () { M3.Rs = +this.value; setTxt("v3a", this.value); drawM3(); };
+if ($("r3b")) $("r3b").oninput = function () { M3.screenX = +this.value; setTxt("v3b", this.value); drawM3(); };
+if ($("r3c")) $("r3c").oninput = function () { M3.moonDist = +this.value; setTxt("v3c", fmt(+this.value, 0)); drawM3(); };
+if ($("r3d")) $("r3d").oninput = function () { stopPlay(); M3.lat = +this.value; setTxtLabel(); drawM3(); };
+if ($("btn3play")) $("btn3play").onclick = function () { if (M3.playing) stopPlay(); else startPlay(); };
+
+/* ---- 首帧 ---- */
+refresh1();
+drawM2();
+drawM3();
+
+})();
+</script>
+
+</body>
+</html>

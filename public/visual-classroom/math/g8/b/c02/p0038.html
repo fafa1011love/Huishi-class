@@ -1,0 +1,582 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>20.1 勾股定理及其应用 · 赵爽弦图与数学风车</title>
+<style>
+  :root{
+    --blue:#2f6fe4; --blue-d:#1d4fb0; --orange:#ef8b1c; --green:#12996a;
+    --red:#dc4646; --purple:#7350d0; --ink:#22303f; --sub:#68798c;
+    --card:#fff; --line:#dde8f4; --grid:#e6eef7;
+  }
+  *{box-sizing:border-box; margin:0; padding:0;}
+  html,body{height:100%;}
+  body{
+    font-family:"Microsoft YaHei","PingFang SC",sans-serif; color:var(--ink);
+    background:linear-gradient(135deg,#dfeefc 0%,#ecf6ff 45%,#f8fcff 100%);
+    display:flex; flex-direction:column; min-width:900px; min-height:560px; overflow:auto;
+  }
+  sup{font-size:.6em;}
+
+  header{flex:none; display:flex; align-items:baseline; gap:12px; flex-wrap:wrap; padding:9px 18px 4px;}
+  header h1{font-size:clamp(17px,2.1vw,25px); letter-spacing:1px; white-space:nowrap;}
+  header h1 .badge{display:inline-block; background:var(--blue); color:#fff; border-radius:8px;
+    font-size:.66em; padding:2px 10px; margin-right:10px; vertical-align:3px;}
+  header .memo{font-size:clamp(11.5px,1.15vw,13.5px); color:var(--sub);}
+
+  main{flex:1; min-height:0; display:grid; grid-template-columns:1fr 372px; gap:12px; padding:4px 16px;}
+  main > div{min-width:0;}
+  .panel{background:var(--card); border:1px solid var(--line); border-radius:12px;
+         box-shadow:0 2px 8px rgba(47,111,228,.07);}
+
+  /* 左栏 */
+  #left{display:flex; flex-direction:column; gap:8px; min-height:0;}
+  #modeRow{display:flex; gap:6px; padding:8px; flex-wrap:wrap; align-items:center;}
+  .btn{
+    font-family:inherit; font-size:clamp(11px,1.1vw,13.5px); padding:7px 12px; border-radius:9px;
+    cursor:pointer; border:1.5px solid var(--line); background:#f5faff; color:var(--ink);
+    transition:.15s; white-space:nowrap;
+  }
+  .btn:hover{border-color:var(--blue); color:var(--blue);}
+  .btn.on{background:var(--blue); border-color:var(--blue); color:#fff; font-weight:700;}
+  .btn.act{background:var(--orange); border-color:var(--orange); color:#fff; font-weight:700;}
+  .btn.act.on{background:var(--red); border-color:var(--red);}
+  #status{flex:1; min-width:170px; font-size:12.5px; color:var(--sub); background:#fffbe8;
+          border:1px dashed #e6c96a; border-radius:8px; padding:5px 10px; line-height:1.45;}
+
+  #sliders{display:grid; grid-template-columns:1fr 1fr; gap:16px; padding:8px 14px; flex:none;}
+  .sl .lab{display:flex; justify-content:space-between; font-size:12.5px; color:var(--sub); margin-bottom:2px;}
+  .sl .val{font-size:16px; font-weight:800; color:var(--blue-d);}
+  input[type=range]{width:100%; appearance:none; height:7px; border-radius:6px; cursor:pointer;
+    background:linear-gradient(90deg,var(--blue) var(--p,50%), #e3edf9 var(--p,50%)); outline:none;}
+  input[type=range]::-webkit-slider-thumb{appearance:none; width:20px; height:20px; border-radius:50%;
+    background:#fff; border:3px solid var(--blue); box-shadow:0 2px 5px rgba(0,0,0,.18); cursor:grab;}
+  input[type=range]::-moz-range-thumb{width:18px;height:18px;border-radius:50%;background:#fff;
+    border:3px solid var(--blue);}
+
+  #strip{display:flex; gap:8px; flex-wrap:wrap; padding:6px 14px 10px; flex:none;}
+  .chip{font-size:clamp(11.5px,1.2vw,14px); font-weight:700; background:#f1f7ff;
+        border:1px solid var(--line); border-radius:8px; padding:3px 9px; white-space:nowrap;}
+  .chip b{color:var(--blue-d);}
+  .chip.g{background:#e9f9f1; border-color:var(--green); color:var(--green);}
+  .chip.o{background:#fff5e8; border-color:var(--orange); color:#a35f0c;}
+
+  #canvasWrap{flex:1; min-height:230px; padding:4px; display:flex;}
+  svg#cv{flex:1; width:100%; min-height:0; touch-action:none; display:block;}
+
+  /* 右栏 */
+  #right{min-height:0; display:flex; flex-direction:column; gap:8px; overflow:hidden;}
+  #rightInner{flex:1; min-height:0; overflow-y:auto; display:flex; flex-direction:column; gap:8px;}
+  .card{padding:10px 12px;}
+  .card h3{font-size:14px; color:var(--blue-d); display:flex; align-items:center; gap:6px;
+           margin-bottom:7px; border-bottom:2px solid var(--line); padding-bottom:5px;}
+  .card h3 .tag{font-size:10.5px; font-weight:400; color:var(--sub); background:#f1f7ff;
+                border-radius:9px; padding:1px 7px; border:1px solid var(--line);}
+  .fml{font-size:clamp(12.5px,1.3vw,16px); font-weight:700; line-height:1.8; overflow-wrap:anywhere;}
+  .fml .num{color:var(--orange);}
+  .fml .res{color:var(--green);}
+  .fml .dim{color:var(--sub); font-weight:400; font-size:.9em;}
+  .row{transition:.2s; border-radius:6px; padding:1px 5px;}
+  .row.hl{background:#fff4d6; box-shadow:0 0 0 2px #f3d089 inset;}
+  .ruleline{font-size:12px; color:var(--sub); line-height:1.65; margin-top:5px;}
+  .ruleline b{color:var(--ink);}
+
+  #trip{display:flex; gap:6px; flex-wrap:wrap;}
+  .tchip{font-size:12.5px; font-weight:700; padding:4px 10px; border-radius:14px; cursor:pointer;
+         border:1.5px solid var(--line); background:#f5faff; transition:.15s; white-space:nowrap;}
+  .tchip:hover{border-color:var(--green); color:var(--green); background:#eefaf4;}
+  .tchip.on{background:var(--green); border-color:var(--green); color:#fff;}
+
+  #opts{display:grid; grid-template-columns:1fr 1fr; gap:2px 10px; font-size:12.5px;}
+  #opts label{display:flex; align-items:center; gap:6px; padding:3px 0; cursor:pointer;}
+  #opts input{width:14px; height:14px; accent-color:var(--blue);}
+
+  footer{flex:none; margin:8px 16px 11px; background:linear-gradient(90deg,#2f6fe4,#5a8ff0);
+         color:#fff; border-radius:12px; padding:8px 16px; display:flex; align-items:center;
+         justify-content:center; gap:10px 22px; flex-wrap:wrap;
+         font-size:clamp(12.5px,1.45vw,18px); font-weight:700; letter-spacing:1px;
+         box-shadow:0 3px 8px rgba(47,111,228,.28);}
+  footer .dot{opacity:.45;}
+</style>
+</head>
+<body>
+
+<header>
+  <h1><span class="badge">20.1</span>勾股定理及其应用
+    <small style="font-size:.55em;color:var(--sub);font-weight:400;">赵爽弦图 · 数学风车 · 勾股数族</small></h1>
+  <div class="memo">拖动红色端点或滑块改变 a、b；切换模式看同一组拼块的两种摆法</div>
+</header>
+
+<main>
+  <div id="left">
+    <div class="panel" id="modeRow">
+      <button class="btn on" data-m="inner">内弦图</button>
+      <button class="btn" data-m="outer">外弦图</button>
+      <button class="btn" data-m="pin">数学风车</button>
+      <button class="btn act" id="btnProof">▶ 割补演示</button>
+      <button class="btn act" id="btnSpin">🔄 风车旋转</button>
+      <div id="status">内弦图：4 个全等直角三角形围成边长 c 的大正方形，中间留出边长 (b−a) 的小正方形。</div>
+    </div>
+
+    <div class="panel" id="sliders">
+      <div class="sl">
+        <div class="lab"><span>直角边 a（勾）</span><span class="val" id="vA">3</span></div>
+        <input type="range" id="sA" min="1" max="5" value="3">
+      </div>
+      <div class="sl">
+        <div class="lab"><span>直角边 b（股）</span><span class="val" id="vB">4</span></div>
+        <input type="range" id="sB" min="1" max="5" value="4">
+      </div>
+    </div>
+
+    <div class="panel" id="strip"></div>
+
+    <div class="panel" id="canvasWrap">
+      <svg id="cv" preserveAspectRatio="xMidYMid meet"></svg>
+    </div>
+  </div>
+
+  <div id="right">
+    <div class="panel card" id="cardMain">
+      <h3>① 勾股定理 <span class="tag">仅直角三角形</span></h3>
+      <div class="fml" id="fmlMain"></div>
+    </div>
+
+    <div id="rightInner">
+      <div class="panel card" id="cardProof">
+        <h3>② 面积证明 <span class="tag" id="proofMode">内弦图</span></h3>
+        <div class="fml" id="fmlProof"></div>
+        <div class="ruleline" id="proofTip"></div>
+      </div>
+
+      <div class="panel card">
+        <h3>③ 勾股数（3,4,5）族</h3>
+        <div id="trip"></div>
+        <div class="ruleline">成倍数仍是勾股数：<b>(3k, 4k, 5k)</b>；勾股定理<b>仅对直角三角形</b>成立。</div>
+      </div>
+
+      <div class="panel card">
+        <h3>④ 显示选项</h3>
+        <div id="opts">
+          <label><input type="checkbox" id="ckGrid" checked>网格坐标系</label>
+          <label><input type="checkbox" id="ckSide" checked>边长标签</label>
+          <label><input type="checkbox" id="ckArea" checked>面积数值</label>
+          <label><input type="checkbox" id="ckDerive" checked>推导步骤</label>
+        </div>
+      </div>
+    </div>
+  </div>
+</main>
+
+<footer>
+  <span>直角三边有妙招</span><span class="dot">◆</span>
+  <span>平方相加斜边找</span><span class="dot">◆</span>
+  <span>赵爽弦图证勾股</span><span class="dot">◆</span>
+  <span>风车转动数学魂</span>
+</footer>
+
+<script>
+const NS="http://www.w3.org/2000/svg";
+const $=id=>document.getElementById(id);
+const svg=$("cv");
+const clamp=(v,lo,hi)=>Math.min(hi,Math.max(lo,v));
+
+let a=3, b=4;
+let mode="inner";                  // inner | outer | pin
+let mergeT=0;                      // 外弦图拼合进度
+let pinAngle=0, spinOn=false;
+let hl=null;                       // square | tris | small
+let proofIdx=-1;
+let tween=null, timers=[], spinRAF=null, MX=5;
+
+const opt={grid:true,side:true,area:true,derive:true};
+
+const Am=()=>Math.min(a,b), Bm=()=>Math.max(a,b), Ls=()=>a+b, C=()=>Math.hypot(a,b);
+const isInt=v=>Math.abs(v-Math.round(v))<1e-9;
+const cText=()=>isInt(C())?String(Math.round(C())):`√${a*a+b*b}≈${C().toFixed(2)}`;
+
+/* ============ 场景容器 ============ */
+let scene;
+function clearScene(){ scene={polys:[],texts:[],dots:[],pts:[]}; }
+function path(pts,o={}){
+  const {fill="none",stroke="#2f6fe4",sw=1,dash=null,closed=true}=o;
+  scene.polys.push({pts,fill,stroke,sw,dash,closed});
+  pts.forEach(p=>scene.pts.push(p));
+}
+function label(x,y,t,o={}){
+  const {color="#22303f",fs=1,anchor="middle",weight="700"}=o;
+  scene.texts.push({x,y,t,color,fs,anchor,weight});
+  scene.pts.push([x,y]);
+}
+function handle(x,y,h,r){
+  scene.dots.push({x,y,r,h});
+  scene.pts.push([x,y]);
+}
+const ctr=pts=>({x:pts.reduce((s,p)=>s+p[0],0)/pts.length,y:pts.reduce((s,p)=>s+p[1],0)/pts.length});
+function outNormal(p1,p2){
+  const dx=p2[0]-p1[0], dy=p2[1]-p1[1], L=Math.hypot(dx,dy)||1;
+  return [dy/L,-dx/L];
+}
+function rot(p,cx,cy,deg){
+  const r=deg*Math.PI/180, co=Math.cos(r), si=Math.sin(r);
+  const dx=p[0]-cx, dy=p[1]-cy;
+  return [cx+dx*co-dy*si, cy+dx*si+dy*co];
+}
+function rightMark(o,p1,p2,sw){
+  const u=[p1[0]-o[0],p1[1]-o[1]], v=[p2[0]-o[0],p2[1]-o[1]];
+  const lu=Math.hypot(...u)||1, lv=Math.hypot(...v)||1, s=Math.min(lu,lv)*0.16;
+  const p=[o[0]+u[0]/lu*s,o[1]+u[1]/lu*s];
+  const q=[o[0]+v[0]/lv*s,o[1]+v[1]/lv*s];
+  const r=[p[0]+v[0]/lv*s,p[1]+v[1]/lv*s];
+  path([p,r,q],{stroke:"#dc4646",sw,closed:false});
+}
+
+/* ============ 内弦图 ============ */
+function buildInner(){
+  const A0=Am(), B0=Bm(), L=A0+B0, gap=B0-A0;
+  const fs=L*0.058, fsS=L*0.045, sw=L*0.010;
+  scene.pts.push([0,0],[L,L]);
+
+  const P=[[B0,0],[L,B0],[A0,L],[0,A0]];
+  const T1=[[B0,0],[B0,B0],[L,B0]];
+  const tris=[T1,
+    [[L,B0],[A0,B0],[A0,L]],
+    [[A0,L],[A0,A0],[0,A0]],
+    [[0,A0],[B0,A0],[B0,0]]];
+  const small=[[A0,A0],[B0,A0],[B0,B0],[A0,B0]];
+
+  /* c² 大正方形（弦图） */
+  path(P,{fill:"rgba(18,153,106,.07)",stroke:hl==="square"?"#ef8b1c":"#12996a",
+          sw:hl==="square"?sw*2.6:sw*1.7});
+  if(gap>0.001)
+    path(small,{fill:"rgba(239,139,28,.42)",stroke:"#ef8b1c",
+          sw:hl==="small"?sw*2.6:sw*1.2});
+  tris.forEach(t=>path(t,{fill:"rgba(47,111,228,.30)",
+          stroke:hl==="tris"?"#ef8b1c":"#2f6fe4",sw:hl==="tris"?sw*2.6:sw*1.2}));
+  path(P,{fill:"none",stroke:hl==="square"?"#ef8b1c":"#12996a",
+          sw:hl==="square"?sw*2.6:sw*1.7});
+  rightMark(T1[1],T1[0],T1[2],sw*1.1);
+
+  const nameV=(B0===b)?"b":"a";     // 竖直直角边（长 B0）
+  const nameH=(A0===a)?"a":"b";     // 水平直角边（长 A0）
+  if(opt.side){
+    label(B0+L*0.05,B0/2,nameV,{fs,color:"#1d4fb0"});
+    label((B0+L)/2,B0-L*0.075,nameH,{fs,color:"#1d4fb0"});
+    const mc=[(P[0][0]+P[1][0])/2,(P[0][1]+P[1][1])/2], n=outNormal(P[0],P[1]);
+    label(mc[0]+n[0]*L*0.10,mc[1]+n[1]*L*0.10,"c",{fs,color:"#0b7d55"});
+  }
+  if(opt.area){
+    label(A0,L+L*0.11,`c² = ${a*a+b*b}`,{fs:fsS,color:"#0b7d55"});
+    label(L*0.84,-L*0.12,`4×½ab = ${2*a*b}`,{fs:fsS*0.95,color:"#1d4fb0"});
+    if(gap>=L*0.13) label((A0+B0)/2,(A0+B0)/2,`(${gap})²`,{fs:fsS*0.9,color:"#a35f0c"});
+  }
+  handle(B0,0,"hB",L*0.021); handle(0,A0,"hA",L*0.021);
+}
+
+/* ============ 外弦图 ============ */
+function buildOuter(){
+  const A0=Am(), B0=Bm(), L=A0+B0, gap=B0-A0;
+  const fs=L*0.058, fsS=L*0.045, sw=L*0.010;
+  scene.pts.push([0,0],[L,L]);
+
+  const big=[[0,0],[L,0],[L,L],[0,L]];
+  const defs=[
+    {pts:[[0,0],[B0,0],[0,A0]], piv:[B0,0]},
+    {pts:[[B0,0],[L,0],[L,B0]], piv:[L,B0]},
+    {pts:[[L,B0],[L,L],[A0,L]], piv:[A0,L]},
+    {pts:[[A0,L],[0,L],[0,A0]], piv:[0,A0]}
+  ];
+  const ang=mergeT*90;
+  const tris=defs.map(d=>({pts:d.pts.map(p=>rot(p,d.piv[0],d.piv[1],-ang))}));
+  const hole=[[B0,0],[L,B0],[A0,L],[0,A0]];
+  const small=[[A0,A0],[B0,A0],[B0,B0],[A0,B0]];
+
+  path(big,{fill:"rgba(115,80,208,.04)",stroke:"#7350d0",sw:sw*1.5});
+  if(mergeT>0.9 && gap>0.001)
+    path(small,{fill:"rgba(239,139,28,.42)",stroke:"#ef8b1c",sw:sw*1.2});
+  tris.forEach(t=>path(t.pts,{fill:"rgba(47,111,228,.30)",stroke:"#2f6fe4",sw:sw*1.2}));
+  if(mergeT<0.98) path(hole,{fill:"none",stroke:"#12996a",sw:sw*1.5,dash:"9 6"});
+  rightMark(tris[0].pts[0],tris[0].pts[1],tris[0].pts[2],sw*1.1);
+
+  if(opt.side){
+    label(B0/2,-L*0.07,(B0===b)?"b":"a",{fs,color:"#1d4fb0"});
+    label(-L*0.075,A0/2,(A0===a)?"a":"b",{fs,color:"#1d4fb0"});
+    label(L/2,L+L*0.085,`a + b = ${L}`,{fs,color:"#5a3fb0"});
+  }
+  if(opt.area){
+    label(L/2,L+L*0.185,`大正方形 (a+b)² = ${L*L}`,{fs:fsS*0.95,color:"#5a3fb0"});
+    if(mergeT<0.5) label((A0+B0)/2,(A0+B0)/2,`空出 c² = ${a*a+b*b}`,{fs:fsS*0.85,color:"#0b7d55"});
+    else if(gap>=L*0.13) label((A0+B0)/2,(A0+B0)/2,`(${gap})²`,{fs:fsS*0.85,color:"#a35f0c"});
+  }
+  handle(B0,0,"hB",L*0.021); handle(0,A0,"hA",L*0.021);
+}
+
+/* ============ 数学风车 ============ */
+function buildPin(){
+  const c=C(), am=Am(), bm=Bm();
+  const fs=c*0.085, fsS=c*0.065, sw=c*0.014;
+  const cx=c/2, cy=c/2;
+  const sq=[[0,0],[c,0],[c,c],[0,c]];
+  const apex=[am*am/c,-am*bm/c];
+  const base=[[0,0],[c,0],apex];
+  const blades=[0,1,2,3].map(i=>base.map(p=>rot(rot(p,cx,cy,i*90),cx,cy,pinAngle)));
+  scene.pts.push([0,0],[c,c]);
+
+  path(sq,{fill:"rgba(18,153,106,.12)",stroke:"#12996a",sw:sw*1.6});
+  blades.forEach(bl=>path(bl,{fill:"rgba(47,111,228,.30)",stroke:"#2f6fe4",sw:sw*1.15}));
+
+  if(opt.side){
+    label(c/2,c*0.10,"c",{fs:fs*0.9,color:"#0b7d55"});
+  }
+  if(opt.area){
+    label(c/2,c*0.40,`c² = ${a*a+b*b}`,{fs:fsS,color:"#0b7d55"});
+    label(c*0.55,c*1.58,`4×½ab = ${2*a*b}`,{fs:fsS*0.9,color:"#1d4fb0"});
+  }
+}
+
+/* ============ 绘制 ============ */
+function el(tag,at,parent,text){
+  const e=document.createElementNS(NS,tag);
+  for(const k in at) e.setAttribute(k,at[k]);
+  if(text!==undefined) e.textContent=text;
+  (parent||svg).appendChild(e);
+  return e;
+}
+function draw(){
+  clearScene();
+  if(mode==="inner") buildInner();
+  else if(mode==="outer") buildOuter();
+  else buildPin();
+
+  svg.innerHTML="";
+  let x0=1e9,y0=1e9,x1=-1e9,y1=-1e9;
+  scene.pts.forEach(([x,y])=>{x0=Math.min(x0,x);x1=Math.max(x1,x);y0=Math.min(y0,y);y1=Math.max(y1,y);});
+  const w=x1-x0,h=y1-y0,pad=Math.max(w,h)*0.10;
+  const bx0=x0-pad,bx1=x1+pad,by0=y0-pad,by1=y1+pad;
+  const span=Math.max(bx1-bx0,by1-by0);
+  svg.setAttribute("viewBox",`${bx0} ${-by1} ${bx1-bx0} ${by1-by0}`);
+
+  /* 网格与坐标轴 */
+  if(opt.grid){
+    const step=span>18?2:1, gs=span*0.0016;
+    for(let x=Math.ceil(bx0/step)*step;x<=bx1;x+=step)
+      el("line",{x1:x,y1:-by0,x2:x,y2:-by1,stroke:"#e6eef7","stroke-width":gs});
+    for(let y=Math.ceil(by0/step)*step;y<=by1;y+=step)
+      el("line",{x1:bx0,y1:-y,x2:bx1,y2:-y,stroke:"#e6eef7","stroke-width":gs});
+    const as=span*0.0035;
+    el("line",{x1:bx0,y1:0,x2:bx1,y2:0,stroke:"#b7c8d9","stroke-width":as});
+    el("line",{x1:0,y1:-by0,x2:0,y2:-by1,stroke:"#b7c8d9","stroke-width":as});
+    el("path",{d:`M${bx1},0 l${-span*0.016},${-span*0.007} l0,${span*0.014} Z`,fill:"#b7c8d9"});
+    el("path",{d:`M0,${-by1} l${-span*0.007},${span*0.016} l${span*0.014},0 Z`,fill:"#b7c8d9"});
+    el("text",{x:bx1-span*0.014,y:span*0.026,"font-size":span*0.030,fill:"#93a7bb"},svg,"x");
+    el("text",{x:span*0.014,y:-by1+span*0.020,"font-size":span*0.030,fill:"#93a7bb"},svg,"y");
+    el("text",{x:-span*0.014,y:span*0.028,"font-size":span*0.030,fill:"#93a7bb",
+               "text-anchor":"end"},svg,"O");
+  }
+
+  scene.polys.forEach(p=>{
+    let d=p.pts.map((q,i)=>`${i?"L":"M"}${q[0]},${-q[1]}`).join(" ");
+    if(p.closed) d+=" Z";
+    const at={d,fill:p.fill,stroke:p.stroke,"stroke-width":p.sw,"stroke-linejoin":"round",
+              "stroke-linecap":"round"};
+    if(p.dash) at["stroke-dasharray"]=p.dash;
+    el("path",at);
+  });
+
+  scene.texts.forEach(t=>{
+    if(!t.t) return;
+    const e=el("text",{x:t.x,y:-t.y,"font-size":t.fs,fill:t.color,"font-weight":t.weight,
+      "text-anchor":t.anchor,"font-family":"Microsoft YaHei,PingFang SC,sans-serif",
+      "dominant-baseline":"middle"},null,t.t);
+  });
+
+  scene.dots.forEach(d=>el("circle",{cx:d.x,cy:-d.y,r:d.r,fill:"#dc4646",stroke:"#fff",
+    "stroke-width":d.r*0.4,class:"drag",cursor:"grab","data-h":d.h}));
+}
+
+/* ============ 右侧面板 ============ */
+function renderPanels(){
+  const s1=a*a,s2=b*b,sum=s1+s2,gap=Math.abs(b-a);
+
+  $("fmlMain").innerHTML =
+    `<div class="row"><b>a² + b² = c²</b></div>`+
+    `<div class="row">${a}² + ${b}² = <span class="num">${s1}</span> + <span class="num">${s2}</span> = <span class="num">${sum}</span></div>`+
+    `<div class="row">c = <span class="res">${cText()}</span> <span class="dim">（斜边，最长边）</span></div>`;
+
+  $("proofMode").textContent={inner:"内弦图",outer:"外弦图",pin:"数学风车"}[mode];
+
+  let html="";
+  if(mode==="inner"){
+    html=
+      `<div class="row ${proofIdx===0?'hl':''}">大正方形（弦图）：c² = <span class="num">${sum}</span></div>`+
+      `<div class="row ${proofIdx===1?'hl':''}">中间小正方形：(b−a)² = ${gap}² = <span class="num">${gap*gap}</span></div>`+
+      `<div class="row ${proofIdx===2?'hl':''}">4 个三角形：4×½ab = 2ab = <span class="num">${2*a*b}</span></div>`+
+      `<div class="row ${proofIdx>=3?'hl':''}">c² = (b−a)² + 4×½ab = ${gap*gap} + ${2*a*b} = <span class="res">${sum}</span></div>`+
+      `<div class="row ${proofIdx>=3?'hl':''}">展开：(a²−2ab+b²) + 2ab = <span class="res">a²+b²</span> ✓</div>`;
+    $("proofTip").innerHTML="4 个三角形只是换了位置、面积不变，所以两块空白区域面积必然相等。";
+  }else if(mode==="outer"){
+    const L=Ls();
+    html=
+      `<div class="row">大正方形：(a+b)² = ${L}² = <span class="num">${L*L}</span></div>`+
+      `<div class="row">四角 4 个三角形：4×½ab = <span class="num">${2*a*b}</span></div>`+
+      `<div class="row">中间空缺：c² = <span class="num">${sum}</span></div>`+
+      `<div class="row ${mergeT>0.9?'hl':''}">(a+b)² = c² + 4×½ab → ${L*L} = ${sum} + ${2*a*b} ✓</div>`+
+      `<div class="row">展开：a²+2ab+b² = c²+2ab → <span class="res">a²+b² = c²</span></div>`;
+    $("proofTip").innerHTML="点「割补演示」：4 个三角形绕顶点转 90° 填入 c²，恰好剩下 (b−a)²。";
+  }else{
+    html=
+      `<div class="row">中心正方形边长 = c，面积 c² = <span class="num">${sum}</span></div>`+
+      `<div class="row">4 片风车叶＝4 个直角三角形：4×½ab = <span class="num">${2*a*b}</span></div>`+
+      `<div class="row ${spinOn?'hl':''}">整幅风车绕中心转 90° 与自身<b>完全重合</b>（四重旋转对称）</div>`+
+      `<div class="row">叶片的斜边＝c，两直角边＝a、b → 与弦图是同一组拼块</div>`;
+    $("proofTip").innerHTML="数学风车：把弦图换个摆法，就成了会转的勾股定理。";
+  }
+  $("fmlProof").innerHTML=html;
+
+  const sets=[[3,4],[6,8],[9,12],[5,12],[8,15]];
+  $("trip").innerHTML=sets.map(([x,y])=>
+    `<span class="tchip ${x===a&&y===b?'on':''}" data-a="${x}" data-b="${y}">${x}, ${y}, ${Math.round(Math.hypot(x,y))}</span>`
+  ).join("");
+
+  $("strip").innerHTML=
+    `<span class="chip g">c² = <b>${sum}</b></span>`+
+    `<span class="chip o">(b−a)² = <b>${gap*gap}</b></span>`+
+    `<span class="chip">4×½ab = <b>${2*a*b}</b></span>`+
+    `<span class="chip">${gap*gap} + ${2*a*b} = <b>${sum}</b> ✓</span>`+
+    `<span class="chip g">c = <b>${cText()}</b></span>`;
+
+  $("cardMain").style.display = opt.derive?"":"none";
+  $("cardProof").style.display = opt.derive?"":"none";
+}
+
+function render(){
+  draw();
+  [["sA",a,"vA"],["sB",b,"vB"]].forEach(([id,v,vid])=>{
+    const el0=$(id);
+    el0.max=MX; el0.value=v;
+    el0.style.setProperty("--p",((v-1)/(MX-1)*100)+"%");
+    $(vid).textContent=v;
+  });
+  document.querySelectorAll("#modeRow .btn[data-m]").forEach(btn=>
+    btn.classList.toggle("on",btn.dataset.m===mode));
+  $("btnSpin").classList.toggle("on",spinOn);
+  renderPanels();
+}
+
+/* ============ 状态与动画 ============ */
+function setStatus(t){ $("status").textContent=t; }
+function stopAll(){
+  timers.forEach(clearTimeout); timers=[];
+  if(spinRAF){ cancelAnimationFrame(spinRAF); spinRAF=null; }
+  spinOn=false; tween=null;
+}
+function animateTo(from,to,dur,done){
+  const t0=performance.now(); tween={};
+  const step=now=>{
+    if(!tween) return;
+    const k=Math.min((now-t0)/dur,1), e=k<.5?2*k*k:1-Math.pow(-2*k+2,2)/2;
+    mergeT=from+(to-from)*e;
+    draw();
+    if(k>=1){ tween=null; renderPanels(); if(done) done(); return; }
+    requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
+}
+
+/* ============ 控件 ============ */
+document.querySelectorAll("#modeRow .btn[data-m]").forEach(btn=>{
+  btn.onclick=()=>{
+    stopAll(); mode=btn.dataset.m; mergeT=0; hl=null; proofIdx=-1;
+    setStatus(mode==="inner"?"内弦图：4 个三角形围成 c²，中间留下 (b−a)²。"
+      :mode==="outer"?"外弦图：边长 (a+b) 的大正方形，中间空出 c²。"
+      :"数学风车：4 片叶片绕中心每转 90° 与自身重合。");
+    render();
+  };
+});
+
+["sA","sB"].forEach(id=>$(id).oninput=e=>{
+  stopAll(); if(id==="sA") a=+e.target.value; else b=+e.target.value;
+  hl=null; proofIdx=-1; render();
+});
+
+$("ckGrid").onchange=e=>{opt.grid=e.target.checked; render();};
+$("ckSide").onchange=e=>{opt.side=e.target.checked; render();};
+$("ckArea").onchange=e=>{opt.area=e.target.checked; render();};
+$("ckDerive").onchange=e=>{opt.derive=e.target.checked; render();};
+
+$("trip").onclick=e=>{
+  const t=e.target.closest(".tchip"); if(!t) return;
+  stopAll(); a=+t.dataset.a; b=+t.dataset.b; MX=Math.max(5,a,b); hl=null; proofIdx=-1; render();
+  setStatus(`已切换勾股数 (${a}, ${b}, ${Math.round(C())})：a、b 同乘 k，图形等比缩放，比值不变。`);
+};
+
+$("btnProof").onclick=()=>{
+  stopAll(); hl=null; proofIdx=-1;
+  if(mode==="outer"){
+    setStatus("拼合演示：4 个三角形绕各自顶点旋转 90°，填入中间空缺的 c²……");
+    animateTo(0,1,1900,()=>{
+      mergeT=1; setStatus("拼合完成：4 个三角形 + 中间 (b−a)² 恰好铺满大正方形 → 面积相等。");
+      timers.push(setTimeout(()=>{ mergeT=0; render(); setStatus("已复原为外弦图，可再次演示。"); },2800));
+    });
+  }else if(mode==="inner"){
+    const steps=[
+      ["square",0,"第①步：整体是边长为 c 的大正方形（弦图），面积 c²。"],
+      ["small", 1,"第②步：中间空出边长 (b−a) 的小正方形，面积 (b−a)²。"],
+      ["tris",  2,"第③步：四周 4 个全等直角三角形，面积共 4×½ab。"],
+      [null,    3,"第④步：c² = (b−a)² + 4×½ab，展开化简得 a² + b² = c²。"]
+    ];
+    steps.forEach(([h,i,txt],k)=>timers.push(setTimeout(()=>{
+      hl=h; proofIdx=i; setStatus(txt); render();
+    },k*1500)));
+    timers.push(setTimeout(()=>{ hl=null; proofIdx=3; render(); },steps.length*1500));
+  }else{
+    setStatus("风车模式下点「🔄 风车旋转」看 90° 旋转对称；或用滑块改变叶片比例。");
+  }
+};
+
+$("btnSpin").onclick=()=>{
+  if(mode!=="pin"){ stopAll(); mode="pin"; mergeT=0; render();
+    setStatus("已切到数学风车，开始旋转：每转 90° 图形与自身重合。"); }
+  spinOn=!spinOn;
+  if(spinOn) loop();
+  $("btnSpin").classList.toggle("on",spinOn);
+  renderPanels();
+};
+function loop(){
+  spinRAF=requestAnimationFrame(()=>{
+    pinAngle=(pinAngle+0.4)%90;
+    draw();
+    if(spinOn) loop();
+  });
+}
+
+/* 拖拽端点 */
+let drag=null;
+svg.addEventListener("pointerdown",e=>{
+  if(e.target.classList&&e.target.classList.contains("drag")){
+    drag=e.target.dataset.h; svg.setPointerCapture(e.pointerId); stopAll(); hl=null; proofIdx=-1;
+  }
+});
+svg.addEventListener("pointermove",e=>{
+  if(!drag) return;
+  const p=svg.createSVGPoint(); p.x=e.clientX; p.y=e.clientY;
+  const m=p.matrixTransform(svg.getScreenCTM().inverse());
+  if(drag==="hA") a=clamp(Math.round(-m.y),1,MX);
+  else b=clamp(Math.round(m.x),1,MX);
+  render();
+});
+svg.addEventListener("pointerup",()=>drag=null);
+
+document.addEventListener("keydown",e=>{
+  if(e.key==="ArrowLeft"||e.key==="ArrowRight"){
+    const d=e.key==="ArrowRight"?1:-1;
+    if(e.shiftKey) a=clamp(a+d,1,MX); else b=clamp(b+d,1,MX);
+    stopAll(); hl=null; proofIdx=-1; render(); e.preventDefault();
+  }else if(e.code==="Space"){ e.preventDefault(); $("btnProof").click(); }
+});
+
+render();
+</script>
+</body>
+</html>

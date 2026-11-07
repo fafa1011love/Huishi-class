@@ -1,0 +1,843 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>探究光的折射规律 · 交互式可视化（人教版八年级 §4.4）</title>
+<style>
+:root{
+  --blue:#2563EB; --blue-d:#1D4ED8; --blue-l:#EFF4FF;
+  --green:#10B981; --red:#EF4444; --amber:#F59E0B; --purple:#7C3AED;
+  --ink:#1F2937; --ink-2:#4B5563; --ink-3:#6B7280;
+  --line:#E5E7EB; --bg:#F5F7FB; --card:#FFFFFF;
+  --radius:14px;
+  --shadow:0 1px 2px rgba(16,24,40,.04), 0 10px 28px -14px rgba(16,24,40,.26);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{
+  font-family:"Microsoft YaHei","PingFang SC","Hiragino Sans GB",system-ui,-apple-system,"Segoe UI",sans-serif;
+  background:var(--bg); color:var(--ink); line-height:1.68; -webkit-font-smoothing:antialiased;
+}
+svg{display:block; font-family:inherit;}
+
+/* ---------- header ---------- */
+.site-header{background:linear-gradient(120deg,#1D4ED8,#2563EB 55%,#3B82F6);color:#fff;padding:22px 0 24px;}
+.header-inner{max-width:1120px;margin:0 auto;padding:0 22px;display:flex;justify-content:space-between;align-items:flex-end;gap:18px;flex-wrap:wrap;}
+.header-text h1{margin:0;font-size:24px;font-weight:700;letter-spacing:.5px;}
+.header-text p{margin:6px 0 0;font-size:13.5px;color:rgba(255,255,255,.88);}
+.header-nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.header-link{border:1px solid rgba(255,255,255,.45);border-radius:999px;padding:7px 16px;font-size:13px;color:#fff;text-decoration:none;background:rgba(255,255,255,.08);white-space:nowrap;}
+.header-link:hover{background:rgba(255,255,255,.2);}
+.header-badge{border:1px solid rgba(255,255,255,.4);border-radius:999px;padding:7px 16px;font-size:13px;background:rgba(255,255,255,.12);white-space:nowrap;}
+
+/* ---------- layout ---------- */
+.wrap{max-width:1120px;margin:0 auto;padding:24px 22px 40px;}
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:24px 26px;margin-bottom:20px;border:1px solid rgba(229,231,235,.7);}
+.chead{display:flex;gap:14px;align-items:flex-start;margin-bottom:18px;}
+.idx{flex:0 0 auto;width:34px;height:34px;border-radius:11px;background:var(--blue-l);color:var(--blue);font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;margin-top:2px;}
+.chead h2{margin:0 0 3px;font-size:19px;font-weight:700;letter-spacing:.2px;}
+.chead p{margin:0;color:var(--ink-3);font-size:13.3px;}
+
+.split{display:grid;grid-template-columns:minmax(0,1.15fr) minmax(280px,.85fr);gap:26px;align-items:start;}
+@media(max-width:900px){ .split{grid-template-columns:1fr;} }
+.stage{border:1px solid var(--line);border-radius:12px;background:#FBFcFE;padding:6px;overflow:hidden;}
+.stage svg{width:100%;height:auto;border-radius:8px;touch-action:none;}
+.stage svg.grab{cursor:grab;}
+.stage svg.grab:active{cursor:grabbing;}
+
+/* ---------- controls ---------- */
+.panel{display:flex;flex-direction:column;gap:15px;}
+.ctl label{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--ink-3);margin-bottom:6px;}
+.ctl label b{color:var(--ink);font-size:14.5px;font-variant-numeric:tabular-nums;font-weight:700;}
+input[type=range]{width:100%;height:24px;accent-color:var(--blue);cursor:pointer;margin:0;background:transparent;}
+.seg{display:flex;gap:8px;flex-wrap:wrap;}
+.seg button{
+  border:1px solid var(--line);background:#fff;color:var(--ink-2);border-radius:9px;
+  padding:6px 14px;font-size:12.5px;cursor:pointer;font-family:inherit;transition:.15s;
+}
+.seg button:hover{border-color:#BFDBFE;background:#F8FAFF;}
+.seg button.on{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600;}
+.seg button.act{background:#FFF7ED;border-color:#FCD34D;color:#B45309;font-weight:600;}
+
+.rows{border:1px solid var(--line);border-radius:11px;overflow:hidden;background:#FCFDFF;}
+.row{display:flex;justify-content:space-between;gap:10px;padding:8px 13px;font-size:13px;border-bottom:1px solid var(--line);}
+.row:last-child{border-bottom:0;}
+.row span{color:var(--ink-3);}
+.row b{font-variant-numeric:tabular-nums;font-weight:700;}
+
+.tagline{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--ink-2);}
+.tag{font-size:11.5px;font-weight:700;border-radius:999px;padding:2px 10px;letter-spacing:.3px;white-space:nowrap;}
+.tag.b{background:#E4F9F0;color:#0E9F6E;}
+.tag.r{background:#FEECEC;color:#DC2626;}
+.tag.a{background:#FFF6E5;color:#B45309;}
+.tag.g{background:#EFF4FF;color:#1D4ED8;}
+
+.note{margin:0;font-size:13.2px;color:var(--ink-2);line-height:1.72;background:#F6F9FF;border-left:3px solid var(--blue);border-radius:0 10px 10px 0;padding:11px 14px;}
+.note em{font-style:normal;font-weight:700;color:var(--blue-d);}
+.note em.r{color:#DC2626;}
+.note em.b{color:var(--blue-d);}
+
+.chart{border:1px solid var(--line);border-radius:11px;background:#FCFDFF;padding:6px 4px 2px;}
+.chart svg{width:100%;height:auto;}
+
+/* ---------- tab ---------- */
+.tabs{display:flex;gap:8px;margin-bottom:14px;flex-wrap:wrap;}
+.tabs button{
+  border:1px solid var(--line);background:#fff;color:var(--ink-2);border-radius:999px;
+  padding:6px 16px;font-size:13px;cursor:pointer;font-family:inherit;transition:.15s;
+}
+.tabs button:hover{border-color:#BFDBFE;}
+.tabs button.on{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600;}
+.hide{display:none;}
+
+footer{text-align:center;color:#93A2B8;font-size:12.3px;padding:6px 0 0;}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-text">
+      <h1>探究光的折射规律</h1>
+      <p>光从一种介质斜射入另一种介质时，传播方向为什么会弯折？往哪个方向弯？</p>
+    </div>
+    <div class="header-nav">
+      <a class="header-link" href="#">« 返回实验目录</a>
+      <span class="header-badge">八年级物理 · 光学 · §4.4</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- ============ ① 空气 → 水/玻璃 ============ -->
+  <section class="card">
+    <div class="chead">
+      <div class="idx">01</div>
+      <div>
+        <h2>光从空气斜射入水（玻璃）：折射光线向法线靠拢</h2>
+        <p>拖动入射角，看折射光线怎么偏折；灰色虚线是「假如不折射」的前进方向。</p>
+      </div>
+    </div>
+    <div class="split">
+      <div class="stage"><svg id="svg1" class="grab" viewBox="0 0 540 400" role="img" aria-label="空气射入水中的折射光路"></svg></div>
+      <div class="panel">
+        <div class="ctl">
+          <label>入射角 i（空气中）<b id="v1i">35°</b></label>
+          <input id="r1i" type="range" min="0" max="80" step="1" value="35">
+        </div>
+        <div class="seg" id="seg1m">
+          <button data-m="water" class="on">水 n = 1.33</button>
+          <button data-m="glass">玻璃 n = 1.50</button>
+        </div>
+        <div class="rows">
+          <div class="row"><span>入射角 i</span><b id="o1i">35.0°</b></div>
+          <div class="row"><span>折射角 r</span><b id="o1r">25.5°</b></div>
+          <div class="row"><span>sin i ÷ sin r</span><b id="o1k">1.33</b></div>
+          <div class="row"><span>偏折了多少（i − r）</span><b id="o1d">9.5°</b></div>
+        </div>
+        <div class="chart"><svg id="ch1" viewBox="0 0 250 196" role="img" aria-label="折射角随入射角变化"></svg></div>
+        <p class="note">空气 → 水（玻璃）：<em class="b">折射角始终小于入射角</em>。i 增大时 r 也增大，但两者<em>不成正比</em>——真正不变的是 sin i ÷ sin r。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ② 水/玻璃 → 空气 ============ -->
+  <section class="card">
+    <div class="chead">
+      <div class="idx">02</div>
+      <div>
+        <h2>光从水（玻璃）斜射入空气：折射光线远离法线</h2>
+        <p>把光路反过来走。入射角大到一定程度，折射光线会消失——只剩下反射光线。</p>
+      </div>
+    </div>
+    <div class="split">
+      <div class="stage"><svg id="svg2" class="grab" viewBox="0 0 540 400" role="img" aria-label="水射入空气的折射光路"></svg></div>
+      <div class="panel">
+        <div class="ctl">
+          <label>入射角 i（水中）<b id="v2i">30°</b></label>
+          <input id="r2i" type="range" min="0" max="80" step="1" value="30">
+        </div>
+        <div class="seg" id="seg2m">
+          <button data-m="water" class="on">水 n = 1.33</button>
+          <button data-m="glass">玻璃 n = 1.50</button>
+        </div>
+        <div class="rows">
+          <div class="row"><span>入射角 i</span><b id="o2i">30.0°</b></div>
+          <div class="row"><span>折射角 r</span><b id="o2r">41.7°</b></div>
+          <div class="row"><span>sin i ÷ sin r</span><b id="o2k">1.33</b></div>
+        </div>
+        <div class="tagline"><span id="o2t" class="tag a">r &gt; i · 远离法线</span><span style="color:var(--ink-3);font-size:12.5px;">i 太大时折射光消失</span></div>
+        <div class="seg">
+          <button class="act" id="b2t">跳到 55°（折射光消失）</button>
+        </div>
+        <div class="chart"><svg id="ch2" viewBox="0 0 250 196" role="img" aria-label="折射角随入射角变化"></svg></div>
+        <p class="note">水 → 空气：<em class="r">折射角大于入射角</em>，光路正好是 ① 的逆过程——这就是<em>光路可逆</em>。入射角越大折射角也越大，折射光线会越来越弱；再大下去，折射光线干脆消失。</p>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ③ 折射成像 ============ -->
+  <section class="card">
+    <div class="chead">
+      <div class="idx">03</div>
+      <div>
+        <h2>折射惹的「错觉」：硬币重现 · 筷子折断</h2>
+        <p>看到的水下物体其实是它的虚像——位置比实际浅，所以硬币像是浮起来了、筷子像断成两截。</p>
+      </div>
+    </div>
+
+    <div class="tabs" id="tabs3">
+      <button data-t="coin" class="on">硬币重现</button>
+      <button data-t="stick">筷子折断</button>
+    </div>
+
+    <!-- 硬币 -->
+    <div id="paneCoin">
+      <div class="split">
+        <div class="stage"><svg id="svg3" viewBox="0 0 500 380" role="img" aria-label="硬币重现实验"></svg></div>
+        <div class="panel">
+          <div class="ctl">
+            <label>往碗里倒水 <b id="v3p">0%</b></label>
+            <input id="r3p" type="range" min="0" max="100" step="1" value="0">
+          </div>
+          <div class="seg">
+            <button class="act" id="b3play">▶ 慢慢倒水</button>
+            <button class="act" id="b3full">倒满</button>
+          </div>
+          <div class="rows">
+            <div class="row"><span>水面到硬币（实深）</span><b id="o3d">— cm</b></div>
+            <div class="row"><span>看到的深度（视深）</span><b id="o3v">— cm</b></div>
+            <div class="row"><span>视深 ÷ 实深</span><b id="o3k">—</b></div>
+          </div>
+          <div class="tagline"><span id="o3t" class="tag r">看不见 · 视线被碗沿挡住</span></div>
+          <p class="note">没倒水时，从硬币直线射来的光撞在碗壁上，进不了眼睛。倒水后光线在水面<em class="b">折向法线的反方向</em>，绕过了碗沿——于是硬币「重现」。看到的硬币是<em>虚像</em>，比实际位置高。</p>
+        </div>
+      </div>
+    </div>
+
+    <!-- 筷子 -->
+    <div id="paneStick" class="hide">
+      <div class="split">
+        <div class="stage"><svg id="svg4" class="grab" viewBox="0 0 500 380" role="img" aria-label="筷子折断实验"></svg></div>
+        <div class="panel">
+          <div class="ctl">
+            <label>筷子倾斜角度 <b id="v4a">25°</b></label>
+            <input id="r4a" type="range" min="0" max="35" step="1" value="25">
+          </div>
+          <div class="ctl">
+            <label>杯中水位 <b id="v4p">65%</b></label>
+            <input id="r4p" type="range" min="20" max="90" step="1" value="65">
+          </div>
+          <div class="rows">
+            <div class="row"><span>筷子末端实深</span><b id="o4d">— cm</b></div>
+            <div class="row"><span>看到的末端深度</span><b id="o4v">— cm</b></div>
+            <div class="row"><span>视深 ÷ 实深</span><b id="o4k">—</b></div>
+          </div>
+          <div class="tagline"><span class="tag a">水下部分看起来向上翘</span><span style="color:var(--ink-3);font-size:12.5px;">可在图上直接拖动筷子</span></div>
+          <p class="note">水下每一点发出的光都在水面折了一下才进眼睛，反向延长回去交出的虚像<em class="r">整体上移</em>，越深移得越多——所以筷子在水面处像是被折断了。</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <footer>物理可视化模型 · 光的折射　|　单文件版，无外部依赖，双击即可打开</footer>
+</div>
+
+<script>
+/* ============================================================
+   基础工具
+   ============================================================ */
+const $  = (s, r = document) => r.querySelector(s);
+const $$ = (s, r = document) => Array.from(r.querySelectorAll(s));
+const fmt = (n, d = 1) => (isFinite(n) ? Number(n).toFixed(d) : "—");
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const D2R = Math.PI / 180, R2D = 180 / Math.PI;
+const MEDIA = { water: { n: 1.333, name: "水", tint: "#DBEAFE" }, glass: { n: 1.500, name: "玻璃", tint: "#EDE9FE" } };
+const F = 'font-family="Microsoft YaHei, PingFang SC, sans-serif"';
+const T = (x, y, s, o = {}) =>
+  `<text x="${x}" y="${y}" font-size="${o.s || 12}" fill="${o.c || "#1F2937"}" font-weight="${o.w || 400}"`
+  + ` text-anchor="${o.a || "start"}" ${F}${o.ex || ""}>${s}</text>`;
+
+/* 以 (cx,cy) 为心、角度用「屏幕度」(0=右，90=下) 画圆弧 */
+function arcP(cx, cy, R, a0, a1) {
+  const p0 = [cx + R * Math.cos(a0 * D2R), cy + R * Math.sin(a0 * D2R)];
+  const p1 = [cx + R * Math.cos(a1 * D2R), cy + R * Math.sin(a1 * D2R)];
+  return `M${p0[0].toFixed(2)} ${p0[1].toFixed(2)} A${R} ${R} 0 0 ${a1 > a0 ? 1 : 0} ${p1[0].toFixed(2)} ${p1[1].toFixed(2)}`;
+}
+const ptOn = (cx, cy, R, a) => [cx + R * Math.cos(a * D2R), cy + R * Math.sin(a * D2R)];
+
+function defs(extra) {
+  return `<defs>
+    <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#EF4444"/></marker>
+    <marker id="ab" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="6" markerHeight="6" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#2563EB"/></marker>
+    <marker id="ag" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#94A3B8"/></marker>
+    <marker id="ao" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="5.5" markerHeight="5.5" orient="auto-start-reverse">
+      <path d="M0 0 L10 5 L0 10 z" fill="#F59E0B"/></marker>
+    <linearGradient id="water" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#93C5FD" stop-opacity=".55"/><stop offset="1" stop-color="#3B82F6" stop-opacity=".38"/></linearGradient>
+    <linearGradient id="waterG" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#C4B5FD" stop-opacity=".55"/><stop offset="1" stop-color="#8B5CF6" stop-opacity=".38"/></linearGradient>
+    ${extra || ""}
+  </defs>`;
+}
+
+/* ============================================================
+   ① 空气 → 介质：折射光路
+   ============================================================ */
+const S1 = { surf: 200, ox: 272, L: 132 };
+const VB = { w: 540, h: 400 };
+const C1 = { i: 35, med: "water" };
+
+/* 白描边，保证文字压在光线上也读得清 */
+const HALO = ' stroke="#FFFFFF" stroke-width="3" stroke-linejoin="round" paint-order="stroke"';
+
+/* 射线长度自适应：让箭头端点始终落在画面内 */
+function fitLen(dx, dy, base) {
+  const { surf, ox } = S1;
+  let t = base;
+  if (dx > 1e-6) t = Math.min(t, (VB.w - 16 - ox) / dx);
+  else if (dx < -1e-6) t = Math.min(t, (ox - 16) / -dx);
+  if (dy > 1e-6) t = Math.min(t, (VB.h - 16 - surf) / dy);
+  else if (dy < -1e-6) t = Math.min(t, (surf - 16) / -dy);
+  return Math.max(24, t);
+}
+
+/* 上下两种介质：整幅通铺，不再画水槽边框 */
+function bands(med) {
+  const { surf } = S1;
+  const grad = med === "water" ? "water" : "waterG";
+  return `<rect x="0" y="0" width="${VB.w}" height="${surf}" fill="#FFFFFF"/>`
+    + `<rect x="0" y="${surf}" width="${VB.w}" height="${VB.h - surf}" fill="url(#${grad})"/>`
+    + `<line x1="0" y1="${surf}" x2="${VB.w}" y2="${surf}" stroke="#60A5FA" stroke-width="2"/>`;
+}
+
+/* 介质标注（最后画，压在最上层） */
+function medLabels(med, n) {
+  return T(16, 28, "空气  n = 1.00", { s: 12, c: "#94A3B8", w: 600, ex: HALO })
+    + T(16, VB.h - 16, `${MEDIA[med].name}  n = ${n.toFixed(2)}`, { s: 12, c: "#2563EB", w: 600, ex: HALO });
+}
+
+/* 光源／激光笔：笔身长 46，标签沿垂向偏开 */
+function source(x, y, dir, away, label) {
+  const ang = Math.atan2(dir[1], dir[0]) * R2D;
+  const mx = clamp(x - dir[0] * 26, 40, VB.w - 40);
+  const my = clamp(y - dir[1] * 26, 20, VB.h - 20);
+  return `<g transform="translate(${x.toFixed(1)},${y.toFixed(1)}) rotate(${ang.toFixed(1)})">
+      <rect x="-46" y="-8" width="46" height="16" rx="4" fill="#334155"/>
+      <rect x="-13" y="-8" width="13" height="16" rx="2" fill="#EF4444"/>
+      <rect x="-51" y="-5.5" width="7" height="11" rx="2" fill="#94A3B8"/></g>`
+    + T(clamp(mx + away[0] * 20, 34, VB.w - 34), clamp(my + away[1] * 20, 20, VB.h - 12),
+        label, { s: 11.5, c: "#334155", w: 600, a: "middle", ex: HALO });
+}
+
+function drawM1() {
+  const n = MEDIA[C1.med].n, i = C1.i, r = Math.asin(Math.sin(i * D2R) / n) * R2D;
+  const { surf, ox, L } = S1;
+  const dirI = [Math.sin(i * D2R), Math.cos(i * D2R)];    // 入射（右下）
+  const dirE = [Math.sin(i * D2R), -Math.cos(i * D2R)];   // 反射（右上）
+  const dirR = [Math.sin(r * D2R), Math.cos(r * D2R)];    // 折射（右下）
+  const S = [ox - L * dirI[0], surf - L * dirI[1]];
+  const lE = fitLen(dirE[0], dirE[1], 124);
+  const lR = fitLen(dirR[0], dirR[1], 150);
+  const lD = fitLen(dirI[0], dirI[1], 112);
+
+  let g = defs() + bands(C1.med);
+
+  /* 法线 */
+  g += `<line x1="${ox}" y1="18" x2="${ox}" y2="384" stroke="#94A3B8" stroke-width="1.4" stroke-dasharray="7 5"/>`;
+  g += T(ox + 7, 30, "法线", { s: 12, c: "#94A3B8", w: 600, ex: HALO });
+
+  /* 假如不折射（沿入射方向直线延长） */
+  const dx = surf + dirI[1] * lD, ex = ox + dirI[0] * lD;
+  g += `<line x1="${ox}" y1="${surf}" x2="${ex.toFixed(1)}" y2="${dx.toFixed(1)}" stroke="#9AA7B8" stroke-width="1.8" stroke-dasharray="6 4"/>`;
+  g += T(ex + 6, dx + 4, "假如不折射", { s: 11.5, c: "#94A3B8", ex: HALO });
+
+  /* 三束光 */
+  g += `<line x1="${S[0].toFixed(1)}" y1="${S[1].toFixed(1)}" x2="${ox}" y2="${surf}" stroke="#EF4444" stroke-width="3" marker-end="url(#ar)"/>`;
+  g += `<line x1="${ox}" y1="${surf}" x2="${(ox + dirE[0] * lE).toFixed(1)}" y2="${(surf + dirE[1] * lE).toFixed(1)}" stroke="#94A3B8" stroke-width="2" marker-end="url(#ag)"/>`;
+  g += `<line x1="${ox}" y1="${surf}" x2="${(ox + dirR[0] * lR).toFixed(1)}" y2="${(surf + dirR[1] * lR).toFixed(1)}" stroke="#2563EB" stroke-width="3" marker-end="url(#ab)"/>`;
+
+  /* 激光笔 */
+  g += source(S[0], S[1], dirI, [Math.cos(i * D2R), -Math.sin(i * D2R)], "激光笔");
+
+  /* 入射点 */
+  g += `<circle cx="${ox}" cy="${surf}" r="4" fill="#fff" stroke="#1F2937" stroke-width="1.6"/>`;
+  g += T(ox - 9, surf - 9, "O", { s: 12, c: "#1F2937", w: 700, a: "end", ex: HALO });
+
+  /* 角弧与读数 */
+  const R1 = 70;
+  g += `<path d="${arcP(ox, surf, R1, -90, -90 - i)}" fill="none" stroke="#EF4444" stroke-width="2"/>`;
+  g += `<path d="${arcP(ox, surf, R1, -90, -90 + i)}" fill="none" stroke="#94A3B8" stroke-width="1.6" stroke-dasharray="4 3"/>`;
+  g += `<path d="${arcP(ox, surf, R1, 90, 90 - r)}" fill="none" stroke="#2563EB" stroke-width="2"/>`;
+  const pi = ptOn(ox, surf, R1 + 22, -90 - i / 2);
+  const pr = ptOn(ox, surf, R1 + 22, 90 - r / 2);
+  g += T(pi[0], pi[1] + 4, `i = ${fmt(i)}°`, { s: 13.5, c: "#EF4444", w: 700, a: "middle", ex: HALO });
+  g += T(pr[0], pr[1] + 4, `r = ${fmt(r)}°`, { s: 13.5, c: "#2563EB", w: 700, a: "middle", ex: HALO });
+  if (i > 15) {
+    const pe = ptOn(ox, surf, R1 + 26, -90 + i / 2);
+    g += T(pe[0] + 6, pe[1], "反射角 = i", { s: 11, c: "#94A3B8", w: 600, ex: HALO });
+  }
+
+  g += medLabels(C1.med, n);
+  $("#svg1").innerHTML = g;
+
+  /* 读数 */
+  const k = i === 0 ? n : Math.sin(i * D2R) / Math.sin(r * D2R);
+  $("#v1i").textContent = i + "°";
+  $("#o1i").textContent = fmt(i) + "°";
+  $("#o1r").textContent = fmt(r) + "°";
+  $("#o1k").textContent = fmt(k, 2);
+  $("#o1d").textContent = fmt(i - r) + "°";
+  drawChart($("#ch1"), i, r, "down");
+}
+
+/* ============================================================
+   ② 介质 → 空气：折射 + 折射光消失
+   ============================================================ */
+const C2 = { i: 30, med: "water" };
+
+function drawM2() {
+  const n = MEDIA[C2.med].n, i = C2.i;
+  const crit = Math.asin(1 / n) * R2D;
+  const tir = i > crit + 1e-9;
+  const r = tir ? 90 : Math.asin(n * Math.sin(i * D2R)) * R2D;
+  const { surf, ox, L } = S1;
+  /* 水中入射（右上），反射（右下），折射（右上更偏离法线） */
+  const dI = [Math.sin(i * D2R), -Math.cos(i * D2R)];
+  const dRf = [Math.sin(i * D2R), Math.cos(i * D2R)];
+  const dR = [Math.sin(r * D2R), -Math.cos(r * D2R)];
+  const S = [ox - L * dI[0], surf - L * dI[1]];
+  const lRf = fitLen(dRf[0], dRf[1], 138);
+  const lR = fitLen(dR[0], dR[1], 150);
+  const lD = fitLen(dI[0], dI[1], 110);
+
+  let g = defs() + bands(C2.med);
+  g += `<line x1="${ox}" y1="18" x2="${ox}" y2="384" stroke="#94A3B8" stroke-width="1.4" stroke-dasharray="7 5"/>`;
+  g += T(ox + 7, 30, "法线", { s: 12, c: "#94A3B8", w: 600, ex: HALO });
+
+  /* 假如不折射 */
+  const dx = surf + dI[1] * lD, ex = ox + dI[0] * lD;
+  g += `<line x1="${ox}" y1="${surf}" x2="${ex.toFixed(1)}" y2="${dx.toFixed(1)}" stroke="#9AA7B8" stroke-width="1.8" stroke-dasharray="6 4"/>`;
+  g += T(ex - Math.cos(i * D2R) * 16, dx - Math.sin(i * D2R) * 16, "假如不折射", { s: 11.5, c: "#94A3B8", a: "end", ex: HALO });
+
+  /* 入射 / 反射 / 折射 */
+  g += `<line x1="${S[0].toFixed(1)}" y1="${S[1].toFixed(1)}" x2="${ox}" y2="${surf}" stroke="#EF4444" stroke-width="3" marker-end="url(#ar)"/>`;
+  g += `<line x1="${ox}" y1="${surf}" x2="${(ox + dRf[0] * lRf).toFixed(1)}" y2="${(surf + dRf[1] * lRf).toFixed(1)}" stroke="${tir ? "#EF4444" : "#94A3B8"}" stroke-width="${tir ? 3 : 2}" marker-end="url(#${tir ? "ar" : "ag"})"/>`;
+  if (!tir) {
+    g += `<line x1="${ox}" y1="${surf}" x2="${(ox + dR[0] * lR).toFixed(1)}" y2="${(surf + dR[1] * lR).toFixed(1)}" stroke="#2563EB" stroke-width="3" marker-end="url(#ab)"/>`;
+  } else {
+    g += `<line x1="${ox}" y1="${surf}" x2="${VB.w - 14}" y2="${surf}" stroke="#CBD5E1" stroke-width="1.6" stroke-dasharray="5 5"/>`;
+    g += T(VB.w - 18, surf - 12, "折射光消失", { s: 12, c: "#94A3B8", a: "end", w: 600, ex: HALO });
+  }
+
+  g += source(S[0], S[1], dI, [Math.cos(i * D2R), Math.sin(i * D2R)], "水中的光源");
+
+  g += `<circle cx="${ox}" cy="${surf}" r="4" fill="#fff" stroke="#1F2937" stroke-width="1.6"/>`;
+  g += T(ox - 9, surf - 9, "O", { s: 12, c: "#1F2937", w: 700, a: "end", ex: HALO });
+
+  const R1 = 70;
+  /* 入射光在左下方（屏幕角 90+i），反射光在右下方（90−i） */
+  g += `<path d="${arcP(ox, surf, R1, 90, 90 + i)}" fill="none" stroke="#EF4444" stroke-width="2"/>`;
+  g += `<path d="${arcP(ox, surf, R1, 90, 90 - i)}" fill="none" stroke="${tir ? "#EF4444" : "#94A3B8"}" stroke-width="${tir ? 2.4 : 1.6}" stroke-dasharray="4 3"/>`;
+  const pi = ptOn(ox, surf, R1 + 22, 90 + i / 2);
+  g += T(pi[0], pi[1] + 4, `i = ${fmt(i)}°`, { s: 13.5, c: "#EF4444", w: 700, a: "middle", ex: HALO });
+  if (!tir) {
+    g += `<path d="${arcP(ox, surf, R1, -90, -90 + r)}" fill="none" stroke="#2563EB" stroke-width="2"/>`;
+    const pr = ptOn(ox, surf, R1 + 22, -90 + r / 2);
+    g += T(pr[0], pr[1] + 4, `r = ${fmt(r)}°`, { s: 13.5, c: "#2563EB", w: 700, a: "middle", ex: HALO });
+  } else {
+    g += `<path d="${arcP(ox, surf, R1, -90, 0)}" fill="none" stroke="#CBD5E1" stroke-width="1.6" stroke-dasharray="4 3"/>`;
+    g += T(ox - 22, surf - 40, "折射光消失了", { s: 14, c: "#EF4444", w: 700, a: "end", ex: HALO });
+  }
+
+  g += medLabels(C2.med, n);
+  $("#svg2").innerHTML = g;
+
+  const k = i === 0 ? 1 / n : Math.sin(i * D2R) / Math.sin(r * D2R);
+  $("#v2i").textContent = i + "°";
+  $("#o2i").textContent = fmt(i) + "°";
+  $("#o2r").textContent = tir ? "没有折射光" : fmt(r) + "°";
+  $("#o2k").textContent = tir ? "—" : fmt(k, 2);
+  const t = $("#o2t");
+  if (tir) { t.className = "tag r"; t.textContent = "折射光消失 · 只剩反射"; }
+  else if (i === 0) { t.className = "tag g"; t.textContent = "i = r = 0 · 不偏折"; }
+  else { t.className = "tag a"; t.textContent = "r > i · 远离法线"; }
+  drawChart($("#ch2"), i, tir ? null : r, "up", crit);
+}
+
+/* ============================================================
+   r–i 关系小图
+   mode "down": 空气→介质   "up": 介质→空气
+   ============================================================ */
+function drawChart(el, i, r, mode, crit) {
+  const x0 = 38, x1 = 232, y0 = 22, y1 = 162, imax = 80;
+  const px = v => x0 + v / imax * (x1 - x0);
+  const py = v => y1 - v / imax * (y1 - y0);
+  const n = mode === "down" ? MEDIA[C1.med].n : MEDIA[C2.med].n;
+  let g = "";
+  g += `<rect x="${x0}" y="${y0}" width="${x1 - x0}" height="${y1 - y0}" fill="#fff" stroke="#E5E7EB"/>`;
+  for (let v = 20; v <= 80; v += 20) {
+    g += `<line x1="${px(v)}" y1="${y0}" x2="${px(v)}" y2="${y1}" stroke="#F1F5F9"/>`;
+    g += `<line x1="${x0}" y1="${py(v)}" x2="${x1}" y2="${py(v)}" stroke="#F1F5F9"/>`;
+    g += T(px(v), y1 + 13, v + "°", { s: 9.5, c: "#94A3B8", a: "middle" });
+    g += T(x0 - 6, py(v) + 3.5, v + "°", { s: 9.5, c: "#94A3B8", a: "end" });
+  }
+  /* y = x 参考线 */
+  g += `<line x1="${px(0)}" y1="${py(0)}" x2="${px(80)}" y2="${py(80)}" stroke="#CBD5E1" stroke-width="1.2" stroke-dasharray="5 4"/>`;
+  g += T(px(74), py(74) - 6, "r = i", { s: 9.5, c: "#94A3B8", a: "middle" });
+
+  if (mode === "up" && crit) {
+    g += `<rect x="${px(crit)}" y="${y0}" width="${x1 - px(crit)}" height="${y1 - y0}" fill="#FEECEC" opacity=".8"/>`;
+    g += T(px(crit) + 5, y0 + 12, "折射光消失", { s: 9.5, c: "#DC2626", w: 700 });
+  }
+
+  let d = "";
+  for (let v = 0; v <= imax; v += 1) {
+    let rr;
+    if (mode === "down") rr = Math.asin(Math.sin(v * D2R) / n) * R2D;
+    else { const s = n * Math.sin(v * D2R); if (s > 1) break; rr = Math.asin(s) * R2D; }
+    d += (d ? "L" : "M") + px(v).toFixed(1) + " " + py(rr).toFixed(1) + " ";
+  }
+  g += `<path d="${d}" fill="none" stroke="#2563EB" stroke-width="2"/>`;
+
+  if (r !== null && r !== undefined) {
+    g += `<line x1="${px(i)}" y1="${py(r)}" x2="${px(i)}" y2="${y1}" stroke="#F59E0B" stroke-width="1" stroke-dasharray="3 3"/>`;
+    g += `<line x1="${x0}" y1="${py(r)}" x2="${px(i)}" y2="${py(r)}" stroke="#F59E0B" stroke-width="1" stroke-dasharray="3 3"/>`;
+    g += `<circle cx="${px(i)}" cy="${py(r)}" r="4.5" fill="#F59E0B" stroke="#fff" stroke-width="1.5"/>`;
+  } else {
+    g += `<line x1="${px(i)}" y1="${y0}" x2="${px(i)}" y2="${y1}" stroke="#EF4444" stroke-width="1.2"/>`;
+  }
+  g += T((x0 + x1) / 2, y1 + 29, "入射角 i →", { s: 10, c: "#6B7280", a: "middle" });
+  g += T(2, y0 - 8, "折射角 r", { s: 10, c: "#6B7280" });
+  el.innerHTML = g;
+}
+
+/* ============================================================
+   ③ 折射成像 —— 共用：折射点求解 / 矢量折射 / 虚像
+   ============================================================ */
+const NW = 1.333;
+
+/* 求水面折射点 x：光从 (px,py) 出发，在水面 yw 折射后到眼睛 E */
+function solveQ(E, yw, px, py, xa, xb) {
+  const d = py - yw, h = yw - E.y;
+  if (d <= 0.6 || h <= 0.6) return null;
+  const f = q => NW * Math.sin(Math.atan2(q - px, d)) - Math.sin(Math.atan2(E.x - q, h));
+  let a = xa, b = xb;
+  if (f(b) < 0) return null;
+  if (f(a) > 0) return { q: a, edge: true };
+  for (let k = 0; k < 50; k++) { const m = (a + b) / 2; if (f(m) > 0) b = m; else a = m; }
+  return { q: (a + b) / 2, edge: false };
+}
+
+/* 虚像：沿出射视线的反向延长线定位，视深 d′ = d · tanθ₁ ÷ tanθ₂
+   （θ₁ 水中入射角、θ₂ 空气中折射角；近垂直时退化为 d′ = d ÷ n） */
+function apparent(E, yw, P, xa, xb) {
+  const q0 = solveQ(E, yw, P.x, P.y, xa, xb);
+  if (!q0) return null;
+  const q = q0.q, d = P.y - yw, h = yw - E.y;
+  const t1 = Math.atan2(q - P.x, d), t2 = Math.atan2(E.x - q, h);
+  const dp = (Math.tan(t2) < 1e-4) ? d / NW : d * Math.tan(t1) / Math.tan(t2);
+  let ux = q - E.x, uy = h;
+  const L = Math.hypot(ux, uy) || 1; ux /= L; uy /= L;
+  if (Math.abs(uy) < 1e-6) return { x: q, y: yw - dp, q };
+  const s = dp / uy;
+  return { x: q + ux * s, y: yw + uy * s, q };
+}
+
+/* ============================================================
+   ③-a 硬币重现
+   ============================================================ */
+const BOWL = { rim: 150, bot: 310, xL0: 155, xR0: 345, sl: 28, th: 12 };
+const COIN = { x: 240, y: 306, rx: 17 };
+const EYE = { x: 430, y: 44 };
+const C3 = { p: 0 };
+
+const bxL = y => BOWL.xL0 + BOWL.sl * (y - BOWL.rim) / (BOWL.bot - BOWL.rim);
+const bxR = y => BOWL.xR0 - BOWL.sl * (y - BOWL.rim) / (BOWL.bot - BOWL.rim);
+const ywCoin = p => (COIN.y - 6) - (p / 100) * ((COIN.y - 6) - (BOWL.rim + 10));
+const PXCM = 25;    // 碗内深 146 px ≈ 5.8 cm
+
+function drawCoin() {
+  const p = C3.p, has = p > 0, yw = ywCoin(p);
+  const { rim, bot, xL0, xR0, th } = BOWL;
+  let g = defs();
+
+  /* 碗体 */
+  g += `<path d="M${xL0 - th} ${rim} L${bxL(bot) - th + 4} ${bot + th} L${bxR(bot) + th - 4} ${bot + th} L${xR0 + th} ${rim}`
+     + ` L${xR0} ${rim} L${bxR(bot)} ${bot} L${bxL(bot)} ${bot} L${xL0} ${rim} Z" fill="#F1F5F9" stroke="#94A3B8" stroke-width="1.6" stroke-linejoin="round"/>`;
+  g += `<rect x="${(bxL(bot) + bxR(bot)) / 2 - 42}" y="${bot + th}" width="84" height="13" rx="4" fill="#E2E8F0" stroke="#94A3B8" stroke-width="1.4"/>`;
+
+  /* 水 */
+  if (has) {
+    g += `<path d="M${bxL(yw)} ${yw} L${bxR(yw)} ${yw} L${bxR(bot)} ${bot} L${bxL(bot)} ${bot} Z" fill="url(#water)"/>`;
+    g += `<line x1="${bxL(yw)}" y1="${yw}" x2="${bxR(yw)}" y2="${yw}" stroke="#3B82F6" stroke-width="2"/>`;
+  }
+
+  /* 沿碗沿的遮挡线 */
+  const kd = (bot + 12 - EYE.y) / (rim - EYE.y);
+  const xEnd = EYE.x + (xR0 - EYE.x) * kd;
+  g += `<line x1="${EYE.x}" y1="${EYE.y}" x2="${xEnd}" y2="${bot + 12}" stroke="#FCA5A5" stroke-width="1.5" stroke-dasharray="6 5"/>`;
+  g += T(xR0 + 8, rim + 34, "沿碗沿看过去", { s: 11, c: "#EF4444", w: 600, ex: HALO });
+
+  /* 眼睛 */
+  g += `<ellipse cx="${EYE.x}" cy="${EYE.y}" rx="15" ry="11" fill="#fff" stroke="#334155" stroke-width="2"/>`;
+  g += `<circle cx="${EYE.x + 3}" cy="${EYE.y}" r="4.5" fill="#334155"/>`;
+  g += T(EYE.x + 20, EYE.y + 4, "眼睛", { s: 12, c: "#334155", w: 600 });
+
+  let q = null, vis = false, img = null;
+  if (has) {
+    const s = solveQ(EYE, yw, COIN.x, COIN.y, bxL(yw), bxR(yw));
+    if (s) {
+      const xr = s.q + (EYE.x - s.q) * (yw - rim) / (yw - EYE.y);
+      vis = xr <= xR0 && xr >= xL0;
+      q = s.q;
+      img = apparent(EYE, yw, COIN, bxL(yw), bxR(yw));
+    }
+  }
+
+  if (vis && q !== null) {
+    /* 实际光路 */
+    g += `<line x1="${COIN.x}" y1="${COIN.y}" x2="${q}" y2="${yw}" stroke="#F59E0B" stroke-width="2.6" marker-end="url(#ao)"/>`;
+    g += `<line x1="${q}" y1="${yw}" x2="${EYE.x}" y2="${EYE.y}" stroke="#F59E0B" stroke-width="2.6" marker-end="url(#ao)"/>`;
+    /* 反向延长 */
+    if (img) {
+      g += `<line x1="${q}" y1="${yw}" x2="${img.x}" y2="${img.y}" stroke="#F59E0B" stroke-width="1.6" stroke-dasharray="5 4"/>`;
+      g += `<ellipse cx="${img.x}" cy="${img.y}" rx="${COIN.rx}" ry="5" fill="#F59E0B" fill-opacity=".35" stroke="#F59E0B" stroke-width="1.6" stroke-dasharray="4 3"/>`;
+      g += T(img.x, img.y - 12, "看到的硬币（虚像）", { s: 11.5, c: "#B45309", w: 700, a: "middle" });
+    }
+    g += T(q + 6, yw - 8, "折射点", { s: 11, c: "#B45309", w: 600 });
+  } else {
+    /* 直线视线被挡 */
+    const blocked = has ? (q !== null ? q : bxR(yw)) : null;
+    if (blocked !== null) {
+      g += `<line x1="${COIN.x}" y1="${COIN.y}" x2="${blocked}" y2="${yw}" stroke="#CBD5E1" stroke-width="2" stroke-dasharray="5 4"/>`;
+      g += `<line x1="${blocked}" y1="${yw}" x2="${EYE.x}" y2="${EYE.y}" stroke="#CBD5E1" stroke-width="2" stroke-dasharray="5 4"/>`;
+    } else {
+      g += `<line x1="${COIN.x}" y1="${COIN.y}" x2="${EYE.x}" y2="${EYE.y}" stroke="#CBD5E1" stroke-width="2" stroke-dasharray="5 4"/>`;
+    }
+    const hitY = rim + 42;
+    const hitX = COIN.x + (EYE.x - COIN.x) * (COIN.y - hitY) / (COIN.y - EYE.y);
+    g += `<path d="M${hitX - 9} ${hitY - 9} L${hitX + 9} ${hitY + 9} M${hitX + 9} ${hitY - 9} L${hitX - 9} ${hitY + 9}" stroke="#EF4444" stroke-width="3" stroke-linecap="round"/>`;
+    g += T(hitX + 14, hitY + 4, "被碗壁挡住", { s: 11.5, c: "#EF4444", w: 700 });
+  }
+
+  /* 真实硬币 */
+  g += `<ellipse cx="${COIN.x}" cy="${COIN.y}" rx="${COIN.rx}" ry="5.5" fill="#F59E0B" stroke="#B45309" stroke-width="1.6"/>`;
+  g += `<rect x="${COIN.x - COIN.rx}" y="${COIN.y - 7}" width="${COIN.rx * 2}" height="7" rx="2" fill="#FBBF24" stroke="#B45309" stroke-width="1.2"/>`;
+  g += T(COIN.x + COIN.rx + 12, COIN.y + 4, has ? "硬币（真实位置）" : "硬币", { s: 11.5, c: "#B45309", w: 600, ex: HALO });
+
+  /* 深度标注 */
+  if (has) {
+    const xm = bxL(yw) - 26;
+    g += `<line x1="${xm}" y1="${yw}" x2="${xm}" y2="${COIN.y}" stroke="#7C3AED" stroke-width="1.4"/>`;
+    g += `<path d="M${xm} ${yw} l-4 8 h8 z M${xm} ${COIN.y} l-4 -8 h8 z" fill="#7C3AED"/>`;
+    g += T(xm - 8, (yw + COIN.y) / 2 + 4, "实深", { s: 11, c: "#7C3AED", w: 700, a: "end" });
+    if (img) {
+      const xi = bxR(yw) + 26;
+      g += `<line x1="${xi}" y1="${yw}" x2="${xi}" y2="${img.y}" stroke="#7C3AED" stroke-width="1.4"/>`;
+      g += `<path d="M${xi} ${yw} l-4 8 h8 z M${xi} ${img.y} l-4 -8 h8 z" fill="#7C3AED"/>`;
+      g += T(xi + 8, (yw + img.y) / 2 + 4, "视深", { s: 11, c: "#7C3AED", w: 700 });
+    }
+  }
+
+  $("#svg3").innerHTML = g;
+
+  $("#v3p").textContent = p + "%";
+  const real = (COIN.y - yw) / PXCM;
+  const app = img ? (img.y - yw) / PXCM : NaN;
+  $("#o3d").textContent = has ? fmt(real) + " cm" : "—";
+  $("#o3v").textContent = has && img ? fmt(app) + " cm" : "—";
+  $("#o3k").textContent = has && img ? fmt(app / real, 2) : "—";
+  const t = $("#o3t");
+  if (!has) { t.className = "tag r"; t.textContent = "看不见 · 视线被碗沿挡住"; }
+  else if (vis) { t.className = "tag b"; t.textContent = "重现了！硬币浮上来了"; }
+  else { t.className = "tag r"; t.textContent = "还看不见 · 水不够深"; }
+}
+
+/* ============================================================
+   ③-b 筷子折断
+   ============================================================ */
+const CUP = { xL: 170, xR: 330, rim: 140, bot: 330, th: 8 };
+const EYE2 = { x: 405, y: 48 };
+const CB = { x: 190, y: 326, L: 290 };
+const C4 = { a: 25, p: 65 };
+const PX2 = 20;     // 杯内高 190 px ≈ 9.5 cm
+
+const ywCup = p => CUP.bot - (p / 100) * (CUP.bot - CUP.rim - 6);
+
+function drawStick() {
+  const th = C4.a * D2R, yw = ywCup(C4.p);
+  const B = { x: CB.x, y: CB.y };
+  const A = { x: B.x + CB.L * Math.sin(th), y: B.y - CB.L * Math.cos(th) };
+  let g = defs();
+
+  /* 杯体 */
+  const { xL, xR, rim, bot, th: w } = CUP;
+  g += `<path d="M${xL - w} ${rim} L${xL - w} ${bot + w} L${xR + w} ${bot + w} L${xR + w} ${rim}`
+     + ` L${xR} ${rim} L${xR} ${bot} L${xL} ${bot} L${xL} ${rim} Z" fill="#FFFFFF" fill-opacity=".7" stroke="#94A3B8" stroke-width="1.6" stroke-linejoin="round"/>`;
+  /* 水 */
+  g += `<path d="M${xL} ${yw} L${xR} ${yw} L${xR} ${bot} L${xL} ${bot} Z" fill="url(#water)"/>`;
+  g += `<line x1="${xL}" y1="${yw}" x2="${xR}" y2="${yw}" stroke="#3B82F6" stroke-width="2"/>`;
+  g += T(xL + 6, yw - 7, "水面", { s: 11.5, c: "#2563EB", w: 700 });
+
+  /* 筷子：水上段 + 水下段（真实） */
+  const cut = { x: B.x + (B.y - yw) * Math.tan(th), y: yw };
+  g += `<line x1="${A.x}" y1="${A.y}" x2="${cut.x}" y2="${cut.y}" stroke="#B45309" stroke-width="7" stroke-linecap="round"/>`;
+  g += `<line x1="${cut.x}" y1="${cut.y}" x2="${B.x}" y2="${B.y}" stroke="#B45309" stroke-width="7" stroke-linecap="round" opacity=".9"/>`;
+
+  /* 眼睛 */
+  g += `<ellipse cx="${EYE2.x}" cy="${EYE2.y}" rx="15" ry="11" fill="#fff" stroke="#334155" stroke-width="2"/>`;
+  g += `<circle cx="${EYE2.x + 3}" cy="${EYE2.y}" r="4.5" fill="#334155"/>`;
+  g += T(EYE2.x - 22, EYE2.y + 4, "眼睛", { s: 12, c: "#334155", w: 600, a: "end" });
+
+  /* 水下段采样 → 虚像 */
+  const N = 12, pts = [], imgs = [];
+  for (let k = 0; k <= N; k++) {
+    const t = k / N;
+    const P = { x: cut.x + (B.x - cut.x) * t, y: cut.y + (B.y - cut.y) * t };
+    if (P.y - yw < 1.2) { pts.push(P); imgs.push(null); continue; }
+    const im = apparent(EYE2, yw, P, xL, xR);
+    pts.push(P); imgs.push(im);
+  }
+
+  /* 三条真实光路 */
+  for (const k of [0, Math.round(N / 2), N]) {
+    const P = pts[k], im = imgs[k];
+    if (!im) continue;
+    g += `<line x1="${P.x}" y1="${P.y}" x2="${im.q}" y2="${yw}" stroke="#F59E0B" stroke-width="1.5" opacity=".85"/>`;
+    g += `<line x1="${im.q}" y1="${yw}" x2="${EYE2.x}" y2="${EYE2.y}" stroke="#F59E0B" stroke-width="1.5" opacity=".85"/>`;
+    g += `<line x1="${im.q}" y1="${yw}" x2="${im.x}" y2="${im.y}" stroke="#F59E0B" stroke-width="1.2" stroke-dasharray="4 4" opacity=".8"/>`;
+  }
+
+  /* 虚像筷子 */
+  let d = "";
+  imgs.forEach((im, k) => { if (im) d += (d ? "L" : "M") + im.x.toFixed(1) + " " + im.y.toFixed(1) + " "; });
+  if (d) {
+    g += `<line x1="${cut.x}" y1="${cut.y}" x2="${imgs.find(x => x) ? imgs.find(x => x).x : cut.x}" y2="${imgs.find(x => x) ? imgs.find(x => x).y : cut.y}" stroke="#F59E0B" stroke-width="1.2" opacity=".5"/>`;
+    g += `<path d="${d}" fill="none" stroke="#F59E0B" stroke-width="6" stroke-linecap="round" opacity=".55" stroke-dasharray="9 5"/>`;
+    const last = imgs.filter(x => x).pop();
+    if (last) {
+      g += `<circle cx="${last.x}" cy="${last.y}" r="4" fill="#F59E0B" opacity=".7"/>`;
+      g += T(last.x + 8, last.y + 14, "看到的筷子末端", { s: 11, c: "#B45309", w: 700 });
+    }
+  }
+
+  /* 水面上标记「看起来折断处」 */
+  g += `<circle cx="${cut.x}" cy="${cut.y}" r="4" fill="#fff" stroke="#EF4444" stroke-width="2"/>`;
+  g += T(cut.x + 10, cut.y - 8, "看起来在这里折断", { s: 11.5, c: "#EF4444", w: 700 });
+
+  $("#svg4").innerHTML = g;
+
+  const real = (B.y - yw) / PX2;
+  const lastImg = imgs.filter(x => x).pop();
+  const app = lastImg ? (lastImg.y - yw) / PX2 : NaN;
+  $("#v4a").textContent = C4.a + "°";
+  $("#v4p").textContent = C4.p + "%";
+  $("#o4d").textContent = fmt(real) + " cm";
+  $("#o4v").textContent = lastImg ? fmt(app) + " cm" : "—";
+  $("#o4k").textContent = lastImg ? fmt(app / real, 2) : "—";
+}
+
+/* ============================================================
+   交互
+   ============================================================ */
+function svgPt(svg, e) {
+  const r = svg.getBoundingClientRect();
+  const vb = svg.viewBox.baseVal;
+  return { x: (e.clientX - r.left) / r.width * vb.width, y: (e.clientY - r.top) / r.height * vb.height };
+}
+
+/* ①② 直接在图上拖动入射光线 */
+function bindRayDrag(svg, getSet) {
+  let drag = false;
+  const upd = e => {
+    const p = svgPt(svg, e);
+    const { ox, surf } = S1;
+    const ang = Math.abs(Math.atan2(p.x - ox, Math.abs(p.y - surf)) * R2D);
+    getSet(clamp(Math.round(ang), 0, 80));
+  };
+  svg.addEventListener("pointerdown", e => {
+    drag = true; svg.setPointerCapture(e.pointerId); upd(e);
+  });
+  svg.addEventListener("pointermove", e => { if (drag) upd(e); });
+  const end = () => { drag = false; };
+  svg.addEventListener("pointerup", end);
+  svg.addEventListener("pointercancel", end);
+}
+
+/* 初始化 */
+$("#r1i").oninput = e => { C1.i = +e.target.value; drawM1(); };
+$("#r2i").oninput = e => { C2.i = +e.target.value; drawM2(); };
+$$("#seg1m button").forEach(b => b.onclick = () => {
+  $$("#seg1m button").forEach(x => x.classList.remove("on"));
+  b.classList.add("on"); C1.med = b.dataset.m; drawM1();
+});
+$$("#seg2m button").forEach(b => b.onclick = () => {
+  $$("#seg2m button").forEach(x => x.classList.remove("on"));
+  b.classList.add("on"); C2.med = b.dataset.m; drawM2();
+});
+bindRayDrag($("#svg1"), v => { C1.i = v; $("#r1i").value = v; drawM1(); });
+bindRayDrag($("#svg2"), v => { C2.i = v; $("#r2i").value = v; drawM2(); });
+$("#b2t").onclick = () => { C2.i = 55; $("#r2i").value = 55; drawM2(); };
+
+/* 硬币 */
+$("#r3p").oninput = e => { stopPour(); C3.p = +e.target.value; drawCoin(); };
+$("#b3full").onclick = () => { stopPour(); C3.p = 100; $("#r3p").value = 100; drawCoin(); };
+let pourRaf = null;
+function stopPour() {
+  if (pourRaf) { cancelAnimationFrame(pourRaf); pourRaf = null; }
+  $("#b3play").textContent = "▶ 慢慢倒水";
+}
+$("#b3play").onclick = () => {
+  if (pourRaf) { stopPour(); return; }
+  $("#b3play").textContent = "⏸ 暂停";
+  const T = 5200, t0 = performance.now();
+  let last = -1;
+  const step = now => {
+    const q = ((now - t0) % T) / T;
+    const tri = q < 0.5 ? q * 2 : 2 - q * 2;
+    const v = Math.round(tri * 100);
+    if (v !== last) { last = v; C3.p = v; $("#r3p").value = v; drawCoin(); }
+    pourRaf = requestAnimationFrame(step);
+  };
+  pourRaf = requestAnimationFrame(step);
+};
+
+/* 筷子 */
+$("#r4a").oninput = e => { C4.a = +e.target.value; drawStick(); };
+$("#r4p").oninput = e => { C4.p = +e.target.value; drawStick(); };
+(function () {
+  const svg = $("#svg4");
+  let drag = false;
+  const upd = e => {
+    const p = svgPt(svg, e);
+    const ang = Math.atan2(p.x - CB.x, CB.y - p.y) * R2D;
+    C4.a = clamp(Math.round(ang), 0, 35);
+    $("#r4a").value = C4.a; drawStick();
+  };
+  svg.addEventListener("pointerdown", e => { drag = true; svg.setPointerCapture(e.pointerId); upd(e); });
+  svg.addEventListener("pointermove", e => { if (drag) upd(e); });
+  const end = () => { drag = false; };
+  svg.addEventListener("pointerup", end);
+  svg.addEventListener("pointercancel", end);
+})();
+
+/* tab */
+$$("#tabs3 button").forEach(b => b.onclick = () => {
+  $$("#tabs3 button").forEach(x => x.classList.remove("on"));
+  b.classList.add("on");
+  const coin = b.dataset.t === "coin";
+  $("#paneCoin").classList.toggle("hide", !coin);
+  $("#paneStick").classList.toggle("hide", coin);
+  stopPour();
+});
+
+drawM1(); drawM2(); drawCoin(); drawStick();
+</script>
+</body>
+</html>

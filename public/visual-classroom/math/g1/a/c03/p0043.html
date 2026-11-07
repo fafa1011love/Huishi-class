@@ -1,0 +1,772 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>幂函数探究教具 · y = x^α</title>
+<style>
+  :root{
+    --bg:#f5f7fa;
+    --card:#fff;
+    --line:#e2e8f0;
+    --ink:#1e293b;
+    --ink2:#334155;
+    --muted:#64748b;
+    --brand:#2563eb;
+    --brand-soft:#eff6ff;
+    --accent:#2563eb;
+    --accent-soft:#eff6ff;
+    --hl:#ef4444;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;
+    line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1320px;margin:0 auto;padding:22px 20px 40px;}
+
+  /* 页头：与「集合的基本运算」教具一致的深蓝渐变条 */
+  header.top{background:linear-gradient(120deg,#1e3a8a,#2563eb 60%,#0ea5e9);color:#fff;
+             box-shadow:0 1px 3px rgba(0,0,0,.08);}
+  header.top .hwrap{padding:18px 28px;}
+  header.top h1{font-size:20px;margin:0;font-weight:700;color:#fff;}
+  header.top h1 span{color:#dbeafe !important;}
+  header.top p{margin:4px 0 0;font-size:13px;color:#fff;opacity:.85;}
+
+  main{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:18px;align-items:start;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+
+  /* 画布区 */
+  .stage{padding:18px;}
+  .plot-box{position:relative;width:100%;height:min(58vh,520px);min-height:420px;border-radius:10px;background:#fff;border:1px solid #cbd5e1;overflow:hidden;user-select:none;-webkit-user-select:none;}
+  canvas#plot{display:block;width:100%;height:100%;cursor:grab;}
+  .formula-bar{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:2px 0 10px;}
+  .formula{font-size:26px;font-weight:700;letter-spacing:.5px;color:var(--ink);}
+  .formula .alpha{color:var(--brand);}
+  .alpha-approx{font-size:13px;color:var(--muted);}
+
+  /* 控件 */
+  .controls{margin-top:12px;display:grid;gap:12px;}
+  .row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+  .seg{display:inline-flex;border:1px solid var(--line);border-radius:8px;overflow:hidden;background:#fff;}
+  .seg button{border:0;background:#fff;padding:8px 14px;font-size:13px;color:var(--muted);cursor:pointer;}
+  .seg button.on{background:var(--brand);color:#fff;font-weight:700;}
+  label.sl{display:flex;align-items:center;gap:9px;font-size:13.5px;color:var(--ink2);}
+  label.sl .nm{min-width:74px;}
+  input[type=range]{width:190px;accent-color:var(--brand);}
+  .val{font-variant-numeric:tabular-nums;font-weight:700;min-width:52px;color:var(--brand);}
+  .btn{border:1px solid var(--brand);background:#fff;color:var(--brand);border-radius:8px;padding:8px 15px;font-size:13.5px;cursor:pointer;transition:.12s;}
+  .btn:hover{background:var(--brand-soft);}
+  .btn.primary{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:600;}
+  .btn.primary:hover{background:#1d4ed8;color:#fff;}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+  .chips .lab{font-size:13px;color:var(--muted);}
+  .chip{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 13px;font-size:13px;cursor:pointer;color:var(--ink);font-variant-numeric:tabular-nums;transition:.12s;}
+  .chip:hover{border-color:var(--brand);color:var(--brand);background:#f8fafc;}
+  .chip.on{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:700;}
+  .switch{display:inline-flex;align-items:center;gap:6px;font-size:13.5px;color:var(--ink2);cursor:pointer;user-select:none;}
+
+  /* 属性面板 */
+  aside.panel{padding:18px;}
+  aside.panel h2{font-size:15px;margin:0 0 12px;padding-bottom:10px;border-bottom:1px solid var(--line);color:var(--ink);font-weight:700;}
+  .prop{margin-bottom:13px;}
+  .prop .k{font-size:12.5px;color:var(--muted);margin-bottom:3px;}
+  .prop .v{font-size:14.5px;color:var(--ink);font-weight:600;}
+  .tag{display:inline-block;padding:3px 12px;border-radius:20px;font-size:13px;font-weight:600;}
+  .tag.odd{background:#eff6ff;color:#2563eb;}
+  .tag.even{background:#f0fdf4;color:#16a34a;}
+  .tag.none{background:#f1f5f9;color:#475569;}
+
+  section.notes{margin-top:18px;padding:18px 20px;}
+  .notes h2{font-size:21px;margin:0 0 14px;color:#1e3a8a;font-weight:700;}
+  .notes ul{margin:0;padding-left:20px;font-size:15.5px;color:var(--ink2);}
+  .notes li{margin-bottom:8px;line-height:1.85;}
+  .notes b{color:var(--ink);}
+  .notes code{color:var(--brand);font-weight:700;font-size:14.5px;}
+  .notes ul ul{margin:4px 0 2px;padding-left:18px;list-style:none;}
+  .notes ul ul li{margin-bottom:5px;}
+  footer{text-align:center;color:var(--muted);font-size:12.5px;margin-top:24px;}
+
+  @media (max-width:900px){
+    main{grid-template-columns:1fr;}
+    .plot-box{height:380px;min-height:340px;}
+    input[type=range]{width:150px;}
+    header.top .hwrap{padding:14px 20px}
+  }
+</style>
+</head>
+<body>
+  <header class="top">
+    <div class="hwrap">
+      <h1>幂函数探究教具 · <span style="color:var(--brand)">y = x<sup>α</sup></span></h1>
+      <p>拖动指数观察图像的连续变化；按住鼠标拖动可平移无限画布，滚轮缩放，双击复位；点击任意曲线可在右侧查看其性质；可钉住多条曲线对比。</p>
+    </div>
+  </header>
+
+  <div class="wrap">
+  <main>
+    <!-- 左：图像 -->
+    <section class="card stage">
+      <div class="formula-bar">
+        <div class="formula">y = x<sup class="alpha" id="alphaShow">2</sup></div>
+        <div class="alpha-approx" id="alphaApprox"></div>
+      </div>
+      <div class="plot-box"><canvas id="plot"></canvas></div>
+
+      <div class="controls">
+        <div class="row">
+          <div class="seg">
+            <button id="mFrac" class="on">分数模式 α = p/q</button>
+            <button id="mCont">连续模式</button>
+          </div>
+          <button class="btn" id="pin">📌 钉住当前曲线</button>
+          <button class="btn" id="clearPin">清除对比</button>
+        </div>
+
+        <div class="row" id="fracRow">
+          <label class="sl"><span class="nm">分子 p</span><input type="range" id="pSl" min="-6" max="6" step="1" value="2"><span class="val" id="pVal">2</span></label>
+          <label class="sl"><span class="nm">分母 q</span><input type="range" id="qSl" min="1" max="9" step="1" value="1"><span class="val" id="qVal">1</span></label>
+          <span style="font-size:12.5px;color:var(--muted)">既约后 α = <b id="pqShow">2/1</b></span>
+        </div>
+
+        <div class="row" id="contRow" style="display:none">
+          <label class="sl"><span class="nm">指数 α</span><input type="range" id="aSl" min="-3" max="5" step="0.01" value="2"><span class="val" id="aVal">2.00</span></label>
+          <label class="switch"><input type="checkbox" id="snapBox" checked> 吸附到常见分数（1/3、1/2、2/3、3/2…）</label>
+        </div>
+
+        <div class="row">
+          <label class="sl"><span class="nm">探针 x</span><input type="range" id="xSl" min="-20" max="20" step="0.01" value="1.5"><span class="val" id="xVal">1.50</span></label>
+          <span style="font-size:13px;color:var(--ink2)">对应点：<b id="probeOut" style="color:var(--hl)">—</b></span>
+          <span style="font-size:12.5px;color:var(--muted)">（鼠标在画板上左右移动即可带动探针，取值覆盖整条 x 轴）</span>
+        </div>
+
+        <div class="chips">
+          <span class="lab">常用指数：</span>
+          <button class="chip" data-p="-1" data-q="1">−1</button>
+          <button class="chip" data-p="1" data-q="2">1/2</button>
+          <button class="chip" data-p="1" data-q="1">1</button>
+          <button class="chip" data-p="2" data-q="1">2</button>
+          <button class="chip" data-p="3" data-q="1">3</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 右：性质面板 -->
+    <aside class="card panel">
+      <h2>性质速查 · <span id="panelAlpha">α = 2</span></h2>
+
+      <div class="prop"><div class="k">定义域</div><div class="v" id="pDomain">—</div></div>
+      <div class="prop"><div class="k">值域</div><div class="v" id="pRange">—</div></div>
+      <div class="prop"><div class="k">奇偶性</div><div class="v"><span class="tag" id="pParity">—</span></div></div>
+      <div class="prop"><div class="k">单调性</div><div class="v" id="pMono">—</div></div>
+      <div class="prop"><div class="k">渐近线</div><div class="v" id="pAsym">—</div></div>
+      <div class="prop"><div class="k">必过定点 / 分布</div><div class="v" id="pPoint">—</div></div>
+    </aside>
+  </main>
+
+  <!-- 知识点总结 -->
+  <section class="card notes">
+    <h2>知识点总结</h2>
+    <ul>
+      <li><b>幂函数的概念：</b>一般地，函数 <code>y = x<sup>α</sup></code> 叫做<b>幂函数</b>，其中 <code>x</code> 是自变量，<code>α</code> 是常数。注意与指数函数 <code>y = a<sup>x</sup></code> 区分：幂函数<b>底数是变量、指数是常数</b>；指数函数<b>底数是常数、指数是变量</b>。</li>
+      <li><b>五个重点函数：</b>教材重点研究 <code>y = x</code>、<code>y = x²</code>、<code>y = x³</code>、<code>y = x<sup>1/2</sup></code>、<code>y = x<sup>−1</sup></code> 这五个幂函数（可用上方"常用指数"按钮逐一切换，再点"钉住当前曲线"把它们同时画出来对比）。</li>
+      <li><b>图像与性质（第一象限）：</b>
+        <ul class="pts">
+          <li>① 所有幂函数的图象都过定点 <code>(1, 1)</code>；</li>
+          <li>② 当 α &gt; 0 时，图象过原点，且在 <code>(0, +∞)</code> 上单调<b>递增</b>；</li>
+          <li>③ 当 α &lt; 0 时，图象不过原点，在 <code>(0, +∞)</code> 上单调<b>递减</b>，且向右、向上无限接近 x 轴和 y 轴，但永不相交；</li>
+          <li>④ 图象永远只出现在第一象限（奇、偶函数会延伸到第二或第三象限），不会出现在第四象限。</li>
+        </ul>
+      </li>
+      <li><b>定义域随 α 而不同：</b>α 为正整数时定义域为 <code>R</code>；α 为分数时需保证被开方数有意义（如 y=x<sup>1/2</sup> 要求 x≥0）；α 为负数或 0 时 <code>x ≠ 0</code>。</li>
+      <li><b>奇偶性的判断：</b>先把 α 化为<b>既约分数 p/q</b>（q&gt;0）：若 q 为偶数，定义域不关于原点对称，是非奇非偶函数；若 q 为奇数，则 p 为奇数时是奇函数、p 为偶数时是偶函数。</li>
+    </ul>
+  </section>
+
+  <footer>拖动滑块即可开始探究 · 适合课堂演示与学生自主探究</footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- 工具函数 ----------
+  function gcd(a,b){a=Math.abs(a);b=Math.abs(b);while(b){var t=b;b=a%b;a=t;}return a||1;}
+  function reduce(p,q){var g=gcd(p,q);return [p/g,q/g];}
+  // 把实数 α 近似成既约分数（分母 ≤ Q），用于判定定义域与奇偶性
+  function rationalize(a,Q){
+    var best={p:Math.round(a),q:1,err:Math.abs(a-Math.round(a))};
+    for(var q=1;q<=Q;q++){
+      var p=Math.round(a*q);
+      if(p===0 && a!==0) { /* p=0 仅当 |a| 很小时合理 */ }
+      var e=Math.abs(a-p/q);
+      if(e<best.err-1e-12){best={p:p,q:q,err:e};}
+    }
+    return reduce(best.p,best.q);
+  }
+  // 吸附到常见简单分数（分母 ≤ 4，容差 0.03）
+  function snapFrac(a){
+    for(var q=1;q<=4;q++){
+      var p=Math.round(a*q);
+      if(Math.abs(a-p/q)<0.025) return reduce(p,q);
+    }
+    return null;
+  }
+  function fmt(a){
+    if(Math.abs(a-Math.round(a))<1e-9) return String(Math.round(a));
+    return (Math.round(a*1000)/1000).toString();
+  }
+  function fracText(p,q){ return q===1? String(p) : (p+"/"+q); }
+
+  // ---------- 状态 ----------
+  var S={
+    mode:"fraction",   // fraction | continuous
+    p:2, q:1,          // 用户输入的 α = p/q（原样保留，不强制约分）
+    rp:2, rq:1,        // 既约后的 p/q（用于计算、绘制与性质判定）
+    aCont:2,           // 连续模式下的 α 数值
+    snap:true,
+    probeX:1.5,
+    pinned:[],         // [{p,q,a,color}]
+    selected:null,     // null=主曲线（滑块控制）；数字=对比曲线下标
+    anim:false, animDir:1, animA:2,
+    ox:0, oy:0, zoom:1,   // 无限画布：视图中心的世界坐标与缩放
+    lastT:0
+  };
+  var PALETTE=["#dc2626","#16a34a","#9333ea","#d97706","#475569","#0d9488"];
+
+  // ---------- DOM ----------
+  var cv=document.getElementById("plot"), ctx=cv.getContext("2d");
+  var W=0,H=0,DPR=1;
+  var $=function(id){return document.getElementById(id);};
+
+  // ---------- 数学：求值 / 性质 ----------
+  // 返回 {y:数值} 或 null（无定义）
+  function valueAt(x,p,q,a){
+    if(x>0) return Math.pow(x,a);
+    if(x===0){
+      if(a>0) return 0;
+      return null;             // 0^0 与负指数在 0 处无定义
+    }
+    if(q%2===1){               // q 奇：负数有定义，符号由 p 的奇偶决定
+      var s=(Math.abs(p)%2===0)?1:-1;
+      return s*Math.pow(-x,a);
+    }
+    return null;               // q 偶：负数无定义
+  }
+
+  function props(p,q,a){
+    var qOdd=(q%2===1), pEven=(Math.abs(p)%2===0), pOdd=!pEven;
+    var R={};
+    // 定义域
+    if(a===0) R.domain="{x | x ≠ 0}";
+    else if(qOdd) R.domain=(a>0)?"R":"{x | x ≠ 0}";
+    else R.domain=(a>0)?"[0, +∞)":"(0, +∞)";
+
+    // 值域
+    if(a>0) R.range=(qOdd&&pOdd)?"R":"[0, +∞)";
+    else if(a<0) R.range=(qOdd&&pOdd)?"{y | y ≠ 0}":"(0, +∞)";
+    else R.range="{1}";
+
+    // 奇偶性
+    if(!qOdd){ R.parity="非奇非偶"; R.parityCls="none"; }
+    else if(pEven){ R.parity="偶函数"; R.parityCls="even"; }
+    else { R.parity="奇函数"; R.parityCls="odd"; }
+
+    // 单调性
+    if(a===0){ R.mono="在各区间上为常数函数 y = 1，不增不减"; }
+    else if(a>0){
+      if(!qOdd) R.mono="在 [0, +∞) 上单调递增";
+      else if(pEven) R.mono="在 (−∞, 0] 上单调递减，在 [0, +∞) 上单调递增";
+      else R.mono="在 R 上单调递增";
+    } else {
+      if(!qOdd) R.mono="在 (0, +∞) 上单调递减";
+      else if(pEven) R.mono="在 (−∞, 0) 上单调递增，在 (0, +∞) 上单调递减";
+      else R.mono="在 (−∞, 0) 上单调递减，在 (0, +∞) 上单调递减";
+    }
+
+    // 渐近线
+    R.asym=(a<0)?"x = 0（y 轴）与 y = 0（x 轴）":"无";
+
+    // 定点与分布
+    var pts=["(1, 1)"];
+    if(a>0) pts.push("(0, 0)");
+    var where;
+    if(a===0) where="第一、二象限（直线 y=1 去掉 (0,1)）";
+    else if(!qOdd) where="仅第一象限"+(a>0?"（含原点）":"");
+    else where=(pEven?"第一、二象限":"第一、三象限");
+    R.point=pts.join("　")+"　｜　"+where;
+
+    return R;
+  }
+
+  // ---------- 绘图 ----------
+  function fitCanvas(){
+    var r=cv.parentElement.getBoundingClientRect();
+    DPR=Math.min(window.devicePixelRatio||1,2);
+    W=r.width; H=r.height;
+    cv.width=Math.round(W*DPR); cv.height=Math.round(H*DPR);
+  }
+  function makeGeom(){
+    var scale=(Math.min(W,H)/8)*S.zoom;
+    return {scale:scale, cx:W/2 - S.ox*scale, cy:H/2 + S.oy*scale};
+  }
+  function visRange(g){
+    return {
+      xminv:(0-g.cx)/g.scale,
+      xmaxv:(W-g.cx)/g.scale,
+      yminv:(g.cy-H)/g.scale,
+      ymaxv:g.cy/g.scale
+    };
+  }
+  function X(g,x){return g.cx+x*g.scale;}
+  function Y(g,y){return g.cy-y*g.scale;}
+
+  function niceStep(raw){
+    var pow=Math.pow(10,Math.floor(Math.log(raw)/Math.LN10));
+    var m=raw/pow;
+    m=(m<=1?1:m<=2?2:m<=5?5:10);
+    return pow*m;
+  }
+  function fmtTick(v,step){
+    var dec=Math.max(0,-Math.floor(Math.log(step)/Math.LN10+1e-9));
+    return v.toFixed(dec);
+  }
+  function drawAxes(g){
+    ctx.save();
+    ctx.lineWidth=1;
+    var vr=visRange(g);
+    var step=niceStep(46/g.scale);
+    // 网格
+    ctx.strokeStyle="#f1f5f9";
+    ctx.beginPath();
+    var n0,n1,v;
+    n0=Math.ceil(vr.xminv/step); n1=Math.floor(vr.xmaxv/step);
+    for(var n=n0;n<=n1;n++){ v=n*step; ctx.moveTo(X(g,v),0); ctx.lineTo(X(g,v),H); }
+    n0=Math.ceil(vr.yminv/step); n1=Math.floor(vr.ymaxv/step);
+    for(n=n0;n<=n1;n++){ v=n*step; ctx.moveTo(0,Y(g,v)); ctx.lineTo(W,Y(g,v)); }
+    ctx.stroke();
+    // 轴
+    ctx.strokeStyle="#334155"; ctx.lineWidth=1.4;
+    ctx.beginPath(); ctx.moveTo(0,Y(g,0)); ctx.lineTo(W,Y(g,0)); ctx.moveTo(X(g,0),0); ctx.lineTo(X(g,0),H); ctx.stroke();
+    // 刻度数字
+    ctx.fillStyle="#64748b"; ctx.font='11px "Microsoft YaHei",system-ui,sans-serif';
+    ctx.textAlign="center"; ctx.textBaseline="top";
+    n0=Math.ceil(vr.xminv/step); n1=Math.floor(vr.xmaxv/step);
+    for(n=n0;n<=n1;n++){
+      v=n*step;
+      if(Math.abs(v)<step*1e-6) continue;
+      ctx.fillText(fmtTick(v,step), X(g,v), Math.min(Math.max(Y(g,0)+4,4),H-16));
+    }
+    ctx.textAlign="right"; ctx.textBaseline="middle";
+    n0=Math.ceil(vr.yminv/step); n1=Math.floor(vr.ymaxv/step);
+    for(n=n0;n<=n1;n++){
+      v=n*step;
+      if(Math.abs(v)<step*1e-6) continue;
+      ctx.fillText(fmtTick(v,step), Math.min(Math.max(X(g,0)-5,20),W-6), Y(g,v));
+    }
+    // 轴名
+    ctx.fillStyle="#334155"; ctx.font='12px "Microsoft YaHei",system-ui,sans-serif'; ctx.textAlign="left"; ctx.textBaseline="top";
+    ctx.fillText("x", W-14, Math.min(Math.max(Y(g,0)+5,4),H-18));
+    ctx.fillText("y", Math.min(Math.max(X(g,0)+6,6),W-12), 4);
+    ctx.restore();
+  }
+
+  // ---------- 标签辅助（教材风格 y=xⁿ） ----------
+  function fmt2(v){ return String(Math.round(v*100)/100); }
+  function measurePowLabel(p,q){
+    ctx.font="bold 13px system-ui, sans-serif";
+    var w1=ctx.measureText("y=x").width;
+    ctx.font="bold 10px system-ui, sans-serif";
+    var w2=ctx.measureText(fracText(p,q)).width;
+    return {w:w1+w2+1,h:17,w1:w1};
+  }
+  // 在 (x,y)（baseline）绘制 y=x^sup，上标形式
+  function drawPowLabel(x,y,color,p,q,alpha){
+    ctx.save();
+    ctx.globalAlpha=Math.min(1,(alpha===undefined?1:alpha)+0.15);
+    ctx.textAlign="left"; ctx.textBaseline="alphabetic"; ctx.lineJoin="round";
+    ctx.lineWidth=3.5; ctx.strokeStyle="rgba(255,255,255,.92)";
+    ctx.font="bold 13px system-ui, sans-serif";
+    var w1=ctx.measureText("y=x").width;
+    ctx.strokeText("y=x",x,y);
+    ctx.fillStyle=color; ctx.fillText("y=x",x,y);
+    ctx.font="bold 10px system-ui, sans-serif";
+    ctx.strokeText(fracText(p,q),x+w1+1,y-7);
+    ctx.fillStyle=color; ctx.fillText(fracText(p,q),x+w1+1,y-7);
+    ctx.restore();
+  }
+  function probeLabelText(pv){ return "("+fmt2(S.probeX)+", "+fmt2(pv)+")"; }
+  function probeLabelPos(g,pv){
+    return {
+      x:Math.min(Math.max(X(g,S.probeX)+9,6),W-110),
+      y:Math.min(Math.max(Y(g,pv)-9,18),H-6)
+    };
+  }
+
+  // 画一条幂函数曲线（placed：已放置标签矩形数组，用于防重叠）
+  function drawCurve(g,placed,p,q,a,color,lw,alpha,showLabel,isMain){
+    ctx.save();
+    ctx.globalAlpha=alpha===undefined?1:alpha;
+    if(isMain){ ctx.shadowColor=color; ctx.shadowBlur=7; }
+    ctx.strokeStyle=color; ctx.lineWidth=lw; ctx.lineJoin="round"; ctx.lineCap="round";
+    var vr=visRange(g);
+    var xMaxR=Math.max(vr.xmaxv,0.5), xMaxL=Math.max(-vr.xminv,0.5);
+    var yCap=Math.max(Math.abs(vr.yminv),Math.abs(vr.ymaxv))*1.6;
+    var N=800;
+    var branches=[];
+    if(q%2===1) branches.push(-1);
+    branches.push(1);
+
+    branches.forEach(function(s){
+      var edge=(s>0)?xMaxR:xMaxL;
+      var started=false;
+      ctx.beginPath();
+      for(var k=0;k<=N;k++){
+        var t=k/N;
+        var x=s*edge*Math.pow(t,2);
+        var y=valueAt(x,p,q,a);
+        if(y===null||!isFinite(y)||Math.abs(y)>yCap){ started=false; continue; }
+        var px=X(g,x), py=Y(g,y);
+        if(!started){ ctx.moveTo(px,py); started=true; }
+        else { ctx.lineTo(px,py); }
+      }
+      ctx.stroke();
+    });
+    ctx.shadowBlur=0;
+
+    // 端点标记
+    if(a>0){ // 原点实心
+      ctx.fillStyle=color; ctx.beginPath(); ctx.arc(X(g,0),Y(g,0),3.6,0,Math.PI*2); ctx.fill();
+    } else if(a===0){ // (0,1) 空心
+      ctx.strokeStyle=color; ctx.lineWidth=lw;
+      ctx.beginPath(); ctx.arc(X(g,0),Y(g,1),4,0,Math.PI*2); ctx.stroke();
+    }
+    // 定点 (1,1)
+    ctx.fillStyle=color; ctx.beginPath(); ctx.arc(X(g,1),Y(g,1),3.6,0,Math.PI*2); ctx.fill();
+    if(isMain){
+      ctx.globalAlpha=Math.min(1,(alpha===undefined?1:alpha)+0.1);
+      ctx.fillStyle="#1e3a8a"; ctx.font='12px "Microsoft YaHei",system-ui,sans-serif';
+      ctx.textAlign="left"; ctx.textBaseline="bottom";
+      ctx.fillText("(1,1)", X(g,1)+7, Y(g,1)-6);
+    }
+    // 曲线旁表达式标签：多候选锚点 + 垂直退让 + 严格防重叠 + 画布内约束
+    if(showLabel){
+      var size=measurePowLabel(p,q);
+      var cands=[];
+      var xMaxR2=Math.max(vr.xmaxv,0.5), xMaxL2=Math.max(-vr.xminv,0.5);
+      if(a<0){
+        [0.85,0.65,0.45,0.28].forEach(function(f){ cands.push(f*xMaxR2); });
+        if(q%2===1){ [-0.85,-0.6].forEach(function(f){ cands.push(f*xMaxL2); }); }
+      } else if(a===0){
+        [0.75,0.45,0.9].forEach(function(f){ cands.push(f*xMaxR2); });
+      } else {
+        var yT=Math.max(0.5,Math.min(Math.abs(vr.ymaxv),Math.abs(vr.yminv)));
+        [0.8,0.6,0.4,0.22].forEach(function(f){ cands.push(Math.pow(yT*f,1/a)); });
+        cands.push(0.9*xMaxR2);
+      }
+      var dys=[0,-18,18,-36,36,-54,54];
+      var best=null, bestScore=Infinity;
+      for(var ci=0;ci<cands.length;ci++){
+        var lx=cands[ci];
+        if(!isFinite(lx)) continue;
+        var ly=Math.pow(lx,a);
+        if(!isFinite(ly)) continue;
+        var ax=X(g,lx)+6, ay=Y(g,ly)-4;
+        for(var di=0;di<dys.length;di++){
+          var rx=Math.min(Math.max(ax, 6), Math.max(6,W-size.w-6));
+          var ry=Math.min(Math.max(ay+dys[di], size.h+4), H-6);
+          var overlap=0;
+          for(var ri=0;ri<placed.length;ri++){
+            var r2=placed[ri];
+            if(rx<r2.x+r2.w && rx+size.w>r2.x && ry-size.h<r2.y && ry>r2.y-r2.h) overlap++;
+          }
+          var score=overlap*10000+ci*20+di;
+          if(score<bestScore){ bestScore=score; best={x:rx,y:ry}; }
+        }
+        if(bestScore<10000) break;   // 已找到无重叠位置
+      }
+      if(best){
+        placed.push({x:best.x,y:best.y,w:size.w,h:size.h});
+        drawPowLabel(best.x,best.y,color,p,q,alpha);
+      }
+    }
+    ctx.restore();
+  }
+
+  function drawProbe(g,p,q,a,color){
+    var x=S.probeX;
+    var y=valueAt(x,p,q,a);
+    ctx.save();
+    ctx.setLineDash([4,4]); ctx.strokeStyle=color; ctx.lineWidth=1.2; ctx.globalAlpha=.75;
+    ctx.beginPath(); ctx.moveTo(X(g,x),0); ctx.lineTo(X(g,x),H); ctx.stroke();
+    ctx.setLineDash([]);
+    var vr=visRange(g);
+    var yCap=Math.max(Math.abs(vr.yminv),Math.abs(vr.ymaxv))*1.6;
+    if(y!==null && isFinite(y) && Math.abs(y)<=yCap){
+      var px=X(g,x), py=Y(g,y);
+      ctx.globalAlpha=1;
+      ctx.fillStyle=color; ctx.beginPath(); ctx.arc(px,py,5,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle="#fff"; ctx.lineWidth=1.6; ctx.stroke();
+      ctx.font="12.5px system-ui, sans-serif"; ctx.textAlign="left"; ctx.textBaseline="bottom";
+      ctx.lineWidth=3; ctx.strokeStyle="rgba(255,255,255,.92)";
+      var pos=probeLabelPos(g,y);
+      var label=probeLabelText(y);
+      ctx.strokeText(label,pos.x,pos.y);
+      ctx.fillStyle=color; ctx.fillText(label,pos.x,pos.y);
+    }
+    ctx.restore();
+  }
+
+  function draw(){
+    if(!W||!H) fitCanvas();
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+    ctx.clearRect(0,0,W,H);
+    var g=makeGeom();
+    drawAxes(g);
+    var vr=visRange(g);
+
+    // 先注册固定文字的占位矩形：(1,1) 提示 + 探针坐标，曲线标签将避让它们
+    var placed=[];
+    placed.push({x:X(g,1)+7, y:Y(g,1)-6, w:38, h:14});
+    var view0=(S.selected!==null&&S.pinned[S.selected])?S.pinned[S.selected]:null;
+    var vp0=view0?view0.p:S.rp, vq0=view0?view0.q:S.rq, va0=vp0/vq0;
+    var pv=valueAt(S.probeX,vp0,vq0,va0);
+    var yCap0=Math.max(Math.abs(vr.yminv),Math.abs(vr.ymaxv))*1.6;
+    if(pv!==null&&isFinite(pv)&&Math.abs(pv)<=yCap0){
+      var ppos=probeLabelPos(g,pv);
+      ctx.font="12.5px system-ui, sans-serif";
+      placed.push({x:ppos.x, y:ppos.y, w:ctx.measureText(probeLabelText(pv)).width, h:14});
+    }
+
+    // 对比曲线（placed 用于标签防重叠）；若某条与主曲线参数相同，则由它兼任主曲线，避免重复显示
+    var mainSel0=(S.selected===null);
+    var dupIdx=-1;
+    if(mainSel0){
+      for(var di2=0;di2<S.pinned.length;di2++){
+        if(S.pinned[di2].p===S.rp&&S.pinned[di2].q===S.rq){ dupIdx=di2; break; }
+      }
+    }
+    S.pinned.forEach(function(it,idx){
+      var isMainDup=(idx===dupIdx);
+      var sel=isMainDup&&mainSel0 ? true : (S.selected===idx);
+      var dim=(S.selected!==null&&!sel);
+      drawCurve(g,placed,it.p,it.q,it.a,it.color,sel?3.2:2.3,dim?0.28:0.88,!sel&&!isMainDup,sel&&isMainDup);
+    });
+
+    var a=S.rp/S.rq;
+    if(dupIdx<0){
+      var mainSel=(S.selected===null);
+      drawCurve(g,placed,S.rp,S.rq,a,"#2563eb",mainSel?2.8:2.2,mainSel?1:0.32,true,mainSel);
+    }
+
+    // 探针跟随当前查看的曲线
+    var view=(S.selected!==null&&S.pinned[S.selected])?S.pinned[S.selected]:null;
+    if(view) drawProbe(g,view.p,view.q,view.a,view.color);
+    else drawProbe(g,S.rp,S.rq,a,"#dc2626");
+  }
+
+  // ---------- 面板更新 ----------
+  function updatePanel(){
+    var view=(S.selected!==null&&S.pinned[S.selected])?S.pinned[S.selected]:null;
+    var vp=view?view.p:S.rp, vq=view?view.q:S.rq, va=vp/vq;
+    var a=S.rp/S.rq; // 主曲线（滑块控制，已约分）
+    var R=props(vp,vq,va);
+    $("alphaShow").textContent=fracText(S.p,S.q);
+    $("panelAlpha").textContent="α = "+fracText(vp,vq)+(Math.abs(va-Math.round(va*1000)/1000)<1e-9?"":" ≈ "+(Math.round(va*1000)/1000));
+    $("pqShow").textContent=fracText(S.rp,S.rq);
+    if(S.mode==="continuous"){
+      var exact=(Math.abs(a-S.aCont)<1e-9);
+      $("alphaApprox").textContent= exact? ("α = "+fmt(a)) : ("数值 α = "+fmt(S.aCont)+"，按最接近的既约分数 "+fracText(S.rp,S.rq)+" 判定定义域与奇偶性");
+    } else {
+      $("alphaApprox").textContent="α = "+fmt(a);
+    }
+    $("pDomain").textContent=R.domain;
+    $("pRange").textContent=R.range;
+    var par=$("pParity"); par.textContent=R.parity; par.className="tag "+R.parityCls;
+    $("pMono").textContent=R.mono;
+    $("pAsym").textContent=R.asym;
+    $("pPoint").textContent=R.point;
+
+    // 探针输出（跟随查看的曲线）
+    $("xVal").textContent=S.probeX.toFixed(2);
+    $("probeOut").textContent=probeText();
+
+    // 芯片高亮
+    var chips=document.querySelectorAll(".chip");
+    for(var i=0;i<chips.length;i++){
+      var cp=+chips[i].dataset.p, cq=+chips[i].dataset.q, rr=reduce(cp,cq);
+      chips[i].classList.toggle("on", rr[0]===S.rp && rr[1]===S.rq);
+    }
+  }
+
+  function refresh(){ updatePanel(); draw(); }
+
+  // ---------- 交互 ----------
+  function setPQ(p,q){
+    // 立即约分并回写滑块（q 会随约分结果变化，与最初版本一致）
+    var r=reduce(p,q); S.p=r[0]; S.q=r[1]; S.rp=r[0]; S.rq=r[1];
+    S.selected=null;
+    $("pSl").value=Math.max(-6,Math.min(6,S.p)); $("qSl").value=Math.min(9,Math.max(1,S.q));
+    $("pVal").textContent=S.p; $("qVal").textContent=S.q;
+    refresh();
+  }
+  function setMode(m){
+    S.mode=m;
+    $("mFrac").classList.toggle("on",m==="fraction");
+    $("mCont").classList.toggle("on",m==="continuous");
+    $("fracRow").style.display=(m==="fraction")?"":"none";
+    $("contRow").style.display=(m==="continuous")?"":"none";
+    if(m==="continuous"){
+      S.aCont=S.rp/S.rq; $("aSl").value=S.aCont; $("aVal").textContent=S.aCont.toFixed(2);
+    }
+  }
+  function setFromContinuous(a){
+    S.aCont=a;
+    var r=null;
+    if(S.snap) r=snapFrac(a);
+    if(!r) r=rationalize(a,12);
+    S.p=r[0]; S.q=r[1]; S.rp=r[0]; S.rq=r[1];
+    S.selected=null;
+    $("pSl").value=Math.max(-6,Math.min(6,S.p)); $("qSl").value=Math.min(9,S.q);
+    $("pVal").textContent=S.p; $("qVal").textContent=S.q;
+    refresh();
+  }
+
+  $("mFrac").onclick=function(){setMode("fraction");};
+  $("mCont").onclick=function(){setMode("continuous");};
+  $("pSl").oninput=function(){ setPQ(+this.value, +$("qSl").value); };
+  $("qSl").oninput=function(){ setPQ(+$("pSl").value,+this.value); };
+  $("aSl").oninput=function(){ $("aVal").textContent=(+this.value).toFixed(2); setFromContinuous(+this.value); };
+  $("snapBox").onchange=function(){ S.snap=this.checked; setFromContinuous(S.aCont); };
+  // 探针：取值覆盖整条 x 轴；滑块与画布鼠标移动都会带动它
+  function probeValue(){
+    var view=(S.selected!==null&&S.pinned[S.selected])?S.pinned[S.selected]:null;
+    var vp=view?view.p:S.rp, vq=view?view.q:S.rq, va=vp/vq;
+    return valueAt(S.probeX,vp,vq,va);
+  }
+  function probeText(){
+    var y=probeValue();
+    var g=makeGeom(), vr=visRange(g);
+    var off=(S.probeX<vr.xminv||S.probeX>vr.xmaxv)?"（当前视野外，拖动画布查看）":"";
+    return (y===null||!isFinite(y))
+      ? "x = "+S.probeX.toFixed(2)+" 处无定义"+off
+      : ("("+S.probeX.toFixed(2)+", "+(Math.round(y*1000)/1000)+")"+off);
+  }
+  function setProbeX(x){
+    S.probeX=x;
+    $("xSl").value=Math.max(-20,Math.min(20,x));
+    $("xVal").textContent=S.probeX.toFixed(2);
+    $("probeOut").textContent=probeText();
+    draw();
+  }
+  $("xSl").oninput=function(){ setProbeX(+this.value); };
+
+  $("pin").onclick=function(){
+    if(S.pinned.length>=6){ alert("最多同时对比 6 条曲线，请先清除。"); return; }
+    var exists=S.pinned.some(function(it){return it.p===S.rp&&it.q===S.rq;});
+    if(exists) return;
+    S.pinned.push({p:S.rp,q:S.rq,a:S.rp/S.rq,color:PALETTE[S.pinned.length%PALETTE.length]});
+    refresh();
+  };
+  $("clearPin").onclick=function(){ S.pinned=[]; S.selected=null; refresh(); };
+
+  // ---------- 无限画布：拖拽平移 / 滚轮缩放 / 点击选曲线 ----------
+  function pickCurve(mx,my){
+    var g=makeGeom(), vr=visRange(g);
+    var cands=[{idx:null,p:S.rp,q:S.rq,a:S.rp/S.rq}];
+    S.pinned.forEach(function(it,i){ cands.push({idx:i,p:it.p,q:it.q,a:it.a}); });
+    var best=null, bd=13;
+    cands.forEach(function(c){
+      var brs=(c.q%2===1)?[-1,1]:[1];
+      brs.forEach(function(s){
+        var edge=(s>0)?Math.max(vr.xmaxv,0.5):Math.max(-vr.xminv,0.5);
+        for(var k=0;k<=300;k++){
+          var t=k/300, x=s*edge*Math.pow(t,2);
+          var y=valueAt(x,c.p,c.q,c.a);
+          if(y===null||!isFinite(y)) continue;
+          var px=X(g,x), py=Y(g,y);
+          if(py<-24||py>H+24) continue;
+          var d=Math.hypot(px-mx,py-my);
+          if(d<bd){ bd=d; best=c; }
+        }
+      });
+    });
+    return best;
+  }
+
+  function evtPos(e){ var r=cv.getBoundingClientRect(); return {x:e.clientX-r.left, y:e.clientY-r.top}; }
+  var drag=null, lastPan=0;
+
+  cv.addEventListener("mousedown",function(e){
+    var p=evtPos(e);
+    drag={sx:p.x, sy:p.y, ox:S.ox, oy:S.oy, moved:false};
+    cv.style.cursor="grabbing";
+    e.preventDefault();
+  });
+  window.addEventListener("mousemove",function(e){
+    if(drag){
+      var p=evtPos(e);
+      var dx=p.x-drag.sx, dy=p.y-drag.sy;
+      if(Math.abs(dx)+Math.abs(dy)>4) drag.moved=true;
+      if(drag.moved){
+        var g=makeGeom();
+        S.ox=drag.ox-dx/g.scale;
+        S.oy=drag.oy+dy/g.scale;
+        draw();
+      }
+      return;
+    }
+    if(e.target===cv){
+      var p2=evtPos(e);
+      cv.style.cursor=pickCurve(p2.x,p2.y)?"pointer":"grab";
+      // 鼠标在画板上横向移动 → 探针跟随（取值覆盖整条 x 轴）
+      var g2=makeGeom();
+      setProbeX((p2.x-g2.cx)/g2.scale);
+    }
+  });
+  window.addEventListener("mouseup",function(){
+    if(drag){ if(drag.moved) lastPan=Date.now(); cv.style.cursor="grab"; drag=null; }
+  });
+  cv.addEventListener("wheel",function(e){
+    e.preventDefault();
+    var p=evtPos(e);
+    var g=makeGeom();
+    var wx=(p.x-g.cx)/g.scale, wy=(g.cy-p.y)/g.scale;
+    var f=(e.deltaY<0)?1.12:1/1.12;
+    var nz=Math.min(6,Math.max(0.25,S.zoom*f));
+    var ns=(Math.min(W,H)/8)*nz;
+    S.ox=wx+(W/2-p.x)/ns;
+    S.oy=wy-(H/2-p.y)/ns;
+    S.zoom=nz;
+    draw();
+  },{passive:false});
+  cv.addEventListener("dblclick",function(){ S.ox=0; S.oy=0; S.zoom=1; draw(); });
+  cv.addEventListener("click",function(e){
+    if(Date.now()-lastPan<200) return;   // 刚拖拽过，不当作点击
+    var p=evtPos(e);
+    var hit=pickCurve(p.x,p.y);
+    S.selected=hit?hit.idx:null;
+    refresh();
+  });
+
+  // 常用指数芯片
+  var chips=document.querySelectorAll(".chip");
+  for(var i=0;i<chips.length;i++){
+    chips[i].onclick=function(){
+      setPQ(+this.dataset.p,+this.dataset.q);
+      if(S.mode==="continuous"){ S.aCont=S.rp/S.rq; $("aSl").value=S.aCont; $("aVal").textContent=S.aCont.toFixed(2); }
+    };
+  }
+
+  // ---------- 初始化 ----------
+  window.addEventListener("resize",function(){ fitCanvas(); draw(); });
+  fitCanvas();
+  refresh();
+})();
+</script>
+</body>
+</html>

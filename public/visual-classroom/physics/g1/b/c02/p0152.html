@@ -1,0 +1,1891 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>模型36 · 拱桥与凹桥压力传感演示</title>
+<style>
+:root{
+  --bg:#f1f5f9; --card:#ffffff; --line:#cbd5e1; --ink:#0f172a; --ink2:#475569; --ink3:#64748b;
+  --blue:#2563eb; --red:#dc2626; --green:#16a34a; --purple:#9333ea; --orange:#ea8a0b; --gray:#6b7280;
+  --shadow:0 1px 2px rgba(15,23,42,.06),0 4px 14px rgba(15,23,42,.08);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);
+  font-family:"PingFang SC","Microsoft YaHei","Source Han Sans SC","Noto Sans CJK SC",system-ui,-apple-system,"Segoe UI",sans-serif;
+  font-size:14px;line-height:1.6}
+header{position:sticky;top:0;z-index:60;background:linear-gradient(90deg,#0f172a,#1e3a8a 60%,#0f766e);color:#fff;
+  padding:8px 14px;display:flex;align-items:center;gap:12px;flex-wrap:wrap;box-shadow:0 2px 10px rgba(15,23,42,.25)}
+header h1{font-size:16px;margin:0;font-weight:700;letter-spacing:.5px}
+header .sub{font-size:12px;opacity:.85}
+header .spacer{flex:1}
+.hbtn{background:rgba(255,255,255,.14);color:#fff;border:1px solid rgba(255,255,255,.3);border-radius:6px;padding:4px 10px;cursor:pointer;font-size:12px}
+.hbtn:hover{background:rgba(255,255,255,.26)}
+.hbtn[aria-pressed="true"]{background:#fff;color:#0f172a;border-color:#fff;font-weight:700}
+.app{display:grid;grid-template-columns:minmax(0,1fr) 330px;gap:10px;padding:10px;align-items:start}
+.stage-wrap{display:flex;flex-direction:column;gap:8px;min-width:0}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow)}
+.panel h3{margin:0;padding:8px 12px;font-size:13px;border-bottom:1px solid var(--line);background:#f8fafc;border-radius:10px 10px 0 0;display:flex;align-items:center;gap:8px}
+.panel h3 .tag{font-size:11px;font-weight:500;color:var(--ink3)}
+.panel .body{padding:10px 12px}
+.stage{position:relative;background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);overflow:hidden}
+#cvs{display:block;width:100%;height:460px;touch-action:none}
+@media (max-width:1100px){#cvs{height:380px}}
+.stagebar{position:absolute;left:8px;top:8px;display:flex;gap:6px;flex-wrap:wrap;z-index:3}
+.stagebar button{background:rgba(255,255,255,.92);border:1px solid var(--line);border-radius:6px;padding:3px 9px;font-size:12px;cursor:pointer;color:var(--ink)}
+.stagebar button[aria-pressed="true"]{background:#0f172a;color:#fff;border-color:#0f172a}
+.toast{position:absolute;left:50%;transform:translateX(-50%);bottom:10px;background:rgba(15,23,42,.9);color:#fff;
+  padding:6px 14px;border-radius:20px;font-size:12px;opacity:0;pointer-events:none;transition:opacity .25s;z-index:5;max-width:92%;text-align:center}
+.toast.show{opacity:1}
+.charts{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:10px}
+@media (max-width:900px){.charts{grid-template-columns:1fr}}
+.chartbox{background:#fff;border:1px solid var(--line);border-radius:10px;box-shadow:var(--shadow);padding:8px}
+.chartbox .ct{font-size:12px;font-weight:700;color:var(--ink2);display:flex;justify-content:space-between;align-items:center;gap:6px;margin-bottom:4px}
+.chartbox .ct span:last-child{font-weight:400;color:var(--ink3);font-size:11px;text-align:right}
+.chartbox canvas{width:100%;height:190px;display:block}
+.chips{display:flex;gap:5px;flex-wrap:wrap;margin-top:5px}
+.chip{border:1px solid var(--line);background:#f8fafc;border-radius:20px;padding:1px 9px;font-size:11px;cursor:pointer;color:var(--ink2)}
+.chip:hover{background:#e2e8f0;color:var(--ink)}
+.row{display:flex;align-items:center;gap:8px;margin:6px 0;flex-wrap:wrap}
+.row label{font-size:12px;color:var(--ink2);min-width:60px}
+input[type=range]{flex:1;min-width:90px;accent-color:#1e3a8a}
+.val{font-variant-numeric:tabular-nums;font-weight:700;font-size:12px;min-width:64px;text-align:right;color:#0f172a}
+button.mini{border:1px solid var(--line);background:#f8fafc;border-radius:6px;padding:3px 8px;font-size:12px;cursor:pointer}
+button.mini:hover{background:#e2e8f0}
+button.mini[aria-pressed="true"]{background:#1e3a8a;color:#fff;border-color:#1e3a8a}
+.presets{display:grid;grid-template-columns:1fr 1fr;gap:6px}
+.presets button{border:1px solid var(--line);background:#f8fafc;border-radius:7px;padding:6px 4px;font-size:12px;cursor:pointer;line-height:1.3}
+.presets button:hover{background:#e0e7ff;border-color:#6366f1}
+.presets button b{display:block;font-size:12px}
+.presets button span{font-size:10px;color:var(--ink3)}
+.toggles{display:grid;grid-template-columns:1fr 1fr;gap:2px 8px}
+.toggles label{display:flex;align-items:center;gap:5px;font-size:12px;color:var(--ink2);cursor:pointer}
+.readout{display:grid;grid-template-columns:1fr 1fr;gap:4px 8px;font-size:12px}
+.ro{display:flex;justify-content:space-between;border-bottom:1px dotted #e2e8f0;padding:2px 0}
+.ro span{color:var(--ink3)}
+.ro b{font-variant-numeric:tabular-nums}
+.big{display:flex;gap:8px;margin-bottom:6px}
+.big div{flex:1;border:1px solid var(--line);border-radius:8px;padding:5px 4px;text-align:center;background:#f8fafc}
+.big div small{display:block;font-size:10px;color:var(--ink3)}
+.big div b{font-size:15px;font-variant-numeric:tabular-nums}
+.lower{display:grid;grid-template-columns:repeat(3,minmax(0,1fr));gap:10px;padding:0 10px 10px}
+@media (max-width:1000px){.lower{grid-template-columns:1fr}}
+table{width:100%;border-collapse:collapse;font-size:11px}
+th,td{border-bottom:1px solid #e2e8f0;padding:3px 4px;text-align:center;font-variant-numeric:tabular-nums;white-space:nowrap}
+th{background:#f8fafc;color:var(--ink3);font-weight:600}
+.scroll{max-height:230px;overflow:auto}
+.q{border:1px solid var(--line);border-radius:8px;padding:7px 9px;margin-bottom:7px;background:#f8fafc}
+.q .qt{font-weight:700;font-size:12.5px;margin-bottom:4px}
+.q .opts{display:grid;grid-template-columns:1fr 1fr;gap:4px}
+.q .opts button{border:1px solid var(--line);background:#fff;border-radius:6px;padding:3px 6px;font-size:11.5px;cursor:pointer;text-align:left}
+.q .opts button:hover{background:#eef2ff}
+.q .opts button.ok{background:#dcfce7;border-color:#16a34a;color:#14532d}
+.q .opts button.no{background:#fee2e2;border-color:#dc2626;color:#7f1d1d}
+.q .fb{font-size:11.5px;margin-top:5px;color:var(--ink2)}
+.q .fb a{color:#1d4ed8;cursor:pointer;text-decoration:underline}
+.stepper{display:flex;gap:5px;margin-bottom:6px;flex-wrap:wrap}
+.stepper button{width:26px;height:26px;border-radius:50%;border:1px solid var(--line);background:#fff;font-size:12px;cursor:pointer}
+.stepper button[aria-current="true"]{background:#1e3a8a;color:#fff;border-color:#1e3a8a;font-weight:700}
+#drawer{position:fixed;top:0;right:0;height:100%;width:380px;max-width:92vw;background:#fff;border-left:1px solid var(--line);
+  box-shadow:-6px 0 24px rgba(15,23,42,.16);transform:translateX(100%);transition:transform .25s;z-index:80;display:flex;flex-direction:column}
+#drawer.open{transform:none}
+#drawer .dhead{background:#0f172a;color:#fff;padding:8px 12px;display:flex;align-items:center;gap:8px}
+#drawer .dbody{flex:1;overflow:auto;padding:8px 10px}
+.tabs{display:flex;gap:4px;flex-wrap:wrap;padding:8px 10px;border-bottom:1px solid var(--line);background:#f8fafc}
+.tabs button{border:1px solid var(--line);background:#fff;border-radius:20px;padding:2px 9px;font-size:11.5px;cursor:pointer}
+.tabs button[aria-pressed="true"]{background:#1e3a8a;color:#fff;border-color:#1e3a8a}
+.citem{display:block;width:100%;text-align:left;border:1px solid var(--line);border-radius:8px;background:#fff;padding:6px 9px;margin-bottom:6px;cursor:pointer}
+.citem:hover{border-color:#6366f1;background:#f5f7ff}
+.citem b{font-size:12.5px;display:block}
+.citem span{font-size:11px;color:var(--ink3);display:block}
+.citem .cat{float:right;font-size:10px;background:#e2e8f0;border-radius:10px;padding:0 6px;color:var(--ink2)}
+input[type=search]{width:100%;padding:5px 8px;border:1px solid var(--line);border-radius:6px;font-size:12px}
+#cardWin{position:fixed;right:16px;bottom:16px;width:410px;max-width:94vw;max-height:80vh;overflow:auto;background:#fff;
+  border:1px solid #94a3b8;border-radius:12px;box-shadow:0 12px 40px rgba(15,23,42,.28);z-index:90;display:none}
+#cardWin.show{display:block}
+#cardWin .cw-h{cursor:move;background:linear-gradient(90deg,#1e3a8a,#0f766e);color:#fff;padding:7px 10px;display:flex;align-items:center;gap:6px;
+  border-radius:12px 12px 0 0;position:sticky;top:0;z-index:2}
+#cardWin .cw-h b{font-size:13px;flex:1}
+#cardWin .cw-h button{background:rgba(255,255,255,.18);border:1px solid rgba(255,255,255,.35);color:#fff;border-radius:5px;padding:1px 7px;font-size:11px;cursor:pointer}
+#cardWin .cw-h button:hover{background:rgba(255,255,255,.34)}
+#cardWin .cw-b{padding:10px 12px}
+.kv{font-size:12px;color:var(--ink2);margin:5px 0}
+.fml{background:#f1f5f9;border-left:3px solid #1e3a8a;padding:6px 9px;border-radius:0 6px 6px 0;font-size:13px;
+  font-family:"Cambria Math","Times New Roman",serif;margin:6px 0;overflow-x:auto}
+.mini{display:block;margin:6px auto;background:#fbfdff;border:1px solid #e2e8f0;border-radius:8px}
+.how{background:#ecfdf5;border-left:3px solid #16a34a;padding:6px 9px;border-radius:0 6px 6px 0;font-size:12px}
+.wrong{background:#fef2f2;border-left:3px solid #dc2626;padding:6px 9px;border-radius:0 6px 6px 0;font-size:12px}
+.mem{background:#fffbeb;border-left:3px solid #f59e0b;padding:5px 9px;border-radius:0 6px 6px 0;font-size:12px}
+details.safe{border:1px solid var(--line);border-radius:8px;padding:6px 9px;font-size:12px;background:#fff7ed}
+.foot{padding:6px 12px 18px;color:var(--ink3);font-size:11.5px;text-align:center}
+.legendline{display:flex;gap:10px;flex-wrap:wrap;font-size:11px;color:var(--ink2);padding:4px 8px;border-top:1px solid var(--line);background:#f8fafc}
+.legendline i{display:inline-block;width:14px;height:3px;border-radius:2px;vertical-align:middle;margin-right:3px}
+@media (max-width:1000px){.app{grid-template-columns:1fr}}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>模型36 · 拱桥与凹桥压力传感演示</h1>
+  <span class="sub">竖直平面圆周运动 × 超重与失重 × 临界脱离</span>
+  <span class="spacer"></span>
+  <button class="hbtn" id="btnCards" aria-haspopup="dialog">📚 知识卡片库</button>
+  <button class="hbtn" id="btnTeachOn" aria-pressed="false">🎓 教学引导</button>
+  <button class="hbtn" id="btnHelp">❓ 说明</button>
+</header>
+
+<div class="app">
+  <div class="stage-wrap">
+    <div class="stage">
+      <div class="stagebar" role="group" aria-label="视图切换">
+        <button data-view="full" aria-pressed="true">全景（正视）</button>
+        <button data-view="arch" aria-pressed="false">拱顶特写</button>
+        <button data-view="dip" aria-pressed="false">凹底特写</button>
+        <button data-view="sensor" aria-pressed="false">传感器特写</button>
+      </div>
+      <canvas id="cvs" aria-label="拱桥与凹桥压力传感演示主画面：小车沿起伏轨道运动，显示重力、支持力、加速度矢量与传感器读数"></canvas>
+      <div class="toast" id="toast" role="status" aria-live="polite"></div>
+      <div class="legendline">
+        <span><i style="background:#6b7280"></i>重力 mg</span>
+        <span><i style="background:#ea8a0b"></i>支持力 N</span>
+        <span><i style="background:#16a34a"></i>法向加速度 aₙ</span>
+        <span><i style="background:#9333ea"></i>切向加速度 aₜ</span>
+        <span><i style="background:#2563eb"></i>速度 v</span>
+        <span><i style="background:#dc2626"></i>超重区 N&gt;mg</span>
+        <span><i style="background:#2563eb"></i>失重区 N&lt;mg</span>
+      </div>
+    </div>
+
+    <div class="charts">
+      <div class="chartbox">
+        <div class="ct"><span>① N–t 实时曲线（压力随时间）</span><span id="ntState"></span></div>
+        <canvas id="chNt" aria-label="压力随时间变化曲线，mg 参考线上方为超重区染红，下方为失重区染蓝"></canvas>
+        <div class="chips">
+          <span class="chip" data-card="c12">拱顶失重/凹底超重</span>
+          <span class="chip" data-card="c02">读数=视重</span>
+          <span class="chip" data-card="c04">完全失重</span>
+        </div>
+      </div>
+      <div class="chartbox">
+        <div class="ct"><span>② N–v² 线性化图（零点法）</span><span id="nv2fit"></span></div>
+        <canvas id="chNv2" aria-label="支持力对速度平方的直线图，拱顶斜率为负、凹底斜率为正，零点对应临界速度"></canvas>
+        <div class="chips">
+          <span class="chip" data-card="c18">N–v² 零点法</span>
+          <span class="chip" data-card="c09">v₀=√(gr)</span>
+          <span class="chip" data-card="c14">v₀ 与质量无关</span>
+        </div>
+      </div>
+      <div class="chartbox">
+        <div class="ct"><span>③ N–位置（沿轨道弧长）</span><span id="nsInfo"></span></div>
+        <canvas id="chNs" aria-label="支持力沿轨道弧长的连续变化曲线"></canvas>
+        <div class="chips">
+          <span class="chip" data-card="c08">一般位置公式</span>
+          <span class="chip" data-card="c22">非匀速圆周</span>
+        </div>
+      </div>
+      <div class="chartbox">
+        <div class="ct"><span>④ v₀–m 图（临界速度与质量）</span><span id="vmInfo"></span></div>
+        <canvas id="chVm" aria-label="临界速度随质量变化图，为水平直线，说明临界速度与质量无关"></canvas>
+        <div class="chips">
+          <span class="chip" data-card="c14">为什么与 m 无关</span>
+          <span class="chip" data-card="c28">易错：v₀ 与质量有关？</span>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <div style="display:flex;flex-direction:column;gap:10px;min-width:0">
+    <div class="panel">
+      <h3>实时读数 <span class="tag">传感器 + 运动学</span></h3>
+      <div class="body">
+        <div class="big">
+          <div><small>拱顶压力 N顶</small><b id="rdNtop" style="color:#2563eb">—</b></div>
+          <div><small>凹底压力 N底</small><b id="rdNbot" style="color:#dc2626">—</b></div>
+          <div><small>重力 mg</small><b id="rdMg">—</b></div>
+        </div>
+        <div class="big">
+          <div><small>实时压力 N</small><b id="rdN">—</b></div>
+          <div><small>状态</small><b id="rdState">—</b></div>
+          <div><small>a<sub>y</sub></small><b id="rdAy">—</b></div>
+        </div>
+        <div class="readout">
+          <div class="ro"><span>速度 v</span><b id="rdV">—</b></div>
+          <div class="ro"><span>v²</span><b id="rdV2">—</b></div>
+          <div class="ro"><span>高度 h</span><b id="rdH">—</b></div>
+          <div class="ro"><span>坡度角 φ</span><b id="rdTheta">—</b></div>
+          <div class="ro"><span>aₙ=v²/ρ</span><b id="rdAn">—</b></div>
+          <div class="ro"><span>aₜ</span><b id="rdAt">—</b></div>
+          <div class="ro"><span>Eₖ</span><b id="rdEk">—</b></div>
+          <div class="ro"><span>Eₚ</span><b id="rdEp">—</b></div>
+          <div class="ro"><span>E总</span><b id="rdEt">—</b></div>
+          <div class="ro"><span>v发射</span><b id="rdVlaunch">—</b></div>
+          <div class="ro"><span>√(gr)</span><b id="rdVcrit">—</b></div>
+          <div class="ro"><span>v底(理论)</span><b id="rdVbot">—</b></div>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>控制面板 <span class="tag">变量与开关</span></h3>
+      <div class="body">
+        <div class="row">
+          <button class="mini" id="btnPlay" aria-pressed="false">▶ 播放</button>
+          <button class="mini" id="btnStep">⏭ 单步</button>
+          <button class="mini" id="btnReset">⟲ 重置</button>
+          <select id="selSpeed" aria-label="慢动作倍率" style="font-size:12px;border:1px solid #cbd5e1;border-radius:6px;padding:3px">
+            <option value="0.25">0.25×</option><option value="0.5">0.5×</option><option value="1" selected>1×</option>
+          </select>
+        </div>
+        <div class="row"><label>拱顶速度 v₀</label><input type="range" id="rngV0" min="0.2" max="8" step="0.05" value="2" aria-label="拱顶速度"><span class="val" id="outV0">2.00 m/s</span></div>
+        <div style="font-size:11px;color:#64748b;margin:-2px 0 6px 68px">恒速模式下 v₀ ＝ 全程恒定速度；滑行模式下 v₀ ＝ 小车经过<b>拱顶</b>时的速度（发射速度由机械能守恒反推）</div>
+        <div class="row"><label>半径 r</label><input type="range" id="rngR" min="0.4" max="2.5" step="0.05" value="1" aria-label="轨道半径"><span class="val" id="outR">1.00 m</span></div>
+        <div class="row" style="margin-top:-2px"><label></label>
+          <button class="mini" data-r="0.5">0.5 m</button><button class="mini" data-r="1" aria-pressed="true">1.0 m</button><button class="mini" data-r="2">2.0 m</button>
+        </div>
+        <div class="row"><label>质量 m</label><input type="range" id="rngM" min="0.05" max="1" step="0.05" value="0.2" aria-label="小车质量"><span class="val" id="outM">0.20 kg</span></div>
+        <div class="row" style="margin-top:-2px"><label></label>
+          <button class="mini" data-m="0.2" aria-pressed="true">m</button><button class="mini" data-m="0.4">2m</button><button class="mini" data-m="0.6">3m</button>
+        </div>
+        <div class="row"><label>重力 g</label>
+          <button class="mini" data-g="9.8" aria-pressed="true">9.8 m/s²</button><button class="mini" data-g="10">10 m/s²</button>
+        </div>
+        <div class="row"><label>运动模式</label>
+          <button class="mini" id="btnModeDrive" aria-pressed="true">🚗 恒速驱动</button>
+          <button class="mini" id="btnModeCoast" aria-pressed="false">🎢 无动力滑行</button>
+        </div>
+        <div style="font-size:11px;color:#64748b;margin:-2px 0 6px 68px">恒速（教材模型）：v 全程不变，拱顶 N 最小、凹底 N 最大；滑行：机械能守恒，N 由“v² 变化 + 重力法向分量变化”共同决定</div>
+        <div class="toggles" style="margin-top:8px;border-top:1px dashed #e2e8f0;padding-top:6px">
+          <label><input type="checkbox" id="chkFric"> 含滚动阻力</label>
+          <label><input type="checkbox" id="chkNoise"> 传感器噪声/滞后</label>
+          <label><input type="checkbox" id="chkVec" checked> 受力矢量</label>
+          <label><input type="checkbox" id="chkAcc" checked> 加速度分解</label>
+          <label><input type="checkbox" id="chkNt" checked> N–t 曲线</label>
+          <label><input type="checkbox" id="chkEnergy" checked> 能量条</label>
+          <label><input type="checkbox" id="chkCenter" checked> 曲率中心与 r 线</label>
+          <label><input type="checkbox" id="chkProj" checked> 脱轨轨迹</label>
+          <label><input type="checkbox" id="chkSensor" checked> 传感器读数</label>
+          <label><input type="checkbox" id="chkSound"> 音效</label>
+          <label><input type="checkbox" id="chkStrobe"> 频闪残影</label>
+          <label><input type="checkbox" id="chkRuler" checked> 标尺与量角器</label>
+        </div>
+      </div>
+    </div>
+
+    <div class="panel">
+      <h3>预设与扫描 <span class="tag">一键复现</span></h3>
+      <div class="body">
+        <div class="presets" id="presetBox"></div>
+        <div class="row" style="margin-top:8px"><button class="mini" id="btnScan" style="flex:1">📈 v 自动扫描（绘 N–v²）</button></div>
+        <div class="row">
+          <button class="mini" id="btnRecord" style="flex:1">➕ 记录本次实验</button>
+          <button class="mini" id="btnExport">⬇ CSV</button>
+          <button class="mini" id="btnClear">🗑 清空</button>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<div class="lower">
+  <div class="panel">
+    <h3>教学引导流程 <span class="tag">六步探究</span></h3>
+    <div class="body">
+      <div class="stepper" id="stepBtns" role="tablist" aria-label="教学步骤"></div>
+      <div id="teachText" style="font-size:12.5px;min-height:70px"></div>
+      <div class="row" style="margin-top:4px">
+        <button class="mini" id="btnTeachPrev">← 上一步</button>
+        <button class="mini" id="btnTeachNext">下一步 →</button>
+        <button class="mini" id="btnTeachCard">📖 打开本步卡片</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>即时练习 <span class="tag">5 题 · 错题跳卡片</span></h3>
+    <div class="body" style="max-height:320px;overflow:auto">
+      <div id="quizBox"></div>
+      <div class="row">
+        <button class="mini" id="btnQuizNew">🔀 重新出题</button>
+        <button class="mini" id="btnQuizHide" aria-pressed="false">🙈 隐藏答案（考核）</button>
+        <span id="quizScore" style="font-size:12px;color:#475569"></span>
+      </div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h3>数据记录 <span class="tag">可导出 CSV</span></h3>
+    <div class="body">
+      <div class="scroll">
+        <table id="tbl">
+          <thead><tr><th>#</th><th>r/m</th><th>m/kg</th><th>g</th><th>v顶</th><th>v底</th><th>N顶</th><th>N底</th><th>mg</th><th>状态</th><th>误差%</th></tr></thead>
+          <tbody id="tblBody"></tbody>
+        </table>
+      </div>
+      <div style="font-size:11px;color:#64748b;margin-top:4px">实验结束后点“记录本次实验”追加一行；N 为压力传感器读数（视重）。</div>
+    </div>
+  </div>
+</div>
+
+<div class="foot">模型36 · 拱桥与凹桥压力传感演示 · 单文件零依赖 · 建议 Chrome / Edge 打开 · 键盘：Enter/Space 打开卡片，Esc 关闭，←/→ 翻页</div>
+
+<aside id="drawer" role="dialog" aria-label="知识卡片库">
+  <div class="dhead"><b style="font-size:14px">📚 知识卡片库</b><span style="flex:1"></span>
+    <button class="hbtn" id="btnDrawerClose" aria-label="关闭卡片库">✕ 关闭</button></div>
+  <div style="padding:8px 10px;border-bottom:1px solid #e2e8f0;background:#f8fafc">
+    <input type="search" id="cardSearch" placeholder="搜索：失重 / 临界 / v₀ / 视重 …" aria-label="搜索知识卡片">
+  </div>
+  <div class="tabs" id="cardTabs" role="tablist"></div>
+  <div class="dbody" id="cardList"></div>
+</aside>
+
+<div id="cardWin" role="dialog" aria-label="知识卡片">
+  <div class="cw-h" id="cwHead">
+    <b id="cwTitle">卡片</b>
+    <button id="btnFlip" aria-label="翻转卡片看推导">🔄 推导</button>
+    <button id="btnPin" aria-label="钉住卡片">📌</button>
+    <button id="btnPrev" aria-label="上一张卡片">◀</button>
+    <button id="btnNext" aria-label="下一张卡片">▶</button>
+    <button id="btnClose" aria-label="关闭卡片">✕</button>
+  </div>
+  <div class="cw-b" id="cwBody"></div>
+</div>
+
+<script>
+"use strict";
+/* 模型36 · 拱桥与凹桥压力传感演示 —— 单文件零依赖实现
+   目录：0 工具 / 1 配置 / 2 轨道几何 / 3 状态 / 4 物理推进 / 5 音效
+        6 主画面 / 7 图表 / 8 读数 / 9 扫描 / 10 预设 / 11 卡片数据 / 12 卡片UI
+        13 教学流程 / 14 练习 / 15 事件绑定 / 16 主循环                        */
+
+/* ---------------------------------------------------------------- 0. 工具 */
+const $  = (s)=>document.querySelector(s);
+const $$ = (s)=>Array.from(document.querySelectorAll(s));
+const clamp=(v,a,b)=>v<a?a:(v>b?b:v);
+const DEGR = 180/Math.PI;
+const REDUCE = !!(window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches);
+
+function toast(msg, ms){
+  const t=$('#toast'); t.textContent=msg; t.classList.add('show');
+  clearTimeout(t._tm); t._tm=setTimeout(()=>t.classList.remove('show'), ms||2600);
+}
+
+/* ------------------------------------------------- 1. 全局配置（物理参数） */
+const CFG = {
+  g : 9.8,
+  a0 : 45*Math.PI/180,   // 拱/凹段端点处的坡度角（也是端点处半径与竖直方向的夹角）
+  Ld : 0.60,             // 拱后下降直线段长 (m)
+  Lr : 0.70,             // 凹后上升直线段长 (m)
+  tolN : 1e-6,           // 脱轨判定的数值容差（N）
+  mu : 0.03,             // 滚动阻力系数（等效恒定阻力 f = μ·m·g）
+  dt : 0.002,            // 固定物理步长 (s)：保证不同帧率 / 慢动作下读数一致
+  sampleDt : 0.008,      // 采样间隔 (s)
+  C : {                  // 视觉编码（固定，图例常驻）
+    mg:'#6b7280', N:'#ea8a0b', an:'#16a34a', at:'#9333ea', v:'#2563eb',
+    over:'#dc2626', under:'#2563eb', ref:'#111827', track:'#334155',
+    mass:['#0ea5e9','#f97316','#a855f7']   // m / 2m / 3m 小车配色
+  }
+};
+
+/* -------------------------------------------- 2. 轨道几何（世界坐标，单位 m）
+   轨道 = [抛物线拱] + [下降直线] + [抛物线凹段] + [上升直线]
+    ★ 为什么用抛物线而不是圆弧做拱（关键几何选择）：
+      · 拱取 y = yT − x²/(2r)，顶点曲率半径恰为 r（ρ_顶 = r）；凹段取 y = (x−xD)²/(2r)，底点曲率半径亦为 r。
+        于是“用哪个 r 代入 N = mg ∓ mv²/r”在极值点严格成立，量角器读的 φ 与 ρ = r/cos³φ 自洽。
+      · 恒速驱动模式下：N/m = g·cosφ − (v²/r)·cos³φ。在拱顶 φ=0，N = mg − mv²/r；
+        当 v ≳ 0.67√(gr)（本几何端点坡度 45°）时拱顶就是全程 N 的最小点，
+        因此“v 超过 √(gr) → N<0 → 脱轨”最先发生在拱顶附近（v 略大时就在拱顶旁，v 越大脱轨点越靠前）。
+      · 凹段：N/m = g·cosφ + (v²/r)·cos³φ 随 |φ| 单调减小，凹底恒为全程最大点（超重最明显处）。
+      · 附带的一个优美结论：无动力滑行时 N/m = (g − v顶²/r)·cos³φ，
+        因为这条抛物线正是“以 √(gr) 通过顶点”的抛体轨迹——v顶 = √(gr) 时整段拱都恰为完全失重。
+   取凹底为高度零点 y = 0；φ 为当地坡度角，ρ = r/cos³φ 为当地曲率半径。        */
+function gArc(u){ return 0.5*(u*Math.sqrt(1+u*u) + Math.asinh(u)); }   // 抛物线弧长 s = r·g(u)
+function invArc(w){          // 由 w = g(u) 反解 u（牛顿迭代，单调函数，收敛很快）
+  let u = w;
+  for(let i=0;i<30;i++){
+    const f = 0.5*(u*Math.sqrt(1+u*u)+Math.asinh(u)) - w;
+    if(!isFinite(f)) break;
+    u -= f/Math.sqrt(1+u*u);
+    if(Math.abs(f) < 1e-13) break;
+  }
+  return u;
+}
+function buildTrack(r){
+  const a0=CFG.a0, U=Math.tan(a0), X=r*U;
+  const drop = r*U*U/2;                       // 端点相对极值点的下降/抬升量
+  const yT   = r*U*U + CFG.Ld*Math.sin(a0);   // 拱顶高度（使凹底恰为 y=0）
+  const T    = {x:0,  y:yT};                  // 拱顶
+  const C1   = {x:0,  y:yT-r};                // 拱顶曲率圆圆心（轨道下方）
+  const A    = {x:X,  y:yT-drop};             // 拱末端
+  const Sp   = {x:X+CFG.Ld*Math.cos(a0), y:yT-drop-CFG.Ld*Math.sin(a0)};  // 凹段起点
+  const xD   = Sp.x + X;                      // 凹底横坐标
+  const C2   = {x:xD, y:r};                   // 凹底曲率圆圆心（轨道上方）
+  const E    = {x:xD+X, y:drop};              // 凹段末端
+  const F    = {x:E.x+CFG.Lr*Math.cos(a0), y:E.y+CFG.Lr*Math.sin(a0)};    // 出口
+  const Sa   = {x:-X, y:yT-drop};             // 拱起点 = 发射点
+  const La = r*(U*Math.sqrt(1+U*U) + Math.asinh(U)), Lp = La;
+  return { r, a0, U, X, drop, yT, T, C1, A, S:Sp, xD, C2, E, F, Sarch:Sa, La, Lp,
+    y0:Sa.y, Ld:CFG.Ld, Lr:CFG.Lr,
+    Ltot: La+CFG.Ld+Lp+CFG.Lr,
+    apexS  : La/2,                  // 拱顶对应弧长
+    bottomS: La+CFG.Ld+Lp/2,        // 凹底对应弧长
+    climb  : drop };                // 发射点 → 拱顶 的爬升高度
+}
+
+/* 由弧长 s 求位置、切向、法向、曲率
+   n̂  = 支持力方向；in̂ = 指向（当地）曲率中心方向；curv = 1/ρ；cosT = cos φ        */
+function posAt(tk, s){
+  const a0=CFG.a0, r=tk.r;
+  s = clamp(s, 0, tk.Ltot);
+  if (s <= tk.La){                                     // —— 抛物线拱（凸） ——
+    const u  = invArc((s - tk.La/2)/r);                // u = x / r
+    const c  = 1/Math.sqrt(1+u*u);                     // cos φ
+    const sp = u*c;                                    // sin φ
+    return {seg:'arch', u, su:u, al:Math.abs(Math.atan(u)),
+      x:r*u, y:tk.yT - r*u*u/2,
+      tx:c,  ty:-sp,                                   // +s 方向单位切向
+      nx: sp, ny: c,                                   // 支持力方向（背离曲率中心）
+      inx:-sp, iny:-c,                                 // 指向曲率中心
+      curv:c*c*c/r, cosT:c};
+  }
+  let q = s - tk.La;
+  if (q <= tk.Ld){                                     // —— 下降直线 ——
+    return {seg:'down', u:null, al:null,
+      x:tk.A.x+q*Math.cos(a0), y:tk.A.y-q*Math.sin(a0),
+      tx:Math.cos(a0), ty:-Math.sin(a0),
+      nx:Math.sin(a0), ny:Math.cos(a0),
+      inx:Math.sin(a0), iny:Math.cos(a0),
+      curv:0, cosT:Math.cos(a0)};
+  }
+  q -= tk.Ld;
+  if (q <= tk.Lp){                                     // —— 抛物线凹段 ——
+    const u  = invArc((q - tk.Lp/2)/r);
+    const c  = 1/Math.sqrt(1+u*u), sp = u*c;
+    return {seg:'dip', u, su:u, al:Math.abs(Math.atan(u)),
+      x:tk.xD + r*u, y:r*u*u/2,
+      tx:c, ty:sp,
+      nx:-sp, ny: c,                                   // 支持力方向（指向曲率中心）
+      inx:-sp, iny: c,
+      curv:c*c*c/r, cosT:c};
+  }
+  q -= tk.Lp;                                          // —— 上升直线 ——
+  return {seg:'up', u:null, al:null,
+    x:tk.E.x+q*Math.cos(a0), y:tk.E.y+q*Math.sin(a0),
+    tx:Math.cos(a0), ty:Math.sin(a0),
+    nx:-Math.sin(a0), ny:Math.cos(a0),
+    inx:-Math.sin(a0), iny:Math.cos(a0),
+    curv:0, cosT:Math.cos(a0)};
+}
+
+/* 支持力解析式（传感器读数即其反作用力，大小相等）
+   N = m(g·cosφ ∓ v²/ρ)，拱取“−”（N 背离曲率中心），凹取“+”（N 指向曲率中心） */
+function normalForce(tk,p,v2,m){
+  if (p.seg==='arch') return m*(CFG.g*p.cosT - v2*p.curv);   // N = mg·cosφ − mv²/ρ
+  if (p.seg==='dip')  return m*(CFG.g*p.cosT + v2*p.curv);   // N = mg·cosφ + mv²/ρ
+  return m*CFG.g*p.cosT;                                     // 直线段：N = mg·cos(坡度)
+}
+/* 加速度：a = g + (N/m)·n̂；再分解为法向 aₙ=v²/r（指圆心）与切向 aₜ */
+function accelOf(p,N,v2,m){
+  const ax=(N/m)*p.nx, ay=-CFG.g+(N/m)*p.ny;
+  const an=v2*p.curv, anx=an*p.inx, any=an*p.iny;
+  return {ax,ay,an,anx,any,atx:ax-anx,aty:ay-any,at:Math.hypot(ax-anx,ay-any)};
+}
+/* 超重/失重判据：看竖直方向加速度分量 a_y
+   “临界（完全失重）”用相对阈值判定：N ≤ 0.3%·mg。
+   因为固定步长积分下，极值点的读数取自跨过极值点的那一小步（偏差约 v·dt ≈ 6 mm），
+   若用绝对零判定，v 恰为 √(gr) 时会差之毫厘地错过“临界”标记。 */
+function stateLabel(ay,N){
+  const mg=S.m*CFG.g;
+  if (N <= Math.max(1e-6, 3e-3*mg)) return {t:'完全失重·临界', c:CFG.C.under};
+  if (ay> 0.12) return {t:'超重', c:CFG.C.over};
+  if (ay<-0.12) return {t:'失重', c:CFG.C.under};
+  return {t:'视重≈重力', c:CFG.C.mg};
+}
+
+/* --------------------------------------------------- 3. 运行状态 */
+/* 两种运动模式：
+   drive=true  恒速驱动（教材标准模型：汽车以恒定速率 v₀ 过桥）→ 拱顶 N 最小、凹底 N 最大
+   drive=false 无动力滑行（机械能守恒）→ 演示能量与受力两步法；此时圆形拱上 N 最小处实际在拱的侧面 */
+const S = {
+  r:1, m:0.2, v0top:2.0, tk:null, drive:true,
+  s:0, dir:1, Spath:0, t:0, v2l:0, mode:'track',
+  playing:false, finished:false, speed:1,
+  samples:[], apex:null, bottom:null, derail:null, proj:[], projV:null, projP:null,
+  prevAl:null, prevBe:null, stroke:0, ghosts:[],
+  fric:false, noise:false, stallT:0, msg:'',
+  scan:null, records:[], recNo:0,
+  view:'full', lastN:0
+};
+function rebuild(){
+  S.tk = buildTrack(S.r);
+  // 恒速驱动：全程 v = v₀；无动力滑行：由机械能守恒反推发射速度，使拱顶恰为 v₀
+  S.v2l = S.drive ? S.v0top*S.v0top : (S.v0top*S.v0top + 2*CFG.g*S.tk.climb);
+}
+/* 任意位置的速率平方：恒速模式为常数；滑行模式用机械能守恒解析式 */
+function speedAt(tk,p){
+  if(S.drive) return S.v0top*S.v0top;
+  return S.v2l + 2*CFG.g*(tk.y0 - p.y) - (S.fric ? 2*CFG.mu*CFG.g*S.Spath : 0);
+}
+function resetRun(autoplay){
+  rebuild();
+  S.s=0; S.dir=1; S.Spath=0; S.t=0; S.mode='track';
+  S.samples=[]; S.apex=null; S.bottom=null; S.derail=null; S.proj=[]; S.projV=null; S.projP=null;
+  S.prevAl=null; S.prevBe=null; S.stroke=0; S.ghosts=[]; S.stallT=0; S.msg='';
+  S.finished=false; S.lastN=0;
+  S.playing = !!autoplay && !REDUCE;
+  $('#btnPlay').setAttribute('aria-pressed', S.playing?'true':'false');
+  $('#btnPlay').textContent = S.playing?'⏸ 暂停':'▶ 播放';
+  updateReadouts();
+}
+
+/* --------------------------------------------------- 4. 物理推进（固定步长） */
+function step(dt){
+  if (S.mode==='proj'){ projStep(dt); return; }
+  const tk=S.tk, p=posAt(tk,S.s);
+  // 速率：恒速驱动为 v₀；无动力滑行用机械能守恒解析式（含阻力时叠加耗散近似项）
+  let v2 = speedAt(tk,p);
+  if (v2 <= 1e-7 && !S.drive){              // 动能耗尽 → 到达最高点 → 反向回滑
+    S.dir = -S.dir; S.s += S.dir*0.0015; S.stallT += dt;
+    if (S.stallT > 1.2) finishRun('速度不足：小车在拱面上往复，未能越过拱顶');
+    return;
+  }
+  if (S.drive) v2 = Math.max(v2, 1e-6);
+  S.stallT = 0;
+  const v = Math.sqrt(v2);
+  const N = normalForce(tk,p,v2,S.m);
+
+  /* ★ 脱轨判定：只在拱形段（单侧约束）发生；所需 N ≤ 0 立即切换为抛体运动 */
+  if (p.seg==='arch' && N <= 0){
+    S.derail = {x:p.x, y:p.y, vx:S.dir*p.tx*v, vy:S.dir*p.ty*v, t:S.t, s:S.s, v:v};
+    S.mode='proj'; S.proj=[{x:p.x,y:p.y}]; S.projV={x:S.derail.vx, y:S.derail.vy};
+    pushSample(S.t, p, v2, v, true);
+    toast('⚠ 所需 N ≤ 0：小车脱离轨道，此后只受重力做抛体运动（不再做圆周运动）', 4000);
+    return;
+  }
+  /* 记录“过拱顶 / 过凹底”：u = x/r 的符号在极值点变号（su 为带符号参数，配合运动方向判定过零点） */
+  if (p.seg==='arch'){
+    if (S.prevAl!=null){
+      const cross = S.dir>0 ? (S.prevAl<0 && p.su>=0) : (S.prevAl>0 && p.su<=0);
+      if (cross){ S.apex={v:v, v2:v2, N:N, t:S.t}; beep(660); }
+    }
+    S.prevAl = p.su;
+  } else if (p.seg==='dip'){
+    if (S.prevBe!=null){
+      const cross = S.dir>0 ? (S.prevBe<0 && p.su>=0) : (S.prevBe>0 && p.su<=0);
+      if (cross){ S.bottom={v:v, v2:v2, N:N, t:S.t}; beep(880); }
+    }
+    S.prevBe = p.su;
+  }
+  pushSample(S.t, p, v2, v, false);
+
+  S.s += S.dir*v*dt; S.Spath += v*dt; S.t += dt;
+  if (S.s >= tk.Ltot-1e-6){ S.s=tk.Ltot; finishRun('小车通过全程（拱 → 凹）'); }
+  else if (S.s <= 0 && S.dir < 0){ S.s=0; finishRun('小车回滑至发射点（未能越过拱顶）'); }
+
+  if ($('#chkStrobe').checked){
+    S.stroke += dt;
+    if (S.stroke >= 0.10){ S.stroke=0; S.ghosts.push({s:S.s}); if(S.ghosts.length>14) S.ghosts.shift(); }
+  }
+}
+function projStep(dt){
+  const d=S.derail; if(!d) return;
+  if(!S.projV) S.projV={x:d.vx,y:d.vy};
+  if(!S.projP) S.projP={x:d.x, y:d.y};          // 抛体当前位置（脱轨点 d 保持不动，供标记/连线使用）
+  S.projV.y -= CFG.g*dt;
+  S.projP.x += S.projV.x*dt; S.projP.y += S.projV.y*dt;
+  S.t += dt; S.proj.push({x:S.projP.x,y:S.projP.y});
+  if (S.proj.length>1500) S.proj.shift();
+  if (S.projP.y < -0.8 || S.projP.x > S.tk.F.x+5) finishRun('小车已飞离轨道，落入接料区');
+}
+function pushSample(t,p,v2,v,derailed){
+  if (!derailed && S.samples.length && (t - S.samples[S.samples.length-1].t) < CFG.sampleDt*0.9) return;
+  const N = derailed ? 0 : normalForce(S.tk,p,v2,S.m);
+  const a = accelOf(p,N,v2,S.m);
+  const st = stateLabel(a.ay,N);
+  S.samples.push({t, s:S.s, N, v, v2, ay:a.ay, an:a.an, at:a.at, h:p.y, seg:p.seg, st:st.t,
+                  ek:0.5*S.m*v2, ep:S.m*CFG.g*p.y});
+  if (S.samples.length>6000) S.samples.shift();
+  S.lastN = N;
+}
+function finishRun(msg){
+  S.finished=true; S.playing=false; S.msg=msg;
+  const b=$('#btnPlay'); b.setAttribute('aria-pressed','false'); b.textContent='▶ 播放';
+  if (msg) toast(msg, 2600);
+}
+
+/* --------------------------------------------------- 5. 音效（默认关闭） */
+let AC=null;
+function beep(f){
+  if(!$('#chkSound').checked) return;
+  try{
+    AC = AC || new (window.AudioContext||window.webkitAudioContext)();
+    const o=AC.createOscillator(), g=AC.createGain();
+    o.frequency.value=f; o.type='sine'; g.gain.value=0.05;
+    o.connect(g); g.connect(AC.destination); o.start(); o.stop(AC.currentTime+0.12);
+  }catch(e){}
+}
+/* =================================================== 6. 主画面绘制 */
+const cvs=$('#cvs');
+let ctx=cvs.getContext('2d');
+let VW={W:0,H:0,sc:1,ox:0,oy:0,bb:{x0:0,x1:1,y0:0,y1:1}};
+
+/* 高 DPI 自适应 */
+function fit(cv){
+  const dpr=window.devicePixelRatio||1;
+  const w=cv.clientWidth||300, h=cv.clientHeight||200;
+  if(cv.width!==Math.round(w*dpr)||cv.height!==Math.round(h*dpr)){cv.width=Math.round(w*dpr);cv.height=Math.round(h*dpr);}
+  const c=cv.getContext('2d'); c.setTransform(dpr,0,0,dpr,0,0); return {c,w,h};
+}
+/* 视野包围盒（按视图模式切换），世界→屏幕自适应缩放，保持等比 */
+function viewBounds(){
+  const tk=S.tk;
+  let b={x0:tk.Sarch.x-0.15, x1:tk.F.x+0.15, y0:Math.min(0,tk.C1.y-0.1), y1:Math.max(tk.yT,tk.F.y,tk.C2.y)+0.15};
+  if (S.derail){ b.x1=Math.max(b.x1, S.derail.x+0.5); }
+  if (S.view==='arch'){ const d=Math.max(0.8,tk.r*1.0); b={x0:tk.T.x-d*1.7, x1:tk.T.x+d*1.7, y0:tk.T.y-d*0.85, y1:tk.T.y+d*0.95}; }
+  if (S.view==='dip') { const d=Math.max(0.8,tk.r*1.0); b={x0:tk.xD-d*1.7,  x1:tk.xD+d*1.7,  y0:-d*0.55,      y1:d*1.05}; }
+  if (S.view==='sensor'){ b={x0:tk.Sarch.x,x1:tk.F.x,y0:-0.25,y1:Math.max(tk.yT,tk.C2.y)}; }
+  return b;
+}
+function setTransform(w,h){
+  const b=viewBounds();
+  const sc=Math.min((w-24)/(b.x1-b.x0), (h-24)/(b.y1-b.y0));
+  const ox=(w-sc*(b.x1-b.x0))/2 - sc*b.x0;
+  const oy=(h-sc*(b.y1-b.y0))/2 + sc*b.y1;
+  VW={W:w,H:h,sc,ox,oy,bb:b};
+}
+const X=x=>VW.ox+VW.sc*x, Y=y=>VW.oy-VW.sc*y, LEN=l=>l*VW.sc;
+
+function arrow(x0,y0,x1,y1,col,wid,label){
+  if(!isFinite(x0)||!isFinite(x1)||!isFinite(y0)||!isFinite(y1))return;
+  ctx.strokeStyle=col; ctx.fillStyle=col; ctx.lineWidth=wid||2;
+  ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x1,y1); ctx.stroke();
+  const dx=x1-x0, dy=y1-y0, len=Math.hypot(dx,dy); if(len<1) return;
+  const ux=dx/len, uy=dy/len, hl=Math.min(11,Math.max(6,len*0.32));
+  ctx.beginPath();
+  ctx.moveTo(x1,y1);
+  ctx.lineTo(x1-hl*ux+uy*4, y1-hl*uy-ux*4);
+  ctx.lineTo(x1-hl*ux-uy*4, y1-hl*uy+ux*4);
+  ctx.closePath(); ctx.fill();
+  if(label){
+    ctx.font='600 12px "PingFang SC",sans-serif'; ctx.fillStyle=col;
+    ctx.textAlign = ux>=0?'left':'right'; ctx.textBaseline='middle';
+    ctx.fillText(label, x1+(ux>=0?6:-6), y1-8);
+    ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+  }
+}
+function dot(x,y,r,col){ ctx.beginPath(); ctx.arc(x,y,r,0,7); ctx.fillStyle=col; ctx.fill(); }
+function roundRect(x,y,w,h,r){
+  ctx.beginPath(); ctx.moveTo(x+r,y);
+  ctx.arcTo(x+w,y,x+w,y+h,r); ctx.arcTo(x+w,y+h,x,y+h,r);
+  ctx.arcTo(x,y+h,x,y,r);     ctx.arcTo(x,y,x+w,y,r); ctx.closePath();
+}
+function bubble(x,y,txt,col){
+  ctx.font='600 12px "PingFang SC",sans-serif';
+  const w=ctx.measureText(txt).width+14;
+  ctx.fillStyle='rgba(255,255,255,.96)'; ctx.strokeStyle=col; ctx.lineWidth=1.6;
+  roundRect(x-w/2,y-11,w,22,7); ctx.fill(); ctx.stroke();
+  ctx.fillStyle='#0f172a'; ctx.textAlign='center'; ctx.textBaseline='middle';
+  ctx.fillText(txt,x,y+1); ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+}
+
+/* 画密切圆（极值点曲率圆）的一小段：圆心 c、半径 r；sgn=+1 极值点在圆心上方（拱），-1 在下方（凹） */
+function drawOsculating(c,r,sgn){
+  ctx.beginPath();
+  for(let i=0;i<=44;i++){
+    const t = -0.55 + 1.10*i/44;
+    const wx = c.x + r*Math.sin(t), wy = c.y + sgn*r*Math.cos(t);
+    i ? ctx.lineTo(X(wx),Y(wy)) : ctx.moveTo(X(wx),Y(wy));
+  }
+  ctx.stroke();
+}
+
+function drawTrack(){
+  const tk=S.tk;
+  ctx.lineCap='round'; ctx.lineJoin='round';
+  const N=700, ds=tk.Ltot/N;
+  // 路基
+  ctx.strokeStyle='#e2e8f0'; ctx.lineWidth=Math.max(7,LEN(0.055));
+  ctx.beginPath();
+  for(let i=0;i<=N;i++){const p=posAt(tk,i*ds); i?ctx.lineTo(X(p.x),Y(p.y)):ctx.moveTo(X(p.x),Y(p.y));}
+  ctx.stroke();
+  // 轨道面
+  ctx.strokeStyle=CFG.C.track; ctx.lineWidth=Math.max(3,LEN(0.03));
+  ctx.beginPath();
+  for(let i=0;i<=N;i++){const p=posAt(tk,i*ds); i?ctx.lineTo(X(p.x),Y(p.y)):ctx.moveTo(X(p.x),Y(p.y));}
+  ctx.stroke();
+  // 沿轨道传感器阵列（颜色编码：红=超重 蓝=失重 灰=接近 mg）
+  if($('#chkSensor').checked){
+    for(let s=0;s<=tk.Ltot;s+=0.25){
+      const p=posAt(tk,s);
+      let v2=speedAt(tk,p); if(v2<0) v2=0;
+      const Nn=Math.max(0,normalForce(tk,p,v2,S.m));
+      const ratio=Nn/(S.m*CFG.g);
+      dot(X(p.x),Y(p.y),Math.max(2,LEN(0.016)), ratio>1.04?CFG.C.over:(ratio<0.96?CFG.C.under:'#94a3b8'));
+    }
+  }
+}
+function drawCenters(){
+  if(!$('#chkCenter').checked) return;
+  const tk=S.tk;
+  ctx.setLineDash([5,4]); ctx.strokeStyle='#94a3b8'; ctx.lineWidth=1.2;
+  ctx.beginPath(); ctx.moveTo(X(tk.C1.x),Y(tk.C1.y)); ctx.lineTo(X(tk.T.x),Y(tk.T.y)); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(X(tk.C2.x),Y(tk.C2.y)); ctx.lineTo(X(tk.xD),Y(0)); ctx.stroke();
+  // 极值点的密切圆（曲率圆，半径 = r，只在极值点与轨道相切；轨道本身是抛物线，故只画一小段示意）
+  ctx.strokeStyle='#cbd5e1';
+  drawOsculating(tk.C1, tk.r, +1);   // 圆心在轨道下方 → 密切圆过拱顶
+  drawOsculating(tk.C2, tk.r, -1);   // 圆心在轨道上方 → 密切圆过凹底
+  ctx.setLineDash([]);
+  ctx.font='11px sans-serif'; ctx.fillStyle='#64748b'; ctx.textAlign='center';
+  ctx.fillText('O₁（拱顶曲率中心）', X(tk.C1.x), Y(tk.C1.y)+15);
+  ctx.fillText('O₂（凹底曲率中心）', X(tk.C2.x), Y(tk.C2.y)+15);
+  ctx.fillText('r='+tk.r.toFixed(2)+'m', (X(tk.C1.x)+X(tk.T.x))/2-20, (Y(tk.C1.y)+Y(tk.T.y))/2);
+  ctx.fillText('r='+tk.r.toFixed(2)+'m', (X(tk.C2.x)+X(tk.xD))/2+22, (Y(tk.C2.y)+Y(0))/2);
+  ctx.fillStyle='#0f172a';
+  ctx.fillText('拱顶', X(tk.T.x), Y(tk.T.y)+18);
+  ctx.fillText('凹底', X(tk.xD), Y(0)+18);
+  ctx.textAlign='left';
+}
+function drawSensors(){
+  if(!$('#chkSensor').checked) return;
+  const tk=S.tk, mg=S.m*CFG.g;
+  const aN=S.apex?S.apex.N:null, bN=S.bottom?S.bottom.N:null;
+  let col = aN==null?'#94a3b8':(aN>mg*1.02?CFG.C.over:(aN<mg*0.98?CFG.C.under:'#64748b'));
+  ctx.fillStyle=col; ctx.strokeStyle='#0f172a'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.rect(X(tk.T.x)-17, Y(tk.T.y)-4, 34, 9); ctx.fill(); ctx.stroke();
+  ctx.font='10px sans-serif'; ctx.fillStyle='#fff'; ctx.textAlign='center';
+  ctx.fillText('S₁', X(tk.T.x), Y(tk.T.y)+3.5);
+  if(aN!=null) bubble(X(tk.T.x), Y(tk.T.y)-32, '拱顶 N='+aN.toFixed(2)+'N', col);
+  col = bN==null?'#94a3b8':(bN>mg*1.02?CFG.C.over:(bN<mg*0.98?CFG.C.under:'#64748b'));
+  ctx.fillStyle=col; ctx.strokeStyle='#0f172a';
+  ctx.beginPath(); ctx.rect(X(tk.xD)-17, Y(0)-4, 34, 9); ctx.fill(); ctx.stroke();
+  ctx.fillStyle='#fff'; ctx.fillText('S₂', X(tk.xD), Y(0)+3.5);
+  if(bN!=null) bubble(X(tk.xD), Y(0)-32, '凹底 N='+bN.toFixed(2)+'N', col);
+  ctx.textAlign='left';
+}
+function drawRuler(){
+  if(!$('#chkRuler').checked) return;
+  const b=VW.bb;
+  const x=X(b.x0)+14;
+  ctx.strokeStyle='#cbd5e1'; ctx.lineWidth=1;
+  ctx.beginPath(); ctx.moveTo(x,Y(b.y0)); ctx.lineTo(x,Y(b.y1)); ctx.stroke();
+  ctx.font='10px sans-serif'; ctx.fillStyle='#94a3b8'; ctx.textAlign='left';
+  const st=(b.y1-b.y0)>3?0.5:0.2;
+  for(let y=Math.ceil(b.y0/st)*st; y<=b.y1+1e-9; y+=st){
+    ctx.beginPath(); ctx.moveTo(x,Y(y)); ctx.lineTo(x+6,Y(y)); ctx.stroke();
+    ctx.fillText(y.toFixed(1)+' m', x+8, Y(y)+3);
+  }
+  // 比例尺
+  let ml=1; while(LEN(ml)<40) ml*=2; while(LEN(ml)>170) ml/=2;
+  const px=LEN(ml), y0=VW.H-18, x0=18;
+  ctx.strokeStyle='#0f172a'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(x0,y0); ctx.lineTo(x0+px,y0);
+  ctx.moveTo(x0,y0-4); ctx.lineTo(x0,y0+4);
+  ctx.moveTo(x0+px,y0-4); ctx.lineTo(x0+px,y0+4); ctx.stroke();
+  ctx.fillStyle='#0f172a'; ctx.textAlign='center'; ctx.font='10px sans-serif';
+  ctx.fillText(ml+' m', x0+px/2, y0-7); ctx.textAlign='left';
+}
+function carColor(){ return CFG.C.mass[S.m<=0.25?0:(S.m<=0.45?1:2)]; }
+function drawCar(p){
+  const col=carColor(), ang=Math.atan2(p.ty,p.tx);
+  const cx=X(p.x), cy=Y(p.y);
+  const bw=LEN(0.30), bh=LEN(0.15);
+  ctx.save(); ctx.translate(cx,cy); ctx.rotate(-ang);
+  ctx.fillStyle=col; ctx.strokeStyle='#0f172a'; ctx.lineWidth=1.2;
+  roundRect(-bw/2, -bh-LEN(0.05), bw, bh, 4); ctx.fill(); ctx.stroke();
+  ctx.fillStyle='#1f2937';
+  ctx.beginPath(); ctx.arc(-bw*0.3, -LEN(0.005), LEN(0.042),0,7); ctx.fill();
+  ctx.beginPath(); ctx.arc( bw*0.3, -LEN(0.005), LEN(0.042),0,7); ctx.fill();
+  ctx.fillStyle='#fff'; ctx.beginPath(); ctx.arc(0,-bh*0.5-LEN(0.05),2.6,0,7); ctx.fill();
+  ctx.restore();
+  dot(cx,cy,3.4,'#f59e0b');                       // 接触点高亮
+  ctx.font='600 11px "PingFang SC",sans-serif'; ctx.fillStyle=col; ctx.textAlign='center';
+  ctx.fillText((S.m*1000).toFixed(0)+' g', cx, cy-LEN(0.28)); ctx.textAlign='left';
+}
+function drawGhosts(){
+  if(!$('#chkStrobe').checked) return;
+  S.ghosts.forEach((g,i)=>{
+    const p=posAt(S.tk,g.s);
+    ctx.globalAlpha=0.10+0.015*i; ctx.fillStyle=carColor();
+    ctx.beginPath(); ctx.arc(X(p.x),Y(p.y)-LEN(0.08),LEN(0.06),0,7); ctx.fill();
+    ctx.globalAlpha=1;
+  });
+}
+function drawVectors(p,v2,v){
+  const cx=X(p.x), cy=Y(p.y)-LEN(0.10);
+  const fs = 90/(S.m*CFG.g);                       // 力比例尺：mg 恒 90 px
+  const N  = Math.max(0,normalForce(S.tk,p,v2,S.m));
+  const a  = accelOf(p,N,v2,S.m);
+  if($('#chkVec').checked){
+    arrow(cx,cy, cx, cy+90, CFG.C.mg, 3, 'mg='+(S.m*CFG.g).toFixed(2)+'N');
+    arrow(cx,cy, cx+p.nx*N*fs, cy-p.ny*N*fs, CFG.C.N, 3, 'N='+N.toFixed(2)+'N');
+    const vs=60/Math.max(3,v);
+    arrow(cx,cy, cx+p.tx*S.dir*v*vs, cy-p.ty*S.dir*v*vs, CFG.C.v, 2, 'v='+v.toFixed(2));
+  }
+  if($('#chkAcc').checked){
+    const as=70/Math.max(6, a.an, Math.hypot(a.atx,a.aty));
+    arrow(cx,cy, cx+p.inx*a.an*as, cy-p.iny*a.an*as, CFG.C.an, 2.4, 'aₙ='+a.an.toFixed(1));
+    const tm=Math.hypot(a.atx,a.aty);
+    if(tm>0.15) arrow(cx,cy, cx+a.atx*as, cy-a.aty*as, CFG.C.at, 2.4, 'aₜ='+tm.toFixed(1));
+  }
+  // 量角器：当地坡度角 φ（轨道切线与水平方向夹角；顶点/底点 φ = 0）
+  if($('#chkRuler').checked && p.al!=null){
+    const arch = p.seg==='arch';
+    const cxo = arch?X(S.tk.C1.x):X(S.tk.C2.x), cyo = arch?Y(S.tk.C1.y):Y(S.tk.C2.y);
+    ctx.strokeStyle='#f59e0b'; ctx.lineWidth=1.2; ctx.setLineDash([3,3]);
+    ctx.beginPath(); ctx.moveTo(cxo,cyo); ctx.lineTo(cx,cy+LEN(0.10)); ctx.stroke();
+    const base = arch? -Math.PI/2 : Math.PI/2;
+    const ang  = arch? (base + p.al) : (base - p.al);   // 屏幕坐标（y 向下）下的方位角
+    ctx.beginPath(); ctx.arc(cxo,cyo,LEN(0.22), Math.min(base,ang), Math.max(base,ang)); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='#b45309'; ctx.font='11px sans-serif'; ctx.textAlign='center';
+    ctx.fillText('φ='+Math.abs(p.al*DEGR).toFixed(0)+'°', cx, cy+LEN(0.34)); ctx.textAlign='left';
+  }
+}
+function drawProj(){
+  if(!$('#chkProj').checked || !S.derail) return;
+  ctx.setLineDash([7,5]); ctx.strokeStyle='#dc2626'; ctx.lineWidth=2;
+  ctx.beginPath(); ctx.moveTo(X(S.derail.x),Y(S.derail.y));
+  S.proj.forEach(pt=>ctx.lineTo(X(pt.x),Y(pt.y)));
+  ctx.stroke(); ctx.setLineDash([]);
+  dot(X(S.derail.x),Y(S.derail.y),4,'#dc2626');
+  ctx.font='600 12px "PingFang SC",sans-serif'; ctx.fillStyle='#dc2626';
+  ctx.fillText('脱轨点（N=0）· 此后做抛体，不再做圆周运动', X(S.derail.x)+8, Y(S.derail.y)-10);
+  if(S.proj.length){ const e=S.proj[S.proj.length-1]; ctx.fillText('v='+S.derail.v.toFixed(2)+' m/s', X(e.x)+8, Y(e.y)+16); }
+}
+function drawEnergyBars(){
+  if(!$('#chkEnergy').checked) return;
+  const tk=S.tk;
+  let p = S.mode==='track'? posAt(tk,S.s) : null;
+  let v2 = p ? speedAt(tk,p) : (S.derail?S.derail.v*S.derail.v:0);
+  if(v2<0) v2=0;
+  const ek=0.5*S.m*v2, ep=S.m*CFG.g*(p?p.y:Math.max(0,S.derail?S.derail.y:0)), et=ek+ep;
+  const E0=0.5*S.m*S.v2l + S.m*CFG.g*tk.y0;
+  const w=120,h=11,x0=16,y0=VW.H-72;
+  ctx.font='10px sans-serif'; ctx.textAlign='left'; ctx.fillStyle='#0f172a';
+  ctx.fillText('机械能（参考 E₀='+E0.toFixed(2)+' J）', x0, y0-6);
+  [['Eₖ',ek,'#2563eb'],['Eₚ',ep,'#16a34a'],['E总',et,'#64748b']].forEach((b,i)=>{
+    const y=y0+i*16, ww=clamp((b[1]/Math.max(E0,1e-6))*w, 0, w);
+    ctx.fillStyle='#e2e8f0'; ctx.fillRect(x0,y,w,h);
+    ctx.fillStyle=b[2]; ctx.fillRect(x0,y,ww,h);
+    ctx.fillStyle='#334155'; ctx.fillText(b[0]+' '+b[1].toFixed(2)+'J', x0+w+6, y+9);
+  });
+  if(S.fric){ ctx.fillStyle='#b45309'; ctx.fillText('含滚动阻力：机械能不守恒', x0, y0+3*16+12); }
+  else if(S.drive){ ctx.fillStyle='#b45309'; ctx.fillText('恒速驱动：Eₖ 恒定，牵引力做功', x0, y0+3*16+12); }
+  else { ctx.fillStyle='#16a34a'; ctx.fillText('无动力滑行：Eₖ+Eₚ 守恒', x0, y0+3*16+12); }
+}
+function hotspots(){
+  const tk=S.tk, hs=[];
+  hs.push({x:tk.T.x, y:tk.T.y, card:'c06'});
+  hs.push({x:tk.xD,  y:0,      card:'c07'});
+  const tkS = S.mode==='track'? posAt(tk,S.s) : null;
+  if(tkS){
+    let v2=speedAt(tk,tkS); if(v2<0) v2=0;
+    const N=Math.max(0,normalForce(tk,tkS,v2,S.m)), a=accelOf(tkS,N,v2,S.m);
+    const fs=90/(S.m*CFG.g)/VW.sc;
+    hs.push({x:tkS.x+tkS.nx*N*fs, y:tkS.y+tkS.ny*N*fs, card:'c02'});
+    if(a.ay<-0.12) hs.push({x:tkS.x+0.14, y:tkS.y+0.22, card:'c04'});
+    if(a.ay> 0.12) hs.push({x:tkS.x+0.14, y:tkS.y+0.22, card:'c03'});
+  }
+  if(S.derail) hs.push({x:S.derail.x, y:S.derail.y, card:'c05'});
+  return hs;
+}
+let HOTS=[];
+function drawHotspots(){
+  HOTS=hotspots();
+  HOTS.forEach(h=>{
+    const x=X(h.x), y=Y(h.y);
+    ctx.beginPath(); ctx.arc(x,y,9,0,7);
+    ctx.fillStyle='rgba(30,58,138,.9)'; ctx.fill();
+    ctx.strokeStyle='#fff'; ctx.lineWidth=1.6; ctx.stroke();
+    ctx.fillStyle='#fff'; ctx.font='700 11px sans-serif'; ctx.textAlign='center'; ctx.textBaseline='middle';
+    ctx.fillText('?',x,y+0.5); ctx.textAlign='left'; ctx.textBaseline='alphabetic';
+  });
+}
+function drawSensorCloseup(){
+  const mg=S.m*CFG.g, N=S.lastN, dev=(N/mg-1)*100;
+  ctx.textAlign='center';
+  ctx.fillStyle='#0f172a'; ctx.font='600 15px "PingFang SC",sans-serif';
+  ctx.fillText('压力传感器实时读数（视重）', VW.W/2, 34);
+  ctx.font='700 44px "Segoe UI",sans-serif';
+  ctx.fillStyle = N>mg*1.02?CFG.C.over:(N<mg*0.98?CFG.C.under:'#0f172a');
+  ctx.fillText(N.toFixed(2)+' N', VW.W/2, 88);
+  ctx.font='13px "PingFang SC",sans-serif'; ctx.fillStyle='#475569';
+  ctx.fillText('重力 mg='+mg.toFixed(2)+' N　|　视重偏差 '+(dev>=0?'+':'')+dev.toFixed(1)+'%', VW.W/2, 112);
+  const st=S.samples.length?S.samples[S.samples.length-1].st:'—';
+  ctx.font='600 13px "PingFang SC",sans-serif';
+  ctx.fillStyle = (st==='超重')?CFG.C.over:((st==='失重'||st==='完全失重·临界')?CFG.C.under:'#0f172a');
+  ctx.fillText('状态：'+st+'　判据：a_y '+(st==='超重'?'向上 > 0':(st==='失重'?'向下 < 0':'≈ 0')), VW.W/2, 136);
+  const bw=68, maxv=Math.max(mg*2.2, N*1.15, 0.01), bh=VW.H-210, base=VW.H-46;
+  [['mg',mg,'#6b7280'],['N',N,N>mg*1.02?CFG.C.over:CFG.C.under]].forEach((b,i)=>{
+    const x=VW.W/2+(i? 26 : -26-bw), hh=clamp((b[1]/maxv)*bh,0,bh);
+    ctx.fillStyle='#eef2f7'; ctx.fillRect(x,base-bh,bw,bh);
+    ctx.fillStyle=b[2];     ctx.fillRect(x,base-hh,bw,hh);
+    ctx.strokeStyle='#94a3b8'; ctx.lineWidth=1; ctx.strokeRect(x,base-bh,bw,bh);
+    ctx.fillStyle='#0f172a'; ctx.font='600 12px sans-serif'; ctx.fillText(b[0], x+bw/2, base+16);
+  });
+  ctx.strokeStyle='#111827'; ctx.setLineDash([6,4]); ctx.lineWidth=1.4;
+  const yRef=base-(mg/maxv)*bh;
+  ctx.beginPath(); ctx.moveTo(VW.W/2-170,yRef); ctx.lineTo(VW.W/2+170,yRef); ctx.stroke(); ctx.setLineDash([]);
+  ctx.fillStyle='#111827'; ctx.font='11px sans-serif'; ctx.textAlign='left';
+  ctx.fillText('mg 参考线', VW.W/2-168, yRef-5);
+}
+/* 尊重 prefers-reduced-motion：提供静态分帧图 */
+function drawStaticFrames(){
+  const tk=S.tk;
+  for(let i=0;i<=4;i++){
+    const s=tk.Ltot*i/4, p=posAt(tk,s);
+    let v2=speedAt(tk,p); if(v2<0) v2=0;
+    const N=Math.max(0,normalForce(tk,p,v2,S.m));
+    ctx.globalAlpha=0.55; drawCar(p); ctx.globalAlpha=1;
+    bubble(X(p.x), Y(p.y)-LEN(0.34), 'N='+N.toFixed(2)+'N', N>S.m*CFG.g?CFG.C.over:CFG.C.under);
+  }
+}
+function drawScene(){
+  const f=fit(cvs); ctx=f.c;
+  ctx.clearRect(0,0,f.w,f.h);
+  ctx.fillStyle='#fbfdff'; ctx.fillRect(0,0,f.w,f.h);
+  setTransform(f.w,f.h);
+  if(S.view==='sensor'){ drawSensorCloseup(); return; }
+  const tk=S.tk;
+  drawTrack(); drawCenters(); drawGhosts(); drawRuler(); drawProj();
+  if(S.mode==='track'){
+    const p=posAt(tk,S.s);
+    let v2=speedAt(tk,p); if(v2<0) v2=0;
+    drawCar(p); drawVectors(p,v2,Math.sqrt(v2));
+  } else if(S.derail){
+    const n=S.proj.length, e=n?S.proj[n-1]:S.derail;    // 抛体阶段：小车沿虚线飞出
+    ctx.save(); ctx.translate(X(e.x),Y(e.y));
+    ctx.fillStyle=carColor(); ctx.strokeStyle='#0f172a'; ctx.lineWidth=1.2;
+    roundRect(-LEN(0.15), -LEN(0.14), LEN(0.30), LEN(0.15), 4); ctx.fill(); ctx.stroke();
+    ctx.restore();
+  }
+  drawSensors(); drawEnergyBars();
+  if(!S.playing && S.s===0 && REDUCE) drawStaticFrames();
+  drawHotspots();
+}
+
+/* =================================================== 7. 图表 */
+function frame(cv){
+  const f=fit(cv); const c=f.c;
+  c.clearRect(0,0,f.w,f.h); c.fillStyle='#fff'; c.fillRect(0,0,f.w,f.h);
+  return {c,w:f.w,h:f.h};
+}
+function fmt(v){ const a=Math.abs(v); return a>=100?v.toFixed(0):(a>=10?v.toFixed(1):v.toFixed(2)); }
+function axes(o,cfg){
+  const c=o.c, P={l:48,r:12,t:14,b:30};
+  const W=o.w-P.l-P.r, H=o.h-P.t-P.b;
+  const X=x=>P.l+(x-cfg.x0)/(cfg.x1-cfg.x0||1)*W;
+  const Yv=y=>P.t+H-(y-cfg.y0)/(cfg.y1-cfg.y0||1)*H;
+  c.font='10px sans-serif';
+  c.strokeStyle='#eef2f7'; c.lineWidth=1;
+  for(let i=0;i<=4;i++){
+    const y=cfg.y0+(cfg.y1-cfg.y0)*i/4, yy=Yv(y);
+    c.beginPath(); c.moveTo(P.l,yy); c.lineTo(P.l+W,yy); c.stroke();
+    c.fillStyle='#94a3b8'; c.textAlign='right'; c.textBaseline='middle'; c.fillText(fmt(y),P.l-4,yy);
+  }
+  for(let i=0;i<=4;i++){
+    const x=cfg.x0+(cfg.x1-cfg.x0)*i/4, xx=X(x);
+    c.beginPath(); c.moveTo(xx,P.t); c.lineTo(xx,P.t+H); c.stroke();
+    c.fillStyle='#94a3b8'; c.textAlign='center'; c.textBaseline='top'; c.fillText(fmt(x),xx,P.t+H+4);
+  }
+  c.strokeStyle='#94a3b8'; c.lineWidth=1.2;
+  c.beginPath(); c.moveTo(P.l,P.t); c.lineTo(P.l,P.t+H); c.lineTo(P.l+W,P.t+H); c.stroke();
+  c.fillStyle='#475569'; c.font='11px "PingFang SC",sans-serif'; c.textAlign='center'; c.textBaseline='alphabetic';
+  c.fillText(cfg.xl||'', P.l+W/2, o.h-4);
+  c.save(); c.translate(12,P.t+H/2); c.rotate(-Math.PI/2); c.fillText(cfg.yl||'',0,0); c.restore();
+  c.textAlign='left';
+  return {c,X,Y:Yv,P,W,H};
+}
+function clipOn(A){ A.c.save(); A.c.beginPath(); A.c.rect(A.P.l,A.P.t,A.W,A.H); A.c.clip(); }
+function clipOff(A){ A.c.restore(); }
+function line(A,pts,col,wid,dash){
+  if(pts.length<2) return;
+  clipOn(A); A.c.strokeStyle=col; A.c.lineWidth=wid||2; A.c.setLineDash(dash||[]);
+  A.c.beginPath();
+  pts.forEach((p,i)=> i?A.c.lineTo(A.X(p[0]),A.Y(p[1])):A.c.moveTo(A.X(p[0]),A.Y(p[1])));
+  A.c.stroke(); A.c.setLineDash([]); clipOff(A);
+}
+function scatter(A,pts,col,r){
+  clipOn(A); A.c.fillStyle=col;
+  pts.forEach(p=>{A.c.beginPath();A.c.arc(A.X(p[0]),A.Y(p[1]),r||2.6,0,7);A.c.fill();});
+  clipOff(A);
+}
+function tag(A,x,y,txt,col){
+  A.c.font='600 10px "PingFang SC",sans-serif';
+  const w=A.c.measureText(txt).width+8;
+  const px=A.X(x), py=A.Y(y);
+  A.c.fillStyle='rgba(255,255,255,.94)'; A.c.strokeStyle=col; A.c.lineWidth=1;
+  A.c.beginPath(); A.c.rect(px-w/2,py-8,w,15); A.c.fill(); A.c.stroke();
+  A.c.fillStyle=col; A.c.textAlign='center'; A.c.textBaseline='middle';
+  A.c.fillText(txt,px,py); A.c.textAlign='left'; A.c.textBaseline='alphabetic';
+}
+function emptyHint(A,txt){
+  A.c.fillStyle='#94a3b8'; A.c.font='12px "PingFang SC",sans-serif'; A.c.textAlign='center';
+  A.c.fillText(txt, A.P.l+A.W/2, A.P.t+A.H/2); A.c.textAlign='left';
+}
+
+function drawNt(){
+  const f=frame($('#chNt')), mg=S.m*CFG.g;
+  let y1=mg*1.9; S.samples.forEach(s=>{ if(s.N>y1) y1=s.N*1.15; });
+  const tmax=Math.max(1.2, S.samples.length?S.samples[S.samples.length-1].t:1.2);
+  const A=axes(f,{x0:0,x1:tmax*1.02,y0:Math.min(0,-mg*0.25),y1,xl:'t / s',yl:'N / N'});
+  A.c.fillStyle='rgba(220,38,38,.10)'; A.c.fillRect(A.P.l,A.P.t,A.W,Math.max(0,A.Y(mg)-A.P.t));
+  A.c.fillStyle='rgba(37,99,235,.10)'; A.c.fillRect(A.P.l,A.Y(mg),A.W,Math.max(0,A.P.t+A.H-A.Y(mg)));
+  A.c.font='10px "PingFang SC",sans-serif';
+  A.c.fillStyle='#dc2626'; A.c.fillText('超重区 N>mg',A.P.l+4,A.P.t+11);
+  A.c.fillStyle='#2563eb'; A.c.fillText('失重区 N<mg',A.P.l+4,A.P.t+A.H-4);
+  if(S.samples.length){
+    line(A, S.samples.map(s=>[s.t,s.N]), '#0f172a', 2);
+    A.c.setLineDash([6,4]); A.c.strokeStyle='#111827'; A.c.lineWidth=1.4;
+    A.c.beginPath(); A.c.moveTo(A.P.l,A.Y(mg)); A.c.lineTo(A.P.l+A.W,A.Y(mg)); A.c.stroke(); A.c.setLineDash([]);
+    A.c.fillStyle='#111827'; A.c.textAlign='right'; A.c.fillText('mg='+mg.toFixed(2)+'N', A.P.l+A.W-4, A.Y(mg)-4);
+    A.c.textAlign='left';
+    if(S.apex)   tag(A,S.apex.t,S.apex.N,'拱顶 '+S.apex.N.toFixed(2)+'N',CFG.C.under);
+    if(S.bottom) tag(A,S.bottom.t,S.bottom.N,'凹底 '+S.bottom.N.toFixed(2)+'N',CFG.C.over);
+    /* “临界”标记：拱顶读数 ≈ 0（相对阈值 0.3% mg，容忍固定步长的取样位置偏差），或已脱轨 */
+    if(S.apex && S.apex.N <= 3e-3*mg) tag(A,S.apex.t,0,'临界 N≈0（v=√(gr)）',CFG.C.over);
+    if(S.derail) tag(A,S.derail.t,0,'临界 N=0',CFG.C.over);
+  } else emptyHint(A,'点击“▶ 播放”开始实验，曲线实时绘制');
+  const last=S.samples.length?S.samples[S.samples.length-1]:null;
+  $('#ntState').textContent = last? ('当前：'+last.st+'（a_y='+last.ay.toFixed(2)+' m/s²）') : '';
+}
+function drawNv2(){
+  const f=frame($('#chNv2')), tk=S.tk, m=S.m, mg=m*CFG.g;
+  const v2max=Math.max(12, S.v0top*S.v0top + 2*CFG.g*tk.yT + 8);
+  const y1=Math.max(mg*2.4, m*(CFG.g + v2max/tk.r)*1.05);
+  const A=axes(f,{x0:0,x1:v2max,y0:Math.min(0,-mg*0.3),y1,xl:'v² / (m²·s⁻²)',yl:'N / N'});
+  line(A, [[0,mg],[v2max, mg-m*v2max/tk.r]], CFG.C.under, 2.2, [7,4]);   // 拱顶：斜率 −m/r
+  // 凹底理论直线：横轴是“拱顶 v²”。恒速模式下 v底=v顶，从 0 起画；滑行模式下 v底²=v顶²+2g·yT
+  const v2b0 = S.drive ? 0 : 2*CFG.g*tk.yT;
+  line(A, [[v2b0, mg+m*v2b0/tk.r],[v2max, mg+m*v2max/tk.r]], CFG.C.over, 2.2, [7,4]); // 凹底：斜率 +m/r
+  A.c.font='600 11px "PingFang SC",sans-serif';
+  A.c.fillStyle=CFG.C.under; A.c.fillText('拱顶 N=mg−(m/r)v²', A.P.l+5, A.Y(mg)-10);
+  A.c.fillStyle=CFG.C.over;  A.c.fillText('凹底 N=mg+(m/r)v²', A.P.l+5, A.Y(mg)+18);
+  if(S.scan) S.scan.sets.forEach(st=>{ scatter(A,st.top,CFG.C.under,2.2); scatter(A,st.bot,CFG.C.over,2.2); });
+  if(S.apex)   { A.c.fillStyle=CFG.C.under; A.c.beginPath(); A.c.arc(A.X(S.apex.v2),A.Y(S.apex.N),4.5,0,7); A.c.fill(); }
+  if(S.bottom) { A.c.fillStyle=CFG.C.over;  A.c.beginPath(); A.c.arc(A.X(S.bottom.v2),A.Y(S.bottom.N),4.5,0,7); A.c.fill(); }
+  const v2c=CFG.g*tk.r;
+  if(v2c<=v2max){
+    A.c.strokeStyle=CFG.C.over; A.c.setLineDash([3,3]); A.c.lineWidth=1.4;
+    A.c.beginPath(); A.c.moveTo(A.X(v2c),A.P.t); A.c.lineTo(A.X(v2c),A.P.t+A.H); A.c.stroke(); A.c.setLineDash([]);
+    tag(A, v2c, mg*0.14, 'v²=gr → v₀='+Math.sqrt(v2c).toFixed(2)+' m/s', CFG.C.over);
+  }
+  if(S.scan && S.scan.fit){
+    const ft=S.scan.fit;
+    $('#nv2fit').textContent='拟合：拱顶斜率 '+ft.k.toFixed(4)+'（理论 '+(-S.m/S.tk.r).toFixed(4)+'，误差 '+ft.kErr.toFixed(2)+'%）｜零点 v₀='+ft.v0.toFixed(3)+'（理论 '+Math.sqrt(CFG.g*S.tk.r).toFixed(3)+'，误差 '+ft.v0Err.toFixed(2)+'%）';
+  } else $('#nv2fit').textContent='点“v 自动扫描”生成散点与线性拟合';
+}
+function drawNs(){
+  const f=frame($('#chNs')), tk=S.tk, mg=S.m*CFG.g;
+  let y1=mg*1.6; S.samples.forEach(s=>{ if(s.N>y1) y1=s.N*1.1; });
+  const A=axes(f,{x0:0,x1:tk.Ltot,y0:Math.min(0,-mg*0.15),y1,xl:'沿轨道弧长 s / m',yl:'N / N'});
+  A.c.fillStyle='rgba(37,99,235,.07)'; A.c.fillRect(A.X(0),A.P.t,A.X(tk.La)-A.X(0),A.H);
+  A.c.fillStyle='rgba(220,38,38,.07)'; A.c.fillRect(A.X(tk.La+tk.Ld),A.P.t,A.X(tk.La+tk.Ld+tk.Lp)-A.X(tk.La+tk.Ld),A.H);
+  A.c.font='10px "PingFang SC",sans-serif'; A.c.textAlign='center';
+  A.c.fillStyle='#2563eb'; A.c.fillText('拱形段',(A.X(0)+A.X(tk.La))/2, A.P.t+11);
+  A.c.fillStyle='#dc2626'; A.c.fillText('凹形段',(A.X(tk.La+tk.Ld)+A.X(tk.La+tk.Ld+tk.Lp))/2, A.P.t+11);
+  A.c.textAlign='left';
+  const th=[];
+  for(let i=0;i<=300;i++){ const s=tk.Ltot*i/300, p=posAt(tk,s);
+    let v2=speedAt(tk,p); if(v2<0)v2=0;
+    th.push([s, Math.max(0,normalForce(tk,p,v2,S.m))]); }
+  line(A, th, '#94a3b8', 1.6, [5,4]);
+  if(S.samples.length) line(A, S.samples.map(s=>[s.s,s.N]), '#0f172a', 2);
+  A.c.setLineDash([6,4]); A.c.strokeStyle='#111827'; A.c.lineWidth=1.2;
+  A.c.beginPath(); A.c.moveTo(A.P.l,A.Y(mg)); A.c.lineTo(A.P.l+A.W,A.Y(mg)); A.c.stroke(); A.c.setLineDash([]);
+  /* 注意：一般位置 N = mg·cosφ ∓ mv²/ρ，“坡度 cosφ”与“曲率 1/ρ”两个因素竞争，
+     故 N–s 曲线在拱形段不一定是单谷；极值点（拱顶/凹底，φ=0）处恒为 mg ∓ mv²/r。 */
+  tag(A, tk.apexS,   mg*0.98, '拱顶（失重）', CFG.C.under);
+  tag(A, tk.bottomS, mg*1.06, '凹底（超重）', CFG.C.over);
+  $('#nsInfo').textContent = (S.apex&&S.bottom)
+    ? ('N顶='+S.apex.N.toFixed(2)+'N < mg='+mg.toFixed(2)+'N < N底='+S.bottom.N.toFixed(2)+'N　｜　一般位置 N=mg·cosφ∓mv²/ρ（坡度与曲率共同决定）')
+    : '播放后显示实测曲线（灰虚线为理论全程曲线；一般位置 N=mg·cosφ∓mv²/ρ）';
+}
+function drawVm(){
+  const f=frame($('#chVm')), tk=S.tk;
+  const v0=Math.sqrt(CFG.g*tk.r);
+  const ms=[0.05,0.2,0.4,0.6,0.8,1.0];
+  const A=axes(f,{x0:0,x1:1.05,y0:0,y1:Math.max(6,v0*1.9),xl:'m / kg',yl:'v₀ / (m·s⁻¹)'});
+  line(A, ms.map(x=>[x,v0]), '#16a34a', 2.4);
+  scatter(A, ms.map(x=>[x,v0]), '#0f172a', 3.2);
+  if(S.scan && S.scan.sets.length>1) S.scan.sets.forEach(st=>scatter(A,[[st.m,st.v0]],CFG.C.mass[st.idx%3],5));
+  A.c.fillStyle='#16a34a'; A.c.font='600 12px "PingFang SC",sans-serif';
+  A.c.fillText('v₀=√(gr)='+v0.toFixed(3)+' m/s（水平直线 ⇒ 与 m 无关）', A.P.l+6, A.Y(v0)-8);
+  A.c.fillStyle='#64748b'; A.c.font='10px "PingFang SC",sans-serif';
+  A.c.fillText('r='+tk.r.toFixed(2)+' m，g='+CFG.g.toFixed(1)+' m/s²', A.P.l+6, A.Y(v0)+15);
+  $('#vmInfo').textContent='√(gr)='+v0.toFixed(3)+' m/s';
+}
+function drawCharts(){
+  if($('#chkNt').checked) drawNt();
+  else { const f=frame($('#chNt')); f.c.fillStyle='#94a3b8'; f.c.font='12px "PingFang SC",sans-serif';
+         f.c.textAlign='center'; f.c.fillText('N–t 曲线已关闭（可在控制面板重新开启）',f.w/2,f.h/2); $('#ntState').textContent=''; }
+  drawNv2(); drawNs(); drawVm();
+}
+/* =================================================== 8. 读数面板更新 */
+function updateReadouts(){
+  const tk=S.tk, mg=S.m*CFG.g;
+  let p = S.mode==='track'? posAt(tk,S.s) : null;
+  let v2=0;
+  if(p) v2=Math.max(0, speedAt(tk,p));
+  else if(S.derail) v2=S.derail.v*S.derail.v;
+  const v=Math.sqrt(v2);
+  let N = p? Math.max(0,normalForce(tk,p,v2,S.m)) : 0;
+  if(S.noise && p) N = N + (Math.sin(S.t*97)+Math.sin(S.t*211))*0.5*0.012*mg;   // 可选：模拟真实传感器噪声
+  const a  = p? accelOf(p,N,v2,S.m) : {ay:0,an:0,at:0};
+  const st = stateLabel(a.ay,N);
+  const set=(id,txt)=>{const e=$(id); if(e) e.textContent=txt;};
+  set('#rdN', N.toFixed(2)+' N');
+  set('#rdState', st.t); $('#rdState').style.color=st.c;
+  set('#rdAy', a.ay.toFixed(2)+' m/s²');
+  $('#rdAy').style.color = a.ay>0.12?CFG.C.over:(a.ay<-0.12?CFG.C.under:'#0f172a');
+  set('#rdV', v.toFixed(2)+' m/s'); set('#rdV2', v2.toFixed(2)+' m²/s²');
+  set('#rdH', (p?p.y:0).toFixed(2)+' m');
+  set('#rdTheta', (p&&p.al!=null)? (Math.abs(p.al*DEGR).toFixed(0)+'°') : '—');
+  set('#rdAn', a.an.toFixed(2)+' m/s²'); set('#rdAt', a.at.toFixed(2)+' m/s²');
+  set('#rdEk', (0.5*S.m*v2).toFixed(3)+' J');
+  set('#rdEp', (p?S.m*CFG.g*p.y:0).toFixed(3)+' J');
+  set('#rdEt', (0.5*S.m*v2+(p?S.m*CFG.g*p.y:0)).toFixed(3)+' J');
+  set('#rdMg', mg.toFixed(2)+' N');
+  set('#rdVlaunch', Math.sqrt(Math.max(0,S.v2l)).toFixed(2)+' m/s');
+  set('#rdVbot', (S.drive? S.v0top : Math.sqrt(Math.max(0, v2 + (p? 2*CFG.g*p.y:0)))).toFixed(2)+' m/s');
+  set('#rdVcrit', Math.sqrt(CFG.g*tk.r).toFixed(2)+' m/s');
+  set('#rdNtop', S.apex?  (S.apex.N.toFixed(2)+' N')  : '—');
+  set('#rdNbot', S.bottom?(S.bottom.N.toFixed(2)+' N'): '—');
+  $('#rdNtop').style.color = S.apex?  (S.apex.N<mg?CFG.C.under:CFG.C.over)   : '#94a3b8';
+  $('#rdNbot').style.color = S.bottom?(S.bottom.N>mg?CFG.C.over:CFG.C.under) : '#94a3b8';
+}
+
+/* =================================================== 9. v 自动扫描 + N–v² 线性拟合 */
+function runScan(masses){
+  const tk=S.tk, sets=[];
+  const list = masses || [S.m];
+  list.forEach((m,idx)=>{
+    const top=[], bot=[];
+    for(let v=0.2; v<=8.0001; v+=0.1){
+      const v2=v*v;
+      const Ntop = m*(CFG.g - v2/tk.r);                          // 拱顶：mg − (m/r)v²
+      const v2b  = S.drive ? v2 : (v2 + 2*CFG.g*tk.yT);          // 凹底速率²：恒速则相同，滑行则由机械能守恒
+      const Nbot = m*(CFG.g + v2b/tk.r);                         // 凹底：mg + (m/r)v底²
+      if(Ntop >= -1e-9) top.push([v2, Math.max(0,Ntop)]);
+      bot.push([v2, Nbot]);
+    }
+    sets.push({m, idx, top, bot, v0:Math.sqrt(CFG.g*tk.r)});
+  });
+  // 对“当前质量”的拱顶数据做最小二乘拟合：N = k·v² + b
+  const st0 = sets.find(s=>Math.abs(s.m-S.m)<1e-9) || sets[0];
+  const pts = st0.top;
+  let sx=0,sy=0,sxx=0,sxy=0; const n=pts.length;
+  pts.forEach(p=>{sx+=p[0]; sy+=p[1]; sxx+=p[0]*p[0]; sxy+=p[0]*p[1];});
+  const k=(n*sxy-sx*sy)/(n*sxx-sx*sx||1e-9), b=(sy-k*sx)/n;
+  const v0fit = Math.sqrt(Math.max(0, -b/k));
+  const kTh=-S.m/tk.r, v0Th=Math.sqrt(CFG.g*tk.r);
+  S.scan={sets, fit:{k, b, v0:v0fit,
+    kErr : Math.abs(k-kTh)/Math.abs(kTh)*100,
+    v0Err: Math.abs(v0fit-v0Th)/v0Th*100,
+    gFromFit: (v0fit*v0fit)/tk.r}};
+  toast('扫描完成：拱顶斜率 '+k.toFixed(4)+'（理论 '+kTh.toFixed(4)+'）；零点 v₀='+v0fit.toFixed(3)+' m/s（理论 '+v0Th.toFixed(3)+'）；反推 g='+((v0fit*v0fit)/tk.r).toFixed(2), 4600);
+}
+
+/* =================================================== 10. 预设方案（集中在配置数组） */
+function setV0(val){ S.v0top=clamp(val,0.2,8); $('#rngV0').value=S.v0top; $('#outV0').textContent=S.v0top.toFixed(2)+' m/s'; rebuild(); resetRun(false); }
+function setView(v){
+  S.view=v;
+  $$('.stagebar button').forEach(b=>b.setAttribute('aria-pressed', b.dataset.view===v?'true':'false'));
+}
+const PRESETS=[
+ {id:'crit', t:'拱顶恰好临界', d:'v顶=√(gr)，N≈0', run(){ setV0(Math.sqrt(CFG.g*S.r)); setView('arch'); toast('拱顶临界：N = mg − mv²/r ≈ 0，重力恰好全部提供向心力',3800);} },
+ {id:'low',  t:'拱顶速度不足', d:'v顶=0.7√(gr)，N>0', run(){ setV0(0.7*Math.sqrt(CFG.g*S.r)); setView('arch'); toast('速度不足：N>0，小车仍压在轨道上，只是处于失重状态',3400);} },
+ {id:'over', t:'拱顶超速脱轨', d:'v顶=1.3√(gr)，抛体', run(){ setV0(1.3*Math.sqrt(CFG.g*S.r)); setView('full'); toast('超速：拱顶所需 N<0，小车脱离轨道做抛体运动',3800);} },
+ {id:'dip1', t:'凹底常规速度', d:'v顶=2.0 m/s',        run(){ setV0(2.0); setView('dip'); toast('凹底：N = mg + mv²/r > mg，处于超重状态',3400);} },
+ {id:'dip2', t:'凹底高速',     d:'v顶=4.0 m/s，读数大', run(){ setV0(4.0); setView('dip'); } },
+ {id:'wave', t:'起伏连续通过', d:'拱→凹全程，N 连续变化', run(){ setV0(0.75*Math.sqrt(CFG.g*S.r)); setView('full'); toast('连续起伏：拱顶失重 → 凹底超重，观察 N–位置图',3400);} },
+ {id:'mass', t:'换质量验证',   d:'m / 2m / 3m 同时扫描', run(){ const b=S.m; runScan([b, 2*b, 3*b]); toast('换质量：v₀ 不变（v₀–m 为水平直线），N–v² 斜率与截距随 m 成正比变化',4600);} }
+];
+
+/* =================================================== 11. 知识卡片数据（35 张） */
+function miniSVG(kind){
+  const open='<svg class="mini" viewBox="0 0 300 118" width="100%" height="118" role="img" aria-hidden="true">';
+  const close='</svg>';
+  /* 带箭头的线段 */
+  function A(x1,y1,x2,y2,c,t){
+    const dx=x2-x1, dy=y2-y1, len=Math.hypot(dx,dy)||1;
+    const ux=dx/len, uy=dy/len, h=7;
+    let s='<line x1="'+x1+'" y1="'+y1+'" x2="'+x2+'" y2="'+y2+'" stroke="'+c+'" stroke-width="2.6"/>'
+        + '<path d="M '+x2+' '+y2+' L '+(x2-ux*h+uy*3.5)+' '+(y2-uy*h-ux*3.5)+' L '+(x2-ux*h-uy*3.5)+' '+(y2-uy*h+ux*3.5)+' Z" fill="'+c+'"/>';
+    if(t) s+='<text x="'+(x2+(ux>=0?6:-6))+'" y="'+(y2+(uy>0?13:-4))+'" font-size="11" fill="'+c+'" text-anchor="'+(ux>=0?'start':'end')+'">'+t+'</text>';
+    return s;
+  }
+  function arcP(cx,cy,r,a1,a2){
+    const x1=(cx+r*Math.cos(a1)).toFixed(1), y1=(cy+r*Math.sin(a1)).toFixed(1);
+    const x2=(cx+r*Math.cos(a2)).toFixed(1), y2=(cy+r*Math.sin(a2)).toFixed(1);
+    const large=Math.abs(a2-a1)>Math.PI?1:0;
+    return 'M '+x1+' '+y1+' A '+r+' '+r+' 0 '+large+' 1 '+x2+' '+y2;
+  }
+  const G='#6b7280', Nc='#ea8a0b', AN='#16a34a', V='#2563eb';
+  const car=(x,y,c)=>'<circle cx="'+x+'" cy="'+y+'" r="9" fill="'+c+'" stroke="#0f172a" stroke-width="1"/>';
+  const T=(x,y,t,c,sz,anc)=>'<text x="'+x+'" y="'+y+'" font-size="'+(sz||11)+'" fill="'+c+'" text-anchor="'+(anc||'middle')+'">'+t+'</text>';
+  switch(kind){
+    case 'arch': return open
+      + '<path d="'+arcP(150,215,150,-Math.PI/2-0.62,-Math.PI/2+0.62)+'" stroke="#334155" stroke-width="5" fill="none"/>'
+      + '<line x1="150" y1="65" x2="150" y2="215" stroke="#94a3b8" stroke-dasharray="4 3"/>'
+      + '<circle cx="150" cy="215" r="3" fill="#94a3b8"/>' + T(150,232,'O₁（圆心在轨道下方）','#64748b',10)
+      + car(150,56,'#0ea5e9') + A(150,56,150,100,G,'mg') + A(150,56,150,14,Nc,'N')
+      + T(232,40,'拱顶：N=mg−mv²/r','#1d4ed8',10,'end') + close;
+    case 'dip': return open
+      + '<path d="'+arcP(150,-95,150,Math.PI/2-0.62,Math.PI/2+0.62)+'" stroke="#334155" stroke-width="5" fill="none"/>'
+      + '<line x1="150" y1="-95" x2="150" y2="55" stroke="#94a3b8" stroke-dasharray="4 3"/>'
+      + '<circle cx="150" cy="-95" r="3" fill="#94a3b8"/>' + T(150,-86,'O₂（圆心在轨道上方）','#64748b',10)
+      + car(150,46,'#0ea5e9') + A(150,46,150,92,G,'mg') + A(150,46,150,4,Nc,'N')
+      + T(232,32,'凹底：N=mg+mv²/r','#b91c1c',10,'end') + close;
+    case 'both': return open
+      + '<path d="M 6 72 Q 56 14 106 72 T 206 72 T 294 72" stroke="#334155" stroke-width="4" fill="none"/>'
+      + '<circle cx="56" cy="30" r="3.5" fill="#2563eb"/><circle cx="156" cy="86" r="3.5" fill="#dc2626"/>'
+      + T(56,20,'拱顶 失重 N<mg','#1d4ed8',10) + T(156,106,'凹底 超重 N>mg','#b91c1c',10)
+      + T(150,52,'起伏路面','#64748b',11) + close;
+    case 'scale': return open
+      + '<rect x="86" y="34" width="128" height="52" rx="8" fill="#e2e8f0" stroke="#94a3b8"/>'
+      + '<rect x="112" y="18" width="76" height="18" rx="4" fill="#0ea5e9"/>'
+      + T(150,66,'读数 = 视重','#0f172a',12) + T(150,100,'压力 = 支持力的反作用力','#64748b',10) + close;
+    case 'elevator': return open
+      + '<rect x="112" y="14" width="78" height="90" fill="none" stroke="#334155" stroke-width="2"/>'
+      + '<rect x="130" y="64" width="42" height="24" fill="#e2e8f0" stroke="#64748b"/>'
+      + T(151,58,'台秤','#0f172a',10) + A(151,44,151,18,AN,'a↑ 超重') + A(206,80,206,104,'#dc2626','a↓')
+      + T(60,60,'电梯：a向上 ⇒ 读数↑','#16a34a',10,'start') + close;
+    case 'vector': return open
+      + '<circle cx="150" cy="58" r="46" fill="#eef2ff" stroke="#c7d2fe"/>'
+      + '<line x1="150" y1="58" x2="150" y2="12" stroke="#94a3b8" stroke-dasharray="3 3"/>'
+      + T(150,10,'指向圆心','#64748b',10)
+      + A(150,58,150,102,G,'mg') + A(150,58,150,18,Nc,'N')
+      + T(206,60,'aₙ',AN,11) + T(96,60,'aₜ','#9333ea',11)
+      + T(150,116,'θ：半径与竖直方向夹角','#64748b',10) + close;
+    case 'graph': return open
+      + '<line x1="42" y1="98" x2="282" y2="98" stroke="#334155"/><line x1="42" y1="98" x2="42" y2="12" stroke="#334155"/>'
+      + '<line x1="42" y1="74" x2="272" y2="22" stroke="#dc2626" stroke-width="2.6"/>'
+      + '<line x1="42" y1="74" x2="272" y2="50" stroke="#2563eb" stroke-width="2.6" stroke-dasharray="5 3"/>'
+      + T(60,30,'凹底 斜率 +m/r','#b91c1c',10,'start') + T(60,88,'拱顶 斜率 −m/r','#1d4ed8',10,'start')
+      + '<circle cx="176" cy="98" r="3.6" fill="#111827"/>' + T(176,90,'gr','#111827',10)
+      + T(276,110,'v²','#64748b',10,'end') + close;
+    case 'energy': return open
+      + '<rect x="40" y="44" width="220" height="20" fill="#dbeafe"/><rect x="40" y="44" width="120" height="20" fill="#2563eb"/>'
+      + '<rect x="40" y="70" width="220" height="20" fill="#dcfce7"/><rect x="40" y="70" width="160" height="20" fill="#16a34a"/>'
+      + T(46,38,'Eₖ = ½mv² （下坡增大）','#2563eb',10,'start')
+      + T(46,106,'Eₚ = mgh（下坡减小，E总不变）','#16a34a',10,'start') + close;
+    case 'compare': return open
+      + '<rect x="10" y="22" width="134" height="80" rx="8" fill="#eff6ff" stroke="#93c5fd"/>'
+      + '<rect x="156" y="22" width="134" height="80" rx="8" fill="#fef2f2" stroke="#fca5a5"/>'
+      + T(77,46,'拱桥 N=mg−mv²/r','#1d4ed8',11) + T(77,66,'失重 · 可脱离','#475569',10) + T(77,86,'≈ 绳模型（单侧）','#475569',10)
+      + T(223,46,'凹桥 N=mg+mv²/r','#b91c1c',11) + T(223,66,'超重 · 不脱离','#475569',10) + T(223,86,'≈ 外轨（双侧）','#475569',10) + close;
+    case 'loop': return open
+      + '<circle cx="150" cy="58" r="44" fill="none" stroke="#334155" stroke-width="4"/>'
+      + car(150,14,'#a855f7') + T(150,4,'最高点','#9333ea',10)
+      + T(150,116,'竖直环最高点：v ≥ √(gr)','#64748b',10) + close;
+    case 'warn': return open
+      + '<path d="M150 14 L268 100 L32 100 Z" fill="#fff7ed" stroke="#f59e0b" stroke-width="2"/>'
+      + T(150,72,'!','#b45309',30) + T(150,116,'实验安全','#b45309',11) + close;
+    case 'rope': return open
+      + '<line x1="96" y1="16" x2="96" y2="56" stroke="#a16207" stroke-width="2"/><circle cx="96" cy="70" r="13" fill="#f97316"/>'
+      + T(96,104,'绳（只能拉）','#a16207',10)
+      + '<path d="M 170 88 L 286 88" stroke="#334155" stroke-width="4"/>' + car(228,80,'#0ea5e9')
+      + T(228,110,'拱桥（单侧，会脱离）','#1d4ed8',10) + close;
+    default: return open + '<rect x="40" y="30" width="220" height="60" rx="8" fill="#f8fafc" stroke="#cbd5e1"/>'
+      + T(150,66,'示意','#64748b',12) + close;
+  }
+}
+
+const KNOWLEDGE_CARDS=[
+ {id:'c01',cat:'概念',icon:'both',title:'拱桥与凹桥',
+  concl:'拱形（凸）轨道圆心在轨道下方，凹形（凹）轨道圆心在轨道上方，两者对支持力的影响完全相反。',
+  fml:'拱：mg·cosθ − N = m v²/r　｜　凹：N − mg·cosθ = m v²/r',
+  how:'主画面看 O₁、O₂ 两个圆心：拱顶圆心在轨道下方、凹底圆心在轨道上方；用“拱顶特写 / 凹底特写”对比。',
+  back:'判断口诀：先看圆心在哪，再看支持力是否指向圆心。拱顶 N 背离圆心故在“指向圆心为正”的方程中取负号；凹底 N 指向圆心故取正号。'},
+
+ {id:'c02',cat:'概念',icon:'scale',title:'视重（表观重量）',
+  concl:'压力传感器读数是小车对轨道的压力，它与轨道对小车支持力是一对作用力与反作用力，大小相等，这个读数叫“视重”。',
+  fml:'N读数 = N支持（牛顿第三定律）　视重 ≠ 重力',
+  how:'切到“传感器特写”视图：读数柱与 mg 参考线实时对比，读数随运动状态而变。',
+  back:'小车受 mg 与 N；轨道受小车压力 N′。N′ 与 N 等大反向。台秤、体重计、压力传感器测的都是 N′。',
+  wrong:'“传感器读数就是小车重力”——错，读数是压力（视重），随加速度变化。'},
+
+ {id:'c03',cat:'概念',icon:'elevator',title:'超重',
+  concl:'竖直方向加速度分量 a_y 向上时，支持力（视重）大于重力，称为超重。',
+  fml:'a_y > 0  ⇒  N = m(g + a_y) > mg',
+  how:'看读数面板 a_y 与状态标签：进入凹形段时 a_y > 0，状态显示“超重”，N–t 曲线进入 mg 线上方红区。',
+  back:'竖直向上为正，由牛顿第二定律：N − mg = m·a_y ⇒ N = m(g + a_y)。a_y 向上则 N > mg。'},
+
+ {id:'c04',cat:'概念',icon:'elevator',title:'失重与完全失重',
+  concl:'a_y 向下时 N < mg，为失重；当 a_y = −g（向下且大小等于 g）时 N = 0，为完全失重。',
+  fml:'N = m(g + a_y)　a_y = −g ⇒ N = 0',
+  how:'拱顶处 a_y = −v²/r < 0，状态显示“失重”；当 v = √(gr) 时 N ≈ 0，标签变为“完全失重·临界”。',
+  back:'竖直方向：N − mg = m·a_y。令 N = 0 得 a_y = −g。注意重力 mg 始终存在且大小不变。',
+  wrong:'“失重就是重力变小了”——错。重力 mg 不变，变小的是支持力（视重）。'},
+
+ {id:'c05',cat:'概念',icon:'arch',title:'临界脱离',
+  concl:'拱顶 N = 0 的临界状态：重力恰好全部用来提供向心力；速度再大就会离开轨道。',
+  fml:'mg = m v₀²/r  ⇒  v₀ = √(gr)',
+  how:'点预设“拱顶超速脱轨”，观察红色虚线抛体轨迹与“脱轨点（N=0）”标记。',
+  back:'N = mg − mv²/r = 0 ⇒ v = √(gr)。此时重力全部充当向心力，轨道与车之间恰好无挤压。'},
+
+ {id:'c06',cat:'公式',icon:'arch',title:'拱顶支持力 N = mg − mv²/r',
+  concl:'拱桥顶点处，重力与支持力的合力提供向下的向心力，故支持力小于重力（v>0 时严格小于）。',
+  fml:'mg − N = m v²/r  ⇔  N = mg − m v²/r < mg',
+  how:'用预设“拱顶速度不足”，读 S₁ 气泡读数并与右侧 mg 对比；拖动 v₀ 看 N 单调减小。',
+  back:'取指向圆心（竖直向下）为正：mg − N = m v²/r，移项即得 N = mg − mv²/r。',
+  wrong:'“拱顶支持力等于重力”——错，只有 v = 0 时才相等。'},
+
+ {id:'c07',cat:'公式',icon:'dip',title:'凹底支持力 N = mg + mv²/r',
+  concl:'凹形路段最低点，向心加速度竖直向上，轨道除托住重力外还要提供向心力，故支持力大于重力。',
+  fml:'N − mg = m v²/r  ⇔  N = mg + m v²/r > mg',
+  how:'用预设“凹底常规速度 / 凹底高速”，读 S₂ 气泡；v 越大读数越大。',
+  back:'取指向圆心（竖直向上）为正：N − mg = m v²/r ⇒ N = mg + mv²/r。'},
+
+ {id:'c08',cat:'公式',icon:'vector',title:'一般位置 N = mg·cosφ ∓ mv²/ρ',
+  concl:'φ 为当地坡度角（顶点/底点 φ = 0，故 cosφ = 1）：拱桥取“− mv²/ρ”，凹桥取“+ mv²/ρ”；圆拱时 ρ = r 为常数，即课本式 N = mg·cosθ ∓ mv²/r。',
+  fml:'拱：N = mg·cosφ − m v²/ρ　｜　凹：N = mg·cosφ + m v²/ρ　（本 Demo 拱/凹为抛物线，ρ = r/cos³φ）',
+  how:'看 ③ N–位置图：N 沿弧长连续变化，恒速模式下拱顶取最小、凹底取最大；画面量角器实时显示 φ。',
+  back:'重力在指向曲率中心方向的分量为 mg·cosφ（φ = 0 时全部在法向，为 mg），再叠加向心需求 m v²/ρ，符号由曲率中心方位决定：拱顶曲率中心在下方，重力“帮忙”提供向心力，故用减号；凹底曲率中心在上方，支持力必须同时克服重力并提供向心力，故用加号。本 Demo 用抛物线拱（顶点曲率半径恰为 r，两侧 ρ 迅速变大），极值点处仍严格化为 mg ∓ mv²/r。',
+  wrong:'把“∓”记混——牢记“凹底压力最大”，凹桥一定用加号；另外别在一般位置漏掉 cosφ，只有顶点/底点才 cosφ = 1。'},
+
+ {id:'c09',cat:'公式',icon:'arch',title:'临界速度 v₀ = √(gr)',
+  concl:'拱顶 N = 0 对应的速度 v₀ = √(gr)，只与半径和 g 有关，与小车质量无关。',
+  fml:'v₀ = √(gr)　［r: m，g: m/s²，v₀: m/s］',
+  how:'读数面板常驻显示 √(gr)；② N–v² 图上零点竖线与标签直接给出 v₀。',
+  back:'mg − m v₀²/r = 0 ⇒ v₀² = gr ⇒ v₀ = √(gr)。等式两边 m 同时约掉。'},
+
+ {id:'c10',cat:'公式',icon:'energy',title:'竖直平面变速：机械能守恒',
+  concl:'不计摩擦时只有重力做功，速率随高度变化：½mv₁² + mgh₁ = ½mv₂² + mgh₂。',
+  fml:'v₂² = v₁² − 2g(h₂ − h₁) = v₁² + 2g·Δh(下降)',
+  how:'打开“能量条”：Eₖ 与 Eₚ 相互转化、E总 恒定；勾选“含滚动阻力”后 E总 下降并提示不守恒。',
+  back:'重力是保守力：−ΔEₚ = ΔEₖ ⇒ ½m(v₂² − v₁²) = mg(h₁ − h₂)。'},
+
+ {id:'c11',cat:'公式',icon:'vector',title:'法向加速度 aₙ = v²/r',
+  concl:'圆周运动法向加速度大小 aₙ = v²/r，方向始终指向圆心；它决定需要多大的向心力。',
+  fml:'aₙ = v²/r　［m/s²］　F向 = m v²/r',
+  how:'画面中绿色矢量 aₙ 恒指圆心；读数面板同步显示 aₙ = v²/r 数值。',
+  back:'法向方程即“指向圆心的合力 = m v²/r”。',
+  wrong:'把“向心力”当成额外的一个力——它只是合力在法向方向的分量。'},
+
+ {id:'c12',cat:'规律',icon:'both',title:'拱顶失重、凹底超重',
+  concl:'同一辆小车：过拱顶时读数小于 mg（失重），过凹底时读数大于 mg（超重）。',
+  fml:'N顶 = mg − mv²/r  <  mg  <  mg + mv²/r = N底',
+  how:'播放“起伏连续通过”，观察 ① N–t 曲线先进入蓝色失重区、后进入红色超重区。',
+  back:'拱顶 a_y = −v²/r < 0 ⇒ 失重；凹底 a_y = +v²/r > 0 ⇒ 超重。'},
+
+ {id:'c13',cat:'规律',icon:'graph',title:'v 增大：拱顶 N 减小、凹底 N 增大',
+  concl:'速度增大时，拱顶压力单调减小（可到零），凹底压力单调增大。',
+  fml:'∂N顶/∂v = −2mv/r < 0　｜　∂N底/∂v = +2mv/r > 0',
+  how:'拖动 v₀ 滑块，或点“v 自动扫描”看 ② 图两条直线一降一升。',
+  back:'向心需求 m v²/r 随 v² 增长：拱顶由重力“分出”这一部分，凹底由支持力“额外承担”这一部分。'},
+
+ {id:'c14',cat:'规律',icon:'graph',title:'v₀ 与质量无关',
+  concl:'临界速度 v₀ = √(gr) 中质量被约掉，换 2m、3m 小车临界速度不变。',
+  fml:'mg = m v₀²/r  ⇒  v₀ = √(gr)　（m 约去）',
+  how:'点预设“换质量验证”：④ v₀–m 图为水平直线；② 图中斜率与截距随 m 成比例变化。',
+  back:'方程两边同除以 m：g = v₀²/r，与质量无关。',
+  wrong:'“重的车更容易飞出去”——错，临界速度只由 r 和 g 决定。'},
+
+ {id:'c15',cat:'规律',icon:'arch',title:'v > √(gr) 脱轨做抛体',
+  concl:'计算所得 N ≤ 0 时轨道无法提供“向下拉”的力，小车立即脱离，之后只受重力做抛体运动。',
+  fml:'N ≤ 0  ⇔  v ≥ √(gr)（仅拱形段）',
+  how:'点“拱顶超速脱轨”，红色虚线为抛体轨迹，并标注“此后不再做圆周运动”；把 v 从 1.0√(gr) 逐步调大，看脱轨点如何前移。',
+  back:'轨道只能推不能拉，N ≥ 0 是单侧约束条件；一旦所需 N 为负，约束失效。恒速模式下 N/m = g·cosφ − (v²/r)·cos³φ 沿拱并非单调（坡度与曲率两个因素竞争），脱轨发生在 N 首次降到 0 的位置：v 略大于 √(gr) 时该点就在拱顶附近，v 越大该点越靠前，会出现“还没到拱顶就飞出去”。',
+  wrong:'“超速只是压力大一点”——错，是直接离开轨道。'},
+
+ {id:'c16',cat:'方法',icon:'vector',title:'法向方程列写法',
+  concl:'三步：① 定圆心与半径方向；② 判断支持力是否指向圆心；③ 沿“指向圆心”方向列 ΣF = m v²/r。',
+  fml:'指向圆心为正：ΣF法 = m v²/r',
+  how:'打开“受力矢量”与“圆心与半径线”，照着绿色 aₙ 的方向列式。',
+  back:'例（拱顶）：mg 指向圆心取正，N 背离圆心取负 ⇒ mg − N = m v²/r。'},
+
+ {id:'c17',cat:'方法',icon:'scale',title:'传感器读数即视重',
+  concl:'读数 = 支持力大小 = 视重；把读数与 mg 比较即可直接判定超重 / 失重。',
+  fml:'N读 > mg ⇔ 超重；N读 < mg ⇔ 失重；N读 = 0 ⇔ 完全失重',
+  how:'关闭所有辅助图层，只留“传感器特写”与速度读数，仍可得出三条核心结论。',
+  back:'牛顿第三定律保证读数与支持力等大；再由 N = m(g + a_y) 建立读数与加速度的联系。'},
+
+ {id:'c18',cat:'方法',icon:'graph',title:'N–v² 线性化与零点法',
+  concl:'把 N 对 v² 作图得直线：斜率 ±m/r、截距 mg；拱顶直线零点即 v² = gr，可反推 g 或验证 v₀。',
+  fml:'N = mg ∓ (m/r)·v²　零点 v² = gr ⇒ g = v零点² / r',
+  how:'点“v 自动扫描”，② 图标题下显示拟合斜率、零点与相对误差（理想模式 < 2%）。',
+  back:'线性化目的：把二次关系变成直线，用斜率测 m/r、用截距测 mg、用零点测 gr。'},
+
+ {id:'c19',cat:'方法',icon:'energy',title:'能量 + 受力两步法',
+  concl:'第一步用机械能守恒求各点速度，第二步用法向方程求支持力，两步缺一不可。',
+  fml:'① v₂² = v₁² + 2g(h₁ − h₂)　② N = mg·cosθ ∓ m v₂²/r',
+  how:'N 的变化来自两部分：v² 随高度变化 + 重力法向分量随位置变化，能量条与 N 读数并排可对照。',
+  back:'非匀速圆周运动必须先有速度分布才能求力；只记“速度大压力大”会漏掉 cosθ 的影响，在拱顶恰好说反。',
+  wrong:'只记“速度大压力大”在拱顶恰好说反了。'},
+
+ {id:'c20',cat:'辨析',icon:'compare',title:'视重 vs 重力',
+  concl:'重力 mg 由引力产生、始终不变；视重是支持力（或压力）的大小，随运动状态改变。',
+  fml:'G = mg（不变）　N（视重）= m(g + a_y)（可变）',
+  how:'读数面板并排显示“实时压力 N”与“重力 mg”，两者数值明显不同。',
+  back:'失重 / 超重改变的是“挤压程度”，不是地球对物体的吸引。'},
+
+ {id:'c21',cat:'辨析',icon:'compare',title:'拱桥 vs 凹桥',
+  concl:'拱桥是单侧约束（可脱离，类似绳模型）；凹桥是双侧约束（不会脱离，类似外轨）。',
+  fml:'拱：N = mg·cosθ − mv²/r ∈ [0, mg]　｜　凹：N = mg·cosθ + mv²/r ≥ mg',
+  how:'分别用“拱顶超速脱轨”与“凹底高速”对比：前者飞出，后者读数更大但始终在轨道上。',
+  back:'凹桥 N = mg·cosθ + mv²/r ≥ 0 恒成立（|θ| ≤ 90°），故永不脱离。'},
+
+ {id:'c22',cat:'辨析',icon:'vector',title:'匀速 vs 非匀速圆周运动',
+  concl:'非匀速圆周运动除顶点 / 底点外，合力不指向圆心——还有切向分量在改变速率大小。',
+  fml:'a = aₙ（指圆心） + aₜ（沿切线）　aₜ = −g·(dy/ds) ≠ 0',
+  how:'打开“加速度分解”：绿色 aₙ 指圆心，紫色 aₜ 沿切线；只有在拱顶 / 凹底紫色矢量消失。',
+  back:'匀速圆周 aₜ = 0，合力即向心力；竖直平面内重力有切向分量，故一般位置 aₜ ≠ 0。',
+  wrong:'“竖直圆周运动合力一定指向圆心”——错。'},
+
+ {id:'c23',cat:'辨析',icon:'rope',title:'拱桥 vs 绳模型 vs 火车斜面',
+  concl:'拱桥与绳模型同为单侧约束（可脱离）；火车转弯斜面中支持力垂直斜面，重力不独自提供向心力。',
+  fml:'拱顶：mg − N = mv²/r　绳最高点：mg + T = mv²/r（T ≥ 0）　斜面：N·sinα = mv²/r',
+  how:'与模型32（绳 / 杆模型）、模型34（火车转弯）对照复习。',
+  back:'三者列式形式相似，关键差别在“谁指向圆心、能否为负”。'},
+
+ {id:'c24',cat:'易错',icon:'arch',title:'易错：拱顶支持力等于重力',
+  concl:'错在忽略了向心需求。正确：N = mg − mv²/r < mg（v > 0）。',
+  fml:'正确：N = mg − m v²/r',
+  how:'用预设“拱顶速度不足”实测读数，明显小于 mg。',
+  back:'静止在拱顶（v = 0）时才有 N = mg；车一动，N 立刻小于 mg。',
+  wrong:'错因：把“竖直方向平衡”当成了默认状态。',
+  mem:'一句话记忆：过拱顶，压力一定小于重力。'},
+
+ {id:'c25',cat:'易错',icon:'elevator',title:'易错：失重就是重力变小了',
+  concl:'错。重力 mg 由质量和 g 决定，运动中不变；变小的是支持力（视重）。',
+  fml:'G = mg 恒定；N = m(g + a_y) 可变',
+  how:'读数面板 mg 那一栏全程不变，而 N 在不断变化。',
+  back:'航天员在轨“失重”是因为重力全部提供向心力，不是不受重力。',
+  mem:'一句话记忆：失重失的是“压”，不是“重”。'},
+
+ {id:'c26',cat:'易错',icon:'arch',title:'易错：N = 0 时物体不受重力',
+  concl:'错。N = 0 时重力依然存在，且恰好全部提供向心力：mg = mv²/r。',
+  fml:'N = 0 ⇒ mg = m v²/r ⇒ v = √(gr)',
+  how:'载入临界预设，看状态标签“完全失重·临界”，而受力图中的 mg 矢量依然存在。',
+  mem:'一句话记忆：N = 0 是“没人托我”，不是“没人拉我”。'},
+
+ {id:'c27',cat:'易错',icon:'dip',title:'易错：凹底速度最小所以压力最小',
+  concl:'错。凹底通常速度最大，且 N = mg + mv²/r 比 mg 还大，压力最大。',
+  fml:'N底 = mg + m v底²/r（全程最大）',
+  how:'看 ③ N–位置图：凹底处 N 出现最大值；能量条显示该处 Eₖ 也最大。',
+  mem:'一句话记忆：凹底是“又快又沉”，压力最大。'},
+
+ {id:'c28',cat:'易错',icon:'graph',title:'易错：临界速度与质量有关',
+  concl:'错。v₀ = √(gr) 中 m 被约掉，与质量无关。',
+  fml:'mg = m v₀²/r ⇒ v₀ = √(gr)',
+  how:'“换质量验证”预设：④ v₀–m 是水平直线；质量加倍只是读数加倍。',
+  mem:'一句话记忆：飞不飞出去看速度和半径，不看车轻车重。'},
+
+ {id:'c29',cat:'易错',icon:'scale',title:'易错：传感器读数就是重力',
+  concl:'错。读数是压力（视重），等于支持力大小，随加速度变化；重力才是 mg。',
+  fml:'读数 = N = m(g + a_y) ≠ mg（一般情况下）',
+  how:'“传感器特写”视图中读数柱与 mg 参考线明显不重合。',
+  mem:'一句话记忆：秤称的是“压”，不称“重”。'},
+
+ {id:'c30',cat:'易错',icon:'vector',title:'易错：竖直圆周合力一定指向圆心',
+  concl:'错。只有匀速圆周运动合力才严格指向圆心；非匀速时还有切向分量。',
+  fml:'a = aₙ + aₜ，aₜ = −g·(dy/ds) ≠ 0',
+  how:'打开“加速度分解”，在拱的非顶点位置可见紫色 aₜ 矢量。',
+  mem:'一句话记忆：变速圆周，合力“斜着指”。'},
+
+ {id:'c31',cat:'易错',icon:'arch',title:'易错：超过临界速度只是压力大一点',
+  concl:'错。v > √(gr) 时所需 N 为负，轨道拉不住车，小车做抛体运动。',
+  fml:'v > √(gr) ⇒ N < 0（不可能）⇒ 脱离 + 抛体',
+  how:'“拱顶超速脱轨”预设中出现红色虚线轨迹与“不再做圆周运动”提示。',
+  mem:'一句话记忆：超临界不是压得狠，是直接“飞”。'},
+
+ {id:'c32',cat:'应用',icon:'arch',title:'应用：拱桥限速、凹形路段轮胎压力',
+  concl:'拱桥 / 高架顶点限速是为防止脱离并减小冲击；凹形路段与坑洼处轮胎压力显著增大，易伤轮胎与路基。',
+  fml:'N顶 = mg − mv²/r（要限速）　N底 = mg + mv²/r（要增载设计）',
+  how:'把 v₀ 调大看拱顶读数降到 0，再想“为什么桥上限速”。',
+  back:'工程上增大 r 可降低拱顶失重程度；凹底需加强路面与轮胎承载。'},
+
+ {id:'c33',cat:'应用',icon:'loop',title:'应用：过山车竖直环',
+  concl:'过山车在竖直环最高点需满足 v ≥ √(gr) 才能贴住轨道，与拱顶临界条件一致。',
+  fml:'最高点：N + mg = m v²/r，N ≥ 0 ⇒ v ≥ √(gr)',
+  how:'对比卡片 c05 与 c09：临界条件完全相同，只是一个“不能太快”，一个“不能太慢”。',
+  back:'区别在于过山车是内侧轨道约束，能提供指向圆心的支持力，故条件是速度不小于 √(gr)。'},
+
+ {id:'c34',cat:'应用',icon:'elevator',title:'应用：电梯台秤、飞机俯冲拉起',
+  concl:'电梯加速上升台秤读数变大（超重），加速下降读数变小（失重）；飞机俯冲拉起时飞行员承受数倍体重。',
+  fml:'N = m(g + a_y)　a 向上 ⇒ 读数↑；a 向下 ⇒ 读数↓',
+  how:'把拱桥凹底看成“被向上加速”，与电梯加速上升完全等价。',
+  back:'本模型是“电梯问题”的曲线版本：判据都是 a_y 的符号。'},
+
+ {id:'c35',cat:'辨析',icon:'compare',title:'两种运动模式：恒速驱动 vs 无动力滑行（进阶）',
+  concl:'教材“拱顶临界 v₀=√(gr)”对应恒速驱动；无动力滑行时速率随高度变化，拱段上 N 的分布完全不同——本轨道的抛物线拱，滑行时 N/m=(g−v顶²/r)cos³φ。',
+  fml:'恒速：N/m = g·cosφ − (v²/r)·cos³φ（φ 为坡度角，ρ=r/cos³φ）；滑行：v²=v顶²+2g(y顶−y) ⇒ 拱段 N/m = (g − v顶²/r)·cos³φ',
+  how:'点“🚗 恒速驱动 / 🎢 无动力滑行”切换：恒速下把 v 调到 √(gr) 看拱顶 N≈0，再调大看脱轨；滑行下把 v顶 调到 0.9√(gr) 附近，看整段拱的读数都接近 0（完全失重）。',
+  back:'滑行时用机械能守恒 v² = v顶² + 2g(y顶−y)，配合 ρ = r/cos³φ 代入 N = mg·cosφ − mv²/ρ，恰好把 u² 项抵消掉，得到 N/m = (g − v顶²/r)·cos³φ。原因是这条抛物线正是“以 √(gr) 通过顶点”的抛体轨迹：v顶 = √(gr) 时小车在整段拱上都处于完全失重（N≡0），v顶 更大则一上拱就脱离，v顶 更小则拱顶读数最大、两侧最小。真实拱桥的限速远比 √(gr) 保守，正是因为它同时要兼顾坡度、曲率变化与车辆动力。'},
+
+ {id:'c36',cat:'安全',icon:'warn',title:'安全卡：轨道与释放装置操作',
+  concl:'小车脱轨会飞出，必须佩戴护目镜、固定装置、设接料区，严禁在轨道平面伸手与超速运行。',
+  fml:'—',
+  how:'每次调大速度前先确认接料挡板到位；压力传感器有量程，勿超载。',
+  back:'要点：① 佩戴护目镜；② 装置夹紧固定；③ 轨道平面禁止伸手；④ v 不超过装置标定上限；⑤ 传感器量程内使用；⑥ 脱轨后先停机再捡车。'}
+];
+const CATS=['全部','概念','公式','规律','方法','辨析','易错','应用','安全'];
+/* =================================================== 12. 卡片 UI */
+let cardCur=0, cardFlip=false, cardPinned=false, cardFilter='全部', cardQuery='';
+function renderTabs(){
+  $('#cardTabs').innerHTML = CATS.map(c=>'<button role="tab" aria-pressed="'+(cardFilter===c)+'" data-cat="'+c+'">'+c+'</button>').join('');
+}
+function renderList(){
+  const q=cardQuery.trim();
+  const arr=KNOWLEDGE_CARDS.filter(k=>{
+    const okCat = (cardFilter==='全部')||(k.cat===cardFilter);
+    const okQ   = !q || ((k.title+k.concl+(k.fml||'')+(k.how||'')+(k.wrong||'')+(k.mem||'')+(k.back||'')).indexOf(q)>=0);
+    return okCat && okQ;
+  });
+  $('#cardList').innerHTML = arr.length
+    ? arr.map(k=>'<button class="citem" data-id="'+k.id+'"><span class="cat">'+k.cat+'</span><b>'+k.title+'</b><span>'+k.concl+'</span></button>').join('')
+    : '<p style="color:#94a3b8;text-align:center;margin-top:20px">没有匹配的卡片</p>';
+}
+function openCard(id){
+  const i=KNOWLEDGE_CARDS.findIndex(k=>k.id===id);
+  if(i<0) return;
+  cardCur=i; cardFlip=false; renderCard();
+  $('#cardWin').classList.add('show');
+}
+function renderCard(){
+  const k=KNOWLEDGE_CARDS[cardCur];
+  $('#cwTitle').textContent = '['+k.cat+'] '+k.title;
+  const front =
+    (k.fml?   '<div class="fml">'+k.fml+'</div>':'')+
+    '<div class="kv"><b>一句话结论：</b>'+k.concl+'</div>'+
+    miniSVG(k.icon||'both')+
+    (k.how?   '<div class="how"><b>在本 Demo 中怎么看：</b>'+k.how+'</div>':'')+
+    (k.wrong? '<div class="wrong" style="margin-top:6px"><b>易错提醒：</b>'+k.wrong+'</div>':'')+
+    (k.mem?   '<div class="mem" style="margin-top:6px">'+k.mem+'</div>':'');
+  const backHtml =
+    '<div class="kv"><b>推导 / 说明：</b>'+(k.back||k.concl)+'</div>'+
+    (k.fml? '<div class="fml">'+k.fml+'</div>':'')+
+    miniSVG(k.icon||'both')+
+    '<div class="kv" style="color:#64748b">按 🔄 翻回正面；←/→ 切换相邻卡片；Esc 关闭；📌 钉住常驻。</div>';
+  let body = cardFlip ? backHtml : front;
+  if(k.cat==='安全'){
+    body = '<details class="safe" open><summary><b>安全要点（点击折叠）</b></summary><div style="margin-top:6px">'
+         + k.concl + '<br>' + (k.back||'') + '</div></details>' + body;
+  }
+  $('#cwBody').innerHTML = body;
+  $('#cardWin').setAttribute('aria-label','知识卡片：'+k.title);
+}
+function stepCard(d){ cardCur=(cardCur+d+KNOWLEDGE_CARDS.length)%KNOWLEDGE_CARDS.length; cardFlip=false; renderCard(); }
+
+/* 卡片浮窗可拖动，默认停靠右下角，不遮挡轨道与读数区 */
+(function makeDraggable(){
+  const win=$('#cardWin'), head=$('#cwHead');
+  let dragging=false, sx=0, sy=0, ox=0, oy=0;
+  head.addEventListener('pointerdown', e=>{
+    if(e.target.tagName==='BUTTON') return;
+    dragging=true; sx=e.clientX; sy=e.clientY;
+    const r=win.getBoundingClientRect(); ox=r.left; oy=r.top;
+    win.style.right='auto'; win.style.bottom='auto'; win.style.left=ox+'px'; win.style.top=oy+'px';
+    head.setPointerCapture&&head.setPointerCapture(e.pointerId);
+  });
+  head.addEventListener('pointermove', e=>{
+    if(!dragging) return;
+    win.style.left = clamp(ox+e.clientX-sx, 0, window.innerWidth-120)+'px';
+    win.style.top  = clamp(oy+e.clientY-sy, 0, window.innerHeight-40)+'px';
+  });
+  head.addEventListener('pointerup', ()=>{dragging=false;});
+  head.addEventListener('pointercancel', ()=>{dragging=false;});
+})();
+
+/* =================================================== 13. 教学引导流程 */
+const TEACH=[
+ {t:'① 观察传感器读数', q:'小车过拱顶和凹底时，两个传感器读数一样吗？哪个大？', card:'c02',
+  d:'先不解释原理，只让学生盯住拱顶 S₁ 与凹底 S₂ 的读数气泡，并与右侧“重力 mg”对比。'},
+ {t:'② 受力分析与法向方程', q:'拱顶时重力、支持力、向心方向如何？法向方程怎么写？', card:'c16',
+  d:'打开“受力矢量”与“圆心与半径线”，先定圆心方向，再沿指向圆心方向列 ΣF = m v²/r。'},
+ {t:'③ 推导 N 表达式', q:'由方程解出 N，拱顶和凹底的表达式差在哪一个符号？', card:'c06',
+  d:'拱顶 mg − N = mv²/r ⇒ N = mg − mv²/r；凹底 N − mg = mv²/r ⇒ N = mg + mv²/r。'},
+ {t:'④ 猜想：什么情况下读数为零？', q:'拱顶 N = 0 时速度多大？这个速度与小车质量有关吗？', card:'c09',
+  d:'令 N = 0 得 v₀ = √(gr)。让学生先猜质量是否影响，再用“换质量验证”实验检验。'},
+ {t:'⑤ 变速度实验', q:'增大 v₀，拱顶读数是变大还是变小？凹底呢？', card:'c13',
+  d:'拖动 v₀ 滑块或点“v 自动扫描”，观察 N–v² 两条直线一升一降。'},
+ {t:'⑥ 图像与临界验证', q:'N–v² 直线的斜率和零点分别给出什么物理量？超过临界会怎样？', card:'c18',
+  d:'斜率 ±m/r、截距 mg、零点 v² = gr；再用“拱顶超速脱轨”看抛体轨迹。'}
+];
+let teachIdx=0, teachAuto=false;
+function renderTeach(){
+  $('#stepBtns').innerHTML = TEACH.map((s,i)=>
+    '<button role="tab" aria-current="'+(i===teachIdx)+'" data-i="'+i+'" aria-label="第'+(i+1)+'步：'+s.t+'">'+(i+1)+'</button>').join('');
+  const s=TEACH[teachIdx];
+  $('#teachText').innerHTML = '<b style="color:#1e3a8a">'+s.t+'</b><br>'+s.d+
+    '<div style="margin-top:6px;background:#eff6ff;border-left:3px solid #2563eb;padding:5px 9px;border-radius:0 6px 6px 0"><b>待答问题：</b>'+s.q+'</div>'+
+    '<div style="margin-top:6px;font-size:11.5px;color:#16a34a">结论页自动总结：N = mg ∓ mv²/r、v₀ = √(gr)、超重失重判据 a_y。</div>';
+  if(teachAuto) openCard(s.card);
+}
+
+/* =================================================== 14. 练习与考核 */
+const QUIZ=[
+ {q:'小车通过拱桥顶点的瞬间，压力传感器读数（视重）与重力相比：', o:['大于 mg','等于 mg','小于 mg','无法确定'], a:2,
+  e:'拱顶 mg − N = mv²/r ⇒ N = mg − mv²/r < mg，处于失重状态。', card:'c06'},
+ {q:'小车通过凹形路段最低点时，传感器读数：', o:['小于 mg','等于 mg','大于 mg','一定为零'], a:2,
+  e:'凹底 N − mg = mv²/r ⇒ N = mg + mv²/r > mg，处于超重状态。', card:'c07'},
+ {q:'拱顶临界速度 v₀ = √(gr) 与下列哪个因素有关？', o:['小车质量 m','半径 r 与 g','只有质量','与三者都无关'], a:1,
+  e:'由 mg = mv₀²/r 两边约去 m，得 v₀ = √(gr)，只与 r、g 有关。', card:'c14'},
+ {q:'拱顶处 N = 0（完全失重）时，小车是否不受重力？', o:['是，重力消失','不是，重力恰好提供向心力','重力变为一半','无法判断'], a:1,
+  e:'N = 0 只说明轨道不再托它；此时 mg = mv²/r，重力全部充当向心力。', card:'c26'},
+ {q:'当拱顶速度 v > √(gr) 时，小车此后做什么运动？', o:['继续沿轨道做圆周运动','静止在拱顶','脱离轨道做抛体运动','匀速直线运动'], a:2,
+  e:'所需 N < 0 不可能，单侧约束失效，小车脱离轨道后只受重力，做抛体运动。', card:'c15'}
+];
+let quizOrder=QUIZ.map((_,i)=>i), quizAns={}, quizHidden=false;
+function shuffle(a){ for(let i=a.length-1;i>0;i--){const j=Math.floor(Math.random()*(i+1)); const t=a[i];a[i]=a[j];a[j]=t;} return a; }
+function renderQuiz(){
+  $('#quizBox').innerHTML = quizOrder.map((qi,pos)=>{
+    const Q=QUIZ[qi], done=quizAns[qi]!==undefined;
+    return '<div class="q"><div class="qt">'+(pos+1)+'. '+Q.q+'</div><div class="opts">'+
+      Q.o.map((o,j)=>{
+        let cls='';
+        if(done && !quizHidden) cls = (j===Q.a)?'ok':(j===quizAns[qi]?'no':'');
+        return '<button class="'+cls+'" data-q="'+qi+'" data-o="'+j+'" aria-label="选项'+(j+1)+'：'+o+'">'+'ABCD'[j]+'. '+o+'</button>';
+      }).join('')+'</div>'+
+      (done && !quizHidden ? '<div class="fb">'+(quizAns[qi]===Q.a?'✅ 正确：':'❌ 不正确：')+Q.e+'　<a data-card="'+Q.card+'">📖 打开对应卡片</a></div>' : '')+
+      '</div>';
+  }).join('');
+  const tot=Object.keys(quizAns).length;
+  let ok=0; Object.keys(quizAns).forEach(k=>{ if(quizAns[k]===QUIZ[k].a) ok++; });
+  $('#quizScore').textContent = tot? ('已答 '+tot+'/'+quizOrder.length+'，正确 '+ok) : '';
+}
+
+/* =================================================== 15. 数据记录 */
+function recordRun(){
+  if(!S.apex && !S.bottom){ toast('请先完整播放一次实验（记录需要拱顶/凹底数据）'); return; }
+  const mg=S.m*CFG.g;
+  const vt=S.apex?S.apex.v:NaN, vb=S.bottom?S.bottom.v:NaN;
+  const Nt=S.apex?S.apex.N:NaN, Nb=S.bottom?S.bottom.N:NaN;
+  const NtTh=S.apex? S.m*(CFG.g - S.apex.v2/S.r) : NaN;
+  const err=S.apex? Math.abs(Nt-NtTh)/mg*100 : NaN;
+  const last=S.samples.length?S.samples[S.samples.length-1].st:'—';
+  S.recNo++;
+  const rec={no:S.recNo, r:S.r, m:S.m, g:CFG.g, vt, vb, Nt, Nb, mg, st:last, NtTh, err};
+  S.records.push(rec); renderTable();
+  toast('已记录第 '+S.recNo+' 组数据');
+}
+function renderTable(){
+  $('#tblBody').innerHTML = S.records.map(r=>{
+    const f=(x)=>isFinite(x)?x.toFixed(3):'—';
+    return '<tr><td>'+r.no+'</td><td>'+r.r.toFixed(2)+'</td><td>'+r.m.toFixed(2)+'</td><td>'+r.g.toFixed(1)+'</td>'+
+      '<td>'+f(r.vt)+'</td><td>'+f(r.vb)+'</td><td>'+f(r.Nt)+'</td><td>'+f(r.Nb)+'</td><td>'+r.mg.toFixed(2)+'</td>'+
+      '<td>'+r.st+'</td><td>'+(isFinite(r.err)?r.err.toFixed(2):'—')+'</td></tr>';
+  }).join('') || '<tr><td colspan="11" style="color:#94a3b8">暂无数据</td></tr>';
+}
+function exportCSV(){
+  if(!S.records.length){ toast('暂无可导出的数据'); return; }
+  const head=['序号','r(m)','m(kg)','g(m/s^2)','v顶(m/s)','v底(m/s)','N顶(N)','N底(N)','mg(N)','N顶理论(N)','状态','相对误差(%)'];
+  const rows=S.records.map(r=>[r.no,r.r.toFixed(3),r.m.toFixed(3),r.g.toFixed(2),
+    isFinite(r.vt)?r.vt.toFixed(4):'', isFinite(r.vb)?r.vb.toFixed(4):'',
+    isFinite(r.Nt)?r.Nt.toFixed(4):'', isFinite(r.Nb)?r.Nb.toFixed(4):'', r.mg.toFixed(4),
+    isFinite(r.NtTh)?r.NtTh.toFixed(4):'', r.st, isFinite(r.err)?r.err.toFixed(3):'']);
+  const csv='\ufeff'+[head].concat(rows).map(a=>a.join(',')).join('\r\n');
+  const blob=new Blob([csv],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');
+  a.href=URL.createObjectURL(blob); a.download='模型36_拱桥凹桥_数据记录.csv';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(()=>URL.revokeObjectURL(a.href), 2000);
+}
+
+/* =================================================== 16. 事件绑定 */
+function bindEvents(){
+  // 播放控制
+  $('#btnPlay').addEventListener('click', ()=>{
+    if(S.finished) resetRun(false);
+    S.playing=!S.playing;
+    $('#btnPlay').setAttribute('aria-pressed', S.playing?'true':'false');
+    $('#btnPlay').textContent = S.playing?'⏸ 暂停':'▶ 播放';
+  });
+  $('#btnStep').addEventListener('click', ()=>{
+    S.playing=false; $('#btnPlay').setAttribute('aria-pressed','false'); $('#btnPlay').textContent='▶ 播放';
+    if(S.finished) resetRun(false);
+    for(let i=0;i<25;i++) step(CFG.dt);      // 单步 = 0.05 s
+    updateReadouts();
+  });
+  $('#btnReset').addEventListener('click', ()=>{ resetRun(false); toast('已重置到发射点'); });
+  $('#selSpeed').addEventListener('change', e=>{ S.speed=parseFloat(e.target.value); });
+
+  // 运动模式（恒速驱动 / 无动力滑行）
+  function setMode(drive){
+    if(S.drive===drive) return;
+    S.drive=drive;
+    $('#btnModeDrive').setAttribute('aria-pressed', drive?'true':'false');
+    $('#btnModeCoast').setAttribute('aria-pressed', drive?'false':'true');
+    S.scan=null; rebuild(); resetRun(false);
+    toast(drive? '恒速驱动模式：小车由牵引装置维持 v = v₀ 不变，拱顶 N 最小、凹底 N 最大（教材标准模型）'
+               : '无动力滑行模式：只有重力做功，机械能守恒；注意圆形拱上 N 最小处实际在拱的侧面（进阶）', 5200);
+  }
+  $('#btnModeDrive').addEventListener('click', ()=>setMode(true));
+  $('#btnModeCoast').addEventListener('click', ()=>setMode(false));
+
+  // 参数
+  $('#rngV0').addEventListener('input', e=>{
+    S.v0top=parseFloat(e.target.value); $('#outV0').textContent=S.v0top.toFixed(2)+' m/s';
+    rebuild(); resetRun(false);
+  });
+  $('#rngR').addEventListener('input', e=>{
+    S.r=parseFloat(e.target.value); $('#outR').textContent=S.r.toFixed(2)+' m';
+    $$('[data-r]').forEach(b=>b.setAttribute('aria-pressed', Math.abs(parseFloat(b.dataset.r)-S.r)<1e-6?'true':'false'));
+    S.scan=null; rebuild(); resetRun(false);
+  });
+  $$('[data-r]').forEach(b=>b.addEventListener('click', ()=>{
+    S.r=parseFloat(b.dataset.r); $('#rngR').value=S.r; $('#outR').textContent=S.r.toFixed(2)+' m';
+    $$('[data-r]').forEach(x=>x.setAttribute('aria-pressed', x===b?'true':'false'));
+    S.scan=null; rebuild(); resetRun(false);
+  }));
+  $('#rngM').addEventListener('input', e=>{
+    S.m=parseFloat(e.target.value); $('#outM').textContent=S.m.toFixed(2)+' kg';
+    $$('[data-m]').forEach(b=>b.setAttribute('aria-pressed', Math.abs(parseFloat(b.dataset.m)-S.m)<1e-6?'true':'false'));
+    S.scan=null; resetRun(false);
+  });
+  $$('[data-m]').forEach(b=>b.addEventListener('click', ()=>{
+    S.m=parseFloat(b.dataset.m); $('#rngM').value=S.m; $('#outM').textContent=S.m.toFixed(2)+' kg';
+    $$('[data-m]').forEach(x=>x.setAttribute('aria-pressed', x===b?'true':'false'));
+    S.scan=null; resetRun(false);
+  }));
+  $$('[data-g]').forEach(b=>b.addEventListener('click', ()=>{
+    CFG.g=parseFloat(b.dataset.g);
+    $$('[data-g]').forEach(x=>x.setAttribute('aria-pressed', x===b?'true':'false'));
+    S.scan=null; rebuild(); resetRun(false);
+  }));
+
+  // 开关
+  $('#chkFric').addEventListener('change', e=>{ S.fric=e.target.checked; if(S.fric) toast('已开启滚动阻力：机械能不再守恒（近似：等效恒定阻力）'); resetRun(false); });
+  $('#chkNoise').addEventListener('change', e=>{ S.noise=e.target.checked; });
+  ['#chkVec','#chkAcc','#chkNt','#chkEnergy','#chkCenter','#chkProj','#chkSensor','#chkStrobe','#chkRuler']
+    .forEach(id=>$(id).addEventListener('change', ()=>{ updateReadouts(); }));
+
+  // 预设
+  $('#presetBox').innerHTML = PRESETS.map(p=>'<button data-preset="'+p.id+'"><b>'+p.t+'</b><span>'+p.d+'</span></button>').join('');
+  $('#presetBox').addEventListener('click', e=>{
+    const b=e.target.closest('button[data-preset]'); if(!b) return;
+    const p=PRESETS.find(x=>x.id===b.dataset.preset); if(!p) return;
+    p.run(); S.scan = (p.id==='mass')? S.scan : S.scan;   // 换质量预设保留扫描结果
+    updateReadouts();
+  });
+  $('#btnScan').addEventListener('click', ()=>runScan([S.m]));
+
+  // 记录 / 导出
+  $('#btnRecord').addEventListener('click', recordRun);
+  $('#btnExport').addEventListener('click', exportCSV);
+  $('#btnClear').addEventListener('click', ()=>{ S.records=[]; S.recNo=0; renderTable(); toast('数据记录已清空'); });
+
+  // 视图
+  $$('.stagebar button').forEach(b=>b.addEventListener('click', ()=>setView(b.dataset.view)));
+
+  // 画布热点
+  cvs.addEventListener('click', e=>{
+    const r=cvs.getBoundingClientRect();
+    const mx=e.clientX-r.left, my=e.clientY-r.top;
+    let best=null, bd=1e9;
+    HOTS.forEach(h=>{ const d=Math.hypot(X(h.x)-mx, Y(h.y)-my); if(d<bd){bd=d;best=h;} });
+    if(best && bd<20) openCard(best.card);
+  });
+
+  // 卡片库
+  $('#btnCards').addEventListener('click', ()=>{ $('#drawer').classList.add('open'); $('#cardSearch').focus(); });
+  $('#btnDrawerClose').addEventListener('click', ()=>$('#drawer').classList.remove('open'));
+  $('#cardTabs').addEventListener('click', e=>{
+    const b=e.target.closest('button[data-cat]'); if(!b) return;
+    cardFilter=b.dataset.cat; renderTabs(); renderList();
+  });
+  $('#cardSearch').addEventListener('input', e=>{ cardQuery=e.target.value; renderList(); });
+  $('#cardList').addEventListener('click', e=>{
+    const b=e.target.closest('.citem'); if(!b) return; openCard(b.dataset.id);
+  });
+  $$('.chip[data-card]').forEach(c=>c.addEventListener('click', ()=>openCard(c.dataset.card)));
+
+  // 卡片窗
+  $('#btnFlip').addEventListener('click', ()=>{ cardFlip=!cardFlip; renderCard(); });
+  $('#btnPin').addEventListener('click', ()=>{
+    cardPinned=!cardPinned;
+    $('#btnPin').textContent = cardPinned?'📍':'📌';
+    $('#btnPin').setAttribute('aria-pressed', cardPinned?'true':'false');
+    toast(cardPinned?'卡片已钉住（不会被 Esc 之外的方式自动关闭）':'已取消钉住');
+  });
+  $('#btnPrev').addEventListener('click', ()=>stepCard(-1));
+  $('#btnNext').addEventListener('click', ()=>stepCard(1));
+  $('#btnClose').addEventListener('click', ()=>{ cardPinned=false; $('#cardWin').classList.remove('show'); });
+
+  // 键盘无障碍
+  document.addEventListener('keydown', e=>{
+    if(e.key==='Escape'){ $('#cardWin').classList.remove('show'); $('#drawer').classList.remove('open'); cardPinned=false; }
+    if($('#cardWin').classList.contains('show')){
+      if(e.key==='ArrowLeft')  { stepCard(-1); e.preventDefault(); }
+      if(e.key==='ArrowRight') { stepCard(1);  e.preventDefault(); }
+      if(e.key==='Enter' || e.key===' '){ if(e.target.tagName!=='BUTTON'){ cardFlip=!cardFlip; renderCard(); e.preventDefault(); } }
+    }
+  });
+
+  // 教学流程
+  $('#btnTeachOn').addEventListener('click', ()=>{
+    teachAuto=!teachAuto;
+    $('#btnTeachOn').setAttribute('aria-pressed', teachAuto?'true':'false');
+    $('#btnTeachOn').textContent = teachAuto?'🎓 教学引导中':'🎓 教学引导';
+    if(teachAuto){ renderTeach(); toast('已开启教学引导：每步自动弹出对应卡片'); }
+  });
+  $('#stepBtns').addEventListener('click', e=>{
+    const b=e.target.closest('button[data-i]'); if(!b) return;
+    teachIdx=parseInt(b.dataset.i,10); renderTeach();
+  });
+  $('#btnTeachPrev').addEventListener('click', ()=>{ teachIdx=(teachIdx-1+TEACH.length)%TEACH.length; renderTeach(); });
+  $('#btnTeachNext').addEventListener('click', ()=>{ teachIdx=(teachIdx+1)%TEACH.length; renderTeach(); });
+  $('#btnTeachCard').addEventListener('click', ()=>openCard(TEACH[teachIdx].card));
+
+  // 练习
+  $('#quizBox').addEventListener('click', e=>{
+    const a=e.target.closest('a[data-card]'); if(a){ openCard(a.dataset.card); return; }
+    const b=e.target.closest('button[data-q]'); if(!b) return;
+    quizAns[parseInt(b.dataset.q,10)] = parseInt(b.dataset.o,10);
+    renderQuiz();
+  });
+  $('#btnQuizNew').addEventListener('click', ()=>{ quizOrder=shuffle(quizOrder.slice()); quizAns={}; renderQuiz(); toast('已随机重排题目并清空作答'); });
+  $('#btnQuizHide').addEventListener('click', ()=>{
+    quizHidden=!quizHidden;
+    $('#btnQuizHide').setAttribute('aria-pressed', quizHidden?'true':'false');
+    $('#btnQuizHide').textContent = quizHidden?'🙈 考核模式中':'🙈 隐藏答案（考核）';
+    renderQuiz();
+  });
+
+  $('#btnHelp').addEventListener('click', ()=>{
+    openCard('c01');
+    toast('用法：选视图 → 调 v₀/r/m/g → 点预设或播放；点画面上的“?”热点可弹出对应知识卡片。', 5000);
+  });
+  window.addEventListener('resize', ()=>{ updateReadouts(); });
+}
+
+/* =================================================== 17. 主循环（固定步长积分） */
+let lastT=0;
+function loop(now){
+  if(!lastT) lastT=now;
+  const real=Math.min((now-lastT)/1000, 0.05); lastT=now;
+  if(S.playing && !S.finished){
+    let acc=real*S.speed;
+    let guard=0;
+    while(acc>0 && guard++<2000){
+      const dt=Math.min(CFG.dt, acc);
+      step(dt); acc-=dt;
+      if(S.finished) break;
+    }
+    updateReadouts();
+  }
+  drawScene(); drawCharts();
+  requestAnimationFrame(loop);
+}
+
+/* =================================================== 18. 初始化 */
+function init(){
+  S.tk=buildTrack(S.r);
+  rebuild();
+  bindEvents();
+  renderTabs(); renderList(); renderTable();
+  renderTeach(); renderQuiz();
+  resetRun(false);
+  $('#outV0').textContent=S.v0top.toFixed(2)+' m/s';
+  $('#outR').textContent=S.r.toFixed(2)+' m';
+  $('#outM').textContent=S.m.toFixed(2)+' kg';
+  if(REDUCE){ toast('已检测到“减少动效”偏好：默认不自动播放，提供静态分帧图，卡片仍可正常浏览', 5200); }
+  else { S.playing=true; $('#btnPlay').setAttribute('aria-pressed','true'); $('#btnPlay').textContent='⏸ 暂停'; }
+  requestAnimationFrame(loop);
+}
+init();
+</script>
+</body>
+</html>

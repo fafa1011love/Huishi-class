@@ -2,11 +2,14 @@
 from __future__ import annotations
 
 import copy
+import hashlib
 import json
+import threading
 import uuid
+from collections import OrderedDict
 
 import biomed_curriculum
-import ollama_adapter
+import lesson_ai_adapter
 
 
 FIVE_STEP_IDS = ["objectives", "content", "reasoning-teaching", "activities-competencies", "final"]
@@ -14,6 +17,20 @@ FIVE_STEP_TITLES = ["专业能力目标与课程定位", "学习内容、重点�
 FORBIDDEN_VERBS = ("了解", "理解", "掌握", "熟悉")
 DURATIONS = (40, 80, 120)
 HOOK_TYPES = ("问题锚点", "案例冲突", "实物观察", "图像辨析", "数据异常", "操作挑战")
+
+# 视为「真实 AI 生成」的引擎标记。不在这个集合里就说明走了内置模板回退。
+# "ollama" 已不再调用，仅保留用于识别此前保存的教案。
+AI_ENGINES = ("responses", "ollama")
+
+
+def _ai_call(method_name, *args, **kwargs):
+    """调用云端 AI 适配器：成功返回 (payload, meta)，失败返回 (None, 失败信息)。"""
+    return getattr(lesson_ai_adapter, method_name)(*args, **kwargs)
+
+
+def _ai_engine_label():
+    """AI 引擎标识，写入生成结果元信息供前端区分来源。"""
+    return lesson_ai_adapter.ENGINE
 
 
 def _duration(value):
@@ -307,7 +324,7 @@ def _activities_step(request, base, path, objective_ids, model_asset, ai_content
         })
     # Keep the activity record usable as a real lesson script, not only as a summary.
     # These fields are deliberately deterministic so the local template remains useful
-    # when Ollama is unavailable.
+    # when the AI service is unavailable.
     activity_detail = [
         {
             "teacherProcess": "先说明观察范围和记录格式，再示范一个部件的定位方法；巡视时优先检查方向、边界和连接关系，最后邀请一组学生用证据复述判断。",
@@ -666,7 +683,7 @@ def validate_workflow(workflow, require_approval=False):
         blocking.append({"code": "missing-reference", "message": "本科教案必须包含可追溯的生成依据"})
     elif any(not item.get("title") or not item.get("sourceType") for item in references):
         blocking.append({"code": "invalid-reference", "message": "参考资料缺少标题或来源类型"})
-    if workflow.get("generation", {}).get("engine") != "ollama":
+    if workflow.get("generation", {}).get("engine") not in AI_ENGINES:
         warnings.append({"code": "template-fallback", "message": workflow.get("generation", {}).get("message") or "当前使用本地模板回退"})
     score = max(0, 100 - len(blocking) * 25 - len(warnings) * 5)
     return {"blocking": blocking, "warnings": warnings, "score": score, "valid": not blocking}
@@ -733,7 +750,7 @@ def generate_draft(request, mode="quick", model_asset=None):
     request["abilityLevel"] = request.get("abilityLevel") if request.get("abilityLevel") in ("基础层", "进阶层") else "基础层"
     base = biomed_curriculum.build_lesson(request)
     activity_count = _activity_count(request["duration"])
-    ai_content, generation = ollama_adapter.generate_lesson_content(request, base, request["duration"], activity_count)
+    ai_content, generation = _ai_call("generate_lesson_content", request, base, request["duration"], activity_count)
     if ai_content:
         # The teacher's topic is the authoritative lesson identity. Let the
         # model write the overview and content, but never let it rename the
@@ -759,7 +776,7 @@ def generate_draft(request, mode="quick", model_asset=None):
         } for item in ai_content.get("questionChain", [])]
         base["misconceptions"] = ai_content.get("misconceptions") or base.get("misconceptions")
     else:
-        generation = {**generation, "engine": "builtin-template", "model": ollama_adapter.DEFAULT_MODEL, "message": generation.get("message") or "本地模型未生成有效课程内容，已使用内置模板回退"}
+        generation = {**generation, "engine": "builtin-template", "message": generation.get("message") or "AI 未生成有效课程内容，已使用内置模板回退"}
     groups = _objective_groups(request, base)
     requested_group = request.get("selectedObjectiveGroupId")
     selected_group = requested_group if any(item["id"] == requested_group for item in groups) else "goal-balanced"
@@ -897,10 +914,31 @@ def prepare_teacher_lesson(payload):
         if value:
             forbidden_output.append(value)
 
+    def normalize(value):
+        """Fix mechanical deviations locally so they never cost another AI round trip."""
+        for key in ("objectives", "keyPoints", "difficulties", "teacherPreparation", "studentPreparation", "homework", "blackboardDesign"):
+            if isinstance(value.get(key), list):
+                value[key] = [item.strip() for item in value[key] if isinstance(item, str) and item.strip()]
+        if isinstance(value.get("keyPoints"), list):
+            value["keyPoints"] = value["keyPoints"][:4]
+        if isinstance(value.get("difficulties"), list):
+            value["difficulties"] = value["difficulties"][:3]
+        generated_process = value.get("process")
+        # The schedule is fixed by the approved design: when the model kept the
+        # right number of phases, trust the schedule for names and minutes.
+        if isinstance(generated_process, list) and len(generated_process) == len(expected_process) and all(isinstance(item, dict) for item in generated_process):
+            for generated, expected in zip(generated_process, expected_process):
+                generated["name"] = expected["name"]
+                generated["minutes"] = expected["minutes"]
+        overview = value.get("overview")
+        if isinstance(overview, str) and overview.strip() and topic not in json.dumps(value, ensure_ascii=False):
+            value["overview"] = f"本课围绕“{topic}”展开。" + overview.strip()
+
     def validate(value):
         required = ("overview", "objectives", "keyPoints", "difficulties", "teacherPreparation", "studentPreparation", "process", "homework", "blackboardDesign")
         if not isinstance(value, dict) or any(key not in value for key in required):
             return "教师版教案缺少必需部分"
+        normalize(value)
         for key in ("overview",):
             if not isinstance(value.get(key), str) or len(value[key].strip()) < 35:
                 return "课程说明过短或缺失"
@@ -942,28 +980,77 @@ def prepare_teacher_lesson(payload):
         "required": ["overview", "objectives", "keyPoints", "difficulties", "teacherPreparation", "studentPreparation", "process", "homework", "blackboardDesign"],
         "additionalProperties": False,
     }
-    generated, error = ollama_adapter.generate_json(
-        "你是一位经验丰富、表达朴实清楚的本科任课教师。请把审核通过的设计整理成普通教师一看就能照着上的教案。只输出符合结构的 JSON。不要输出说明、编号或后台设计术语。",
-        json.dumps(prompt_context, ensure_ascii=False),
-        validator=validate,
-        timeout=240,
-        format_schema=schema,
-    )
-    if generated is None:
-        return {"draft": None, "generation": {"engine": "unavailable", "message": f"AI 教案成稿失败：{error or '未返回有效内容'}"}, "quality": {"valid": False, "blocking": [error or "AI 未返回有效教案"]}}
+    user_prompt = json.dumps(prompt_context, ensure_ascii=False)
 
-    draft = {
-        "title": topic,
-        "courseName": course_name,
-        "duration": int(workflow.get("duration") or 40),
-        **generated,
-        "references": references,
-    }
-    return {
-        "draft": draft,
-        "generation": {"engine": "ollama", "message": "AI 教案成稿已完成"},
-        "quality": {"valid": True, "blocking": [], "checks": ["内容结构完整", "教学流程与课时一致", "活动包含教师指导、学生任务和检查方式", "未包含后台编号及模板话术"]},
-    }
+    def produce():
+        generated, error = _ai_call(
+            "generate_json",
+            "你是一位经验丰富、表达朴实清楚的本科任课教师。请把审核通过的设计整理成普通教师一看就能照着上的教案。只输出符合结构的 JSON。不要输出说明、编号或后台设计术语。",
+            user_prompt,
+            validator=validate,
+            timeout=240,
+            format_schema=schema,
+        )
+        if generated is None:
+            failure = error.get("message") if isinstance(error, dict) else (error or "未返回有效内容")
+            return {"draft": None, "generation": {"engine": "unavailable", "message": f"AI 教案成稿失败：{failure}"}, "quality": {"valid": False, "blocking": [failure]}}
+
+        draft = {
+            "title": topic,
+            "courseName": course_name,
+            "duration": int(workflow.get("duration") or 40),
+            **generated,
+            "references": references,
+        }
+        return {
+            "draft": draft,
+            "generation": {"engine": _ai_engine_label(), "message": "AI 教案成稿已完成"},
+            "quality": {"valid": True, "blocking": [], "checks": ["内容结构完整", "教学流程与课时一致", "活动包含教师指导、学生任务和检查方式", "未包含后台编号及模板话术"]},
+        }
+
+    cache_key = hashlib.sha256("\n".join((lesson_ai_adapter.DEFAULT_MODEL, user_prompt)).encode("utf-8")).hexdigest()
+    return _cached_teacher_lesson(cache_key, produce)
+
+
+# The manuscript depends only on the approved design, so identical requests
+# (re-opening the export tab, a remount, a double click) reuse one AI result.
+_TEACHER_LESSON_CACHE = OrderedDict()
+_TEACHER_LESSON_CACHE_SIZE = 32
+_TEACHER_LESSON_INFLIGHT = {}
+_TEACHER_LESSON_LOCK = threading.Lock()
+
+
+def clear_teacher_lesson_cache():
+    with _TEACHER_LESSON_LOCK:
+        _TEACHER_LESSON_CACHE.clear()
+
+
+def _cached_teacher_lesson(key, produce):
+    with _TEACHER_LESSON_LOCK:
+        if key in _TEACHER_LESSON_CACHE:
+            _TEACHER_LESSON_CACHE.move_to_end(key)
+            return copy.deepcopy(_TEACHER_LESSON_CACHE[key])
+        pending = _TEACHER_LESSON_INFLIGHT.get(key)
+        if pending is None:
+            _TEACHER_LESSON_INFLIGHT[key] = threading.Event()
+    if pending is not None:
+        # Another request is already generating this exact manuscript.
+        pending.wait(timeout=20 * 60)
+        with _TEACHER_LESSON_LOCK:
+            if key in _TEACHER_LESSON_CACHE:
+                return copy.deepcopy(_TEACHER_LESSON_CACHE[key])
+        return produce()
+    try:
+        result = produce()
+        if result.get("draft"):
+            with _TEACHER_LESSON_LOCK:
+                _TEACHER_LESSON_CACHE[key] = copy.deepcopy(result)
+                while len(_TEACHER_LESSON_CACHE) > _TEACHER_LESSON_CACHE_SIZE:
+                    _TEACHER_LESSON_CACHE.popitem(last=False)
+        return result
+    finally:
+        with _TEACHER_LESSON_LOCK:
+            _TEACHER_LESSON_INFLIGHT.pop(key).set()
 
 
 def generate_step(payload):
@@ -1057,7 +1144,8 @@ def edit_step(payload):
         "modelContext": workflow.get("modelContext") or {},
         "references": workflow.get("groundingReferences") or [],
     }
-    revised, generation = ollama_adapter.revise_lesson_step(
+    revised, generation = _ai_call(
+        "revise_lesson_step",
         request,
         step,
         instruction,

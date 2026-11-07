@@ -1,0 +1,690 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<title>对数函数探究教具 · y = log_a x</title>
+<style>
+  :root{
+    --bg:#f5f7fa;
+    --card:#fff;
+    --line:#e2e8f0;
+    --ink:#1e293b;
+    --ink2:#334155;
+    --muted:#64748b;
+    --brand:#2563eb;
+    --brand-soft:#eff6ff;
+    --hl:#ef4444;
+  }
+  *{box-sizing:border-box;}
+  html,body{margin:0;padding:0;}
+  body{
+    background:var(--bg);
+    color:var(--ink);
+    font-family:"Microsoft YaHei","PingFang SC",system-ui,sans-serif;
+    line-height:1.65;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1320px;margin:0 auto;padding:22px 20px 40px;}
+
+  /* 页头：与「指数函数探究教具」一致的深蓝渐变条 */
+  header.top{background:linear-gradient(120deg,#1e3a8a,#2563eb 60%,#0ea5e9);color:#fff;
+             box-shadow:0 1px 3px rgba(0,0,0,.08);}
+  header.top .hwrap{padding:18px 28px;}
+  header.top h1{font-size:20px;margin:0;font-weight:700;color:#fff;}
+  header.top h1 span{color:#dbeafe !important;}
+  header.top p{margin:4px 0 0;font-size:13px;color:#fff;opacity:.85;}
+
+  main{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:18px;align-items:start;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:0 1px 3px rgba(0,0,0,.05);}
+
+  /* 画布区 */
+  .stage{padding:18px;}
+  .plot-box{position:relative;width:100%;height:min(58vh,520px);min-height:420px;border-radius:10px;background:#fff;border:1px solid #cbd5e1;overflow:hidden;user-select:none;-webkit-user-select:none;}
+  canvas#plot{display:block;width:100%;height:100%;cursor:grab;}
+  .formula-bar{display:flex;align-items:baseline;gap:10px;flex-wrap:wrap;margin:2px 0 10px;}
+  .formula{font-size:26px;font-weight:700;letter-spacing:.5px;color:var(--ink);}
+  .formula .base{color:var(--brand);}
+  .formula sub{font-size:0.6em;}
+  .a-approx{font-size:13px;color:var(--muted);}
+  .a-warn{font-size:13px;color:var(--hl);font-weight:700;}
+
+  /* 控件 */
+  .controls{margin-top:12px;display:grid;gap:12px;}
+  .row{display:flex;align-items:center;gap:12px;flex-wrap:wrap;}
+  label.sl{display:flex;align-items:center;gap:9px;font-size:13.5px;color:var(--ink2);}
+  label.sl .nm{min-width:74px;}
+  input[type=range]{width:190px;accent-color:var(--brand);}
+  .val{font-variant-numeric:tabular-nums;font-weight:700;min-width:52px;color:var(--brand);}
+  .chips{display:flex;gap:8px;flex-wrap:wrap;align-items:center;}
+  .chips .lab{font-size:13px;color:var(--muted);}
+  .chip{border:1px solid var(--line);background:#fff;border-radius:8px;padding:6px 13px;font-size:13px;cursor:pointer;color:var(--ink);font-variant-numeric:tabular-nums;transition:.12s;}
+  .chip:hover{border-color:var(--brand);color:var(--brand);background:#f8fafc;}
+  .chip.on{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:700;}
+  .btn{border:1px solid var(--brand);background:#fff;color:var(--brand);border-radius:8px;padding:6px 13px;font-size:13px;cursor:pointer;font-variant-numeric:tabular-nums;transition:.12s;}
+  .btn:hover{background:var(--brand-soft);}
+  .btn.on{background:var(--brand);border-color:var(--brand);color:#fff;font-weight:700;}
+  .switch{display:inline-flex;align-items:center;gap:6px;font-size:13.5px;color:var(--ink2);cursor:pointer;user-select:none;}
+  .switch input{accent-color:var(--brand);width:15px;height:15px;}
+
+  /* 属性面板 */
+  aside.panel{padding:18px;}
+  aside.panel h2{font-size:15px;margin:0 0 12px;padding-bottom:10px;border-bottom:1px solid var(--line);color:var(--ink);font-weight:700;}
+  .prop{margin-bottom:13px;}
+  .prop .k{font-size:12.5px;color:var(--muted);margin-bottom:3px;}
+  .prop .v{font-size:14.5px;color:var(--ink);font-weight:600;}
+  .tag{display:inline-block;padding:3px 12px;border-radius:20px;font-size:13px;font-weight:600;}
+  .tag.none{background:#f1f5f9;color:#475569;}
+
+  section.notes{margin-top:18px;padding:18px 20px;}
+  .notes h2{font-size:21px;margin:0 0 14px;color:#1e3a8a;font-weight:700;}
+  .notes ul{margin:0;padding-left:20px;font-size:15.5px;color:var(--ink2);}
+  .notes li{margin-bottom:8px;line-height:1.85;}
+  .notes b{color:var(--ink);}
+  .notes code{color:var(--brand);font-weight:700;font-size:14.5px;}
+  .notes ul ul{margin:4px 0 2px;padding-left:18px;list-style:none;}
+  .notes ul ul li{margin-bottom:5px;}
+  .note-tbl{width:100%;border-collapse:collapse;margin:8px 0 6px;font-size:14.5px;}
+  .note-tbl th,.note-tbl td{border:1.5px solid #94a3b8;padding:7px 12px;text-align:center;vertical-align:middle;}
+  .note-tbl th{background:#f8fafc;color:#1e3a8a;font-weight:700;}
+  .note-tbl td.k{background:#f8fafc;color:var(--ink2);font-weight:600;width:120px;}
+  .logsub{font-size:11px;vertical-align:sub;}
+  .logfrac{display:inline-flex;flex-direction:column;align-items:center;vertical-align:-0.55em;font-size:8.5px;line-height:1.15;margin:0 2px 0 1.5px;transform:translateY(1px);}
+  .logfrac i{font-style:normal;display:block;padding:0 1.5px;}
+  .logfrac i:first-child{border-bottom:1px solid currentColor;}
+  footer{text-align:center;color:var(--muted);font-size:12.5px;margin-top:24px;}
+
+  @media (max-width:900px){
+    main{grid-template-columns:1fr;}
+    .plot-box{height:380px;min-height:340px;}
+    input[type=range]{width:150px;}
+    header.top .hwrap{padding:14px 20px}
+  }
+</style>
+</head>
+<body>
+  <header class="top">
+    <div class="hwrap">
+      <h1>对数函数探究教具 · <span style="color:var(--brand)">y = log<sub>a</sub>x</span></h1>
+      <p>拖动底数滑块（a &gt; 0，a ≠ 1）观察图像变化，蓝色为 a &gt; 1、粉色为 0 &lt; a &lt; 1；<b>鼠标在画布上移动时，探针竖线会实时跟随</b>；按住拖动可平移，滚轮缩放，双击复位；可勾选显示 y = log<span class="logfrac"><i>1</i><i>a</i></span>x（关于 x 轴对称）与反函数 y = a<sup>x</sup> 及对称轴 y = x。</p>
+    </div>
+  </header>
+
+  <div class="wrap">
+  <main>
+    <!-- 左：图像 -->
+    <section class="card stage">
+      <div class="formula-bar">
+        <div class="formula">y = log<sub class="base" id="baseShow">2</sub> x</div>
+        <div class="a-approx" id="aApprox"></div>
+        <div class="a-warn" id="aWarn"></div>
+      </div>
+      <div class="plot-box"><canvas id="plot"></canvas></div>
+
+      <div class="controls">
+        <div class="row">
+          <label class="sl"><span class="nm">底数 a</span><input type="range" id="aSl" min="0.1" max="10" step="0.01" value="2"><span class="val" id="aVal">2</span></label>
+        </div>
+
+        <div class="row">
+          <label class="sl"><span class="nm">探针 x</span><input type="range" id="xSl" min="0.01" max="8" step="0.01" value="2"><span class="val" id="xVal">2.00</span></label>
+          <span style="font-size:13px;color:var(--ink2)">对应点：<b id="probeOut" style="color:var(--hl)">—</b></span>
+        </div>
+
+        <div class="chips">
+          <span class="lab">常用底数：</span>
+          <button class="chip" data-p="1" data-q="3">1/3</button>
+          <button class="chip" data-p="1" data-q="2">1/2</button>
+          <button class="chip" data-p="2" data-q="1">2</button>
+          <button class="chip" data-p="3" data-q="1">3</button>
+          <button class="chip" data-a="e">e</button>
+          <button class="chip" data-a="1/e">1/e</button>
+          <button class="chip" data-a="10">10</button>
+          <button class="btn" id="allBase" style="margin-left:4px">一次显示全部</button>
+        </div>
+
+        <div class="row">
+          <label class="switch"><input type="checkbox" id="snapBox" checked> 吸附常用底数（1/2、2、e、10…）</label>
+          <label class="switch"><input type="checkbox" id="mirrorBox"> <span>显示 y = log<span class="logfrac"><i>1</i><i>a</i></span>x（关于 x 轴对称）</span></label>
+          <label class="switch"><input type="checkbox" id="invBox"> <span>显示反函数 y = a<sup>x</sup> 与 y = x</span></label>
+        </div>
+      </div>
+    </section>
+
+    <!-- 右：性质面板 -->
+    <aside class="card panel">
+      <h2>性质速查 · <span id="panelBase">a = 2</span></h2>
+
+      <div class="prop"><div class="k">定义域</div><div class="v" id="pDomain">—</div></div>
+      <div class="prop"><div class="k">值域</div><div class="v" id="pRange">—</div></div>
+      <div class="prop"><div class="k">定点</div><div class="v" id="pPoint">—</div></div>
+      <div class="prop"><div class="k">单调性</div><div class="v" id="pMono">—</div></div>
+      <div class="prop"><div class="k">函数值分布</div><div class="v" id="pDist">—</div></div>
+      <div class="prop"><div class="k">奇偶性</div><div class="v"><span class="tag" id="pParity">—</span></div></div>
+      <div class="prop"><div class="k">渐近线</div><div class="v" id="pAsym">—</div></div>
+      <div class="prop"><div class="k">反函数</div><div class="v" id="pInv">—</div></div>
+    </aside>
+  </main>
+
+  <section class="card notes">
+    <h2>知识点总结</h2>
+    <ul>
+      <li><b>对数的概念：</b>一般地，如果 <code>a<sup>b</sup> = N</code>（<code>a &gt; 0</code>，且 <code>a ≠ 1</code>），那么数 <code>b</code> 叫做<b>以 a 为底 N 的对数</b>，记作 <code>b = log<span class="logsub">a</span>N</code>，其中 <code>a</code> 叫做底数，<code>N</code> 叫做真数。
+        <ul>
+          <li>① 指数式与对数式互化：<code>a<sup>b</sup> = N ⇔ log<span class="logsub">a</span>N = b</code>；</li>
+          <li>② <b>负数和 0 没有对数</b>，真数必须满足 <code>N &gt; 0</code>；</li>
+          <li>③ <code>log<span class="logsub">a</span>1 = 0</code>，<code>log<span class="logsub">a</span>a = 1</code>；对数恒等式 <code>a<sup>log<span class="logsub">a</span>N</sup> = N</code>；</li>
+          <li>④ 常用对数 <code>lg N = log<span class="logsub">10</span>N</code>，自然对数 <code>ln N = log<span class="logsub">e</span>N</code>（<code>e = 2.71828…</code>）。</li>
+        </ul>
+      </li>
+      <li><b>对数的运算性质：</b>设 <code>a &gt; 0</code>，<code>a ≠ 1</code>，<code>M &gt; 0</code>，<code>N &gt; 0</code>，则
+        <ul>
+          <li>① <code>log<span class="logsub">a</span>(M·N) = log<span class="logsub">a</span>M + log<span class="logsub">a</span>N</code>；</li>
+          <li>② <code>log<span class="logsub">a</span>(M/N) = log<span class="logsub">a</span>M − log<span class="logsub">a</span>N</code>；</li>
+          <li>③ <code>log<span class="logsub">a</span>M<sup>n</sup> = n·log<span class="logsub">a</span>M</code>（<code>n ∈ R</code>）。</li>
+        </ul>
+        <b>换底公式：</b><code>log<span class="logsub">a</span>b = log<span class="logsub">c</span>b / log<span class="logsub">c</span>a</code>（<code>c &gt; 0</code>，<code>c ≠ 1</code>），特别地 <code>log<span class="logsub">a</span>b = lg b / lg a = ln b / ln a</code>，且 <code>log<span class="logsub">a</span>b · log<span class="logsub">b</span>a = 1</code>。
+        注意 <code>log<span class="logsub">a</span>(M + N)</code> <b>不能</b>拆成两对数之和。
+      </li>
+      <li><b>对数函数的概念：</b>一般地，函数 <code>y = log<span class="logsub">a</span>x</code>（<code>a &gt; 0</code>，且 <code>a ≠ 1</code>）叫做<b>对数函数</b>，其中 <code>x</code> 是自变量。
+        <p style="margin:6px 0 2px"><b>识别要点：</b></p>
+        <ul>
+          <li>① 系数必须是 1；</li>
+          <li>② 底数 <code>a</code> 是大于 0 且不等于 1 的<b>常数</b>；</li>
+          <li>③ 自变量 <code>x</code> 出现在<b>真数位置</b>，且必须 <code>x &gt; 0</code>。</li>
+        </ul>
+        它来自指数式 <code>y = a<sup>x</sup></code> 的反解：<code>x = log<span class="logsub">a</span>y</code>，习惯上写成 <code>y = log<span class="logsub">a</span>x</code>。
+      </li>
+      <li><b>图像与性质：</b>教材重点研究 <code>y = log<sub>2</sub>x</code> 与 <code>y = log<sub>1/2</sub>x</code>，由此归纳出 <code>a &gt; 1</code> 与 <code>0 &lt; a &lt; 1</code> 两类图像。
+        <table class="note-tbl">
+          <tr><th>项目</th><th>a &gt; 1（如 y = log<sub>2</sub>x）</th><th>0 &lt; a &lt; 1（如 y = log<sub>1/2</sub>x）</th></tr>
+          <tr><td class="k">定义域</td><td colspan="2"><code>(0, +∞)</code></td></tr>
+          <tr><td class="k">值域</td><td colspan="2"><code>R</code></td></tr>
+          <tr><td class="k">定点</td><td colspan="2">图象都过定点 <code>(1, 0)</code></td></tr>
+          <tr><td class="k">单调性</td><td>在 <code>(0, +∞)</code> 上单调<b>递增</b></td><td>在 <code>(0, +∞)</code> 上单调<b>递减</b></td></tr>
+          <tr><td class="k">函数值分布</td><td><code>x &gt; 1</code> 时 <code>y &gt; 0</code>；<code>0 &lt; x &lt; 1</code> 时 <code>y &lt; 0</code></td><td><code>x &gt; 1</code> 时 <code>y &lt; 0</code>；<code>0 &lt; x &lt; 1</code> 时 <code>y &gt; 0</code></td></tr>
+          <tr><td class="k">奇偶性</td><td colspan="2"><b>非奇非偶</b></td></tr>
+          <tr><td class="k">渐近线</td><td colspan="2">以 <code>y</code> 轴（<code>x = 0</code>）为渐近线：图象无限接近 y 轴，但<b>永不相交</b></td></tr>
+        </table>
+        两类图象都只分布在<b>第一、四象限</b>。
+      </li>
+      <li><b>两类对称关系：</b>
+        <ul>
+          <li>① <code>y = log<span class="logsub">a</span>x</code> 与 <code>y = log<span class="logsub">1/a</span>x = −log<span class="logsub">a</span>x</code> 的图象<b>关于 x 轴对称</b>；</li>
+          <li>② <code>y = log<span class="logsub">a</span>x</code> 与 <code>y = a<sup>x</sup></code> <b>互为反函数</b>，图象<b>关于直线 y = x 对称</b>。</li>
+        </ul>
+      </li>
+      <li><b>底数大小与图像位置的关系：</b>
+        <ul>
+          <li>① 所有图象都过同一定点 <code>(1, 0)</code>；</li>
+          <li>② 作直线 <code>y = 1</code>，与图象交点的横坐标<b>恰好等于底数 a</b>（因为 <code>log<span class="logsub">a</span>a = 1</code>）；</li>
+          <li>③ 在同一 <code>x &gt; 0</code> 且 <code>x ≠ 1</code> 处：<code>a &gt; 1</code> 时，底数<b>越大</b>，图象越<b>靠近 x 轴</b>；<code>0 &lt; a &lt; 1</code> 时，底数<b>越大</b>，图象越<b>远离 x 轴</b>。</li>
+        </ul>
+      </li>
+      <li><b>简单应用：</b>对数增长的特点是<b>越来越慢</b>。当 <code>a &gt; 1</code>、<code>k &gt; 0</code> 时，总存在 <code>x<sub>0</sub></code>，使得 <code>x &gt; x<sub>0</sub></code> 后恒有 <code>log<span class="logsub">a</span>x &lt; kx &lt; a<sup>x</sup></code>；实际问题中常用对数模型描述 pH 值、地震震级、声音分贝等"压缩尺度"的量。</li>
+    </ul>
+  </section>
+
+  <footer>拖动滑块即可开始探究 · 适合课堂演示与学生自主探究</footer>
+</div>
+
+<script>
+(function(){
+  "use strict";
+
+  // ---------- 工具函数 ----------
+  function fmt3(v){ return (Math.round(v*1000)/1000).toString().replace("-","−"); }
+  function fmt2(v){ return (Math.round(v*100)/100).toString().replace("-","−"); }
+
+  // 常用底数吸附表
+  var SNAP=[[1/10,"1/10"],[1/4,"1/4"],[1/3,"1/3"],[1/Math.E,"1/e"],[1/2,"1/2"],[3/4,"3/4"],[1,"1"],
+            [4/3,"4/3"],[3/2,"3/2"],[2,"2"],[Math.E,"e"],[3,"3"],[4,"4"],[5,"5"],[10,"10"]]
+           .map(function(it){return {a:it[0],t:it[1]};});
+  function snapBase(a){
+    for(var i=0;i<SNAP.length;i++){
+      if(Math.abs(Math.log(a/SNAP[i].a))<0.015) return SNAP[i];
+    }
+    return null;
+  }
+
+  // ---------- 状态 ----------
+  var ZOOM0={ox:3.2, oy:0.3, zoom:1};
+  var S={ a:2, aTxt:"2", snap:true, mirror:false, inverse:false, probeX:2, pinned:[],
+          ox:ZOOM0.ox, oy:ZOOM0.oy, zoom:ZOOM0.zoom };
+
+  // 配色沿用指数函数教具：a>1 蓝色系，0<a<1 粉色系，a=1 灰色
+  function catColor(a){ return a>1 ? "#0ea5e9" : (a<1 ? "#ec4899" : "#94a3b8"); }
+  function dispTxt(txt){ return String(txt).indexOf("/")>=0 ? "("+txt+")" : txt; }
+  function isOne(a){ return Math.abs(Math.log(a))<1e-9; }
+
+  // 倒数底数文本：3/2 → 2/3，1/3 → 3，2 → 1/2，e → 1/e
+  function recipTxt(txt){
+    var s=String(txt), m=s.split("/");
+    if(m.length===2) return (m[0]==="1") ? m[1] : (m[1]+"/"+m[0]);
+    var n=parseFloat(s);
+    if(isFinite(n)){
+      if(Math.abs(n-Math.round(n))<1e-9) return "1/"+Math.round(n);
+      return fmt3(1/n);
+    }
+    return "1/"+s;
+  }
+
+  // log_a x
+  function flog(a,x){ return Math.log(x)/Math.log(a); }
+  function fexp(a,x){ return Math.exp(x*Math.log(a)); }
+
+  function props(a){
+    var R={}, one=isOne(a);
+    R.domain="(0, +∞)";
+    R.range="R";
+    R.point="(1, 0)　｜　log<sub>a</sub>1 = 0";
+    if(one){ R.mono="—"; R.dist="—"; R.asym="—"; }
+    else{
+      R.mono=(a>1 ? "在 (0, +∞) 上单调递增" : "在 (0, +∞) 上单调递减");
+      R.dist=(a>1 ? "x > 1 时 y > 0；0 < x < 1 时 y < 0" : "x > 1 时 y < 0；0 < x < 1 时 y > 0");
+      R.asym="x = 0（y 轴）";
+    }
+    R.parity="非奇非偶";
+    return R;
+  }
+
+  // ---------- DOM / 画布 ----------
+  var cv=document.getElementById("plot"), ctx=cv.getContext("2d");
+  var W=0,H=0,DPR=1;
+  var $=function(id){return document.getElementById(id);};
+
+  function fitCanvas(){
+    var r=cv.parentElement.getBoundingClientRect();
+    DPR=Math.min(window.devicePixelRatio||1,2);
+    W=r.width; H=r.height;
+    cv.width=Math.round(W*DPR); cv.height=Math.round(H*DPR);
+  }
+  function makeGeom(){
+    var scale=(Math.min(W,H)/8)*S.zoom;
+    return {scale:scale, cx:W/2 - S.ox*scale, cy:H/2 + S.oy*scale};
+  }
+  function visRange(g){
+    return { xminv:(0-g.cx)/g.scale, xmaxv:(W-g.cx)/g.scale,
+             yminv:(g.cy-H)/g.scale, ymaxv:g.cy/g.scale };
+  }
+  function X(g,x){ return g.cx+x*g.scale; }
+  function Y(g,y){ return g.cy-y*g.scale; }
+
+  function niceStep(raw){
+    var pow=Math.pow(10,Math.floor(Math.log(raw)/Math.LN10));
+    var m=raw/pow;
+    m=(m<=1?1:m<=2?2:m<=5?5:10);
+    return pow*m;
+  }
+  function fmtTick(v,step){
+    var dec=Math.max(0,-Math.floor(Math.log(step)/Math.LN10+1e-9));
+    return v.toFixed(dec);
+  }
+
+  function drawAxes(g){
+    ctx.save();
+    var vr=visRange(g);
+    var step=niceStep(46/g.scale);
+    ctx.lineWidth=1; ctx.strokeStyle="#f1f5f9";
+    ctx.beginPath();
+    var n0,n1,v,n;
+    n0=Math.ceil(vr.xminv/step); n1=Math.floor(vr.xmaxv/step);
+    for(n=n0;n<=n1;n++){ v=n*step; ctx.moveTo(X(g,v),0); ctx.lineTo(X(g,v),H); }
+    n0=Math.ceil(vr.yminv/step); n1=Math.floor(vr.ymaxv/step);
+    for(n=n0;n<=n1;n++){ v=n*step; ctx.moveTo(0,Y(g,v)); ctx.lineTo(W,Y(g,v)); }
+    ctx.stroke();
+    ctx.strokeStyle="#334155"; ctx.lineWidth=1.4;
+    ctx.beginPath(); ctx.moveTo(0,Y(g,0)); ctx.lineTo(W,Y(g,0));
+    ctx.moveTo(X(g,0),0); ctx.lineTo(X(g,0),H); ctx.stroke();
+    ctx.fillStyle="#64748b"; ctx.font='11px "Microsoft YaHei",system-ui,sans-serif';
+    ctx.textAlign="center"; ctx.textBaseline="top";
+    n0=Math.ceil(vr.xminv/step); n1=Math.floor(vr.xmaxv/step);
+    for(n=n0;n<=n1;n++){
+      v=n*step;
+      if(Math.abs(v)<step*1e-6) continue;
+      ctx.fillText(fmtTick(v,step), X(g,v), Math.min(Math.max(Y(g,0)+4,4),H-16));
+    }
+    ctx.textAlign="right"; ctx.textBaseline="middle";
+    n0=Math.ceil(vr.yminv/step); n1=Math.floor(vr.ymaxv/step);
+    for(n=n0;n<=n1;n++){
+      v=n*step;
+      if(Math.abs(v)<step*1e-6) continue;
+      ctx.fillText(fmtTick(v,step), Math.min(Math.max(X(g,0)-5,20),W-6), Y(g,v));
+    }
+    ctx.fillStyle="#334155"; ctx.font='12px "Microsoft YaHei",system-ui,sans-serif';
+    ctx.textAlign="left"; ctx.textBaseline="top";
+    ctx.fillText("x", W-14, Math.min(Math.max(Y(g,0)+5,4),H-18));
+    ctx.fillText("y", Math.min(Math.max(X(g,0)+6,6),W-12), 4);
+    ctx.restore();
+  }
+
+  // 带白边描边的文字
+  function stroked(txt,px,py,color){
+    ctx.lineJoin="round"; ctx.lineWidth=3.5; ctx.strokeStyle="rgba(255,255,255,.92)";
+    ctx.strokeText(txt,px,py);
+    ctx.fillStyle=color; ctx.fillText(txt,px,py);
+  }
+
+  function yCapOf(vr){ return Math.max(Math.abs(vr.yminv),Math.abs(vr.ymaxv))*1.8; }
+
+  // 画一条对数曲线：靠近 y 轴用几何采样，其余线性采样
+  function drawLogCurve(g,a,color,o){
+    o=o||{};
+    ctx.save();
+    ctx.globalAlpha=(o.alpha===undefined?1:o.alpha);
+    if(o.main){ ctx.shadowColor=color; ctx.shadowBlur=7; }
+    ctx.strokeStyle=color; ctx.lineWidth=o.lw||2.6; ctx.lineJoin="round"; ctx.lineCap="round";
+    if(o.dash) ctx.setLineDash([6,4]);
+    var vr=visRange(g), lna=Math.log(a), yCap=yCapOf(vr);
+    var xL=Math.max(vr.xminv,1e-9), xR=vr.xmaxv, pts=[], i;
+    if(xR>1e-3){
+      if(xL<1){
+        var lo=Math.max(xL,1e-12), n1=340;
+        for(i=0;i<=n1;i++) pts.push(lo*Math.pow(1/lo,i/n1));
+      } else pts.push(xL);
+      var s0=pts.length?pts[pts.length-1]:xL;
+      var n2=Math.max(2,Math.min(900,Math.round((xR-s0)*90+120)));
+      for(i=1;i<=n2;i++) pts.push(s0+(xR-s0)*i/n2);
+      ctx.beginPath();
+      var started=false;
+      for(i=0;i<pts.length;i++){
+        var x=pts[i];
+        if(!(x>0)) continue;
+        var y=Math.log(x)/lna;
+        if(!isFinite(y)||Math.abs(y)>yCap){
+          if(started){ ctx.stroke(); ctx.beginPath(); started=false; }
+          continue;
+        }
+        var px=X(g,x), py=Y(g,y);
+        if(!started){ ctx.moveTo(px,py); started=true; } else ctx.lineTo(px,py);
+      }
+      ctx.stroke();
+    }
+    ctx.setLineDash([]); ctx.shadowBlur=0;
+    if(o.alpha===undefined) ctx.globalAlpha=1;
+    ctx.fillStyle=color;
+    ctx.beginPath(); ctx.arc(X(g,1),Y(g,0),3.8,0,Math.PI*2); ctx.fill();
+    if(o.main){
+      ctx.globalAlpha=1;
+      ctx.font='12px "Microsoft YaHei",system-ui,sans-serif';
+      ctx.textAlign="left"; ctx.textBaseline="bottom";
+      stroked("(1,0)", X(g,1)+7, Y(g,0)-7, "#1e3a8a");
+    }
+    ctx.restore();
+  }
+
+  // 曲线旁的表达式标签 y = log_a x（shift 用于多条曲线时错开候选位置）
+  function drawLogLabel(g,a,txt,color,preferHigh,shift){
+    ctx.save();
+    ctx.textAlign="left"; ctx.textBaseline="alphabetic";
+    ctx.font='bold 13px system-ui, sans-serif';
+    var w0=ctx.measureText("y = log").width;
+    ctx.font='bold 11px system-ui, sans-serif';
+    var w1=ctx.measureText(txt).width;
+    var bw=w0+w1+16, bh=18;
+    var vr=visRange(g);
+    var high=[0.5*vr.xmaxv,0.7*vr.xmaxv,0.3*vr.xmaxv,2.5,1.8];
+    var low=[0.82*vr.xmaxv,0.62*vr.xmaxv,0.42*vr.xmaxv,4,3,2.2,1.6];
+    var cand=preferHigh?high.concat(low):low.concat(high);
+    var n=cand.length; shift=shift||0;
+    var hit=null;
+    for(var k=0;k<n;k++){
+      var x=cand[(k+shift)%n];
+      if(!(x>0.01)) continue;
+      var px=X(g,x)+8, py=Y(g,flog(a,x))-8;
+      if(px>6 && px<W-bw-6 && py>bh+4 && py<H-6){ hit={x:px,y:py}; break; }
+    }
+    if(hit){
+      ctx.font='bold 13px system-ui, sans-serif'; stroked("y = log",hit.x,hit.y,color);
+      ctx.font='bold 11px system-ui, sans-serif'; stroked(txt,hit.x+w0,hit.y+3,color);
+      ctx.font='bold 13px system-ui, sans-serif'; stroked(" x",hit.x+w0+w1+2,hit.y,color);
+    }
+    ctx.restore();
+  }
+
+  // 参考曲线：反函数 y = a^x 与对称轴 y = x
+  function drawInverse(g,a){
+    var vr=visRange(g), yCap=yCapOf(vr);
+    var lo=Math.max(vr.xminv,vr.yminv), hi=Math.min(vr.xmaxv,vr.ymaxv);
+    if(hi>lo){
+      ctx.save();
+      ctx.strokeStyle="#94a3b8"; ctx.lineWidth=1.3; ctx.setLineDash([7,5]); ctx.globalAlpha=.9;
+      ctx.beginPath(); ctx.moveTo(X(g,lo),Y(g,lo)); ctx.lineTo(X(g,hi),Y(g,hi)); ctx.stroke();
+      ctx.setLineDash([]);
+      ctx.font='12px "Microsoft YaHei",system-ui,sans-serif';
+      ctx.textAlign="right"; ctx.textBaseline="bottom";
+      stroked("y = x", X(g,hi)-6, Y(g,hi)-6, "#64748b");
+      ctx.restore();
+    }
+    ctx.save();
+    ctx.strokeStyle="#f59e0b"; ctx.lineWidth=2; ctx.setLineDash([6,4]); ctx.globalAlpha=.9;
+    ctx.beginPath();
+    var started=false, N=900, k;
+    for(k=0;k<=N;k++){
+      var x=vr.xminv+(vr.xmaxv-vr.xminv)*(k/N), y=fexp(a,x);
+      if(!isFinite(y)||Math.abs(y)>yCap){ started=false; continue; }
+      var px=X(g,x), py=Y(g,y);
+      if(!started){ ctx.moveTo(px,py); started=true; } else ctx.lineTo(px,py);
+    }
+    ctx.stroke(); ctx.setLineDash([]);
+    ctx.fillStyle="#f59e0b";
+    ctx.beginPath(); ctx.arc(X(g,0),Y(g,1),3.4,0,Math.PI*2); ctx.fill();
+    ctx.globalAlpha=1;
+    ctx.font='12px "Microsoft YaHei",system-ui,sans-serif';
+    ctx.textAlign="left"; ctx.textBaseline="bottom";
+    stroked("y = aˣ", X(g,0)+8, Y(g,1)-7, "#b45309");
+    ctx.restore();
+  }
+
+  function drawProbe(g,a,color){
+    var x=S.probeX;
+    if(!(x>0)) return;
+    var y=flog(a,x), yCap=yCapOf(visRange(g));
+    ctx.save();
+    ctx.setLineDash([4,4]); ctx.strokeStyle=color; ctx.lineWidth=1.2; ctx.globalAlpha=.75;
+    ctx.beginPath(); ctx.moveTo(X(g,x),0); ctx.lineTo(X(g,x),H); ctx.stroke();
+    ctx.setLineDash([]);
+    if(isFinite(y)&&Math.abs(y)<=yCap){
+      var px=X(g,x), py=Y(g,y);
+      ctx.globalAlpha=1;
+      ctx.fillStyle="#ef4444";
+      ctx.beginPath(); ctx.arc(px,py,5,0,Math.PI*2); ctx.fill();
+      ctx.strokeStyle="#fff"; ctx.lineWidth=1.6; ctx.stroke();
+      ctx.font='12.5px system-ui, sans-serif'; ctx.textAlign="left"; ctx.textBaseline="bottom";
+      var lx=Math.min(Math.max(px+9,6),W-110), ly=Math.min(Math.max(py-9,18),H-6);
+      stroked("("+fmt2(x)+", "+fmt3(y)+")", lx, ly, "#ef4444");
+    }
+    ctx.restore();
+  }
+
+  function draw(){
+    if(!W||!H) fitCanvas();
+    ctx.setTransform(DPR,0,0,DPR,0,0);
+    ctx.clearRect(0,0,W,H);
+    var g=makeGeom(), vr=visRange(g);
+    drawAxes(g);
+
+    var color=catColor(S.a), one=isOne(S.a);
+
+    // 定义域外的灰色区域（x ≤ 0 无图象）
+    var ax=X(g,0);
+    if(ax>0 && ax<W){
+      ctx.save();
+      ctx.fillStyle="rgba(148,163,184,.10)";
+      ctx.fillRect(0,0,Math.min(ax,W),H);
+      ctx.restore();
+    }
+
+    // 渐近线说明
+    if(!one){
+      var yy=Math.min(vr.ymaxv-0.45, Math.max(vr.yminv+0.5, vr.ymaxv-0.45));
+      if(ax>-60 && ax<W+60){
+        ctx.save();
+        ctx.font='11.5px "Microsoft YaHei",system-ui,sans-serif';
+        ctx.textAlign="left"; ctx.textBaseline="middle";
+        var tw=ctx.measureText("渐近线 x = 0（y 轴）").width;
+        var tx=Math.min(Math.max(ax+7,6), Math.max(6,W-tw-8));
+        stroked("渐近线 x = 0（y 轴）", tx, Y(g,yy), "#94a3b8");
+        ctx.restore();
+      }
+    }
+
+    if(S.inverse && !one) drawInverse(g,S.a);
+    if(S.mirror && !one){
+      var ra=1/S.a, rt=recipTxt(S.aTxt), rc=catColor(ra);
+      drawLogCurve(g,ra,rc,{dash:true,lw:2,alpha:.9});
+      drawLogLabel(g,ra,rt,rc,true,1);
+    }
+    // 钉住的对比曲线（与主曲线同底数的由主曲线兼任）
+    var mainIdx=-1, i;
+    for(i=0;i<S.pinned.length;i++){
+      if(Math.abs(Math.log(S.pinned[i].a/S.a))<1e-9){ mainIdx=i; break; }
+    }
+    for(i=0;i<S.pinned.length;i++){
+      if(i===mainIdx) continue;
+      drawLogCurve(g,S.pinned[i].a,catColor(S.pinned[i].a),{lw:2.1,alpha:.85});
+    }
+    drawLogCurve(g,S.a,color,{main:true,lw:2.8});
+    for(i=0;i<S.pinned.length;i++){
+      if(i===mainIdx) continue;
+      drawLogLabel(g,S.pinned[i].a,S.pinned[i].txt,catColor(S.pinned[i].a),i%2===0,i+1);
+    }
+    drawLogLabel(g,S.a,S.aTxt,color,false,0);
+    if(!one) drawProbe(g,S.a,color);
+  }
+
+  // ---------- 面板更新 ----------
+  function chipVal(c){
+    if(c.dataset.p!==undefined) return {a:(+c.dataset.p)/(+c.dataset.q), txt:c.textContent.trim()};
+    if(c.dataset.a==="1/e") return {a:Math.exp(-1), txt:"1/e"};
+    if(c.dataset.a==="e") return {a:Math.E, txt:"e"};
+    return {a:10, txt:"10"};
+  }
+  var chips=document.querySelectorAll(".chip");
+
+  function updatePanel(){
+    var a=S.a, R=props(a), one=isOne(a), d=dispTxt(S.aTxt);
+    $("baseShow").textContent=d;
+    $("panelBase").textContent="a = "+d;
+    var sn=snapBase(S.a);
+    $("aApprox").textContent = sn ? ("a = "+sn.t) : ("数值 a = "+fmt3(S.a));
+    $("aWarn").textContent = one ? "a = 1 时对数无意义：定义要求 a > 0 且 a ≠ 1" : "";
+
+    $("pDomain").textContent=R.domain;
+    $("pRange").textContent=R.range;
+    $("pPoint").innerHTML=R.point;
+    $("pMono").textContent=R.mono;
+    $("pDist").textContent=R.dist;
+    var par=$("pParity"); par.textContent=R.parity; par.className="tag none";
+    $("pAsym").textContent=R.asym;
+    $("pInv").innerHTML = one ? "—" : ("y = "+d+"<sup>x</sup>（关于 y = x 对称）");
+
+    $("xVal").textContent=S.probeX.toFixed(2);
+    $("probeOut").textContent="("+fmt2(S.probeX)+", "+fmt3(flog(a,S.probeX))+")";
+
+    for(var i=0;i<chips.length;i++){
+      chips[i].classList.toggle("on", Math.abs(a-chipVal(chips[i]).a)<1e-9);
+    }
+  }
+  function refresh(){ updatePanel(); draw(); }
+
+  // ---------- 交互 ----------
+  function setA(v,forceTxt){
+    var a=v, txt=null;
+    if(S.snap){ var sn=snapBase(a); if(sn){ a=sn.a; txt=sn.t; } }
+    if(!txt) txt=forceTxt||fmt3(a);
+    S.a=a; S.aTxt=txt;
+    $("aSl").value=a;
+    $("aVal").textContent=txt;
+    refresh();
+  }
+  $("aSl").oninput=function(){ setA(+this.value); };
+  $("snapBox").onchange=function(){ S.snap=this.checked; setA(S.a); };
+  $("mirrorBox").onchange=function(){ S.mirror=this.checked; draw(); };
+  $("invBox").onchange=function(){ S.inverse=this.checked; draw(); };
+
+  function setProbeX(v){
+    v=Math.max(0.01,v);
+    S.probeX=v;
+    var sl=$("xSl");
+    if(v>+sl.max-0.5) sl.max=String(Math.ceil(v+2));
+    sl.value=v;
+  }
+  $("xSl").oninput=function(){ setProbeX(+this.value); refresh(); };
+
+  for(var i=0;i<chips.length;i++){
+    chips[i].onclick=function(){ var t=chipVal(this); setA(t.a,t.txt); };
+  }
+
+  // 一次显示全部常用底数的图像（再次点击清除对比）
+  $("allBase").onclick=function(){
+    if(S.pinned.length){
+      S.pinned=[];
+      this.textContent="一次显示全部";
+      this.classList.remove("on");
+      refresh();
+      return;
+    }
+    var vals=[];
+    for(var j=0;j<chips.length;j++){
+      var t=chipVal(chips[j]);
+      var dup=vals.some(function(x){ return Math.abs(x.a-t.a)<1e-9; });
+      if(!dup) vals.push({a:t.a, txt:t.txt});
+    }
+    S.pinned=vals;
+    this.textContent="清除对比";
+    this.classList.add("on");
+    setA(2);   // 主曲线落回 y = log2 x
+  };
+
+  // ---------- 无限画布：拖拽平移 / 滚轮缩放 / 双击复位 ----------
+  function evtPos(e){ var r=cv.getBoundingClientRect(); return {x:e.clientX-r.left, y:e.clientY-r.top}; }
+  var drag=null;
+  cv.addEventListener("mousedown",function(e){
+    var p=evtPos(e);
+    drag={sx:p.x, sy:p.y, ox:S.ox, oy:S.oy, moved:false};
+    cv.style.cursor="grabbing"; e.preventDefault();
+  });
+  window.addEventListener("mousemove",function(e){
+    if(drag){
+      var p=evtPos(e), dx=p.x-drag.sx, dy=p.y-drag.sy;
+      if(Math.abs(dx)+Math.abs(dy)>4) drag.moved=true;
+      if(drag.moved){
+        var g=makeGeom();
+        S.ox=drag.ox-dx/g.scale; S.oy=drag.oy+dy/g.scale;
+        draw();
+      }
+      return;
+    }
+    if(e.target===cv){
+      var p2=evtPos(e), g2=makeGeom();
+      var wx=(p2.x-g2.cx)/g2.scale;
+      if(wx>0.01 && Math.abs(wx-S.probeX)>1e-9){ setProbeX(wx); refresh(); }
+    }
+  });
+  window.addEventListener("mouseup",function(){
+    if(drag){ cv.style.cursor="grab"; drag=null; }
+  });
+  cv.addEventListener("wheel",function(e){
+    e.preventDefault();
+    var p=evtPos(e), g=makeGeom();
+    var wx=(p.x-g.cx)/g.scale, wy=(g.cy-p.y)/g.scale;
+    var f=(e.deltaY<0)?1.12:1/1.12;
+    var nz=Math.min(6,Math.max(0.25,S.zoom*f));
+    var ns=(Math.min(W,H)/8)*nz;
+    S.ox=wx+(W/2-p.x)/ns;
+    S.oy=wy-(H/2-p.y)/ns;
+    S.zoom=nz;
+    draw();
+  },{passive:false});
+  cv.addEventListener("dblclick",function(){
+    S.ox=ZOOM0.ox; S.oy=ZOOM0.oy; S.zoom=ZOOM0.zoom; draw();
+  });
+
+  window.addEventListener("resize",function(){ fitCanvas(); draw(); });
+  fitCanvas();
+  setA(2);
+})();
+</script>
+</body>
+</html>

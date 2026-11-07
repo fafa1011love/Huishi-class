@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<title>向量的数量积与投影演示器</title>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  body { font-family:"Times New Roman","Microsoft YaHei",sans-serif; background:#eef1f7; color:#1f2937; height:100vh; display:flex; overflow:hidden; }
+  #canvasWrap { flex:1; display:flex; align-items:center; justify-content:center; position:relative; }
+  canvas { background:#fff; border-radius:12px; box-shadow:0 2px 10px rgba(0,0,0,.08); }
+  #panel { width:320px; background:#fff; border-left:1px solid #dbe2ef; padding:24px 22px; display:flex; flex-direction:column; gap:18px; overflow-y:auto; }
+  h1 { font-size:19px; color:#2563eb; border-bottom:2px solid #2563eb; padding-bottom:8px; }
+  .sec { background:#f6f8fc; border:1px solid #e2e8f4; border-radius:10px; padding:14px 16px; }
+  .sec h2 { font-size:14px; color:#2563eb; margin-bottom:10px; }
+  label { font-size:13px; display:flex; justify-content:space-between; margin:8px 0 4px; }
+  label b { color:#2563eb; font-family:"Times New Roman",serif; font-style:italic; }
+  input[type=range] { width:100%; accent-color:#2563eb; }
+  .numrow { display:flex; gap:8px; align-items:center; margin-top:4px; }
+  input[type=number] { width:100%; padding:5px 6px; border:1px solid #c7d2e8; border-radius:6px; font-family:"Times New Roman",serif; font-size:14px; color:#1f2937; background:#fff; }
+  input[type=number]:focus { outline:none; border-color:#2563eb; }
+  .hint { font-size:12px; color:#6b7280; margin-top:8px; }
+  .val { font-family:"Times New Roman",serif; font-size:16px; }
+  .formula { font-family:"Times New Roman",serif; font-style:italic; font-size:17px; text-align:center; color:#1f2937; }
+  .big { font-size:22px; text-align:center; font-family:"Times New Roman",serif; margin-top:6px; }
+  .pos { color:#dc2626; } .neg { color:#059669; } .zero { color:#6b7280; }
+  .note { font-size:12.5px; color:#4b5563; line-height:1.7; }
+  .toggle { display:flex; gap:8px; }
+  .toggle button { flex:1; padding:6px 0; border:1px solid #c7d2e8; background:#fff; border-radius:8px; cursor:pointer; font-size:13px; color:#374151; }
+  .toggle button.on { background:#2563eb; color:#fff; border-color:#2563eb; }
+</style>
+</head>
+<body>
+<div id="canvasWrap"><canvas id="cv" width="860" height="640"></canvas></div>
+<div id="panel">
+  <h1>向量的数量积与投影 <span style="font-size:11px;color:#94a3b8;font-weight:normal">v1.7</span></h1>
+
+  <div class="sec">
+    <h2>参数控制</h2>
+    <label><span>|<b>a</b>|</span><span class="val" id="laV">5.0</span></label>
+    <input type="range" id="la" min="1" max="8" step="0.1" value="5">
+    <label><span>|<b>b</b>|</span><span class="val" id="lbV">6.0</span></label>
+    <input type="range" id="lb" min="1" max="8" step="0.1" value="6">
+    <label><span>夹角 θ</span><span class="val" id="thV">60°</span></label>
+    <input type="range" id="th" min="0" max="180" step="1" value="60">
+    <label style="margin-top:12px"><span>自定义 <b>a</b> = ( x , y )</span></label>
+    <div class="numrow">
+      <input type="number" id="ax" step="0.1" value="2.5">
+      <span style="color:#6b7280">,</span>
+      <input type="number" id="ay" step="0.1" value="4.3">
+    </div>
+    <div class="hint">也可在画布上直接拖动 a 的箭头端点改变向量（y 分量为负时按 0 处理，θ 限制在 0°–180°）</div>
+  </div>
+
+  <div class="sec">
+    <h2>显示选项</h2>
+    <div class="toggle">
+      <button id="tProj" class="on">投影线段</button>
+      <button id="tArc" class="on">夹角弧</button>
+    </div>
+    <button id="playBtn" style="margin-top:10px;width:100%;padding:9px 0;border:none;border-radius:8px;background:#2563eb;color:#fff;font-size:14px;cursor:pointer">▶ 演示投影过程</button>
+    <button id="resetBtn" style="margin-top:8px;width:100%;padding:8px 0;border:1px solid #c7d2e8;border-radius:8px;background:#fff;color:#374151;font-size:14px;cursor:pointer">↺ 重置</button>
+    <div id="stepTip" style="margin-top:8px;font-size:13px;color:#2563eb;text-align:center;min-height:18px"></div>
+  </div>
+
+  <div class="sec">
+    <h2>数量积</h2>
+    <div class="formula">a · b = |a||b|cos θ</div>
+    <div class="big" id="dotV"></div>
+  </div>
+
+  <div class="sec">
+    <h2>投影</h2>
+    <div class="formula">投影数量 = |a|cos θ</div>
+    <div class="big" id="pV"></div>
+    <div class="formula" style="margin-top:10px">投影向量 = (|a|cos θ) · e<sub>b</sub></div>
+    <div class="note" id="note"></div>
+  </div>
+</div>
+
+<script>
+const cv = document.getElementById('cv'), ctx = cv.getContext('2d');
+const st = { la:5, lb:6, th:60*Math.PI/180, proj:true, arc:true };
+const anim = { active:false, hold:false, paused:false, frozenT:0, step:-1, stepStart:0 };
+let G = null; // 当前几何缓存，供动画层使用
+const ease = t => 0.5-0.5*Math.cos(Math.PI*Math.min(1,Math.max(0,t)));
+
+function draw(){
+  const W=cv.width, H=cv.height, cx=W*0.38, cy=H*0.55, s=44;
+  ctx.clearRect(0,0,W,H);
+  // 坐标轴
+  ctx.strokeStyle='#c9d2e3'; ctx.lineWidth=1.5;
+  ctx.beginPath(); ctx.moveTo(60,cy); ctx.lineTo(W-40,cy); ctx.moveTo(cx,50); ctx.lineTo(cx,H-50); ctx.stroke();
+
+  const th=st.th, la=st.la, lb=st.lb;
+  // b 沿 x 轴正方向
+  const bx=lb*s, by=0;
+  const ax=Math.cos(th)*la*s, ay=-Math.sin(th)*la*s; // canvas y 向下
+  const B={x:cx+bx,y:cy+by}, A={x:cx+ax,y:cy+ay};
+  G = {W,H,cx,cy,s,A,B,pLen: la*Math.cos(th)*s};
+
+  // 角弧
+  if(st.arc){
+    ctx.strokeStyle='#f59e0b'; ctx.fillStyle='rgba(245,158,11,.12)'; ctx.lineWidth=2;
+    const r=52;
+    ctx.beginPath(); ctx.moveTo(cx,cy);
+    ctx.arc(cx,cy,r, th===0?0:-th, 0, false); ctx.closePath(); ctx.fill(); ctx.stroke();
+    ctx.fillStyle='#b45309'; ctx.font='italic 15px "Times New Roman"';
+    ctx.fillText('θ', cx+r+10, cy-10);
+  }
+
+  // 向量 b（浅色调，避免盖过投影向量）
+  ctx.strokeStyle='#7fa3e3'; ctx.lineWidth=3.5; arrow(cx,cy,B.x,B.y,3.5);
+  ctx.fillStyle='#7fa3e3'; ctx.font='italic bold 17px "Times New Roman"';
+  ctx.fillText('b', B.x+8, B.y+18);
+  // 向量 a
+  ctx.strokeStyle='#8fcbb0'; arrow(cx,cy,A.x,A.y,3.5);
+  ctx.fillStyle='#8fcbb0';
+  ctx.fillText('a', A.x+10*(ax===0?1:Math.sign(ax||1))-4, A.y-10);
+
+  // 投影向量（最后绘制，压在最上层；与 b 同线但颜色更醒目）
+  const pLen = la*Math.cos(th)*s; // 带符号
+  if(st.proj && !(anim.active||anim.hold)){
+    ctx.strokeStyle='#dc2626'; ctx.fillStyle='#dc2626'; ctx.lineWidth=4.5;
+    arrow(cx,cy,cx+pLen,cy,4.5);
+    // 从 A 落到 b 所在直线的虚线（浅淡，避免干扰）
+    ctx.strokeStyle='#c3cddb'; ctx.lineWidth=1.3; ctx.setLineDash([6,5]);
+    ctx.beginPath(); ctx.moveTo(A.x,A.y); ctx.lineTo(cx+pLen,cy); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='#dc2626'; ctx.font='italic 15px "Times New Roman"';
+    ctx.fillText('投影向量', cx+pLen/2-30, cy+44);
+  }
+
+  // O
+  ctx.fillStyle='#374151'; ctx.font='italic 15px "Times New Roman"';
+  ctx.fillText('O', cx-16, cy+16);
+
+  // 数值
+  const dot=la*lb*Math.cos(th), p=la*Math.cos(th);
+  const cls=v=>Math.abs(v)<1e-9?'zero':(v>0?'pos':'neg');
+  document.getElementById('dotV').innerHTML =
+    'a · b = <span class="'+cls(dot)+'">'+dot.toFixed(2)+'</span>';
+  document.getElementById('pV').innerHTML =
+    '<span class="'+cls(p)+'">'+p.toFixed(2)+'</span>';
+  const n=document.getElementById('note');
+  if(Math.abs(th-Math.PI/2)<1e-9){
+    n.innerHTML='θ = 90°，a ⊥ b，cos θ = 0，投影与数量积均为 <b>0</b>。';
+  } else if(th<Math.PI/2){
+    n.innerHTML='θ 为<b>锐角</b>，cos θ &gt; 0，投影向量与 b <b>同向</b>，投影数量为<b style="color:#dc2626">正</b>。';
+  } else {
+    n.innerHTML='θ 为<b>钝角</b>，cos θ &lt; 0，投影向量与 b <b>反向</b>，投影数量为<b style="color:#059669">负</b>——红色线段画在 b 的反方向一侧。';
+  }
+  if(anim.active||anim.hold) drawOverlay();
+}
+
+// ---------- 投影过程分步动画 ----------
+const STEPS = [
+  {d:1.0, rest:0.5, tip:'① 观察向量 a 与 b 的夹角'},
+  {d:1.1, rest:0.7, tip:'② 过 a 的终点向 b 所在直线作垂线'},
+  {d:1.0, rest:0.7, tip:'③ 垂足 H 就是影子的落点'},
+  {d:1.2, rest:0.6, tip:'④ 从 O 指向垂足——得到投影向量'},
+  {d:1.6, rest:0, tip:''} // 结论由 step4 绘制时给出
+];
+function runDemo(){
+  stopDemo();
+  anim.active=true; anim.step=0; anim.stepStart=performance.now();
+  document.getElementById('playBtn').textContent='⏸ 暂停演示';
+  tick();
+}
+function stopDemo(){
+  anim.active=false; anim.hold=false; anim.paused=false; anim.frozenT=0; anim.step=-1;
+  document.getElementById('playBtn').textContent='▶ 演示投影过程';
+  document.getElementById('stepTip').textContent='';
+  draw();
+}
+function pauseDemo(){
+  anim.paused=true;
+  anim.frozenT=(performance.now()-anim.stepStart)/1000;   // 冻结当前步进度
+  document.getElementById('playBtn').textContent='▶ 继续演示';
+  document.getElementById('stepTip').textContent=STEPS[anim.step].tip+'（已暂停）';
+  draw();
+}
+function resumeDemo(){
+  anim.stepStart=performance.now()-anim.frozenT*1000;      // 从暂停处继续
+  anim.paused=false;
+  document.getElementById('playBtn').textContent='⏸ 暂停演示';
+  tick();
+}
+function holdFinal(){
+  // 演示结束：停在最终画面（第⑤步完整状态），直到用户再次操作
+  anim.active=false; anim.hold=true; anim.paused=false; anim.step=STEPS.length-1;
+  document.getElementById('playBtn').textContent='▶ 演示投影过程';
+  document.getElementById('stepTip').textContent='演示完成——拖动滑块、输入坐标或拖动向量 a 可重新开始';
+}
+function tick(){
+  if(!anim.active) return;
+  if(anim.paused) return;   // 暂停时中断 RAF 链，动画真正冻结
+  const now=performance.now();
+  const cur=STEPS[anim.step];
+  if((now-anim.stepStart)/1000 >= cur.d + (cur.rest||0)){
+    anim.step++; anim.stepStart=now;
+    if(anim.step>=STEPS.length){ holdFinal(); return; }
+  }
+  document.getElementById('stepTip').textContent=STEPS[anim.step].tip;
+  draw();
+  const g=++rafGen;   // 代际令牌：暂停/继续/重置后旧帧回调自动作废，避免双链
+  requestAnimationFrame(()=>{ if(g===rafGen) tick(); });
+}
+let rafGen=0;
+function drawOverlay(){
+  if(!G) return;
+  const {cx,cy,A,B,pLen,s}=G, rawT=anim.paused?anim.frozenT:(performance.now()-anim.stepStart)/1000;
+  const t=Math.min(rawT, (STEPS[anim.step]||{}).d||rawT); // rest 停顿期画面定格在动作完成态
+  const foot={x:cx+pLen, y:cy};
+  ctx.save();
+  if(anim.step===0){
+    // 高亮 a（描边光晕）
+    const k=ease(t/0.4);
+    ctx.strokeStyle='rgba(143,203,176,'+(0.35*k)+')'; ctx.lineWidth=11; ctx.lineCap='round';
+    ctx.beginPath(); ctx.moveTo(cx,cy); ctx.lineTo(A.x,A.y); ctx.stroke();
+    ctx.strokeStyle='#8fcbb0'; ctx.lineWidth=3.5; arrow(cx,cy,A.x,A.y,3.5);
+    ctx.strokeStyle='#7fa3e3'; arrow(cx,cy,B.x,B.y,3.5);
+  } else if(anim.step===1){
+    // 垂线从 A 向垂足生长
+    const k=ease(t/0.9);
+    ctx.strokeStyle='#b8c4d6'; ctx.lineWidth=1.8; ctx.setLineDash([6,5]); ctx.lineDashOffset=0;
+    ctx.beginPath(); ctx.moveTo(A.x,A.y);
+    ctx.lineTo(A.x+(foot.x-A.x)*k, A.y+(foot.y-A.y)*k); ctx.stroke();
+    ctx.setLineDash([]);
+    if(k>=1){ rightAngleMark(foot, Math.sign(pLen)||1); }
+    ctx.strokeStyle='#8fcbb0'; arrow(cx,cy,A.x,A.y,3.5);
+    ctx.strokeStyle='#7fa3e3'; arrow(cx,cy,B.x,B.y,3.5);
+  } else if(anim.step===2){
+    // 垂足脉冲
+    const ph=(Math.sin(t*5)+1)/2;
+    rightAngleMark(foot, Math.sign(pLen)||1);
+    ctx.strokeStyle='#b8c4d6'; ctx.lineWidth=1.8; ctx.setLineDash([6,5]);
+    ctx.beginPath(); ctx.moveTo(A.x,A.y); ctx.lineTo(foot.x,foot.y); ctx.stroke();
+    ctx.setLineDash([]);
+    ctx.fillStyle='rgba(220,38,38,'+(0.25+0.35*ph)+')';
+    ctx.beginPath(); ctx.arc(foot.x,foot.y,7+5*ph,0,7); ctx.fill();
+    ctx.fillStyle='#dc2626'; ctx.beginPath(); ctx.arc(foot.x,foot.y,3.5,0,7); ctx.fill();
+    ctx.fillStyle='#dc2626'; ctx.font='italic 15px "Times New Roman"';
+    ctx.fillText('H', foot.x+(Math.sign(pLen)||1)*14, cy-8);
+    ctx.strokeStyle='#8fcbb0'; arrow(cx,cy,A.x,A.y,3.5);
+    ctx.strokeStyle='#7fa3e3'; arrow(cx,cy,B.x,B.y,3.5);
+  } else if(anim.step===3){
+    // 投影向量从 O 生长
+    const k=ease(t/1.0);
+    ctx.strokeStyle='#b8c4d6'; ctx.lineWidth=1.8; ctx.setLineDash([6,5]);
+    ctx.beginPath(); ctx.moveTo(A.x,A.y); ctx.lineTo(foot.x,foot.y); ctx.stroke();
+    ctx.setLineDash([]);
+    rightAngleMark(foot, Math.sign(pLen)||1);
+    ctx.fillStyle='#dc2626'; ctx.beginPath(); ctx.arc(foot.x,foot.y,3.5,0,7); ctx.fill();
+    ctx.fillText('H', foot.x+(Math.sign(pLen)||1)*14, cy-8);
+    ctx.strokeStyle='#8fcbb0'; arrow(cx,cy,A.x,A.y,3.5);
+    ctx.strokeStyle='#7fa3e3'; arrow(cx,cy,B.x,B.y,3.5);
+    ctx.strokeStyle='#dc2626'; ctx.fillStyle='#dc2626';
+    arrow(cx,cy,cx+(foot.x-cx)*k, cy, 4.5);
+  } else if(anim.step===4){
+    // 结论：完整投影向量 + 标注
+    const k=ease(t/0.4);
+    ctx.strokeStyle='#b8c4d6'; ctx.lineWidth=1.8; ctx.setLineDash([6,5]);
+    ctx.beginPath(); ctx.moveTo(A.x,A.y); ctx.lineTo(foot.x,foot.y); ctx.stroke();
+    ctx.setLineDash([]);
+    rightAngleMark(foot, Math.sign(pLen)||1);
+    ctx.fillStyle='#dc2626'; ctx.beginPath(); ctx.arc(foot.x,foot.y,3.5,0,7); ctx.fill();
+    ctx.fillText('H', foot.x+(Math.sign(pLen)||1)*14, cy-8);
+    ctx.strokeStyle='#8fcbb0'; arrow(cx,cy,A.x,A.y,3.5);
+    ctx.strokeStyle='#7fa3e3'; arrow(cx,cy,B.x,B.y,3.5);
+    ctx.strokeStyle='#dc2626'; ctx.fillStyle='#dc2626';
+    arrow(cx,cy,foot.x,cy,4.5);
+    ctx.globalAlpha=k;
+    ctx.font='italic 15px "Times New Roman"';
+    ctx.fillText('投影向量', (cx+foot.x)/2-30, cy+44);
+    ctx.globalAlpha=1;
+    const p=Math.abs(G.pLen)/s;
+    const sgn = Math.abs(p)<1e-9 ? '= 0' : (G.pLen>0 ? '> 0' : '< 0');
+    ctx.font='16px "Times New Roman"';
+    ctx.fillStyle = Math.abs(p)<1e-9 ? '#6b7280' : (G.pLen>0 ? '#dc2626' : '#059669');
+    ctx.fillText('投影数量 |a|cosθ '+sgn, cx-40, cy+74);
+  }
+  ctx.restore();
+}
+function rightAngleMark(foot,dir){
+  const r=10;
+  ctx.strokeStyle='#64748b'; ctx.lineWidth=1.5;
+  ctx.beginPath();
+  ctx.moveTo(foot.x-dir*r, foot.y);
+  ctx.lineTo(foot.x-dir*r, foot.y-r);
+  ctx.lineTo(foot.x, foot.y-r);
+  ctx.stroke();
+}
+function arrow(x1,y1,x2,y2,w){
+  const ang=Math.atan2(y2-y1,x2-x1), h=11;
+  ctx.fillStyle=ctx.strokeStyle; // 箭头颜色与线段保持一致
+  ctx.lineWidth=w;
+  ctx.beginPath(); ctx.moveTo(x1,y1); ctx.lineTo(x2,y2); ctx.stroke();
+  ctx.beginPath(); ctx.moveTo(x2,y2);
+  ctx.lineTo(x2-h*Math.cos(ang)+h*0.45*Math.sin(ang), y2-h*Math.sin(ang)-h*0.45*Math.cos(ang));
+  ctx.lineTo(x2-h*Math.cos(ang)-h*0.45*Math.sin(ang), y2-h*Math.sin(ang)+h*0.45*Math.cos(ang));
+  ctx.closePath(); ctx.fill();
+}
+function bind(id,key,isAngle){
+  const el=document.getElementById(id);
+  el.addEventListener('input',()=>{
+    let v=+el.value;
+    if(isAngle){ st.th=v*Math.PI/180; document.getElementById('thV').textContent=v+'°'; }
+    else { st[key]=v; document.getElementById(id+'V').textContent=v.toFixed(1); }
+    if(anim.active||anim.hold) stopDemo();
+    syncAB(); draw();
+  });
+}
+bind('la','la'); bind('lb','lb'); bind('th',null,true);
+
+// ---------- 自定义向量 a ----------
+const GEO = ()=>({cx:cv.width*0.38, cy:cv.height*0.55, s:44});
+function syncAB(){
+  document.getElementById('ax').value=(st.la*Math.cos(st.th)).toFixed(1);
+  document.getElementById('ay').value=(st.la*Math.sin(st.th)).toFixed(1);
+}
+function setA(x,y){
+  let r=Math.hypot(x,y);
+  if(r<0.05){ x=1; y=0; r=1; }
+  st.la=Math.min(8,Math.max(1,r));
+  let a=Math.atan2(y,x);
+  if(a<0) a = (x<0 && Math.abs(y)<1e-9) ? Math.PI : 0;   // y<0 按 0 处理
+  if(a>Math.PI) a=Math.PI;
+  st.th=a;
+  document.getElementById('la').value=st.la;
+  document.getElementById('laV').textContent=st.la.toFixed(1);
+  document.getElementById('th').value=Math.round(a*180/Math.PI);
+  document.getElementById('thV').textContent=Math.round(a*180/Math.PI)+'°';
+  if(anim.active||anim.hold) stopDemo();
+  syncAB(); draw();
+}
+['ax','ay'].forEach(id=>{
+  document.getElementById(id).addEventListener('input',()=>{
+    setA(+document.getElementById('ax').value||0, +document.getElementById('ay').value||0);
+  });
+});
+
+// ---------- 画布拖动 a 的端点 ----------
+let dragA=false;
+function aTip(){
+  const {cx,cy,s}=GEO();
+  return {x:cx+Math.cos(st.th)*st.la*s, y:cy-Math.sin(st.th)*st.la*s};
+}
+cv.style.touchAction='none';
+cv.addEventListener('pointerdown',e=>{
+  if(anim.active||anim.hold) return;
+  const r=cv.getBoundingClientRect(), p={x:e.clientX-r.left, y:e.clientY-r.top}, t=aTip();
+  if(Math.hypot(p.x-t.x,p.y-t.y)<22){ dragA=true; cv.setPointerCapture(e.pointerId); }
+});
+cv.addEventListener('pointermove',e=>{
+  if(!dragA) return;
+  const r=cv.getBoundingClientRect(), {cx,cy,s}=GEO();
+  const mx=(e.clientX-r.left-cx)/s, my=(cy-(e.clientY-r.top))/s;
+  setA(mx,my);
+});
+cv.addEventListener('pointerup',()=>{ dragA=false; });
+
+syncAB();
+document.getElementById('playBtn').addEventListener('click',()=>{
+  if(anim.active && !anim.paused) pauseDemo();
+  else if(anim.active && anim.paused) resumeDemo();
+  else stopDemo(), runDemo();
+});
+// 重置：参数恢复默认值，并清除演示/保留状态
+document.getElementById('resetBtn').addEventListener('click',()=>{
+  stopDemo();
+  st.la=5; st.lb=6; st.th=60*Math.PI/180;
+  document.getElementById('la').value=5;  document.getElementById('laV').textContent='5.0';
+  document.getElementById('lb').value=6;  document.getElementById('lbV').textContent='6.0';
+  document.getElementById('th').value=60; document.getElementById('thV').textContent='60°';
+  syncAB(); draw();
+});
+[['tProj','proj'],['tArc','arc']].forEach(([id,key])=>{
+  document.getElementById(id).addEventListener('click',e=>{
+    st[key]=!st[key]; e.target.classList.toggle('on',st[key]); draw();
+  });
+});
+draw();
+</script>
+</body>
+</html>

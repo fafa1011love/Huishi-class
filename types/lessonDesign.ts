@@ -47,7 +47,7 @@ export type LessonDesignWorkflow = {
   phases: Array<Record<string, any>>
   staleSteps: string[]
   alignmentMatrix: Array<Record<string, any>>
-  generation: { engine: 'ollama' | 'builtin-template'; model?: string; message?: string; groundedSourceIds?: string[] }
+  generation: { engine: 'ollama' | 'responses' | 'builtin-template'; model?: string; message?: string; groundedSourceIds?: string[] }
   quality: DesignQuality
   qualityPending?: boolean
   modelContext?: { available: boolean; partKeys: string[] }

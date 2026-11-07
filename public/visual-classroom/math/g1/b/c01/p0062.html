@@ -1,0 +1,549 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>三角形解的个数（SSA）探究模型</title>
+<style>
+  :root{
+    --bg:#eef1f7;
+    --card:#ffffff;
+    --ink:#1b2432;
+    --ink2:#5c6879;
+    --ink3:#8d99aa;
+    --line:#e3e8f0;
+    --blue:#2563eb;
+    --blue-d:#1a49b8;
+    --blue-soft:#eef4ff;
+    --red:#dc2626;
+    --green:#059669;
+    --amber:#d97706;
+    --serif:"Times New Roman","Songti SC","SimSun",Times,serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0;padding:24px 20px 40px;
+    background:
+      radial-gradient(1100px 520px at 18% -12%, #ffffff 0%, rgba(255,255,255,0) 62%),
+      radial-gradient(900px 480px at 92% -4%, #e9f1ff 0%, rgba(233,241,255,0) 58%),
+      var(--bg);
+    color:var(--ink);
+    font-family:"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1250px;margin:0 auto;}
+
+  .head{margin-bottom:16px;}
+  .badge{display:inline-block;font-size:11.5px;letter-spacing:.16em;color:var(--blue);
+    background:var(--blue-soft);border:1px solid #d6e3ff;padding:5px 11px;border-radius:999px;font-weight:700;}
+  h1{font-family:var(--serif);font-size:31px;margin:11px 0 7px;font-weight:700;}
+  .sub{margin:0;color:var(--ink2);font-size:14px;line-height:1.7;max-width:860px;}
+  .sub b{color:var(--ink);font-weight:600;}
+
+  .layout{display:grid;grid-template-columns:minmax(0,1fr) 420px;gap:18px;align-items:stretch;}
+  @media (max-width:1090px){.layout{grid-template-columns:1fr;}}
+  .col{display:grid;gap:18px;align-content:start;}
+  .full{grid-column:1 / -1;}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;
+    box-shadow:0 1px 2px rgba(20,30,50,.04),0 16px 34px -22px rgba(20,30,50,.35);}
+
+  .stage-card{padding:14px 14px 6px;}
+  .stage-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:2px 4px 10px;flex-wrap:wrap;}
+  .tag{font-size:12px;font-weight:700;color:var(--ink2);background:#f4f6fa;border:1px solid var(--line);border-radius:8px;padding:4px 9px;}
+  .hint{font-size:12.5px;color:var(--ink3);}
+  .stage{
+    position:relative;border:1px solid var(--line);border-radius:12px;overflow:hidden;
+    background:
+      radial-gradient(circle at 1px 1px, #dde5f0 1px, transparent 0) 0 0/23px 23px,
+      linear-gradient(180deg,#fdfeff,#f6f9fd);
+  }
+  svg#board{display:block;width:100%;height:auto;touch-action:none;user-select:none;}
+
+  .controls{display:flex;align-items:center;gap:10px;padding:14px 6px 14px;flex-wrap:wrap;}
+  .btn{font:inherit;font-size:13.5px;font-weight:700;color:var(--blue-d);background:var(--blue-soft);
+    border:1px solid #d6e3ff;border-radius:10px;padding:9px 16px;cursor:pointer;transition:.15s;white-space:nowrap;}
+  .btn:hover{background:#e2ecff;}
+  .btn.ghost{color:var(--ink2);background:#f6f8fb;border-color:var(--line);}
+  .btn.ghost:hover{background:#eef1f6;}
+  .btn:disabled{opacity:.55;cursor:not-allowed;}
+  .zoomctl{display:inline-flex;align-items:center;gap:8px;font-size:13px;font-weight:700;color:var(--ink2);
+    background:#f6f8fb;border:1px solid var(--line);border-radius:10px;padding:6px 14px;}
+  .zoomctl input{width:120px;accent-color:var(--blue);cursor:pointer;}
+
+  .panel{padding:30px 20px 26px;}
+  .panel-head{display:flex;align-items:baseline;gap:10px;margin-bottom:14px;}
+  .panel-head h2{font-family:var(--serif);font-size:21px;margin:0;font-weight:700;}
+  .panel-head .en{font-family:var(--serif);font-size:12.5px;color:var(--ink3);letter-spacing:.06em;}
+
+  .sliders{margin:16px 0 10px;}
+  .srow{display:grid;grid-template-columns:110px 1fr 74px;gap:10px;align-items:center;padding:13px 0;}
+  .srow+.srow{border-top:1px dashed var(--line);}
+  .slabel{font-size:13.5px;font-weight:600;color:var(--ink2);}
+  .slabel .sym{font-family:var(--serif);font-style:italic;color:var(--ink);font-size:15px;margin-right:4px;}
+  input[type=range]{width:100%;accent-color:var(--blue);cursor:pointer;}
+  .snum{width:74px;font:inherit;font-family:var(--serif);font-size:15px;font-weight:700;text-align:right;
+    color:var(--blue-d);background:#fff;border:1px solid var(--line);border-radius:8px;padding:6px 8px;}
+  .snum:focus{outline:none;border-color:var(--blue);}
+  .crow{display:flex;justify-content:space-between;align-items:center;padding:9px 2px 2px;
+    border-top:1px dashed var(--line);font-size:13.5px;color:var(--ink2);font-weight:600;}
+  .crow .cval{font-family:var(--serif);font-style:italic;font-size:15px;font-weight:700;color:#7c3aed;}
+
+  .verdict{border-radius:12px;padding:14px 16px;border:1px solid var(--line);transition:.2s;}
+  .verdict .cnt{font-size:28px;font-family:var(--serif);font-weight:800;line-height:1.25;}
+  .verdict .desc{font-size:13.5px;color:var(--ink2);margin-top:4px;line-height:1.65;}
+  .v0 .cnt{color:var(--red);} .v1 .cnt{color:var(--green);} .v2 .cnt{color:var(--blue);}
+  .v0{background:linear-gradient(180deg,#fff6f5,#ffefee);border-color:#ffd9d5;}
+  .v1{background:linear-gradient(180deg,#f2fbf7,#e8f7f0);border-color:#cdeeda;}
+  .v2{background:linear-gradient(180deg,#f6faff,#eef5ff);border-color:#d6e3ff;}
+
+  table{width:100%;border-collapse:collapse;margin:16px 0 4px;font-size:13px;}
+  th,td{padding:11px 10px;text-align:left;border-bottom:1px solid var(--line);}
+  th{font-size:12px;letter-spacing:.08em;color:var(--ink3);font-weight:700;}
+  td .sym{font-family:var(--serif);font-style:italic;}
+  tr.hl td{background:var(--blue-soft);font-weight:700;color:var(--blue-d);}
+
+  .note{font-size:13px;color:var(--ink2);line-height:1.8;background:#f7f9fc;border:1px solid var(--line);
+    border-radius:10px;padding:12px 14px;margin-top:12px;}
+  .note .sym{font-family:var(--serif);font-style:italic;}
+  .note b{color:var(--ink);}
+  .calc{font-family:var(--serif);font-size:14.5px;color:var(--ink);background:#fff;border:1px dashed #d6e3ff;
+    border-radius:8px;padding:8px 12px;margin-top:12px;}
+  .calc b{color:var(--blue-d);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="head">
+    <span class="badge">6.4.3 · 正弦定理的应用</span>
+    <h1>三角形解的个数（SSA）探究模型</h1>
+    <p class="sub">已知<b>两边</b>和其中<b>一边的对角</b>（即 <i style="font-family:var(--serif)">a</i>、<i style="font-family:var(--serif)">b</i>、<i style="font-family:var(--serif)">A</i>），三角形可能有 <b>0 个、1 个或 2 个</b>解。几何本质：以点 <i style="font-family:var(--serif)">C</i> 为圆心、<i style="font-family:var(--serif)">a</i> 为半径作圆，看它与射线 <i style="font-family:var(--serif)">AB</i> 有几个交点——<b>点「▶ 演示几何本质」可观看作圆找交点的全过程</b>。</p>
+  </div>
+
+  <div class="layout">
+    <div class="card stage-card">
+        <div class="stage-head">
+          <span class="tag">几何画板 · 拖动滑块或直接拖动顶点 B₁ / B₂</span>
+          <span class="zoomctl">🔍 缩放 <input type="range" id="sZoom" min="0.5" max="1.5" step="0.05" value="0.8"></span>
+        </div>
+        <div class="stage">
+          <svg id="board" viewBox="0 0 900 560" xmlns="http://www.w3.org/2000/svg"></svg>
+        </div>
+        <div class="controls">
+          <button class="btn" id="btnAnim">▶ 演示几何本质</button>
+          <button class="btn ghost jump" data-cnt="0">0 解</button>
+          <button class="btn ghost jump" data-cnt="1">1 解</button>
+          <button class="btn ghost jump" data-cnt="2">2 解</button>
+          <button class="btn ghost" id="btnSnap">📌 临界情形 a = h</button>
+        </div>
+      </div>
+
+    <div class="card panel">
+      <div class="panel-head">
+        <h2>参数与分析</h2>
+        <span class="en">Law of Sines · SSA</span>
+      </div>
+
+      <div class="sliders">
+        <div class="srow">
+          <div class="slabel"><span class="sym">A</span> 角 A（对角）</div>
+          <input type="range" id="sA" min="5" max="150" step="0.5" value="40">
+          <input type="number" class="snum" id="nA" min="5" max="150" step="0.5" value="40">
+        </div>
+        <div class="srow">
+          <div class="slabel"><span class="sym">b</span> 边 b（= AC）</div>
+          <input type="range" id="sb" min="1" max="14" step="0.05" value="8">
+          <input type="number" class="snum" id="nb" min="1" max="14" step="0.05" value="8">
+        </div>
+        <div class="srow">
+          <div class="slabel"><span class="sym">a</span> 边 a（R）</div>
+          <input type="range" id="sa" min="0.2" max="14" step="0.05" value="4">
+          <input type="number" class="snum" id="na" min="0.2" max="14" step="0.05" value="4">
+        </div>
+        <div class="crow">
+          <span><span class="sym">c</span> 边 c（= AB）</span>
+          <span class="cval" id="cInfo">—</span>
+        </div>
+      </div>
+
+      <table>
+        <thead><tr><th>比较关系</th><th>解的个数</th><th>几何解释</th></tr></thead>
+        <tbody>
+          <tr id="row0"><td><span class="sym">a</span> &lt; <span class="sym">h</span> = <span class="sym">b</span>·sin <span class="sym">A</span></td><td>0 个</td><td>圆与射线不相交</td></tr>
+          <tr id="row1a"><td><span class="sym">a</span> = <span class="sym">h</span></td><td>1 个</td><td>相切：B 为垂足（直角三角形）</td></tr>
+          <tr id="row1b"><td><span class="sym">a</span> ≥ <span class="sym">b</span> 且 <span class="sym">A</span> 为锐角</td><td>1 个</td><td>另一交点在射线反向，须舍去</td></tr>
+          <tr id="row1c"><td><span class="sym">A</span> ≥ 90° 且 <span class="sym">a</span> &gt; <span class="sym">b</span></td><td>1 个</td><td>钝角/直角时只能一解</td></tr>
+          <tr id="row2"><td><span class="sym">h</span> &lt; <span class="sym">a</span> &lt; <span class="sym">b</span>（A 为锐角）</td><td>2 个</td><td>圆与射线交于两点 B₁、B₂</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div class="card panel full">
+      <div class="verdict" id="verdict">
+        <div class="cnt" id="cntText"></div>
+        <div class="desc" id="cntDesc"></div>
+      </div>
+      <div class="calc" id="calcLine"></div>
+      <div class="note" id="noteBox">
+        <b>代数视角：</b>由正弦定理 <span class="sym">sin B = b·sin A / a</span>。当 <span class="sym">b·sin A / a</span> &lt; 1 时，B 可能是锐角或钝角（互补的两个角都行），对应 2 个解；这正是 SSA 不能唯一确定三角形的"歧义"来源。
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+(function(){
+  var svg = document.getElementById('board');
+  var NS = 'http://www.w3.org/2000/svg';
+  var W = 900, H = 560;                      // 画布尺寸
+  var UNIT = 34, ORIGIN = {x: 110, y: 440};  // draw() 内自动缩放
+  var state = {A: 40, b: 8, a: 4};
+  var userZoom = 0.8;        // 画面缩放（滑块可调）
+  var animP = 1;            // 作圆动画进度 0→1（1 = 正常显示）
+  var animRAF = null;
+
+  function el(name, attrs, parent){
+    var e = document.createElementNS(NS, name);
+    for (var k in attrs) e.setAttribute(k, attrs[k]);
+    (parent || svg).appendChild(e);
+    return e;
+  }
+  function toXY(p){ return {x: ORIGIN.x + p.x * UNIT, y: ORIGIN.y - p.y * UNIT}; }
+  var rad = function(d){ return d * Math.PI / 180; };
+
+  var L = {};
+  ['grid','circle','rayAc','rays','tri2','tri1','labels','dots','drag'].forEach(function(n){
+    L[n] = el('g', {});
+  });
+
+  var txt = function(x, y, s, attrs, parent){
+    var t = el('text', Object.assign({x:x, y:y,
+      'font-family':'"Times New Roman",SimSun,serif','font-size':16, fill:'#1b2432'}, attrs||{}), parent||L.labels);
+    t.textContent = s; return t;
+  };
+
+  function solveCount(){
+    var A = state.A, b = state.b, a = state.a;
+    var h = b * Math.sin(rad(A));
+    if (a < h - 1e-9) return 0;
+    if (Math.abs(a - h) < 1e-9) return 1;
+    if (A >= 90) return 1;
+    if (a >= b) return 1;
+    return 2;
+  }
+
+  function pointOnRay(t){
+    return {x: t * Math.cos(rad(state.A)), y: t * Math.sin(rad(state.A))};
+  }
+  // 射线 AB 与圆的交点距离 t（只保留 t>0）
+  function intersections(){
+    return rawRoots().filter(function(t){ return t > 1e-9; });
+  }
+  // 直线 AB 与圆的全部交点（含反向延长线上的）
+  function rawRoots(){
+    var A = rad(state.A), b = state.b, a = state.a;
+    var Bq = -2*b*Math.cos(A), Cq = b*b - a*a;
+    var disc = Bq*Bq - 4*Cq;
+    if (disc < 0) return [];
+    var s = Math.sqrt(disc);
+    return [(-Bq - s)/2, (-Bq + s)/2];
+  }
+
+  // 边标注：取 PQ 中点，沿法线偏移；below=true 时标在边的下方
+  function sideLabel(P, Q, s, color, below){
+    var mx = (P.x+Q.x)/2, my = (P.y+Q.y)/2;
+    var dx = Q.x-P.x, dy = Q.y-P.y, len = Math.hypot(dx,dy) || 1;
+    var nx = -dy/len, ny = dx/len;
+    if (below){ if (ny < 0){ nx=-nx; ny=-ny; } }
+    else { if (ny > 0){ nx=-nx; ny=-ny; } }
+    txt(mx + nx*20, my + ny*20 + 6, s,
+      {'font-size':18, fill:color, 'font-style':'italic', 'font-weight':'bold', 'text-anchor':'middle'});
+  }
+
+  function draw(){
+    [L.grid, L.circle, L.rayAc, L.rays, L.tri2, L.tri1, L.labels, L.dots, L.drag].forEach(function(g){
+      while (g.firstChild) g.removeChild(g.firstChild);
+    });
+    var A = state.A, b = state.b, a = state.a;
+    var cnt = solveCount();
+    var ts = intersections();
+    var h = b * Math.sin(rad(A));
+    var footOnRay = b * Math.cos(rad(A));
+    var drawing = animP < 1;                     // 作圆动画进行中
+
+    // ---- 取景缓存：只在缩放滑块变化时重算；调 A/b/a 任何参数时三角形位置都固定 ----
+    var Ar = rad(A);
+    var frameKey = 'frame|' + userZoom;
+    if (state._frameKey !== frameKey){
+      state._frameKey = frameKey;
+      var drawLen = Math.max(1.5, footOnRay > 0 ? footOnRay : 0);
+      ts.forEach(function(t){ drawLen = Math.max(drawLen, t); });
+      drawLen += 1.2;
+      var pts = [
+        {x:0, y:0}, {x:b, y:0},
+        {x:b-a, y:-a}, {x:b+a, y:a},
+        {x:drawLen*Math.cos(Ar), y:drawLen*Math.sin(Ar)}
+      ];
+      var fminX=1e9,fmaxX=-1e9,fminY=1e9,fmaxY=-1e9;
+      pts.forEach(function(p){
+        fminX=Math.min(fminX,p.x); fmaxX=Math.max(fmaxX,p.x);
+        fminY=Math.min(fminY,p.y); fmaxY=Math.max(fmaxY,p.y);
+      });
+      var M = 40;
+      var base = Math.min(48, (W-2*M)/(fmaxX-fminX), (H-2*M)/(fmaxY-fminY));
+      state._frame = {
+        UNIT: base * userZoom,
+        drawLen: drawLen,
+        ox: (W - (fmaxX-fminX)*base*userZoom)/2 - fminX*base*userZoom,
+        oy: (H - (fmaxY-fminY)*base*userZoom)/2 + fmaxY*base*userZoom
+      };
+    }
+    UNIT = state._frame.UNIT;
+    ORIGIN.x = state._frame.ox;
+    ORIGIN.y = state._frame.oy;
+
+    // （无网格背景，纯白画布）
+
+    var Ac = toXY({x:0, y:0}), Cc = toXY({x:b, y:0});
+
+    // 已知边 AC（实线）
+    el('line', {x1: Ac.x, y1: Ac.y, x2: Cc.x, y2: Cc.y, stroke:'#1b2432', 'stroke-width':3}, L.rayAc);
+
+    // 射线 AB：实线画到"有用长度"（覆盖交点/垂足），反向延长虚线只在需要展示舍去点时出现
+    var far = toXY(pointOnRay(state._frame.drawLen));
+    el('line', {x1: Ac.x, y1: Ac.y, x2: far.x, y2: far.y, stroke:'#334155', 'stroke-width':2.2}, L.rays);
+
+    // 反向延长虚线 + 舍去点：仅当另一交点落在射线反向时（a ≥ b 且 A 为锐角的一解情形）
+    if (cnt === 1 && A < 90 && a > b && !drawing){
+      var roots = rawRoots();
+      var tNeg = Math.min(roots[0], roots[1]);
+      if (tNeg < -1e-6){
+        var backPt = toXY(pointOnRay(tNeg * 1.18));
+        el('line', {x1: Ac.x, y1: Ac.y, x2: backPt.x, y2: backPt.y,
+          stroke:'#94a3b8', 'stroke-width':1.8, 'stroke-dasharray':'7 6'}, L.rays);
+        var rej = toXY(pointOnRay(tNeg));
+        el('circle', {cx: rej.x, cy: rej.y, r: 5.5, fill:'#fff', stroke:'#dc2626', 'stroke-width':2.2}, L.dots);
+        txt(rej.x + 10, rej.y - 10, '舍去', {'font-size':13, fill:'#dc2626', 'font-weight':'bold'});
+      }
+    }
+
+    // 圆：心 C，半径 a（动画时半径从 0 长到 a）
+    var R = a * UNIT * animP;
+    el('circle', {cx: Cc.x, cy: Cc.y, r: Math.max(0.01, R),
+      fill: (cnt===2 && !drawing) ? 'rgba(37,99,235,.06)' : 'rgba(148,163,184,.07)',
+      stroke:'#94a3b8', 'stroke-width':2, 'stroke-dasharray': drawing ? 'none' : '6 5'}, L.circle);
+    el('circle', {cx: Cc.x, cy: Cc.y, r: 4, fill:'#334155'}, L.circle);
+
+    // 半径线：黑色，表示 a 的长度（不标注文字，a 的说明见右栏参数「边 a（R）」）
+    var spA = Math.PI * 0.72;
+    var sp = {x: Cc.x + R*Math.cos(spA), y: Cc.y - R*Math.sin(spA)};
+    if (R > 14){
+      el('line', {x1: Cc.x, y1: Cc.y, x2: sp.x, y2: sp.y, stroke:'#1b2432', 'stroke-width':2}, L.circle);
+      el('circle', {cx: sp.x, cy: sp.y, r: 2.6, fill:'#1b2432'}, L.circle);
+    }
+
+    // 高度参考 h：从 C 向射线 AB 作垂线（A 为锐角时）
+    if (A < 90 && !drawing){
+      var fp = pointOnRay(footOnRay), fpS = toXY(fp);
+      el('line', {x1: Cc.x, y1: Cc.y, x2: fpS.x, y2: fpS.y, stroke:'#d97706', 'stroke-width':1.8, 'stroke-dasharray':'4 5'}, L.rays);
+      txt((Cc.x+fpS.x)/2 + 10, (Cc.y+fpS.y)/2 - 12, 'h=' + h.toFixed(2), {'font-size':15, fill:'#d97706', 'font-style':'italic', 'font-weight':'bold'});
+    }
+
+    // 解三角形（动画结束后出现）
+    function triangle(t, color, g){
+      var Bp = toXY(pointOnRay(t));
+      el('path', {d:'M '+Ac.x+' '+Ac.y+' L '+Bp.x+' '+Bp.y+' L '+Cc.x+' '+Cc.y+' Z',
+        fill: color.fill, stroke: color.stroke, 'stroke-width':2.4}, g);
+      return Bp;
+    }
+    var B1 = null, B2 = null;
+    if (!drawing){
+      if (ts.length === 2){
+        B1 = triangle(ts[0], {fill:'rgba(37,99,235,.14)', stroke:'#2563eb'}, L.tri2);
+        B2 = triangle(ts[1], {fill:'rgba(5,150,105,.14)', stroke:'#059669'}, L.tri2);
+      } else if (ts.length === 1){
+        B1 = triangle(ts[0], {fill:'rgba(5,150,105,.16)', stroke:'#059669'}, L.tri1);
+      } else if (A < 90){
+        var fp2 = toXY(pointOnRay(footOnRay));
+        el('circle', {cx: fp2.x, cy: fp2.y, r: 5, fill:'none', stroke:'#dc2626', 'stroke-width':2}, L.tri1);
+      }
+    }
+
+    // 角 A 圆弧
+    var ar = Math.min(46, b*UNIT*0.5);
+    el('path', {d:'M '+(Ac.x+ar)+' '+Ac.y+' A '+ar+' '+ar+' 0 0 0 '+(Ac.x+ar*Math.cos(Ar))+' '+(Ac.y-ar*Math.sin(Ar)),
+      fill:'none', stroke:'#1a49b8', 'stroke-width':2}, L.labels);
+
+    // 文字标注
+    txt(Ac.x-22, Ac.y+22, 'A', {'font-size':19, 'font-weight':'bold'});
+    txt(Cc.x+10, Cc.y+24, 'C', {'font-size':19, 'font-weight':'bold'});
+    txt(Ac.x+ar+12, Ac.y-16, A.toFixed(1)+'°', {'font-size':16, fill:'#1a49b8', 'font-weight':'bold'});
+    if (!drawing){
+      if (ts.length >= 1 && B1){
+        // 三角形成立：只标 b（a 的数值见右栏参数 a（R））
+        sideLabel(Ac, Cc, 'b=' + b.toFixed(2), '#1b2432', true);
+      }
+    }
+
+    // 顶点
+    function dot(P, color, name, g, dragTag){
+      el('circle', {cx:P.x, cy:P.y, r:6, fill:color, stroke:'#fff', 'stroke-width':2, cursor: dragTag?'grab':'default'}, g);
+      if (name) txt(P.x+10, P.y-10, name, {'font-size':17, fill:color, 'font-weight':'bold'}, g);
+    }
+    dot(Ac, '#1b2432', null, L.dots);
+    dot(Cc, '#334155', null, L.dots);
+    if (!drawing){
+      if (ts.length === 2){
+        dot(B1, '#2563eb', 'B\u2081', L.dots, 0);
+        dot(B2, '#059669', 'B\u2082', L.dots, 1);
+      } else if (ts.length === 1){
+        dot(B1, '#059669', 'B', L.dots, 0);
+      }
+    }
+    state._ts = ts;
+  }
+
+  // ---------- 面板 ----------
+  var sA = document.getElementById('sA'), sb = document.getElementById('sb'), sa = document.getElementById('sa');
+  var nA = document.getElementById('nA'), nb = document.getElementById('nb'), na = document.getElementById('na');
+  var cInfo = document.getElementById('cInfo');
+  var verdict = document.getElementById('verdict'), cntText = document.getElementById('cntText'),
+      cntDesc = document.getElementById('cntDesc'), calcLine = document.getElementById('calcLine'),
+      modeHint = null; // 画板右上角改为缩放滑块，参数提示由右栏输入框承担
+
+  function updateUI(){
+    var A = state.A, b = state.b, a = state.a;
+    var h = b * Math.sin(rad(A));
+    var cnt = solveCount();
+    nA.value = A.toFixed(1);
+    nb.value = b.toFixed(2);
+    na.value = a.toFixed(2);
+    var tsv = intersections();
+    cInfo.textContent = tsv.length === 2 ? ('c\u2081=' + tsv[0].toFixed(2) + '，c\u2082=' + tsv[1].toFixed(2))
+                      : tsv.length === 1 ? ('c=' + tsv[0].toFixed(2)) : '—';
+    verdict.className = 'verdict v' + cnt;
+    cntText.textContent = cnt === 0 ? '三角形有 0 个解（无解）' : ('三角形有 ' + cnt + ' 个解');
+    var desc;
+    if (cnt === 0) desc = 'a = ' + a.toFixed(2) + ' < h = b·sinA = ' + h.toFixed(2) + '：边 a 太短，够不着射线 AB，圆与射线无交点。';
+    else if (cnt === 1 && Math.abs(a - h) < 1e-9) desc = 'a = h = ' + h.toFixed(2) + '：圆与射线 AB 相切，B 恰为垂足，得到直角三角形（临界情形）。';
+    else if (cnt === 1 && A >= 90) desc = 'A ≥ 90° 且 a > b = ' + b.toFixed(2) + '：钝角三角形只能有这一个解（若 B 也为钝角则内角和超 180°）。';
+    else if (cnt === 1) desc = 'a = ' + a.toFixed(2) + ' ≥ b = ' + b.toFixed(2) + '：圆与直线交于两点，但另一点落在射线 AB 的反向延长线上，须舍去（图中红色空心点）。';
+    else desc = 'h = ' + h.toFixed(2) + ' < a = ' + a.toFixed(2) + ' < b = ' + b.toFixed(2) + '：圆与射线交于两点 B₁、B₂，两个三角形都符合条件——这就是 SSA 的"歧义"。';
+    cntDesc.textContent = desc;
+    var ratio = b*Math.sin(rad(A))/a;
+    calcLine.innerHTML = '正弦定理：sin B = b·sin A / a = <b>' + ratio.toFixed(4) + '</b>' +
+      (ratio > 1 ? ' &gt; 1 → 无解（B 不存在）' : (cnt===2 ? ' → B 可取锐角或其补角 → 2 个解' : ' → B 唯一 → 1 个解'));
+
+    var rows = {row0: cnt===0, row1a: cnt===1 && Math.abs(a-h)<1e-9, row1b: cnt===1 && A<90 && a>=b,
+                row1c: cnt===1 && A>=90, row2: cnt===2};
+    for (var id in rows) document.getElementById(id).className = rows[id] ? 'hl' : '';
+  }
+
+  function refresh(){ draw(); updateUI(); }
+
+  function stopAnim(){
+    if (animRAF){ cancelAnimationFrame(animRAF); animRAF = null; }
+    var b = document.getElementById('btnAnim');
+    b.disabled = false;
+    b.textContent = '▶ 演示几何本质';
+  }
+
+  function clampNum(v, lo, hi, fb){ v = parseFloat(v); return isNaN(v) ? fb : Math.min(hi, Math.max(lo, v)); }
+
+  ['input'].forEach(function(ev){
+    sA.addEventListener(ev, function(){ stopAnim(); state.A = +sA.value; refresh(); });
+    sb.addEventListener(ev, function(){ stopAnim(); state.b = +sb.value; refresh(); });
+    sa.addEventListener(ev, function(){ stopAnim(); state.a = +sa.value; refresh(); });
+    nA.addEventListener(ev, function(){ stopAnim(); state.A = clampNum(nA.value, 5, 150, state.A); refresh(); });
+    nb.addEventListener(ev, function(){ stopAnim(); state.b = clampNum(nb.value, 1, 14, state.b); refresh(); });
+    na.addEventListener(ev, function(){ stopAnim(); state.a = clampNum(na.value, 0.2, 14, state.a); refresh(); });
+  });
+
+  // ▶ 动画：半径从 0 长到 a，展示"以 C 为圆心、a 为半径作圆，看与射线 AB 有几个交点"
+  document.getElementById('btnAnim').onclick = function(){
+    stopAnim();
+    this.disabled = true;
+    this.textContent = '⏳ 正在作圆…';
+    var dur = 2400, t0 = null;
+    function ease(t){ return t<.5 ? 2*t*t : 1-Math.pow(-2*t+2,2)/2; }
+    function step(ts){
+      if (t0 === null) t0 = ts;
+      var p = Math.min(1, (ts - t0)/dur);
+      animP = Math.max(ease(p), 0.01);
+      draw();
+      if (p < 1){ animRAF = requestAnimationFrame(step); }
+      else { animP = 1; refresh(); stopAnim(); }
+    }
+    animRAF = requestAnimationFrame(step);
+  };
+
+  // 跳到指定解数
+  function jump(cnt){
+    stopAnim();
+    var A = state.A, b = state.b;
+    if (cnt === 2){
+      if (A >= 90 || b*Math.sin(rad(A)) >= b) A = 40;   // 两解需锐角且 h<a<b
+      var h2 = b * Math.sin(rad(A));
+      state.a = +((h2 + b)/2).toFixed(2);
+    } else if (cnt === 1){
+      state.a = +(b * Math.sin(rad(A))).toFixed(2);     // 相切
+    } else {
+      state.a = +Math.max(0.2, b * Math.sin(rad(A)) * 0.6).toFixed(2);
+    }
+    state.A = +A.toFixed(1);
+    syncSliders(); refresh();
+  }
+  Array.prototype.forEach.call(document.querySelectorAll('.jump'), function(btn){
+    btn.onclick = function(){ jump(+btn.getAttribute('data-cnt')); };
+  });
+
+  document.getElementById('btnSnap').onclick = function(){
+    stopAnim();
+    state.a = +(state.b * Math.sin(rad(state.A))).toFixed(2);
+    syncSliders(); refresh();
+  };
+
+  var sZoom = document.getElementById('sZoom');
+  sZoom.addEventListener('input', function(){
+    stopAnim();
+    userZoom = +sZoom.value;
+    draw();
+  });
+
+  function syncSliders(){
+    sA.value = Math.min(150, Math.max(5, state.A));
+    sb.value = Math.min(14, Math.max(1, state.b));
+    sa.value = Math.min(14, Math.max(0.2, state.a));
+  }
+  // 拖动 B 顶点 → 改变 a
+  var dragging = null;
+  function svgPoint(evt){
+    var r = svg.getBoundingClientRect();
+    return {x: (evt.clientX - r.left) * W / r.width, y: (evt.clientY - r.top) * H / r.height};
+  }
+  svg.addEventListener('pointerdown', function(e){
+    stopAnim();
+    var ts = state._ts || [];
+    if (!ts.length) return;
+    var p = svgPoint(e);
+    for (var i = 0; i < ts.length; i++){
+      var Bp = toXY(pointOnRay(ts[i]));
+      if (Math.hypot(p.x - Bp.x, p.y - Bp.y) < 22){ dragging = i; svg.setPointerCapture(e.pointerId); break; }
+    }
+  });
+  svg.addEventListener('pointermove', function(e){
+    if (dragging === null) return;
+    var p = svgPoint(e);
+    var wx = (p.x - ORIGIN.x)/UNIT, wy = (ORIGIN.y - p.y)/UNIT;
+    var a = Math.hypot(wx - state.b, wy);
+    state.a = +Math.min(14, Math.max(0.2, a)).toFixed(2);
+    syncSliders(); refresh();
+  });
+  svg.addEventListener('pointerup', function(){ dragging = null; });
+
+  refresh();
+})();
+</script>
+</body>
+</html>

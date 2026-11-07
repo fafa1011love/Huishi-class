@@ -1,0 +1,762 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1.0">
+<title>探究凸透镜与凹透镜对光的作用 · 交互式可视化（人教版八年级上册 §5.1）</title>
+<style>
+:root{
+  --blue:#2563EB; --blue-d:#1D4ED8; --blue-l:#EFF4FF;
+  --green:#10B981; --red:#EF4444; --amber:#F59E0B;
+  --ink:#1F2937; --ink-3:#6B7280;
+  --line:#E5E7EB; --bg:#F5F7FB; --card:#FFFFFF;
+  --radius:14px;
+  --shadow:0 1px 2px rgba(16,24,40,.04), 0 10px 28px -14px rgba(16,24,40,.26);
+}
+*{box-sizing:border-box;}
+html,body{margin:0;padding:0;}
+body{font-family:"Microsoft YaHei","PingFang SC","Hiragino Sans GB",system-ui,-apple-system,"Segoe UI",sans-serif;
+  background:var(--bg);color:var(--ink);line-height:1.68;-webkit-font-smoothing:antialiased;}
+svg{display:block;font-family:inherit;}
+
+.site-header{background:linear-gradient(120deg,#1D4ED8,#2563EB 55%,#3B82F6);color:#fff;padding:22px 0 24px;}
+.header-inner{max-width:1120px;margin:0 auto;padding:0 22px;display:flex;justify-content:space-between;align-items:flex-end;gap:18px;flex-wrap:wrap;}
+.header-text h1{margin:0;font-size:24px;font-weight:700;letter-spacing:.5px;}
+.header-text p{margin:6px 0 0;font-size:13.5px;color:rgba(255,255,255,.88);}
+.header-nav{display:flex;align-items:center;gap:10px;flex-wrap:wrap;}
+.header-link{border:1px solid rgba(255,255,255,.45);border-radius:999px;padding:7px 16px;font-size:13px;color:#fff;text-decoration:none;background:rgba(255,255,255,.08);white-space:nowrap;}
+.header-link:hover{background:rgba(255,255,255,.2);}
+.header-badge{border:1px solid rgba(255,255,255,.4);border-radius:999px;padding:7px 16px;font-size:13px;background:rgba(255,255,255,.12);white-space:nowrap;}
+
+.wrap{max-width:1120px;margin:0 auto;padding:24px 22px 40px;}
+.card{background:var(--card);border-radius:var(--radius);box-shadow:var(--shadow);padding:24px 26px;margin-bottom:20px;border:1px solid rgba(229,231,235,.7);}
+.chead{display:flex;gap:14px;align-items:flex-start;margin-bottom:18px;}
+.idx{flex:0 0 auto;width:34px;height:34px;border-radius:11px;background:var(--blue-l);color:var(--blue);font-weight:800;font-size:14px;display:flex;align-items:center;justify-content:center;margin-top:2px;}
+.chead h2{margin:0 0 3px;font-size:19px;font-weight:700;letter-spacing:.2px;}
+.chead p{margin:0;color:var(--ink-3);font-size:13.3px;}
+
+.split{display:grid;grid-template-columns:minmax(0,1.06fr) minmax(285px,.94fr);gap:26px;align-items:start;}
+@media(max-width:900px){.split{grid-template-columns:1fr;}}
+.stage{border:1px solid var(--line);border-radius:12px;background:#FBFcFE;padding:6px;overflow:hidden;}
+.stage.dark{background:#0B1220;border-color:#1E293B;padding:0;}
+.stage svg{width:100%;height:auto;border-radius:8px;touch-action:none;}
+[data-drag]{cursor:ns-resize;}
+[data-drag="screen"]{cursor:ew-resize;}
+
+.panel{display:flex;flex-direction:column;gap:15px;}
+.ctl label{display:flex;justify-content:space-between;align-items:baseline;font-size:13px;color:var(--ink-3);margin-bottom:6px;}
+.ctl label b{color:var(--ink);font-size:14.5px;font-variant-numeric:tabular-nums;font-weight:700;}
+input[type=range]{width:100%;height:24px;accent-color:var(--blue);cursor:pointer;margin:0;background:transparent;}
+.tick{display:flex;justify-content:space-between;font-size:11px;color:var(--ink-3);margin-top:1px;}
+.seg{display:flex;gap:8px;flex-wrap:wrap;}
+.seg button{border:1px solid var(--line);background:#fff;color:var(--ink-3);border-radius:9px;padding:6px 14px;font-size:12.5px;cursor:pointer;font-family:inherit;transition:.15s;}
+.seg button:hover{border-color:#BFDBFE;background:#F8FAFF;}
+.seg button.on{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600;}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;}
+.tabs button{border:1px solid var(--line);background:#fff;color:var(--ink-3);border-radius:999px;padding:6px 16px;font-size:13px;cursor:pointer;font-family:inherit;transition:.15s;}
+.tabs button:hover{border-color:#BFDBFE;}
+.tabs button.on{background:var(--blue);border-color:var(--blue);color:#fff;font-weight:600;}
+.btn{border:1px solid var(--blue);background:#fff;color:var(--blue);border-radius:9px;padding:7px 15px;font-size:13px;cursor:pointer;font-family:inherit;transition:.15s;white-space:nowrap;}
+.btn:hover{background:var(--blue-l);}
+.btn.primary{background:var(--blue);color:#fff;}
+.btn.primary:hover{background:var(--blue-d);}
+.btn-row{display:flex;gap:8px;flex-wrap:wrap;}
+
+.rows{border:1px solid var(--line);border-radius:11px;overflow:hidden;background:#FCFDFF;}
+.row{display:flex;justify-content:space-between;gap:10px;padding:8px 13px;font-size:13px;border-bottom:1px solid var(--line);}
+.row:last-child{border-bottom:0;}
+.row span{color:var(--ink-3);}
+.row b{font-variant-numeric:tabular-nums;font-weight:700;}
+
+.tagline{display:flex;align-items:center;gap:9px;font-size:13px;color:var(--ink-3);flex-wrap:wrap;}
+.tag{font-size:11.5px;font-weight:700;border-radius:999px;padding:2px 10px;letter-spacing:.3px;white-space:nowrap;}
+.tag.a{background:#FFF6E5;color:#B45309;}
+.tag.b{background:#EFF4FF;color:#1D4ED8;}
+
+.bar{height:9px;background:#EEF2F7;border-radius:6px;overflow:hidden;margin-top:2px;}
+.bar i{display:block;height:100%;width:0;background:linear-gradient(90deg,#FBBF24,#F59E0B);}
+@keyframes flick{0%,100%{transform:scale(1,1);}50%{transform:scale(.88,1.1);}}
+.flame{transform-box:fill-box;transform-origin:center bottom;animation:flick .48s ease-in-out infinite;}
+
+footer{text-align:center;color:#93A2B8;font-size:12.3px;padding:6px 0 0;}
+</style>
+</head>
+<body>
+
+<header class="site-header">
+  <div class="header-inner">
+    <div class="header-text">
+      <h1>探究凸透镜与凹透镜对光的作用</h1>
+      <p>会聚、发散不是"有没有交点"，而是折射光相对入射光偏向哪边——拖出光路来看</p>
+    </div>
+    <div class="header-nav">
+      <a class="header-link" href="#">« 返回实验目录</a>
+      <span class="header-badge">八年级物理 · 光学 · §5.1 透镜</span>
+    </div>
+  </div>
+</header>
+
+<div class="wrap">
+
+  <!-- ============ ① 焦点与焦距 ============ -->
+  <section class="card">
+    <div class="chead">
+      <div class="idx">01</div>
+      <div>
+        <h2>平行光射进透镜后去了哪——焦点与焦距</h2>
+        <p>拖动焦距，看焦点的位置、透镜的厚薄怎么跟着一起变。</p>
+      </div>
+    </div>
+    <div class="split">
+      <div class="stage dark">
+        <svg id="svg1" viewBox="0 0 760 320" role="img" aria-label="平行光经过凸透镜或凹透镜"></svg>
+      </div>
+      <div class="panel">
+        <div class="seg" id="seg1">
+          <button data-t="conv" class="on">凸透镜</button>
+          <button data-t="conc">凹透镜</button>
+        </div>
+        <div class="ctl">
+          <label>焦距 f <b id="v1f">10.0 cm</b></label>
+          <input id="r1f" type="range" min="6" max="16" step="0.5" value="10">
+          <div class="tick"><span>6 · 很厚</span><span>16 · 很薄</span></div>
+        </div>
+        <div class="rows">
+          <div class="row"><span>透镜形状</span><b id="o1shape">—</b></div>
+          <div class="row"><span>焦距 f</span><b id="o1f">—</b></div>
+          <div class="row"><span>平行光折射后</span><b id="o1after">—</b></div>
+        </div>
+        <div class="tagline" id="o1tag"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ② 三条特殊光线 ============ -->
+  <section class="card">
+    <div class="chead">
+      <div class="idx">02</div>
+      <div>
+        <h2>三条特殊光线（激光光学演示仪）</h2>
+        <p>焦距固定 10.0 cm。图上那个白点可以直接上下拖。</p>
+      </div>
+    </div>
+    <div class="tabs" id="tabs2">
+      <button data-k="a" class="on">① 平行于主光轴</button>
+      <button data-k="b">② 过焦点</button>
+      <button data-k="c">③ 过光心</button>
+    </div>
+    <div class="split" style="margin-top:16px">
+      <div class="stage dark">
+        <svg id="svg2" viewBox="0 0 760 320" role="img" aria-label="三条特殊光线"></svg>
+      </div>
+      <div class="panel">
+        <div class="seg" id="seg2">
+          <button data-t="conv" class="on">凸透镜</button>
+          <button data-t="conc">凹透镜</button>
+        </div>
+        <div class="ctl">
+          <label id="lb2h">入射光线离主光轴</label>
+          <input id="r2h" type="range" min="0.4" max="5.2" step="0.1" value="3">
+          <div class="tick"><span>贴着主轴</span><span>靠近透镜边缘</span></div>
+        </div>
+        <div class="rows">
+          <div class="row"><span>这条入射光线</span><b id="o2in">—</b></div>
+          <div class="row"><span>折射后</span><b id="o2out">—</b></div>
+        </div>
+        <div class="tagline" id="o2tag"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ③ 会聚还是发散 ============ -->
+  <section class="card">
+    <div class="chead">
+      <div class="idx">03</div>
+      <div>
+        <h2>会聚还是发散？看"偏向"，不看"有没有交点"</h2>
+        <p>灰色虚线＝假如没有透镜、光会走的路。拿它跟绿色出射光比一比。</p>
+      </div>
+    </div>
+    <div class="split">
+      <div class="stage dark">
+        <svg id="svg3" viewBox="0 0 760 320" role="img" aria-label="会聚与发散作用的判据"></svg>
+      </div>
+      <div class="panel">
+        <div class="seg" id="seg3">
+          <button data-t="conv" class="on">凸透镜</button>
+          <button data-t="conc">凹透镜</button>
+        </div>
+        <div class="ctl">
+          <label>焦距 f <b id="v3f">10.0 cm</b></label>
+          <input id="r3f" type="range" min="6" max="16" step="0.5" value="10">
+        </div>
+        <div class="ctl">
+          <label>入射光束 <b id="v3t">平行光</b></label>
+          <input id="r3t" type="range" min="-100" max="100" step="1" value="0">
+          <div class="tick"><span>发散（点光源近）</span><span>平行</span><span>会聚</span></div>
+        </div>
+        <div class="btn-row">
+          <button class="btn" data-t3="-100">点光源放在一倍焦距内</button>
+          <button class="btn" data-t3="0">平行光</button>
+          <button class="btn" data-t3="60">会聚光束</button>
+        </div>
+        <div class="rows">
+          <div class="row"><span>入射光束</span><b id="o3in">—</b></div>
+          <div class="row"><span>出射光束</span><b id="o3out">—</b></div>
+          <div class="row"><span>边缘光线偏折</span><b id="o3bend">—</b></div>
+        </div>
+        <div class="tagline" id="o3tag"></div>
+      </div>
+    </div>
+  </section>
+
+  <!-- ============ ④ 太阳光测焦距 ============ -->
+  <section class="card">
+    <div class="chead">
+      <div class="idx">04</div>
+      <div>
+        <h2>太阳光聚焦点燃火柴——粗测焦距</h2>
+        <p>光屏可以拖。找到光斑最小最亮的那一点，它到透镜的距离就是焦距。</p>
+      </div>
+    </div>
+    <div class="split">
+      <div class="stage dark">
+        <svg id="svg4" viewBox="0 0 760 320" role="img" aria-label="太阳光聚焦测焦距"></svg>
+      </div>
+      <div class="panel">
+        <div class="ctl">
+          <label>凸透镜厚薄 <b id="v4th">中等</b></label>
+          <input id="r4th" type="range" min="0" max="100" step="1" value="50">
+          <div class="tick"><span>薄 · 焦距长</span><span>厚 · 焦距短</span></div>
+        </div>
+        <div class="ctl">
+          <label>光屏到透镜的距离 L <b id="v4s">16.0 cm</b></label>
+          <input id="r4s" type="range" min="3" max="26" step="0.1" value="16">
+          <div class="tick"><span>3</span><span>26 cm</span></div>
+        </div>
+        <div class="btn-row">
+          <button class="btn primary" id="b4play">▶ 自动移动光屏</button>
+        </div>
+        <div class="rows">
+          <div class="row"><span>这块透镜的焦距 f</span><b id="o4f">—</b></div>
+          <div class="row"><span>光屏位置 L</span><b id="o4s">—</b></div>
+          <div class="row"><span>离焦点还差</span><b id="o4gap">—</b></div>
+          <div class="row"><span>光斑直径</span><b id="o4d">—</b></div>
+        </div>
+        <div class="ctl">
+          <label>能量集中程度 <b id="o4b">—</b></label>
+          <div class="bar"><i id="o4bar"></i></div>
+        </div>
+        <div class="tagline" id="o4tag"></div>
+      </div>
+    </div>
+  </section>
+
+</div>
+
+<footer>物理可视化模型 · 凸透镜与凹透镜对光的作用　|　单文件版，双击即用</footer>
+
+<script>
+/* ============================================================
+   透镜光路引擎（薄透镜，近轴）
+   世界坐标：光心 O 在原点，主光轴水平，光沿 +x 方向传播，y 向上。
+   入射光在透镜平面上高度 y、斜率 m，则  m_out = m - y/f
+   f > 0 凸透镜（会聚），f < 0 凹透镜（发散）。
+   ============================================================ */
+
+const $ = (s, r) => (r || document).querySelector(s);
+const clamp = (v, a, b) => Math.min(b, Math.max(a, v));
+const FONT = '"Microsoft YaHei","PingFang SC",sans-serif';
+
+const CX = 380, AY = 150, PPM = 13;              // 光心像素位置、每厘米像素数
+const XMIN = -29, XMAX = 29, YMIN = -11.5, YMAX = 11.5;
+const Xn = x => CX + x * PPM, Yn = y => AY - y * PPM;
+const X = x => Xn(x).toFixed(2), Y = y => Yn(y).toFixed(2);
+
+const C_IN = '#FCD34D', C_OUT = '#34D399', C_GRAY = '#64748B',
+      C_AMB = '#F59E0B', C_LENS = '#93C5FD', C_DIM = '#94A3B8', C_TXT = '#E2E8F0';
+
+function T(sel, v) { const e = $(sel); if (e) e.textContent = v; }
+function HH(sel, v) { const e = $(sel); if (e) e.innerHTML = v; }
+
+/* ---------- 文本 ---------- */
+function label(x, y, s, o) {
+  o = o || {};
+  const xx = o.px != null ? o.px : X(x), yy = o.py != null ? o.py : Y(y);
+  let pre = '';
+  if (o.bg) {                                   // 加一层底色，避免压在光线上看不清
+    const sz = o.size || 12;
+    const wpx = s.replace(/[^\x00-\xff]/g, 'xx').length * sz * 0.34 + 10;
+    const x0 = o.a === 'middle' ? xx - wpx / 2 : (o.a === 'end' ? xx - wpx : xx - 3);
+    pre = '<rect x="' + x0.toFixed(1) + '" y="' + (yy - sz * 0.92).toFixed(1) + '" width="' + wpx.toFixed(1) +
+      '" height="' + (sz * 1.22).toFixed(1) + '" rx="4" fill="#0B1220" opacity=".94"/>';
+  }
+  return pre + '<text x="' + xx + '" y="' + yy + '" font-size="' + (o.size || 12) +
+    '" fill="' + (o.fill || C_DIM) + '" font-weight="' + (o.w || 400) +
+    '" text-anchor="' + (o.a || 'start') + '" font-family=' + FONT +
+    (o.op != null ? ' opacity="' + o.op + '"' : '') + '>' + s + '</text>';
+}
+
+/* ---------- 线段裁剪到画面内 ---------- */
+function clipSeg(p0, p1) {
+  let t0 = 0, t1 = 1;
+  const dx = p1.x - p0.x, dy = p1.y - p0.y;
+  function slab(num, den, lo, hi) {
+    if (Math.abs(den) < 1e-9) return num >= lo && num <= hi;
+    let a = (lo - num) / den, b = (hi - num) / den;
+    if (a > b) { const s = a; a = b; b = s; }
+    if (a > t0) t0 = a;
+    if (b < t1) t1 = b;
+    return t1 >= t0;
+  }
+  if (!slab(p0.x, dx, XMIN, XMAX)) return null;
+  if (!slab(p0.y, dy, YMIN, YMAX)) return null;
+  if (t1 < t0) return null;
+  return { a: { x: p0.x + dx * t0, y: p0.y + dy * t0 }, b: { x: p0.x + dx * t1, y: p0.y + dy * t1 } };
+}
+
+/* ---------- 一条光线（含箭头与光晕） ---------- */
+function arrowOn(a, b, col) {
+  const dx = b.x - a.x, dy = b.y - a.y, L = Math.hypot(dx, dy);
+  if (L < 0.4) return '';
+  const ux = dx / L, uy = dy / L, t = 0.62;
+  const ax = a.x + dx * t, ay = a.y + dy * t;
+  const nx = -uy, ny = ux, hw = 0.42;
+  const tx = ax + ux * 0.9, ty = ay + uy * 0.9;
+  const bx = ax - ux * 0.7, by = ay - uy * 0.7;
+  return '<path d="M' + X(tx) + ' ' + Y(ty) + ' L' + X(bx + nx * hw) + ' ' + Y(by + ny * hw) +
+    ' L' + X(bx - nx * hw) + ' ' + Y(by - ny * hw) + ' Z" fill="' + col + '"/>';
+}
+function ray(x0, y0, x1, y1, col, o) {
+  o = o || {};
+  const s = clipSeg({ x: x0, y: y0 }, { x: x1, y: y1 });
+  if (!s) return '';
+  const a = s.a, b = s.b, w = o.w || 1.8;
+  let out = '';
+  if (!o.dash) out += '<line x1="' + X(a.x) + '" y1="' + Y(a.y) + '" x2="' + X(b.x) + '" y2="' + Y(b.y) +
+    '" stroke="' + col + '" stroke-width="' + (w * 3).toFixed(1) + '" opacity="0.12" stroke-linecap="round"/>';
+  out += '<line x1="' + X(a.x) + '" y1="' + Y(a.y) + '" x2="' + X(b.x) + '" y2="' + Y(b.y) +
+    '" stroke="' + col + '" stroke-width="' + w + '" stroke-linecap="round"' +
+    (o.dash ? ' stroke-dasharray="' + o.dash + '"' : '') +
+    (o.op != null ? ' opacity="' + o.op + '"' : '') + '/>';
+  if (o.arrow !== false && !o.dash) out += arrowOn(a, b, col);
+  return out;
+}
+
+/* ---------- 舞台 / 主光轴 / 刻度尺 ---------- */
+function stageBg() { return '<rect x="0" y="0" width="760" height="320" rx="10" fill="#0B1220"/>'; }
+function axisG() {
+  return '<line x1="' + X(XMIN + 1) + '" y1="' + Y(0) + '" x2="' + X(XMAX - 1) + '" y2="' + Y(0) +
+    '" stroke="#64748B" stroke-width="1.1" stroke-dasharray="9 7" opacity=".9"/>' +
+    label(XMAX - 1, -0.8, '主光轴', { a: 'end', size: 11.5 });
+}
+function rulerG() {
+  let s = '<line x1="' + X(-20) + '" y1="290" x2="' + X(20) + '" y2="290" stroke="#475569" stroke-width="1.2"/>';
+  for (let c = -20; c <= 20; c++) {
+    const major = c % 5 === 0;
+    s += '<line x1="' + X(c) + '" y1="290" x2="' + X(c) + '" y2="' + (290 - (major ? 11 : 6)) +
+      '" stroke="' + (major ? '#94A3B8' : '#475569') + '" stroke-width="1"/>';
+    if (major) s += label(c, 0, String(c), { py: 306, size: 11, a: 'middle' });
+  }
+  s += '<text x="' + (Xn(20) + 12).toFixed(1) + '" y="294" font-size="11" fill="#94A3B8" font-family=' + FONT + '>cm</text>';
+  return s;
+}
+
+/* ---------- 透镜（厚薄随焦距变：焦距越短透镜越厚） ---------- */
+function lensG(f) {
+  const h = 5.6;
+  const d = 0.42 + 0.5 * clamp((16 - Math.abs(f)) / 10, 0, 1);
+  let p;
+  if (f > 0) {
+    p = 'M' + X(0) + ' ' + Y(h) + ' Q' + X(2 * d) + ' ' + Y(0) + ' ' + X(0) + ' ' + Y(-h) +
+        ' Q' + X(-2 * d) + ' ' + Y(0) + ' ' + X(0) + ' ' + Y(h) + ' Z';
+  } else {
+    const w = 0.58, dc = d * 0.92;
+    p = 'M' + X(-w) + ' ' + Y(h) + ' L' + X(w) + ' ' + Y(h) +
+        ' Q' + X(w - 2 * dc) + ' ' + Y(0) + ' ' + X(w) + ' ' + Y(-h) +
+        ' L' + X(-w) + ' ' + Y(-h) + ' Q' + X(-w + 2 * dc) + ' ' + Y(0) + ' ' + X(-w) + ' ' + Y(h) + ' Z';
+  }
+  return '<path d="' + p + '" fill="rgba(147,197,253,.20)" stroke="' + C_LENS + '" stroke-width="1.6"/>';
+}
+function oCenter() {
+  return '<circle cx="' + X(0) + '" cy="' + Y(0) + '" r="3.6" fill="#0B1220" stroke="' + C_TXT + '" stroke-width="1.5"/>';
+}
+/* 焦点标记：竖引导线 + 文字（放在主轴下方，避开光束） */
+function focusMark(fx, txt, strong) {
+  const y0 = Yn(0);
+  return '<line x1="' + X(fx) + '" y1="' + (y0 + 7) + '" x2="' + X(fx) + '" y2="' + (y0 + 26) +
+    '" stroke="' + C_AMB + '" stroke-width="1.2" opacity="' + (strong ? .9 : .5) + '"' +
+    (strong ? '' : ' stroke-dasharray="4 4"') + '/>' +
+    label(fx, 0, txt, { px: X(fx), py: y0 + 41, size: 12, a: 'middle', fill: C_AMB, w: 700, op: strong ? 1 : .7, bg: true });
+}
+function fBracket(f) {
+  const y = 250;
+  return '<line x1="' + X(0) + '" y1="' + y + '" x2="' + X(f) + '" y2="' + y + '" stroke="' + C_AMB + '" stroke-width="1.4"/>' +
+    '<line x1="' + X(0) + '" y1="' + (y - 6) + '" x2="' + X(0) + '" y2="' + (y + 6) + '" stroke="' + C_AMB + '" stroke-width="1.4"/>' +
+    '<line x1="' + X(f) + '" y1="' + (y - 6) + '" x2="' + X(f) + '" y2="' + (y + 6) + '" stroke="' + C_AMB + '" stroke-width="1.4"/>' +
+    label(f / 2, 0, '焦距 f = ' + Math.abs(f).toFixed(1) + ' cm', { px: X(f / 2), py: y + 20, size: 12, a: 'middle', fill: C_AMB, w: 700, bg: true }) +
+    label(0, 0, 'O 光心', {
+      px: X(0) + (f > 0 ? -7 : 7), py: y - 9, size: 11.5,
+      a: f > 0 ? 'end' : 'start', fill: '#CBD5E1', w: 600
+    });
+}
+function handle(x, y, tag) {
+  return '<circle cx="' + X(x) + '" cy="' + Y(y) + '" r="7.5" fill="#FFFFFF" fill-opacity=".92" stroke="#2563EB" stroke-width="1.6" data-drag="' + tag + '"/>';
+}
+/* 偏折角圆弧（屏幕坐标角度） */
+function angleArc(cxpx, cypx, r, a0, a1, col) {
+  let d = a1 - a0;
+  while (d > Math.PI) d -= 2 * Math.PI;
+  while (d < -Math.PI) d += 2 * Math.PI;
+  const sweep = d > 0 ? 1 : 0;
+  return '<path d="M' + (cxpx + r * Math.cos(a0)).toFixed(1) + ' ' + (cypx + r * Math.sin(a0)).toFixed(1) +
+    ' A' + r + ' ' + r + ' 0 0 ' + sweep + ' ' + (cxpx + r * Math.cos(a1)).toFixed(1) + ' ' + (cypx + r * Math.sin(a1)).toFixed(1) +
+    '" fill="none" stroke="' + col + '" stroke-width="1.6"/>';
+}
+
+/* ---------- 拖动 ---------- */
+function toWorld(svg, e) {
+  const r = svg.getBoundingClientRect();
+  const px = (e.clientX - r.left) / r.width * 760;
+  const py = (e.clientY - r.top) / r.height * 320;
+  return { x: (px - CX) / PPM, y: (AY - py) / PPM };
+}
+function bindDrag(svg, hit, apply) {
+  let active = false;
+  svg.addEventListener('pointerdown', e => {
+    const t = e.target;
+    if (!t || t.getAttribute('data-drag') !== hit) return;
+    active = true;
+    try { svg.setPointerCapture(e.pointerId); } catch (err) {}
+    e.preventDefault(); apply(toWorld(svg, e));
+  });
+  svg.addEventListener('pointermove', e => { if (active) { e.preventDefault(); apply(toWorld(svg, e)); } });
+  const end = () => { active = false; };
+  svg.addEventListener('pointerup', end);
+  svg.addEventListener('pointercancel', end);
+}
+function bindSeg(id, pick) {
+  const box = $(id);
+  if (!box) return;
+  box.addEventListener('click', e => {
+    const b = e.target.closest ? e.target.closest('button') : null;
+    if (!b || !box.contains(b)) return;
+    Array.prototype.forEach.call(box.children, x => x.classList.remove('on'));
+    b.classList.add('on');
+    pick(b.getAttribute('data-t'));
+  });
+}
+function bindTabs(id, pick) {
+  const box = $(id);
+  if (!box) return;
+  box.addEventListener('click', e => {
+    const b = e.target.closest ? e.target.closest('button') : null;
+    if (!b || !box.contains(b)) return;
+    Array.prototype.forEach.call(box.children, x => x.classList.remove('on'));
+    b.classList.add('on');
+    pick(b.getAttribute('data-k'));
+  });
+}
+
+/* ============================================================
+   ① 焦点与焦距
+   ============================================================ */
+const m1 = { type: 'conv' };
+const HS9 = [-5, -3.75, -2.5, -1.25, 0, 1.25, 2.5, 3.75, 5];
+
+function draw1() {
+  try {
+    const fmag = parseFloat($('#r1f').value);
+    const sgn = m1.type === 'conv' ? 1 : -1;
+    const f = sgn * fmag;
+    let g = stageBg() + axisG() + rulerG();
+    g += label(XMIN + 1, 7.6, '平行入射光', { size: 11.5, fill: C_IN, w: 700 });
+    HS9.forEach(h => {
+      g += ray(XMIN, h, 0, h, C_IN, { w: 1.7 });
+      const m = -h / f;
+      g += ray(0, h, XMAX, h + m * XMAX, C_OUT, { w: 1.7 });
+      if (sgn < 0) g += ray(0, h, f, 0, C_OUT, { w: 1.4, dash: '7 5', op: .6 });
+    });
+    if (sgn > 0) {
+      g += '<circle cx="' + X(f) + '" cy="' + Y(0) + '" r="15" fill="#FDE68A" opacity=".16"/>';
+      g += '<circle cx="' + X(f) + '" cy="' + Y(0) + '" r="6" fill="#FDE68A"/>';
+      g += focusMark(f, 'F（实焦点）', true) + focusMark(-f, 'F', false);
+    } else {
+      g += focusMark(f, 'F（虚焦点）', true) + focusMark(-f, 'F', false);
+    }
+    g += lensG(f) + oCenter() + fBracket(f);
+    $('#svg1').innerHTML = g;
+
+    T('#v1f', fmag.toFixed(1) + ' cm');
+    T('#o1shape', sgn > 0 ? '中间厚、边缘薄' : '中间薄、边缘厚');
+    T('#o1f', fmag.toFixed(1) + ' cm');
+    T('#o1after', sgn > 0 ? '会聚于另一侧焦点 F' : '发散，反向延长线过 F');
+    HH('#o1tag', sgn > 0
+      ? '<span class="tag a">会聚作用</span>平行光被拉向主光轴，真的交于一点'
+      : '<span class="tag b">发散作用</span>平行光被推离主光轴，交点只在反向延长线上');
+  } catch (e) {}
+}
+
+/* ============================================================
+   ② 三条特殊光线
+   ============================================================ */
+const m2 = { type: 'conv', tab: 'a', F: 10 };
+
+function draw2() {
+  try {
+    const sgn = m2.type === 'conv' ? 1 : -1;
+    const f = sgn * m2.F;
+    const h = parseFloat($('#r2h').value);
+    const tab = m2.tab;
+    let g = stageBg() + axisG() + rulerG();
+
+    if (tab === 'a') {
+      g += label(XMIN + 1, 7.6, '平行于主光轴入射', { size: 12, fill: C_IN, w: 700 });
+      g += ray(XMIN, h, 0, h, C_IN, { w: 2 });
+      const m = -h / f;
+      g += ray(0, h, XMAX, h, C_GRAY, { w: 1.3, dash: '5 6', op: .85 });
+      g += ray(0, h, XMAX, h + m * XMAX, C_OUT, { w: 2 });
+      if (sgn < 0) g += ray(0, h, f, 0, C_OUT, { w: 1.5, dash: '7 5', op: .65 });
+      if (sgn > 0) {
+        g += '<circle cx="' + X(f) + '" cy="' + Y(0) + '" r="6" fill="#FDE68A"/>';
+        g += focusMark(f, 'F（折射后过这里）', true) + focusMark(-f, 'F', false);
+      } else {
+        g += focusMark(f, 'F（反向延长线过这里）', true) + focusMark(-f, 'F', false);
+      }
+      g += lensG(f) + oCenter() + handle(0, h, 'h');
+      T('#lb2h', '入射光线离主光轴');
+      T('#o2in', '平行于主光轴，距主轴 ' + h.toFixed(1) + ' cm');
+      T('#o2out', sgn > 0 ? '通过另一侧焦点 F（10.0 cm 处）' : '偏离主轴，反向延长线过入射侧 F');
+
+    } else if (tab === 'b') {
+      if (sgn > 0) {
+        g += label(XMIN + 1, 7.6, '从左焦点 F 发出', { size: 12, fill: C_IN, w: 700 });
+        g += ray(-f, 0, 0, h, C_IN, { w: 2 });
+        g += ray(0, h, XMAX, h + (h / f) * XMAX, C_GRAY, { w: 1.3, dash: '5 6', op: .85 });
+        g += ray(0, h, XMAX, h, C_OUT, { w: 2 });
+        g += '<circle cx="' + X(-f) + '" cy="' + Y(0) + '" r="5" fill="' + C_IN + '"/>';
+        g += focusMark(-f, 'F（光线从此发出）', true) + focusMark(f, 'F', false);
+        T('#o2in', '从左焦点 F 出发，射到 ' + h.toFixed(1) + ' cm 高处');
+      } else {
+        const fa = Math.abs(f);
+        const m = -h / fa;
+        g += label(XMIN + 1, 7.6, '指向另一侧焦点 F', { size: 12, fill: C_IN, w: 700 });
+        g += ray(XMIN, h + m * XMIN, 0, h, C_IN, { w: 2 });
+        g += ray(0, h, fa, 0, C_IN, { w: 1.5, dash: '7 5', op: .65 });
+        g += ray(0, h, XMAX, h + m * XMAX, C_GRAY, { w: 1.3, dash: '5 6', op: .85 });
+        g += ray(0, h, XMAX, h, C_OUT, { w: 2 });
+        g += focusMark(fa, 'F（延长线过这里）', true) + focusMark(-fa, 'F', false);
+        T('#o2in', '延长线过另一侧焦点 F');
+      }
+      g += lensG(f) + oCenter() + handle(0, h, 'h');
+      T('#lb2h', '光线穿过透镜的高度');
+      T('#o2out', '平行于主光轴射出');
+
+    } else {
+      const xL = -14, m = -h / 14;
+      g += label(XMIN + 1, 7.6, '射向光心 O', { size: 12, fill: C_IN, w: 700 });
+      g += ray(xL, h, 0, 0, C_IN, { w: 2 });
+      g += ray(0, 0, XMAX, m * XMAX, C_OUT, { w: 2 });
+      g += label(0, 0, '传播方向不变', { px: Xn(0) + 14, py: Yn(0) + 26, size: 12, fill: C_OUT, w: 700, bg: true });
+      g += lensG(f) + oCenter() + handle(xL, h, 'h');
+      T('#lb2h', '光线的倾斜程度');
+      T('#o2in', '穿过光心 O，与主轴成 ' + (Math.atan(h / 14) * 180 / Math.PI).toFixed(1) + '°');
+      T('#o2out', '沿原方向直线射出');
+    }
+
+    $('#svg2').innerHTML = g;
+    HH('#o2tag', tab === 'c'
+      ? '<span class="tag b">不偏折</span>光心 O 就在这里：穿过它的光线不改变方向'
+      : '<span class="tag a">偏折发生在透镜上</span>入射、出射两条直线一定在透镜平面上拐弯');
+  } catch (e) {}
+}
+
+/* ============================================================
+   ③ 会聚 / 发散的判据
+   ============================================================ */
+const m3 = { type: 'conv' };
+const HS5 = [-5, -2.5, 0, 2.5, 5];
+
+function draw3() {
+  try {
+    const fmag = parseFloat($('#r3f').value);
+    const sgn = m3.type === 'conv' ? 1 : -1;
+    const f = sgn * fmag;
+    const t = parseFloat($('#r3t').value);
+    const k = t / 800;                        // 入射光束的曲率：κ>0 会聚，κ<0 发散
+    let g = stageBg() + axisG() + rulerG();
+
+    const xStart = k < 0 ? Math.max(1 / k, XMIN) : XMIN;
+    HS5.forEach(h => {
+      const mIn = -k * h, mOut = mIn - h / f;
+      g += ray(xStart, h + mIn * xStart, 0, h, C_IN, { w: 1.8 });
+      g += ray(0, h, XMAX, h + mIn * XMAX, C_GRAY, { w: 1.3, dash: '5 6', op: .9 });
+      g += ray(0, h, XMAX, h + mOut * XMAX, C_OUT, { w: 1.8 });
+    });
+
+    /* 点光源 / 会聚点的标记 */
+    if (k < -0.0015 && Math.abs(1 / k) <= 27) {
+      const xs = 1 / k;
+      g += '<circle cx="' + X(xs) + '" cy="' + Y(0) + '" r="5" fill="' + C_IN + '"/>';
+      g += label(xs, 0, '点光源', { px: X(xs), py: Yn(0) - 14, size: 11.5, a: 'middle', fill: C_IN, w: 700, bg: true });
+    }
+
+    /* 顶边光线的偏折角 */
+    const yT = 5, mIn = -k * yT, mOut = mIn - yT / f;
+    const a0 = Math.atan2(-mIn, 1), a1 = Math.atan2(-mOut, 1);
+    g += angleArc(Xn(0), Yn(yT), 46, a0, a1, '#FFFFFF');
+    let dd = a1 - a0;
+    while (dd > Math.PI) dd -= 2 * Math.PI;
+    while (dd < -Math.PI) dd += 2 * Math.PI;
+    const am = a0 + dd / 2;
+    g += label(0, 0, Math.abs(dd * 180 / Math.PI).toFixed(1) + '°',
+      { px: Xn(0) + 60 * Math.cos(am), py: Yn(yT) + 60 * Math.sin(am) + 4, size: 12, a: 'middle', fill: '#FFFFFF', w: 700, bg: true });
+
+    g += lensG(f) + oCenter();
+    $('#svg3').innerHTML = g;
+
+    /* 判据 */
+    const xv = 1 / (k + 1 / f);
+    const bend = Math.abs(Math.atan(mOut) - Math.atan(mIn)) * 180 / Math.PI;
+    const toward = mOut < mIn;                 // 上方光线：斜率变小＝被拉向主轴
+
+    T('#v3f', fmag.toFixed(1) + ' cm');
+    T('#v3t', Math.abs(k) < 0.0015 ? '平行光' : (k < 0 ? '发散 ' + Math.abs(1 / k).toFixed(1) + ' cm 处点光源' : '会聚于 ' + (1 / k).toFixed(1) + ' cm 处'));
+    T('#o3in', Math.abs(k) < 0.0015 ? '平行光' :
+      (k < 0 ? '点光源在透镜前 ' + Math.abs(1 / k).toFixed(1) + ' cm（发散）' :
+               '会聚光束，若不受阻将交于透镜后 ' + (1 / k).toFixed(1) + ' cm'));
+    T('#o3out', Math.abs(k + 1 / f) < 0.0015 ? '平行光' :
+      (xv > 0 ? '会聚于透镜后 ' + xv.toFixed(1) + ' cm' :
+                '发散，反向延长线交于透镜前 ' + Math.abs(xv).toFixed(1) + ' cm'));
+    T('#o3bend', bend.toFixed(1) + '°　' + (toward ? '朝主光轴' : '背离主光轴'));
+    HH('#o3tag', sgn > 0
+      ? '<span class="tag a">会聚作用</span>不管入射光是发散还是会聚，出射光总比入射光更靠近主光轴'
+      : '<span class="tag b">发散作用</span>不管入射光是发散还是会聚，出射光总比入射光更远离主光轴');
+  } catch (e) {}
+}
+
+/* ============================================================
+   ④ 太阳光聚焦 · 点燃火柴测焦距
+   ============================================================ */
+let raf4 = null;
+
+function draw4() {
+  try {
+    const th = parseFloat($('#r4th').value);
+    const f = 14 - 8 * th / 100;
+    const xs = parseFloat($('#r4s').value);
+    const R = Math.max(5 * Math.abs(1 - xs / f), 0.1);
+    const d = 2 * R;
+    const lit = d < 1.0;
+
+    let g = stageBg() + axisG() + rulerG();
+    g += label(XMIN + 1, 7.6, '太阳光（可看成平行光）', { size: 11.5, fill: C_IN, w: 700 });
+
+    HS9.forEach(h => {
+      g += ray(XMIN, h, 0, h, C_IN, { w: 1.6 });
+      const ys = h * (1 - xs / f);
+      g += ray(0, h, xs, ys, C_OUT, { w: 1.6 });
+    });
+
+    /* 焦点标记（待测） */
+    g += focusMark(f, 'F（待测）', false);
+
+    /* 光斑 + 光屏 */
+    const Rd = Math.min(R, 6.2);                 // 光斑再大也只落在光屏上
+    g += '<line x1="' + X(xs) + '" y1="' + Y(-Rd) + '" x2="' + X(xs) + '" y2="' + Y(Rd) +
+      '" stroke="#FDE68A" stroke-width="9" opacity="' + (lit ? .95 : .75) + '" stroke-linecap="round"/>';
+    g += '<line x1="' + X(xs) + '" y1="' + Y(-6.2) + '" x2="' + X(xs) + '" y2="' + Y(6.2) +
+      '" stroke="#38BDF8" stroke-width="3" opacity=".8"/>';
+    g += '<circle cx="' + X(xs) + '" cy="' + Y(7.4) + '" r="8" fill="#38BDF8" data-drag="screen"/>';
+    g += label(xs, 0, '光屏（可拖动）', { px: X(xs), py: Yn(7.4) - 12, size: 11.5, a: 'middle', fill: '#38BDF8', w: 700, bg: true });
+
+    /* 火柴 */
+    const y0 = Yn(0);
+    g += '<rect x="' + X(xs - 3.6) + '" y="' + (y0 - 4) + '" width="' + (3.2 * PPM).toFixed(1) + '" height="8" rx="3" fill="#E7D8B8"/>';
+    g += '<rect x="' + X(xs - 0.95) + '" y="' + (y0 - 5.5) + '" width="' + (0.95 * PPM).toFixed(1) + '" height="11" rx="4" fill="' + (lit ? '#7F1D1D' : '#B91C1C') + '"/>';
+    if (lit) {
+      const bx = Xn(xs - 0.4), by = y0 - 6;
+      g += '<circle cx="' + bx + '" cy="' + by + '" r="20" fill="#FB923C" opacity=".22"/>';
+      g += '<g class="flame"><path d="M' + bx + ' ' + (by - 30) + ' C' + (bx + 9) + ' ' + (by - 18) + ' ' + (bx + 8) + ' ' + (by - 5) + ' ' + bx + ' ' + by +
+        ' C' + (bx - 8) + ' ' + (by - 5) + ' ' + (bx - 9) + ' ' + (by - 18) + ' ' + bx + ' ' + (by - 30) + ' Z" fill="#FB923C"/>' +
+        '<path d="M' + bx + ' ' + (by - 18) + ' C' + (bx + 4.5) + ' ' + (by - 11) + ' ' + (bx + 4.5) + ' ' + (by - 3) + ' ' + bx + ' ' + by +
+        ' C' + (bx - 4.5) + ' ' + (by - 3) + ' ' + (bx - 4.5) + ' ' + (by - 11) + ' ' + bx + ' ' + (by - 18) + ' Z" fill="#FDE68A"/></g>';
+    }
+
+    g += lensG(f) + oCenter();
+    $('#svg4').innerHTML = g;
+
+    T('#v4th', th < 25 ? '薄' : (th > 75 ? '厚' : '中等'));
+    T('#v4s', xs.toFixed(1) + ' cm');
+    T('#o4f', f.toFixed(1) + ' cm');
+    T('#o4s', xs.toFixed(1) + ' cm');
+    T('#o4gap', Math.abs(xs - f).toFixed(1) + ' cm');
+    T('#o4d', d.toFixed(2) + ' cm');
+    const b = Math.sqrt(clamp(Math.pow(0.8 / Math.max(d, 0.12), 2), 0, 1));
+    $('#o4bar').style.width = (b * 100).toFixed(0) + '%';
+    T('#o4b', d < 1.2 ? '很集中' : (d < 3 ? '较集中' : (d < 6 ? '分散' : '很分散')));
+    HH('#o4tag', lit
+      ? '<span class="tag a">火柴被点燃</span>光斑最小最亮 —— 此刻 L = ' + xs.toFixed(1) + ' cm 就是焦距'
+      : '<span class="tag b">还没点燃</span>光斑直径 ' + d.toFixed(2) + ' cm，能量没有聚到一起');
+  } catch (e) {}
+}
+
+function anim4() {
+  const btn = $('#b4play');
+  if (raf4) { cancelAnimationFrame(raf4); raf4 = null; btn.textContent = '▶ 自动移动光屏'; return; }
+  btn.textContent = '⏸ 暂停';
+  const t0 = performance.now(), T = 5200;
+  const step = now => {
+    raf4 = requestAnimationFrame(step);
+    try {
+      const p = ((now - t0) % T) / T;
+      const tri = p < 0.5 ? p * 2 : 2 - p * 2;
+      const e = tri * tri * (3 - 2 * tri);
+      $('#r4s').value = (3 + e * 23).toFixed(1);
+      draw4();
+    } catch (err) {}
+  };
+  raf4 = requestAnimationFrame(step);
+}
+
+/* ============================================================
+   初始化
+   ============================================================ */
+document.addEventListener('DOMContentLoaded', () => {
+  /* ① */
+  bindSeg('#seg1', t => { m1.type = t; draw1(); });
+  $('#r1f').addEventListener('input', draw1);
+
+  /* ② */
+  bindSeg('#seg2', t => { m2.type = t; draw2(); });
+  bindTabs('#tabs2', k => { m2.tab = k; draw2(); });
+  $('#r2h').addEventListener('input', draw2);
+  bindDrag($('#svg2'), 'h', w => {
+    $('#r2h').value = clamp(w.y, 0.4, 5.2).toFixed(1);
+    draw2();
+  });
+
+  /* ③ */
+  bindSeg('#seg3', t => { m3.type = t; draw3(); });
+  $('#r3f').addEventListener('input', draw3);
+  $('#r3t').addEventListener('input', draw3);
+  Array.prototype.forEach.call(document.querySelectorAll('[data-t3]'), b => {
+    b.addEventListener('click', () => { $('#r3t').value = b.getAttribute('data-t3'); draw3(); });
+  });
+
+  /* ④ */
+  $('#r4th').addEventListener('input', () => { if (raf4) anim4(); draw4(); });
+  $('#r4s').addEventListener('input', () => { if (raf4) anim4(); draw4(); });
+  $('#b4play').addEventListener('click', anim4);
+  bindDrag($('#svg4'), 'screen', w => {
+    if (raf4) anim4();
+    $('#r4s').value = clamp(w.x, 3, 26).toFixed(1);
+    draw4();
+  });
+
+  draw1(); draw2(); draw3(); draw4();
+});
+</script>
+
+</body>
+</html>

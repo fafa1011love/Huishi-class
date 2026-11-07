@@ -1,0 +1,1096 @@
+<!doctype html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>平移 · 3D 动态交互模型</title>
+<style>
+  *{box-sizing:border-box}
+  html,body{height:100%}
+  body{
+    margin:0;overflow:hidden;user-select:none;-webkit-user-select:none;
+    font-family:"PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+    color:#1e2c44;
+    background:radial-gradient(125% 115% at 76% -12%, #ffffff 0%, #eef3fb 46%, #dbe6f4 100%);
+    -webkit-font-smoothing:antialiased;
+  }
+  #scene{position:fixed;inset:0;display:block;touch-action:none;cursor:grab}
+  #scene.grabbing{cursor:grabbing}
+  #scene.over{cursor:move}
+
+  .hdr{position:fixed;left:28px;top:22px;pointer-events:none;user-select:none}
+  .hdr h1{margin:0;font-size:27px;font-weight:700;letter-spacing:.10em;color:#16253f}
+  .hdr h1 em{font-style:normal;font-size:14px;letter-spacing:.06em;color:#7d8ea6;margin-left:10px;font-weight:500}
+  .hdr .rule{width:46px;height:3px;border-radius:2px;background:linear-gradient(90deg,#3f7bea,#8fc0ff);margin-top:10px}
+  .hdr p{margin:8px 0 0;font-size:12.5px;letter-spacing:.03em;color:#8494a9}
+
+  .panel{
+    position:fixed;top:20px;right:20px;width:316px;
+    background:rgba(255,255,255,.94);
+    backdrop-filter:blur(14px);-webkit-backdrop-filter:blur(14px);
+    border:1px solid rgba(206,220,238,.95);
+    border-radius:18px;
+    box-shadow:0 12px 34px rgba(34,64,116,.11), 0 2px 6px rgba(34,64,116,.05);
+    padding:13px 15px 13px;
+    max-height:calc(100vh - 40px);overflow:auto;
+    scrollbar-width:thin;
+  }
+  .panel::-webkit-scrollbar{width:6px}
+  .panel::-webkit-scrollbar-thumb{background:#d6e0ee;border-radius:3px}
+
+  .grp{padding:9px 0;border-bottom:1px dashed #e5ecf6}
+  .grp.first{padding-top:1px}
+  .grp.last{border-bottom:none;padding-bottom:0}
+
+  .lab{
+    display:flex;justify-content:space-between;align-items:baseline;
+    font-size:12px;color:#7f8fa5;letter-spacing:.05em;margin-bottom:6px;
+  }
+  .lab b{font-size:13px;color:#1b2b45;font-weight:600;font-variant-numeric:tabular-nums;letter-spacing:0}
+
+  .seg{display:grid;grid-template-columns:repeat(3,1fr);gap:4px;background:#eff4fb;padding:4px;border-radius:11px}
+  .seg button{
+    border:0;background:transparent;padding:7px 2px;border-radius:7px;
+    font-size:12px;color:#5d6d84;font-weight:500;cursor:pointer;
+    font-family:inherit;transition:.16s ease;white-space:nowrap;
+  }
+  .seg button:hover{color:#2b4166}
+  .seg button.on{background:#fff;color:#2563c9;font-weight:600;box-shadow:0 1px 5px rgba(40,70,120,.16)}
+
+  input[type=range]{
+    -webkit-appearance:none;appearance:none;
+    width:100%;height:20px;background:transparent;cursor:pointer;display:block;
+  }
+  input[type=range]::-webkit-slider-runnable-track{height:5px;border-radius:3px;background:#e4ebf5}
+  input[type=range]::-webkit-slider-thumb{
+    -webkit-appearance:none;appearance:none;width:17px;height:17px;border-radius:50%;
+    background:#fff;border:3px solid #3f7bea;margin-top:-6px;
+    box-shadow:0 1px 4px rgba(40,70,120,.25);transition:.1s;
+  }
+  input[type=range]:active::-webkit-slider-thumb{transform:scale(1.12)}
+  input[type=range]::-moz-range-track{height:5px;border-radius:3px;background:#e4ebf5}
+  input[type=range]::-moz-range-thumb{width:14px;height:14px;border-radius:50%;background:#fff;border:3px solid #3f7bea}
+
+  .rowbtn{display:flex;gap:8px;margin-top:9px}
+  .btn{
+    flex:1;border:1px solid #d9e3f0;background:#fff;color:#3a4c67;
+    font-family:inherit;font-size:12.5px;font-weight:500;
+    padding:8px 6px;border-radius:10px;cursor:pointer;transition:.16s;
+  }
+  .btn:hover{border-color:#b9cdea;background:#f7fafe}
+  .btn.primary{background:linear-gradient(180deg,#4c86ee,#3a71dd);border:0;color:#fff;font-weight:600;box-shadow:0 3px 10px rgba(56,110,220,.28)}
+  .btn.primary:hover{background:linear-gradient(180deg,#5a90f2,#3f76e2)}
+  .btn.primary.playing{background:linear-gradient(180deg,#f0914f,#e07a34);box-shadow:0 3px 10px rgba(224,122,52,.3)}
+
+  .checks{display:grid;grid-template-columns:1fr 1fr;gap:0 6px}
+  .chk{display:flex;align-items:center;gap:6px;font-size:12px;color:#43536b;padding:4px 0;cursor:pointer;white-space:nowrap}
+  .chk input{width:14px;height:14px;accent-color:#3f7bea;cursor:pointer;margin:0}
+  .chk input:disabled{cursor:not-allowed;opacity:.35}
+  .chk.dim{opacity:.42}
+
+  .kv{display:flex;justify-content:space-between;align-items:flex-start;font-size:12.5px;padding:2.5px 0;color:#5b6b82;gap:10px}
+  .kv > span{flex:none;padding-top:1px}
+  .kv b{font-variant-numeric:tabular-nums;color:#1c2c46;font-weight:600;letter-spacing:.01em;text-align:right;line-height:1.45}
+  .kv b.big{font-size:14.5px;color:#5b34c9}
+  .kv b.wrap{font-size:11.5px;font-weight:600}
+
+  .prop{display:flex;gap:7px;padding:4px 0}
+  .prop i{font-style:normal;color:#0f9d76;font-weight:800;font-size:12px;line-height:1.45}
+  .prop .t{font-size:12.5px;color:#33445f;line-height:1.35;font-weight:500}
+  .prop b{display:block;font-size:11.5px;color:#6b7d95;font-weight:500;margin-top:1px;font-variant-numeric:tabular-nums}
+
+  .legend{
+    position:fixed;left:28px;bottom:22px;display:flex;gap:15px;flex-wrap:wrap;
+    font-size:12.5px;color:#5b6b82;pointer-events:none;
+    background:rgba(255,255,255,.76);backdrop-filter:blur(8px);
+    padding:9px 14px;border-radius:11px;border:1px solid rgba(208,220,237,.95);
+  }
+  .legend span{display:flex;align-items:center}
+  .legend i{display:inline-block;width:11px;height:11px;border-radius:3px;margin-right:7px}
+  .legend i.dash{width:17px;height:0;border-top:2px dashed #93a4bb;border-radius:0;margin-right:7px}
+  .legend i.hatch{
+    background:
+      repeating-linear-gradient(45deg, rgba(91,52,201,.9) 0 1.4px, rgba(255,255,255,0) 1.4px 5px),
+      rgba(150,116,240,.55);
+  }
+
+  @media (max-width:900px){
+    .panel{width:272px;top:auto;bottom:14px;right:14px;max-height:56vh}
+    .hdr{left:16px;top:14px}
+    .hdr h1{font-size:22px}
+    .legend{left:16px;bottom:auto;top:92px}
+  }
+</style>
+</head>
+<body>
+<canvas id="scene"></canvas>
+
+<header class="hdr">
+  <h1>平 移<em>Translation</em></h1>
+  <div class="rule"></div>
+  <p>拖动<b style="color:#e07a34;font-weight:600">橙色图形</b>即可平移 · 拖动空白处旋转视角 · 滚轮缩放</p>
+</header>
+
+<aside class="panel">
+  <div class="grp first">
+    <div class="lab"><span>选择图形</span></div>
+    <div class="seg" id="figSeg">
+      <button data-fig="rect" class="on">长方形</button>
+      <button data-fig="tri">三角形</button>
+      <button data-fig="para">平行四边形</button>
+      <button data-fig="house">小房子</button>
+      <button data-fig="f">字母 F</button>
+    </div>
+  </div>
+
+  <div class="grp">
+    <div class="lab"><span>平移方向</span><b id="dirVal">正东 0°</b></div>
+    <input type="range" id="dir" min="0" max="360" step="1" value="0" />
+    <div class="lab" style="margin-top:8px"><span>平移距离</span><b id="distVal">1.10</b></div>
+    <input type="range" id="dist" min="0.6" max="5" step="0.02" value="1.1" />
+    <div class="rowbtn">
+      <button class="btn primary" id="autoBtn">自动演示</button>
+    </div>
+    <div class="rowbtn" style="margin-top:7px">
+      <button class="btn" id="topBtn">平面视角</button>
+      <button class="btn" id="resetBtn">复位视角</button>
+    </div>
+  </div>
+
+  <div class="grp">
+    <div class="lab"><span>显示</span></div>
+    <div class="checks">
+      <label class="chk"><input type="checkbox" id="cOverlap" checked /> 重叠分区</label>
+      <label class="chk"><input type="checkbox" id="cEdgeLen" checked /> 阴影边长</label>
+      <label class="chk"><input type="checkbox" id="cLinks" checked /> 对应点连线</label>
+      <label class="chk"><input type="checkbox" id="cLetters" checked /> 顶点字母</label>
+      <label class="chk"><input type="checkbox" id="cEdges" /> 高亮对应边</label>
+      <label class="chk"><input type="checkbox" id="cGrid" checked /> 参照网格</label>
+    </div>
+  </div>
+
+  <div class="grp">
+    <div class="lab"><span>阴影（重叠）区</span><b class="big" id="ovArea">S = 1.69</b></div>
+    <div class="kv"><span>阴影各边</span><b class="wrap" id="ovEdges">1.04 / 1.63 / 1.04 / 1.63</b></div>
+  </div>
+
+  <div class="grp last">
+    <div class="lab"><span>性质检验（拖动时实时更新）</span></div>
+    <div class="prop"><i>✓</i><div class="t">形状、大小不变<b id="p1">AB = A′B′ = 2.27，各边各角都不变</b></div></div>
+    <div class="prop"><i>✓</i><div class="t">对应点连线平行且相等<b id="p2">AA′ = BB′ = 1.10，互相平行</b></div></div>
+    <div class="prop"><i>✓</i><div class="t">对应线段平行，对应角相等<b id="p3">AB ∥ A′B′，∠A = ∠A′ = 90°</b></div></div>
+  </div>
+</aside>
+
+<div class="legend">
+  <span><i style="background:#4f7fe0"></i>原图形</span>
+  <span><i style="background:#f28c3a"></i>平移后的图形</span>
+  <span><i class="hatch"></i>重叠（阴影）区</span>
+  <span><i class="dash"></i>对应点连线</span>
+  <span><i style="background:#0e9b86"></i>平移方向与距离</span>
+</div>
+
+<script>
+(function () {
+  'use strict';
+
+  /* ============================================================
+     0. 基础工具
+     ============================================================ */
+  var cvs = document.getElementById('scene');
+  var ctx = cvs.getContext('2d');
+  var W = 1, H = 1, DPR = 1, VP = null;
+  var HGT = 0.40;                       // 图形厚度
+  var SCL = 0.86;                       // 图形整体缩放
+  var LIGHT = norm3({ x: 0.45, y: 0.88, z: 0.3 });
+  var FONT = '"PingFang SC","Microsoft YaHei",system-ui,sans-serif';
+
+  function sub3(a, b) { return { x: a.x - b.x, y: a.y - b.y, z: a.z - b.z }; }
+  function dot3(a, b) { return a.x * b.x + a.y * b.y + a.z * b.z; }
+  function cross3(a, b) {
+    return { x: a.y * b.z - a.z * b.y, y: a.z * b.x - a.x * b.z, z: a.x * b.y - a.y * b.x };
+  }
+  function len3(a) { return Math.sqrt(a.x * a.x + a.y * a.y + a.z * a.z); }
+  function norm3(a) { var l = len3(a) || 1; return { x: a.x / l, y: a.y / l, z: a.z / l }; }
+  function mul3(a, s) { return { x: a.x * s, y: a.y * s, z: a.z * s }; }
+  function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
+  function hsl(h, s, l) { return 'hsl(' + Math.round(h) + ',' + Math.round(s) + '%,' + clamp(l, 5, 96).toFixed(1) + '%)'; }
+  function fmt(n, d) { return n.toFixed(d === undefined ? 2 : d); }
+
+  /* ============================================================
+     1. 相机与投影
+     ============================================================ */
+  var FOV = 46 * Math.PI / 180;
+  var CAM0 = { yaw: -0.52, pitch: 0.76, dist: 7.8 };
+  var CAM_TOP = { yaw: 0, pitch: 1.42, dist: 8.4 };
+  var cam = {
+    yaw: CAM0.yaw, pitch: CAM0.pitch, dist: CAM0.dist,
+    tYaw: CAM0.yaw, tPitch: CAM0.pitch, tDist: CAM0.dist,
+    target: { x: 0, y: 0.15, z: 0 },
+    goal: { x: 0, y: 0.15, z: 0 }
+  };
+
+  function buildVP() {
+    var cp = Math.cos(cam.pitch), sp = Math.sin(cam.pitch);
+    var e = {
+      x: cam.target.x + cam.dist * cp * Math.sin(cam.yaw),
+      y: cam.target.y + cam.dist * sp,
+      z: cam.target.z + cam.dist * cp * Math.cos(cam.yaw)
+    };
+    var f = norm3(sub3(cam.target, e));
+    var r = cross3(f, { x: 0, y: 1, z: 0 });
+    if (len3(r) < 1e-6) r = { x: 1, y: 0, z: 0 }; else r = norm3(r);
+    var u = cross3(r, f);
+    var shiftX = W > 1100 ? 92 : 0;
+    return { e: e, f: f, r: r, u: u, cx: W / 2 - shiftX, cy: H / 2, fpx: (H / 2) / Math.tan(FOV / 2) };
+  }
+
+  function pj(p) {
+    if (!VP) return null;
+    var d = sub3(p, VP.e);
+    var zc = dot3(d, VP.f);
+    if (zc < 0.25) return null;
+    var s = VP.fpx / zc;
+    return { x: VP.cx + dot3(d, VP.r) * s, y: VP.cy - dot3(d, VP.u) * s, z: zc };
+  }
+  function dep(p) { return VP ? dot3(sub3(p, VP.e), VP.f) : 0; }
+
+  // 屏幕点 → 顶面(y=HGT)上的板面坐标
+  function screenToBoard(sx, sy) {
+    if (!VP) return null;
+    var a = (sx - VP.cx) / VP.fpx;
+    var b = -(sy - VP.cy) / VP.fpx;
+    var dir = {
+      x: VP.f.x + VP.r.x * a + VP.u.x * b,
+      y: VP.f.y + VP.r.y * a + VP.u.y * b,
+      z: VP.f.z + VP.r.z * a + VP.u.z * b
+    };
+    if (Math.abs(dir.y) < 0.06) return null;
+    var t = (HGT - VP.e.y) / dir.y;
+    if (t <= 0) return null;
+    return { x: VP.e.x + dir.x * t, z: VP.e.z + dir.z * t };
+  }
+
+  /* ============================================================
+     2. 绘制基元
+     ============================================================ */
+  function fillPoly(pts, fill, stroke, lw) {
+    if (!pts || !pts.length) return;
+    for (var k = 0; k < pts.length; k++) if (!pts[k]) return;
+    ctx.beginPath();
+    ctx.moveTo(pts[0].x, pts[0].y);
+    for (var i = 1; i < pts.length; i++) ctx.lineTo(pts[i].x, pts[i].y);
+    ctx.closePath();
+    if (fill) { ctx.fillStyle = fill; ctx.fill(); }
+    if (stroke) { ctx.strokeStyle = stroke; ctx.lineWidth = lw || 1; ctx.lineJoin = 'round'; ctx.stroke(); }
+  }
+
+  function line3(a, b, color, lw, dash) {
+    var A = pj(a), B = pj(b);
+    if (!A || !B) return;
+    ctx.save();
+    if (dash) ctx.setLineDash(dash);
+    ctx.beginPath();
+    ctx.moveTo(A.x, A.y);
+    ctx.lineTo(B.x, B.y);
+    ctx.strokeStyle = color;
+    ctx.lineWidth = lw || 1;
+    ctx.lineCap = 'round';
+    ctx.stroke();
+    ctx.restore();
+  }
+
+  function line3Cased(a, b, color, lw) {
+    line3(a, b, 'rgba(255,255,255,0.92)', lw + 3.6);
+    line3(a, b, color, lw);
+  }
+
+  function text2(x, y, str, color, size, weight) {
+    ctx.font = (weight || 600) + ' ' + (size || 15) + 'px ' + FONT;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.lineWidth = 4.5;
+    ctx.strokeStyle = 'rgba(255,255,255,.96)';
+    ctx.strokeText(str, x, y);
+    ctx.fillStyle = color;
+    ctx.fillText(str, x, y);
+  }
+
+  function dot2(x, y, color, r) {
+    ctx.beginPath();
+    ctx.arc(x, y, r || 3.6, 0, Math.PI * 2);
+    ctx.fillStyle = '#fff';
+    ctx.fill();
+    ctx.lineWidth = 2.4;
+    ctx.strokeStyle = color;
+    ctx.stroke();
+  }
+
+  function drawArrow(p0, p1, color, width) {
+    var dx = p1.x - p0.x, dy = p1.y - p0.y;
+    var L = Math.sqrt(dx * dx + dy * dy);
+    if (L < 5) return;
+    var ux = dx / L, uy = dy / L;
+    var head = Math.min(16, L * 0.32);
+    var bx = p1.x - ux * head * 0.82, by = p1.y - uy * head * 0.82;
+
+    ctx.save();
+    ctx.strokeStyle = color; ctx.lineWidth = width; ctx.lineCap = 'round';
+    ctx.beginPath(); ctx.moveTo(p0.x, p0.y); ctx.lineTo(bx, by); ctx.stroke();
+
+    var nx = -uy, ny = ux;
+    ctx.beginPath();
+    ctx.moveTo(p1.x, p1.y);
+    ctx.lineTo(bx + nx * head * 0.44, by + ny * head * 0.44);
+    ctx.lineTo(bx - nx * head * 0.44, by - ny * head * 0.44);
+    ctx.closePath();
+    ctx.fillStyle = color;
+    ctx.fill();
+    ctx.restore();
+  }
+
+  /* ============================================================
+     3. 板面二维几何
+     ============================================================ */
+  function cross2(a, b, p) { return (b.x - a.x) * (p.z - a.z) - (b.z - a.z) * (p.x - a.x); }
+
+  function signedArea(pts) {
+    var s = 0;
+    for (var i = 0; i < pts.length; i++) {
+      var j = (i + 1) % pts.length;
+      s += pts[i].x * pts[j].z - pts[j].x * pts[i].z;
+    }
+    return s / 2;
+  }
+  function polyArea(pts) { return Math.abs(signedArea(pts)); }
+  function ensureCCW(pts) { return signedArea(pts) < 0 ? pts.slice().reverse() : pts.slice(); }
+
+  function lineInter(A, B, P, Q) {
+    var rx = B.x - A.x, rz = B.z - A.z;
+    var sx = Q.x - P.x, sz = Q.z - P.z;
+    var den = rx * sz - rz * sx;
+    if (Math.abs(den) < 1e-12) return { x: P.x, z: P.z };
+    var t = ((P.x - A.x) * sz - (P.z - A.z) * sx) / den;
+    return { x: A.x + rx * t, z: A.z + rz * t };
+  }
+
+  // Sutherland–Hodgman：凸多边形 clip 裁剪 subject
+  function clipConvex(subj, clip) {
+    var out = subj.slice();
+    for (var i = 0; i < clip.length && out.length; i++) {
+      var A = clip[i], B = clip[(i + 1) % clip.length];
+      var input = out; out = [];
+      for (var j = 0; j < input.length; j++) {
+        var P = input[j], Q = input[(j + 1) % input.length];
+        var dp = cross2(A, B, P), dq = cross2(A, B, Q);
+        if (dp >= 0) out.push(P);
+        if ((dp > 0 && dq < 0) || (dp < 0 && dq > 0)) out.push(lineInter(A, B, P, Q));
+      }
+    }
+    return out;
+  }
+
+  function polyIntersect(a, b) {
+    if (a.length < 3 || b.length < 3) return [];
+    var r = clipConvex(ensureCCW(a), ensureCCW(b));
+    var out = [];
+    for (var i = 0; i < r.length; i++) {
+      var p = r[i];
+      if (!out.length || Math.hypot(p.x - out[out.length - 1].x, p.z - out[out.length - 1].z) > 1e-4) out.push(p);
+    }
+    if (out.length > 2 && Math.hypot(out[0].x - out[out.length - 1].x, out[0].z - out[out.length - 1].z) < 1e-4) out.pop();
+    return out.length >= 3 ? out : [];
+  }
+
+  function segClipConvex(p0, p1, clip) {
+    var t0 = 0, t1 = 1;
+    var dx = p1.x - p0.x, dz = p1.z - p0.z;
+    for (var i = 0; i < clip.length; i++) {
+      var A = clip[i], B = clip[(i + 1) % clip.length];
+      var nx = -(B.z - A.z), nz = (B.x - A.x);         // CCW 的内向法向
+      var den = nx * dx + nz * dz;
+      var num = nx * (p0.x - A.x) + nz * (p0.z - A.z);
+      if (Math.abs(den) < 1e-12) {
+        if (num < 0) return null;
+      } else {
+        var t = -num / den;
+        if (den > 0) { if (t > t0) t0 = t; } else { if (t < t1) t1 = t; }
+      }
+    }
+    if (t0 > t1) return null;
+    return [
+      { x: p0.x + dx * t0, z: p0.z + dz * t0 },
+      { x: p0.x + dx * t1, z: p0.z + dz * t1 }
+    ];
+  }
+
+  function polyCentroid(pts) {
+    var a = signedArea(pts);
+    if (Math.abs(a) < 1e-9) {
+      var sx = 0, sz = 0;
+      for (var i = 0; i < pts.length; i++) { sx += pts[i].x; sz += pts[i].z; }
+      return { x: sx / pts.length, z: sz / pts.length };
+    }
+    var cx = 0, cz = 0;
+    for (var j = 0; j < pts.length; j++) {
+      var k = (j + 1) % pts.length;
+      var f = pts[j].x * pts[k].z - pts[k].x * pts[j].z;
+      cx += (pts[j].x + pts[k].x) * f;
+      cz += (pts[j].z + pts[k].z) * f;
+    }
+    return { x: cx / (6 * a), z: cz / (6 * a) };
+  }
+
+  /* ============================================================
+     4. 图形与配色
+     ============================================================ */
+  var COL_A = { h: 217, s: 74, l: 59 };
+  var COL_B = { h: 26, s: 88, l: 60 };
+  var COL_O = { fill: 'rgba(122,82,232,0.55)', edge: '#5b34c9', hatch: 'rgba(74,38,158,0.40)' };
+
+  var FIG = {
+    rect: {
+      name: '长方形', convex: true,
+      poly: [[-1.32, -0.96], [1.32, -0.96], [1.32, 0.96], [-1.32, 0.96]],
+      marks: [[0, 'A'], [1, 'B'], [2, 'C'], [3, 'D']], hl: [0, 1]
+    },
+    tri: {
+      name: '三角形', convex: true,
+      poly: [[-1.50, -1.00], [1.62, -1.18], [0.48, 1.48]],
+      marks: [[0, 'A'], [1, 'B'], [2, 'C']], hl: [0, 1]
+    },
+    para: {
+      name: '平行四边形', convex: true,
+      poly: [[-1.35, -0.90], [0.75, -0.90], [1.35, 0.90], [-0.75, 0.90]],
+      marks: [[0, 'A'], [1, 'B'], [2, 'C'], [3, 'D']], hl: [0, 1]
+    },
+    house: {
+      name: '小房子', convex: true,
+      poly: [[-1.10, -1.12], [1.10, -1.12], [1.10, 0.22], [0, 1.52], [-1.10, 0.22]],
+      marks: [[0, 'A'], [1, 'B'], [2, 'C'], [3, 'D'], [4, 'E']], hl: [0, 1]
+    },
+    f: {
+      name: '字母 F', convex: false,
+      poly: [[-0.62, -1.30], [-0.14, -1.30], [-0.14, -0.20], [0.86, -0.20],
+             [0.86, 0.18], [-0.14, 0.18], [-0.14, 0.55], [1.08, 0.55],
+             [1.08, 0.95], [-0.62, 0.95]],
+      marks: [[9, 'A'], [0, 'B'], [7, 'C']], hl: [9, 0]
+    }
+  };
+
+  var state = {
+    fig: 'rect',
+    dir: 0,
+    dist: 1.1,
+    showOverlap: true,
+    showEdgeLen: true,
+    showLinks: true,
+    showLetters: true,
+    showEdges: false,
+    showGrid: true,
+    auto: false
+  };
+
+  (function initTarget() {
+    var t0 = state.dir * Math.PI / 180;
+    cam.target.x = cam.goal.x = Math.cos(t0) * state.dist * 0.5;
+    cam.target.z = cam.goal.z = Math.sin(t0) * state.dist * 0.5;
+  })();
+
+  /* ============================================================
+     5. 场景构件
+     ============================================================ */
+  var BOARD = 8.6;
+
+  function drawBoard() {
+    var c = [[-BOARD, -BOARD], [BOARD, -BOARD], [BOARD, BOARD], [-BOARD, BOARD]]
+      .map(function (p) { return pj({ x: p[0], y: 0, z: p[1] }); });
+    fillPoly(c, 'rgba(255,255,255,0.88)', 'rgba(174,194,220,0.55)', 1.5);
+  }
+
+  function drawGrid() {
+    var N = 8;
+    for (var i = -N; i <= N; i++) {
+      var major = (i % 5 === 0);
+      var col = major ? 'rgba(108,138,180,0.30)' : 'rgba(108,138,180,0.15)';
+      var lw = major ? 1.35 : 1;
+      line3({ x: -N, y: 0.004, z: i }, { x: N, y: 0.004, z: i }, col, lw);
+      line3({ x: i, y: 0.004, z: -N }, { x: i, y: 0.004, z: N }, col, lw);
+    }
+  }
+
+  function drawShadow(poly, off) {
+    var layers = [[0.30, 0.05], [0.16, 0.07]];
+    for (var k = 0; k < layers.length; k++) {
+      var o = layers[k][0], a = layers[k][1];
+      var pts = poly.map(function (p) {
+        return pj({ x: p.x + off.x + o, y: 0.002, z: p.z + off.z + o * 0.85 });
+      });
+      fillPoly(pts, 'rgba(38,62,102,' + a + ')', null);
+    }
+  }
+
+  function buildPrism(poly, off, col) {
+    var top = poly.map(function (p) { return { x: p.x + off.x, y: HGT, z: p.z + off.z }; });
+    var bot = poly.map(function (p) { return { x: p.x + off.x, y: 0, z: p.z + off.z }; });
+
+    var cx = 0, cy = 0, cz = 0;
+    for (var t = 0; t < top.length; t++) { cx += top[t].x; cy += top[t].y; cz += top[t].z; }
+    cx /= top.length; cy /= top.length; cz /= top.length;
+    var cen = { x: cx, y: cy, z: cz };
+
+    var faces = [], n = poly.length;
+    for (var i = 0; i < n; i++) {
+      var j = (i + 1) % n;
+      var quad = [bot[i], bot[j], top[j], top[i]];
+      var e = sub3(bot[j], bot[i]);
+      var nn = norm3(cross3(e, { x: 0, y: 1, z: 0 }));
+      var mid = { x: (bot[i].x + bot[j].x) / 2, y: HGT / 2, z: (bot[i].z + bot[j].z) / 2 };
+      if (dot3(nn, sub3(mid, cen)) < 0) nn = mul3(nn, -1);
+      var sh = 0.64 + 0.36 * Math.abs(dot3(nn, LIGHT));
+      var dsum = 0;
+      for (var q = 0; q < 4; q++) dsum += dep(quad[q]);
+      faces.push({
+        pts: quad.map(pj),
+        color: hsl(col.h, col.s * 0.9, col.l * sh * 0.9),
+        stroke: 'rgba(255,255,255,0.13)',
+        depth: dsum / 4
+      });
+    }
+
+    var td = 0;
+    for (var r = 0; r < top.length; r++) td += dep(top[r]);
+
+    return {
+      top: top, bot: bot, cen: cen, sides: faces,
+      topFace: {
+        pts: top.map(pj),
+        color: hsl(col.h, col.s, col.l),
+        stroke: hsl(col.h, col.s * 0.92, col.l * 0.66),
+        depth: td / top.length
+      },
+      depth: dep(cen)
+    };
+  }
+
+  function drawShape(s) {
+    var sides = s.sides.slice().sort(function (a, b) { return b.depth - a.depth; });
+    for (var i = 0; i < sides.length; i++) fillPoly(sides[i].pts, sides[i].color, sides[i].stroke, 1);
+    fillPoly(s.topFace.pts, s.topFace.color, s.topFace.stroke, 1.8);
+  }
+
+  // 阴影区斜线（在板面坐标里生成，再投影，透视下仍然正确）
+  function hatchPolygon(pts, y, color, spacing, angleDeg) {
+    if (pts.length < 3) return;
+    var ang = angleDeg * Math.PI / 180;
+    var d = { x: Math.cos(ang), z: Math.sin(ang) };
+    var n = { x: -d.z, z: d.x };
+    var min = Infinity, max = -Infinity;
+    for (var i = 0; i < pts.length; i++) {
+      var c = pts[i].x * n.x + pts[i].z * n.z;
+      if (c < min) min = c;
+      if (c > max) max = c;
+    }
+    for (var c2 = min + spacing * 0.35; c2 < max; c2 += spacing) {
+      var p0 = { x: n.x * c2 - d.x * 30, z: n.z * c2 - d.z * 30 };
+      var p1 = { x: n.x * c2 + d.x * 30, z: n.z * c2 + d.z * 30 };
+      var seg = segClipConvex(p0, p1, pts);
+      if (seg) {
+        line3({ x: seg[0].x, y: y, z: seg[0].z }, { x: seg[1].x, y: y, z: seg[1].z }, color, 1.15);
+      }
+    }
+  }
+
+  /* ============================================================
+     6. 主渲染
+     ============================================================ */
+  var lastGeom = null;
+
+  function render() {
+    ctx.clearRect(0, 0, W, H);
+    VP = buildVP();
+
+    var th = state.dir * Math.PI / 180;
+    var vec = { x: Math.cos(th) * state.dist, z: Math.sin(th) * state.dist };
+
+    var fig = FIG[state.fig];
+    var poly = fig.poly.map(function (p) { return { x: p[0] * SCL, z: -p[1] * SCL }; });
+    var marks = fig.marks;
+    var offA = { x: 0, z: 0 };
+    var offB = { x: vec.x, z: vec.z };
+
+    var tA = function (i) { return { x: poly[i].x, y: HGT, z: poly[i].z }; };
+    var tB = function (i) { return { x: poly[i].x + vec.x, y: HGT, z: poly[i].z + vec.z }; };
+
+    var moved = poly.map(function (p) { return { x: p.x + vec.x, z: p.z + vec.z }; });
+    var over = fig.convex ? polyIntersect(poly, moved) : [];
+    var overArea = over.length >= 3 ? polyArea(over) : 0;
+
+    // 箭头落点：选“最空旷”的对应点
+    var gx = 0, gz = 0;
+    for (var g = 0; g < poly.length; g++) { gx += poly[g].x; gz += poly[g].z; }
+    gx /= poly.length; gz /= poly.length;
+
+    var arrowIdx = marks[0][0], arrowCost = -1;
+    for (var s2 = 0; s2 < marks.length; s2++) {
+      var vi = poly[marks[s2][0]];
+      var mx0 = vi.x + vec.x / 2, mz0 = vi.z + vec.z / 2;
+      var dA0 = Math.hypot(mx0 - gx, mz0 - gz);
+      var dB0 = Math.hypot(mx0 - gx - vec.x, mz0 - gz - vec.z);
+      var cost = Math.min(dA0, dB0);
+      if (cost > arrowCost) { arrowCost = cost; arrowIdx = marks[s2][0]; }
+    }
+
+    drawBoard();
+    if (state.showGrid) drawGrid();
+    drawShadow(poly, offA);
+    drawShadow(poly, offB);
+
+    /* 对应点连线：先画，被立体图形自然遮挡 */
+    if (state.showLinks) {
+      ctx.save();
+      ctx.setLineDash([7, 7]);
+      ctx.strokeStyle = 'rgba(122,143,172,0.95)';
+      ctx.lineWidth = 1.9;
+      ctx.lineCap = 'round';
+      for (var m = 0; m < marks.length; m++) {
+        var idx = marks[m][0];
+        if (idx === arrowIdx) continue;
+        var q0 = pj(tA(idx)), q1 = pj(tB(idx));
+        if (!q0 || !q1) continue;
+        ctx.beginPath();
+        ctx.moveTo(q0.x, q0.y);
+        ctx.lineTo(q1.x, q1.y);
+        ctx.stroke();
+      }
+      ctx.restore();
+    }
+
+    /* 立体图形 */
+    var sA = buildPrism(poly, offA, COL_A);
+    var sB = buildPrism(poly, offB, COL_B);
+    [sA, sB].sort(function (a, b) { return b.depth - a.depth; }).forEach(drawShape);
+
+    var cen2A = pj(sA.cen), cen2B = pj(sB.cen);
+
+    /* 重叠（阴影）区 */
+    var oc2 = null;
+    if (state.showOverlap && over.length >= 3) {
+      var yTop = HGT + 0.016;
+      var topPts = over.map(function (p) { return pj({ x: p.x, y: yTop, z: p.z }); });
+      var zPts = over.map(function (p) { return pj({ x: p.x, y: 0.006, z: p.z }); });
+
+      fillPoly(zPts, 'rgba(122,82,232,0.12)', 'rgba(122,82,232,0.30)', 1);
+      fillPoly(topPts, COL_O.fill, null);
+      hatchPolygon(over, yTop, COL_O.hatch, 0.26, 45);
+      fillPoly(topPts, null, 'rgba(255,255,255,0.95)', 3.6);
+      fillPoly(topPts, null, COL_O.edge, 1.7);
+
+      var oc = polyCentroid(over);
+      oc2 = pj({ x: oc.x, y: yTop, z: oc.z });
+
+      if (oc2) {
+        text2(oc2.x, oc2.y - 18, 'S = ' + fmt(overArea), '#4a21b8', 14.5, 800);
+
+        if (state.showEdgeLen) {
+          for (var q = 0; q < over.length; q++) {
+            var a1 = over[q], a2 = over[(q + 1) % over.length];
+            var Le = Math.hypot(a2.x - a1.x, a2.z - a1.z);
+            if (Le < 0.45) continue;
+            var m2 = pj({ x: (a1.x + a2.x) / 2, y: yTop, z: (a1.z + a2.z) / 2 });
+            if (!m2) continue;
+            var ox2 = m2.x - oc2.x, oy2 = m2.y - oc2.y;
+            var lo = Math.hypot(ox2, oy2) || 1;
+            text2(m2.x + ox2 / lo * 17, m2.y + oy2 / lo * 17, fmt(Le), '#4a21b8', 11.5, 700);
+          }
+        }
+      }
+    }
+
+    /* 高亮对应边 */
+    if (state.showEdges) {
+      var hi = fig.hl;
+      line3Cased(tA(hi[0]), tA(hi[1]), '#d8315b', 4);
+      line3Cased(tB(hi[0]), tB(hi[1]), '#d8315b', 4);
+    }
+
+    /* 平移方向与距离 */
+    var pA = pj(tA(arrowIdx)), pB = pj(tB(arrowIdx));
+    if (pA && pB) {
+      drawArrow(pA, pB, '#0e9b86', 3.4);
+      var dxp = pB.x - pA.x, dyp = pB.y - pA.y;
+      var Lp = Math.sqrt(dxp * dxp + dyp * dyp) || 1;
+      var nxL = -dyp / Lp, nyL = dxp / Lp;
+
+      // 顶点字母占位，距离标注自动躲开
+      var occ = [];
+      for (var oi = 0; oi < marks.length; oi++) {
+        var pa2 = pj(tA(marks[oi][0])), pb2 = pj(tB(marks[oi][0]));
+        if (pa2 && cen2A) occ.push(offsetFrom(pa2, cen2A, 18));
+        if (pb2 && cen2B) occ.push(offsetFrom(pb2, cen2B, 18));
+      }
+      var topA2 = sA.top.map(pj), topB2 = sB.top.map(pj);
+      var bestP = null, bestScore = -1;
+      for (var tt = 0.22; tt <= 0.8601; tt += 0.16) {
+        for (var sg = -1; sg <= 1; sg += 2) {
+          var cxp = pA.x + dxp * tt + nxL * 28 * sg;
+          var cyp = pA.y + dyp * tt + nyL * 28 * sg;
+          // 按文字外框估算：标签约 62×16
+          var mnd = Infinity;
+          for (var oj = 0; oj < occ.length; oj++) {
+            var ddx = Math.max(Math.abs(cxp - occ[oj].x) - 31, 0);
+            var ddy = Math.max(Math.abs(cyp - occ[oj].y) - 9, 0);
+            var dd = Math.hypot(ddx, ddy);
+            if (dd < mnd) mnd = dd;
+          }
+          // 落在图形本身上要扣分，尽量把标注放在空白处
+          var pt0 = { x: cxp, y: cyp };
+          if (topA2.every(Boolean) && pointInPoly(pt0, topA2)) mnd -= 45;
+          if (topB2.every(Boolean) && pointInPoly(pt0, topB2)) mnd -= 45;
+          if (mnd > bestScore) { bestScore = mnd; bestP = { x: cxp, y: cyp }; }
+        }
+      }
+      if (bestP && bestScore > 8) {
+        text2(bestP.x, bestP.y, '距离 ' + fmt(state.dist), '#0b7d6c', 12.5, 700);
+      }
+    }
+
+    /* 对应点与字母 */
+    for (var k = 0; k < marks.length; k++) {
+      var ia = marks[k][0];
+      var aa = pj(tA(ia)), bb = pj(tB(ia));
+      if (aa) dot2(aa.x, aa.y, hsl(COL_A.h, COL_A.s, COL_A.l * 0.7), 3.3);
+      if (bb) dot2(bb.x, bb.y, hsl(COL_B.h, COL_B.s, COL_B.l * 0.62), 3.3);
+    }
+
+    if (state.showLetters) {
+      for (var z = 0; z < marks.length; z++) {
+        var ii = marks[z][0], letter = marks[z][1];
+        var pa = pj(tA(ii)), pb = pj(tB(ii));
+        if (pa && cen2A) {
+          var q1 = offsetFrom(pa, cen2A, 18);
+          text2(q1.x, q1.y, letter, '#1e3a68', 15, 700);
+        }
+        if (pb && cen2B) {
+          var q2 = offsetFrom(pb, cen2B, 18);
+          text2(q2.x, q2.y, letter + '′', '#a4520f', 15, 700);
+        }
+      }
+    }
+
+    lastGeom = { topB: sB.top.map(pj), botB: sB.bot.map(pj) };
+  }
+
+  function offsetFrom(p2, cen2, r) {
+    var dx = p2.x - cen2.x, dy = p2.y - cen2.y;
+    var l = Math.hypot(dx, dy) || 1;
+    return { x: p2.x + dx / l * r, y: p2.y + dy / l * r };
+  }
+
+  function pointInPoly(pt, p2) {
+    var inside = false;
+    for (var i = 0, j = p2.length - 1; i < p2.length; j = i++) {
+      var xi = p2[i].x, yi = p2[i].y, xj = p2[j].x, yj = p2[j].y;
+      if (((yi > pt.y) !== (yj > pt.y)) && (pt.x < (xj - xi) * (pt.y - yi) / (yj - yi) + xi)) inside = !inside;
+    }
+    return inside;
+  }
+
+  function hitImage(sx, sy) {
+    if (!lastGeom) return false;
+    var pt = { x: sx, y: sy };
+    var a = lastGeom.topB.every(Boolean) && pointInPoly(pt, lastGeom.topB);
+    var b = lastGeom.botB.every(Boolean) && pointInPoly(pt, lastGeom.botB);
+    return a || b;
+  }
+
+  /* ============================================================
+     7. 交互
+     ============================================================ */
+  var orbit = null, figDrag = null;
+
+  cvs.addEventListener('pointerdown', function (e) {
+    if (cvs.setPointerCapture) { try { cvs.setPointerCapture(e.pointerId); } catch (err) {} }
+
+    if (hitImage(e.clientX, e.clientY)) {
+      var bp = screenToBoard(e.clientX, e.clientY);
+      if (bp) {
+        var th = state.dir * Math.PI / 180;
+        figDrag = {
+          gx: bp.x - Math.cos(th) * state.dist,
+          gz: bp.z - Math.sin(th) * state.dist
+        };
+        if (state.auto) setAuto(false);
+        cam.goal.x = cam.target.x;          // 冻结相机，图形不跟手漂移
+        cam.goal.z = cam.target.z;
+        cvs.style.cursor = 'grabbing';
+        return;
+      }
+    }
+    orbit = { x: e.clientX, y: e.clientY };
+    cvs.classList.add('grabbing');
+  });
+
+  cvs.addEventListener('pointermove', function (e) {
+    if (figDrag) {
+      var bp2 = screenToBoard(e.clientX, e.clientY);
+      if (!bp2) return;
+      var nx = bp2.x - figDrag.gx;
+      var nz = bp2.z - figDrag.gz;
+      var d = Math.hypot(nx, nz);
+      var MAXD = 5, MIND = 0.6;
+      if (d > MAXD) { nx *= MAXD / d; nz *= MAXD / d; d = MAXD; }
+      else if (d < MIND) { nx *= MIND / d; nz *= MIND / d; d = MIND; }
+      state.dist = clamp(d, MIND, MAXD);
+      state.dir = ((Math.atan2(nz, nx) * 180 / Math.PI) + 360) % 360;
+      syncInputs();
+      updateUI();
+      return;
+    }
+    if (orbit) {
+      var dx = e.clientX - orbit.x, dy = e.clientY - orbit.y;
+      orbit.x = e.clientX; orbit.y = e.clientY;
+      cam.yaw -= dx * 0.0062;
+      cam.pitch = clamp(cam.pitch - dy * 0.0055, 0.14, 1.44);
+      cam.tYaw = cam.yaw;
+      cam.tPitch = cam.pitch;
+      return;
+    }
+    cvs.classList.toggle('over', hitImage(e.clientX, e.clientY));
+  });
+
+  function endPointer(e) {
+    if (figDrag) { figDrag = null; cvs.style.cursor = 'grab'; }
+    orbit = null;
+    cvs.classList.remove('grabbing');
+    if (cvs.releasePointerCapture && e && e.pointerId !== undefined) {
+      try { cvs.releasePointerCapture(e.pointerId); } catch (err) {}
+    }
+  }
+  cvs.addEventListener('pointerup', endPointer);
+  cvs.addEventListener('pointercancel', endPointer);
+
+  cvs.addEventListener('wheel', function (e) {
+    e.preventDefault();
+    cam.dist = clamp(cam.dist * (1 + e.deltaY * 0.0011), 6.2, 24);
+    cam.tDist = cam.dist;
+  }, { passive: false });
+
+  var pinch = null;
+  cvs.addEventListener('touchstart', function (e) {
+    if (e.touches.length === 2) {
+      pinch = Math.hypot(e.touches[0].clientX - e.touches[1].clientX,
+                         e.touches[0].clientY - e.touches[1].clientY);
+    }
+  }, { passive: true });
+  cvs.addEventListener('touchmove', function (e) {
+    if (e.touches.length === 2 && pinch) {
+      var d2 = Math.hypot(e.touches[0].clientX - e.touches[1].clientX,
+                          e.touches[0].clientY - e.touches[1].clientY);
+      cam.dist = clamp(cam.dist * (pinch / d2), 6.2, 24);
+      cam.tDist = cam.dist;
+      pinch = d2;
+    }
+  }, { passive: true });
+  cvs.addEventListener('touchend', function () { pinch = null; }, { passive: true });
+
+  /* ============================================================
+     8. 面板
+     ============================================================ */
+  var el = {
+    dir: document.getElementById('dir'),
+    dist: document.getElementById('dist'),
+    dirVal: document.getElementById('dirVal'),
+    distVal: document.getElementById('distVal'),
+    autoBtn: document.getElementById('autoBtn'),
+    resetBtn: document.getElementById('resetBtn'),
+    topBtn: document.getElementById('topBtn'),
+    figSeg: document.getElementById('figSeg'),
+    cOverlap: document.getElementById('cOverlap'),
+    cEdgeLen: document.getElementById('cEdgeLen'),
+    cLinks: document.getElementById('cLinks'),
+    cLetters: document.getElementById('cLetters'),
+    cEdges: document.getElementById('cEdges'),
+    cGrid: document.getElementById('cGrid'),
+    ovArea: document.getElementById('ovArea'),
+    ovEdges: document.getElementById('ovEdges'),
+    p1: document.getElementById('p1'),
+    p2: document.getElementById('p2'),
+    p3: document.getElementById('p3')
+  };
+
+  function dirText(deg) {
+    var d = ((deg % 360) + 360) % 360;
+    var base = ['东', '东南', '南', '西南', '西', '西北', '北', '东北'];
+    var a = Math.floor(d / 45) % 8;
+    var b = (a + 1) % 8;
+    var part = d - a * 45;
+    if (part < 1.2) return '正' + base[a] + ' ' + Math.round(d) + '°';
+    if (part > 43.8) return '正' + base[b] + ' ' + Math.round(d) + '°';
+    return base[a] + '偏' + base[b] + ' ' + Math.round(d) + '°';
+  }
+
+  function syncInputs() {
+    el.dir.value = state.dir;
+    el.dist.value = state.dist;
+  }
+
+  function updateUI() {
+    el.dirVal.textContent = dirText(state.dir);
+    el.distVal.textContent = fmt(state.dist);
+
+    var fig = FIG[state.fig];
+    var poly = fig.poly.map(function (p) { return { x: p[0] * SCL, z: -p[1] * SCL }; });
+    var th = state.dir * Math.PI / 180;
+    var vec = { x: Math.cos(th) * state.dist, z: Math.sin(th) * state.dist };
+
+    if (fig.convex) {
+      var moved = poly.map(function (p) { return { x: p.x + vec.x, z: p.z + vec.z }; });
+      var over = polyIntersect(poly, moved);
+      if (over.length >= 3) {
+        el.ovArea.textContent = 'S = ' + fmt(polyArea(over));
+        var ls = [];
+        for (var i = 0; i < over.length; i++) {
+          var a = over[i], b = over[(i + 1) % over.length];
+          ls.push(fmt(Math.hypot(b.x - a.x, b.z - a.z), 2));
+        }
+        el.ovEdges.textContent = ls.join(' / ');
+      } else {
+        el.ovArea.textContent = 'S = 0';
+        el.ovEdges.textContent = '两块图形已经完全分开，没有重叠';
+      }
+    } else {
+      el.ovArea.textContent = '—';
+      el.ovEdges.textContent = '字母 F 是凹图形，不做重叠分析';
+    }
+
+    var m = fig.marks, nm = {};
+    for (var k = 0; k < m.length; k++) nm[m[k][0]] = m[k][1];
+
+    var i1 = fig.hl[0], i2 = fig.hl[1];
+    var L1 = Math.hypot(poly[i2].x - poly[i1].x, poly[i2].z - poly[i1].z);
+    el.p1.textContent = nm[i1] + nm[i2] + ' = ' + nm[i1] + '′' + nm[i2] + '′ = ' +
+      fmt(L1) + '，每条边、每个角都不变';
+
+    el.p2.textContent = 'AA′ = BB′ = ' + fmt(state.dist) + '，且互相平行';
+
+    var n = poly.length;
+    var pre = poly[(i1 - 1 + n) % n], nxt = poly[(i1 + 1) % n], cur = poly[i1];
+    var vx1 = pre.x - cur.x, vz1 = pre.z - cur.z;
+    var vx2 = nxt.x - cur.x, vz2 = nxt.z - cur.z;
+    var cosA = (vx1 * vx2 + vz1 * vz2) / ((Math.hypot(vx1, vz1) || 1) * (Math.hypot(vx2, vz2) || 1));
+    var ang = Math.acos(clamp(cosA, -1, 1)) * 180 / Math.PI;
+    el.p3.textContent = nm[i1] + nm[i2] + ' ∥ ' + nm[i1] + '′' + nm[i2] + '′，∠' +
+      nm[i1] + ' = ∠' + nm[i1] + '′ = ' + fmt(ang, 1) + '°';
+  }
+
+  el.dir.addEventListener('input', function () {
+    state.dir = parseFloat(el.dir.value);
+    updateUI();
+  });
+  el.dist.addEventListener('input', function () {
+    state.dist = parseFloat(el.dist.value);
+    if (state.auto) setAuto(false);
+    updateUI();
+  });
+
+  function applyFigUI() {
+    var convex = FIG[state.fig].convex;
+    el.cOverlap.disabled = !convex;
+    el.cEdgeLen.disabled = !convex;
+    el.cOverlap.parentNode.classList.toggle('dim', !convex);
+    el.cEdgeLen.parentNode.classList.toggle('dim', !convex);
+  }
+
+  Array.prototype.forEach.call(el.figSeg.querySelectorAll('button'), function (btn) {
+    btn.addEventListener('click', function () {
+      Array.prototype.forEach.call(el.figSeg.querySelectorAll('button'), function (b) { b.classList.remove('on'); });
+      btn.classList.add('on');
+      state.fig = btn.getAttribute('data-fig');
+      applyFigUI();
+      updateUI();
+    });
+  });
+
+  el.cOverlap.addEventListener('change', function () { state.showOverlap = el.cOverlap.checked; });
+  el.cEdgeLen.addEventListener('change', function () { state.showEdgeLen = el.cEdgeLen.checked; });
+  el.cLinks.addEventListener('change', function () { state.showLinks = el.cLinks.checked; });
+  el.cLetters.addEventListener('change', function () { state.showLetters = el.cLetters.checked; });
+  el.cEdges.addEventListener('change', function () { state.showEdges = el.cEdges.checked; });
+  el.cGrid.addEventListener('change', function () { state.showGrid = el.cGrid.checked; });
+
+  el.resetBtn.addEventListener('click', function () {
+    cam.tYaw = CAM0.yaw; cam.tPitch = CAM0.pitch; cam.tDist = CAM0.dist;
+  });
+  el.topBtn.addEventListener('click', function () {
+    cam.tYaw = CAM_TOP.yaw; cam.tPitch = CAM_TOP.pitch; cam.tDist = CAM_TOP.dist;
+  });
+
+  var phase = 0;
+  var AUTO_MIN = 0.7, AUTO_MAX = 4.4;
+  function setAuto(on) {
+    state.auto = on;
+    el.autoBtn.classList.toggle('playing', on);
+    el.autoBtn.textContent = on ? '暂停演示' : '自动演示';
+    if (on) {
+      var t = clamp((state.dist - AUTO_MIN) / (AUTO_MAX - AUTO_MIN), 0, 1);
+      phase = Math.acos(1 - 2 * t);
+    }
+  }
+  el.autoBtn.addEventListener('click', function () { setAuto(!state.auto); });
+
+  /* ============================================================
+     9. 主循环
+     ============================================================ */
+  function resize() {
+    DPR = Math.min(2, window.devicePixelRatio || 1);
+    W = window.innerWidth;
+    H = window.innerHeight;
+    cvs.width = Math.round(W * DPR);
+    cvs.height = Math.round(H * DPR);
+    cvs.style.width = W + 'px';
+    cvs.style.height = H + 'px';
+    ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
+  }
+  window.addEventListener('resize', resize);
+  resize();
+
+  var lastTs = 0;
+
+  function loop(ts) {
+    var dt = lastTs ? Math.min(0.05, (ts - lastTs) / 1000) : 0.016;
+    lastTs = ts;
+
+    if (state.auto) {
+      phase += dt * 0.8;
+      state.dist = AUTO_MIN + (0.5 - 0.5 * Math.cos(phase)) * (AUTO_MAX - AUTO_MIN);
+      el.dist.value = state.dist;
+      updateUI();
+    }
+
+    var kc = 1 - Math.exp(-8 * dt);
+    cam.yaw += (cam.tYaw - cam.yaw) * kc;
+    cam.pitch += (cam.tPitch - cam.pitch) * kc;
+    cam.dist += (cam.tDist - cam.dist) * kc;
+
+    if (!figDrag) {
+      var th = state.dir * Math.PI / 180;
+      cam.goal.x = Math.cos(th) * state.dist * 0.5;
+      cam.goal.z = Math.sin(th) * state.dist * 0.5;
+      var k = 1 - Math.exp(-7 * dt);
+      cam.target.x += (cam.goal.x - cam.target.x) * k;
+      cam.target.z += (cam.goal.z - cam.target.z) * k;
+    }
+
+    render();
+    requestAnimationFrame(loop);
+  }
+
+  syncInputs();
+  applyFigUI();
+  updateUI();
+  requestAnimationFrame(loop);
+})();
+</script>
+</body>
+</html>

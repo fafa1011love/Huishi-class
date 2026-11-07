@@ -1,0 +1,558 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>频率分布直方图估计模型：众数 · 中位数 · 平均数</title>
+<style>
+  :root{
+    --bg:#eef1f7; --card:#ffffff; --ink:#1b2432; --ink2:#5c6879; --ink3:#8d99aa;
+    --line:#e3e8f0;
+    --blue:#2563eb; --blue-d:#1a49b8; --blue-soft:#eef4ff;
+    --purple:#7c3aed; --purple-soft:#f3eeff; --purple-line:#ddccff;
+    --mode:#d97706;      /* 众数-琥珀 */
+    --median:#7c3aed;    /* 中位数-紫 */
+    --mean:#be123c;      /* 平均数-玫红 */
+    --true:#8b95a6;      /* 真值-灰 */
+    --serif:"Times New Roman","Songti SC","SimSun",Times,serif;
+  }
+  *{box-sizing:border-box;}
+  body{
+    margin:0; padding:24px 20px 44px;
+    background:
+      radial-gradient(1100px 520px at 18% -12%, #ffffff 0%, rgba(255,255,255,0) 62%),
+      radial-gradient(900px 480px at 92% -4%, #f1eaff 0%, rgba(241,234,255,0) 58%),
+      var(--bg);
+    color:var(--ink);
+    font-family:"Segoe UI","PingFang SC","Hiragino Sans GB","Microsoft YaHei",system-ui,-apple-system,sans-serif;
+    -webkit-font-smoothing:antialiased;
+  }
+  .wrap{max-width:1250px;margin:0 auto;}
+  .head{margin-bottom:16px;}
+  .badge{display:inline-block;font-size:11.5px;letter-spacing:.16em;color:var(--purple);
+    background:var(--purple-soft);border:1px solid var(--purple-line);padding:5px 11px;border-radius:999px;font-weight:700;}
+  h1{font-family:var(--serif);font-size:30px;margin:11px 0 7px;font-weight:700;}
+  .sub{margin:0;color:var(--ink2);font-size:14px;line-height:1.75;max-width:940px;}
+  .sub b{color:var(--ink);font-weight:600;}
+
+  .layout{display:grid;grid-template-columns:minmax(0,1fr) 372px;gap:16px;align-items:start;}
+  @media (max-width:1080px){.layout{grid-template-columns:1fr;}}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:16px;
+    box-shadow:0 1px 2px rgba(20,30,50,.04),0 16px 34px -22px rgba(20,30,50,.35);}
+
+  /* ---------- 左侧图表 ---------- */
+  .stage-card{padding:14px 14px 10px;}
+  .stage-head{display:flex;justify-content:space-between;align-items:center;gap:10px;padding:2px 4px 10px;flex-wrap:wrap;}
+  .tag{font-size:12px;font-weight:700;color:var(--ink2);background:#f4f6fa;border:1px solid var(--line);border-radius:8px;padding:4px 9px;}
+  .stage{border:1px solid var(--line);border-radius:12px;overflow:hidden;background:linear-gradient(180deg,#fdfeff,#f8fafd);}
+  svg{display:block;width:100%;height:auto;}
+
+  /* ---------- 控制条 ---------- */
+  .controls{display:flex;flex-direction:column;gap:7px;padding:10px 4px 12px;}
+  .ctrl-row{display:flex;align-items:center;gap:9px;flex-wrap:wrap;}
+  .num{width:70px;font:inherit;font-size:13px;font-weight:700;color:var(--purple);text-align:center;
+    padding:5px 6px;border:1px solid var(--purple-line);border-radius:8px;background:#fbf8ff;}
+  .num:focus{outline:2px solid #d8c8ff;outline-offset:1px;}
+  .ctl-label{font-size:12.5px;font-weight:700;color:var(--ink2);}
+  .chips{display:flex;gap:6px;flex-wrap:wrap;}
+  .chip{font:inherit;font-size:12.5px;font-weight:700;color:var(--ink2);background:#f6f8fb;
+    border:1px solid var(--line);border-radius:9px;padding:6px 12px;cursor:pointer;transition:.15s;}
+  .chip:hover{background:#eef1f6;}
+  .chip.on{color:#fff;background:var(--purple);border-color:var(--purple);}
+  .slider-box{display:flex;align-items:center;gap:8px;}
+  input[type=range]{width:130px;accent-color:var(--purple);}
+  .checks{display:flex;gap:12px;margin-left:auto;flex-wrap:wrap;}
+  .ck{display:flex;align-items:center;gap:5px;font-size:12.5px;color:var(--ink2);cursor:pointer;user-select:none;}
+  .ck input{accent-color:var(--purple);}
+
+  /* ---------- 右侧面板 ---------- */
+  .panel{padding:16px 16px 18px;display:flex;flex-direction:column;gap:12px;}
+  .stat{border:1px solid var(--line);border-radius:13px;padding:12px 14px;background:#fbfcfe;}
+  .stat .name{font-size:13px;font-weight:800;letter-spacing:.04em;}
+  .stat .row{display:flex;align-items:baseline;gap:10px;margin-top:5px;flex-wrap:wrap;}
+  .stat .est{font-family:var(--serif);font-size:27px;font-weight:700;color:var(--purple);}
+  .stat .est-lab{font-size:11px;color:var(--ink3);font-weight:700;}
+  .stat .tru{font-size:13px;color:var(--ink2);}
+  .stat .tru b{font-family:var(--serif);font-size:16px;color:var(--ink);}
+  .stat .diff{margin-left:auto;font-size:12px;font-weight:800;border-radius:999px;padding:3px 10px;}
+  .d-good{color:#15803d;background:#eafbf0;border:1px solid #c9efd6;}
+  .d-mid  {color:#b45309;background:#fdf5e6;border:1px solid #f3ddb0;}
+  .d-bad  {color:#be123c;background:#fdeef2;border:1px solid #f6cdd8;}
+  .stat .how{margin-top:7px;font-size:12px;color:var(--ink3);line-height:1.65;border-top:1px dashed var(--line);padding-top:6px;}
+  .stat .how b{color:var(--ink2);}
+
+  .kcard{border:1px solid var(--line);border-radius:13px;padding:12px 14px;background:#fbfcfe;}
+  .kcard h3{margin:0 0 8px;font-size:14px;font-weight:800;display:flex;align-items:center;gap:7px;}
+  .kcard h3 .dot{width:9px;height:9px;border-radius:50%;background:var(--purple);display:inline-block;}
+  .kcard .f{font-size:12.5px;color:var(--ink2);line-height:1.7;margin:4px 0;}
+  .kcard .f b{color:var(--ink);}
+  .formula{font-family:var(--serif);font-size:13.5px;color:var(--ink);background:#f6f2ff;border:1px solid var(--purple-line);
+    border-radius:8px;padding:7px 10px;margin:6px 0;display:block;}
+  .kcard ul{margin:6px 0 0;padding-left:18px;font-size:12.5px;color:var(--ink2);line-height:1.8;}
+  .kcard li b{color:var(--ink);}
+
+  /* ---------- 底部公式/规律双栏 ---------- */
+  .klayout{margin-top:16px;display:grid;grid-template-columns:1fr 1fr;gap:16px;align-items:start;}
+  @media (max-width:980px){.klayout{grid-template-columns:1fr;}}
+  .klayout .card{padding:16px 18px 18px;}
+  .klayout .kcard{border:none;background:transparent;border-radius:0;padding:0;box-shadow:none;}
+
+  /* ---------- 对比条图 ---------- */
+  .strip-card{margin-top:16px;padding:14px 16px 12px;}
+  .strip-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap;padding-bottom:8px;}
+  .strip-head h2{font-family:var(--serif);font-size:19px;margin:0;}
+  .legend{display:flex;gap:14px;align-items:center;font-size:12px;color:var(--ink2);flex-wrap:wrap;}
+  .lg{display:flex;align-items:center;gap:5px;}
+  .note{font-size:12.5px;color:var(--ink3);line-height:1.7;margin-top:8px;padding:0 2px;}
+  .note b{color:var(--ink2);}
+  .foot{margin-top:18px;text-align:center;font-size:12px;color:var(--ink3);}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+  <div class="head">
+    <span class="badge">统计 · 频率分布直方图</span>
+    <h1>用直方图估计众数、中位数、平均数 —— 并观察「组距 / 分组」对估计值的影响</h1>
+    <p class="sub">同一批 100 个体重数据先按 <b>细组距（组距 = 1）</b>算出接近真实的<b>真值</b>（灰色虚线），再按你选择的组距画直方图，得到三个<b>估计值</b>。
+      拖动滑块、输入任意组距，观察估计值如何逼近或偏离真值 —— 这正是考题常问的：<b>组距改变、分组改变，对三个估计值各有什么影响？</b></p>
+  </div>
+
+  <div class="layout">
+    <!-- 左：直方图 -->
+    <div class="card stage-card">
+      <div class="stage-head">
+        <span class="tag">频率分布直方图（纵轴：频数）</span>
+        <span class="tag" id="binInfo"></span>
+      </div>
+      <div class="stage"><svg id="hist" viewBox="0 0 960 470"></svg></div>
+      <div class="controls">
+        <div class="ctrl-row">
+          <span class="ctl-label">组距 d</span>
+          <input type="range" id="widthSlider" min="0.5" max="20" step="0.5" value="5">
+          <input type="number" class="num" id="widthNum" min="0.4" max="30" step="0.1" value="5">
+          <span class="ctl-label" style="margin-left:4px">预设</span>
+          <div class="chips" id="widthChips"></div>
+        </div>
+        <div class="ctrl-row">
+          <span class="ctl-label">分组起点偏移</span>
+          <input type="range" id="offSlider" min="0" max="4.5" step="0.1" value="0">
+          <span class="tag" id="offVal">+0.0</span>
+          <div class="checks">
+            <label class="ck"><input type="checkbox" id="ckRaw" checked>原始数据</label>
+            <label class="ck"><input type="checkbox" id="ckTrue" checked>真值线</label>
+            <label class="ck" style="color:#d97706"><input type="checkbox" id="ckMode" checked style="accent-color:#d97706">众数估计线</label>
+            <label class="ck" style="color:#7c3aed"><input type="checkbox" id="ckMed" checked style="accent-color:#7c3aed">中位数估计线</label>
+            <label class="ck" style="color:#be123c"><input type="checkbox" id="ckMean" checked style="accent-color:#be123c">平均数估计线</label>
+            <label class="ck"><input type="checkbox" id="ckLab" checked>数值标签</label>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- 右：三个估计值 + 公式 + 规律 -->
+    <div class="card panel">
+      <div class="stat" id="stMode"></div>
+      <div class="stat" id="stMed"></div>
+      <div class="stat" id="stMean"></div>
+    </div>
+  </div>
+
+  <!-- 组距影响 -->
+  <div class="card strip-card">
+    <div class="strip-head">
+      <h2>① 组距改变会怎样？ —— 同一批数据、同一真值，不同组距下估计值落在哪里</h2>
+      <div class="legend">
+        <span class="lg"><svg width="14" height="14"><circle cx="7" cy="7" r="4.5" fill="#7c3aed"/></svg>估计值</span>
+        <span class="lg"><svg width="14" height="14"><circle cx="7" cy="7" r="5" fill="none" stroke="#7c3aed" stroke-width="2.2"/><circle cx="7" cy="7" r="2" fill="#7c3aed"/></svg>当前组距</span>
+        <span class="lg"><svg width="16" height="14"><line x1="8" y1="1" x2="8" y2="13" stroke="#8b95a6" stroke-width="2" stroke-dasharray="3 2.5"/></svg>真值</span>
+      </div>
+    </div>
+    <svg id="stripD" viewBox="0 0 1160 345"></svg>
+    <p class="note" id="noteD"></p>
+  </div>
+
+  <!-- 起点影响 -->
+  <div class="card strip-card">
+    <div class="strip-head">
+      <h2>② 分组（起点）改变会怎样？ —— 组距不变、平移分组起点，估计值落在哪里</h2>
+    </div>
+    <svg id="stripS" viewBox="0 0 1160 345"></svg>
+    <p class="note" id="noteS"></p>
+  </div>
+
+  <!-- 公式与规律（放在两张对比图之后） -->
+  <div class="klayout">
+    <div class="card kcard">
+      <h3><span class="dot"></span>三个估计值怎么算（考试写法）</h3>
+      <div class="f"><b>众数估计：</b>最高矩形的底边中点。</div>
+      <span class="formula">x<sub>众</sub> = ( l<sub>底</sub> + r<sub>底</sub> ) / 2</span>
+      <div class="f"><b>中位数估计：</b>把直方图面积左右平分的竖线横坐标（设中位数落在底边为 l、宽为 d、高为 f 的组内，该组左侧累积频数为 F，样本容量 n）：</div>
+      <span class="formula">x<sub>中</sub> = l + ( n/2 − F ) / f × d</span>
+      <div class="f"><b>平均数估计：</b>每个组用<b>组中值</b>代表，求加权平均：</div>
+      <span class="formula">x<sub>平</sub> = Σ (组中值 × 频数) / n</span>
+    </div>
+
+    <div class="card kcard">
+      <h3><span class="dot"></span>规律总结（影响分析，随当前设置动态更新）</h3>
+      <ul id="ruleList"></ul>
+    </div>
+  </div>
+
+  <div class="foot">交互模型 · 拖动「分组起点偏移」滑块或切换组距，两张对比图与右侧结论会同步刷新 · 真值由原始数据直接计算</div>
+</div>
+
+<script>
+/* ================= 数据：100 个体重值，分布固定 ================= */
+function buildRaw(){
+  const spec=[[50,55,2],[55,60,12],[60,65,29],[65,70,26],[70,75,11],[75,80,9],[80,85,9],[85,90,2]];
+  let seed=20240601;
+  const rnd=()=>{ seed=(seed*1103515245+12345)%2147483648; return seed/2147483648; };
+  const v=[];
+  for(const [a,b,c] of spec) for(let i=0;i<c;i++) v.push(a+rnd()*(b-a));
+  v.sort((a,b)=>a-b);
+  v[49]=66.45; v[50]=66.55;          // 保证真中位数 = 66.5
+  v.sort((a,b)=>a-b);
+  return v;
+}
+const RAW = buildRaw();
+const N = RAW.length;
+
+/* 真值（用组距=1 的细分组近似“真众数”） */
+function truths(vals){
+  const s=[...vals].sort((a,b)=>a-b);
+  const med=(s[N/2-1]+s[N/2])/2;
+  const mean=vals.reduce((a,b)=>a+b,0)/N;
+  const cnt={};
+  vals.forEach(x=>{const k=Math.floor(x); cnt[k]=(cnt[k]||0)+1;});
+  let bk=50,bn=0;
+  Object.keys(cnt).forEach(k=>{ if(cnt[k]>bn){bn=cnt[k];bk=+k;} });
+  return {med, mean, mode:bk+0.5, modeInfo:`[${bk}, ${bk+1}) 内含 ${bn} 个数据`};
+}
+const T = truths(RAW);
+
+/* 直方图 + 三个估计值（base 只是分组网格锚点，最左组会向左扩展以覆盖全部数据） */
+function estimates(vals, base, width){
+  const mn=Math.min(...vals), mx=Math.max(...vals);
+  const k0=Math.floor((mn-base)/width);
+  const start=base+k0*width;
+  const kmax=Math.floor((mx-start)/width);
+  const bins=[];
+  for(let k=0;k<=kmax;k++) bins.push({x0:start+k*width, x1:start+(k+1)*width, n:0});
+  vals.forEach(v=>{ const k=Math.floor((v-start)/width); if(k>=0&&k<bins.length) bins[k].n++; });
+  let mb=0; bins.forEach((b,i)=>{ if(b.n>bins[mb].n) mb=i; });
+  const mode=(bins[mb].x0+bins[mb].x1)/2;
+  let F=0, med=null, mBin=null;
+  for(const b of bins){ if(F+b.n>=N/2){ med=b.x0+(N/2-F)/b.n*width; mBin=b; break; } F+=b.n; }
+  let sm=0; bins.forEach(b=> sm += (b.x0+b.x1)/2*b.n );
+  return {bins, start, mb, mBin, mode, med, mean:sm/N};
+}
+
+/* ================= 状态 ================= */
+const state={ width:5, offset:0, showRaw:true, showTrue:true, showLab:true, show:{mode:true, med:true, mean:true} };
+const METRICS=[
+  {key:'mode',  name:'众数',   color:'#d97706', est:e=>e.mode,  tru:T.mode},
+  {key:'med',   name:'中位数', color:'#7c3aed', est:e=>e.med,   tru:T.med},
+  {key:'mean',  name:'平均数', color:'#be123c', est:e=>e.mean,  tru:T.mean},
+];
+const fmt=x=>x.toFixed(1);
+const num=v=>Number.isInteger(+v.toFixed(2))?String(Math.round(v)):(+v.toFixed(2)).toString();
+const esc=s=>s;
+
+/* ================= 主直方图 ================= */
+function renderHist(){
+  const svg=document.getElementById('hist');
+  const W=960,H=470,padL=52,padR=18,padT=86,padB=64;
+  const pw=W-padL-padR, ph=H-padT-padB;
+  const e=estimates(RAW, 50+state.offset, state.width);
+  // 横轴范围随分组自适应：始终把首尾组包进来
+  const XMIN=Math.min(45, Math.floor(e.start)-1);
+  const XMAX=Math.max(95, Math.ceil(e.bins[e.bins.length-1].x1)+1);
+  const x=v=>padL+(v-XMIN)/(XMAX-XMIN)*pw;
+  const ymax=Math.ceil(Math.max(...e.bins.map(b=>b.n))/5)*5;
+  const y=n=>padT+ph-n/ymax*ph;
+
+  let g='';
+  // 网格 + y 轴
+  for(let t=0;t<=ymax;t+=5){
+    g+=`<line x1="${padL}" y1="${y(t)}" x2="${W-padR}" y2="${y(t)}" stroke="#e8edf4" stroke-width="1"/>`;
+    g+=`<text x="${padL-8}" y="${y(t)+4}" font-size="11.5" fill="#8d99aa" text-anchor="end">${t}</text>`;
+  }
+  g+=`<line x1="${padL}" y1="${padT}" x2="${padL}" y2="${y(0)}" stroke="#c6cfdb" stroke-width="1.2"/>`;
+  g+=`<line x1="${padL}" y1="${y(0)}" x2="${W-padR}" y2="${y(0)}" stroke="#c6cfdb" stroke-width="1.2"/>`;
+
+  // 柱子（频数标签延后绘制，避免被估计值竖线遮挡）
+  const bw=x(e.bins[0].x1)-x(e.bins[0].x0);
+  let labG='';
+  e.bins.forEach((b,i)=>{
+    if(b.n===0) return;
+    const isMax=i===e.mb;
+    g+=`<rect x="${x(b.x0)+1}" y="${y(b.n)}" width="${bw-2}" height="${y(0)-y(b.n)}"
+       fill="${isMax?'#cabffd':'#f9c9d4'}" fill-opacity="${isMax?0.95:0.85}"
+       stroke="${isMax?'#7c3aed':'#f2a7b8'}" stroke-width="${isMax?1.6:1}" rx="2"/>`;
+    if(state.showLab) labG+=`<text x="${x((b.x0+b.x1)/2)}" y="${y(b.n)-6}" font-size="11.5" font-weight="700" paint-order="stroke" stroke="#ffffff" stroke-width="3"
+       fill="${isMax?'#5b21b6':'#9f6472'}" text-anchor="middle">${b.n}</text>`;
+  });
+  // x 轴刻度（按组距自动选取整齐的刻度间隔，且不超过 12 个刻度）
+  const w0=state.width;
+  const tickStep = w0>=10 ? w0 : (w0>=5 ? 5 : (w0>=2 ? 2 : 5));
+  const startTick = Math.ceil(XMIN/tickStep)*tickStep;
+  for(let t=startTick;t<=XMAX-0.6;t+=tickStep)
+    g+=`<text x="${x(t)}" y="${y(0)+16}" font-size="11" fill="#8d99aa" text-anchor="middle">${num(t)}</text>`;
+  g+=`<text x="${W-padR}" y="${y(0)+32}" font-size="11.5" fill="#8d99aa" text-anchor="end">体重 / kg</text>`;
+
+  // 原始数据条带（底部）
+  if(state.showRaw){
+    const base=y(0)-6;
+    RAW.forEach((v,i)=>{
+      const j=((i*2654435761)%97)/97*10-5;    // 确定性抖动
+      g+=`<circle cx="${x(v)}" cy="${base-4+j*0.5}" r="2" fill="#9aa5b5" fill-opacity="0.55"/>`;
+    });
+  }
+
+  // 三组：真值虚线（带标注） + 估计值实线（可单独关闭） + 顶部标签
+  const rows=[{m:METRICS[0],top:padT-64},{m:METRICS[1],top:padT-42},{m:METRICS[2],top:padT-20}];
+  rows.forEach(({m,top})=>{
+    const ev=m.est(e), tv=m.tru, on=state.show[m.key];
+    if(state.showTrue){
+      g+=`<line x1="${x(tv)}" y1="${padT-8}" x2="${x(tv)}" y2="${y(0)}" stroke="#8b95a6" stroke-width="1.6" stroke-dasharray="4 3"/>`;
+      g+=`<circle cx="${x(tv)}" cy="${y(0)}" r="3.5" fill="none" stroke="#8b95a6" stroke-width="1.6"/>`;
+      // 真值线标注：竖排小字，说明这是哪个统计量的真值
+      g+=`<text x="${x(tv)+5}" y="${y(0)-24}" transform="rotate(-90 ${x(tv)+5} ${y(0)-24})"
+         font-size="10.5" font-weight="700" fill="#78828f" paint-order="stroke" stroke="#ffffff" stroke-width="3.2"
+         text-anchor="start">${m.name}真值 ${fmt(tv)}</text>`;
+    }
+    if(!on) return;
+    g+=`<line x1="${x(ev)}" y1="${padT-8}" x2="${x(ev)}" y2="${y(0)}" stroke="${m.color}" stroke-width="2.6"/>`;
+    // 估计值→真值 的顶部连线
+    if(state.showTrue){
+      g+=`<path d="M ${x(ev)} ${top+4} L ${x(ev)} ${top} L ${x(tv)} ${top} L ${x(tv)} ${top+4}" fill="none"
+         stroke="${m.color}" stroke-width="1.1" stroke-dasharray="2 2" opacity="0.75"/>`;
+    }
+    // 标签：估计 + 真值 + 差
+    if(state.showLab){
+      const diff=ev-tv, dTxt=(diff>=0?'+':'−')+Math.abs(diff).toFixed(1);
+      const label=state.showTrue?`${m.name}估计 ${fmt(ev)}  真值 ${fmt(tv)}（差 ${dTxt}）`:`${m.name}估计 ${fmt(ev)}`;
+      const wLabel=label.length*7.2+16;
+      let lx=x(ev)-8;
+      lx=Math.max(padL+4, Math.min(W-padR-wLabel, lx));
+      g+=`<circle cx="${x(ev)}" cy="${top+4}" r="4" fill="${m.color}"/>`;
+      g+=`<rect x="${lx}" y="${top-11}" width="${wLabel}" height="17" rx="8.5" fill="#ffffff" fill-opacity="0.92"
+         stroke="${m.color}" stroke-width="1" opacity="0.95"/>`;
+      g+=`<text x="${lx+8}" y="${top+1.5}" font-size="11" font-weight="700" fill="${m.color}">${label}</text>`;
+    }
+  });
+
+  // 图例（频数标签在竖线之后补画，保证可读）
+  g+=labG;
+  const lg=[];
+  METRICS.forEach(m=>{ if(state.show[m.key]) lg.push([m.name+'估计', m.color, '2.6 0']); });
+  if(state.showTrue) lg.push(['各统计量真值（灰虚线）','#8b95a6','4 3']);
+  let lx0=padL;
+  lg.forEach(([t,c,da])=>{
+    g+=`<line x1="${lx0}" y1="${H-14}" x2="${lx0+22}" y2="${H-14}" stroke="${c}" stroke-width="2.4" ${da?`stroke-dasharray="${da}"`:''}/>`;
+    g+=`<text x="${lx0+27}" y="${H-10}" font-size="11.5" fill="#5c6879">${t}</text>`;
+    lx0+=27+t.length*12.5+22;
+  });
+
+  svg.innerHTML=g;
+  document.getElementById('binInfo').textContent=
+    `当前：组距 = ${num(state.width)}，分组锚点 = 50+${fmt(state.offset)}，实际最左组起点 = ${fmt(e.start)}（n = ${N}）`;
+}
+
+/* ================= 右侧三张统计卡 ================= */
+function diffClass(d){ const a=Math.abs(d); return a<0.5?'d-good':a<1.5?'d-mid':'d-bad'; }
+function renderStats(){
+  const e=estimates(RAW, 50+state.offset, state.width);
+  let Fbefore=0; for(const b of e.bins){ if(b===e.mBin) break; Fbefore+=b.n; }
+  const defs=[
+    {id:'stMode', m:METRICS[0], ev:e.mode, how:`最高矩形为 <b>[${fmt(e.bins[e.mb].x0)}, ${fmt(e.bins[e.mb].x1)})</b>，取底边中点。真值：细分组（组距 1）最高组中点，${T.modeInfo}。`},
+    {id:'stMed',  m:METRICS[1], ev:e.med,  how:`落在 <b>[${fmt(e.mBin.x0)}, ${fmt(e.mBin.x1)})</b> 内：l = ${fmt(e.mBin.x0)}，F（左侧累积频数）= ${Fbefore}，f = ${e.mBin.n}，d = ${state.width}。真值：原始数据第 50、51 个的平均。`},
+    {id:'stMean', m:METRICS[2], ev:e.mean, how:`Σ(组中值×频数) / ${N}。真值：100 个原始数据的算术平均。`},
+  ];
+  defs.forEach(d=>{
+    const diff=d.ev-d.m.tru, dTxt=(diff>=0?'+':'−')+Math.abs(diff).toFixed(1);
+    document.getElementById(d.id).innerHTML=
+      `<div class="name" style="color:${d.m.color}">■ ${d.m.name}估计</div>
+       <div class="row">
+         <span class="est-lab">估计</span><span class="est">${fmt(d.ev)}</span>
+         <span class="tru">真值 <b>${fmt(d.m.tru)}</b></span>
+         <span class="diff ${diffClass(diff)}">差 ${dTxt}</span>
+       </div>
+       <div class="how">${d.how}</div>`;
+  });
+}
+
+/* ================= 通用条带图 ================= */
+function stripGeom(){
+  return {W:1160,H:345,padL:80,padR:60,top:40,bh:56,gap:26};
+}
+function stripXDomain(vals){
+  const lo=Math.min(...vals,T.mode,T.med,T.mean), hi=Math.max(...vals,T.mode,T.med,T.mean);
+  const pad=(hi-lo)*0.08+0.4;
+  return [lo-pad,hi+pad];
+}
+/* rows: [{name,color,points:[{x,val,cur}] , tru}] */
+function renderStrip(svgId, rows, domain, xTickFmt, axisLabel){
+  const {W,padL,padR,top,bh,gap}=stripGeom();
+  const [lo,hi]=domain;
+  const x=v=>padL+(v-lo)/(hi-lo)*(W-padL-padR);
+  let g='';
+  // 行
+  rows.forEach((r,i)=>{
+    const cy=top+bh/2+i*(bh+gap);
+    g+=`<text x="${padL-14}" y="${cy+5}" font-size="14.5" font-weight="800" fill="${r.color}" text-anchor="end">${r.name}</text>`;
+    // 值域淡带
+    if(r.points.length>1){
+      const xs=r.points.map(p=>x(p.val));
+      g+=`<line x1="${Math.min(...xs)}" y1="${cy}" x2="${Math.max(...xs)}" y2="${cy}" stroke="${r.color}" stroke-width="10" stroke-opacity="0.13" stroke-linecap="round"/>`;
+    }
+    // 真值虚线
+    g+=`<line x1="${x(r.tru)}" y1="${cy-22}" x2="${x(r.tru)}" y2="${cy+22}" stroke="#8b95a6" stroke-width="2" stroke-dasharray="4 3"/>`;
+    // 点（标签交错两层高度 + 拥挤时稀疏标注：必标当前点与首尾点，其余按水平间距抽稀）
+    const sorted=[...r.points].sort((a,b)=>a.val-b.val);
+    const showLab=[];
+    let lastX=-1e9;
+    sorted.forEach((p,pi)=>{
+      const px=x(p.val);
+      const must=(pi===0)||(pi===sorted.length-1)||p.cur||(Math.abs(px-lastX)>=38);
+      if(must){ showLab.push(pi); lastX=px; }
+    });
+    sorted.forEach((p,pi)=>{
+      const labY=cy-(showLab.indexOf(pi)%2===0?13:27);
+      if(p.cur){
+        g+=`<circle cx="${x(p.val)}" cy="${cy}" r="9" fill="none" stroke="#7c3aed" stroke-width="2.2"/>`;
+      }
+      g+=`<circle cx="${x(p.val)}" cy="${cy}" r="5" fill="${r.color}"/>`;
+      if(showLab.includes(pi))
+        g+=`<text x="${x(p.val)}" y="${labY}" font-size="11.5" font-weight="700" fill="${r.color}" text-anchor="middle">${p.val.toFixed(1)}</text>`;
+    });
+  });
+  // x 轴（按实际行数计算，且不超出画布底部）
+  const nT=8, axisY=Math.min(top+rows.length*(bh+gap)-8, 345-42);
+  g+=`<line x1="${padL}" y1="${axisY}" x2="${W-padR}" y2="${axisY}" stroke="#c6cfdb" stroke-width="1.2"/>`;
+  for(let i=0;i<=nT;i++){
+    const v=lo+(hi-lo)*i/nT;
+    g+=`<line x1="${x(v)}" y1="${axisY}" x2="${x(v)}" y2="${axisY+5}" stroke="#c6cfdb"/>`;
+    g+=`<text x="${x(v)}" y="${axisY+19}" font-size="11.5" fill="#8d99aa" text-anchor="middle">${xTickFmt(v)}</text>`;
+  }
+  g+=`<text x="${W-padR}" y="${axisY+36}" font-size="11.5" fill="#8d99aa" text-anchor="end">${axisLabel}</text>`;
+  document.getElementById(svgId).innerHTML=g;
+}
+
+/* 组距影响（对比序列随当前组距动态生成） */
+function dList(){
+  const base=[2,5,10,20,state.width];
+  const set=[...new Set(base.map(v=>+v.toFixed(2)))].sort((a,b)=>a-b);
+  return set;
+}
+function renderStripD(){
+  const D=dList();
+  const pts=METRICS.map(m=>({name:m.name,color:m.color,tru:m.tru,points:[]}));
+  D.forEach(d=>{
+    const e=estimates(RAW,50,d);
+    METRICS.forEach((m,i)=>pts[i].points.push({val:m.est(e), cur:Math.abs(d-state.width)<1e-9}));
+  });
+  const all=pts.flatMap(p=>p.points.map(q=>q.val));
+  renderStrip('stripD', pts, stripXDomain(all), v=>v.toFixed(0), '三个统计量的估计值 →');
+  // 动态说明
+  const rng=pts.map(p=>{
+    const vs=p.points.map(q=>q.val);
+    return {name:p.name, lo:Math.min(...vs), hi:Math.max(...vs)};
+  });
+  const f=r=>`${r.lo.toFixed(1)} ~ ${r.hi.toFixed(1)}（最大摆动 ${(r.hi-r.lo).toFixed(1)}）`;
+  document.getElementById('noteD').innerHTML=
+    `<b>读图：</b>组距依次取 ${D.map(num).join(' / ')} ——
+     众数估计在 <b>${f(rng[0])}</b> 之间摆动，最敏感；
+     中位数估计 <b>${f(rng[1])}</b>，较稳定；
+     平均数估计 <b>${f(rng[2])}</b>，几乎不动。灰色虚线是该统计量的真值，点越靠近虚线估计越准。`;
+}
+
+/* 起点影响（组距固定为当前值） */
+function renderStripS(){
+  const w=state.width, offs=[];
+  const stp = w<=6 ? 0.5 : (w<=12 ? 1 : 2);
+  for(let o=0;o<w-1e-9;o+=stp) offs.push(+o.toFixed(2));
+  if(!offs.some(o=>Math.abs(o-state.offset)<1e-9)) offs.push(+state.offset.toFixed(2));
+  offs.sort((a,b)=>a-b);
+  const pts=METRICS.map(m=>({name:m.name,color:m.color,tru:m.tru,points:[]}));
+  offs.forEach(o=>{
+    const e=estimates(RAW,50+o,w);
+    METRICS.forEach((m,i)=>pts[i].points.push({val:m.est(e), cur:Math.abs(o-state.offset)<1e-9}));
+  });
+  const all=pts.flatMap(p=>p.points.map(q=>q.val));
+  renderStrip('stripS', pts, stripXDomain(all), v=>v.toFixed(1), '估计值 →（每个点对应一个分组锚点偏移）');
+  const rng=pts.map(p=>{
+    const vs=p.points.map(q=>q.val);
+    return {name:p.name, lo:Math.min(...vs), hi:Math.max(...vs)};
+  });
+  const f=r=>`最大摆动 ${(r.hi-r.lo).toFixed(1)}`;
+  document.getElementById('noteS').innerHTML=
+    `<b>读图：</b>组距固定为 <b>${num(w)}</b>，把分组锚点从 50 平移到 50+${Math.max(...offs).toFixed(1)}（最左组自动左扩以覆盖全部数据）——
+     众数估计 ${f(rng[0])}、中位数估计 ${f(rng[1])}、平均数估计 ${f(rng[2])}。
+     <b>分组方式（起点）一变，「最高的组」可能换组，众数估计会跳变</b>；中位数、平均数由于本质是加权平均类统计量，对起点平移相对不敏感。`;
+}
+
+/* ================= 规律总结 ================= */
+function renderRules(){
+  const e=estimates(RAW,50+state.offset,state.width);
+  const dm=e.mode-T.mode, dd=e.med-T.med, da=e.mean-T.mean;
+  const s=d=>`<b style="color:${Math.abs(d)<0.5?'#15803d':Math.abs(d)<1.5?'#b45309':'#be123c'}">${d>=0?'+':'−'}${Math.abs(d).toFixed(1)}</b>`;
+  document.getElementById('ruleList').innerHTML=`
+    <li><b>组距越小 → 估计越准。</b>组内均匀分布的假设越接近事实，三个估计值都向真值收敛（可切到组距 2 验证）。</li>
+    <li><b>组距变大：</b>当前组距 ${num(state.width)} 下三个差的绝对值为 众数 ${s(dm)}、中位数 ${s(dd)}、平均数 ${s(da)}。
+      <b>众数</b>受组距影响最大——组一合并，最高组可能换位置，估计可能跳到另一个值；<b>中位数</b>只用到累积面积，受影响中等；<b>平均数</b>因组内偏高偏低相互抵消，最稳定。</li>
+    <li><b>分组（起点）改变：</b>众数估计可能因「最高组换组」而跳变；中位数、平均数估计变化较小。</li>
+    <li><b>考试口径：</b>直方图本身<em>丢失了组内原始数据</em>，所以只能得到估计值；数据保留完整时，直接算出的才是真值。答「影响」题抓住一句：<b>组距越大、分组越粗 → 信息损失越多 → 估计越粗糙（尤其众数），平均数与中位数相对稳健。</b></li>`;
+}
+
+/* ================= 交互 ================= */
+function renderAll(){ renderHist(); renderStats(); renderStripD(); renderStripS(); renderRules(); }
+
+/* 组距统一入口：滑块、数字输入、预设按钮都走这里 */
+const PRESETS=[1,2,2.5,5,10,20];
+function setWidth(w, skipSlider){
+  w=Math.max(0.4, Math.min(30, +(+w).toFixed(2)));
+  state.width=w;
+  const maxOff=Math.max(0, +(w-0.5).toFixed(2));
+  const sl=document.getElementById('offSlider');
+  sl.max=maxOff;
+  if(state.offset>maxOff+1e-9){ state.offset=0; sl.value=0; }
+  document.getElementById('offVal').textContent='+'+state.offset.toFixed(1);
+  if(!skipSlider) document.getElementById('widthSlider').value=Math.min(20,w);
+  document.getElementById('widthNum').value=w;
+  document.querySelectorAll('#widthChips .chip').forEach(c=>{
+    c.classList.toggle('on', Math.abs(+c.dataset.w-w)<1e-9);
+  });
+  renderAll();
+}
+const chipsBox=document.getElementById('widthChips');
+PRESETS.forEach(d=>{
+  const b=document.createElement('button');
+  b.className='chip'+(d===state.width?' on':'');
+  b.dataset.w=d;
+  b.textContent=num(d);
+  b.onclick=()=>setWidth(d);
+  chipsBox.appendChild(b);
+});
+document.getElementById('widthSlider').addEventListener('input',e=>setWidth(e.target.value, true));
+document.getElementById('widthNum').addEventListener('change',e=>setWidth(e.target.value));
+document.getElementById('widthNum').addEventListener('keydown',e=>{
+  if(e.key==='Enter'){ e.preventDefault(); setWidth(e.target.value); }
+});
+document.getElementById('offSlider').addEventListener('input',e=>{
+  state.offset=+e.target.value;
+  document.getElementById('offVal').textContent='+'+state.offset.toFixed(1);
+  renderAll();
+});
+document.getElementById('ckRaw').addEventListener('change',e=>{state.showRaw=e.target.checked;renderAll();});
+document.getElementById('ckTrue').addEventListener('change',e=>{state.showTrue=e.target.checked;renderAll();});
+document.getElementById('ckLab').addEventListener('change',e=>{state.showLab=e.target.checked;renderAll();});
+[['ckMode','mode'],['ckMed','med'],['ckMean','mean']].forEach(([id,k])=>{
+  document.getElementById(id).addEventListener('change',e=>{ state.show[k]=e.target.checked; renderAll(); });
+});
+
+renderAll();
+</script>
+</body>
+</html>

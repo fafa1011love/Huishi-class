@@ -1,0 +1,2628 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>模型31 · 向心力探究（向心力演示器 + 测力标尺）</title>
+<style>
+:root{
+  --bg:#f1f5f9; --card:#ffffff; --line:#e2e8f0; --ink:#0f172a; --sub:#475569; --mut:#94a3b8;
+  --blue:#2563eb; --red:#dc2626; --green:#16a34a; --amber:#f59e0b; --purple:#7c3aed; --orange:#ea580c;
+  --v:#2563eb; --f:#dc2626; --a:#16a34a; --spr:#ea580c;
+  --shadow:0 1px 2px rgba(15,23,42,.06),0 6px 18px rgba(15,23,42,.06);
+}
+*{box-sizing:border-box}
+html,body{margin:0;padding:0}
+body{background:var(--bg);color:var(--ink);font:14px/1.6 system-ui,-apple-system,"Segoe UI","Microsoft YaHei",sans-serif;}
+h1,h2,h3,h4{margin:0}
+button{font-family:inherit}
+.wrap{max-width:1560px;margin:0 auto;padding:14px 16px 60px}
+/* ---------- 顶栏 ---------- */
+.top{display:flex;flex-wrap:wrap;gap:12px;align-items:flex-end;justify-content:space-between;
+  background:linear-gradient(180deg,#ffffff,#f8fafc);border:1px solid var(--line);border-radius:14px;
+  padding:12px 16px;box-shadow:var(--shadow)}
+.brand{display:flex;gap:12px;align-items:center;flex-wrap:wrap}
+.badge{background:var(--blue);color:#fff;font-weight:700;font-size:12px;border-radius:8px;padding:4px 9px;white-space:nowrap}
+.top h1{font-size:19px;letter-spacing:.2px}
+.sub{color:var(--sub);font-size:12.5px;margin:2px 0 0}
+.topbtns{display:flex;gap:8px;flex-wrap:wrap}
+.btn{background:#fff;border:1px solid #cbd5e1;color:var(--ink);border-radius:9px;padding:7px 12px;
+  font-size:13px;cursor:pointer;transition:.15s}
+.btn:hover{border-color:var(--blue);color:var(--blue)}
+.btn.pri{background:var(--blue);border-color:var(--blue);color:#fff}
+.btn.pri:hover{background:#1d4ed8;color:#fff}
+.btn.on{background:#dbeafe;border-color:var(--blue);color:#1d4ed8;font-weight:600}
+.btn:disabled{opacity:.45;cursor:not-allowed}
+.btn.sm{padding:4px 9px;font-size:12px;border-radius:7px}
+/* ---------- 步骤条 ---------- */
+.steps{display:flex;gap:6px;flex-wrap:wrap;margin:12px 0 0}
+.steps button{flex:1 1 130px;background:#fff;border:1px solid var(--line);border-radius:10px;padding:7px 10px;
+  font-size:12.5px;color:var(--sub);cursor:pointer;text-align:left;line-height:1.35}
+.steps button b{display:block;font-size:13px;color:var(--ink)}
+.steps button.on{border-color:var(--blue);background:#eff6ff;box-shadow:inset 0 0 0 1px #bfdbfe}
+.steps button.on b{color:#1d4ed8}
+.steps button.done{border-color:#86efac}
+.tip{margin-top:10px;background:#fffbeb;border:1px solid #fde68a;border-left:4px solid var(--amber);
+  border-radius:10px;padding:9px 13px;font-size:13px}
+.tip b{color:#b45309}
+/* ---------- 主栅格 ---------- */
+.grid{display:grid;grid-template-columns:minmax(0,1fr) 372px;gap:14px;margin-top:14px;align-items:start}
+@media(max-width:1180px){.grid{grid-template-columns:minmax(0,1fr)}}
+.panel{background:var(--card);border:1px solid var(--line);border-radius:14px;box-shadow:var(--shadow)}
+.panel>h3{font-size:14px;padding:11px 14px;border-bottom:1px solid var(--line);display:flex;
+  align-items:center;justify-content:space-between;gap:8px}
+.panel>h3 small{font-weight:400;color:var(--mut);font-size:11.5px}
+.pbody{padding:12px 14px}
+.stage{position:relative}
+#cvMain{display:block;width:100%;height:520px;border-radius:0 0 13px 13px}
+@media(max-width:700px){#cvMain{height:420px}}
+.legend{position:absolute;left:12px;top:92px;background:rgba(255,255,255,.93);border:1px solid var(--line);
+  border-radius:10px;padding:8px 10px;font-size:11.5px;color:var(--sub);line-height:1.85;pointer-events:none}
+.legend i{display:inline-block;width:15px;height:3px;border-radius:2px;margin-right:6px;vertical-align:3px}
+.legend .t{font-weight:700;color:#0f172a;border-bottom:1px solid var(--line);padding-bottom:3px;margin-bottom:3px}
+.hint{position:absolute;right:12px;top:152px;background:rgba(255,255,255,.92);border:1px solid var(--line);
+  border-radius:9px;padding:5px 9px;font-size:11.5px;color:var(--mut);pointer-events:none}
+/* ---------- 控制面板 ---------- */
+.ctrl{max-height:none}
+.grp{border-bottom:1px dashed var(--line);padding:10px 0}
+.grp:last-child{border-bottom:0}
+.grp>h4{font-size:12.5px;color:var(--blue);margin:0 0 8px;letter-spacing:.3px}
+.row{display:flex;align-items:center;gap:8px;margin:7px 0}
+.row label{flex:0 0 92px;font-size:12.5px;color:var(--sub)}
+.row .val{flex:0 0 74px;text-align:right;font-variant-numeric:tabular-nums;font-size:12.5px;color:var(--ink);font-weight:600}
+input[type=range]{flex:1;min-width:0;accent-color:var(--blue);height:18px}
+input[type=range]:disabled{opacity:.4}
+.seg{display:flex;gap:4px;flex-wrap:wrap}
+.seg button{flex:1;min-width:52px;background:#f8fafc;border:1px solid #cbd5e1;border-radius:8px;padding:5px 6px;
+  font-size:12px;cursor:pointer;color:var(--sub)}
+.seg button.on{background:#dbeafe;border-color:var(--blue);color:#1d4ed8;font-weight:600}
+.chk{display:flex;align-items:center;gap:6px;font-size:12.5px;color:var(--sub);padding:3px 0;cursor:pointer}
+.chk input{accent-color:var(--blue)}
+.chkgrid{display:grid;grid-template-columns:1fr 1fr;gap:0 10px}
+select,input[type=text],input[type=number]{width:100%;border:1px solid #cbd5e1;border-radius:8px;padding:6px 8px;
+  font-size:13px;color:var(--ink);background:#fff;font-family:inherit}
+.note{background:#f8fafc;border:1px solid var(--line);border-radius:9px;padding:8px 10px;font-size:12px;color:var(--sub);margin-top:8px}
+.note.warn{background:#fef2f2;border-color:#fecaca;color:#b91c1c}
+.note.ok{background:#f0fdf4;border-color:#bbf7d0;color:#15803d}
+.lockinfo{font-size:11.5px;color:#b45309;background:#fffbeb;border:1px solid #fde68a;border-radius:8px;
+  padding:6px 9px;margin-top:7px}
+/* ---------- 读出 ---------- */
+.readout{display:grid;grid-template-columns:repeat(4,1fr);gap:6px}
+.ro{background:#f8fafc;border:1px solid var(--line);border-radius:9px;padding:6px 8px}
+.ro .k{font-size:11px;color:var(--mut)}
+.ro .v{font-size:14px;font-weight:700;font-variant-numeric:tabular-nums}
+.ro.bA{border-left:3px solid var(--blue)}
+.ro.bB{border-left:3px solid var(--purple)}
+.tag{display:inline-block;border-radius:7px;padding:3px 8px;font-size:12px;font-weight:700}
+.tag.up{background:#fee2e2;color:#b91c1c}
+.tag.eq{background:#e0f2fe;color:#0369a1}
+.tag.warn{background:#fef3c7;color:#b45309}
+/* ---------- 图表 ---------- */
+.chartwrap{margin-top:14px}
+.tabs{display:flex;gap:6px;flex-wrap:wrap;padding:10px 14px 0}
+.tabs button{background:#f8fafc;border:1px solid #cbd5e1;border-radius:9px;padding:5px 11px;font-size:12.5px;
+  cursor:pointer;color:var(--sub)}
+.tabs button.on{background:#dbeafe;border-color:var(--blue);color:#1d4ed8;font-weight:600}
+#cvChart{display:block;width:100%;height:340px}
+@media(max-width:700px){#cvChart{height:300px}}
+/* ---------- 表格 ---------- */
+.tblwrap{overflow:auto;max-height:290px}
+table{border-collapse:collapse;width:100%;font-size:12.5px;font-variant-numeric:tabular-nums}
+th,td{border:1px solid var(--line);padding:5px 7px;text-align:right;white-space:nowrap}
+th{background:#f8fafc;color:var(--sub);font-weight:600;position:sticky;top:0}
+td.l,th.l{text-align:left}
+tr.exp1 td:first-child{border-left:3px solid var(--blue)}
+tr.exp2 td:first-child{border-left:3px solid var(--green)}
+tr.exp3 td:first-child{border-left:3px solid var(--amber)}
+tr.exp4 td:first-child{border-left:3px solid var(--purple)}
+/* ---------- 测验 ---------- */
+.q{border:1px solid var(--line);border-radius:11px;padding:11px 13px;margin-bottom:10px;background:#fff}
+.q .qt{font-weight:600;font-size:13.5px;margin-bottom:7px}
+.q .qt em{font-style:normal;color:var(--blue);font-weight:700}
+.opt{display:block;border:1px solid #cbd5e1;border-radius:8px;padding:6px 10px;margin:5px 0;cursor:pointer;
+  font-size:13px;background:#f8fafc}
+.opt:hover{border-color:var(--blue)}
+.opt.right{background:#f0fdf4;border-color:#16a34a;color:#15803d;font-weight:600}
+.opt.wrong{background:#fef2f2;border-color:#dc2626;color:#b91c1c}
+.opt.dis{pointer-events:none;opacity:.75}
+.fb{border-radius:9px;padding:8px 10px;font-size:12.5px;margin-top:7px}
+.fb.ok{background:#f0fdf4;border:1px solid #bbf7d0;color:#15803d}
+.fb.no{background:#fef2f2;border:1px solid #fecaca;color:#b91c1c}
+.fb button{margin-left:6px}
+/* ---------- 抽屉 / 弹窗 ---------- */
+.drawer{position:fixed;top:0;right:0;width:430px;max-width:96vw;height:100%;background:#fff;
+  border-left:1px solid var(--line);box-shadow:-8px 0 28px rgba(15,23,42,.14);transform:translateX(105%);
+  transition:transform .25s ease;z-index:60;display:flex;flex-direction:column}
+.drawer.open{transform:none}
+.dhead{padding:12px 14px;border-bottom:1px solid var(--line);display:flex;gap:8px;align-items:center}
+.dhead h3{font-size:15px;flex:1}
+.dtabs{display:flex;gap:5px;flex-wrap:wrap;padding:9px 14px;border-bottom:1px solid var(--line)}
+.dtabs button{background:#f8fafc;border:1px solid #cbd5e1;border-radius:14px;padding:3px 10px;font-size:12px;cursor:pointer}
+.dtabs button.on{background:#dbeafe;border-color:var(--blue);color:#1d4ed8;font-weight:600}
+.dsearch{padding:9px 14px;border-bottom:1px solid var(--line);display:flex;gap:7px}
+.drawer-body{flex:1;overflow:auto;padding:12px 14px 30px}
+.dfoot{border-top:1px solid var(--line);padding:9px 14px;display:flex;gap:7px;justify-content:space-between}
+.modal{position:fixed;inset:0;background:rgba(15,23,42,.45);display:none;align-items:center;justify-content:center;z-index:80;padding:18px}
+.modal.open{display:flex}
+.mbox{background:#fff;border-radius:14px;max-width:660px;width:100%;max-height:88vh;overflow:auto;
+  box-shadow:0 20px 60px rgba(15,23,42,.3);padding:16px 18px}
+.mbox h3{font-size:16px;margin-bottom:4px}
+.mbox .cat{font-size:11.5px;color:var(--mut);margin-bottom:10px}
+.kfig{background:#f8fafc;border:1px solid var(--line);border-radius:10px;padding:8px;margin:9px 0;text-align:center}
+.kfig svg{max-width:100%;height:auto}
+.kv{font-size:13px;margin:7px 0}
+.kv b{color:var(--blue)}
+.demo{background:#eff6ff;border:1px solid #bfdbfe;border-radius:9px;padding:8px 10px;font-size:12.5px;margin-top:9px}
+.mis{background:#fef2f2;border:1px solid #fecaca;border-radius:9px;padding:8px 10px;font-size:12.5px;margin-top:9px}
+.back{background:#f8fafc;border:1px dashed #cbd5e1;border-radius:9px;padding:9px 11px;font-size:12.5px;margin-top:10px;color:var(--sub)}
+.clist{display:grid;gap:8px}
+.citem{border:1px solid var(--line);border-radius:11px;padding:9px 11px;cursor:pointer;background:#fff}
+.citem:hover{border-color:var(--blue);box-shadow:var(--shadow)}
+.citem b{font-size:13.5px}
+.citem .cc{font-size:11px;color:var(--mut);margin-left:6px;font-weight:400}
+.citem p{margin:4px 0 0;font-size:12.5px;color:var(--sub)}
+.citem.pin{border-color:var(--amber);background:#fffbeb}
+/* ---------- 报告 ---------- */
+#reportBox{font-size:13px}
+#reportBox h4{font-size:14px;margin:14px 0 6px;color:var(--blue)}
+#reportBox table{font-size:12px}
+#cvRep{display:block;width:100%;height:260px;border:1px solid var(--line);border-radius:9px;background:#fff}
+#cvRepSce{display:block;width:100%;height:200px;border:1px solid var(--line);border-radius:9px;background:#fff}
+@media print{
+  body{background:#fff}
+  .top,.grid,.chartwrap,.tabs,.steps,.tip,.dfoot,.topbtns,.noprint,.drawer,.toast{display:none !important}
+  #cardModal{display:none !important}
+  #repModal{position:static !important;background:none !important;display:block !important;padding:0 !important}
+  #repModal .mbox{box-shadow:none;max-height:none;max-width:none;border:0;padding:0}
+  #reportBox h4{page-break-after:avoid}
+  #reportBox table{page-break-inside:auto}
+}
+/* ---------- 锚点热点 ---------- */
+#hot{position:absolute;inset:0}
+.hot{position:absolute;width:19px;height:19px;margin:-9.5px 0 0 -9.5px;border-radius:50%;
+  background:#fff;border:2px solid var(--blue);color:var(--blue);font-size:11px;font-weight:700;
+  display:flex;align-items:center;justify-content:center;cursor:pointer;box-shadow:0 1px 4px rgba(15,23,42,.25);
+  padding:0;line-height:1}
+.hot:hover{background:var(--blue);color:#fff}
+.toast{position:fixed;left:50%;transform:translateX(-50%);bottom:26px;background:#0f172a;color:#fff;
+  padding:9px 16px;border-radius:10px;font-size:13px;z-index:99;opacity:0;transition:.25s;pointer-events:none;max-width:88vw}
+.toast.show{opacity:.96}
+.sr{position:absolute;width:1px;height:1px;overflow:hidden;clip:rect(0 0 0 0)}
+</style>
+</head>
+<body>
+<div class="wrap">
+
+<header class="top">
+  <div class="brand">
+    <span class="badge">模型 31</span>
+    <div>
+      <h1>向心力探究 · 向心力演示器与测力标尺</h1>
+      <p class="sub">控制变量法得出 F = mω²r　|　核心结论：向心力是<b>效果力</b>，由其他力提供</p>
+    </div>
+  </div>
+  <div class="topbtns">
+    <button class="btn" id="btnCards" aria-label="打开知识卡片库">知识卡片库（<span id="dCnt">0</span> 张）</button>
+    <button class="btn" id="btnReport" aria-label="生成实验报告">实验报告</button>
+    <button class="btn" id="btnExam" aria-label="教师考核模式">教师考核</button>
+  </div>
+</header>
+
+<nav class="steps" id="stepBar" aria-label="教学流程七步"></nav>
+<div class="tip"><span id="tipText"></span>　<b id="tipQ"></b></div>
+
+<div class="grid">
+  <!-- ============ 左：演示舞台 ============ -->
+  <section class="panel stage">
+    <h3>向心力演示器（俯视 · 水平面内）
+      <small id="scaleNote">比例尺：1 m ≈ — px</small>
+    </h3>
+    <div style="position:relative">
+      <canvas id="cvMain" aria-label="向心力演示器俯视动画"></canvas>
+      <div class="legend">
+        <div class="t">图例（颜色编码固定）</div>
+        <div><i style="background:#2563eb"></i>速度 v（切线方向）</div>
+        <div><i style="background:#dc2626"></i>向心力 F（指向圆心）</div>
+        <div><i style="background:#16a34a"></i>向心加速度 a<sub>n</sub></div>
+        <div><i style="background:#ea580c"></i>弹簧（拉力 = 读数来源）</div>
+        <div><i style="background:#7c3aed"></i>B 球 / 对照量</div>
+        <div><i style="background:#94a3b8"></i>半径线 r（虚线）</div>
+      </div>
+      <div class="hint" id="hintNote">点击画面上的 ⓘ 圆标可弹出对应知识卡片</div>
+      <div id="hot"></div>
+    </div>
+    <div class="pbody" style="border-top:1px solid var(--line)">
+      <div class="readout" id="readout"></div>
+      <div id="verdictBox" class="note ok" style="margin-top:10px"></div>
+    </div>
+  </section>
+
+  <!-- ============ 右：控制面板 ============ -->
+  <aside class="panel ctrl">
+    <h3>控制面板 <small>灰显 = 已被控制变量锁定</small></h3>
+    <div class="pbody">
+
+      <div class="grp">
+        <h4>驱动与转速</h4>
+        <div class="seg" id="segDrive">
+          <button data-drive="motor" class="on" aria-pressed="true">电机驱动</button>
+          <button data-drive="hand" aria-pressed="false">手摇柄</button>
+        </div>
+        <div class="row"><label>转速 n</label><input type="range" id="rN" min="0" max="300" step="1" value="60"><span class="val" id="vN">60 r/min</span></div>
+        <div class="row"><label>播放速度</label>
+          <div class="seg" id="segSpeed" style="flex:1">
+            <button data-sp="0.25">0.25×</button><button data-sp="0.5">0.5×</button><button data-sp="1" class="on">1×</button>
+          </div>
+        </div>
+        <div class="row" style="gap:6px">
+          <button class="btn pri sm" id="bPlay">播放</button>
+          <button class="btn sm" id="bPause">暂停</button>
+          <button class="btn sm" id="bStep">单步</button>
+          <button class="btn sm" id="bReset">重置</button>
+        </div>
+        <div class="note" id="driveNote"></div>
+      </div>
+
+      <div class="grp">
+        <h4>A 球（蓝）</h4>
+        <div class="row"><label>质量 m<sub>A</sub></label><input type="range" id="rMA" min="0.05" max="0.40" step="0.01" value="0.10"><span class="val" id="vMA">0.10 kg</span></div>
+        <div class="row"><label>半径 r<sub>A</sub></label><input type="range" id="rRA" min="0.05" max="0.30" step="0.005" value="0.100"><span class="val" id="vRA">0.100 m</span></div>
+        <div class="row"><label>塔轮档位</label>
+          <div class="seg" id="segGA" style="flex:1">
+            <button data-g="1" class="on">1:1</button><button data-g="1.5">3:2</button><button data-g="2">2:1</button><button data-g="3">3:1</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="grp">
+        <h4>B 球（紫）</h4>
+        <div class="row"><label>质量 m<sub>B</sub></label><input type="range" id="rMB" min="0.05" max="0.40" step="0.01" value="0.10"><span class="val" id="vMB">0.10 kg</span></div>
+        <div class="row"><label>半径 r<sub>B</sub></label><input type="range" id="rRB" min="0.05" max="0.30" step="0.005" value="0.100"><span class="val" id="vRB">0.100 m</span></div>
+        <div class="row"><label>塔轮档位</label>
+          <div class="seg" id="segGB" style="flex:1">
+            <button data-g="1" class="on">1:1</button><button data-g="0.667">2:3</button><button data-g="0.5">1:2</button><button data-g="0.333">1:3</button>
+          </div>
+        </div>
+        <div class="row"><label>对比方式</label>
+          <div class="seg" id="segCmp" style="flex:1">
+            <button data-cmp="same" data-cmp2="1" class="on">同轴（ω 相同）</button><button data-cmp="gear" data-cmp2="0">换档（ω 不同）</button>
+          </div>
+        </div>
+        <div class="note" id="cmpNote"></div>
+      </div>
+
+      <div class="grp">
+        <h4>读数与误差</h4>
+        <div class="row"><label>标尺读数</label>
+          <div class="seg" id="segRead" style="flex:1">
+            <button data-rd="grid" class="on">格数（格）</button><button data-rd="force">力值（N）</button>
+          </div>
+        </div>
+        <div class="row"><label>数据模式</label>
+          <div class="seg" id="segErr" style="flex:1">
+            <button data-er="ideal" class="on">理想</button><button data-er="real">含摩擦与读数误差</button>
+          </div>
+        </div>
+        <div class="row"><label>误差幅度</label><input type="range" id="rAmp" min="0" max="12" step="1" value="4"><span class="val" id="vAmp">±4 %</span></div>
+        <div class="row"><label>随机种子</label><input type="number" id="iSeed" value="2026" min="1" step="1"></div>
+        <div class="row" style="gap:6px">
+          <button class="btn sm" id="bSample">多次测量取平均（5 次）</button>
+          <span class="val" id="vSample" style="flex:0 0 auto">—</span>
+        </div>
+        <div class="row" style="gap:6px">
+          <button class="btn pri sm" id="bRec">记录当前数据</button>
+          <button class="btn sm" id="bStatic">静态分帧图</button>
+        </div>
+        <div class="note" id="errNote"></div>
+      </div>
+
+      <div class="grp">
+        <h4>四组控制变量实验</h4>
+        <div class="seg" id="segExp" style="margin-bottom:8px">
+          <button data-e="1">① 变 ω</button><button data-e="2">② 变 r</button><button data-e="3">③ 变 m</button><button data-e="4">④ 反例：定 v 变 r</button>
+        </div>
+        <div class="seg" id="segExpBtn" style="margin-bottom:8px">
+          <button data-e="0" class="on">自由调节</button>
+        </div>
+        <div id="expBox"></div>
+        <div class="row" style="gap:6px;margin-top:8px">
+          <button class="btn pri sm" id="bAuto">一键采集该组数据</button>
+          <button class="btn sm" id="bUnlock">解除锁定</button>
+        </div>
+        <div id="lockNote" class="lockinfo" style="display:none"></div>
+      </div>
+
+      <div class="grp">
+        <h4>力源溯源（谁提供向心力）</h4>
+        <div class="row"><label>情境</label>
+          <select id="selSce" aria-label="选择力源情境">
+            <option value="rope">水平面绳拉小球</option>
+            <option value="conical">圆锥摆</option>
+            <option value="car">汽车水平转弯</option>
+            <option value="sat">卫星绕地</option>
+            <option value="loopTop">竖直圆环 · 最高点</option>
+            <option value="loopBot">竖直圆环 · 最低点</option>
+          </select>
+        </div>
+        <canvas id="cvSce" width="680" height="420" style="width:100%;height:230px;border:1px solid var(--line);border-radius:9px;margin-top:8px;background:#fff"></canvas>
+        <div id="sceBox"></div>
+      </div>
+
+      <div class="grp">
+        <h4>图层与仪器</h4>
+        <div class="chkgrid">
+          <label class="chk"><input type="checkbox" id="ckRuler" checked>测力标尺</label>
+          <label class="chk"><input type="checkbox" id="ckVec" checked>速度/力/加速度矢量</label>
+          <label class="chk"><input type="checkbox" id="ckRadius" checked>半径虚线</label>
+          <label class="chk"><input type="checkbox" id="ckForce" checked>受力分析层（正视）</label>
+          <label class="chk"><input type="checkbox" id="ckCircle" checked>轨迹圆</label>
+          <label class="chk"><input type="checkbox" id="ckStrobe">频闪残影</label>
+          <label class="chk"><input type="checkbox" id="ckReadout" checked>转速/读数窗</label>
+          <label class="chk"><input type="checkbox" id="ckSound">音效</label>
+          <label class="chk"><input type="checkbox" id="ckTower" checked>塔轮与皮带</label>
+        </div>
+        <div class="row"><label>频闪频率</label><input type="range" id="rStrobe" min="1" max="30" step="0.5" value="10"><span class="val" id="vStrobe">10 Hz</span></div>
+        <div class="row" style="gap:6px"><button class="btn sm" id="bSync">同步锁定（残影静止）</button>
+          <span style="font-size:11.5px;color:#64748b">频闪频率 = 转动频率 n/60</span></div>
+      </div>
+
+      <div class="grp">
+        <h4>安全（点击展开）</h4>
+        <details>
+          <summary style="cursor:pointer;font-size:12.5px;color:var(--sub)">旋转装置操作安全提示</summary>
+          <div class="note warn" style="margin-top:8px">
+            ① 转速不得超过装置额定值（本演示标尺满量程 40 格 ≈ 2.0 N，超限即报警）；<br>
+            ② 小球必须用挡圈/螺钉锁紧，防止高速飞出；③ 操作者与旁观者佩戴护目镜；<br>
+            ④ 手摇时不得戴手套，衣袖束紧，防止被摇柄卷入；⑤ 底座必须用 C 型夹固定在桌面上；<br>
+            ⑥ 先低速起动、转速稳定后再读数；⑦ 强磁/金属件远离旋转区。
+          </div>
+        </details>
+      </div>
+
+    </div>
+  </aside>
+</div>
+
+<!-- ============ 图表区 ============ -->
+<section class="panel chartwrap">
+  <h3>图像分析 <small>点为实测（含误差模式），实线为理论曲线，虚线为过原点拟合直线</small></h3>
+  <div class="tabs" id="chartTabs" role="tablist"></div>
+  <div class="pbody" style="padding-top:10px">
+    <canvas id="cvChart" aria-label="实验数据图像"></canvas>
+    <div id="chartNote" class="note" style="margin-top:9px"></div>
+  </div>
+</section>
+
+<!-- ============ 数据记录 ============ -->
+<section class="panel chartwrap">
+  <h3>数据记录表
+    <small><span id="recCount">0</span> 条 · <button class="btn sm" id="bCsv">导出 CSV</button>
+      <button class="btn sm" id="bClear">清空记录</button>
+      <button class="btn sm" id="bRatio">比值法计算</button></small>
+  </h3>
+  <div class="pbody">
+    <div class="tblwrap"><table id="recTbl"><thead><tr>
+      <th class="l">组别</th><th>m (kg)</th><th>r (m)</th><th>n (r/min)</th><th>ω (rad/s)</th>
+      <th>v (m/s)</th><th>格数</th><th>F<sub>读</sub> (N)</th><th>F<sub>理</sub> (N)</th><th>相对误差</th><th>a<sub>n</sub> (m/s²)</th>
+    </tr></thead><tbody id="recBody"></tbody></table></div>
+    <div id="ratioBox" class="note" style="display:none"></div>
+  </div>
+</section>
+
+<!-- ============ 练习与考核 ============ -->
+<section class="panel chartwrap">
+  <h3>练习与考核
+    <small><button class="btn sm" id="bExam">教师考核模式</button>
+      <button class="btn sm" id="bHideAns">隐藏答案与提示</button>
+      <span id="examStat"></span></small>
+  </h3>
+  <div class="pbody" id="quizBox"></div>
+</section>
+
+</div>
+
+<!-- ============ 卡片抽屉 ============ -->
+<aside class="drawer" id="drawer" aria-label="知识卡片库" aria-hidden="true">
+  <div class="dhead">
+    <h3>知识卡片库</h3>
+    <button class="btn sm" id="dClose" aria-label="关闭卡片库">关闭</button>
+  </div>
+  <div class="dtabs" id="dTabs"></div>
+  <div class="dsearch">
+    <input type="text" id="dSearch" placeholder="搜索关键词，如：效果力 / ω² / 离心" aria-label="搜索卡片">
+    <button class="btn sm" id="dGo">搜索</button>
+  </div>
+  <div class="drawer-body" id="dBody" tabindex="-1"></div>
+  <div class="dfoot">
+    <button class="btn sm" id="bPrev">← 上一张</button>
+    <span id="dIdx" style="font-size:12px;color:var(--mut)"></span>
+    <button class="btn sm" id="bNext">下一张 →</button>
+  </div>
+</aside>
+
+<!-- 卡片弹窗 -->
+<div class="modal" id="cardModal" role="dialog" aria-modal="true" aria-labelledby="cmTitle">
+  <div class="mbox" id="cmBox" tabindex="-1" aria-live="polite"></div>
+</div>
+
+<!-- 实验报告 -->
+<div class="modal" id="repModal" role="dialog" aria-modal="true" aria-labelledby="repTitle">
+  <div class="mbox">
+    <div class="noprint" style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px">
+      <h3 id="repTitle" style="font-size:16px">实验报告 · 向心力探究</h3>
+      <div style="display:flex;gap:7px">
+        <button class="btn sm" id="bPrint">打印 / 导出 PDF</button>
+        <button class="btn sm" id="bRepClose">关闭</button>
+      </div>
+    </div>
+    <div id="reportBox"></div>
+  </div>
+</div>
+
+<div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+<script>
+"use strict";
+/* =====================================================================
+   模型31 · 向心力探究（向心力演示器 + 测力标尺）
+   结构：0 工具 → 1 配置（物理参数/实验/情境/卡片） → 2 状态
+        3 物理内核 → 4 主舞台绘制 → 5 图表 → 6 数据表/报告
+        → 7 测验与考核 → 8 卡片库 → 9 交互绑定 → 10 主循环
+   全部物理量用 SI 单位：m(kg) r(m) ω(rad/s) n(r/min) F(N) a(m/s²)
+   ===================================================================== */
+/* ===================== 0. 通用工具 ===================== */
+const $ = function (id) { return document.getElementById(id); };
+const TAU = Math.PI * 2;
+const REDUCE = !!(window.matchMedia && window.matchMedia("(prefers-reduced-motion: reduce)").matches);
+function fmt(v, d) {
+  if (!isFinite(v)) return "—";
+  return v.toFixed(d === undefined ? 2 : d);
+}
+function clamp(v, a, b) { return v < a ? a : (v > b ? b : v); }
+/** 可复现伪随机数发生器（mulberry32），保证同一随机种子下误差数据可复现 */
+function mulberry32(a) {
+  return function () {
+    a |= 0; a = a + 0x6D2B79F5 | 0;
+    let t = Math.imul(a ^ a >>> 15, 1 | a);
+    t = t + Math.imul(t ^ t >>> 7, 61 | t) ^ t;
+    return ((t ^ t >>> 14) >>> 0) / 4294967296;
+  };
+}
+let toastTimer = 0;
+function toast(msg) {
+  const el = $("toast"); if (!el) return;
+  el.textContent = msg; el.classList.add("show");
+  clearTimeout(toastTimer); toastTimer = setTimeout(function () { el.classList.remove("show"); }, 2600);
+}
+/** 简易音效（点击/报警），可开关 */
+let AC = null;
+function beep(freq, dur, type) {
+  if (!S.show.sound) return;
+  try {
+    if (!AC) AC = new (window.AudioContext || window.webkitAudioContext)();
+    const o = AC.createOscillator(), g = AC.createGain();
+    o.type = type || "sine"; o.frequency.value = freq;
+    g.gain.setValueAtTime(0.0001, AC.currentTime);
+    g.gain.exponentialRampToValueAtTime(0.14, AC.currentTime + 0.01);
+    g.gain.exponentialRampToValueAtTime(0.0001, AC.currentTime + (dur || 0.12));
+    o.connect(g); g.connect(AC.destination); o.start(); o.stop(AC.currentTime + (dur || 0.12) + 0.02);
+  } catch (e) { /* 忽略音频不可用 */ }
+}
+
+/* ===================== 1. 物理与界面配置（集中可调） ===================== */
+const CFG = {
+  board: { w: 1.00, h: 1.00 }, // 主舞台俯视视野（m），以转轴为原点
+  gridMax: 40,                 // 测力标尺满量程格数（超过即超出弹性限度）
+  qGrid: 0.05,                 // 每一格代表的力（N/格）→ 满量程 2.0 N
+  kVis: 26,                    // 弹簧"视觉劲度"（N/m），仅用于画弹簧伸长，不参与计算
+  muFric: 0.08,                // 含误差模式下摩擦造成的系统性偏小比例（8%），使读数偏小
+  dtFixed: 1 / 240,            // 固定物理积分步长（s）
+  strobeMax: 14,               // 频闪残影最多保留个数
+  gearLabels: { 1: "1:1", 1.5: "3:2", 2: "2:1", 3: "3:1", 0.667: "2:3", 0.5: "1:2", 0.333: "1:3" }
+};
+const COL = {
+  v: "#2563eb", F: "#dc2626", a: "#16a34a", spring: "#ea580c", B: "#7c3aed",
+  path: "#94a3b8", ink: "#0f172a", sub: "#475569", mut: "#94a3b8", gear: "#64748b", base: "#cbd5e1"
+};
+
+/* ===================== 2. 知识点小卡片（24 张，9 大类） ===================== */
+/* --- 内联迷你示意图工具（全部为纯 SVG，无外部资源） --- */
+function sv(w, h, inner) {
+  return '<svg viewBox="0 0 ' + w + ' ' + h + '" xmlns="http://www.w3.org/2000/svg" ' +
+    'style="max-width:100%;height:auto">' + inner + "</svg>";
+}
+function aR(x1, y1, x2, y2, c, t) { // 带箭头的线段
+  const a = Math.atan2(y2 - y1, x2 - x1), L = 7.5, t0 = t || 2;
+  const p1x = x2 - L * Math.cos(a - 0.42), p1y = y2 - L * Math.sin(a - 0.42);
+  const p2x = x2 - L * Math.cos(a + 0.42), p2y = y2 - L * Math.sin(a + 0.42);
+  return '<line x1="' + x1 + '" y1="' + y1 + '" x2="' + x2 + '" y2="' + y2 + '" stroke="' + c +
+    '" stroke-width="' + t0 + '" stroke-linecap="round"/>' +
+    '<polygon points="' + x2 + "," + y2 + " " + p1x.toFixed(1) + "," + p1y.toFixed(1) + " " +
+    p2x.toFixed(1) + "," + p2y.toFixed(1) + '" fill="' + c + '"/>';
+}
+function cir(x, y, r, c, w) {
+  return '<circle cx="' + x + '" cy="' + y + '" r="' + r + '" fill="none" stroke="' + (c || COL.path) +
+    '" stroke-width="' + (w || 1.4) + '"' + (w ? "" : ' stroke-dasharray="4 3"') + "/>";
+}
+function dot(x, y, c, r) {
+  return '<circle cx="' + x + '" cy="' + y + '" r="' + (r || 5) + '" fill="' + (c || COL.ink) + '"/>';
+}
+function tx(x, y, s, c, sz, an, bold) {
+  return '<text x="' + x + '" y="' + y + '" fill="' + (c || COL.ink) + '" font-size="' + (sz || 11) +
+    '" font-family="system-ui,sans-serif" text-anchor="' + (an || "middle") + '"' +
+    (bold ? ' font-weight="700"' : "") + ">" + s + "</text>";
+}
+/* 通用：圆周 + 球 + 指向圆心的红色 F + 切向蓝色 v + 绿色 aₙ（与 F 同向）
+   圆心 O(90,66)，半径 46，球在 (136,66)（圆的最右端），逆时针运动
+   ⟹ v 沿切线竖直向上；F 与 aₙ 都水平向左指向圆心 */
+function figCircle(extra) {
+  return sv(300, 132,
+    cir(90, 66, 46, "#94a3b8", 0) + dot(90, 66, "#475569", 3) +
+    dot(136, 66, "#2563eb", 6) +
+    aR(136, 66, 94, 66, COL.F, 2.4) + tx(115, 55, "F", COL.F, 12, "middle", 1) +
+    aR(136, 66, 136, 30, COL.v, 2.2) + tx(150, 28, "v", COL.v, 12, "middle", 1) +
+    // 直角标记：v ⊥ F
+    '<path d="M126 66 L126 56 L136 56" fill="none" stroke="' + COL.a + '" stroke-width="1.4"/>' +
+    // aₙ：与 F 同向（指向圆心），下移 12 px 与 F 错开
+    aR(136, 78, 96, 78, COL.a, 2) + tx(116, 92, "aₙ", COL.a, 12, "middle", 1) +
+    (extra || ""));
+}
+function figBars(vals, labels, color) {
+  let s = "";
+  const x0 = 42, y0 = 104, w = 34, maxv = Math.max.apply(null, vals);
+  for (let i = 0; i < vals.length; i++) {
+    const h = 76 * vals[i] / maxv, x = x0 + i * (w + 26);
+    s += '<rect x="' + x + '" y="' + (y0 - h) + '" width="' + w + '" height="' + h + '" rx="3" fill="' + color + '" opacity="' + (0.55 + 0.45 * vals[i] / maxv) + '"/>';
+    s += tx(x + w / 2, y0 - h - 5, vals[i].toFixed(1), COL.ink, 11, "middle", 1);
+    s += tx(x + w / 2, y0 + 15, labels[i], COL.sub, 10.5);
+  }
+  s += '<line x1="30" y1="' + y0 + '" x2="278" y2="' + y0 + '" stroke="#475569" stroke-width="1.4"/>';
+  return sv(300, 128, s);
+}
+
+/** 测力标尺示意图：10 个红白等分格，lit 个格被"已伸长"的深红色填充 */
+function figRuler(y, lit) {
+  const x0 = 24, w = 150, blk = w / 10;
+  let s = '<rect x="' + x0 + '" y="' + y + '" width="' + w + '" height="20" fill="#fff" stroke="#cbd5e1"/>';
+  for (let i = 0; i < 10; i++) {
+    s += '<rect x="' + (x0 + i * blk) + '" y="' + y + '" width="' + blk + '" height="20" fill="' +
+      (i % 2 ? "#ffffff" : "#fca5a5") + '"/>';
+  }
+  s += '<rect x="' + x0 + '" y="' + y + '" width="' + (blk * lit) + '" height="20" fill="#dc2626" opacity=".82"/>';
+  return s;
+}
+
+const KNOWLEDGE_CARDS = [
+  /* ---------- 概念（3） ---------- */
+  {
+    id: "c_effect", cat: "概念", title: "向心力是「效果力」",
+    concl: "向心力是按作用效果命名的力，不是一个额外多出来的力。",
+    formula: "F<sub>n</sub> = m v²/r = m ω² r　（方向始终指向圆心，故名“向心”）",
+    svg: figCircle(tx(60, 116, "同一个力，两种叫法", COL.sub, 10.5)),
+    demo: "打开图层「受力分析层（正视）」：红色 F 箭头与橙色弹簧拉力 T 完全重合——它俩是同一个力，只是叫法不同。再把「力源溯源」切到 5 个情境，看提供向心力的分别是谁。",
+    mis: "错因：把“物体做圆周运动”当成“产生向心力”的原因。正确：先有指向圆心的合力，才使物体做圆周运动。",
+    back: "受力分析三步：① 只看性质力（重力、弹力、摩擦力…），画全；② 求合力；③ 若合力指向圆心，则这个合力就“充当”向心力，此时才把它叫做向心力。<b>向心力不能重复画进受力图</b>，否则等于把同一个力算了两次。"
+  },
+  {
+    id: "c_nature", cat: "概念", title: "性质力 vs 效果力",
+    concl: "性质力按产生机制命名，效果力按作用效果命名；二者不是并列关系。",
+    formula: "性质力：重力 G、弹力（拉力 T / 支持力 N / 弹簧弹力）、摩擦力 f、万有引力、电场力<br>" +
+      "效果力：向心力、动力、阻力、压力、支持力、浮力……",
+    svg: sv(300, 128,
+      tx(72, 18, "按机制命名", COL.sub, 11, "middle", 1) +
+      tx(72, 36, "重力·弹力·摩擦", COL.ink, 11) +
+      tx(72, 52, "万有引力·电场力", COL.ink, 11) +
+      tx(228, 18, "按效果命名", COL.sub, 11, "middle", 1) +
+      tx(228, 36, "向心力·动力", COL.ink, 11) +
+      tx(228, 52, "阻力·压力·浮力", COL.ink, 11) +
+      aR(110, 84, 190, 84, COL.F, 2) + tx(150, 100, "同一个力可有两个名字", COL.F, 10.5) +
+      '<rect x="14" y="66" width="118" height="52" rx="8" fill="none" stroke="#cbd5e1" stroke-dasharray="4 3"/>' +
+      '<rect x="168" y="66" width="118" height="52" rx="8" fill="none" stroke="#cbd5e1" stroke-dasharray="4 3"/>'),
+    demo: "右侧「力源溯源」下拉：同一个向心力，在 5 个情境中分别由绳拉力、拉力与重力的合力、静摩擦力、万有引力、弹力与重力的合力提供。",
+    mis: "易错：在受力图上既画“绳的拉力”又画“向心力”。正确：只画性质力，向心力是它们的合力（或某个分力）。",
+    back: "辨析方法：问一句“这个力是谁施加的、靠什么机制产生的”？答得出来就是性质力；答不出来、只在描述运动效果的就是效果力。"
+  },
+  {
+    id: "c_an", cat: "概念", title: "向心加速度指向圆心",
+    concl: "aₙ = v²/r = ω²r，方向始终指向圆心，与速度方向垂直。",
+    formula: "a<sub>n</sub> = v²/r = ω² r = (2πn)² r　（单位 m/s²）",
+    svg: figCircle(""),
+    demo: "主画面中蓝色 v（切线）与绿色 aₙ（指圆心）永远成 90°；点画面上“小球”处的 ⓘ 可看该卡。把转速 n 拉大，观察 aₙ 随 ω² 迅速变长。",
+    mis: "易错：“向心加速度沿切线/沿速度方向”。正确：它只改变速度方向，不改变速率，故必与 v 垂直；非匀速圆周的总加速度并不指向圆心。",
+    back: "定性理解：速度矢量末端在“速度圆”上匀速转动，Δv 在极短时间内指向圆心，故 a = Δv/Δt 指向圆心。定量：a = v²/r，r 越小、v 越大，方向改变越剧烈。"
+  },
+  /* ---------- 公式（3） ---------- */
+  {
+    id: "f_F", cat: "公式", title: "向心力的四种等价形式",
+    concl: "同一个向心力，按已知条件选最方便的表达形式。",
+    formula: "F<sub>n</sub> = m v²/r ＝ m ω² r ＝ m (2π/T)² r ＝ m (2πn)² r",
+    svg: sv(300, 122,
+      tx(150, 16, "已知线速度 v", COL.sub, 11, "middle", 1) + tx(150, 34, "F = m v² / r", COL.ink, 13, "middle", 1) +
+      tx(150, 56, "已知角速度 ω", COL.sub, 11, "middle", 1) + tx(150, 74, "F = m ω² r", COL.ink, 13, "middle", 1) +
+      tx(150, 96, "已知周期 T 或转速 n", COL.sub, 11, "middle", 1) + tx(150, 114, "F = m(2π/T)²r = m(2πn)²r", COL.ink, 12, "middle", 1)),
+    demo: "数据面板同时给出 n、ω、v、r、m、F、aₙ，可任选一种形式手算核对；主画面 ⓘ“转速读数”处点开可看换算关系。",
+    mis: "易错：把 n（r/min）直接代入 ω = 2πn。正确：n 必须先化为 r/s（或 n/60）。",
+    back: "换算链：v = ωr，ω = 2π/T = 2πn（n 单位 r/s）。本 Demo 滑块给的是 N（r/min），故 ω = 2πN/60。"
+  },
+  {
+    id: "f_a", cat: "公式", title: "aₙ 与 ω、v、n、T 的关系",
+    concl: "aₙ = v²/r = ω²r；ω = 2π/T = 2πn；v = ωr。",
+    formula: "a<sub>n</sub> = v²/r = ω² r　|　v = ω r　|　ω = 2π/T = 2π n　|　T = 1/n",
+    svg: sv(300, 118,
+      tx(150, 18, "ω = 2π n = 2π / T", COL.ink, 13, "middle", 1) +
+      aR(150, 30, 150, 46, COL.mut, 1.6) +
+      tx(150, 62, "v = ω r", COL.ink, 13, "middle", 1) +
+      aR(150, 74, 150, 90, COL.mut, 1.6) +
+      tx(150, 106, "aₙ = v²/r = ω² r", COL.F, 13.5, "middle", 1)),
+    demo: "面板读出区实时显示 ω = 2πN/60 与 v = ωr 的数值；把 n 从 60 拉到 120，ω 加倍、v 加倍、aₙ 变 4 倍。",
+    mis: "易错：认为“ω 加倍 → aₙ 加倍”。正确：aₙ ∝ ω²，加倍变 4 倍。",
+    back: "由 a = Δv/Δt 与几何相似可得 aₙ = v²/r；代入 v = ωr 得 aₙ = ω²r。故 r 一定时 aₙ ∝ ω²。"
+  },
+  {
+    id: "f_derive", cat: "公式", title: "F ∝ ω² 是怎么来的",
+    concl: "牛顿第二定律 + aₙ = ω²r ⟹ Fₙ = mω²r，故 m、r 一定时 F ∝ ω²。",
+    formula: "F<sub>n</sub> = m a<sub>n</sub> = m ω² r　⟹　m、r 不变时　F₁/F₂ = (ω₁/ω₂)² = (n₁/n₂)²",
+    svg: figBars([1, 4, 9], ["ω", "2ω", "3ω"], COL.F),
+    demo: "实验①：n 由 60 → 120 r/min，格数由 7.9 → 31.6，比值 1:4；图表页「F–ω²」是一条过原点的直线。",
+    mis: "易错：“转速加倍，向心力加倍”。正确：变 4 倍（F ∝ ω²）。",
+    back: "关键在 aₙ = ω²r 里 ω 是平方出现的：ω 加倍 → aₙ 变 4 倍 → 所需向心力变 4 倍。这也是为什么高速转弯（v 稍大）就要大得多的侧向力。"
+  },
+  /* ---------- 规律（4） ---------- */
+  {
+    id: "r_w2", cat: "规律", title: "F ∝ ω²（m、r 固定）",
+    concl: "质量与半径相同时，向心力与角速度的平方成正比；转速加倍，力变 4 倍。",
+    formula: "F₁ : F₂ = ω₁² : ω₂² = n₁² : n₂²　（60 → 120 r/min 时 1 : 4，不是 1 : 2）",
+    svg: figBars([7.9, 31.6], ["60 r/min", "120 r/min"], COL.F),
+    demo: "点实验「① 变 ω」→「一键采集」，看 F–ω² 图过原点直线与 F–ω 图的弯曲曲线对比；读数窗格数比直接显示 ≈ 1:4。",
+    mis: "易错：“转速加倍 → 向心力加倍”。正确：F ∝ ω²，变 4 倍。",
+    back: "控制变量：m、r 不变。测 5 个转速，作 F–ω² 图得直线（斜率 = mr）；若误作 F–ω 图则得抛物线，可反证不是正比。"
+  },
+  {
+    id: "r_r", cat: "规律", title: "F ∝ r（m、ω 固定）",
+    concl: "质量与角速度相同时，向心力与半径成正比。",
+    formula: "F₁ : F₂ = r₁ : r₂　（0.10 → 0.20 m 时格数比 ≈ 1 : 2）",
+    svg: figBars([7.9, 15.8], ["r=0.10 m", "r=0.20 m"], COL.a),
+    demo: "点实验「② 变 r」，滑块 m 与 n 被锁定灰显；F–r 图为过原点直线，斜率 = mω²。",
+    mis: "易错：“F 与 r 一定成正比”。正确：只有 <b>ω 固定</b>时才成立；若固定线速度 v，则 F ∝ 1/r（见反例组）。",
+    back: "塔轮保证两球 ω 相同是关键：同一根横杆上的两球，不管放在哪个半径，转一圈的时间都一样（角速度相同）。"
+  },
+  {
+    id: "r_m", cat: "规律", title: "F ∝ m（r、ω 固定）",
+    concl: "半径与角速度相同时，向心力与质量成正比；双球 m 与 2m 的格数比 ≈ 1:2。",
+    formula: "F₁ : F₂ = m₁ : m₂　（m → 2m 时格数比 ≈ 1 : 2）",
+    svg: figBars([7.9, 15.8], ["m", "2m"], COL.B),
+    demo: "点实验「③ 变 m」，A、B 两球并排（同轴 ω 相同、r 相同）比较；双球标尺并列的格数比实时给出。",
+    mis: "易错：以为“重的球转得慢所以力不一定大”。正确：ω 由装置强制相同，质量只影响所需向心力大小。",
+    back: "这是牛顿第二定律 F = ma 的直接体现：aₙ 相同（ω、r 相同），m 加倍则所需合力加倍。"
+  },
+  {
+    id: "r_vinv", cat: "规律", title: "v 固定时 F ∝ 1/r（反例组）",
+    concl: "控制线速度 v 而不是 ω 时，F = mv²/r 与半径成反比——打破“F 与 r 一定成正比”。",
+    formula: "F = m v² / r　⟹　F₁ : F₂ = r₂ : r₁　（v 固定）",
+    svg: figBars([13.2, 7.9, 5.6, 4.4], ["0.06", "0.10", "0.14", "0.18 m"], COL.B),
+    demo: "点实验「④ 反例：定 v 变 r」→ 一键采集，F–1/r 图为过原点直线，而 F–r 图是双曲线（明显不过原点直线）。",
+    mis: "易错：把“F ∝ r”当成无条件结论。正确：比例关系必须说明<b>控制量</b>是什么。",
+    back: "同一条公式 F = mv²/r = mω²r：ω 固定看后者得 F ∝ r；v 固定看前者得 F ∝ 1/r。矛盾只是控制量不同造成的。"
+  },
+  /* ---------- 方法（4） ---------- */
+  {
+    id: "m_control", cat: "方法", title: "控制变量法（四组变量表）",
+    concl: "一次只改一个量，其余全部锁死，才能判定因果关系。",
+    formula: '<table style="width:100%;font-size:12px;border-collapse:collapse">' +
+      "<tr><th style='text-align:left'>组别</th><th style='text-align:left'>自变量</th><th style='text-align:left'>因变量</th><th style='text-align:left'>控制量</th></tr>" +
+      "<tr><td>①</td><td>ω（由 n 调）</td><td>格数 N ∝ F</td><td>m、r</td></tr>" +
+      "<tr><td>②</td><td>r</td><td>格数 N ∝ F</td><td>m、ω</td></tr>" +
+      "<tr><td>③</td><td>m</td><td>格数 N ∝ F</td><td>r、ω</td></tr>" +
+      "<tr><td>④</td><td>r（v 固定）</td><td>格数 N ∝ F</td><td>m、v</td></tr></table>",
+    svg: sv(300, 116,
+      tx(150, 16, "一次只动一个量", COL.ink, 12.5, "middle", 1) +
+      '<rect x="26" y="34" width="70" height="34" rx="7" fill="#dbeafe" stroke="#2563eb"/>' + tx(61, 56, "自变量", COL.v, 11, "middle", 1) +
+      '<rect x="108" y="34" width="70" height="34" rx="7" fill="#f1f5f9" stroke="#cbd5e1"/>' + tx(143, 56, "控制量", COL.mut, 11, "middle", 1) +
+      '<rect x="190" y="34" width="70" height="34" rx="7" fill="#f1f5f9" stroke="#cbd5e1"/>' + tx(225, 56, "控制量", COL.mut, 11, "middle", 1) +
+      aR(96, 51, 108, 51, COL.mut, 1.4) + aR(178, 51, 190, 51, COL.mut, 1.4) +
+      tx(150, 92, "↓", COL.mut, 14) + tx(150, 110, "因变量：标尺格数", COL.F, 12, "middle", 1)),
+    demo: "点四组预设按钮之一，被控制的滑块会自动灰显并出现“控制变量已锁定”提示；「解除锁定」可恢复自由调节。",
+    mis: "易错：同时改 m 和 r 就下结论。正确：这样测出的比值无法归因。",
+    back: "本演示器的巧妙之处：两球同轴 → ω 天然相同（控制 ②③）；塔轮换档 → 得到整数比 ω（控制 ①）；保持 v 不变需同步改 n 与 r（控制 ④）。"
+  },
+  {
+    id: "m_grid", cat: "方法", title: "标尺比值法（不必测 k）",
+    concl: "弹簧在弹性限度内伸长量 ∝ 弹力，故标尺格数 ∝ 向心力；比格数就是比力。",
+    formula: "F = k·x，x ∝ 格数 N　⟹　F₁/F₂ = N₁/N₂　（与劲度系数 k 无关，不必测）",
+    svg: sv(300, 122,
+      figRuler(26, 3) + tx(99, 62, "标尺（红白等分格）", COL.sub, 10.5) +
+      figRuler(76, 6) +
+      tx(150, 112, "伸长格数 3 : 6 = 1 : 2　⟹　力之比 1 : 2", COL.F, 12, "middle", 1)),
+    demo: "读数模式可切「格数 / 力值（N）」：格数 × 0.05 N/格 = 力值。满量程 40 格 = 2.0 N，超限标尺变红并提示“超出弹性限度”。",
+    mis: "易错：以为必须测出弹簧劲度系数才能比较。正确：只要没超弹性限度，比值法不需要 k。",
+    back: "胡克定律 F = kx 是线性的，因此格数（正比于 x）之比等于力之比，这是一切“用伸长量读力”的仪器的共同依据。"
+  },
+  {
+    id: "m_graph", cat: "方法", title: "图像法（F–ω² 是过原点直线）",
+    concl: "把“曲线”化成“直线”来判断比例关系，斜率有明确物理意义。",
+    formula: "F = (m r)·ω²　⟹　F–ω² 图斜率 k = m r；F–r 图斜率 = mω²；F–m 图斜率 = ω²r",
+    svg: sv(300, 126,
+      '<line x1="40" y1="106" x2="280" y2="106" stroke="#475569" stroke-width="1.4"/>' +
+      '<line x1="40" y1="106" x2="40" y2="16" stroke="#475569" stroke-width="1.4"/>' +
+      '<line x1="44" y1="100" x2="272" y2="26" stroke="#dc2626" stroke-width="2.4"/>' +
+      '<circle cx="90" cy="85" r="3.4" fill="#2563eb"/><circle cx="140" cy="66" r="3.4" fill="#2563eb"/>' +
+      '<circle cx="190" cy="48" r="3.4" fill="#2563eb"/><circle cx="240" cy="30" r="3.4" fill="#2563eb"/>' +
+      tx(160, 120, "横轴 ω²　纵轴 F", COL.sub, 10.5) + tx(28, 20, "F", COL.ink, 11, "end", 1)),
+    demo: "图表页切到「F–ω²」看直线与拟合斜率（应等于 m·r）；切到「F–ω 与 F–n（对照）」可看到它<b>不是</b>直线。",
+    mis: "易错：看到 F 随 ω 增大就写“成正比”。正确：必须作成 F–ω² 图才是过原点直线。",
+    back: "化曲为直是实验数据处理的基本方法：若 y 与 x 不成正比，就试着改横轴为 x²、1/x、√x 等，直到图线变直。"
+  },
+  {
+    id: "m_error", cat: "方法", title: "误差来源与改进",
+    concl: "摩擦、皮带打滑、弹簧超限、未稳定就读数，都会让格数偏离理论值。",
+    formula: "主要系统误差：F<sub>读</sub> = mω²r − f<sub>摩</sub>（偏小）　|　随机误差：读数 ±（2~5）%",
+    svg: sv(300, 118,
+      '<line x1="40" y1="100" x2="280" y2="100" stroke="#475569" stroke-width="1.4"/>' +
+      '<line x1="40" y1="100" x2="40" y2="16" stroke="#475569" stroke-width="1.4"/>' +
+      '<line x1="44" y1="96" x2="272" y2="24" stroke="#94a3b8" stroke-width="2" stroke-dasharray="5 4"/>' +
+      '<circle cx="96" cy="80" r="3.4" fill="#ea580c"/><circle cx="146" cy="70" r="3.4" fill="#ea580c"/>' +
+      '<circle cx="196" cy="52" r="3.4" fill="#ea580c"/><circle cx="246" cy="34" r="3.4" fill="#ea580c"/>' +
+      tx(160, 114, "实测点并不严格落在直线上", COL.sub, 10.5)),
+    demo: "把「数据模式」切到「含摩擦与读数误差」，重采一次：点会散开；用「多次测量取平均（5 次）」再测，散开明显变小。",
+    mis: "易错：把单次偏差当成规律不成立。正确：多次测量取平均、检查系统误差来源后再下结论。",
+    back: "改进办法：① 给横杆与球加润滑剂减小摩擦；② 皮带张紧防打滑；③ 选择合适量程，绝不超弹性限度；④ 等转速稳定（频闪像静止）再读数；⑤ 每个点测 3~5 次取平均。"
+  },
+  /* ---------- 力源（5） ---------- */
+  {
+    id: "s_rope", cat: "力源", title: "水平面绳拉小球",
+    concl: "重力与支持力平衡，绳的拉力全部充当向心力。",
+    formula: "竖直：N = mg　水平：T = mω²r　⟹　T 提供向心力（T 就是 F<sub>n</sub>）",
+    svg: sv(300, 122,
+      cir(150, 62, 44, "#cbd5e1", 0) + dot(150, 62, "#475569", 3) + dot(106, 62, "#2563eb", 6) +
+      aR(106, 62, 146, 62, COL.F, 2.4) + tx(126, 52, "T=Fₙ", COL.F, 11, "middle", 1) +
+      aR(106, 62, 106, 26, COL.v, 2) + tx(120, 24, "v", COL.v, 11, "start", 1) +
+      tx(150, 116, "光滑水平面：G 与 N 平衡，不提供向心力", COL.sub, 10.5)),
+    demo: "「力源溯源」选“水平面绳拉小球”，正视受力图上红色合力与绳拉力重合，标注“T 提供向心力”。",
+    mis: "易错：把重力也算进水平面内的向心力。正确：重力竖直、向心力水平，两者垂直，重力不提供向心力。",
+    back: "这是本演示器的原型：横杆上小球的“绳/弹簧”沿水平方向拉住小球，弹簧弹力就是向心力，也就等于标尺读出的力。"
+  },
+  {
+    id: "s_conical", cat: "力源", title: "圆锥摆",
+    concl: "绳的拉力与重力的合力水平指向圆心，提供向心力；Fₙ = mg·tanθ。",
+    formula: "T cosθ = mg，T sinθ = F<sub>n</sub> = mω²r　⟹　F<sub>n</sub> = mg tanθ，r = L sinθ",
+    svg: sv(300, 132,
+      dot(150, 22, "#475569", 3) + dot(96, 96, "#2563eb", 6) +
+      '<line x1="150" y1="22" x2="96" y2="96" stroke="#475569" stroke-width="1.6"/>' +
+      '<line x1="150" y1="22" x2="150" y2="118" stroke="#cbd5e1" stroke-width="1.2" stroke-dasharray="4 3"/>' +
+      '<line x1="60" y1="118" x2="240" y2="118" stroke="#94a3b8" stroke-width="1.2"/>' +
+      aR(96, 96, 96, 128, "#0f172a", 2) + tx(112, 128, "mg", "#0f172a", 11, "start", 1) +
+      aR(96, 96, 140, 62, COL.spring, 2) + tx(150, 54, "T", COL.spring, 11, "start", 1) +
+      aR(96, 96, 150, 96, COL.F, 2.4) + tx(126, 110, "Fₙ", COL.F, 11.5, "middle", 1)),
+    demo: "「力源溯源」选“圆锥摆”，可看到 T 的竖直分力平衡 mg、水平分力充当向心力；θ 越大所需 ω 越大。",
+    mis: "易错：认为“拉力就是向心力”。正确：只有 T 的水平分力（或说 T 与 mg 的合力）才是向心力。",
+    back: "由 tanθ = Fₙ/mg = ω²r/g 且 r = L sinθ，可得 cosθ = g/(ω²L)：转速越大，摆角 θ 越接近 90°，但永远到不了。"
+  },
+  {
+    id: "s_car", cat: "力源", title: "汽车水平转弯",
+    concl: "竖直方向平衡，指向弯道中心的静摩擦力提供向心力；超速时摩擦力不够就侧滑。",
+    formula: "f<sub>静</sub> = mω²r = m v²/r ≤ μ mg　⟹　v<sub>max</sub> = √(μ g r)",
+    svg: sv(300, 124,
+      '<line x1="40" y1="100" x2="260" y2="100" stroke="#475569" stroke-width="2"/>' +
+      '<rect x="118" y="72" width="64" height="26" rx="5" fill="#dbeafe" stroke="#2563eb"/>' +
+      tx(150, 90, "汽车", COL.v, 11, "middle", 1) +
+      aR(150, 72, 150, 44, "#0f172a", 1.8) + tx(162, 50, "mg", "#0f172a", 11, "start", 1) +
+      aR(118, 84, 66, 84, COL.F, 2.4) + tx(92, 74, "f静=Fₙ", COL.F, 11, "middle", 1) +
+      tx(150, 118, "弯心在左侧 → 摩擦力指向弯心", COL.sub, 10.5)),
+    demo: "「力源溯源」选“汽车水平转弯”，并注意路面倾斜（外高内低）时可由重力分力分担一部分向心力。",
+    mis: "易错：“汽车转弯靠惯性/离心力甩出去”。正确：惯性系中没有离心力，是摩擦力不足以提供所需 m v²/r，车便沿切线方向甩出（离心运动）。",
+    back: "限速与弯道半径：v_max = √(μgr)。雨天 μ 变小，安全限速随之下降——这就是“雨天弯道上要减速”的定量依据。"
+  },
+  {
+    id: "s_sat", cat: "力源", title: "卫星绕地",
+    concl: "万有引力全部充当向心力；轨道越高，速率越小、周期越长。",
+    formula: "G Mm/r² = m v²/r = m ω² r　⟹　v = √(GM/r)，T = 2π√(r³/GM)",
+    svg: sv(300, 130,
+      dot(150, 65, "#475569", 16) + tx(150, 65, "地", "#fff", 11, "middle", 1) +
+      cir(150, 65, 50, "#cbd5e1", 0) + dot(100, 65, "#2563eb", 6) +
+      aR(100, 65, 140, 65, COL.F, 2.4) + tx(120, 54, "F引=Fₙ", COL.F, 11, "middle", 1) +
+      aR(100, 65, 100, 30, COL.v, 2) + tx(114, 28, "v", COL.v, 11, "start", 1) +
+      tx(150, 126, "万有引力提供向心力（完全失重）", COL.sub, 10.5)),
+    demo: "「力源溯源」选“卫星绕地”；此时弹簧/绳都不存在，向心力由引力提供——说明“效果力”可以由完全不同的性质力充当。",
+    mis: "易错：认为卫星还受一个“向心力”。正确：向心力就是引力本身，不能重复添加。",
+    back: "由 GMm/r² = mv²/r 得 v = √(GM/r)：r 越大 v 越小。近地卫星 v ≈ 7.9 km/s，周期约 84 min。"
+  },
+  {
+    id: "s_loop", cat: "力源", title: "竖直圆环最高点 / 最低点",
+    concl: "最高点 mg 与 N 同向向下共同提供向心力；最低点 N 与 mg 反向，N 要“托住”球还得额外提供向心力。",
+    formula: "最高点：mg + N = m v<sub>顶</sub>²/r　⟹　N = m v<sub>顶</sub>²/r − mg（v<sub>顶</sub> ≥ √(gr) 才不脱离）<br>" +
+      "最低点：N − mg = m v<sub>底</sub>²/r　⟹　N = m v<sub>底</sub>²/r + mg（最大，最易超重）",
+    svg: sv(300, 146,
+      cir(150, 66, 48, "#cbd5e1", 0) + dot(150, 18, "#2563eb", 6) + dot(150, 114, "#2563eb", 6) +
+      // 最高点：mg 竖直向下，mg 与 N 同向，合力竖直向下指向圆心
+      aR(136, 24, 136, 58, "#0f172a", 1.8) + tx(126, 44, "mg", "#0f172a", 10.5, "end", 1) +
+      aR(164, 22, 164, 58, COL.F, 2.4) + tx(174, 42, "mg+N=Fₙ", COL.F, 10.5, "start", 1) +
+      // 最低点：mg 竖直向下，N 竖直向上，合力（N−mg）竖直向上指向圆心
+      aR(136, 118, 136, 134, "#0f172a", 1.8) + tx(126, 130, "mg", "#0f172a", 10.5, "end", 1) +
+      aR(164, 112, 164, 70, COL.F, 2.4) + tx(174, 92, "N−mg=Fₙ", COL.F, 10.5, "start", 1) +
+      tx(150, 140, "顶：mg、N 同向助向心（N 可小到 0）　底：N 先顶住 mg 再留出 Fₙ", COL.sub, 9.5)),
+    demo: "「力源溯源」分别选“竖直圆环·最高点”与“·最低点”，比较两处 N 的大小与速度大小。",
+    mis: "易错：两处都用“N = mv²/r”。正确：最高点重力帮忙（N 较小甚至可为 0），最低点重力拖后腿（N 最大）。",
+    back: "机械能守恒使 v底 > v顶，故最低点 N 最大——过山车设计时要按最低点校核轨道强度，按最高点校核不脱轨条件 v顶 ≥ √(gr)。"
+  },
+  /* ---------- 辨析（2） ---------- */
+  {
+    id: "d_work", cat: "辨析", title: "向心力不做功",
+    concl: "向心力与瞬时速度垂直，瞬时功率恒为 0，只改变方向不改变速率。",
+    formula: "P = F·v·cos90° = 0　⟹　W = 0，ΔE<sub>k</sub> = 0（匀速圆周）",
+    svg: sv(300, 122,
+      cir(150, 62, 46, "#cbd5e1", 0) + dot(196, 62, "#2563eb", 6) +
+      aR(196, 62, 154, 62, COL.F, 2.4) + tx(176, 50, "Fₙ", COL.F, 11, "middle", 1) +
+      aR(196, 62, 196, 26, COL.v, 2.4) + tx(210, 30, "v", COL.v, 11, "start", 1) +
+      '<path d="M182 62 L182 50 L196 50" fill="none" stroke="#16a34a" stroke-width="1.6"/>' +
+      tx(150, 120, "夹角恒为 90° → 不做功、速率不变", COL.a, 11, "middle", 1)),
+    demo: "主画面中蓝色 v 与红色 F 始终垂直；数据面板里 v 的读数不随转动变化（匀速时），但方向角在变。",
+    mis: "易错：“向心力做了功所以物体转起来”。正确：启动时要靠切向力做功增速；进入匀速圆周后，向心力不再做功。",
+    back: "功的定义 W = Fs cosθ 里的 θ 是力与<b>位移</b>（即速度方向）的夹角。向心力与之垂直，故任何一小段位移上做功都为 0。"
+  },
+  {
+    id: "d_centri", cat: "辨析", title: "离心与近心运动（惯性系无离心力）",
+    concl: "F供 < mω²r 做离心运动，F供 > mω²r 做近心运动；“离心力”只在非惯性系中引入。",
+    formula: "F<sub>供</sub> = mω²r 时圆周；F<sub>供</sub> &lt; mω²r 时离心；F<sub>供</sub> &gt; mω²r 时近心",
+    svg: sv(300, 124,
+      cir(150, 62, 44, "#cbd5e1", 0) +
+      // 离心：提供的力 < 所需 mω²r → 沿切线外侧甩出（远离圆心）
+      '<path d="M194 62 Q248 44 282 28" fill="none" stroke="#ea580c" stroke-width="2.2" stroke-dasharray="5 4"/>' +
+      // 近心：提供的力 > 所需 mω²r → 向内侧收拢（靠近圆心）
+      '<path d="M194 62 Q182 40 156 46" fill="none" stroke="#7c3aed" stroke-width="2.2" stroke-dasharray="5 4"/>' +
+      dot(194, 62, "#2563eb", 6) +
+      tx(278, 18, "离心", "#ea580c", 11, "middle", 1) + tx(138, 38, "近心", "#7c3aed", 11, "middle", 1) +
+      tx(150, 118, "（超纲提示：离心力仅在非惯性系使用）", COL.mut, 9.5)),
+    demo: "把转速 n 拉大（所需 mω²r 变大）而弹簧弹力已到满量程，就会出现“供不应求”的离心趋势——标尺变红报警正是这个情形。",
+    mis: "易错：“向心力与离心力平衡”。正确：惯性系中不存在离心力，做圆周运动是因为合力<b>恰好等于</b> mω²r。",
+    back: "洗衣机脱水：水滴与衣物间的附着力不足以提供所需 mω²r，水滴便沿切线飞出（离心运动），并非被“离心力推走”。"
+  },
+  /* ---------- 易错（2 张，覆盖 7 条误解） ---------- */
+  {
+    id: "mis1", cat: "易错", title: "易错 ①：向心力到底是不是“多出来的力”",
+    concl: "向心力不是额外受到的力，也不是圆周运动“产生”的力。",
+    formula: "三条误解逐条拆解：<br>" +
+      "①「物体还受到一个额外的向心力」→ 错：向心力就是某个性质力或其合力；<br>" +
+      "②「因为做圆周运动，所以产生向心力」→ 错：因果倒置，是先有指向圆心的合力；<br>" +
+      "③「向心力与离心力平衡」→ 错：惯性系中无离心力，是合力恰好等于 mω²r。",
+    svg: sv(300, 112,
+      '<rect x="18" y="20" width="126" height="72" rx="8" fill="#fef2f2" stroke="#dc2626"/>' +
+      tx(81, 40, "✗ 额外画一个", COL.F, 11.5, "middle", 1) + tx(81, 60, "“向心力”", COL.F, 12, "middle", 1) +
+      tx(81, 80, "（重复计算）", COL.sub, 10.5) +
+      '<rect x="156" y="20" width="126" height="72" rx="8" fill="#f0fdf4" stroke="#16a34a"/>' +
+      tx(219, 40, "✓ 只画性质力", "#15803d", 11.5, "middle", 1) + tx(219, 60, "合力 = 向心力", "#15803d", 12, "middle", 1) +
+      tx(219, 80, "（不重复）", COL.sub, 10.5)),
+    demo: "打开「受力分析层」：受力图上只有 G、N、弹簧拉力 T 三个性质力箭头，合力用红色单独标注——没有第 4 个力。",
+    mis: "一句话记忆：先画性质力，再看合力，合力指圆心就叫它向心力。",
+    back: "检验方法：把受力图上所有箭头矢量相加，看结果是否等于 mω²r 且指向圆心；若你在图里多画了一个“向心力”，加出来就会变成 2 倍。"
+  },
+  {
+    id: "mis2", cat: "易错", title: "易错 ②：比例关系与方向",
+    concl: "四条高频误解：做功、加速度方向、转速加倍、F 与 r 的关系。",
+    formula: "④「向心力能做功、能改变速率」→ 错：与 v 垂直，W = 0；<br>" +
+      "⑤「向心加速度沿切线/沿速度方向」→ 错：指向圆心（非匀速圆周的总加速度才偏离圆心）；<br>" +
+      "⑥「转速加倍，向心力加倍」→ 错：F ∝ ω²，变 <b>4 倍</b>；<br>" +
+      "⑦「F 与 r 一定成正比（或一定成反比）」→ 错：取决于控制量：ω 固定 F ∝ r，v 固定 F ∝ 1/r。",
+    svg: figBars([1, 4], ["n", "2n"], COL.F),
+    demo: "用实验①验证⑥（格数 1:4），用实验④验证⑦（F–1/r 才是直线）；用图层「矢量」看 aₙ 与 v 的夹角验证⑤。",
+    mis: "一句话记忆：垂直不做功；aₙ 指圆心；转速加倍力变四倍；说 F 与 r 的关系前先说清“谁不变”。",
+    back: "另有：⑧「匀速圆周运动的合力是恒力」→ 错：大小不变但方向时刻改变，是变力（矢量是否恒定要看方向）。"
+  },
+  /* ---------- 应用（1） ---------- */
+  {
+    id: "app_life", cat: "应用", title: "生活与工程实例",
+    concl: "凡是需要“拐弯”的地方，都需要某个力来充当向心力。",
+    formula: "汽车转弯：静摩擦 f ≤ μmg　|　脱水：附着力不足 → 离心　|　链球：绳拉力 T = mv²/r　|　弯道倾斜：N 与 mg 的合力分担",
+    svg: sv(300, 126,
+      '<rect x="16" y="18" width="128" height="40" rx="7" fill="#eff6ff" stroke="#bfdbfe"/>' + tx(80, 42, "汽车转弯（静摩擦）", COL.v, 10.5, "middle", 1) +
+      '<rect x="156" y="18" width="128" height="40" rx="7" fill="#fefce8" stroke="#fde68a"/>' + tx(220, 42, "洗衣机脱水（离心）", "#b45309", 10.5, "middle", 1) +
+      '<rect x="16" y="68" width="128" height="40" rx="7" fill="#f5f3ff" stroke="#ddd6fe"/>' + tx(80, 92, "链球 / 过山车（拉力）", "#6d28d9", 10.5, "middle", 1) +
+      '<rect x="156" y="68" width="128" height="40" rx="7" fill="#f0fdf4" stroke="#bbf7d0"/>' + tx(220, 92, "卫星绕地（引力）", "#15803d", 10.5, "middle", 1)),
+    demo: "「力源溯源」下拉逐个切换 5~6 个情境，对照每种情境“谁提供向心力”的标注。",
+    mis: "易错：所有情境都套用“绳拉力”。正确：先做受力分析，再看哪个力（或合力）指向圆心。",
+    back: "工程设计要点：先算所需 mω²r，再核对该力源的最大值（μmg、绳的断裂强度、轨道强度），留足安全系数。"
+  },
+  /* ---------- 安全（1） ---------- */
+  {
+    id: "safe", cat: "安全", title: "旋转装置操作安全",
+    concl: "限速、锁紧、护目、固定——四条底线。",
+    formula: "① 转速不超额定值（标尺 40 格 = 2.0 N 满量程，超限报警）；② 小球必须锁紧；" +
+      "③ 戴护目镜；④ 手摇时不戴手套、衣袖束紧；⑤ 底座夹紧；⑥ 转速稳定后再读数。",
+    svg: sv(300, 108,
+      '<circle cx="150" cy="52" r="30" fill="#fef2f2" stroke="#dc2626" stroke-width="2"/>' +
+      tx(150, 46, "⚠", COL.F, 20, "middle", 1) + tx(150, 66, "限速", COL.F, 11, "middle", 1) +
+      tx(150, 100, "高速旋转件 · 保持安全距离", COL.sub, 11, "middle", 1)),
+    demo: "控制面板底部「安全」折叠区；标尺超限（>40 格）时画面标尺整体变红并提示“超出弹性限度”。",
+    mis: "易错：为了“效果明显”一路加速。正确：超过弹性限度后弹簧不再满足 F ∝ x，读数完全失真且小球有飞出风险。",
+    back: "本演示设定：满量程 40 格（2.0 N）。当所需向心力超过弹簧能提供的最大值时，小球会被甩到更大半径甚至飞出——这就是现实中的离心事故。"
+  }
+];
+const CATS = ["全部", "概念", "公式", "规律", "方法", "力源", "辨析", "易错", "应用", "安全"];
+
+/* ===================== 3. 四组实验（控制变量表） ===================== */
+const EXPERIMENTS = {
+  1: {
+    id: 1, name: "① 变 ω（m、r 固定）", chart: "w2", card: "r_w2",
+    indep: "ω（由转速 n 调节）", dep: "标尺格数 N ∝ F", ctrl: "m、r 保持不变",
+    lock: ["rMA", "rMB", "rRA", "rRB", "segGA", "segGB"],
+    samples: [{ n: 40 }, { n: 60 }, { n: 80 }, { n: 100 }, { n: 120 }],
+    concl: "m、r 相同时 F ∝ ω²：n 由 60 → 120 r/min，格数比 ≈ 1:4（<b>不是 1:2</b>）。",
+    xlabel: "ω²（(rad/s)²）", theory: function (m, r, w2) { return m * w2 * r; }
+  },
+  2: {
+    id: 2, name: "② 变 r（m、ω 固定）", chart: "r", card: "r_r",
+    indep: "半径 r", dep: "标尺格数 N ∝ F", ctrl: "m、ω（n）保持不变",
+    lock: ["rMA", "rMB", "rN", "segGA", "segGB"],
+    samples: [{ r: 0.05 }, { r: 0.10 }, { r: 0.15 }, { r: 0.20 }, { r: 0.25 }],
+    concl: "m、ω 相同时 F ∝ r：r 由 0.10 → 0.20 m，格数比 ≈ 1:2。",
+    xlabel: "r（m）", theory: function (m, r, w2) { return m * w2 * r; }
+  },
+  3: {
+    id: 3, name: "③ 变 m（r、ω 固定）", chart: "m", card: "r_m",
+    indep: "质量 m", dep: "标尺格数 N ∝ F", ctrl: "r、ω（n）保持不变",
+    lock: ["rRA", "rRB", "rN", "segGA", "segGB"],
+    samples: [{ m: 0.05 }, { m: 0.10 }, { m: 0.15 }, { m: 0.20 }, { m: 0.25 }],
+    concl: "r、ω 相同时 F ∝ m：m → 2m，格数比 ≈ 1:2。",
+    xlabel: "m（kg）", theory: function (m, r, w2) { return m * w2 * r; }
+  },
+  4: {
+    id: 4, name: "④ 反例：定 v 变 r", chart: "inv", card: "r_vinv",
+    indep: "半径 r（保持 v 不变）", dep: "标尺格数 N ∝ F", ctrl: "m、线速度 v 保持不变",
+    lock: ["rMA", "rMB", "rN"], fixedV: true,
+    samples: [{ r: 0.05 }, { r: 0.10 }, { r: 0.15 }, { r: 0.20 }, { r: 0.25 }],
+    concl: "v 固定时 F ∝ 1/r：r 变大反而更省力——说明“F 与 r 成正比”必须限定 ω 不变。",
+    xlabel: "1/r（1/m）", theory: function (m, r, w2) { return m * w2 * r; }
+  }
+};
+
+/* ===================== 4. 力源情境 ===================== */
+const SCENARIOS = {
+  rope: {
+    name: "水平面绳拉小球", card: "s_rope",
+    who: "绳（弹簧）的拉力 T 全部充当向心力",
+    formula: "T = F<sub>n</sub> = mω²r　（竖直方向 N = mg 平衡）",
+    desc: "光滑水平面上，小球被绳（或弹簧）拉住做匀速圆周运动。重力与支持力都在竖直方向、互相平衡，<b>不参与</b>水平面内的偏转；水平方向只有绳的拉力，它全部用来充当向心力。这正是本演示器的原型。"
+  },
+  conical: {
+    name: "圆锥摆", card: "s_conical",
+    who: "绳拉力 T 与重力 mg 的<b>合力</b>（即 T 的水平分力）提供向心力",
+    formula: "T cosθ = mg，T sinθ = F<sub>n</sub>　⟹　F<sub>n</sub> = mg·tanθ = mω²r，r = L sinθ",
+    desc: "小球在水平面内做圆周运动，绳扫出一个圆锥面。拉力沿绳斜向上，其竖直分力平衡重力，水平分力指向圆心充当向心力。<b>拉力本身不等于向心力</b>，这一点与水平绳拉小球不同。"
+  },
+  car: {
+    name: "汽车水平转弯", card: "s_car",
+    who: "指向弯心的<b>静摩擦力</b>提供向心力",
+    formula: "f = mω²r = m v²/r ≤ μmg　⟹　v<sub>max</sub> = √(μ g r)",
+    desc: "水平路面上，竖直方向重力与支持力平衡；水平方向只有轮胎与地面的静摩擦力指向弯心。车速过大时所需向心力超过最大静摩擦力 μmg，车便沿切线方向甩出（离心运动），这就是超速侧滑的原因。"
+  },
+  sat: {
+    name: "卫星绕地", card: "s_sat",
+    who: "<b>万有引力</b>全部充当向心力",
+    formula: "GMm/r² = m v²/r　⟹　v = √(GM/r)，T = 2π√(r³/GM)",
+    desc: "卫星只受地球的引力，这个引力恰好指向地心（圆心），全部用来充当向心力。此处没有绳、没有弹簧、没有摩擦，却同样满足 F = mω²r——可见“向心力”是效果上的称呼，与力的性质无关。"
+  },
+  loopTop: {
+    name: "竖直圆环 · 最高点", card: "s_loop",
+    who: "重力 mg 与轨道弹力 N（均指向圆心方向）的<b>合力</b>提供向心力",
+    formula: "mg + N = m v<sub>顶</sub>²/r　⟹　N = m v<sub>顶</sub>²/r − mg　（不脱轨条件 v<sub>顶</sub> ≥ √(gr)）",
+    desc: "在最高点，重力方向恰好指向圆心，与轨道对球的压力<b>同向</b>，两者共同提供向心力，因此所需的弹力 N 反而较小；当 v<sub>顶</sub> = √(gr) 时 N = 0，这是球恰好不脱离轨道的临界速度。"
+  },
+  loopBot: {
+    name: "竖直圆环 · 最低点", card: "s_loop",
+    who: "轨道弹力 N 与重力 mg 的<b>合力</b>（N 向上、mg 向下）提供向心力",
+    formula: "N − mg = m v<sub>底</sub>²/r　⟹　N = m v<sub>底</sub>²/r + mg　（此处 N 最大，最易“超重”）",
+    desc: "在最低点，向心方向竖直向上，弹力 N 必须<b>先抵消重力、再额外提供</b> m v<sub>底</sub>²/r，故 N 最大。又因机械能守恒使 v<sub>底</sub> > v<sub>顶</sub>，最低点的压力是整个圆周中最大的，轨道强度按此校核。"
+  }
+};
+
+/* ===================== 5. 运行状态 ===================== */
+const S = {
+  t: 0, angA: 0, angB: Math.PI, running: !REDUCE, speed: 1,
+  n: 60, drive: "motor",
+  A: { m: 0.10, r: 0.100, gear: 1 },
+  B: { m: 0.10, r: 0.100, gear: 1 },
+  cmp: "same",            // same=同轴同 ω；gear=换档不同 ω
+  readMode: "grid",       // grid=格数；force=力值
+  errMode: "ideal",       // ideal / real
+  amp: 4, seed: 2026,
+  exp: 0,                 // 0=自由，1..4=实验组
+  scen: "rope",
+  chart: "w2",
+  records: [], samples: [],
+  quiz: [], exam: false, hideAns: false,
+  anchors: [], show: {
+    ruler: true, vec: true, radius: true, force: true, circle: true,
+    strobe: false, readout: true, sound: false, tower: true
+  },
+  strobe: 10, lastStrobe: 0, strobePts: [], over: false, staticStrip: false
+};
+/* ===================== 6. 物理内核（解析式，与帧率无关） ===================== */
+/** 电机角速度：ω = 2πn/60（n 单位 r/min） */
+function omegaMotor() { return TAU * S.n / 60; }
+/** 某球的实际角速度：同轴时两球相同；换档时各按塔轮半径比传动（皮带线速度相等 ⟹ ω₁R₁ = ω₂R₂） */
+function omegaOf(which) {
+  const wm = omegaMotor();
+  if (S.cmp === "same") return wm * (which === "A" ? S.A.gear : S.A.gear);
+  return wm * (which === "A" ? S.A.gear : S.B.gear);
+}
+/** 单次读数：含误差模式叠加「摩擦导致的系统性偏小」+ 可复现随机误差 */
+function reading(F, idx) {
+  if (S.errMode === "ideal" || F <= 0) return { F: F, N: F / CFG.qGrid };
+  const rnd = mulberry32(S.seed * 7919 + (idx || 0) * 104729 + Math.round(F * 1e4) + 13);
+  const e = (rnd() * 2 - 1) * S.amp / 100;
+  const Fr = Math.max(0, F * (1 - CFG.muFric + e)); // 摩擦使弹簧读数偏小
+  return { F: Fr, N: Fr / CFG.qGrid };
+}
+/** 多次测量取平均（默认 5 次），返回均值与标准差 */
+function readingAvg(F, times) {
+  const k = times || 5, arr = [];
+  for (let i = 1; i <= k; i++) arr.push(reading(F, i).F);
+  const mean = arr.reduce(function (a, b) { return a + b; }, 0) / k;
+  const sd = Math.sqrt(arr.reduce(function (a, b) { return a + (b - mean) * (b - mean); }, 0) / k);
+  return { F: mean, N: mean / CFG.qGrid, sd: sd, arr: arr };
+}
+/** 单个球的完整物理状态 */
+function ballPhys(which) {
+  const b = which === "A" ? S.A : S.B;
+  const w = omegaOf(which);
+  const F = b.m * w * w * b.r;          // 理论向心力 F = mω²r
+  const v = w * b.r;
+  const a = w * w * b.r;
+  const rd = reading(F, 0);
+  return {
+    m: b.m, r: b.r, w: w, v: v, a: a, F: F,
+    Fread: rd.F, N: rd.N, Ntrue: F / CFG.qGrid,
+    over: F / CFG.qGrid > CFG.gridMax,
+    n: w * 60 / TAU
+  };
+}
+
+/* ===================== 7. 数据读出面板 ===================== */
+function unitY() { return S.readMode === "grid" ? "格" : "N"; }
+function yOf(p) { return S.readMode === "grid" ? p.N : p.Fread; }   // 当前读数（含误差）
+function yTrue(p) { return S.readMode === "grid" ? p.Ntrue : p.F; } // 理论值
+
+function updateReadout() {
+  const A = ballPhys("A"), B = ballPhys("B");
+  const ratioReal = (yOf(B) > 1e-9) ? yOf(A) / yOf(B) : 0;
+  const ratioTh = (yTrue(B) > 1e-9) ? yTrue(A) / yTrue(B) : 0;
+  const u = unitY();
+  function cell(cls, k, v) {
+    return '<div class="ro ' + cls + '"><div class="k">' + k + '</div><div class="v">' + v + "</div></div>";
+  }
+  let h = "";
+  h += cell("", "转速 n", fmt(S.n, 0) + " r/min");
+  h += cell("bA", "ω<sub>A</sub>", fmt(A.w, 3) + " rad/s");
+  h += cell("bA", "v<sub>A</sub>", fmt(A.v, 3) + " m/s");
+  h += cell("bA", "a<sub>n,A</sub>", fmt(A.a, 2) + " m/s²");
+  h += cell("bA", "标尺 A", fmt(yOf(A), 2) + " " + u + (A.over ? " ⚠" : ""));
+  h += cell("bB", "标尺 B", fmt(yOf(B), 2) + " " + u + (B.over ? " ⚠" : ""));
+  h += cell("", "格数比 A:B", (ratioReal > 0 ? fmt(ratioReal, 3) + " : 1" : "—"));
+  h += cell("", "理论比 A:B", (ratioTh > 0 ? fmt(ratioTh, 3) + " : 1" : "—"));
+  $("readout").innerHTML = h;
+  updateVerdict(A, B, ratioReal, ratioTh);
+  S.over = A.over || B.over;
+}
+
+function updateVerdict(A, B, rr, rt) {
+  let h = "";
+  if (A.over || B.over) {
+    h += '<span class="tag warn">⚠ 已超出弹性限度（> ' + CFG.gridMax + " 格 ≈ " +
+      fmt(CFG.gridMax * CFG.qGrid, 1) + " N）</span> 弹簧不再满足 F ∝ x，读数失真，请降低转速 / 减小半径 / 减小质量。<br>";
+  }
+  h += "<b>读数依据：</b>弹簧在弹性限度内伸长量 ∝ 弹力，故 <b>格数 ∝ 向心力</b>（" +
+    CFG.qGrid + " N/格），只比格数即可比力，不必测劲度系数 k。<br>";
+  h += "<b>效果力提示：</b>此刻红色 F 箭头就是弹簧的弹力（性质力），它<b>充当</b>了向心力（效果力）——不是额外多出的力。<br>";
+  if (S.cmp === "gear") {
+    const gw = S.A.gear / S.B.gear;
+    h += "<b>塔轮：</b>皮带线速度相等 ⟹ ω₁R₁ = ω₂R₂，ω<sub>A</sub> : ω<sub>B</sub> = " +
+      fmt(gw, 3) + " : 1，则理论格数比 = (ω<sub>A</sub>/ω<sub>B</sub>)² · (m<sub>A</sub>r<sub>A</sub>)/(m<sub>B</sub>r<sub>B</sub>) = <b>" +
+      fmt(rt, 3) + " : 1</b>。";
+    if (Math.abs(gw - 2) < 1e-3) h += "　（ω<sub>A</sub>:ω<sub>B</sub> = 2:1 → 格数比 <b>4:1</b>，验证 F ∝ ω²）";
+    if (Math.abs(gw - 0.5) < 1e-3) h += "　（ω<sub>A</sub>:ω<sub>B</sub> = 1:2 → 格数比 <b>1:4</b>，验证 F ∝ ω²）";
+    if (Math.abs(gw - 3) < 1e-3) h += "　（ω 比 3:1 → 格数比 <b>9:1</b>，再次验证 F ∝ ω²）";
+  } else {
+    const mr = (S.A.m * S.A.r) / (S.B.m * S.B.r);
+    h += "<b>同轴对比：</b>ω 相同，格数比 = m<sub>A</sub>r<sub>A</sub> : m<sub>B</sub>r<sub>B</sub> = <b>" + fmt(mr, 3) + " : 1</b>";
+    if (Math.abs(S.A.r - S.B.r) < 1e-9) h += "　（r 相同 → 只比质量，验证 F ∝ m）";
+    if (Math.abs(S.A.m - S.B.m) < 1e-9) h += "　（m 相同 → 只比半径，验证 F ∝ r）";
+  }
+  if (S.errMode === "real") {
+    h += "<br><b>含误差模式：</b>读数 = 理论值 ×(1 − " + Math.round(CFG.muFric * 100) + "% 摩擦 ± " +
+      S.amp + "% 随机)，实测比 " + fmt(rr, 3) + " 与理论比 " + fmt(rt, 3) + " 会有偏差——用「多次测量取平均」可减小。";
+  }
+  $("verdictBox").innerHTML = h;
+  $("verdictBox").className = (A.over || B.over) ? "note warn" : "note ok";
+}
+
+/* ===================== 8. 教学七步流程 ===================== */
+const STEPS = [
+  { t: "① 提出问题", p: "小球为什么能一直“拐弯”？是什么力使它不断改变速度方向？", q: "小球做圆周运动时，指向圆心的那个力是谁给的？", card: "c_effect" },
+  { t: "② 猜想", p: "向心力的大小可能与质量 m、半径 r、转动快慢 ω（或 n）有关。", q: "转速加倍，你猜需要的向心力变为几倍？", card: "f_F" },
+  { t: "③ 设计四组对照", p: "用控制变量法：一次只改一个量，其余锁死。", q: "每一组实验分别要控制哪些量保持不变？", card: "m_control" },
+  { t: "④ 采集格数", p: "弹簧伸长 ∝ 弹力，所以标尺格数之比就是向心力之比。", q: "为什么不必知道弹簧的劲度系数也能比较力的大小？", card: "m_grid" },
+  { t: "⑤ 图像分析", p: "把数据画成图：F–ω²、F–r、F–m 是否过原点的直线？", q: "F–ω² 图是一条直线，说明什么？F–ω 图呢？", card: "m_graph" },
+  { t: "⑥ 结论", p: "F = mω²r = mv²/r，且向心力是按效果命名的力。", q: "向心力是一种“新的力”吗？它由什么提供？", card: "c_nature" },
+  { t: "⑦ 力源溯源", p: "同一个向心力，在不同情境中可由完全不同的性质力充当。", q: "5 个情境中，提供向心力的分别是哪个力？", card: "s_rope" }
+];
+function renderStepBar() {
+  let h = "";
+  for (let i = 0; i < STEPS.length; i++) {
+    h += '<button data-i="' + i + '" class="' + (i === S.step ? "on" : "") + (i < S.step ? " done" : "") +
+      '" aria-label="第' + (i + 1) + "步 " + STEPS[i].t + '"><b>' + STEPS[i].t + "</b></button>";
+  }
+  $("stepBar").innerHTML = h;
+  const bs = $("stepBar").querySelectorAll("button");
+  for (let i = 0; i < bs.length; i++) bs[i].addEventListener("click", function () { setStep(parseInt(this.dataset.i, 10)); });
+}
+function setStep(i, silent) {
+  S.step = clamp(i, 0, STEPS.length - 1);
+  renderStepBar();
+  $("tipText").textContent = STEPS[S.step].p;
+  $("tipQ").textContent = "【待答】" + STEPS[S.step].q;
+  if (!silent && !REDUCE) setTimeout(function () { openCard(STEPS[S.step].card); }, 240);
+  // 每步联动图表页
+  const cm = { 0: "w2", 1: "w2", 2: "all", 3: "w2", 4: "w2", 5: "w2", 6: "w2" };
+  if (cm[S.step] && cm[S.step] !== "all") { S.chart = cm[S.step]; renderChartTabs(); drawChart(); }
+}
+
+/* ===================== 9. 四组实验：载入、锁定控制量、一键采集 ===================== */
+function lockIds(list) {
+  return list || [];
+}
+function applyExp(id) {
+  S.exp = id;
+  const E = EXPERIMENTS[id];
+  const segs = ["rMA", "rMB", "rRA", "rRB", "rN"];
+  for (let i = 0; i < segs.length; i++) $(segs[i]).disabled = false;
+  $("lockNote").style.display = "none";
+  if (!E) { $("expBox").innerHTML = '<div class="note">自由调节：可任意改变 m、r、n，观察读数变化；点上方四组按钮载入控制变量实验。</div>'; return; }
+  // 载入该组的基准值
+  if (id === 1) { S.A.m = S.B.m = 0.10; S.A.r = S.B.r = 0.10; S.n = 40; S.cmp = "same"; }
+  if (id === 2) { S.A.m = S.B.m = 0.10; S.n = 60; S.A.r = 0.05; S.B.r = 0.05; S.cmp = "same"; }
+  if (id === 3) { S.A.r = S.B.r = 0.10; S.n = 60; S.A.m = 0.05; S.B.m = 0.05; S.cmp = "same"; }
+  if (id === 4) { S.A.m = S.B.m = 0.10; S.A.r = 0.10; S.B.r = 0.10; S.cmp = "same"; setNForV(0.628); }
+  syncInputs();
+  for (let i = 0; i < E.lock.length; i++) { const el = $(E.lock[i]); if (el) el.disabled = true; }
+  $("lockNote").style.display = "";
+  $("lockNote").innerHTML = "控制变量已锁定：<b>" + E.ctrl + "</b>（灰显滑块不可调）。自变量：" + E.indep +
+    "　因变量：" + E.dep + "。<br>说明：" + E.concl;
+  // 变量表
+  $("expBox").innerHTML =
+    '<table style="width:100%;font-size:12px;margin-top:8px"><tr><th class="l">组别</th><th class="l">自变量</th><th class="l">因变量</th><th class="l">控制量</th></tr>' +
+    '<tr><td class="l">' + E.name + "</td><td class='l'>" + E.indep + "</td><td class='l'>" + E.dep +
+    "</td><td class='l'>" + E.ctrl + "</td></tr></table>" +
+    '<div class="note" style="margin-top:7px">采样点：' + E.samples.map(function (s) {
+      return (s.n !== undefined ? "n=" + s.n : (s.r !== undefined ? "r=" + s.r : "m=" + s.m));
+    }).join("　") + "</div>";
+  S.chart = E.chart; renderChartTabs(); drawChart();
+  if (!REDUCE) setTimeout(function () { openCard(E.card); }, 240);
+}
+function unlockAll() {
+  S.exp = 0;
+  const segs = ["rMA", "rMB", "rRA", "rRB", "rN"];
+  for (let i = 0; i < segs.length; i++) $(segs[i]).disabled = false;
+  $("lockNote").style.display = "none";
+  $("expBox").innerHTML = '<div class="note">已解除锁定，可自由调节全部参数。</div>';
+  const bs = $("segExp").querySelectorAll("button");
+  for (let i = 0; i < bs.length; i++) bs[i].classList.remove("on");
+  const b0 = $("segExpBtn").querySelector("button"); if (b0) b0.classList.add("on");
+}
+/** 反例组：保持线速度 v 不变，由 r 反算转速 n（ω = v/r） */
+function setNForV(v) {
+  S.n = clamp(v / S.A.r * 60 / TAU, 0, 300);
+}
+/** 一键采集：按该组采样点逐点测量并写入数据表 */
+function autoCollect() {
+  if (!S.exp) { toast("请先选择一组实验（①~④）再采集"); return; }
+  const E = EXPERIMENTS[S.exp];
+  let i = 0;
+  const btn = $("bAuto"); btn.disabled = true;
+  (function next() {
+    if (i >= E.samples.length) {
+      btn.disabled = false;
+      S.chart = E.chart; renderChartTabs(); drawChart();
+      toast(E.name + " 采集完成：" + E.samples.length + " 个点");
+      beep(880, 0.1, "triangle");
+      return;
+    }
+    const s = E.samples[i];
+    if (s.n !== undefined) S.n = s.n;
+    if (s.r !== undefined) { S.A.r = s.r; S.B.r = s.r; }
+    if (s.m !== undefined) { S.A.m = s.m; S.B.m = s.m; }
+    if (E.fixedV) setNForV(0.628);   // 保持 v = 0.628 m/s 不变
+    syncInputs();
+    addRecord(true);
+    i++;
+    setTimeout(next, REDUCE ? 0 : 260);
+  })();
+}
+/* ===================== 10. 画布基础设施 ===================== */
+const cv = $("cvMain"), ctx = cv.getContext("2d");
+const cvS = $("cvSce"), ctxS = cvS.getContext("2d");
+const cvC = $("cvChart"), ctxC = cvC.getContext("2d");
+let V = { W: 900, H: 520, cx: 400, cy: 230, s: 500 };
+function fitCanvas(c, cx2) {
+  const dpr = Math.min(window.devicePixelRatio || 1, 2.5);
+  const w = c.clientWidth || 900, h = c.clientHeight || 520;
+  c.width = Math.round(w * dpr); c.height = Math.round(h * dpr);
+  const g = c.getContext("2d");
+  g.setTransform(dpr, 0, 0, dpr, 0, 0);
+  return { w: w, h: h, g: g };
+}
+function layout() {
+  const a = fitCanvas(cv, ctx), b = fitCanvas(cvS, ctxS), d = fitCanvas(cvC, ctxC);
+  V.W = a.w; V.H = a.h;
+  V.cx = V.W * 0.44; V.cy = V.H * 0.50;            // 竖直居中，保证 ±0.5 m 的刻度底板完整可见
+  V.s = Math.min(V.W * 0.28, V.H * 0.32) / 0.32;   // 按最大半径 0.32 m 定标（px/m）
+  $("scaleNote").textContent = "比例尺：1 m ≈ " + Math.round(V.s) + " px";
+  void b; void d;
+}
+/** 世界坐标 → 屏幕坐标（y 轴向下为正，故取负） */
+function px(x) { return V.cx + x * V.s; }
+function py(y) { return V.cy - y * V.s; }
+function arrow(g, x1, y1, x2, y2, color, w, head) {
+  const a = Math.atan2(y2 - y1, x2 - x1), L = head || 9;
+  g.strokeStyle = color; g.lineWidth = w || 2; g.lineCap = "round";
+  g.beginPath(); g.moveTo(x1, y1); g.lineTo(x2, y2); g.stroke();
+  g.fillStyle = color;
+  g.beginPath();
+  g.moveTo(x2, y2);
+  g.lineTo(x2 - L * Math.cos(a - 0.42), y2 - L * Math.sin(a - 0.42));
+  g.lineTo(x2 - L * Math.cos(a + 0.42), y2 - L * Math.sin(a + 0.42));
+  g.closePath(); g.fill();
+}
+/** 把源画布等比缩放（contain）画到目标矩形中央，避免被拉扁/拉长 */
+function drawFit(g, src, w, h) {
+  try {
+    const sw = src.clientWidth || src.width, sh = src.clientHeight || src.height;
+    if (!sw || !sh) return;
+    const k = Math.min(w / sw, h / sh), dw = sw * k, dh = sh * k;
+    g.drawImage(src, (w - dw) / 2, (h - dh) / 2, dw, dh);
+  } catch (e) { /* 忽略绘制失败 */ }
+}
+/** 指向圆心的矢量长度：长度随物理量增大，但保证箭头不越过转轴（起点在球上） */
+function radialLen(base, rpx, minL, maxL) {
+  const L = clamp(base, minL, maxL);
+  return clamp(Math.min(L, rpx - 24), minL, maxL);
+}
+function label(g, s, x, y, o) {
+  o = o || {};
+  g.font = (o.weight ? o.weight + " " : "") + (o.size || 11.5) + 'px system-ui,"Microsoft YaHei",sans-serif';
+  g.textAlign = o.align || "left"; g.textBaseline = o.base || "middle";
+  if (o.pad !== false) {
+    const w = g.measureText(s).width + 8;
+    const x0 = o.align === "center" ? x - w / 2 : (o.align === "right" ? x - w : x - 4);
+    g.fillStyle = o.bg || "rgba(255,255,255,.86)";
+    g.fillRect(x0, y - (o.size || 11.5) * 0.78, w, (o.size || 11.5) * 1.56);
+  }
+  g.fillStyle = o.color || "#0f172a";
+  g.fillText(s, x, y);
+}
+
+/* ===================== 11. 主舞台绘制 ===================== */
+/** 刻度底板（俯视）+ 半径刻度尺 */
+function drawBoard() {
+  const g = ctx, L = 0.5, step = 0.05;
+  g.fillStyle = "#fbfcfe"; g.fillRect(0, 0, V.W, V.H);
+  g.strokeStyle = "#eef2f7"; g.lineWidth = 1;
+  for (let x = -L; x <= L + 1e-9; x += step) { g.beginPath(); g.moveTo(px(x), py(-L)); g.lineTo(px(x), py(L)); g.stroke(); }
+  for (let y = -L; y <= L + 1e-9; y += step) { g.beginPath(); g.moveTo(px(-L), py(y)); g.lineTo(px(L), py(y)); g.stroke(); }
+  g.strokeStyle = "#dbe3ec"; g.lineWidth = 1.4;
+  g.strokeRect(px(-L), py(L), 2 * L * V.s, 2 * L * V.s);
+  label(g, "刻度底板（俯视）· 每格 0.05 m", px(-L) + 6, py(L) + 12, { size: 10.5, color: COL.mut });
+}
+/** 轨迹圆 + 半径线 + 半径刻度 */
+function drawCircles(pA, pB) {
+  const g = ctx;
+  if (!S.show.circle) return;
+  g.save(); g.setLineDash([5, 4]); g.strokeStyle = "#cbd5e1"; g.lineWidth = 1.3;
+  g.beginPath(); g.arc(px(0), py(0), pA.r * V.s, 0, TAU); g.stroke();
+  g.strokeStyle = "#e9d5ff";
+  g.beginPath(); g.arc(px(0), py(0), pB.r * V.s, 0, TAU); g.stroke();
+  g.restore();
+}
+/** 横杆 + 半径刻度尺（每 0.05 m 一大格） */
+function drawRod(pA, pB) {
+  const g = ctx;
+  const aA = S.angA, aB = S.angB;
+  const xA = Math.cos(aA) * pA.r, yA = Math.sin(aA) * pA.r;
+  const xB = Math.cos(aB) * pB.r, yB = Math.sin(aB) * pB.r;
+  g.strokeStyle = "#94a3b8"; g.lineWidth = 6; g.lineCap = "round";
+  g.beginPath(); g.moveTo(px(xA), py(yA)); g.lineTo(px(xB), py(yB)); g.stroke();
+  // 半径刻度（沿 A 侧）
+  g.strokeStyle = "#64748b"; g.lineWidth = 1;
+  for (let d = 0.05; d <= 0.3001; d += 0.05) {
+    const X = px(Math.cos(aA) * d), Y = py(Math.sin(aA) * d);
+    const nx = -Math.sin(aA), ny = Math.cos(aA);
+    g.beginPath(); g.moveTo(X - nx * 4, Y + ny * 4); g.lineTo(X + nx * 4, Y - ny * 4); g.stroke();
+  }
+  label(g, "半径刻度尺（每 0.05 m）", px(Math.cos(aA) * 0.05), py(Math.sin(aA) * 0.05) + 16,
+    { size: 10.5, color: COL.mut });
+  // 虚线半径 r
+  if (S.show.radius) {
+    g.save(); g.setLineDash([4, 4]); g.strokeStyle = COL.path; g.lineWidth = 1.4;
+    g.beginPath(); g.moveTo(px(0), py(0)); g.lineTo(px(xA), py(yA)); g.stroke();
+    g.beginPath(); g.moveTo(px(0), py(0)); g.lineTo(px(xB), py(yB)); g.stroke();
+    g.restore();
+    label(g, "r<sub>A</sub>".replace(/<[^>]+>/g, "") + "=" + fmt(pA.r, 3) + " m",
+      px(xA / 2), py(yA / 2) - 10, { size: 10.5, color: COL.sub, align: "center" });
+  }
+}
+/** 弹簧（橙色，锯齿，长度随力略变化，仅示意） */
+function drawSpring(which, p) {
+  const g = ctx;
+  const a = which === "A" ? S.angA : S.angB;
+  const r0 = 0.035, r1 = p.r - 0.022;
+  if (r1 <= r0) return;
+  const x0 = px(Math.cos(a) * r0), y0 = py(Math.sin(a) * r0);
+  const x1 = px(Math.cos(a) * r1), y1 = py(Math.sin(a) * r1);
+  const dx = x1 - x0, dy = y1 - y0, len = Math.hypot(dx, dy);
+  const ux = dx / len, uy = dy / len, nx = -uy, ny = ux;
+  const coils = 9, amp = clamp(4 + 10 * (p.F / 2), 4, 14);
+  g.strokeStyle = COL.spring; g.lineWidth = 2.2; g.lineCap = "round"; g.lineJoin = "round";
+  g.beginPath(); g.moveTo(x0, y0);
+  for (let i = 1; i <= coils; i++) {
+    const t = i / (coils + 0.0);
+    const sgn = (i % 2 === 0) ? 1 : -1;
+    g.lineTo(x0 + ux * len * t + nx * amp * sgn * 0.7, y0 + uy * len * t + ny * amp * sgn * 0.7);
+  }
+  g.lineTo(x1, y1); g.stroke();
+  label(g, "弹簧：拉力 = 标尺读数", (x0 + x1) / 2 + nx * (amp + 12), (y0 + y1) / 2 + ny * (amp + 12),
+    { size: 10.5, color: COL.spring, align: "center" });
+  S.springPt = { x: (x0 + x1) / 2, y: (y0 + y1) / 2 };
+}
+/** 小球 + 矢量（v 蓝 / F 红 / a 绿） */
+function drawBall(which, p) {
+  const g = ctx;
+  const a = which === "A" ? S.angA : S.angB;
+  const X = px(Math.cos(a) * p.r), Y = py(Math.sin(a) * p.r);
+  const col = which === "A" ? COL.v : COL.B;
+  // 残影
+  if (S.show.strobe && S.strobePts.length) {
+    for (let i = 0; i < S.strobePts.length; i++) {
+      const q = S.strobePts[i][which];
+      if (!q) continue;
+      g.globalAlpha = 0.16 + 0.5 * (i / S.strobePts.length);
+      g.fillStyle = col;
+      g.beginPath(); g.arc(px(q.x), py(q.y), 5.4, 0, TAU); g.fill();
+    }
+    g.globalAlpha = 1;
+  }
+  // 球
+  g.fillStyle = col; g.strokeStyle = "#fff"; g.lineWidth = 2;
+  g.beginPath(); g.arc(X, Y, 9, 0, TAU); g.fill(); g.stroke();
+  g.fillStyle = "#fff"; g.font = '700 10px system-ui,sans-serif'; g.textAlign = "center"; g.textBaseline = "middle";
+  g.fillText(which, X, Y + 0.5);
+  // 常驻参数标签
+  const u = S.readMode === "grid" ? fmt(p.N, 1) + "格" : fmt(p.Fread, 3) + "N";
+  label(g, which + "：m=" + fmt(p.m, 2) + "kg　r=" + fmt(p.r, 3) + "m　ω=" + fmt(p.w, 2) + "rad/s　F=" + u,
+    X + 14, Y - 16, { size: 10.5, color: col, weight: 600 });
+  if (!S.show.vec) return;
+  /* ---- 以下方向一律用「屏幕坐标」单位矢量表示（注意屏幕 y 轴向下）：
+         球在 (X,Y)，圆心 O 在屏幕上的方向为 (−cos a, +sin a) ---- */
+  const rpx = Math.max(p.r * V.s, 1);                 // 半径的屏幕像素长度
+  const vsx = -Math.sin(a), vsy = -Math.cos(a);       // 速度：切线方向（逆时针）
+  const fsx = -Math.cos(a), fsy = Math.sin(a);        // 向心力/向心加速度：指向圆心 O
+  // 速度（切线，逆时针）
+  const vl = clamp(26 + p.v * 22, 26, 74);
+  arrow(g, X, Y, X + vsx * vl, Y + vsy * vl, COL.v, 2.6);
+  label(g, "v=" + fmt(p.v, 2) + " m/s", X + vsx * (vl + 16), Y + vsy * (vl + 16),
+    { size: 10.5, color: COL.v, weight: 600, align: "center" });
+  // 向心力（始终指向圆心 O；长度随 F 增大，但不穿过转轴）
+  const fl = radialLen(30 + p.F * 26, rpx, 22, 92);
+  arrow(g, X, Y, X + fsx * fl, Y + fsy * fl, COL.F, 3);
+  // 读数标签放在球的外侧（背向圆心）：既不遮小球，也不会两球标签在转轴处重叠
+  label(g, "Fₙ=" + (S.readMode === "grid" ? fmt(p.N, 1) + "格" : fmt(p.F, 2) + "N"),
+    X - fsx * 42, Y - fsy * 42, { size: 10.5, color: COL.F, weight: 700, align: "center" });
+  // 向心加速度（绿色，与 F 同向指向圆心，沿 −v 侧平移 22 px 以免与 v 重叠）
+  const al = radialLen(24 + p.a * 1.6, rpx, 20, 70);
+  const ox = -vsx * 22, oy = -vsy * 22;
+  arrow(g, X + ox, Y + oy, X + ox + fsx * al, Y + oy + fsy * al, COL.a, 2.2);
+  const ald = Math.min(al + 14, Math.max(24, rpx - 34));
+  label(g, "aₙ=" + fmt(p.a, 1) + "m/s²", X + ox + fsx * ald, Y + oy + fsy * ald,
+    { size: 10.5, color: COL.a, weight: 600, align: "center" });
+  // 直角标记（v ⊥ F，恒为 90°）
+  const s1 = 16;
+  g.save(); g.strokeStyle = COL.a; g.lineWidth = 1.3; g.beginPath();
+  g.moveTo(X + vsx * s1, Y + vsy * s1);
+  g.lineTo(X + vsx * s1 + fsx * s1, Y + vsy * s1 + fsy * s1);
+  g.lineTo(X + fsx * s1, Y + fsy * s1); g.stroke(); g.restore();
+  S.ballPt = S.ballPt || {}; S.ballPt[which] = { x: X, y: Y };
+}
+/** 转轴与底座 */
+function drawAxis() {
+  const g = ctx;
+  g.fillStyle = "#e2e8f0"; g.strokeStyle = "#94a3b8"; g.lineWidth = 1.6;
+  g.beginPath(); g.arc(px(0), py(0), 18, 0, TAU); g.fill(); g.stroke();
+  g.fillStyle = "#64748b"; g.beginPath(); g.arc(px(0), py(0), 6, 0, TAU); g.fill();
+  label(g, "转轴 O（圆心）", px(0) + 24, py(0) + 20, { size: 10.5, color: COL.sub });
+}
+/** 读数窗（转速）+ 双球并列测力标尺 */
+function drawHUD(pA, pB) {
+  const g = ctx;
+  if (!S.show.readout) return;
+  // 转速窗
+  const bx = 12, by = 12, bw = 182, bh = 80;
+  g.fillStyle = "rgba(255,255,255,.94)"; g.strokeStyle = "#cbd5e1"; g.lineWidth = 1.2;
+  g.beginPath(); g.rect(bx, by, bw, bh); g.fill(); g.stroke();
+  label(g, "转速 n = " + fmt(S.n, 0) + " r/min", bx + 9, by + 16, { size: 12, weight: 700, pad: false });
+  label(g, "ω = 2πn/60 = " + fmt(omegaMotor(), 3) + " rad/s　T = " + (S.n > 0 ? fmt(60 / S.n, 3) : "∞") + " s",
+    bx + 9, by + 34, { size: 10.5, color: COL.sub, pad: false });
+  label(g, S.drive === "motor" ? "驱动：电机" : "驱动：手摇柄（摇频 " + fmt(S.n / 60, 2) + " Hz）",
+    bx + 9, by + 51, { size: 10.5, color: COL.mut, pad: false });
+  label(g, "累计圈数 k = " + fmt(S.t * S.n / 60, 2) + " 圈（秒表 + 圈数计数）",
+    bx + 9, by + 67, { size: 10.5, color: COL.mut, pad: false });
+  S.anchors.push({ k: "n", x: bx + bw - 8, y: by + 10, card: "f_a" });
+  if (!S.show.ruler) return;
+  // 双球标尺（并列）
+  const rw = 226, rh = 150, rx = V.W - rw - 12, ry = 12;
+  g.fillStyle = "rgba(255,255,255,.95)"; g.strokeStyle = "#cbd5e1"; g.lineWidth = 1.2;
+  g.beginPath(); g.rect(rx, ry, rw, rh); g.fill(); g.stroke();
+  label(g, "测力标尺（并列对比）", rx + 9, ry + 14, { size: 11, weight: 700, pad: false });
+  const u = S.readMode === "grid" ? "格" : "N";
+  drawRulerBar(g, rx + 10, ry + 30, rw - 20, 34, pA, "A", COL.v);
+  drawRulerBar(g, rx + 10, ry + 76, rw - 20, 34, pB, "B", COL.B);
+  const r1 = yOf(pB) > 1e-9 ? yOf(pA) / yOf(pB) : 0;
+  const r2 = yTrue(pB) > 1e-9 ? yTrue(pA) / yTrue(pB) : 0;
+  label(g, "格数比 A:B = " + fmt(r1, 3) + " : 1　（理论 " + fmt(r2, 3) + " : 1）", rx + 9, ry + 124,
+    { size: 10.5, color: COL.F, weight: 700, pad: false });
+  let badge = "";
+  if (Math.abs(S.A.m - S.B.m) < 1e-9 && Math.abs(S.A.r - S.B.r) < 1e-9) badge = "m、r 相同";
+  else if (Math.abs(S.A.r - S.B.r) < 1e-9) badge = "r 相同";
+  else if (Math.abs(S.A.m - S.B.m) < 1e-9) badge = "m 相同";
+  if (S.cmp === "same") badge += (badge ? "，" : "") + "ω 相同（同轴）";
+  else badge += (badge ? "，" : "") + "ω 比 " + fmt(S.A.gear / S.B.gear, 2) + " : 1（换档）";
+  label(g, "控制量：" + (badge || "自由调节"), rx + 9, ry + 141,
+    { size: 10.5, color: COL.sub, weight: 600, pad: false });
+  S.anchors.push({ k: "ruler", x: rx + rw - 10, y: ry + 8, card: "m_grid" });
+}
+/** 单条标尺：红白等分格，指针到当前格数 */
+function drawRulerBar(g, x, y, w, h, p, name, col) {
+  const N = clamp(yOf(p), 0, CFG.gridMax);
+  const frac = N / CFG.gridMax;
+  g.save();
+  g.fillStyle = "#f1f5f9"; g.strokeStyle = "#94a3b8"; g.lineWidth = 1;
+  g.fillRect(x, y, w, h); g.strokeRect(x, y, w, h);
+  // 红白等分格（每 2 格一循环，共 20 个色块）
+  const blk = w / 20;
+  for (let i = 0; i < 20; i++) {
+    g.fillStyle = p.over ? "#ef4444" : (i % 2 === 0 ? "#fca5a5" : "#ffffff");
+    g.fillRect(x + i * blk, y + 2, blk - 0.5, h - 4);
+  }
+  // 已伸长部分加深
+  g.fillStyle = p.over ? "rgba(153,27,27,.55)" : "rgba(220,38,38,.30)";
+  g.fillRect(x + 1, y + 2, (w - 2) * frac, h - 4);
+  // 指针
+  const pxp = x + (w - 2) * frac;
+  g.strokeStyle = p.over ? "#7f1d1d" : "#0f172a"; g.lineWidth = 2;
+  g.beginPath(); g.moveTo(pxp, y - 3); g.lineTo(pxp, y + h + 3); g.stroke();
+  g.fillStyle = p.over ? "#7f1d1d" : "#0f172a";
+  g.beginPath(); g.moveTo(pxp - 4, y - 4); g.lineTo(pxp + 4, y - 4); g.lineTo(pxp, y + 2); g.closePath(); g.fill();
+  g.restore();
+  label(g, name + "：" + fmt(yOf(p), 2) + " " + (S.readMode === "grid" ? "格" : "N") +
+    "　（满量程 " + CFG.gridMax + " 格）", x + 2, y + h + 12, { size: 10.5, color: col, weight: 600, pad: false });
+  if (p.over) label(g, "⚠ 超出弹性限度", x + w - 4, y - 8, { size: 10.5, color: "#b91c1c", weight: 700, align: "right" });
+}
+/** 塔轮 + 皮带 + 电机/手摇柄（屏幕坐标示意图） */
+function drawTower() {
+  if (!S.show.tower) return;
+  const g = ctx, bx = 12, by = V.H - 156, bw = 206, bh = 144;
+  g.fillStyle = "rgba(255,255,255,.94)"; g.strokeStyle = "#cbd5e1"; g.lineWidth = 1.2;
+  g.beginPath(); g.rect(bx, by, bw, bh); g.fill(); g.stroke();
+  label(g, "塔轮与皮带（半径比 1:2:3）", bx + 8, by + 13, { size: 11, weight: 700, pad: false });
+  const cx1 = bx + 58, cy1 = by + 84, cx2 = bx + 148, cy2 = by + 84;
+  const steps = [18, 12, 6];   // 三级塔轮半径（px），半径比 3:2:1
+  function pulley(cx, cy, activeIdx) {
+    for (let i = 0; i < 3; i++) {
+      g.beginPath(); g.arc(cx, cy, steps[i], 0, TAU);
+      g.fillStyle = i === activeIdx ? "#fde68a" : "#e2e8f0";
+      g.fill(); g.strokeStyle = "#94a3b8"; g.lineWidth = 1.2; g.stroke();
+    }
+    g.fillStyle = "#475569"; g.beginPath(); g.arc(cx, cy, 3, 0, TAU); g.fill();
+  }
+  /* 传动比 g = ω轴/ω电机 = R主动/R从动。
+     三级半径 18:12:6 = 3:2:1，故 1、3:2、2:1、3:1、2:3、1:2、1:3 都能用真实档位组合实现 */
+  const PAIR = {
+    1: [0, 0], 1.5: [0, 1], 2: [1, 2], 3: [0, 2],
+    0.667: [1, 0], 0.5: [2, 1], 0.333: [2, 0]
+  };
+  const pr = PAIR[S.A.gear] || [0, 0];
+  pulley(cx1, cy1, pr[0]);   // 主动塔轮（电机侧）
+  pulley(cx2, cy2, pr[1]);   // 从动塔轮（转轴侧）
+  // 皮带：两轮的外公切线（半径不同时是斜线，半径相同时才是水平线）
+  const rr1 = steps[pr[0]], rr2 = steps[pr[1]];
+  const sa = (rr2 - rr1) / (cx2 - cx1), ca = Math.sqrt(Math.max(0, 1 - sa * sa));
+  const nx = -sa, ny = -ca;
+  g.strokeStyle = "#0f172a"; g.lineWidth = 2;
+  g.beginPath(); g.moveTo(cx1 + rr1 * nx, cy1 + rr1 * ny); g.lineTo(cx2 + rr2 * nx, cy2 + rr2 * ny); g.stroke();
+  g.beginPath(); g.moveTo(cx1 - rr1 * nx, cy1 - rr1 * ny); g.lineTo(cx2 - rr2 * nx, cy2 - rr2 * ny); g.stroke();
+  label(g, "主动塔轮", cx1, cy1 + 30, { size: 10, color: COL.sub, align: "center" });
+  label(g, "从动塔轮", cx2, cy2 + 30, { size: 10, color: COL.sub, align: "center" });
+  label(g, "皮带线速度相等 ⟹ ω₁R₁ = ω₂R₂", bx + 8, by + bh - 26, { size: 10, color: COL.mut, pad: false });
+  label(g, "当前传动比 " + (CFG.gearLabels[S.A.gear] || "1:1") + " → ω<sub>轴</sub> = " + fmt(omegaOf("A"), 2) + " rad/s",
+    bx + 8, by + bh - 11, { size: 10, color: COL.sub, pad: false });
+  // 电机 / 手摇柄
+  const mx = bx + bw - 44, my = by + 20;
+  if (S.drive === "motor") {
+    g.fillStyle = "#dbeafe"; g.strokeStyle = COL.v; g.lineWidth = 1.4;
+    g.beginPath(); g.rect(mx - 18, my - 12, 36, 24); g.fill(); g.stroke();
+    label(g, "电机", mx, my, { size: 10, color: COL.v, align: "center", pad: false });
+  } else {
+    g.strokeStyle = COL.spring; g.lineWidth = 2.4;
+    const aa = S.angA;
+    g.beginPath(); g.moveTo(mx, my); g.lineTo(mx + Math.cos(aa) * 14, my - Math.sin(aa) * 14); g.stroke();
+    g.fillStyle = COL.spring; g.beginPath(); g.arc(mx + Math.cos(aa) * 14, my - Math.sin(aa) * 14, 4, 0, TAU); g.fill();
+    label(g, "手摇柄", mx - 22, my - 18, { size: 10, color: COL.spring, pad: false });
+  }
+  S.anchors.push({ k: "tower", x: bx + bw - 10, y: by + 10, card: "m_control" });
+}
+/** 受力分析层（正视）：G、N、弹簧拉力 T 与合力 = 向心力 */
+function drawForceLayer(p) {
+  if (!S.show.force) return;
+  const g = ctx, w = 238, h = 168, bx = V.W - w - 12, by = V.H - h - 12;
+  g.fillStyle = "rgba(255,255,255,.95)"; g.strokeStyle = "#cbd5e1"; g.lineWidth = 1.2;
+  g.beginPath(); g.rect(bx, by, w, h); g.fill(); g.stroke();
+  label(g, "受力分析（正视）", bx + 8, by + 13, { size: 11, weight: 700, pad: false });
+  const X = bx + 78, Y = by + 96;
+  // 支承面
+  g.strokeStyle = "#94a3b8"; g.lineWidth = 2;
+  g.beginPath(); g.moveTo(bx + 20, Y + 22); g.lineTo(bx + w - 20, Y + 22); g.stroke();
+  for (let i = 0; i < 12; i++) {
+    g.beginPath(); g.moveTo(bx + 20 + i * 16, Y + 22); g.lineTo(bx + 14 + i * 16, Y + 32); g.stroke();
+  }
+  // 球
+  g.fillStyle = COL.v; g.strokeStyle = "#fff"; g.lineWidth = 2;
+  g.beginPath(); g.arc(X, Y, 11, 0, TAU); g.fill(); g.stroke();
+  // 重力 G（向下）、支持力 N（向上）—— 等长表示平衡
+  arrow(g, X, Y + 11, X, Y + 52, "#0f172a", 2.2);
+  label(g, "G=mg", X + 8, Y + 56, { size: 10.5, color: "#0f172a", weight: 600, pad: false });
+  arrow(g, X, Y - 11, X, Y - 50, "#64748b", 2.2);
+  label(g, "N", X + 8, Y - 46, { size: 10.5, color: "#475569", weight: 600, pad: false });
+  label(g, "G 与 N 平衡 → 不提供向心力", bx + 8, by + h - 30, { size: 10, color: COL.mut, pad: false });
+  // 弹簧拉力 T（水平指向圆心，红色标注为合力）
+  const fl = clamp(34 + p.F * 30, 34, 92);
+  arrow(g, X + 11, Y, X + 11 + fl, Y, COL.F, 3);
+  label(g, "T = Fₙ = " + (S.readMode === "grid" ? fmt(p.N, 1) + " 格" : fmt(p.F, 2) + " N"),
+    X + 20 + fl, Y - 14, { size: 10.5, color: COL.F, weight: 700, pad: false });
+  label(g, "合力 = 向心力（由弹簧弹力提供，指向圆心）", bx + 8, by + h - 14,
+    { size: 10.5, color: COL.F, weight: 600, pad: false });
+  S.anchors.push({ k: "force", x: bx + w - 10, y: by + 10, card: "c_effect" });
+}
+/** 静态分帧图（prefers-reduced-motion 或手动） */
+function drawStaticStrip(p) {
+  const g = ctx, n = 4, w = 110, h = 110;
+  const x0 = Math.max(228, (V.W - 486) / 2), y0 = V.H - h - 26;
+  for (let i = 0; i < n; i++) {
+    const bx = x0 + i * (w + 8);
+    g.fillStyle = "rgba(255,255,255,.94)"; g.strokeStyle = "#cbd5e1"; g.lineWidth = 1.2;
+    g.beginPath(); g.rect(bx, y0, w, h); g.fill(); g.stroke();
+    const cx2 = bx + w / 2, cy2 = y0 + 58, R = 34;
+    g.save(); g.setLineDash([3, 3]); g.strokeStyle = "#cbd5e1";
+    g.beginPath(); g.arc(cx2, cy2, R, 0, TAU); g.stroke(); g.restore();
+    const a = i * TAU / n, X = cx2 + Math.cos(a) * R, Y = cy2 - Math.sin(a) * R;
+    g.fillStyle = COL.v; g.beginPath(); g.arc(X, Y, 6, 0, TAU); g.fill();
+    arrow(g, X, Y, cx2, cy2, COL.F, 2.2, 7);
+    const tx = -Math.sin(a), ty = Math.cos(a);
+    arrow(g, X, Y, X + tx * 22, Y - ty * 22, COL.v, 2, 7);
+    label(g, "θ=" + (i * 90) + "°", bx + 6, y0 + h - 10, { size: 10, color: COL.sub, pad: false });
+  }
+  label(g, "静态分帧：Fₙ 始终指向圆心、v 沿切线、二者垂直", x0, y0 + h + 12,
+    { size: 10.5, color: COL.F, weight: 600, pad: false });
+  void p;
+}
+/** 主绘制入口 */
+function draw() {
+  const pA = ballPhys("A"), pB = ballPhys("B");
+  S.anchors = [];
+  drawBoard();
+  drawCircles(pA, pB);
+  drawAxis();               // 转轴先画，矢量与标签后画：箭头指向圆心时可压在转轴上方，不被轴盘遮住
+  drawRod(pA, pB);
+  drawSpring("A", pA);
+  drawSpring("B", pB);
+  drawBall("A", pA);
+  drawBall("B", pB);
+  drawTower();
+  drawHUD(pA, pB);
+  drawForceLayer(pA);
+  if (S.staticStrip) drawStaticStrip(pA);
+  if (S.springPt) S.anchors.push({ k: "spring", x: S.springPt.x, y: S.springPt.y - 4, card: "s_rope" });
+  if (S.ballPt && S.ballPt.A) S.anchors.push({ k: "ball", x: S.ballPt.A.x + 12, y: S.ballPt.A.y - 12, card: "c_an" });
+  syncHotspots();
+}
+/** 把 ⓘ 锚点同步为可点击的 DOM 圆标 */
+let hotEls = {};
+function syncHotspots() {
+  const box = $("hot");
+  const seen = {};
+  for (let i = 0; i < S.anchors.length; i++) {
+    const an = S.anchors[i];
+    seen[an.k] = 1;
+    let el = hotEls[an.k];
+    if (!el) {
+      el = document.createElement("button");
+      el.className = "hot"; el.textContent = "ⓘ";
+      el.setAttribute("aria-label", "查看相关知识卡片");
+      el.addEventListener("click", function () { openCard(an.card); });
+      box.appendChild(el); hotEls[an.k] = el;
+    }
+    el.style.left = an.x + "px"; el.style.top = an.y + "px";
+    el.dataset.card = an.card;
+  }
+  Object.keys(hotEls).forEach(function (k) {
+    if (!seen[k]) { hotEls[k].style.display = "none"; }
+    else hotEls[k].style.display = "";
+  });
+}
+/* ===================== 12. 图像分析 ===================== */
+const CHART_TABS = [
+  { k: "w2", t: "F–ω²（实验①）" },
+  { k: "r", t: "F–r（实验②）" },
+  { k: "m", t: "F–m（实验③）" },
+  { k: "inv", t: "F–1/r（反例④）" },
+  { k: "cmp", t: "F–ω 与 F–n（对照）" },
+  { k: "all", t: "四联图" }
+];
+const GROUP_OF = { w2: 1, r: 2, m: 3, inv: 4, cmp: 1 };
+function renderChartTabs() {
+  let h = "";
+  for (let i = 0; i < CHART_TABS.length; i++) {
+    const c = CHART_TABS[i];
+    h += '<button data-c="' + c.k + '" class="' + (S.chart === c.k ? "on" : "") + '" role="tab">' + c.t + "</button>";
+  }
+  $("chartTabs").innerHTML = h;
+  const bs = $("chartTabs").querySelectorAll("button");
+  for (let i = 0; i < bs.length; i++) {
+    bs[i].addEventListener("click", function () { S.chart = this.dataset.c; renderChartTabs(); drawChart(); });
+  }
+}
+/** 某条记录的图像横坐标 */
+function recX(rec, key) {
+  if (key === "w2") return rec.w * rec.w;
+  if (key === "r") return rec.r;
+  if (key === "m") return rec.m;
+  if (key === "inv") return 1 / rec.r;
+  if (key === "cmp") return rec.w;
+  return rec.w * rec.w;
+}
+function recY(rec) { return S.readMode === "grid" ? rec.N : rec.Fread; }
+function recYth(rec) { return S.readMode === "grid" ? rec.Nth : rec.Fth; }
+function recsOf(key) {
+  const gid = GROUP_OF[key] || 0;
+  return S.records.filter(function (r) { return r.exp === gid; });
+}
+/** 理论曲线：给定横坐标 x，按该组"控制量"算出理论纵坐标 */
+function theoryAt(key, x, base) {
+  if (!base) return 0;
+  if (key === "w2") return base.m * base.r * x;                       // F = (mr)·ω²
+  if (key === "r") return base.m * base.w * base.w * x;               // F = (mω²)·r
+  if (key === "m") return base.w * base.w * base.r * x;               // F = (ω²r)·m
+  if (key === "inv") return base.m * base.v * base.v * x;             // F = (mv²)·(1/r)
+  return base.m * base.r * x * x;                                     // F–ω：抛物线
+}
+/** 画一个坐标系面板 */
+function panelAxes(g, x, y, w, h, title, xl, yl) {
+  g.fillStyle = "#fff"; g.fillRect(x, y, w, h);
+  g.strokeStyle = "#e2e8f0"; g.lineWidth = 1; g.strokeRect(x, y, w, h);
+  g.fillStyle = "#0f172a"; g.font = '700 12px system-ui,"Microsoft YaHei",sans-serif';
+  g.textAlign = "left"; g.textBaseline = "middle";
+  g.fillText(title, x + 8, y + 14);
+  const L = 52, B = 34, T = 26, R = 14;
+  const px0 = x + L, py0 = y + h - B, pw = w - L - R, ph = h - T - B;
+  g.strokeStyle = "#475569"; g.lineWidth = 1.4;
+  g.beginPath(); g.moveTo(px0, py0 - ph); g.lineTo(px0, py0); g.lineTo(px0 + pw, py0); g.stroke();
+  g.fillStyle = "#475569"; g.font = '11px system-ui,sans-serif'; g.textAlign = "center";
+  g.fillText(xl, px0 + pw / 2, y + h - 10);
+  g.save(); g.translate(x + 14, py0 - ph / 2); g.rotate(-Math.PI / 2);
+  g.fillText(yl, 0, 0); g.restore();
+  return { x0: px0, y0: py0, w: pw, h: ph };
+}
+/** 单面板绘图（含理论曲线、拟合直线、误差带） */
+function drawPanel(g, x, y, w, h, key, title) {
+  const recs = recsOf(key);
+  const u = S.readMode === "grid" ? "格（标尺读数）" : "N";
+  const xl = key === "w2" ? "ω²（(rad/s)²）" : key === "r" ? "r（m）" : key === "m" ? "m（kg）" :
+    key === "inv" ? "1/r（1/m）" : "ω（rad/s）";
+  const A = panelAxes(g, x, y, w, h, title, xl, "F（" + u + "）");
+  if (!recs.length) {
+    g.fillStyle = "#94a3b8"; g.font = '12px system-ui,sans-serif'; g.textAlign = "center";
+    g.fillText("暂无数据：请点右侧「一键采集该组数据」", x + w / 2, y + h / 2);
+    return null;
+  }
+  const base = recs[0];
+  // 量程
+  let maxX = 0, maxY = 0;
+  for (let i = 0; i < recs.length; i++) {
+    maxX = Math.max(maxX, recX(recs[i], key));
+    maxY = Math.max(maxY, recY(recs[i]), recYth(recs[i]));
+  }
+  maxX = maxX * 1.12 || 1; maxY = maxY * 1.18 || 1;
+  const sx = function (v) { return A.x0 + A.w * v / maxX; };
+  const sy = function (v) { return A.y0 - A.h * v / maxY; };
+  // 网格
+  g.strokeStyle = "#f1f5f9"; g.lineWidth = 1;
+  for (let i = 1; i <= 5; i++) {
+    const yy = A.y0 - A.h * i / 5;
+    g.beginPath(); g.moveTo(A.x0, yy); g.lineTo(A.x0 + A.w, yy); g.stroke();
+  }
+  // 理论曲线
+  g.strokeStyle = "#94a3b8"; g.lineWidth = 1.8; g.setLineDash([6, 4]);
+  g.beginPath();
+  for (let i = 0; i <= 60; i++) {
+    const xx = maxX * i / 60, yy = theoryAt(key, xx, base);
+    const vy = S.readMode === "grid" ? yy / CFG.qGrid : yy;
+    if (i === 0) g.moveTo(sx(xx), sy(vy)); else g.lineTo(sx(xx), sy(vy));
+  }
+  g.stroke(); g.setLineDash([]);
+  // 过原点拟合直线（最小二乘，强制过原点）
+  let sxy = 0, sxx = 0;
+  for (let i = 0; i < recs.length; i++) { const xx = recX(recs[i], key); sxy += xx * recY(recs[i]); sxx += xx * xx; }
+  const k = sxx > 0 ? sxy / sxx : 0;
+  if (key !== "cmp") {
+    g.strokeStyle = "#f59e0b"; g.lineWidth = 1.8; g.setLineDash([4, 3]);
+    g.beginPath(); g.moveTo(sx(0), sy(0)); g.lineTo(sx(maxX), sy(k * maxX)); g.stroke(); g.setLineDash([]);
+  }
+  // 理论点（空心）+ 实测点（实心）
+  for (let i = 0; i < recs.length; i++) {
+    const X = sx(recX(recs[i], key)), Yt = sy(recYth(recs[i])), Yr = sy(recY(recs[i]));
+    g.strokeStyle = "#16a34a"; g.lineWidth = 1.6;
+    g.beginPath(); g.arc(X, Yt, 4.2, 0, TAU); g.stroke();
+    g.fillStyle = "#2563eb"; g.beginPath(); g.arc(X, Yr, 4.6, 0, TAU); g.fill();
+    if (S.errMode === "real") {
+      const sd = (S.readMode === "grid" ? recs[i].sd / CFG.qGrid : recs[i].sd) || 0;
+      if (sd > 0) {
+        g.strokeStyle = "rgba(234,88,12,.85)"; g.lineWidth = 1.4;
+        g.beginPath(); g.moveTo(X, sy(Math.max(0, recY(recs[i]) - sd))); g.lineTo(X, sy(recY(recs[i]) + sd)); g.stroke();
+      }
+    }
+  }
+  // 图例
+  g.font = '10.5px system-ui,sans-serif'; g.textAlign = "left";
+  g.fillStyle = "#2563eb"; g.fillRect(A.x0 + A.w - 118, y + 22, 9, 3);
+  g.fillStyle = "#475569"; g.fillText("实测点", A.x0 + A.w - 104, y + 23);
+  g.strokeStyle = "#16a34a"; g.beginPath(); g.arc(A.x0 + A.w - 58, y + 23, 4, 0, TAU); g.stroke();
+  g.fillStyle = "#475569"; g.fillText("理论值", A.x0 + A.w - 48, y + 23);
+  // 统计
+  let err = 0;
+  for (let i = 0; i < recs.length; i++) err += Math.abs(recs[i].Fread - recs[i].Fth) / (recs[i].Fth || 1);
+  err = err / recs.length * 100;
+  return { k: k, err: err, n: recs.length };
+}
+function drawChart() {
+  const a = fitCanvas(cvC, ctxC);
+  const g = ctxC;
+  g.clearRect(0, 0, a.w, a.h);
+  g.fillStyle = "#fff"; g.fillRect(0, 0, a.w, a.h);
+  if (S.chart === "all") {
+    const w2 = a.w / 2, h2 = a.h / 2;
+    drawPanel(g, 0, 0, w2, h2, "w2", "实验① F–ω²（m、r 不变）");
+    drawPanel(g, w2, 0, w2, h2, "r", "实验② F–r（m、ω 不变）");
+    drawPanel(g, 0, h2, w2, h2, "m", "实验③ F–m（r、ω 不变）");
+    drawPanel(g, w2, h2, w2, h2, "inv", "反例④ F–1/r（m、v 不变）");
+  } else if (S.chart === "cmp") {
+    drawPanel(g, 0, 0, a.w / 2, a.h, "cmp", "对照：F–ω（应弯曲，不是直线！）");
+    drawPanel(g, a.w / 2, 0, a.w / 2, a.h, "w2", "F–ω²（应过原点直线）");
+  } else {
+    const title = (S.chart === "w2" ? "实验① " : S.chart === "r" ? "实验② " : S.chart === "m" ? "实验③ " : "反例④ ") +
+      (S.chart === "w2" ? "F–ω²（m、r 不变）" : S.chart === "r" ? "F–r（m、ω 不变）" :
+        S.chart === "m" ? "F–m（r、ω 不变）" : "F–1/r（m、v 不变）");
+    drawPanel(g, 0, 0, a.w, a.h, S.chart, title);
+  }
+  updateChartNote();
+}
+function updateChartNote() {
+  const key = S.chart === "all" || S.chart === "cmp" ? "w2" : S.chart;
+  const gid = GROUP_OF[key];
+  const E = EXPERIMENTS[gid];
+  const recs = recsOf(key);
+  const info = drawPanelInfo(key);
+  let h = "";
+  if (E) h += "<b>" + E.name + "</b>：" + E.concl + "<br>";
+  if (recs.length) {
+    const q = S.readMode === "grid" ? CFG.qGrid : 1;   // 格数模式：N → 格 需除以分度值
+    const uu = S.readMode === "grid" ? " 格/" : " N/";
+    h += "实测点数 " + recs.length + "　过原点拟合斜率 ≈ <b>" + fmt(info.k, 4) + "</b>";
+    if (key === "w2") h += "（理论斜率 = m·r" + (S.readMode === "grid" ? "÷" + CFG.qGrid : "") + " = " +
+      fmt(recs[0].m * recs[0].r / q, 4) + uu + "(rad/s)²）";
+    if (key === "r") h += "（理论斜率 = m·ω²" + (S.readMode === "grid" ? "÷" + CFG.qGrid : "") + " = " +
+      fmt(recs[0].m * recs[0].w * recs[0].w / q, 4) + uu + "m）";
+    if (key === "m") h += "（理论斜率 = ω²·r" + (S.readMode === "grid" ? "÷" + CFG.qGrid : "") + " = " +
+      fmt(recs[0].w * recs[0].w * recs[0].r / q, 4) + uu + "kg）";
+    if (key === "inv") h += "（理论斜率 = m·v²" + (S.readMode === "grid" ? "÷" + CFG.qGrid : "") + " = " +
+      fmt(recs[0].m * recs[0].v * recs[0].v / q, 4) + (S.readMode === "grid" ? " 格·m" : " N·m") + "）";
+    h += "　平均相对误差 <b>" + fmt(info.err, 2) + " %</b>";
+    h += S.errMode === "ideal" ? "（理想模式应 < 1 %）" : "（含误差模式：误差属正常，结论仍由趋势得出）";
+  } else {
+    h += "暂无该组数据：点右侧「一键采集该组数据」自动测量 " +
+      (E ? E.samples.length : 5) + " 个点。";
+  }
+  if (S.chart === "cmp") h += "<br><b>对照目的：</b>F–ω 图是<b>曲线</b>（弯曲），F–ω² 图才是<b>过原点直线</b> ⟹ F ∝ ω² 而不是 F ∝ ω。";
+  $("chartNote").innerHTML = h;
+}
+/** 只取拟合统计（不重绘） */
+function drawPanelInfo(key) {
+  const recs = recsOf(key);
+  if (!recs.length) return { k: 0, err: 0, n: 0 };
+  let sxy = 0, sxx = 0, err = 0;
+  for (let i = 0; i < recs.length; i++) {
+    const xx = recX(recs[i], key);
+    sxy += xx * recY(recs[i]); sxx += xx * xx;
+    err += Math.abs(recs[i].Fread - recs[i].Fth) / (recs[i].Fth || 1);
+  }
+  return { k: sxx > 0 ? sxy / sxx : 0, err: err / recs.length * 100, n: recs.length };
+}
+
+/* ===================== 13. 数据记录表 ===================== */
+function addRecord(silent) {
+  const p = ballPhys("A");
+  const times = S.multi ? 5 : 1;
+  let Fread = p.Fread, sd = 0;
+  if (times > 1) {
+    const av = readingAvg(p.F, times);
+    Fread = av.F; sd = av.sd;
+  }
+  const rec = {
+    exp: S.exp || 0, m: p.m, r: p.r, n: p.n, w: p.w, v: p.v, a: p.a,
+    N: Fread / CFG.qGrid, Nth: p.F / CFG.qGrid, Fread: Fread, Fth: p.F, sd: sd, times: times
+  };
+  S.records.push(rec);
+  renderRecords();
+  drawChart();
+  if (!silent) { toast("已记录 1 条数据（" + times + " 次测量取平均）"); beep(760, 0.09); }
+}
+function renderRecords() {
+  const tb = $("recBody");
+  let h = "";
+  for (let i = 0; i < S.records.length; i++) {
+    const r = S.records[i];
+    const err = Math.abs(r.Fread - r.Fth) / (r.Fth || 1) * 100;
+    h += '<tr class="exp' + r.exp + '"><td class="l">' + (r.exp ? EXPERIMENTS[r.exp].name.split(" ")[0] : "自由") +
+      (r.times > 1 ? " ×" + r.times : "") + "</td><td>" + fmt(r.m, 3) + "</td><td>" + fmt(r.r, 3) + "</td><td>" +
+      fmt(r.n, 1) + "</td><td>" + fmt(r.w, 3) + "</td><td>" + fmt(r.v, 3) + "</td><td>" + fmt(r.N, 2) + "</td><td>" +
+      fmt(r.Fread, 4) + "</td><td>" + fmt(r.Fth, 4) + "</td><td>" + fmt(err, 2) + "%</td><td>" + fmt(r.a, 2) + "</td></tr>";
+  }
+  tb.innerHTML = h || '<tr><td class="l" colspan="11" style="color:#94a3b8">暂无记录：调好参数后点「记录当前数据」，或点实验组的「一键采集」。</td></tr>';
+  $("recCount").textContent = S.records.length;
+}
+function exportCSV() {
+  if (!S.records.length) { toast("暂无记录可导出"); return; }
+  const head = ["组别", "m(kg)", "r(m)", "n(r/min)", "omega(rad/s)", "v(m/s)", "格数", "F读(N)", "F理(N)", "相对误差(%)", "an(m/s^2)"];
+  let s = head.join(",") + "\n";
+  for (let i = 0; i < S.records.length; i++) {
+    const r = S.records[i];
+    const err = Math.abs(r.Fread - r.Fth) / (r.Fth || 1) * 100;
+    s += [r.exp ? EXPERIMENTS[r.exp].name.split(" ")[0] : "自由", r.m.toFixed(4), r.r.toFixed(4), r.n.toFixed(2),
+      r.w.toFixed(4), r.v.toFixed(4), r.N.toFixed(3), r.Fread.toFixed(5), r.Fth.toFixed(5), err.toFixed(3), r.a.toFixed(3)].join(",") + "\n";
+  }
+  const blob = new Blob(["\ufeff" + s], { type: "text/csv;charset=utf-8" });
+  const a = document.createElement("a");
+  a.href = URL.createObjectURL(blob); a.download = "向心力实验数据.csv";
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  setTimeout(function () { URL.revokeObjectURL(a.href); }, 2000);
+  toast("已导出 CSV（" + S.records.length + " 条）");
+}
+/** 比值法：对当前组相邻两点求自变量比、格数比、理论比，并给结论 */
+function calcRatio() {
+  const key = S.chart === "all" || S.chart === "cmp" ? "w2" : S.chart;
+  const gid = GROUP_OF[key];
+  const recs = recsOf(key);
+  const box = $("ratioBox");
+  if (recs.length < 2) { box.style.display = ""; box.innerHTML = "该组数据不足 2 条，无法计算比值。请先「一键采集」。"; return; }
+  let h = "<b>比值法（当前组：" + (EXPERIMENTS[gid] ? EXPERIMENTS[gid].name : "自由") + "）</b><br>";
+  h += '<table style="width:100%;font-size:12px;margin-top:6px"><tr><th class="l">比较</th><th>自变量比</th><th>格数比（实测）</th><th>理论比</th><th class="l">结论</th></tr>';
+  for (let i = 1; i < recs.length; i++) {
+    const a = recs[i - 1], b = recs[i];
+    const xa = recX(a, key), xb = recX(b, key);
+    const xr = xa > 0 ? xb / xa : 0;
+    const yr = a.N > 0 ? b.N / a.N : 0;
+    const tr = a.Fth > 0 ? b.Fth / a.Fth : 0;
+    let concl = "";
+    if (key === "w2") {
+      const nr = a.n > 0 ? b.n / a.n : 0;
+      concl = "n 比 " + fmt(nr, 2) + " → F 比 " + fmt(yr, 2) + "（≈" + fmt(nr * nr, 2) + "）⟹ F ∝ ω²";
+    } else if (key === "r") concl = "r 比 " + fmt(xr, 2) + " → F 比 " + fmt(yr, 2) + " ⟹ F ∝ r（ω 不变）";
+    else if (key === "m") concl = "m 比 " + fmt(xr, 2) + " → F 比 " + fmt(yr, 2) + " ⟹ F ∝ m";
+    else concl = "r 比 " + fmt(b.r / a.r, 2) + " → F 比 " + fmt(yr, 2) + " ⟹ F ∝ 1/r（v 不变）";
+    h += "<tr><td class='l'>点" + i + " / 点" + (i + 1) + "</td><td>" + fmt(xr, 3) + "</td><td><b>" + fmt(yr, 3) +
+      "</b></td><td>" + fmt(tr, 3) + "</td><td class='l'>" + concl + "</td></tr>";
+  }
+  h += "</table><div style='margin-top:6px'>判据：格数比 ≈ 理论比（相对偏差 &lt; 5%）即验证成立；含误差模式下用多次测量取平均后可更接近。</div>";
+  box.style.display = ""; box.innerHTML = h;
+}
+/* ===================== 14. 力源溯源情境图 ===================== */
+function drawScenario() {
+  const a = fitCanvas(cvS, ctxS), g = ctxS, w = a.w, h = a.h;
+  g.clearRect(0, 0, w, h);
+  g.fillStyle = "#fff"; g.fillRect(0, 0, w, h);
+  const cx = w / 2, cy = h * 0.54;
+  const sc = S.scen;
+  if (sc === "rope") {
+    const rx = Math.min(w * 0.30, 130), ry = rx * 0.42;
+    g.save(); g.setLineDash([5, 4]); g.strokeStyle = "#cbd5e1"; g.lineWidth = 1.4;
+    g.beginPath(); g.ellipse(cx, cy, rx, ry, 0, 0, TAU); g.stroke(); g.restore();
+    g.fillStyle = "#64748b"; g.beginPath(); g.arc(cx, cy, 4, 0, TAU); g.fill();
+    const X = cx + rx, Y = cy;
+    g.fillStyle = COL.v; g.strokeStyle = "#fff"; g.lineWidth = 2;
+    g.beginPath(); g.arc(X, Y, 10, 0, TAU); g.fill(); g.stroke();
+    arrow(g, X - 10, Y, cx + 6, Y, COL.F, 3);
+    label(g, "T = Fₙ", (X + cx) / 2, Y - 16, { size: 11, color: COL.F, weight: 700, align: "center" });
+    arrow(g, X, Y - 10, X, Y - 46, COL.v, 2.2);
+    label(g, "v", X + 10, Y - 40, { size: 11, color: COL.v, weight: 700 });
+    // 竖直方向：G 与 N 平衡
+    arrow(g, X + 22, Y + 10, X + 22, Y + 52, "#0f172a", 2);
+    label(g, "G", X + 28, Y + 54, { size: 11, color: "#0f172a", weight: 700 });
+    arrow(g, X + 22, Y - 10, X + 22, Y - 52, "#64748b", 2);
+    label(g, "N", X + 28, Y - 46, { size: 11, color: "#475569", weight: 700 });
+    label(g, "竖直：N = G 平衡（不提供向心力）；水平：绳拉力 T 全部充当向心力",
+      cx, h - 14, { size: 11, color: COL.sub, align: "center" });
+  } else if (sc === "conical") {
+    const px0 = cx, py0 = 34, R = Math.min(w * 0.26, 108);
+    const X = cx - R, Y = h * 0.66;
+    g.fillStyle = "#64748b"; g.beginPath(); g.arc(px0, py0, 4, 0, TAU); g.fill();
+    g.strokeStyle = "#475569"; g.lineWidth = 1.6;
+    g.beginPath(); g.moveTo(px0, py0); g.lineTo(X, Y); g.stroke();
+    g.save(); g.setLineDash([4, 4]); g.strokeStyle = "#cbd5e1";
+    g.beginPath(); g.moveTo(px0, py0); g.lineTo(px0, Y + 26); g.stroke();
+    g.beginPath(); g.moveTo(px0, Y); g.lineTo(X, Y); g.stroke(); g.restore();
+    g.save(); g.setLineDash([3, 3]); g.strokeStyle = "#94a3b8";
+    g.beginPath(); g.ellipse(px0, Y, R, R * 0.34, 0, 0, TAU); g.stroke(); g.restore();
+    g.fillStyle = COL.v; g.strokeStyle = "#fff"; g.lineWidth = 2;
+    g.beginPath(); g.arc(X, Y, 10, 0, TAU); g.fill(); g.stroke();
+    // θ 为绳与竖直方向的夹角；T 沿绳指向悬点（屏幕上是右上方向）
+    const th = Math.atan2(Y - py0, px0 - X);
+    arrow(g, X, Y, X + Math.cos(th) * 62, Y - Math.sin(th) * 62, COL.spring, 2.6);
+    label(g, "T", X + Math.cos(th) * 70, Y - Math.sin(th) * 70 - 6,
+      { size: 12, color: COL.spring, weight: 700, align: "center" });
+    arrow(g, X, Y + 10, X, Y + 54, "#0f172a", 2);
+    label(g, "mg", X + 12, Y + 56, { size: 11, color: "#0f172a", weight: 700 });
+    arrow(g, X + 6, Y, px0 - 6, Y, COL.F, 3);
+    label(g, "Fₙ = T 的水平分力", (X + px0) / 2, Y - 14, { size: 11, color: COL.F, weight: 700, align: "center" });
+    label(g, "θ = " + fmt(Math.atan2(px0 - X, Y - py0) * 180 / Math.PI, 0) + "°", px0 - 30, py0 + 42,
+      { size: 11, color: COL.sub });
+    label(g, "Tcosθ = mg，Tsinθ = Fₙ = mω²r　⟹　Fₙ = mg·tanθ", cx, h - 14,
+      { size: 11, color: COL.sub, align: "center" });
+  } else if (sc === "car") {
+    const Y = h * 0.60;
+    g.strokeStyle = "#475569"; g.lineWidth = 2.4;
+    g.beginPath(); g.moveTo(30, Y + 34); g.lineTo(w - 30, Y + 34); g.stroke();
+    g.fillStyle = "#dbeafe"; g.strokeStyle = COL.v; g.lineWidth = 1.6;
+    g.beginPath(); g.rect(cx - 40, Y - 24, 80, 34); g.fill(); g.stroke();
+    label(g, "汽车", cx, Y - 6, { size: 11, color: COL.v, align: "center", weight: 700 });
+    arrow(g, cx, Y - 24, cx, Y - 62, "#64748b", 2);
+    label(g, "N", cx + 10, Y - 50, { size: 11, color: "#475569", weight: 700 });
+    arrow(g, cx, Y + 10, cx, Y + 30, "#0f172a", 2);
+    label(g, "mg", cx + 12, Y + 28, { size: 11, color: "#0f172a", weight: 700 });
+    arrow(g, cx - 40, Y - 6, cx - 128, Y - 6, COL.F, 3);
+    label(g, "f静 = Fₙ", cx - 84, Y - 20, { size: 11, color: COL.F, weight: 700, align: "center" });
+    label(g, "弯心", cx - 140, Y - 6, { size: 11, color: COL.sub, align: "center" });
+    label(g, "f ≤ μmg　⟹　v ≤ √(μgr)，超速即侧滑（离心运动）", cx, h - 14,
+      { size: 11, color: COL.sub, align: "center" });
+  } else if (sc === "sat") {
+    const R = Math.min(w * 0.30, 124);
+    g.fillStyle = "#64748b"; g.beginPath(); g.arc(cx, cy, 30, 0, TAU); g.fill();
+    label(g, "地球", cx, cy, { size: 11, color: "#fff", align: "center", weight: 700 });
+    g.save(); g.setLineDash([5, 4]); g.strokeStyle = "#cbd5e1"; g.lineWidth = 1.4;
+    g.beginPath(); g.ellipse(cx, cy, R, R * 0.46, 0, 0, TAU); g.stroke(); g.restore();
+    const X = cx + R, Y = cy;
+    g.fillStyle = COL.v; g.strokeStyle = "#fff"; g.lineWidth = 2;
+    g.beginPath(); g.arc(X, Y, 9, 0, TAU); g.fill(); g.stroke();
+    arrow(g, X - 9, Y, cx + 30, Y, COL.F, 3);
+    label(g, "F引 = Fₙ", (X + cx) / 2 + 10, Y - 18, { size: 11, color: COL.F, weight: 700, align: "center" });
+    arrow(g, X, Y - 9, X, Y - 48, COL.v, 2.2);
+    label(g, "v", X + 12, Y - 40, { size: 11, color: COL.v, weight: 700 });
+    label(g, "GMm/r² = mv²/r　⟹　v = √(GM/r)，r 越大 v 越小", cx, h - 14,
+      { size: 11, color: COL.sub, align: "center" });
+  } else {
+    const R = Math.min(w * 0.26, 96);
+    g.save(); g.setLineDash([5, 4]); g.strokeStyle = "#cbd5e1"; g.lineWidth = 1.4;
+    g.beginPath(); g.arc(cx, cy, R, 0, TAU); g.stroke(); g.restore();
+    g.fillStyle = "#64748b"; g.beginPath(); g.arc(cx, cy, 4, 0, TAU); g.fill();
+    const top = (sc === "loopTop");
+    const X = cx, Y = top ? cy - R : cy + R;
+    g.fillStyle = COL.v; g.strokeStyle = "#fff"; g.lineWidth = 2;
+    g.beginPath(); g.arc(X, Y, 10, 0, TAU); g.fill(); g.stroke();
+    if (top) {
+      arrow(g, X + 24, Y + 10, X + 24, Y + 50, "#0f172a", 2.2);
+      label(g, "mg", X + 32, Y + 54, { size: 11, color: "#0f172a", weight: 700 });
+      arrow(g, X - 24, Y + 10, X - 24, Y + 44, COL.F, 2.6);
+      label(g, "N", X - 34, Y + 48, { size: 11, color: COL.F, weight: 700 });
+      label(g, "mg + N = mv顶²/r（都指向圆心）", cx, h - 14, { size: 11, color: COL.sub, align: "center" });
+    } else {
+      arrow(g, X + 24, Y - 10, X + 24, Y - 66, COL.F, 2.8);
+      label(g, "N", X + 34, Y - 56, { size: 11, color: COL.F, weight: 700 });
+      arrow(g, X - 24, Y - 10, X - 24, Y + 30, "#0f172a", 2.2);
+      label(g, "mg", X - 36, Y + 32, { size: 11, color: "#0f172a", weight: 700 });
+      label(g, "N − mg = mv底²/r（N 最大）", cx, h - 14, { size: 11, color: COL.sub, align: "center" });
+    }
+    arrow(g, X + (top ? 44 : 44), Y, X + 92, Y, COL.v, 2.2);
+    label(g, "v", X + 100, Y, { size: 11, color: COL.v, weight: 700 });
+  }
+}
+function updateSceBox() {
+  const s = SCENARIOS[S.scen];
+  $("sceBox").innerHTML =
+    '<div class="note" style="margin-top:8px"><b>谁提供向心力：</b>' + s.who + "<br>" +
+    '<span style="color:#1d4ed8">' + s.formula + "</span><br>" + s.desc +
+    '<br><button class="btn sm" id="bSceCard" style="margin-top:6px">打开对应知识卡片</button>' +
+    '<button class="btn sm" id="bSceDraw" style="margin-top:6px">把该情境套用到主画面参数</button></div>';
+  $("bSceCard").addEventListener("click", function () { openCard(s.card); });
+  $("bSceDraw").addEventListener("click", function () {
+    if (S.scen === "sat") { toast("卫星情境无弹簧/半径滑块，仅作力源示意"); return; }
+    toast("已按该情境刷新主画面（参数保持当前值）");
+    draw();
+  });
+}
+
+/* ===================== 15. 一键生成实验报告 ===================== */
+function nowStr() {
+  const d = new Date();
+  function p(x) { return (x < 10 ? "0" : "") + x; }
+  return d.getFullYear() + " 年 " + (d.getMonth() + 1) + " 月 " + d.getDate() + " 日 " + p(d.getHours()) + ":" + p(d.getMinutes());
+}
+function buildReport() {
+  const E = S.exp ? EXPERIMENTS[S.exp] : null;
+  const key = S.chart === "all" || S.chart === "cmp" ? "w2" : S.chart;
+  const recs = S.exp ? S.records.filter(function (r) { return r.exp === S.exp; }) : S.records;
+  let h = "";
+  h += '<div style="text-align:center"><h2 style="font-size:19px">实验报告 · 探究向心力大小的决定因素</h2>' +
+    '<div style="color:#475569;font-size:12.5px">' + nowStr() + "　|　装置：向心力演示器 + 测力标尺（模型 31）</div></div>";
+  h += '<h4>一、实验目的</h4><div>用<b>控制变量法</b>探究向心力 F 与质量 m、半径 r、角速度 ω 的定量关系，' +
+    "并说明向心力是按<b>作用效果</b>命名的力（效果力），由其他性质力提供。</div>";
+  h += '<h4>二、实验原理与装置</h4><div>弹簧在弹性限度内伸长量与弹力成正比（F = kx），故 <b>标尺格数 ∝ 向心力</b>，' +
+    "只需比较格数之比即可比较力之比，不必测定劲度系数 k（本装置 " + CFG.qGrid + " N/格，满量程 " + CFG.gridMax +
+    " 格 ≈ " + fmt(CFG.gridMax * CFG.qGrid, 1) + " N）。塔轮靠皮带传动、线速度相等，故 ω₁R₁ = ω₂R₂，可得到整数比的角速度。</div>" +
+    '<canvas id="cvRep" width="900" height="300"></canvas>' +
+    '<div style="font-size:12px;color:#475569;text-align:center">图 1　装置俯视图（横杆、双球、弹簧、测力标尺、塔轮）</div>';
+  h += '<h4>三、变量控制表</h4>';
+  h += '<table><tr><th class="l">组别</th><th class="l">自变量</th><th class="l">因变量</th><th class="l">控制量</th></tr>';
+  for (const kk in EXPERIMENTS) {
+    const e = EXPERIMENTS[kk];
+    h += '<tr><td class="l">' + e.name + "</td><td class='l'>" + e.indep + "</td><td class='l'>" + e.dep +
+      "</td><td class='l'>" + e.ctrl + "</td></tr>";
+  }
+  h += "</table>";
+  h += "<h4>四、数据记录</h4>";
+  if (!recs.length) {
+    h += '<div style="color:#94a3b8">（暂无数据，请先采集）</div>';
+  } else {
+    h += '<table><tr><th class="l">组别</th><th>m (kg)</th><th>r (m)</th><th>n (r/min)</th><th>ω (rad/s)</th>' +
+      "<th>v (m/s)</th><th>格数</th><th>F读 (N)</th><th>F理 (N)</th><th>相对误差</th><th>aₙ (m/s²)</th></tr>";
+    for (let i = 0; i < recs.length; i++) {
+      const r = recs[i];
+      const err = Math.abs(r.Fread - r.Fth) / (r.Fth || 1) * 100;
+      h += "<tr><td class='l'>" + (r.exp ? EXPERIMENTS[r.exp].name.split(" ")[0] : "自由") + "</td><td>" + fmt(r.m, 3) +
+        "</td><td>" + fmt(r.r, 3) + "</td><td>" + fmt(r.n, 1) + "</td><td>" + fmt(r.w, 3) + "</td><td>" + fmt(r.v, 3) +
+        "</td><td>" + fmt(r.N, 2) + "</td><td>" + fmt(r.Fread, 4) + "</td><td>" + fmt(r.Fth, 4) + "</td><td>" +
+        fmt(err, 2) + "%</td><td>" + fmt(r.a, 2) + "</td></tr>";
+    }
+    h += "</table>";
+  }
+  h += '<h4>五、图像分析</h4><canvas id="cvRepCh" width="900" height="330"></canvas>';
+  const info = drawPanelInfo(key);
+  h += '<div style="font-size:12.5px;margin-top:6px">拟合斜率 ≈ <b>' + fmt(info.k, 4) + "</b>　平均相对误差 <b>" +
+    fmt(info.err, 2) + " %</b>　（" + (S.errMode === "ideal" ? "理想模式，应 < 1%" : "含摩擦与读数误差模式") + "）</div>";
+  h += '<h4>六、实验结论</h4><div>① <b>F = mω²r = m v²/r = m(2π/T)²r = m(2πn)²r</b>；' +
+    "② m、r 一定时 <b>F ∝ ω²</b>（转速加倍，格数变为 4 倍，不是 2 倍）；" +
+    "③ m、ω 一定时 F ∝ r；r、ω 一定时 F ∝ m；<b>④ 若固定线速度 v，则 F ∝ 1/r</b>——说“F 与 r 成正比”必须限定 ω 不变；" +
+    "⑤ 向心力始终<b>指向圆心</b>、与速度垂直、<b>不做功</b>，只改变速度方向；" +
+    "⑥ 向心力是<b>效果力</b>，本装置中由弹簧弹力（性质力）提供，不是额外多出来的力。</div>";
+  h += '<h4>七、误差分析</h4><div>系统误差：横杆与小球间的摩擦使弹簧读数<b>偏小</b>；皮带打滑使实际 ω 小于理论值；' +
+    "弹簧超出弹性限度后 F 与 x 不再成正比，读数完全失真。<br>偶然误差：读数时标尺指针的估读偏差、转速未稳定就读数。" +
+    "<br>改进：① 润滑减摩；② 张紧皮带；③ 选合适量程，绝不超限；④ 用频闪仪确认转速稳定（残影静止）后再读数；" +
+    "⑤ 每个测量点重复 3~5 次取平均。</div>";
+  h += '<h4>八、力源溯源：谁提供向心力</h4><canvas id="cvRepSce" width="900" height="280"></canvas>' +
+    '<div style="font-size:12.5px;margin-top:6px"><b>' + SCENARIOS[S.scen].name + "：</b>" + SCENARIOS[S.scen].who +
+    "<br>" + SCENARIOS[S.scen].formula + "</div>";
+  $("reportBox").innerHTML = h;
+  $("repModal").classList.add("open");
+  // 画三张图
+  setTimeout(function () {
+    const c1 = $("cvRep");
+    if (c1) {
+      const g1 = c1.getContext("2d");
+      const w = c1.clientWidth || 640, hh = 260;      // 与 CSS 高度 260 一致
+      c1.width = w * 2; c1.height = hh * 2;
+      g1.setTransform(2, 0, 0, 2, 0, 0);
+      g1.fillStyle = "#fff"; g1.fillRect(0, 0, w, hh);
+      drawFit(g1, cv, w, hh);
+    }
+    const c2 = $("cvRepCh");
+    if (c2) {
+      const g2 = c2.getContext("2d");
+      const w2 = c2.clientWidth;
+      c2.width = w2 * 2; c2.height = 330 * 2;
+      g2.setTransform(2, 0, 0, 2, 0, 0);
+      drawPanel(g2, 0, 0, w2, 330, key, E ? E.name + " 图像" : "数据图像");
+    }
+    const c3 = $("cvRepSce");
+    if (c3) {
+      const g3 = c3.getContext("2d");
+      const w3 = c3.clientWidth || 640, h3 = 200;     // 与 CSS 高度 200 一致
+      c3.width = w3 * 2; c3.height = h3 * 2;
+      g3.setTransform(2, 0, 0, 2, 0, 0);
+      g3.fillStyle = "#fff"; g3.fillRect(0, 0, w3, h3);
+      drawFit(g3, cvS, w3, h3);
+    }
+  }, 60);
+}
+/* ===================== 16. 练习与教师考核 ===================== */
+const QUIZ = [
+  {
+    q: "水平光滑桌面上，绳拉小球做匀速圆周运动。提供向心力的是哪个力？",
+    opts: [{ t: "绳的拉力（弹力）", ok: true }, { t: "重力", ok: false },
+    { t: "一个额外多出来的“向心力”", ok: false }, { t: "离心力", ok: false }],
+    ex: "向心力是按<b>效果</b>命名的力：此处绳的拉力指向圆心，它“充当”了向心力。重力竖直、与向心方向垂直，不提供向心力；惯性系中不存在离心力。",
+    card: "c_effect"
+  },
+  {
+    q: "m、r 保持不变，转速 n 由 60 r/min 加倍到 120 r/min，所需向心力变为原来的几倍？",
+    opts: [{ t: "2 倍", ok: false }, { t: "4 倍", ok: true }, { t: "不变", ok: false }, { t: "1/2 倍", ok: false }],
+    ex: "F = mω²r，ω = 2πn/60，故 m、r 不变时 <b>F ∝ ω² ∝ n²</b>：n 加倍 → F 变 <b>4 倍</b>。演示器上表现为标尺格数由约 7.9 格变到约 31.6 格（比值 1:4）。",
+    card: "r_w2"
+  },
+  {
+    q: "“向心力 F 与半径 r 成正比”这个结论成立的前提是什么？",
+    opts: [{ t: "无条件成立", ok: false }, { t: "角速度 ω（转速 n）保持不变", ok: true },
+    { t: "线速度 v 保持不变", ok: false }, { t: "质量不断改变", ok: false }],
+    ex: "由 F = mω²r 看，<b>ω 不变</b>时 F ∝ r；但由 F = mv²/r 看，<b>v 不变</b>时 F ∝ 1/r。说比例关系必须先说清控制量——第四组反例正是为此而设。",
+    card: "r_vinv"
+  },
+  {
+    q: "匀速圆周运动中，加速度的方向是？",
+    opts: [{ t: "沿轨迹切线方向", ok: false }, { t: "始终指向圆心", ok: true },
+    { t: "沿速度方向", ok: false }, { t: "为零", ok: false }],
+    ex: "匀速圆周只有法向加速度 aₙ = v²/r = ω²r，方向<b>始终指向圆心</b>，与速度垂直，只改变方向不改变速率，故不做功。",
+    card: "c_an"
+  },
+  {
+    q: "非匀速圆周运动（速率也在变）中，总加速度的方向是？",
+    opts: [{ t: "仍然指向圆心", ok: false }, { t: "沿切线方向", ok: false },
+    { t: "由切向分量与法向分量合成，不指向圆心", ok: true }, { t: "为零", ok: false }],
+    ex: "速率变化需要<b>切向分量</b> a<sub>t</sub> = dv/dt，方向改变需要<b>法向分量</b> aₙ = v²/r，两者合成后<b>不再指向圆心</b>。匀速圆周只是 a<sub>t</sub> = 0 的特例。",
+    card: "c_an"
+  }
+];
+function shuffle(arr) {
+  const a = arr.slice();
+  for (let i = a.length - 1; i > 0; i--) {
+    const j = Math.floor(Math.random() * (i + 1));
+    const t = a[i]; a[i] = a[j]; a[j] = t;
+  }
+  return a;
+}
+function buildQuiz() {
+  let list = QUIZ.map(function (x) { return x; });
+  if (S.exam) list = shuffle(list);
+  S.quiz = list.map(function (x) {
+    let opts = x.opts.map(function (o) { return { t: o.t, ok: o.ok }; });
+    if (S.exam) opts = shuffle(opts);
+    return { q: x.q, opts: opts, ex: x.ex, card: x.card, ans: -1 };
+  });
+  renderQuiz();
+}
+function renderQuiz() {
+  let h = "";
+  for (let i = 0; i < S.quiz.length; i++) {
+    const Q = S.quiz[i];
+    h += '<div class="q"><div class="qt">第 ' + (i + 1) + " 题　" + Q.q + "</div>";
+    for (let j = 0; j < Q.opts.length; j++) {
+      const cls = Q.ans === j ? (Q.opts[j].ok ? "opt right" : "opt wrong") : "opt";
+      h += '<button class="' + cls + '" data-i="' + i + '" data-j="' + j + '">' +
+        String.fromCharCode(65 + j) + ". " + Q.opts[j].t + "</button>";
+    }
+    if (Q.ans >= 0 && !S.hideAns) {
+      h += '<div class="fb ' + (Q.opts[Q.ans].ok ? "ok" : "no") + '">' +
+        (Q.opts[Q.ans].ok ? "✓ 回答正确。" : "✗ 回答错误。") + Q.ex +
+        '<button class="btn sm" data-card="' + Q.card + '">查看对应卡片</button></div>';
+    } else if (Q.ans >= 0 && S.hideAns) {
+      h += '<div class="fb ' + (Q.opts[Q.ans].ok ? "ok" : "no") + '">' +
+        (Q.opts[Q.ans].ok ? "✓ 已记录（正确）" : "✗ 已记录（错误，答案已隐藏）") + "</div>";
+    }
+    h += "</div>";
+  }
+  $("quizBox").innerHTML = h;
+  const bs = $("quizBox").querySelectorAll("button[data-j]");
+  for (let i = 0; i < bs.length; i++) {
+    bs[i].addEventListener("click", function () {
+      const qi = parseInt(this.dataset.i, 10), qj = parseInt(this.dataset.j, 10);
+      S.quiz[qi].ans = qj;
+      renderQuiz();
+      updateExamStat();
+      beep(S.quiz[qi].opts[qj].ok ? 880 : 220, 0.1, S.quiz[qi].opts[qj].ok ? "sine" : "sawtooth");
+    });
+  }
+  const cs = $("quizBox").querySelectorAll("button[data-card]");
+  for (let i = 0; i < cs.length; i++) {
+    cs[i].addEventListener("click", function () { openCard(this.dataset.card); });
+  }
+  updateExamStat();
+}
+function updateExamStat() {
+  let done = 0, right = 0;
+  for (let i = 0; i < S.quiz.length; i++) {
+    if (S.quiz[i].ans >= 0) { done++; if (S.quiz[i].opts[S.quiz[i].ans].ok) right++; }
+  }
+  $("examStat").innerHTML = "　已答 " + done + "/" + S.quiz.length + "　正确 " + right +
+    (S.exam ? "　<b>【考核模式】</b>" : "");
+}
+
+/* ===================== 17. 知识卡片：弹窗 / 抽屉 ===================== */
+let curCard = null, curList = KNOWLEDGE_CARDS.slice(), curIdx = 0, flipped = false;
+const PINS = {};
+function cardById(id) {
+  for (let i = 0; i < KNOWLEDGE_CARDS.length; i++) if (KNOWLEDGE_CARDS[i].id === id) return KNOWLEDGE_CARDS[i];
+  return null;
+}
+function openCard(id) {
+  const c = cardById(id); if (!c) return;
+  curCard = c; flipped = false;
+  dragPos.x = 0; dragPos.y = 0; $("cmBox").style.transform = "";
+  const idx = curList.findIndex(function (x) { return x.id === id; });
+  if (idx >= 0) curIdx = idx;
+  renderCardModal();
+  $("cardModal").classList.add("open");
+  beep(660, 0.06, "triangle");
+}
+function renderCardModal() {
+  const c = curCard; if (!c) return;
+  let h = "";
+  h += '<div style="display:flex;justify-content:space-between;align-items:flex-start;gap:10px">' +
+    '<div><div class="cat">分类：' + c.cat + "　|　共 " + KNOWLEDGE_CARDS.length + " 张</div>" +
+    '<h3 id="cmTitle">' + c.title + "</h3></div>" +
+    '<div style="display:flex;gap:6px;flex-wrap:wrap">' +
+    '<button class="btn sm" id="cmFlip">翻面（推导/说明）</button>' +
+    '<button class="btn sm" id="cmPin">' + (PINS[c.id] ? "取消钉住" : "钉住") + "</button>" +
+    '<button class="btn sm" id="cmPrev">← 上一张</button>' +
+    '<button class="btn sm" id="cmNext">下一张 →</button>' +
+    '<button class="btn sm" id="cmClose">关闭 (Esc)</button></div></div>';
+  if (!flipped) {
+    h += '<div class="kv"><b>一句话结论：</b>' + c.concl + "</div>";
+    h += '<div class="kv"><b>公式 / 判据：</b>' + c.formula + "</div>";
+    h += '<div class="kfig">' + c.svg + "</div>";
+    h += '<div class="demo"><b>在本 Demo 中怎么看：</b>' + c.demo + "</div>";
+    if (c.mis) h += '<div class="mis"><b>易错提醒：</b>' + c.mis + "</div>";
+  } else {
+    h += '<div class="back" style="border-style:solid;color:#0f172a"><b>背面 · 推导与说明：</b><br>' + c.back + "</div>";
+    h += '<div class="kfig">' + c.svg + "</div>";
+  }
+  $("cmBox").innerHTML = h;
+  $("cmFlip").addEventListener("click", function () { flipped = !flipped; renderCardModal(); });
+  $("cmPin").addEventListener("click", function () {
+    PINS[c.id] = !PINS[c.id]; renderCardModal(); renderDrawer();
+    toast(PINS[c.id] ? "已钉住该卡片" : "已取消钉住");
+  });
+  $("cmPrev").addEventListener("click", function () { stepCard(-1); });
+  $("cmNext").addEventListener("click", function () { stepCard(1); });
+  $("cmClose").addEventListener("click", closeCard);
+  try { $("cmBox").focus(); } catch (e) { }
+  $("cmBox").focus && $("cmBox").focus();
+}
+function stepCard(d) {
+  if (!curList.length) return;
+  curIdx = (curIdx + d + curList.length) % curList.length;
+  openCard(curList[curIdx].id);
+}
+function closeCard() { $("cardModal").classList.remove("open"); }
+function renderDrawerTabs() {
+  let h = "";
+  for (let i = 0; i < CATS.length; i++) {
+    h += '<button data-c="' + CATS[i] + '" class="' + (S.dcat === CATS[i] ? "on" : "") + '">' + CATS[i] + "</button>";
+  }
+  $("dTabs").innerHTML = h;
+  const bs = $("dTabs").querySelectorAll("button");
+  for (let i = 0; i < bs.length; i++) {
+    bs[i].addEventListener("click", function () { S.dcat = this.dataset.c; renderDrawerTabs(); renderDrawer(); });
+  }
+}
+function filteredCards() {
+  const kw = (S.dkw || "").trim();
+  return KNOWLEDGE_CARDS.filter(function (c) {
+    if (S.dcat && S.dcat !== "全部" && c.cat !== S.dcat) return false;
+    if (!kw) return true;
+    return (c.title + c.concl + c.formula + c.demo + c.back + (c.mis || "") + c.cat).indexOf(kw) >= 0;
+  });
+}
+function renderDrawer() {
+  curList = filteredCards();
+  // 钉住的排前面
+  curList.sort(function (a, b) { return (PINS[b.id] ? 1 : 0) - (PINS[a.id] ? 1 : 0); });
+  let h = '<div class="clist">';
+  for (let i = 0; i < curList.length; i++) {
+    const c = curList[i];
+    h += '<div class="citem' + (PINS[c.id] ? " pin" : "") + '" data-id="' + c.id + '" tabindex="0" role="button" ' +
+      'aria-label="卡片：' + c.title + '"><b>' + c.title + '</b><span class="cc">［' + c.cat + "］" +
+      (PINS[c.id] ? " 📌" : "") + "</span><p>" + c.concl + "</p></div>";
+  }
+  h += "</div>";
+  if (!curList.length) h = '<div style="color:#94a3b8">没有匹配的卡片，换个关键词试试。</div>';
+  $("dBody").innerHTML = h;
+  $("dIdx").textContent = curList.length ? (curIdx + 1) + " / " + curList.length : "0 / 0";
+  const its = $("dBody").querySelectorAll(".citem");
+  for (let i = 0; i < its.length; i++) {
+    its[i].addEventListener("click", function () { openCard(this.dataset.id); });
+    its[i].addEventListener("keydown", function (e) {
+      if (e.key === "Enter" || e.key === " ") { e.preventDefault(); openCard(this.dataset.id); }
+    });
+  }
+}
+function openDrawer() { $("drawer").classList.add("open"); $("drawer").setAttribute("aria-hidden", "false"); renderDrawer(); $("dSearch").focus(); }
+function closeDrawer() { $("drawer").classList.remove("open"); $("drawer").setAttribute("aria-hidden", "true"); }
+/* ===================== 17.5 卡片弹窗拖动（避免遮挡关键动画区） ===================== */
+const dragPos = { x: 0, y: 0 };
+function enableCardDrag() {
+  const box = $("cmBox");
+  let dragging = false, ox = 0, oy = 0;
+  box.addEventListener("mousedown", function (e) {
+    if (e.target && e.target.closest && e.target.closest("button")) return;
+    dragging = true; ox = e.clientX - dragPos.x; oy = e.clientY - dragPos.y;
+    box.style.cursor = "move";
+  });
+  document.addEventListener("mousemove", function (e) {
+    if (!dragging) return;
+    dragPos.x = e.clientX - ox; dragPos.y = e.clientY - oy;
+    box.style.transform = "translate(" + dragPos.x + "px," + dragPos.y + "px)";
+  });
+  document.addEventListener("mouseup", function () { dragging = false; box.style.cursor = ""; });
+}
+
+/* ===================== 18. 控件绑定 ===================== */
+function setSeg(id, val, key) {
+  const bs = $(id).querySelectorAll("button");
+  for (let i = 0; i < bs.length; i++) {
+    const v = parseFloat(bs[i].dataset[key || "g"]);
+    bs[i].classList.toggle("on", Math.abs(v - val) < 1e-3);
+  }
+}
+/** 把状态 S 同步到所有控件显示 */
+function syncInputs() {
+  $("rN").value = Math.round(S.n); $("vN").textContent = fmt(S.n, 0) + " r/min";
+  $("rMA").value = S.A.m; $("vMA").textContent = fmt(S.A.m, 2) + " kg";
+  $("rMB").value = S.B.m; $("vMB").textContent = fmt(S.B.m, 2) + " kg";
+  $("rRA").value = S.A.r; $("vRA").textContent = fmt(S.A.r, 3) + " m";
+  $("rRB").value = S.B.r; $("vRB").textContent = fmt(S.B.r, 3) + " m";
+  $("rAmp").value = S.amp; $("vAmp").textContent = "±" + S.amp + " %";
+  $("rStrobe").value = S.strobe; $("vStrobe").textContent = S.strobe + " Hz";
+  $("iSeed").value = S.seed;
+  setSeg("segGA", S.A.gear); setSeg("segGB", S.B.gear);
+  setSeg("segCmp", S.cmp === "same" ? 1 : 0, "cmp2");
+  const gb = $("segGB").querySelectorAll("button");
+  for (let i = 0; i < gb.length; i++) gb[i].disabled = (S.cmp === "same");
+  const dr = $("segDrive").querySelectorAll("button");
+  for (let i = 0; i < dr.length; i++) dr[i].classList.toggle("on", dr[i].dataset.drive === S.drive);
+  $("driveNote").innerHTML = S.drive === "motor"
+    ? "电机驱动：转速由滑块设定，ω = 2πn/60 = <b>" + fmt(omegaMotor(), 3) + " rad/s</b>。"
+    : "手摇柄：摇频 f = n/60 = <b>" + fmt(S.n / 60, 2) + " Hz</b>，需保持匀速摇动（现实中用频闪仪判断是否稳定）。";
+  $("cmpNote").innerHTML = S.cmp === "same"
+    ? "同轴对比：两球在同一根横杆上，<b>ω 必然相同</b>，故格数比 = m<sub>A</sub>r<sub>A</sub> : m<sub>B</sub>r<sub>B</sub>——适合做实验②③。"
+    : "换档对比：两路由塔轮分别传动，ω<sub>A</sub>:ω<sub>B</sub> = R比，适合做实验①（ω 比 1:2 → 格数比 1:4）。<b>注意：</b>这相当于两次实验并排显示，不是同时同轴。";
+  const er = $("segErr");
+  if (er) {
+    const bs2 = er.querySelectorAll("button");
+    for (let i = 0; i < bs2.length; i++) bs2[i].classList.toggle("on", bs2[i].dataset.er === S.errMode);
+  }
+  const rd = $("segRead");
+  if (rd) {
+    const bs3 = rd.querySelectorAll("button");
+    for (let i = 0; i < bs3.length; i++) bs3[i].classList.toggle("on", bs3[i].dataset.rd === S.readMode);
+  }
+  if (S.errMode === "real") {
+    $("errNote").className = "note warn";
+    $("errNote").innerHTML = "含误差模式：读数 = 理论值 ×(1 − " + Math.round(CFG.muFric * 100) +
+      "% 摩擦 ± " + S.amp + "% 随机)。随机种子 " + S.seed + " 保证可复现；用「多次测量取平均」可减小偶然误差。";
+  } else {
+    $("errNote").className = "note ok";
+    $("errNote").innerHTML = "理想模式：读数 = 理论值 mω²r，相对误差应 &lt; 1%。切到「含摩擦与读数误差」可体验真实数据。";
+  }
+}
+function bindSeg(id, cb, key) {
+  const bs = $(id).querySelectorAll("button");
+  for (let i = 0; i < bs.length; i++) {
+    bs[i].addEventListener("click", function () {
+      const bs2 = $(id).querySelectorAll("button");
+      for (let j = 0; j < bs2.length; j++) bs2[j].classList.remove("on");
+      this.classList.add("on");
+      cb(this.dataset[key || "g"], this);
+    });
+  }
+}
+function bindAll() {
+  // --- 滑块 ---
+  $("rN").addEventListener("input", function () { S.n = parseFloat(this.value); syncInputs(); updateReadout(); });
+  $("rMA").addEventListener("input", function () { S.A.m = parseFloat(this.value); syncInputs(); updateReadout(); });
+  $("rMB").addEventListener("input", function () { S.B.m = parseFloat(this.value); syncInputs(); updateReadout(); });
+  $("rRA").addEventListener("input", function () { S.A.r = parseFloat(this.value); syncInputs(); updateReadout(); });
+  $("rRB").addEventListener("input", function () { S.B.r = parseFloat(this.value); syncInputs(); updateReadout(); });
+  $("rAmp").addEventListener("input", function () { S.amp = parseFloat(this.value); syncInputs(); updateReadout(); });
+  $("rStrobe").addEventListener("input", function () { S.strobe = parseFloat(this.value); syncInputs(); });
+  $("iSeed").addEventListener("input", function () { S.seed = parseInt(this.value, 10) || 1; updateReadout(); });
+  // --- 分段按钮 ---
+  bindSeg("segDrive", function (v) { S.drive = v; syncInputs(); }, "drive");
+  bindSeg("segSpeed", function (v) { S.speed = parseFloat(v) || 1; }, "sp");
+  bindSeg("segGA", function (v) { S.A.gear = parseFloat(v); syncInputs(); updateReadout(); });
+  bindSeg("segGB", function (v) { S.B.gear = parseFloat(v); syncInputs(); updateReadout(); });
+  $("segCmp").querySelectorAll("button").forEach(function (b) {
+    b.dataset.cmp2 = b.dataset.cmp === "same" ? "1" : "0";
+    b.addEventListener("click", function () { S.cmp = b.dataset.cmp; syncInputs(); updateReadout(); });
+  });
+  $("segRead").querySelectorAll("button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      S.readMode = b.dataset.rd; syncInputs(); updateReadout(); drawChart(); calcRatio();
+    });
+  });
+  $("segErr").querySelectorAll("button").forEach(function (b) {
+    b.addEventListener("click", function () { S.errMode = b.dataset.er; syncInputs(); updateReadout(); drawChart(); });
+  });
+  $("segExp").querySelectorAll("button").forEach(function (b) {
+    b.addEventListener("click", function () {
+      const id = parseInt(b.dataset.e, 10);
+      const bs = $("segExp").querySelectorAll("button");
+      for (let i = 0; i < bs.length; i++) bs[i].classList.remove("on");
+      b.classList.add("on");
+      $("segExpBtn").querySelector("button").classList.remove("on");
+      applyExp(id);
+    });
+  });
+  $("segExpBtn").querySelectorAll("button").forEach(function (b) {
+    b.addEventListener("click", function () { unlockAll(); });
+  });
+  // --- 播放控制 ---
+  $("bPlay").addEventListener("click", function () { S.running = true; });
+  $("bPause").addEventListener("click", function () { S.running = !S.running; this.textContent = S.running ? "暂停" : "继续"; });
+  $("bStep").addEventListener("click", function () { S.running = false; $("bPause").textContent = "继续"; advance(1 / 60); updateReadout(); });
+  $("bReset").addEventListener("click", function () {
+    S.t = 0; S.angA = 0; S.angB = Math.PI; S.strobePts = []; S.lastStrobe = 0; updateReadout();
+  });
+  $("bAuto").addEventListener("click", function () { autoCollect(); });
+  $("bUnlock").addEventListener("click", function () { unlockAll(); });
+  $("bSample").addEventListener("click", function () {
+    S.multi = !S.multi;
+    this.classList.toggle("on", S.multi);
+    this.textContent = S.multi ? "多次测量：开（5 次取平均）" : "多次测量取平均（5 次）";
+    $("vSample").textContent = S.multi ? "已开启" : "—";
+  });
+  $("bRec").addEventListener("click", function () { addRecord(false); });
+  $("bStatic").addEventListener("click", function () {
+    S.staticStrip = !S.staticStrip; this.classList.toggle("on", S.staticStrip);
+    toast(S.staticStrip ? "已叠加静态分帧图（4 帧）" : "已关闭静态分帧图");
+  });
+  $("bSync").addEventListener("click", function () {
+    S.strobe = clamp(Math.round(S.n / 60 * 10) / 10, 1, 30);
+    syncInputs();
+    toast("频闪频率已同步为 " + S.strobe + " Hz（= 转动频率），残影应呈静止效果");
+  });
+  // --- 图层开关 ---
+  const cks = {
+    ckRuler: "ruler", ckVec: "vec", ckRadius: "radius", ckForce: "force", ckCircle: "circle",
+    ckStrobe: "strobe", ckReadout: "readout", ckSound: "sound", ckTower: "tower"
+  };
+  Object.keys(cks).forEach(function (k) {
+    $(k).addEventListener("change", function () {
+      S.show[cks[k]] = this.checked;
+      if (cks[k] === "strobe") { S.strobePts = []; S.lastStrobe = S.t; }
+    });
+  });
+  // --- 力源 ---
+  $("selSce").addEventListener("change", function () { S.scen = this.value; drawScenario(); updateSceBox(); });
+  // --- 数据表 ---
+  $("bCsv").addEventListener("click", exportCSV);
+  $("bClear").addEventListener("click", function () {
+    S.records = []; renderRecords(); drawChart(); $("ratioBox").style.display = "none"; toast("已清空记录");
+  });
+  $("bRatio").addEventListener("click", calcRatio);
+  // --- 考核 ---
+  $("bExam").addEventListener("click", function () {
+    S.exam = !S.exam; this.classList.toggle("on", S.exam);
+    buildQuiz(); toast(S.exam ? "教师考核模式：题目与选项已随机打乱" : "已退出考核模式");
+  });
+  $("bHideAns").addEventListener("click", function () {
+    S.hideAns = !S.hideAns; this.classList.toggle("on", S.hideAns);
+    renderQuiz(); toast(S.hideAns ? "已隐藏答案解析" : "已显示答案解析");
+  });
+  $("btnExam").addEventListener("click", function () {
+    S.exam = true; buildQuiz(); $("bExam").classList.add("on");
+    $("quizBox").scrollIntoView({ behavior: "smooth", block: "center" });
+    toast("教师考核模式：题目与选项已随机打乱");
+  });
+  // --- 卡片抽屉 / 报告 ---
+  enableCardDrag();
+  $("btnCards").addEventListener("click", openDrawer);
+  $("dClose").addEventListener("click", closeDrawer);
+  $("btnReport").addEventListener("click", buildReport);
+  $("bPrint").addEventListener("click", function () { window.print(); });
+  $("bRepClose").addEventListener("click", function () { $("repModal").classList.remove("open"); });
+  $("dGo").addEventListener("click", function () { S.dkw = $("dSearch").value; renderDrawer(); });
+  $("dSearch").addEventListener("input", function () { S.dkw = this.value; renderDrawer(); });
+  $("bPrev").addEventListener("click", function () { stepCard(-1); });
+  $("bNext").addEventListener("click", function () { stepCard(1); });
+  $("cardModal").addEventListener("click", function (e) { if (e.target === this) closeCard(); });
+  $("repModal").addEventListener("click", function (e) { if (e.target === this) $("repModal").classList.remove("open"); });
+  // --- 键盘 ---
+  document.addEventListener("keydown", function (e) {
+    if (e.key === "Escape") { closeCard(); closeDrawer(); $("repModal").classList.remove("open"); return; }
+    if ($("cardModal").classList.contains("open")) {
+      if (e.key === "ArrowLeft") { stepCard(-1); e.preventDefault(); }
+      if (e.key === "ArrowRight") { stepCard(1); e.preventDefault(); }
+      return;
+    }
+    if (e.target && /input|select|textarea/i.test(e.target.tagName)) return;
+    if (e.code === "Space") { e.preventDefault(); S.running = !S.running; $("bPause").textContent = S.running ? "暂停" : "继续"; }
+    else if (e.key === "r" || e.key === "R") { S.t = 0; S.angA = 0; S.angB = Math.PI; }
+    else if (e.key === "ArrowUp") { S.n = clamp(S.n + 5, 0, 300); syncInputs(); updateReadout(); }
+    else if (e.key === "ArrowDown") { S.n = clamp(S.n - 5, 0, 300); syncInputs(); updateReadout(); }
+  });
+  // --- 窗口缩放 ---
+  let rt = 0;
+  window.addEventListener("resize", function () {
+    clearTimeout(rt);
+    rt = setTimeout(function () { layout(); draw(); drawChart(); drawScenario(); }, 120);
+  });
+}
+
+/* ===================== 19. 主循环（固定步长，慢动作与帧率无关） ===================== */
+function pushStrobe() {
+  const aA = S.angA, aB = S.angB;
+  S.strobePts.push({
+    A: { x: Math.cos(aA) * S.A.r, y: Math.sin(aA) * S.A.r },
+    B: { x: Math.cos(aB) * S.B.r, y: Math.sin(aB) * S.B.r }
+  });
+  while (S.strobePts.length > CFG.strobeMax) S.strobePts.shift();
+}
+function advance(dtSim) {
+  const wA = omegaOf("A"), wB = omegaOf("B");
+  let acc = dtSim, guard = 0;
+  while (acc >= CFG.dtFixed && guard < 2000) {
+    S.angA += wA * CFG.dtFixed;
+    S.angB += wB * CFG.dtFixed;
+    S.t += CFG.dtFixed;
+    acc -= CFG.dtFixed; guard++;
+    if (S.show.strobe && (S.t - S.lastStrobe) >= 1 / Math.max(S.strobe, 0.5)) { pushStrobe(); S.lastStrobe = S.t; }
+  }
+  if (S.angA > TAU * 1000) S.angA -= TAU * 1000;
+  if (S.angB > TAU * 1000) S.angB -= TAU * 1000;
+}
+let lastTs = 0, frameN = 0, overPrev = false;
+function frame(ts) {
+  const dt = lastTs ? Math.min((ts - lastTs) / 1000, 0.06) : 0;
+  lastTs = ts;
+  if (S.running && !S.staticStrip) advance(dt * S.speed);
+  draw();
+  if (frameN % 4 === 0) {
+    updateReadout();
+    if (S.over && !overPrev) { beep(180, 0.25, "square"); toast("⚠ 所需向心力已超出弹簧弹性限度（" + CFG.gridMax + " 格）"); }
+    overPrev = S.over;
+  }
+  frameN++;
+  requestAnimationFrame(frame);
+}
+
+/* ===================== 20. 初始化 ===================== */
+function init() {
+  S.step = 0; S.multi = false; S.dcat = "全部"; S.dkw = "";
+  layout();
+  $("dCnt").textContent = KNOWLEDGE_CARDS.length;
+  syncInputs();
+  renderStepBar();
+  setStep(0, true);
+  renderChartTabs();
+  drawChart();
+  renderRecords();
+  buildQuiz();
+  renderDrawerTabs();
+  renderDrawer();
+  drawScenario();
+  updateSceBox();
+  unlockAll();
+  bindAll();
+  updateReadout();
+  if (REDUCE) {
+    S.running = false; S.staticStrip = true;
+    $("bStatic").classList.add("on");
+    toast("已检测到「减少动效」偏好：动画默认暂停，已叠加静态分帧图");
+  }
+  requestAnimationFrame(frame);
+}
+if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", init);
+else init();
+</script>
+</body>
+</html>

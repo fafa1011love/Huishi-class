@@ -1,0 +1,1795 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>模型46 · 验证机械能守恒定律（自由落体 + 打点纸带）</title>
+<style>
+/* ============ 基础与主题（浅色） ============ */
+*{box-sizing:border-box;margin:0;padding:0}
+html,body{height:100%}
+body{font-family:"Microsoft YaHei","PingFang SC","Segoe UI",sans-serif;background:#f4f6f9;color:#1f2933;font-size:14px;line-height:1.55}
+button{font-family:inherit;cursor:pointer;border:1px solid #c8d0da;background:#fff;color:#1f2933;border-radius:6px;padding:4px 10px;font-size:13px}
+button:hover{background:#eef3fa;border-color:#9db4d0}
+button.primary{background:#1565c0;border-color:#1565c0;color:#fff}
+button.primary:hover{background:#0d47a1}
+button.danger{background:#d32f2f;border-color:#d32f2f;color:#fff}
+button.danger:hover{background:#b71c1c}
+button.on{background:#1565c0;color:#fff;border-color:#1565c0}
+input[type=range]{vertical-align:middle}
+input[type=checkbox],input[type=radio]{vertical-align:-2px;margin-right:3px}
+select,input[type=number],input[type=text]{border:1px solid #c8d0da;border-radius:6px;padding:3px 6px;background:#fff;font-family:inherit;font-size:13px}
+table{border-collapse:collapse;background:#fff;font-size:12.5px}
+th,td{border:1px solid #d5dce5;padding:3px 7px;text-align:center;white-space:nowrap}
+th{background:#e8eef6;font-weight:600}
+/* ============ 布局 ============ */
+header{padding:10px 18px 6px;background:#fff;border-bottom:1px solid #dfe5ec}
+header h1{font-size:18px;color:#123a6b}
+header .hdr-note{font-size:12px;color:#5b6b7c;margin-top:2px}
+nav#tabNav{display:flex;flex-wrap:wrap;gap:6px;padding:8px 18px;background:#fff;border-bottom:1px solid #dfe5ec;position:sticky;top:0;z-index:50}
+nav#tabNav button{border-radius:16px}
+nav#tabNav button.active{background:#1565c0;color:#fff;border-color:#1565c0}
+.layout{display:flex;gap:12px;padding:12px 18px;align-items:flex-start}
+main{flex:1 1 auto;min-width:0}
+section.tabPanel{display:none}
+section.tabPanel.active{display:block}
+.panel{background:#fff;border:1px solid #dfe5ec;border-radius:10px;padding:14px;margin-bottom:12px;box-shadow:0 1px 3px rgba(20,40,80,.05)}
+.panel>h2{font-size:15px;color:#123a6b;border-left:4px solid #1565c0;padding-left:8px;margin-bottom:10px}
+.panel>h3{font-size:13.5px;color:#34506e;margin:10px 0 6px}
+.grid2{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+.grid2>div{min-width:0}
+.ctlRow{display:flex;flex-wrap:wrap;gap:8px 14px;align-items:center;margin:6px 0}
+.tag{display:inline-block;padding:1px 8px;border-radius:10px;font-size:11.5px;background:#e8eef6;color:#34506e;margin:0 3px 3px 0}
+.tag.g{background:#e2f2e5;color:#1b5e20}.tag.y{background:#fff4d6;color:#8d6e00}.tag.o{background:#ffe4cc;color:#b35400}
+.tag.r{background:#fde3e3;color:#b71c1c}.tag.p{background:#efe3f5;color:#5e3575}.tag.b{background:#dfeaf8;color:#154a80}
+.note{font-size:12px;color:#5b6b7c}
+.kformula{font-family:"Cambria Math",Georgia,serif;font-size:15px;color:#123a6b;background:#f0f5fb;border-radius:6px;padding:4px 10px;display:inline-block;margin:2px 4px}
+/* 警示卡 */
+.warnCard{border:2px solid #d32f2f;background:#fdf2f2;border-radius:10px;padding:10px 12px;margin:8px 0}
+.warnCard h4{color:#b71c1c;font-size:13.5px;margin-bottom:4px}
+.warnCard .wf{font-family:"Cambria Math",Georgia,serif;font-size:15px;color:#b71c1c}
+.okCard{border:1px solid #2e7d32;background:#f1f8f1;border-radius:10px;padding:10px 12px;margin:8px 0}
+.okCard h4{color:#1b5e20;font-size:13.5px;margin-bottom:4px}
+/* 颜色语义 */
+.cGh{color:#2e7d32;font-weight:600}.cHalf{color:#9a7200;font-weight:600}.cEtot{color:#ef6c00;font-weight:600}
+.cErr{color:#d32f2f;font-weight:600}.cRef{color:#7b1fa2}.negDelta{color:#d32f2f;font-weight:700}
+.rowSel{background:#fff8e1}.rowMiss{color:#b0b8c3;background:#f6f7f9}
+/* 画布 */
+.canvasWrap{position:relative;background:#fff;border:1px solid #dfe5ec;border-radius:8px}
+canvas{display:block;width:100%}
+/* 热点 */
+.hs{position:absolute;width:20px;height:20px;border-radius:50%;background:#ff8f00;color:#fff;border:2px solid #fff;font-size:11px;line-height:16px;padding:0;font-weight:700;box-shadow:0 0 0 1px #ff8f00;z-index:5}
+.hs:hover{background:#ef6c00}
+/* 操作清单 */
+.opItem{border:1px solid #dfe5ec;border-radius:8px;padding:7px 10px;margin:6px 0;background:#fbfcfe}
+.opItem.done{background:#f1f8f1;border-color:#a5d6a7}
+.opItem .why{display:none;font-size:12px;color:#34506e;background:#eef3fa;border-radius:6px;padding:4px 8px;margin-top:4px}
+.opItem.openWhy .why{display:block}
+details{border:1px solid #dfe5ec;border-radius:8px;padding:6px 10px;margin:6px 0;background:#fbfcfe}
+summary{cursor:pointer;font-weight:600;color:#34506e}
+/* 抽屉与卡片 */
+aside#drawer{width:320px;flex:0 0 320px;background:#fff;border:1px solid #dfe5ec;border-radius:10px;padding:10px;position:sticky;top:56px;max-height:calc(100vh - 70px);overflow:auto}
+aside#drawer.hidden{display:none}
+#cardSearch{width:100%;margin:6px 0}
+#catChips{display:flex;flex-wrap:wrap;gap:4px;margin-bottom:6px}
+#catChips button{padding:1px 8px;border-radius:12px;font-size:12px}
+#catChips button.cur{background:#5e3575;color:#fff;border-color:#5e3575}
+.cardListItem{display:block;width:100%;text-align:left;border:1px solid #e2e8f0;border-radius:8px;padding:6px 8px;margin:5px 0;background:#fff}
+.cardListItem:hover{border-color:#5e3575;background:#faf5ff}
+.cardListItem .cl-cat{font-size:11px;color:#fff;border-radius:8px;padding:0 6px;margin-right:6px}
+#modalBg{position:fixed;inset:0;background:rgba(20,30,50,.45);display:none;z-index:200;align-items:center;justify-content:center}
+#modalBg.show{display:flex}
+#modal{background:#fff;border-radius:12px;width:min(560px,94vw);max-height:88vh;overflow:auto;padding:16px;position:relative}
+.kcard{perspective:900px}
+.kcardInner{position:relative;transition:transform .45s;transform-style:preserve-3d}
+.kcard.flipped .kcardInner{transform:rotateY(180deg)}
+.kface{backface-visibility:hidden;border:1px solid #dfe5ec;border-radius:10px;padding:12px}
+.kface.back{position:absolute;inset:0;transform:rotateY(180deg);background:#f7f4fb;overflow:auto}
+.kface h4{color:#4a2c6d;font-size:15px;margin-bottom:6px}
+.kface .one{margin:6px 0}
+.kface .kformula{display:block;margin:6px 0}
+.kmini{margin:8px 0;text-align:center}
+.kface .guide{background:#eef6ff;border-radius:8px;padding:6px 10px;font-size:12.5px;margin-top:8px}
+.kface .warn{background:#fdf2f2;color:#b71c1c;border-radius:8px;padding:6px 10px;font-size:12.5px;margin-top:6px}
+.modalBtns{display:flex;gap:8px;flex-wrap:wrap;margin-top:10px}
+#pinStack{position:fixed;left:12px;bottom:64px;z-index:150;display:flex;flex-direction:column;gap:6px}
+.pinnedCard{background:#fff;border:1px solid #b39ddb;border-radius:8px;padding:6px 10px;font-size:12.5px;box-shadow:0 2px 6px rgba(60,30,120,.18);cursor:pointer;max-width:280px}
+/* 引导条 */
+#guide{position:fixed;left:0;right:0;bottom:0;background:#123a6b;color:#fff;padding:8px 16px;z-index:120;display:flex;gap:12px;align-items:center;flex-wrap:wrap;box-shadow:0 -2px 8px rgba(0,0,30,.25)}
+#guide.hidden{display:none}
+#guide .gq{background:rgba(255,255,255,.14);border-radius:8px;padding:4px 10px;font-size:12.5px}
+#guide button{background:rgba(255,255,255,.15);border-color:rgba(255,255,255,.4);color:#fff}
+#guide button:hover{background:rgba(255,255,255,.3)}
+#gReopen{position:fixed;right:14px;bottom:12px;z-index:119}
+/* Toast */
+#toast{position:fixed;top:70px;left:50%;transform:translateX(-50%);background:#263238;color:#fff;padding:8px 18px;border-radius:20px;z-index:300;display:none;box-shadow:0 3px 10px rgba(0,0,0,.3);max-width:80vw;text-align:center}
+/* 测速读数面板 */
+.roPanel{display:grid;grid-template-columns:repeat(auto-fit,minmax(150px,1fr));gap:6px}
+.roBox{background:#f7fafd;border:1px solid #dfe5ec;border-radius:8px;padding:5px 8px;font-size:12.5px}
+.roBox b{font-family:"Cambria Math",Georgia,serif;font-size:14px;color:#123a6b}
+.errBox{background:#fdf2f2;border:1.5px dashed #d32f2f;border-radius:8px;padding:5px 8px;font-size:12.5px;color:#8e1414}
+/* 能量条 */
+.ebarRow{display:flex;align-items:center;gap:6px;margin:4px 0;font-size:12.5px}
+.ebarRow .lbl{width:120px;text-align:right}
+.ebarTrack{flex:1;height:14px;background:#eef1f5;border-radius:7px;overflow:hidden;position:relative}
+.ebarFill{height:100%;border-radius:7px;transition:width .1s linear}
+.ebarVal{width:110px;font-family:Consolas,monospace}
+/* 候选纸带 */
+.candItem{border:1px solid #dfe5ec;border-radius:8px;padding:6px;background:#fbfcfe}
+.candItem.sel{border:2px solid #1565c0;background:#eef5ff}
+/* 练习 */
+.qItem{border:1px solid #dfe5ec;border-radius:10px;padding:10px;margin:8px 0;background:#fbfcfe}
+.qItem .qTitle{font-weight:600;color:#123a6b;margin-bottom:6px}
+.qOpt{display:block;margin:3px 0;padding:4px 8px;border:1px solid #e2e8f0;border-radius:8px;cursor:pointer;background:#fff}
+.qOpt:hover{border-color:#1565c0}
+.qOpt.right{background:#f1f8f1;border-color:#2e7d32}
+.qOpt.wrong{background:#fdf2f2;border-color:#d32f2f}
+.qFb{display:none;margin-top:6px;font-size:12.5px;background:#fff8e1;border-radius:8px;padding:6px 10px}
+.qItem.done .qFb{display:block}
+/* 小结 */
+.summary li{margin:4px 0}
+.legend{font-size:12px;color:#5b6b7c;display:flex;flex-wrap:wrap;gap:10px;margin:4px 0}
+.legend i{display:inline-block;width:12px;height:12px;border-radius:3px;vertical-align:-2px;margin-right:3px}
+@media (max-width:1100px){
+  .layout{flex-direction:column}
+  aside#drawer{width:100%;flex:none;position:static;max-height:none}
+  .grid2{grid-template-columns:1fr}
+}
+@media (prefers-reduced-motion:reduce){
+  *{transition:none !important;animation:none !important}
+}
+</style>
+</head>
+<body>
+<header>
+  <h1>模型46 · 实验：验证机械能守恒定律（重锤自由下落 + 打点计时器纸带）</h1>
+  <div class="hdr-note">g = 9.8 m/s²（当地重力加速度公认值，独立取用）· 打点频率 f = 50 Hz（控制变量，T = 1/f = 0.02 s）· 本实验是<b>验证</b>而非推导：h 用刻度尺量、v 用纸带点距独立算出</div>
+</header>
+
+<nav id="tabNav" role="tablist" aria-label="标签页导航">
+  <button data-tab="principle" class="active">① 原理与防循环验证</button>
+  <button data-tab="apparatus">② 装置与操作规范</button>
+  <button data-tab="tape">③ 纸带·选带·测速</button>
+  <button data-tab="data">④ 数据处理与判定</button>
+  <button data-tab="err">⑤ 误差归因与诊断</button>
+  <button data-tab="gate">⑥ 光电门方案</button>
+  <button data-tab="quiz">⑦ 练习与考核</button>
+  <button id="drawerBtn" aria-label="打开知识卡片库">📖 知识卡片库</button>
+</nav>
+
+<div class="layout">
+<main id="main">
+
+<!-- ============ ① 原理与防循环验证 ============ -->
+<section id="tab-principle" class="tabPanel active" role="tabpanel" aria-label="实验原理与防循环验证">
+  <div class="panel">
+    <h2>实验原理与"独立测量"原则</h2>
+    <div class="kformula">mgh = ½mv²（从静止起下落 h）</div>
+    <div class="kformula">mg·Δh = ½m(v₂² − v₁²)（任意两点，不要求初速为零）</div>
+    <p class="note" style="margin-top:6px">重物自由下落时若只有重力做功，重力势能的减少量等于动能的增加量。在<b>实验误差允许范围内</b>二者相等，即验证了机械能守恒定律。</p>
+    <h3>三个量必须"互不依赖"地独立测出（独立测量原则）</h3>
+    <table>
+      <tr><th>物理量</th><th>测量方式</th><th>独立性</th></tr>
+      <tr><td>下落高度 h</td><td>毫米刻度尺量纸带上两点间距离（一次读数，从起点量到目标点，估读到 0.1 mm）</td><td>只用长度测量</td></tr>
+      <tr><td>速度 v</td><td>由纸带上点间距与打点周期 T 算出：v<sub>n</sub> = (s<sub>n+1</sub> − s<sub>n−1</sub>)/(2T)</td><td>只用点距 + 时间周期</td></tr>
+      <tr><td>重力加速度 g</td><td>取当地公认值（如 9.8 m/s²），<b>不</b>由本纸带算出</td><td>外部公认常数</td></tr>
+    </table>
+  </div>
+
+  <div class="panel">
+    <h2 style="border-color:#d32f2f;color:#b71c1c">⛔ 防循环验证·三条禁令（核心警示）</h2>
+    <div class="warnCard"><h4>禁令一：禁止用 v = √(2gh) 求速度</h4>
+      <span class="wf">v = √(2gh)</span> 是由"机械能守恒"这一<b>待验证的结论</b>本身推出的。用它算速度，则 ½mv² ≡ mgh 恒成立，验证必然"百分百成功"——这叫<b>循环论证</b>，是无效验证。</div>
+    <div class="warnCard"><h4>禁令二：禁止用 v = gt 或 h = ½gt² 求速度/高度</h4>
+      这不仅默认了自由落体结论，还默认加速度 a 恰好等于 g。而实验中因阻力 a 略小于 g，用 v = gt 会得到 ½v² <b>偏大</b>甚至出现 ½v² &gt; mgh 的反常假象。</div>
+    <div class="warnCard"><h4>禁令三：禁止用同一条纸带拟合出的 a 代替 g 再验证守恒</h4>
+      若作 v²/2–h 图，其斜率是<b>实际加速度 a（因阻力略小于 g）</b>。用"斜率 a"反算速度同样恒有 ½v² = a·h，验证必"成功"，仍属循环。斜率只能作为"<b>存在阻力</b>"的证据。</div>
+    <div class="okCard"><h4>✔ 正确做法</h4>h（尺）、v（点距÷周期）、g（公认值）三者独立取得，再比较 gh 与 ½v²，看相对误差 δ 是否在允许范围内。</div>
+  </div>
+
+  <div class="panel">
+    <h2>对照演示：同一组数据，正确法 vs 错误法</h2>
+    <p class="note">下表用<b>当前纸带</b>在第 <input type="number" id="cmpN" value="8" min="1" max="23" style="width:56px"> 个点上，分别用四种方法求速度并计算 δ = (gh − ½v²)/gh。错误方法仅作<b>红色警示的对照示范</b>，界面上不提供用它们"计算数据表"的功能。</p>
+    <div class="ctlRow">
+      <button class="primary" id="btnLoadDrag">载入"阻力较大带"（a≈9.5 m/s²，最能暴露错误方法的假象）</button>
+      <button id="btnLoadStd">载入"标准合格纸带"</button>
+    </div>
+    <table id="cmpTable" style="width:100%;table-layout:fixed">
+      <thead><tr><th style="width:22%">方法</th><th>速度公式</th><th>v /(m/s)</th><th class="cGh">gh /(J/kg)</th><th class="cHalf">½v² /(J/kg)</th><th>δ</th><th>结论</th></tr></thead>
+      <tbody></tbody>
+    </table>
+    <div id="cmpNote" class="note" style="margin-top:6px"></div>
+    <div class="warnCard"><h4>为什么错误法"必然相等"是假象？</h4>把待验证的结论（守恒式 / a=g / 斜率a）代入计算，等式从代数上就被"写死"了：½(√(2gh))² = gh 恒成立，与纸带真实运动无关——即使纸带是"减速下落"的，它照样显示"守恒"。真正的验证必须让 h 与 v 来自<b>两条独立的测量通道</b>，误差信息才不会被抹掉。</div>
+  </div>
+
+  <div class="panel">
+    <h2>本实验要建立的五条核心认识</h2>
+    <ol class="summary">
+      <li>速度必须由纸带点距独立测出（<b>防循环验证</b>，三禁令）。</li>
+      <li>"第一、二点间距接近 2 mm"是"<b>初速为零</b>且打点与释放同步"的近似判据（50 Hz 下 ½×9.8×0.02² ≈ 1.96 mm）。</li>
+      <li>mgh 与 ½mv² 在<b>误差允许范围内相等</b>即验证成立（δ 约 1% 量级），不要求严格相等；比较时 <b>m 可约去</b>。</li>
+      <li>阻力（空气 + 限位孔摩擦）做负功，使 <b>½mv² 略小于 mgh</b>，且下落越远偏差越明显——这是正常且符合预期的结果。</li>
+      <li>本实验是"<b>验证</b>"而非"推导"：独立测量 + 误差范围内比较，而不是由公式推出结论。</li>
+    </ol>
+  </div>
+</section>
+
+<!-- ============ ② 装置与操作规范 ============ -->
+<section id="tab-apparatus" class="tabPanel" role="tabpanel" aria-label="装置搭建与操作规范">
+  <div class="grid2">
+    <div class="panel">
+      <h2>实验装置（侧视图）</h2>
+      <div class="ctlRow">
+        <label><input type="radio" name="timerType" value="spark" checked> 电火花计时器（220 V 交流）</label>
+        <label><input type="radio" name="timerType" value="em"> 电磁打点计时器（4–6 V 低压交流）</label>
+      </div>
+      <div class="ctlRow">
+        <button class="primary" id="apPower">① 接通电源</button>
+        <button class="primary" id="apRelease">② 释放重锤</button>
+        <button id="apStep">单步（一个打点周期）</button>
+        <button id="apReset">重置</button>
+        <label>慢动作 <input type="range" id="apSpeed" min="0.1" max="5" step="0.1" value="0.5" style="width:90px"> <span id="apSpeedV">0.5×</span></label>
+      </div>
+      <div class="ctlRow">
+        <label><input type="checkbox" id="swHole" checked> 限位孔竖直（取消勾选=倾斜，摩擦增大）</label>
+        <label><input type="checkbox" id="lyVec" checked> 矢量（mg / 阻力 / v）</label>
+        <label><input type="checkbox" id="lyEbar" checked> 能量条</label>
+        <label><input type="checkbox" id="lyZoom"> 点迹放大</label>
+        <label><input type="checkbox" id="lySound"> 音效</label>
+      </div>
+      <div id="apStatus" class="note" style="margin:4px 0">状态：电源未接通。规范顺序：<b>先接通电源，待打点稳定后再释放</b>。</div>
+      <div class="canvasWrap" id="apWrap"></div>
+      <div class="legend">
+        <span><i style="background:#1565c0"></i>重力 mg</span><span><i style="background:#8e24aa"></i>阻力 f（空气+限位孔）</span><span><i style="background:#2e7d32"></i>速度 v</span>
+        <span><i style="background:#2e7d32"></i>E_p 减少量</span><span><i style="background:#f9a825"></i>E_k 增加量</span><span><i style="background:#ef6c00"></i>E_总（相对释放点）</span>
+      </div>
+      <div id="apEnergy"></div>
+      <div id="apReadout" class="note" style="margin-top:6px"></div>
+    </div>
+    <div class="panel">
+      <h2>操作规范清单（逐条可勾选，展开看"为什么"）</h2>
+      <div id="opList"></div>
+      <details><summary>⚠ 安全提示（可折叠）</summary>
+        <ul style="margin:6px 0 0 18px">
+          <li>电火花计时器使用 <b>220 V 交流</b>，注意用电安全，湿手勿触碰插头与接线柱。</li>
+          <li>重锤下落区保持清空，<b>勿用手去接下落的重锤</b>。</li>
+          <li>纸带勿折叠、勿沾水油，保持平整以减小摩擦与读数误差。</li>
+          <li>电磁打点计时器线圈通电会发热，<b>不宜长时间连续通电</b>。</li>
+        </ul>
+      </details>
+      <details><summary>📷 点迹如何生成（原理速览）</summary>
+        <p class="note" style="margin:6px 0">每经过一个交流周期 T=0.02 s，计时器在纸带上打一个点：电火花式通过墨粉纸盘放电打点（阻力小）；电磁式通过振针压复写纸打点（振针会对纸带有轻微阻碍）。纸带上的点距记录了相等时间间隔内的位移。</p>
+      </details>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ③ 纸带·选带·测速 ============ -->
+<section id="tab-tape" class="tabPanel" role="tabpanel" aria-label="纸带生成、选带与测速">
+  <div class="panel">
+    <h2>纸带生成（物理自洽：s = ∫∫a dt²，a = g − 阻力项）</h2>
+    <div class="ctlRow">
+      <label>电源频率 f（控制变量）<select id="ctlF"><option value="50">50 Hz（标准）</option><option value="49">49 Hz（偏低）</option><option value="51">51 Hz（偏高）</option></select></label>
+      <label>释放初速度 v₀ <input type="range" id="ctlV0" min="0" max="0.5" step="0.01" value="0" style="width:90px"> <span id="ctlV0V">0.00 m/s</span></label>
+      <label><input type="checkbox" id="swAir"> 空气阻力</label>
+      <label><input type="checkbox" id="swFric"> 限位孔摩擦</label>
+      <label><input type="checkbox" id="swNoise"> 读数噪声</label>
+      <label><input type="checkbox" id="swMiss"> 漏点</label>
+      <label><input type="checkbox" id="swGhost"> 重影</label>
+    </div>
+    <div class="ctlRow">
+      <button class="primary" id="btnGen">生成纸带（25 个点）</button>
+      <span class="note">预设：</span>
+      <span id="presetBtns"></span>
+    </div>
+    <p class="note">生成的点迹位置由数值积分给出（无阻力时 a = g；开启阻力后 a = g − c₀ − c₁v），再叠加可选的读数噪声/漏点/重影。<b>一切速度均由点距反算，绝不用 √(2gh) 生成数据。</b></p>
+  </div>
+
+  <div class="panel">
+    <h2>纸带工作台（点击/拖动选点；方向键 ←→ 微调）</h2>
+    <div class="ctlRow" id="selModes">
+      <span class="note">当前选择：</span>
+      <button class="selMode on" data-mode="n">测点 n</button>
+      <button class="selMode" data-mode="A">A 点（两点法）</button>
+      <button class="selMode" data-mode="B">B 点（两点法）</button>
+      <button class="selMode" data-mode="O">参考点 O（起点）</button>
+      <button id="btnSweep">▶ 测速动画（中间时刻）</button>
+      <label><input type="checkbox" id="errDemoToggle"> 错误测速对照（红色警示）</label>
+    </div>
+    <div class="canvasWrap"><canvas id="tapeCanvas" height="190" tabindex="0" aria-label="纸带点迹图，点击选择点"></canvas>
+      <button class="hs" id="hsX1" data-card="c9" style="top:34%;left:26%" aria-label="第一二点间距知识点">i</button>
+      <button class="hs" id="hsVn" data-card="c8" style="top:64%;left:55%" aria-label="测速区间知识点">i</button>
+    </div>
+    <div id="roPanel" class="roPanel" style="margin-top:8px"></div>
+    <div id="rulerBox" style="margin-top:8px"></div>
+    <div id="errDemoPanel" style="display:none;margin-top:8px"></div>
+  </div>
+
+  <div class="panel">
+    <h2>"第一、二点间距 ≈ 2 mm"判据的来源</h2>
+    <div class="grid2">
+      <div>
+        <div class="kformula">x₁ = ½gT² = ½ × 9.8 × 0.02² ≈ 1.96 mm ≈ 2 mm</div>
+        <p class="note" style="margin-top:4px">它说明：<b>50 Hz、从静止释放、打点与释放同步</b>时，第一个打点间隔对应恰好一个周期的自由下落。这是"初速为零"的<b>近似判据</b>，不是必要条件。</p>
+        <p class="note">若第一、二点明显大于 2 mm（如先释放后通电、或手带出了初速度），就不能用"从静止起"的 mgh=½mv² 验证，应<b>改用任意两点</b>：mgΔh = ½m(v₂²−v₁²)（此时不需要初速为零）。注意：若舍去前面密集点另选起点，也不能再用"从静止起"的表达式。</p>
+        <button class="primary" id="btnMmAnim">▶ 播放 2 mm 判据推导动画</button>
+        <div id="mmAnim" class="note" style="margin-top:6px"></div>
+      </div>
+      <div id="curX1"></div>
+    </div>
+  </div>
+
+  <div class="panel">
+    <h2>选带任务：哪条纸带合格？</h2>
+    <p class="note">选带标准：① 点迹清晰、无重影漏点；② 第一、二点间距接近 2 mm；③ 点距均匀增大；④ 长度足够（取 6–10 个点）。点选你认为合格的纸带并"判定"：</p>
+    <div class="grid2" id="candList" style="grid-template-columns:repeat(auto-fit,minmax(240px,1fr))"></div>
+    <div class="ctlRow"><button class="primary" id="btnJudge">判定</button><span id="candFb" class="note"></span></div>
+  </div>
+</section>
+
+<!-- ============ ④ 数据处理与判定 ============ -->
+<section id="tab-data" class="tabPanel" role="tabpanel" aria-label="数据处理与三种判定方法">
+  <div class="panel">
+    <h2>方法一：逐点比较（m 可约去）</h2>
+    <div class="ctlRow">
+      <label><input type="radio" name="massMode" value="cancel" checked> 约去 m（比较 gh 与 ½v²，单位 J/kg）</label>
+      <label><input type="radio" name="massMode" value="with"> 带 m（显示能量 J）</label>
+      <label>重锤质量 m = <input type="number" id="mInput" value="1.0" min="0.1" max="5" step="0.1" style="width:60px"> kg（仅"带 m"模式需要；比较比值时 m 约去）</label>
+      <button class="primary" id="btnScan">h 扫描（重新生成并刷新数据表与图象）</button>
+      <button id="btnLog">记入实验记录</button>
+    </div>
+    <div style="overflow:auto;max-height:300px">
+      <table id="dataTable" style="width:100%">
+        <thead><tr><th>n</th><th>t /s</th><th>h=s<sub>n</sub> /mm</th><th>x<sub>n</sub> /mm</th><th>x<sub>n+1</sub> /mm</th><th>v<sub>n</sub> /(m/s)</th><th class="cGh">gh /(J/kg)</th><th class="cHalf">½v² /(J/kg)</th><th id="thDelta">δ</th></tr></thead>
+        <tbody></tbody>
+      </table>
+    </div>
+    <p class="note">v<sub>n</sub> = (s<sub>n+1</sub> − s<sub>n−1</sub>)/(2T) = (x<sub>n</sub> + x<sub>n+1</sub>)/(2T)；δ = (gh − ½v²)/gh × 100%。当前纸带编号：<b id="tapeNo">—</b></p>
+  </div>
+
+  <div class="grid2">
+    <div class="panel">
+      <h2>方法二：图象法</h2>
+      <div class="ctlRow">
+        <select id="chartSel" aria-label="选择图象类型">
+          <option value="v2h">v²/2 – h 图（线性化）</option>
+          <option value="energy">E_p、E_k、E_总 – h 三线图</option>
+          <option value="vh">v – h 图</option>
+          <option value="dh">δ – h 图</option>
+        </select>
+        <label><input type="checkbox" id="chkRef" checked> 理想参考线（斜率 g，紫虚线）</label>
+        <label>零势能参考面 <select id="refSel"><option value="O">释放点 O</option><option value="A">A 点</option></select></label>
+        <button id="btnExportChart">导出当前图数据</button>
+      </div>
+      <div class="canvasWrap"><canvas id="chartCv" height="330" aria-label="数据处理图象"></canvas>
+        <button class="hs" id="hsSlope" data-card="c12" style="top:22%;left:70%" aria-label="斜率知识点">i</button>
+      </div>
+      <div id="fitStats" class="note" style="margin-top:6px"></div>
+      <div class="legend"><span><i style="background:#42a5f5"></i>实测点</span><span><i style="background:#e53935"></i>拟合线</span><span><i style="background:#7b1fa2"></i>理想参考线（斜率 g）</span><span><i style="background:#2e7d32"></i>E_p</span><span><i style="background:#f9a825"></i>E_k</span><span><i style="background:#ef6c00"></i>E_总</span></div>
+    </div>
+    <div>
+      <div class="panel">
+        <h2>方法三：两点法（适用性最广，不要求初速为零）</h2>
+        <div class="ctlRow">
+          <label>A 点 <select id="selA"></select></label>
+          <label>B 点 <select id="selB"></select></label>
+        </div>
+        <div id="abPanel" class="roPanel"></div>
+        <p class="note" style="margin-top:6px">验证 mg·Δh<sub>AB</sub> = ½m(v<sub>B</sub>² − v<sub>A</sub>²)。即使纸带第一、二点不满足 2 mm（有初速度），两点法依然有效。</p>
+      </div>
+      <div class="panel" id="judgePanel">
+        <h2>判定面板</h2>
+        <div id="judgeText"></div>
+      </div>
+      <div class="panel">
+        <h2>实验记录（每组一行，可导出 CSV）</h2>
+        <div class="ctlRow"><button id="btnCsv">导出 CSV</button><button id="btnClearLog">清空</button></div>
+        <div style="overflow:auto;max-height:220px"><table id="logTable"><thead><tr><th>纸带</th><th>f /Hz</th><th>m /kg</th><th>h /mm</th><th>v /(m/s)</th><th>gh</th><th>½v²</th><th>δ /%</th><th>开关</th></tr></thead><tbody></tbody></table></div>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ⑤ 误差归因与诊断 ============ -->
+<section id="tab-err" class="tabPanel" role="tabpanel" aria-label="误差归因与反常诊断">
+  <div class="panel">
+    <h2>逐项误差的实时影响（相对理想基准）</h2>
+    <p class="note">基线：f=50 Hz、静止释放、无阻力、无噪声（δ≈0，斜率≈9.8）。逐项单独开启下列因素，显示对"末点 δ"和"v²/2–h 拟合斜率"的影响方向与量级：</p>
+    <div style="overflow:auto"><table id="impactTable" style="width:100%"><thead><tr><th>误差因素</th><th>δ(末点)</th><th>拟合斜率</th><th>影响方向与归因</th></tr></thead><tbody></tbody></table></div>
+  </div>
+  <div class="panel">
+    <h2>误差归因表</h2>
+    <div style="overflow:auto"><table style="width:100%"><thead><tr><th>来源</th><th>类型</th><th>方向</th><th>归因与对策</th></tr></thead><tbody>
+      <tr><td>空气阻力 + 限位孔摩擦</td><td>系统</td><td class="cErr">使 ½v² 偏小（δ&gt;0）</td><td>阻力做负功，下落越远速度越大、偏差越明显；选密度大体积小的重锤、限位孔竖直、纸带平整</td></tr>
+      <tr><td>电源频率偏低（如 49 Hz）</td><td>系统</td><td class="cErr">使 v 偏大（δ 可能&lt;0，反常）</td><td>真实 T&gt;0.02 s，按 0.02 s 计算时间偏小 → v 偏大；应核对电源频率</td></tr>
+      <tr><td>h 测量偏大/偏小</td><td>偶然/系统</td><td>δ 相应偏大/偏小</td><td>从起点一次量到目标点，不逐段累加；估读到 0.1 mm，同一把尺</td></tr>
+      <tr><td>第一点不清晰 / 释放有初速度</td><td>系统</td><td>视情况（初速度使 ½v² 偏大）</td><td>先通电待稳定再释放；手提纸带上端竖直释放；必要时改用两点法</td></tr>
+      <tr><td>限位孔不竖直</td><td>系统</td><td class="cErr">使 ½v² 偏小</td><td>摩擦增大；调节两限位孔与重锤下落线共线</td></tr>
+      <tr><td>点迹模糊、点序认错</td><td>偶然</td><td>随机（可致反常）</td><td>选清晰带、编号确认；漏点处不能用两端点算速度</td></tr>
+    </tbody></table></div>
+  </div>
+  <div class="panel">
+    <h2>反常结果诊断：为什么会出现 ½v² &gt; gh？</h2>
+    <div class="ctlRow"><button class="danger" id="diagLoad">载入"频率 49 Hz 反常带"</button><span class="note" id="diagState"></span></div>
+    <p class="note">观察④的数据表：δ 出现<b>负值</b>。请勾选所有可能的原因（多选），然后"诊断"：</p>
+    <div id="diagOpts"></div>
+    <div class="ctlRow"><button class="primary" id="btnDiag">诊断</button></div>
+    <div id="diagFb"></div>
+  </div>
+</section>
+
+<!-- ============ ⑥ 光电门方案 ============ -->
+<section id="tab-gate" class="tabPanel" role="tabpanel" aria-label="光电门替代方案">
+  <div class="grid2">
+    <div class="panel">
+      <h2>光电门测速替代方案（对照模块）</h2>
+      <p class="note">重锤（装挡光片）沿竖直导轨下落，依次经过两个光电门。v = d/Δt（d 为挡光片宽度，Δt 为挡光时间），量出两门高度差 Δh，验证 <b>mgΔh = ½m(v₂² − v₁²)</b>。<b>本方案不需要初速为零</b>，也不依赖打点周期。</p>
+      <div class="ctlRow">
+        <label>门1高度 h₁ <input type="range" id="pgH1" min="0.05" max="0.6" step="0.01" value="0.25" style="width:90px"> <span id="pgH1V">0.25 m</span></label>
+        <label>门2高度 h₂ <input type="range" id="pgH2" min="0.3" max="1.0" step="0.01" value="0.65" style="width:90px"> <span id="pgH2V">0.65 m</span></label>
+      </div>
+      <div class="ctlRow">
+        <label>挡光片宽度 d <select id="pgD"><option value="0.005">0.5 cm</option><option value="0.01" selected>1.0 cm</option><option value="0.02">2.0 cm</option><option value="0.05">5.0 cm</option></select></label>
+        <label>释放初速度 v₀ <input type="range" id="pgV0" min="0" max="1" step="0.05" value="0" style="width:90px"> <span id="pgV0V">0.00 m/s</span></label>
+        <label><input type="checkbox" id="pgDrag"> 阻力（a = g − 0.15）</label>
+        <button class="primary" id="btnPgRun">▶ 运行</button>
+      </div>
+      <div class="canvasWrap" id="pgWrap"></div>
+    </div>
+    <div>
+      <div class="panel">
+        <h2>测量结果</h2>
+        <div id="pgResults" class="roPanel"></div>
+        <p class="note" style="margin-top:6px">"瞬时参考值"仅为教学对照显示——它由运动真值给出，<b>验证计算只用 v = d/Δt</b>。</p>
+      </div>
+      <div class="panel">
+        <h2>挡光片宽度 vs 偏差（门1处）</h2>
+        <div style="overflow:auto"><table id="pgDevTable" style="width:100%"><thead><tr><th>d /cm</th><th>Δt₁ /ms</th><th>v=d/Δt₁ /(m/s)</th><th>瞬时参考 /(m/s)</th><th>偏差</th></tr></thead><tbody></tbody></table></div>
+        <p class="note" style="margin-top:4px">v = d/Δt 是挡光过程的<b>平均速度</b>，d 越小越接近门处的瞬时速度。修正说明：单门测即时速度时必须用小挡光片；本实验两点法中该恒定偏差大部分相互抵消，故验证仍可靠。</p>
+      </div>
+      <div class="panel">
+        <h2>打点纸带 vs 光电门 方案对照</h2>
+        <table style="width:100%"><tr><th></th><th>打点纸带</th><th>光电门</th></tr>
+        <tr><td>是否需要初速为零</td><td>用 mgh=½mv² 时需要（2 mm 判据）；两点法不需要</td><td class="cGh">不需要（Δ 形式）</td></tr>
+        <tr><td>主要误差来源</td><td>纸带摩擦、点迹读数、打点周期</td><td>挡光片宽度、门的定位、计时精度</td></tr>
+        <tr><td>精度</td><td>较高（δ 可控制在 1% 内）</td><td>高（Δt 可达 0.1 ms 级）</td></tr>
+        <tr><td>操作难度</td><td>中（选带、量点距较繁琐）</td><td>低（自动计时）</td></tr></table>
+      </div>
+    </div>
+  </div>
+</section>
+
+<!-- ============ ⑦ 练习与考核 ============ -->
+<section id="tab-quiz" class="tabPanel" role="tabpanel" aria-label="练习与考核">
+  <div class="panel">
+    <h2>练习考核（6 题·即时反馈）</h2>
+    <div class="ctlRow">
+      <label><input type="checkbox" id="quizTeacher"> 教师考核模式（随机出题、隐藏答案、统一判分）</label>
+      <button class="primary" id="btnQuizSubmit" style="display:none">交卷判分</button>
+      <span id="quizScore" class="note"></span>
+    </div>
+    <div id="quizBox"></div>
+  </div>
+  <div class="panel">
+    <h2>结论小结</h2>
+    <ul class="summary">
+      <li>在误差允许范围内 <b>mgh ≈ ½mv²</b>（或 gΔh ≈ ½Δv²），机械能守恒定律得到验证；比较时 <b>m 可约去</b>。</li>
+      <li>测速公式：<b>v<sub>n</sub> = (s<sub>n+1</sub> − s<sub>n−1</sub>)/(2T)</b>——中间时刻的瞬时速度。</li>
+      <li>误差方向：阻力使 <b>½v² 略小于 gh</b> 且随 h 增大；频率偏低使 v 偏大（可致反常）。</li>
+      <li>判定标准：δ ≲ 1% 量级即视为"在实验误差允许范围内相等"，绝不要求严格相等。</li>
+    </ul>
+  </div>
+</section>
+</main>
+
+<!-- ============ 知识卡片抽屉 ============ -->
+<aside id="drawer" class="hidden" aria-label="知识卡片库">
+  <h2 style="font-size:14px;color:#4a2c6d">📖 知识卡片库（<span id="cardCount">0</span> 张）</h2>
+  <input type="text" id="cardSearch" placeholder="搜索关键词，如：循环论证 / 2mm / 斜率…">
+  <div id="catChips"></div>
+  <div id="cardList"></div>
+</aside>
+</div>
+
+<!-- 卡片弹窗 -->
+<div id="modalBg"><div id="modal" role="dialog" aria-modal="true" aria-label="知识卡片">
+  <div class="kcard" id="kcard">
+    <div class="kcardInner">
+      <div class="kface front" id="kfaceF"></div>
+      <div class="kface back" id="kfaceB"></div>
+    </div>
+  </div>
+  <div class="modalBtns">
+    <button id="btnFlip">翻转（正面结论 / 背面推导）</button>
+    <button id="btnPin">📌 钉住</button>
+    <button id="btnPrevC">← 上一张</button>
+    <button id="btnNextC">下一张 →</button>
+    <button id="btnCloseC">关闭（Esc）</button>
+  </div>
+</div></div>
+<div id="pinStack"></div>
+
+<!-- 教学引导 -->
+<div id="guide">
+  <b id="gStep">教学引导 1/8</b><span id="gTitle"></span>
+  <span class="gq" id="gText"></span>
+  <span class="gq" id="gQ" style="background:rgba(255,213,79,.25)"></span>
+  <button id="gAns">显示答案</button>
+  <button id="gJump">前往对应标签页</button>
+  <button id="gPrev">←</button><button id="gNext">→</button><button id="gClose">收起</button>
+</div>
+<button id="gReopen" class="hidden">教学引导</button>
+<div id="toast" role="status"></div>
+
+<script>
+'use strict';
+/* =====================================================================
+   模型46 · 验证机械能守恒定律（自由落体 + 打点纸带）
+   物理内核：
+   1) 点迹生成：数值积分 dv/dt = g − c0 − c1·v（无阻力时 a=g），点位于 t_n = n/f。
+   2) 测速反算：v_n = (s_{n+1} − s_{n−1})/(2T)，T=0.02 s（标称）。全程不存在
+      用 √(2gh)、v=gt 生成或计算速度的路径——唯一的例外是下方
+      【错误示范专用区】renderCompare()，且界面显式标注"错误示范"。
+   ===================================================================== */
+
+/* ---------------- 常量与工具 ---------------- */
+const G = 9.8;                 // 当地重力加速度公认值（独立取用，不由纸带算出）
+const FNOM = 50;               // 标称频率（控制变量）
+const TCALC = 0.02;            // 标称打点周期 T = 1/50 s
+const COL = {gh:'#2e7d32', half:'#b8860b', halfFill:'#f9a825', etot:'#ef6c00',
+             ref:'#7b1fa2', pt:'#42a5f5', fit:'#e53935', drag:'#8e24aa',
+             grav:'#1565c0', err:'#d32f2f', tape:'#5d4037'};
+const $ = s => document.querySelector(s);
+const $$ = s => Array.from(document.querySelectorAll(s));
+const REDUCED = window.matchMedia && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+function mulberry32(a){return function(){a|=0;a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296;};}
+function gauss(rnd){let u=0,v=0;while(u===0)u=rnd();while(v===0)v=rnd();return Math.sqrt(-2*Math.log(u))*Math.cos(2*Math.PI*v);}
+function fmt(x,d){return (x==null||isNaN(x))?'—':x.toFixed(d);}
+function fmtV(x){return (x==null||isNaN(x))?'—':Number(x.toPrecision(3));}
+function fmtD(x){return (x==null||isNaN(x))?'—':(Math.abs(x)>=10?x.toFixed(1):Number(x.toPrecision(2)));}
+function mm(x){return (x==null||isNaN(x))?'—':(x*1000).toFixed(1);}   // 米→毫米，0.1 mm
+let toastTimer=null;
+function toast(msg){const t=$('#toast');t.innerHTML=msg;t.style.display='block';clearTimeout(toastTimer);toastTimer=setTimeout(()=>{t.style.display='none';},3400);}
+
+/* ---------------- 物理仿真（点迹生成，物理自洽） ---------------- */
+// 生成打点位置：中点法数值积分，每个打点周期 500 个子步
+function simulateRaw(o){
+  const Tr = 1/o.f, sub = 500, dt = Tr/sub;
+  const raw = [0], vpts = [o.v0];
+  let v = o.v0, s = 0;
+  for(let n=1;n<=o.N;n++){
+    for(let i=0;i<sub;i++){
+      const a1 = G - o.c0 - o.c1*v;        // 阻力项：常数 c0（摩擦）+ 线性 c1·v（空气阻力）
+      const vm = v + a1*dt/2;
+      const a2 = G - o.c0 - o.c1*vm;
+      v += a2*dt; s += vm*dt;
+    }
+    raw.push(s); vpts.push(v);
+  }
+  return {raw, vpts, Tr};
+}
+// 测量：叠加读数噪声 / 漏点 / 重影
+function measureTape(sim, o){
+  const rnd = mulberry32(o.seed||12345);
+  return sim.raw.map((x,i)=>({
+    n:i,
+    s: x + (o.noise ? gauss(rnd)*o.noise : 0),
+    valid: !(o.missN===i),
+    ghost: (o.ghostN===i),
+    blur: !!(o.blur && i%3===2)
+  }));
+}
+// 由"测量值"反算各行数据：v_n=(s_{n+1}−s_{n−1})/(2T)，h 相对参考点 O
+function buildRows(pts, oIdx){
+  const s0 = pts[oIdx||0].s, out = [];
+  for(let n=1;n<pts.length-1;n++){
+    const r = {n, t:n*TCALC};
+    if(!pts[n].valid || !pts[n-1].valid || !pts[n+1].valid){ r.miss=true; out.push(r); continue; }
+    r.h  = pts[n].s - s0;
+    r.xn = pts[n].s - pts[n-1].s;
+    r.xn1= pts[n+1].s - pts[n].s;
+    r.v  = (pts[n+1].s - pts[n-1].s)/(2*TCALC);       // ★ 唯一的测速通道：点距÷时间
+    r.gh = G*r.h;
+    r.half = 0.5*r.v*r.v;
+    r.delta = (r.gh>1e-9) ? (r.gh - r.half)/r.gh*100 : null;
+    out.push(r);
+  }
+  return out;
+}
+function linfit(pts){
+  const n = pts.length; if(n<2) return null;
+  let sx=0,sy=0,sxx=0,sxy=0,syy=0;
+  for(const p of pts){sx+=p[0];sy+=p[1];sxx+=p[0]*p[0];sxy+=p[0]*p[1];syy+=p[1]*p[1];}
+  const den = n*sxx - sx*sx; if(Math.abs(den)<1e-15) return null;
+  const slope = (n*sxy - sx*sy)/den;
+  const icpt = (sy - slope*sx)/n;
+  const rden = (n*sxx-sx*sx)*(n*syy-sy*sy);
+  const r2 = rden>1e-18 ? Math.pow(n*sxy-sx*sy,2)/rden : 1;
+  return {slope, icpt, r2};
+}
+
+/* ---------------- 全局状态 ---------------- */
+const state = {
+  f:FNOM, v0:0, air:false, fric:false, bigDrag:false, noise:false, miss:false, ghost:false,
+  holeVertical:true, timerType:'spark',
+  m:1.0, massMode:'cancel',
+  selN:8, selA:2, selB:8, refO:0, refMode:'O',
+  tape:null, tapeSeq:0,
+  chart:'v2h', showRef:true,
+  selMode:'n',
+  log:[],
+  photo:{h1:0.25,h2:0.65,d:0.01,v0:0,drag:false},
+  quizTeacher:false
+};
+function dragParams(){
+  let c0=0, c1=0;
+  if(state.fric) c0 += 0.12;            // 限位孔摩擦
+  if(state.air)  c1 += 0.05;            // 空气阻力（线性）
+  if(!state.holeVertical) c0 += 0.22;   // 限位孔倾斜
+  if(state.bigDrag){ c0 = 0.28; c1 = 0.025; }  // "阻力较大带"预设：有效 a≈9.5 m/s²
+  return {c0,c1};
+}
+function genTape(opts){
+  const d = dragParams();
+  const o = Object.assign({
+    f:state.f, v0:state.v0, c0:d.c0, c1:d.c1, N:24,
+    noise: state.noise?0.00025:0,
+    missN: state.miss?7:null, ghostN: state.ghost?10:null, blur:false,
+    seed:(Date.now()%100000)|0
+  }, opts||{});
+  const sim = simulateRaw(o);
+  const pts = measureTape(sim,o);
+  state.refO = 0;
+  state.tape = {pts, rows:buildRows(pts,0), meta:o, sim};
+  state.tapeSeq++;
+  const valid = state.tape.rows.filter(r=>!r.miss);
+  if(valid.length){
+    if(!valid.some(r=>r.n===state.selN))  state.selN  = valid[Math.floor(valid.length/2)].n;
+    if(!valid.some(r=>r.n===state.selA))  state.selA  = valid[0].n;
+    if(!valid.some(r=>r.n===state.selB))  state.selB  = valid[valid.length-1].n;
+  }
+  renderAll();
+}
+
+/* =====================================================================
+   知识卡片库（KNOWLEDGE_CARDS）
+   字段：cat 分类 / title 标题 / one 一句话结论 / formula 公式或判据 /
+         mini 迷你示意图键 / guide 在本Demo中怎么看 / warn 易错提醒 / back 背面推导
+   ===================================================================== */
+const CATS = ['概念','公式','规律','方法','辨析','易错','应用','误差'];
+const CATCOLOR = {'概念':'#1565c0','公式':'#00695c','规律':'#2e7d32','方法':'#6a4fa3','辨析':'#ad1457','易错':'#c62828','应用':'#00838f','误差':'#ef6c00'};
+function mtag(txt,color){return '<svg viewBox="0 0 140 66" width="140" height="66" style="max-width:100%"><rect x="4" y="6" width="132" height="54" rx="8" fill="#f4f7fb" stroke="'+(color||'#5e3575')+'" stroke-width="1.5"/><text x="70" y="38" text-anchor="middle" font-size="14" fill="#33475e" font-family="Cambria Math,Georgia,serif">'+txt+'</text></svg>';}
+const MINIS = {
+  tape:c=>'<svg viewBox="0 0 140 66" width="140" height="66"><rect x="6" y="22" width="128" height="22" rx="3" fill="#faf6ef" stroke="'+c+'"/><g fill="'+c+'"><circle cx="18" cy="33" r="2"/><circle cx="28" cy="33" r="2"/><circle cx="40" cy="33" r="2"/><circle cx="56" cy="33" r="2"/><circle cx="76" cy="33" r="2"/><circle cx="100" cy="33" r="2"/><circle cx="126" cy="33" r="2"/></g><path d="M14 52 L14 58 L28 58 L28 52" stroke="#c62828" fill="none"/><text x="21" y="64" font-size="8" text-anchor="middle" fill="#c62828">x₁</text></svg>',
+  slope:c=>'<svg viewBox="0 0 140 66" width="140" height="66"><line x1="16" y1="8" x2="16" y2="56" stroke="#90a4ae"/><line x1="16" y1="56" x2="134" y2="56" stroke="#90a4ae"/><line x1="16" y1="56" x2="126" y2="14" stroke="'+c+'" stroke-width="2"/><line x1="16" y1="56" x2="126" y2="26" stroke="#7b1fa2" stroke-dasharray="4 3"/><circle cx="52" cy="41" r="2.5" fill="#42a5f5"/><circle cx="80" cy="31" r="2.5" fill="#42a5f5"/><circle cx="106" cy="22" r="2.5" fill="#42a5f5"/><text x="120" y="10" font-size="8" fill="#7b1fa2">g</text></svg>',
+  gate:c=>'<svg viewBox="0 0 140 66" width="140" height="66"><rect x="14" y="10" width="4" height="50" fill="#90a4ae"/><rect x="122" y="10" width="4" height="50" fill="#90a4ae"/><rect x="10" y="16" width="12" height="5" fill="'+c+'"/><rect x="118" y="34" width="12" height="5" fill="'+c+'"/><rect x="62" y="26" width="16" height="20" rx="3" fill="#5d4037"/><line x1="70" y1="4" x2="70" y2="22" stroke="#2e7d32" stroke-width="2" marker-end="url(#ar)"/><defs><marker id="ar" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto"><path d="M0 0 L6 3 L0 6 z" fill="#2e7d32"/></marker></defs></svg>',
+  energy:c=>'<svg viewBox="0 0 140 66" width="140" height="66"><rect x="10" y="14" width="90" height="10" fill="#2e7d32"/><rect x="10" y="30" width="74" height="10" fill="#f9a825"/><rect x="10" y="46" width="88" height="10" fill="#ef6c00"/><text x="106" y="23" font-size="9" fill="#2e7d32">E_p减</text><text x="106" y="39" font-size="9" fill="#b8860b">E_k增</text><text x="106" y="55" font-size="9" fill="#ef6c00">E_总</text></svg>',
+  timer:c=>'<svg viewBox="0 0 140 66" width="140" height="66"><rect x="30" y="10" width="80" height="28" rx="4" fill="#eceff1" stroke="'+c+'"/><text x="70" y="28" font-size="10" text-anchor="middle" fill="#33475e">打点计时器</text><line x1="70" y1="38" x2="70" y2="60" stroke="#5d4037" stroke-width="4"/><circle cx="60" cy="46" r="2" fill="#c62828"/><circle cx="70" cy="52" r="2" fill="#c62828"/><circle cx="80" cy="58" r="2" fill="#c62828"/><rect x="108" y="16" width="24" height="16" rx="2" fill="#fff3e0" stroke="#ef6c00"/><text x="120" y="28" font-size="7" text-anchor="middle" fill="#ef6c00">220V</text></svg>',
+  drop:c=>'<svg viewBox="0 0 140 66" width="140" height="66"><line x1="70" y1="6" x2="70" y2="14" stroke="#90a4ae"/><rect x="58" y="14" width="24" height="30" rx="4" fill="#455a64"/><path d="M58 44 L82 44 L70 58 z" fill="#37474f"/><line x1="96" y1="20" x2="96" y2="40" stroke="#1565c0" stroke-width="2.5" marker-end="url(#ar2)"/><text x="104" y="32" font-size="9" fill="#1565c0">mg</text><defs><marker id="ar2" markerWidth="6" markerHeight="6" refX="3" refY="3" orient="auto"><path d="M0 0 L6 3 L0 6 z" fill="#1565c0"/></marker></defs><circle cx="30" cy="20" r="2" fill="#c62828"/><circle cx="30" cy="30" r="2" fill="#c62828"/><circle cx="30" cy="44" r="2" fill="#c62828"/></svg>',
+  forbid:c=>'<svg viewBox="0 0 140 66" width="140" height="66"><circle cx="70" cy="33" r="24" fill="none" stroke="#c62828" stroke-width="4"/><line x1="53" y1="16" x2="87" y2="50" stroke="#c62828" stroke-width="4"/><text x="70" y="63" font-size="9" text-anchor="middle" fill="#c62828">禁止</text></svg>',
+  compare:c=>'<svg viewBox="0 0 140 66" width="140" height="66"><rect x="14" y="10" width="50" height="46" rx="6" fill="#f1f8f1" stroke="#2e7d32"/><rect x="76" y="10" width="50" height="46" rx="6" fill="#fdf2f2" stroke="#c62828"/><text x="39" y="38" font-size="12" text-anchor="middle" fill="#2e7d32">✔</text><text x="101" y="38" font-size="12" text-anchor="middle" fill="#c62828">✘</text></svg>',
+  ruler:c=>'<svg viewBox="0 0 140 66" width="140" height="66"><rect x="10" y="24" width="120" height="18" fill="#fff8e1" stroke="#b8860b"/><g stroke="#b8860b">'+'<line x1="20" y1="24" x2="20" y2="34"/><line x1="40" y1="24" x2="40" y2="38"/><line x1="60" y1="24" x2="60" y2="34"/><line x1="80" y1="24" x2="80" y2="38"/><line x1="100" y1="24" x2="100" y2="34"/><line x1="120" y1="24" x2="120" y2="38"/>'+'</g><line x1="80" y1="14" x2="80" y2="52" stroke="#1565c0" stroke-width="2"/><text x="80" y="64" font-size="8" text-anchor="middle" fill="#1565c0">一次读数</text></svg>'
+};
+function mini(key,cat){ return (MINIS[key]||mtag('·'))(CATCOLOR[cat]||'#5e3575'); }
+
+const KNOWLEDGE_CARDS = [
+/* ---- 概念 ---- */
+{id:'c1',cat:'概念',title:'验证性实验与"独立测量"原则',one:'验证守恒必须让 h、v、g 来自互不依赖的三条测量通道，误差信息才不会被抹掉。',formula:'h←毫米刻度尺；v←纸带点距/T；g←当地公认值',mini:'ruler',guide:'①页"独立测量原则"表；③页测速读数面板中 h 与 v 的来源各不相同。',warn:'若某一量由待验证结论推出，验证即失效。',back:'验证的逻辑结构：由测量得到 A 与 B，比较 A?≈B。若 B=f(A)（如 v=√(2gh)），则"B≈A"是恒等式，与自然规律无关，实验失去检验力。'},
+{id:'c2',cat:'概念',title:'循环论证（防循环三禁令）',one:'把待验证的结论代入计算过程，得到"必然相等"的假象，称为循环论证。',formula:'禁：v=√(2gh)；禁：v=gt、h=½gt²；禁：用同带拟合的 a 代替 g',mini:'forbid',guide:'①页"三条禁令"红色警示卡与"正确 vs 错误"对照表。',warn:'错误法得到的 δ 恒为 0，看起来"最精确"，实际最无效。',back:'设 v=√(2gh)，则 ½v²=½·2gh=gh 恒成立；即使纸带来自减速运动也照样"守恒"，故该相等不携带任何关于自然的信息。'},
+{id:'c3',cat:'概念',title:'打点周期 T = 1/f',one:'交流电每变化一个周期打一个点，f=50 Hz 时 T=0.02 s。',formula:'T = 1/f，f=50 Hz ⇒ T=0.02 s',mini:'timer',guide:'②页电源标注；③页频率选择器（控制变量）。',warn:'电源频率实际偏低时，真实 T>0.02 s，按 0.02 s 计算会系统性放大 v。',back:'打点计时器毎周期打一次点，点数×周期=时间。频率由电网决定，我国为 50 Hz。'},
+{id:'c4',cat:'概念',title:'中间时刻瞬时速度',one:'匀变速直线运动中，某段时间内的平均速度等于该段时间中间时刻的瞬时速度。',formula:'v(中间时刻) = Δx/Δt',mini:'tape',guide:'③页"测速动画"按钮：高亮 s(n−1)→s(n+1) 区间与时间 2T。',back:'匀变速中 v(t) 线性，区间平均=(v初+v末)/2=中间时刻的 v。点 n 恰是 [t(n−1), t(n+1)] 的时间中点，故 v_n=(s(n+1)−s(n−1))/(2T)。'},
+{id:'c5',cat:'概念',title:'系统误差、偶然误差与相对误差 δ',one:'阻力使结果单向偏（系统）；读数起伏双向（偶然）；相对误差 δ 量化偏离程度。',formula:'δ = |mgh − ½mv²| / mgh × 100%',mini:'compare',guide:'④页数据表 δ 列；⑤页逐项误差影响表。',warn:'判定看 δ 的量级与方向，不看单点偶然起伏。',back:'系统误差有确定方向（如阻力恒使 ½v² 偏小）；偶然误差可通过多次测量取平均减小。δ 以 mgh 为基准归一，便于跨点比较。'},
+/* ---- 公式 ---- */
+{id:'c6',cat:'公式',title:'mgh = ½mv²（从静止起）',one:'从静止自由下落 h，若只有重力做功，势能减少量等于动能增加量。',formula:'mgh = ½mv²（要求初速为零）',mini:'energy',guide:'④页逐点表：gh 列（绿）与 ½v² 列（黄）对比。',warn:'使用前提：第一、二点接近 2 mm（初速为零判据）。',back:'动能定理：mgh = ½mv² − 0。验证时 m 同时出现在两边，可约去。'},
+{id:'c7',cat:'公式',title:'mgΔh = ½m(v₂² − v₁²)（任意两点）',one:'取任意两点比较势能减少与动能增加，不要求初速为零。',formula:'mg·Δh = ½m(v₂² − v₁²)',mini:'energy',guide:'④页"方法三：两点法"面板（A、B 可任选）。',back:'动能定理对任意过程成立：mgΔh = ½mv₂² − ½mv₁²，与初速度无关，故适用性最广。'},
+{id:'c8',cat:'公式',title:'v_n = (s_{n+1} − s_{n−1})/(2T)',one:'点 n 的速度=跨该点两个间隔的平均速度（中间时刻法）。',formula:'v_n = (x_n + x_{n+1})/(2T) = (s_{n+1} − s_{n−1})/(2T)',mini:'tape',guide:'③页测速动画与读数面板；③页"错误测速对照"显示 x_n/T 的系统偏差。',warn:'不是 x_n/T（那只是第 n 个间隔的平均速度，对应其中间时刻而非端点 n）。',back:'见"中间时刻瞬时速度"卡：区间 [t(n−1),t(n+1)] 长恰 2T，点 n 为其中间时刻。'},
+{id:'c9',cat:'公式',title:'T=1/f 与"2 mm 判据"',one:'50 Hz 下从静止释放，第一、二点间距 ≈1.96 mm≈2 mm，是初速为零的近似判据。',formula:'x₁ = ½gT² = ½×9.8×0.02² ≈ 1.96 mm（仅用于判据，不得用于求速度）',mini:'tape',guide:'③页"2 mm 判据"面板的推导动画与当前纸带 x₁ 实测值。',warn:'h=½gt² 只用来解释判据来源，不能用来"算"高度或速度。',back:'若打点与释放同步且初速为零，第一个间隔对应一个周期内的下落量 ½gT²≈1.96 mm；明显大于此值说明打点开始时重锤已有速度。'},
+{id:'c10',cat:'公式',title:'相对误差 δ 的定义',one:'δ 以 mgh 为基准，衡量 ½v² 偏离的程度。',formula:'δ = (mgh − ½mv²)/mgh × 100%（带符号）',mini:'slope',guide:'④页数据表 δ 列、δ–h 图；⑤页反常诊断中 δ<0 即反常。',back:'δ>0 表示 ½v² 偏小（阻力方向）；δ<0 表示偏大（多为频率/读数/初速度问题）。'},
+{id:'c11',cat:'公式',title:'v = d/Δt（光电门）',one:'挡光片宽度除以挡光时间，是挡光过程的平均速度。',formula:'v = d/Δt，d 越小越接近瞬时速度',mini:'gate',guide:'⑥页结果面板与"挡光片宽度 vs 偏差"表。',warn:'d 较大时它系统性偏离门处瞬时速度；两点法中该偏差大部分抵消。',back:'挡光期间物体继续加速，d/Δt 是 [门−d, 门] 区间的平均速度，恒不等于门处瞬时值，偏差约 ½aΔt。'},
+{id:'c12',cat:'公式',title:'v²/2 = a·h（图象斜率）',one:'v²/2–h 图是过原点的直线，斜率等于实际加速度 a。',formula:'v²/2 = a·h（斜率 = a，理想时 a=g，有阻力时 a<g）',mini:'slope',guide:'④页图象法：拟合线（红）、理想参考线（紫虚线）与斜率统计。',warn:'斜率只能作为"存在阻力"的证据，不能反代验证守恒，也不能当作 g 去验证 g。',back:'匀变速：v²=2ah ⇒ v²/2=a·h。若 a=g 则机械能守恒；实验测得 a 略小正说明阻力存在。'},
+/* ---- 规律 ---- */
+{id:'c13',cat:'规律',title:'阻力使 ½v² 略小于 gh',one:'空气阻力与摩擦做负功，动能增加量略小于势能减少量，且随 h 增大更明显。',formula:'½v² = gh − w_阻力/(m)，w_阻力 随 h、v 增大',mini:'drop',guide:'③页开"空气阻力+限位孔摩擦"或载入"阻力较大带"，看④页 δ 列递增。',warn:'这是正常且符合预期的结果，不是实验失败。',back:'动能定理：½mv² = mgh − W_f，W_f>0 ⇒ ½v²<gh；v 越大阻力做功越快，故 δ 随 h 单调增大。'},
+{id:'c14',cat:'规律',title:'频率偏低使 v 偏大',one:'真实 T>0.02 s 时，按 0.02 s 算出的 v 系统性偏大，可致 ½v²>gh 反常。',formula:'v_算 = Δs/T_算，T_算<T_真 ⇒ v_算 > v_真',mini:'timer',guide:'③页频率选 49 Hz 生成纸带 → ④页 δ 出现负值 → ⑤页反常诊断。',back:'v=(s_{n+1}−s_{n−1})/(2T_算)，分母偏小 ⇒ v 偏大；½v² 放大约 2×(T_真/T_算−1)≈4%。'},
+{id:'c15',cat:'规律',title:'m 可约去',one:'比较 gh 与 ½v² 即可，无需称量重锤质量。',formula:'mgh?≈½mv² ⇔ gh?≈½v²',mini:'compare',guide:'④页"约去 m / 带 m"两种模式切换，结论不变。',warn:'只有需要能量的具体数值（单位 J）时才测 m。',back:'等式两边同除以 m（m>0），比值与 m 无关；质量大小只影响阻力相对大小。'},
+{id:'c16',cat:'规律',title:'v²/2–h 图：过原点直线、斜率=a<g',one:'实测点几乎在过原点直线上，斜率略小于 g——正是阻力的痕迹。',formula:'斜率 = a = g − 阻力项 < g（无阻力时 ≈ g）',mini:'slope',guide:'④页图象法：红拟合线与紫虚线（斜率 g）几乎重合但略平。',back:'由 ½v²=gh−w(h)/m，w/h 随 h 缓增，故曲线微下凸、拟合斜率介于 a_初与 a_末之间，恒小于 g。'},
+{id:'c17',cat:'规律',title:'不满足 2 mm 时改用两点法',one:'第一、二点明显大于 2 mm，就用 Δ 形式验证，不需要初速为零。',formula:'mgΔh = ½m(v₂² − v₁²)',mini:'tape',guide:'③页选带任务中的"有初速度带"；④页两点法面板。',warn:'舍去前面密集点后，不能再对剩余点用"从静止起"的 mgh=½mv²。',back:'Δ 形式来自动能定理对任意两点的应用，与初速度无关；判据失效只影响"从静止式"。'},
+/* ---- 方法 ---- */
+{id:'c18',cat:'方法',title:'中间时刻平均速度法',one:'测跨点两间隔之和除以 2T，得该点瞬时速度。',formula:'v_n = (x_n + x_{n+1})/(2T)',mini:'tape',guide:'③页"测速动画"。',back:'等价于 (s_{n+1}−s_{n−1})/(2T)；相邻两点法 x_n/T 只给间隔中点的速度，偏小约 ½aT。'},
+{id:'c19',cat:'方法',title:'选带与选点法',one:'先按四条标准选带，再舍去开头过密点、选间距清晰的连续点计算。',formula:'标准：清晰 · x₁≈2mm · 间距递增 · 够长',mini:'tape',guide:'③页选带任务（4 条候选带）。',back:'开头点太密读数相对误差大；漏点及其相邻点不能用（缺 s_{n±1}）。'},
+{id:'c20',cat:'方法',title:'一次读数法（h 从起点量）',one:'h 从参考点一次量到目标点，不逐段累加。',formula:'h_n = s_n − s_O（一次读数，估读 0.1 mm）',mini:'ruler',guide:'③页刻度尺读数动画。',back:'逐段累加会把每段读数误差累积；一次读数只引入一次估读误差。'},
+{id:'c21',cat:'方法',title:'逐点比较法',one:'对每个可测点算 gh 与 ½v²，列表比较 δ。',formula:'δ_n = (gh_n − ½v_n²)/gh_n',mini:'compare',guide:'④页方法一数据表。',back:'多点比较可区分系统偏差（δ 随 h 单调变化）与偶然偏差（随机起伏）。'},
+{id:'c22',cat:'方法',title:'图象线性化法',one:'作 v²/2–h 图化曲为直，斜率、截距、R² 一目了然。',formula:'v²/2 = a·h（过原点直线）',mini:'slope',guide:'④页方法二图象与拟合统计。',back:'线性化把"两点是否相等"转化为"直线是否过原点、斜率是否合理"，并天然平均掉偶然误差。'},
+{id:'c23',cat:'方法',title:'两点法',one:'任取 A、B 两点，比较 gΔh 与 ½Δv²。',formula:'g·Δh_AB ?≈ ½(v_B² − v_A²)',mini:'compare',guide:'④页方法三面板（A、B 下拉可选）。',back:'对 A→B 过程用动能定理，自动消去初速度项，故与 2 mm 判据无关。'},
+{id:'c24',cat:'方法',title:'误差归因法',one:'按"方向→来源→量级"三步把偏差归到具体因素。',formula:'δ>0→阻力/摩擦；δ<0→频率/读数/初速度',mini:'compare',guide:'⑤页误差归因表与逐项影响表。',back:'先看 δ 符号定方向，再依大小排序：阻力≈百分之几；频率 1 Hz≈4%；读数≈千分之几。'},
+{id:'c25',cat:'方法',title:'防循环验证自检法',one:'问自己：这个量是从哪儿来的？若答案是"由守恒式算的"，立即停止。',formula:'h?独立 v?独立 g?公认',mini:'forbid',guide:'①页对照表：四种方法的 δ 并排，错误法恒 0。',back:'自检口诀：尺量 h、带算 v、表查 g，三者碰不到彼此的公式。'},
+/* ---- 辨析 ---- */
+{id:'c26',cat:'辨析',title:'验证 vs 推导',one:'验证=独立测量后比较；推导=从原理出发算出结果。二者不可混。',formula:'验证：测量→比较；推导：原理→结论',mini:'compare',guide:'①页原理与五条核心认识。',warn:'用 v=√(2gh) 实际上是"推导冒充验证"。',back:'本实验目的在检验守恒律是否与实际运动一致，因此测量通道必须独立于待检验的规律。'},
+{id:'c27',cat:'辨析',title:'正确测速 vs 错误测速',one:'正确：(s_{n+1}−s_{n−1})/(2T)；错误：x_n/T、√(2gh)、gt。',formula:'✔中间时刻法；✘相邻间隔法（偏小½aT）；✘√(2gh)（循环）',mini:'tape',guide:'③页"错误测速对照"开关：三种算法并列显示偏差。',back:'x_n/T 是第 n 个间隔的平均速度，对应其中间时刻（比点 n 早 T/2），速度偏小约 ½aT，且误差随 n 线性累积。'},
+{id:'c28',cat:'辨析',title:'2 mm 判据 vs 必要条件',one:'"接近 2 mm"是初速为零的近似判据，不是实验成立的必要条件。',formula:'x₁≈2mm ⇒ 可用静止式；不满足 ⇒ 改两点法',mini:'tape',guide:'③页选带任务反馈；④页两点法。',warn:'说"必须 2 mm 才能做实验"是不严谨的。',back:'判据给出的是"可以用从静止式"的充分近似条件；两点法在任意初速度下都成立。'},
+{id:'c29',cat:'辨析',title:'打点纸带 vs 光电门',one:'纸带法一次下落得全过程；光电门法只取两点但自动计时、不依赖 T。',formula:'纸带：v=(Δs)/(2T)；光电门：v=d/Δt',mini:'gate',guide:'⑥页方案对照卡与运行演示。',back:'两者测速通道不同：纸带靠时间周期，光电门靠挡光计时；两点验证式中都可约去 m、都不必知初速度（Δ 形式）。'},
+{id:'c30',cat:'辨析',title:'电磁 vs 电火花打点计时器',one:'电磁式：4–6 V 低压交流、复写纸、振针；电火花式：220 V 交流、墨粉纸盘、放电打点（阻力更小）。',formula:'T=0.02 s（f=50 Hz，两者相同）',mini:'timer',guide:'②页计时器类型切换，标注与纸带穿法随之变化。',warn:'电磁打点计时器绝不能直接接 220 V。',back:'电火花式通过放电墨粉纸盘打点，对纸带阻力小、点迹清晰，是现行教材首选。'},
+{id:'c31',cat:'辨析',title:'a vs g',one:'a 是纸带反映的实际加速度（略小于 g）；g 是当地重力加速度公认值。',formula:'a = g − 阻力/m < g；验证用 g，不用 a',mini:'slope',guide:'④页拟合斜率（≈a）与理想参考线（g）对比。',warn:'把斜率当 g 用，就回到了循环论证。',back:'拟合斜率是实测运动的属性；g 是外部公认常数。二者的差本身就是阻力存在的定量证据。'},
+{id:'c32',cat:'辨析',title:'E_p 减少量 vs E_k 增加量',one:'比较的是"减少量 mgh"与"增加量 ½mv²"，二者属于同一重物—地球系统。',formula:'ΔE_p = −mgh（减少）；ΔE_k = +½mv²（增加）',mini:'energy',guide:'④页能量三线图：E_p 减、E_k 增、E_总 近水平。',warn:'E_总是机械能总量（不含内能）；阻力生热不属于机械能。',back:'机械能守恒表述为 ΔE_k + ΔE_p ≈ 0；有阻力时 |ΔE_k|<|ΔE_p|，差额转为内能。'},
+/* ---- 易错 ---- */
+{id:'c33',cat:'易错',title:'"用 v=√(2gh) 算速度更方便"',one:'错！这是把待验证结论代入，属循环论证，δ 恒为 0 的假象。',formula:'应改用 v_n=(s_{n+1}−s_{n−1})/(2T)',mini:'forbid',guide:'①页对照表"错误示范①"列。',warn:'记忆：结论不能当尺子用。',back:'½(√(2gh))²≡gh，与运动真实情况无关。'},
+{id:'c34',cat:'易错',title:'"用 v=gt 求速度可以"',one:'错！既用了自由落体结论，又默认 a=g；有阻力时 a<g，结果偏大甚至反常。',formula:'应改用点距反算',mini:'forbid',guide:'①页对照表"错误示范②"列（阻力带上 δ 为负）。',back:'v=gt 在 a=g 时才对；实验里 a 恒未知待测，用它等于偷换前提。'},
+{id:'c35',cat:'易错',title:'"第一、二点必须 2 mm 才能做实验"',one:'不严谨！2 mm 只是"初速为零"的近似判据；不满足可改用两点法。',formula:'mgΔh=½m(v₂²−v₁²) 不需要初速为零',mini:'tape',guide:'③页选带任务、④页两点法。',back:'判据服务于"从静止式"；两点法无此要求。'},
+{id:'c36',cat:'易错',title:'"必须从第一个点开始验证"',one:'错！可任取两点用 Δ 形式验证，更通用。',formula:'gΔh ?≈ ½Δv²',mini:'compare',guide:'④页 A、B 点任意可选。',back:'动能定理对任意过程成立；开头点过密反而读数误差大。'},
+{id:'c37',cat:'易错',title:'"某点速度=前后两点间距除以 T"',one:'不严谨！应是跨该点的两个间隔之和除以 2T。',formula:'v_n=(x_n+x_{n+1})/(2T)，不是 x_n/T',mini:'tape',guide:'③页错误测速对照：x_n/T 的系统偏差数值。',back:'x_n/T 对应第 n 间隔中间时刻，比点 n 早半个周期，速度系统性偏小。'},
+{id:'c38',cat:'易错',title:'"mgh 必须严格等于 ½mv²"',one:'错！实验误差允许范围内相等即可（δ≲1% 量级）。',formula:'判定标准：δ ≲ 1% 视为守恒成立',mini:'compare',guide:'④页判定面板。',back:'测量总伴误差，严格相等反而可疑（多半是循环计算）。'},
+{id:'c39',cat:'易错',title:'"½v² 略小于 gh 说明实验失败"',one:'错！这正是阻力做负功的正常表现。',formula:'½v² = gh − w_阻/m',mini:'drop',guide:'③页开阻力开关后④页 δ 全为正且递增。',back:'若无阻力才有严格相等；出现小幅正 δ 恰说明测量通道独立、数据可信。'},
+{id:'c40',cat:'易错',title:'"½v² 大于 gh 说明能量增加了"',one:'错！机械能不会凭空增加，多为频率偏低或测量/点序错误。',formula:'δ<0 → 查频率、读数、初速度、点序',mini:'forbid',guide:'⑤页反常诊断交互。',back:'频率偏低使 T 算小、v 算大；h 量小、初速度、认错点序同理——全是测量问题，不是物理。'},
+{id:'c41',cat:'易错',title:'"必须测重锤质量"',one:'错！比较 gh 与 ½v² 时 m 约去。',formula:'mgh?≈½mv² ⇔ gh?≈½v²',mini:'compare',guide:'④页"约去 m"模式。',back:'只有要报出能量数值（J）时才需要 m。'},
+{id:'c42',cat:'易错',title:'"v²/2–h 图斜率就是 g，可用来验证 g"',one:'不严谨！斜率是实际加速度 a<g；且不能反代验证守恒。',formula:'斜率=a（阻力使其小于 g）',mini:'slope',guide:'④页拟合统计与"不得反代"标注。',back:'用斜率反算 v 再验证守恒 ⇒ ½v²=a·h 恒成立，又是循环。'},
+{id:'c43',cat:'易错',title:'"电磁打点计时器接 220 V"',one:'错！电磁式用 4–6 V 低压交流；220 V 交流是电火花式。',formula:'电磁：4–6 V AC；电火花：220 V AC',mini:'timer',guide:'②页计时器切换标注。',back:'电磁式线圈由低压交流驱动振针；接 220 V 会烧毁并危及安全。'},
+{id:'c44',cat:'易错',title:'"先释放纸带再接通电源"',one:'错！应先通电、待打点稳定后再释放。',formula:'顺序：通电→稳定→释放',mini:'timer',guide:'②页若先点"释放"会被规范拦截并提示。',back:'先释放则开头点迹缺失/第一点不清晰，2 mm 判据失效，且打点器可能漏打。'},
+{id:'c45',cat:'易错',title:'"重锤越轻越好"',one:'错！应选密度大、体积小、质量较大的重锤，使阻力相对重力可忽略。',formula:'阻力/m 越小越好 ⇒ 密度大体积小',mini:'drop',guide:'②页重锤标注"密度大体积小"；⑤页阻力影响量级。',back:'空气阻力与体积相关、摩擦与纸带相关，都近似与 m 无关；m 越大，阻力加速度 c/m 越小。'},
+/* ---- 应用 ---- */
+{id:'c46',cat:'应用',title:'频闪照片分析自由落体',one:'频闪照相以相等时间间隔记录位置，分析方法与纸带完全同源。',formula:'相邻像距递增；v=平均速度法',mini:'tape',guide:'③页纸带工作台的点距结构与频闪照片一致。',back:'把"打点"换成"闪光"，点迹分析、中间时刻测速、逐点验证全部照搬。'},
+{id:'c47',cat:'应用',title:'传感器与光电门现代实验',one:'位移/速度传感器直接绘制 E–h 曲线，原理与本实验一致、精度更高。',formula:'实时采集 (h, v) → ½v²–h 线性检验',mini:'gate',guide:'⑥页光电门方案即数字化实验的最小实现。',back:'传感器把"人工量点距"自动化，但独立测量原则不变：v 仍由运动数据得到，不得用 √(2gh)。'},
+{id:'c48',cat:'应用',title:'工程中的能量损耗评估',one:'用"应得能量−实得能量"评估摩擦生热与效率，思路同 δ 分析。',formula:'损耗 = mgh − ½mv²；效率 = 实得/应得',mini:'energy',guide:'④页能量三线图中 E_总的微小下倾即"损耗"可视化。',back:'斜面、滑轨、传动系统的效率测定都是本实验能量核算的工程版。'},
+{id:'c49',cat:'应用',title:'过山车与滑梯的能量核算',one:'设计轨道高度差时按 mgh≈½mv² 估算速度，再扣除摩擦损耗。',formula:'v_设计 = √(2gΔh·η)',mini:'drop',guide:'②页能量条随下落的此消彼长即过山车能量图景。',back:'工程上"倒过来用"守恒律（由 h 设计 v）是允许的——那是设计，不是验证；两者语境不同。'},
+/* ---- 误差 ---- */
+{id:'c50',cat:'误差',title:'空气阻力',one:'随速度增大，做负功，使 ½v² 略小于 gh。',formula:'a = g − c₁v/m',mini:'drop',guide:'③页"空气阻力"开关；⑤页逐项影响表。',back:'线性阻力下 W_f=∫c₁v dx 随 h 超线性增长，故 δ 随 h 单调增大。'},
+{id:'c51',cat:'误差',title:'限位孔摩擦（含不竖直）',one:'纸带与限位孔的摩擦近似恒定；孔不竖直时急剧增大。',formula:'a = g − c₀/m',mini:'tape',guide:'②页"限位孔竖直"开关；③页"限位孔摩擦"开关。',back:'恒定摩擦对应恒定 a 减少量；倾斜时纸带压孔，c₀ 显著增大。'},
+{id:'c52',cat:'误差',title:'电源频率偏差',one:'f 偏低（如 49 Hz）使真实 T 偏大，按 0.02 s 计算令 v 偏大约 2%，½v² 偏大约 4%。',formula:'v_算/v_真 = T_真/T_算',mini:'timer',guide:'③页频率选 49 Hz → δ 变负（反常）。',back:'49 Hz 时 T_真=1/49≈0.0204 s，v 偏大 2.04%，能量偏大 4.1%，足以压过阻力项。'},
+{id:'c53',cat:'误差',title:'h 读数与点迹质量',one:'估读误差属偶然误差；点迹模糊、重影、点序认错会造成虚假偏差。',formula:'读数到 0.1 mm；一次读数',mini:'ruler',guide:'③页"读数噪声/漏点/重影"开关。',back:'h 的相对误差在开头密集点处被放大（h 本身小），故舍去过密点。'},
+{id:'c54',cat:'误差',title:'释放初速度',one:'手带出初速度使第一间隔偏大，并令 ½v²>gh（用静止式时）。',formula:'½v² − gh = ½v₀² + …>0',mini:'drop',guide:'③页 v₀ 滑块；选带任务"有初速度带"。',back:'初速度项 ½v₀² 直接加进动能却不体现在 h 中，故反常偏大；两点法可消去该常数项。'}
+];
+
+/* ---------------- 预设 ---------------- */
+const PRESETS = [
+  {id:'std',   name:'标准合格纸带（50 Hz·静止）', tip:'f=50、v₀=0、无阻力无噪声', set:{f:50,v0:0,air:false,fric:false,bigDrag:false,noise:false,miss:false,ghost:false}},
+  {id:'freq49',name:'频率 49 Hz 反常带', tip:'观察 ½v²>gh 的反常', set:{f:49,v0:0,air:false,fric:false,bigDrag:false,noise:false,miss:false,ghost:false}},
+  {id:'v0',    name:'有初速度带（v₀=0.30 m/s）', tip:'第一二点明显大于 2 mm', set:{f:50,v0:0.3,air:false,fric:false,bigDrag:false,noise:false,miss:false,ghost:false}},
+  {id:'drag',  name:'阻力较大带（a≈9.5 m/s²）', tip:'δ≈3% 且随 h 递增', set:{f:50,v0:0,air:true,fric:true,bigDrag:true,noise:false,miss:false,ghost:false}},
+  {id:'photo', name:'光电门方案（d=1.0 cm）', tip:'跳转⑥页', tab:'gate'},
+  {id:'refA',  name:'参考面切换（以 A 为零势能面）', tip:'跳转④页能量图', tab:'data', refA:true}
+];
+/* 候选纸带（选带任务） */
+const TAPE_CANDIDATES = [
+  {id:'A', name:'纸带 A', ok:true,  cfg:{f:50,v0:0,   c0:0,c1:0,     noise:0.00008,missN:null,ghostN:null,blur:false,seed:11,N:10},
+   why:'合格：点迹清晰、第一二点≈1.96 mm（初速为零）、点距均匀递增、长度足够。'},
+  {id:'B', name:'纸带 B', ok:false, cfg:{f:50,v0:0.42,c0:0,c1:0,     noise:0.00008,missN:null,ghostN:null,blur:false,seed:22,N:10},
+   why:'不合格：第一二点≈10 mm，明显大于 2 mm——打点开始时重锤已有速度（如先释放后通电）。不宜用"从静止式"验证。'},
+  {id:'C', name:'纸带 C', ok:false, cfg:{f:50,v0:0,   c0:0,c1:0,     noise:0.0012, missN:5,   ghostN:null,blur:true, seed:33,N:10},
+   why:'不合格：点迹模糊、有漏点（第5点），读数误差大，漏点处及其相邻点无法测速。'},
+  {id:'D', name:'纸带 D', ok:false, cfg:{f:50,v0:0.18,c0:0,c1:0,     noise:0.00008,missN:null,ghostN:null,blur:false,seed:44,N:10},
+   why:'不合格：第一二点≈5.6 mm＞2 mm，释放时手带出了初速度；若用需改两点法。'}
+];
+/* 操作清单 */
+const CHECKLIST = [
+  ['先接通电源，待打点稳定后再释放纸带','保证第一点清晰、打点与释放同步——"第一二点≈2 mm"判据的前提。若先释放后通电，开头点迹缺失，只能改用两点法。'],
+  ['释放时手提纸带上端（或用夹子），纸带竖直、重锤靠近计时器','使重锤从静止竖直下落，减小初速度与摆动（摆动会增大限位孔摩擦）。'],
+  ['限位孔竖直：两限位孔与重锤下落线在同一竖直线上','纸带不压孔、不刮边，摩擦最小；倾斜时摩擦急剧增大，½v² 明显偏小。'],
+  ['选用密度大、体积小、质量较大的重锤','阻力（与体积、纸带相关）不随 m 增大，m 大则阻力加速度 c/m 小，阻力相对重力可忽略。'],
+  ['打点计时器不宜长时间连续通电','电磁式线圈发热会改变振针打点力度甚至损坏；实验完毕及时断电。'],
+  ['测量用同一把毫米刻度尺，h 从起点一次量到目标点，读数估读到 0.1 mm','避免逐段累加带来的累积误差；同一把尺避免零点误差不一致。'],
+  ['整理器材：断电、取下纸带平放勿折叠，重锤下落区清空','折叠的纸带过孔时摩擦增大且点距失真；安全习惯。']
+];
+/* 教学引导八步 */
+const GUIDE_STEPS = [
+  {tab:'principle', title:'原理与独立测量（防循环）', text:'h 用尺量、v 用纸带算、g 取公认值——三条通道互不依赖。', q:'为什么不能用 v=√(2gh) 求速度？', a:'它由待验证的守恒式推出，用它则 ½v²≡gh 恒成立（循环论证），验证必"成功"但无效。'},
+  {tab:'apparatus', title:'器材与操作规范', text:'先通电、待打点稳定再释放；限位孔竖直；重锤密度大体积小。', q:'为什么必须"先通电、待打点稳定后再释放"？', a:'保证第一点打在释放瞬间、点迹清晰，"第一二点≈2 mm"判据才成立。'},
+  {tab:'tape',      title:'生成与选择纸带（2 mm 判据）', text:'选带四标准：清晰、x₁≈2 mm、间距递增、长度足够。', q:'第一、二点间距接近 2 mm 说明了什么？', a:'50 Hz、从静止释放且打点与释放同步（x₁=½gT²≈1.96 mm），是初速为零的近似判据。'},
+  {tab:'tape',      title:'选点与中间时刻测速', text:'v_n=(s_{n+1}−s_{n−1})/(2T)，点 n 恰为该 2T 的时间中点。', q:'为什么不能用 x_n/T 当作点 n 的速度？', a:'x_n/T 是第 n 个间隔的平均速度，对应其中间时刻（比点 n 早 T/2），系统性偏小。'},
+  {tab:'data',      title:'三种判定方法与相对误差', text:'逐点比较、v²/2–h 图象、两点法；判定看 δ 是否 ≲1%。', q:'重锤质量可以不测吗？', a:'可以：比较 gh 与 ½v² 时 m 从两边约去，只有要能量数值（J）时才测 m。'},
+  {tab:'err',       title:'误差归因与反常诊断', text:'阻力 ⇒ ½v² 略小（δ>0 递增）；δ<0 是反常，需排查。', q:'½v² 略小于 gh 正常吗？若 ½v²>gh 该查什么？', a:'略小是阻力做负功的正常表现；偏大应查：电源频率偏低、h 读数/点序错误、释放初速度。'},
+  {tab:'gate',      title:'光电门方案对照', text:'v=d/Δt、量 Δh，验证 mgΔh=½m(v₂²−v₁²)。', q:'光电门方案为什么不需要初速为零？', a:'两点式 mgΔh=½m(v₂²−v₁²) 对任意初速度成立（Δ 形式消去初速度项）。'},
+  {tab:'quiz',      title:'误解辨析与总结', text:'对照 13 张易错卡自查，完成 6 道练习。', q:'本实验是"验证"还是"推导"机械能守恒？', a:'验证：独立测 h 与 v，在误差允许范围内检验 mgh≈½mv²，而不是由公式推出结论。'}
+];
+/* 练习题 */
+const QUIZ = [
+  {q:'某同学用 v=√(2gh) 计算各点速度，再验证 mgh=½mv²，结果每点都严格相等。这说明：', opts:['实验非常成功，误差为零','犯了循环论证错误：把待验证的结论代入了计算，"相等"是假象','仪器精度极高','重锤质量选得正好'], ans:1, card:'c33',
+   exp:'√(2gh) 本身由机械能守恒推出，用它算速度则 ½v²≡gh 恒成立，与运动真实情况无关——这是无效验证。'},
+  {q:'合格纸带"第一、二点间距接近 2 mm"说明：', opts:['恰好是仪器误差','重锤从静止释放且打点与释放同步（50 Hz 下 x₁=½gT²≈1.96 mm）','必须恰好等于 2 mm 才能做实验','说明阻力为零'], ans:1, card:'c9',
+   exp:'2 mm 来自 ½×9.8×0.02²≈1.96 mm，是"初速为零+同步打点"的近似判据，不是必要条件；不满足时可改用两点法。'},
+  {q:'打点周期 T=0.02 s，纸带上点 n（前后点均清晰）的速度应按下式计算：', opts:['v = x_n / T','v = (x_n + x_{n+1}) / (2T)','v = √(2gh_n)','v = g·nT'], ans:1, card:'c8',
+   exp:'跨点两个间隔之和除以 2T，即中间时刻法；x_n/T 只是间隔平均速度，√(2gh) 与 gt 都属禁令。'},
+  {q:'验证机械能守恒时，是否必须测出重锤的质量 m？', opts:['必须，否则无法计算','不必：比较 gh 与 ½v² 时 m 可从两边约去','只有用两点法才需要','取决于下落高度'], ans:1, card:'c41',
+   exp:'mgh 与 ½mv² 两边同除以 m，只需比较 gh 与 ½v²；只有要报出能量数值（J）时才测 m。'},
+  {q:'实验发现各点 ½v² 都略小于 gh，且下落越远偏差越大。合理的解释是：', opts:['实验失败，应重做','机械能守恒定律不成立','空气阻力与摩擦做负功的正常表现，在误差范围内守恒仍成立','说明 g 取错了'], ans:2, card:'c39',
+   exp:'阻力做负功使 ΔE_k<|ΔE_p|，且速度越大损耗越快，δ 随 h 单调增大——这正是预期结果。'},
+  {q:'若某组数据出现 ½v² > gh（δ<0），首先应排查：', opts:['重锤质量是否称准','电源频率是否偏低、点序与 h 读数是否有误、释放是否带了初速度','立即得出"机械能增加了"的结论','换一个更轻的重锤'], ans:1, card:'c40',
+   exp:'机械能不会凭空增加：频率偏低使 v 偏大（49 Hz 时约 +4%），h 量小、初速度、认错点序都会造成反常偏大；质量误差因 m 约去而不影响。'}
+];
+/* 反常诊断选项 */
+const DIAG_OPTS = [
+  {id:'freq',  txt:'电源频率偏低（如实际为 49 Hz）', ok:true,  why:'✔ 正确。真实 T>0.02 s，按 0.02 s 计算 v 系统性偏大约 2%、能量偏大约 4%，足以造成 ½v²>gh。'},
+  {id:'hSmall',txt:'毫米刻度尺量 h 时读数偏小', ok:true,  why:'✔ 可能。h 偏小使 gh 偏小，可致 δ<0。排查：换点复测、检查零点。'},
+  {id:'v0',    txt:'释放时重锤带出了初速度', ok:true,  why:'✔ 可能。½v²−gh 含 ½v₀² 项，初速度直接造成偏大。排查：检查第一二点间距是否明显大于 2 mm。'},
+  {id:'order', txt:'点序认错（把后面的点当成了第 1 点）', ok:true,  why:'✔ 可能。参考点取错使 h 系统性偏小。排查：重新编号，核对起点。'},
+  {id:'mass',  txt:'重锤质量称量有误', ok:false, why:'✘ 不是原因。比较 gh 与 ½v² 时 m 已约去，质量误差不改变 δ。'},
+  {id:'drag',  txt:'空气阻力太大', ok:false, why:'✘ 方向相反。阻力做负功只会使 ½v² 偏小（δ>0），不可能造成 ½v²>gh。'},
+  {id:'hole',  txt:'限位孔不竖直、摩擦太大', ok:false, why:'✘ 方向相反。摩擦与阻力同向，都使 ½v² 偏小。'}
+];
+
+/* =====================================================================
+   渲染：标签页 / 各面板
+   ===================================================================== */
+function switchTab(name){
+  $$('#tabNav button[data-tab]').forEach(b=>b.classList.toggle('active', b.dataset.tab===name));
+  $$('section.tabPanel').forEach(s=>s.classList.toggle('active', s.id==='tab-'+name));
+  renderAll();
+}
+function renderAll(){
+  if(!state.tape) return;
+  renderTapeCanvas(); renderReadout(); renderErrDemo();
+  renderCmp(); renderTable(); renderChart(); renderAB(); renderJudge(); renderLog();
+  renderImpact(); renderCurX1(); renderCandidates();
+}
+/* ---------- ③ 纸带画布 ---------- */
+let sweep=null; // {n,t0}
+function renderTapeCanvas(){
+  const cv=$('#tapeCanvas'); if(!cv) return;
+  const dpr=window.devicePixelRatio||1;
+  const W=cv.clientWidth||900, H=190;
+  cv.width=W*dpr; cv.height=H*dpr;
+  const ctx=cv.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,W,H);
+  const pts=state.tape.pts, N=pts.length-1;
+  const x0=56, x1=W-36;
+  const sMax=Math.max(pts[N].s,0.02), sc=(x1-x0)/sMax;
+  const yb=78, bh=44; // 纸带带体
+  // 纸带
+  ctx.fillStyle='#faf6ef'; ctx.strokeStyle=COL.tape;
+  ctx.fillRect(x0-14, yb-bh/2, (x1-x0)+28, bh); ctx.strokeRect(x0-14, yb-bh/2, (x1-x0)+28, bh);
+  // h_n 尺寸线（参考点O→n）
+  const n=state.selN, O=state.refO;
+  if(pts[n]&&pts[O]){
+    const xa=x0+pts[O].s*sc, xb=x0+pts[n].s*sc;
+    ctx.strokeStyle=COL.gh; ctx.fillStyle=COL.gh; ctx.lineWidth=1;
+    const yt=yb-bh/2-26;
+    ctx.beginPath(); ctx.moveTo(xa,yt); ctx.lineTo(xb,yt);
+    ctx.moveTo(xa,yt-4); ctx.lineTo(xa,yt+4); ctx.moveTo(xb,yt-4); ctx.lineTo(xb,yt+4); ctx.stroke();
+    ctx.beginPath(); ctx.moveTo(xa,yt); ctx.lineTo(xa+3,yt+2); ctx.lineTo(xa+3,yt-2); ctx.fill();
+    ctx.beginPath(); ctx.moveTo(xb,yt); ctx.lineTo(xb-3,yt+2); ctx.lineTo(xb-3,yt-2); ctx.fill();
+    ctx.font='11px Consolas'; ctx.textAlign='center';
+    ctx.fillText('h_'+n+' = '+mm(pts[n].s-pts[O].s)+' mm', (xa+xb)/2, yt-6);
+  }
+  // 测速区间 s_{n-1}→s_{n+1}（含动画高亮）
+  const row=state.tape.rows.find(r=>r.n===n);
+  if(row&&!row.miss){
+    const xa=x0+pts[n-1].s*sc, xb=x0+pts[n+1].s*sc;
+    const yb2=yb+bh/2+14;
+    ctx.strokeStyle=COL.ref; ctx.fillStyle=COL.ref; ctx.lineWidth=1.4;
+    ctx.beginPath(); ctx.moveTo(xa,yb2); ctx.lineTo(xb,yb2);
+    ctx.moveTo(xa,yb2-4); ctx.lineTo(xa,yb2+4); ctx.moveTo(xb,yb2-4); ctx.lineTo(xb,yb2+4); ctx.stroke();
+    ctx.font='11px Consolas'; ctx.textAlign='center';
+    ctx.fillText('s(n+1)−s(n−1) = '+mm(pts[n+1].s-pts[n-1].s)+' mm  ÷  2T', (xa+xb)/2, yb2+13);
+    // 动画扫过
+    if(sweep){
+      const p=Math.min(1,(performance.now()-sweep.t0)/1600);
+      const xm=xa+(xb-xa)*(REDUCED?1:p);
+      ctx.fillStyle='rgba(123,31,162,.18)'; ctx.fillRect(xa, yb-bh/2, xm-xa, bh);
+      ctx.fillStyle=COL.ref; ctx.beginPath(); ctx.arc(xm,yb,5,0,7); ctx.fill();
+      ctx.fillText('平均速度 → v_'+n, xm, yb-bh/2-8);
+      if(p>=1&&!REDUCED){ sweep=null; }
+      else if(p<1&&!REDUCED){ requestAnimationFrame(renderTapeCanvas); }
+    }
+  }
+  // 点迹
+  ctx.textAlign='center';
+  for(let i=0;i<=N;i++){
+    const x=x0+pts[i].s*sc;
+    ctx.strokeStyle=pts[i].valid?(pts[i].blur?'#b9a98f':COL.tape):'#e0e0e0';
+    ctx.lineWidth=pts[i].valid?2:1;
+    ctx.globalAlpha=pts[i].valid?(pts[i].blur?0.45:1):0.3;
+    ctx.beginPath(); ctx.moveTo(x,yb-16); ctx.lineTo(x,yb+16); ctx.stroke();
+    if(pts[i].ghost){ // 重影
+      ctx.strokeStyle='#c9a227'; ctx.beginPath(); ctx.moveTo(x+3,yb-16); ctx.lineTo(x+3,yb+16); ctx.stroke();
+    }
+    ctx.globalAlpha=1;
+    if(i%1===0){
+      ctx.fillStyle=pts[i].valid?'#5b6b7c':'#bdbdbd'; ctx.font='10px Consolas';
+      ctx.fillText(pts[i].valid?String(i):(String(i)+'✗'), x, yb+bh/2+30);
+    }
+  }
+  // 第一间隔标注
+  const xA=x0+pts[0].s*sc, xB=x0+pts[1].s*sc;
+  ctx.strokeStyle=COL.err; ctx.fillStyle=COL.err; ctx.lineWidth=1;
+  const yf=yb+bh/2-8;
+  ctx.beginPath(); ctx.moveTo(xA,yf); ctx.lineTo(xB,yf); ctx.moveTo(xA,yf-3); ctx.lineTo(xA,yf+3); ctx.moveTo(xB,yf-3); ctx.lineTo(xB,yf+3); ctx.stroke();
+  ctx.font='10.5px Consolas';
+  ctx.fillText('x₁='+mm(pts[1].s-pts[0].s)+'mm', (xA+xB)/2, yf+11);
+  // 标记 O/A/B/n
+  const marks=[[O,'O','#5d4037'],[state.selA,'A','#1565c0'],[state.selB,'B','#00838f'],[n,'n','#c62828']];
+  marks.forEach(([idx,lab,c])=>{
+    if(idx==null||!pts[idx])return;
+    const x=x0+pts[idx].s*sc;
+    ctx.fillStyle=c;
+    ctx.beginPath(); ctx.moveTo(x,yb-bh/2-14); ctx.lineTo(x-5,yb-bh/2-22); ctx.lineTo(x+5,yb-bh/2-22); ctx.closePath(); ctx.fill();
+    ctx.font='bold 11px Consolas'; ctx.fillText(lab,x,yb-bh/2-26);
+  });
+  // 选中点高亮
+  if(pts[n]){ const x=x0+pts[n].s*sc; ctx.strokeStyle='#c62828'; ctx.lineWidth=1.5; ctx.beginPath(); ctx.arc(x,yb,10,0,7); ctx.stroke(); }
+  // 比例尺
+  ctx.fillStyle='#5b6b7c'; ctx.font='10.5px Consolas'; ctx.textAlign='left';
+  ctx.fillText('纸带（左端=点0，点距随时间增大）  比例尺：'+ (sc.toFixed(0))+' px/m', x0-40, 14);
+}
+/* ---------- ③ 读数面板与刻度尺 ---------- */
+function renderReadout(){
+  const n=state.selN, pts=state.tape.pts, row=state.tape.rows.find(r=>r.n===n);
+  const O=state.refO;
+  let html='';
+  const box=(lab,val,cls)=>'<div class="'+(cls||'roBox')+'"><b>'+lab+'</b> = '+val+'</div>';
+  if(!row||row.miss){
+    html='<div class="errBox">点 '+n+' 或其相邻点为漏点，无法测速（缺 s(n−1) 或 s(n+1)）。</div>';
+  }else{
+    html=
+      box('s(n−1)', mm(pts[n-1].s-pts[O].s)+' mm')+
+      box('s(n+1)', mm(pts[n+1].s-pts[O].s)+' mm')+
+      box('x(n)',   mm(row.xn)+' mm')+
+      box('x(n+1)', mm(row.xn1)+' mm')+
+      box('h(n)=s(n)', mm(row.h)+' mm','roBox')+
+      box('t(n)', fmt(row.t,3)+' s')+
+      box('v(n)=(s(n+1)−s(n−1))/(2T)', fmtV(row.v)+' m/s')+
+      '<div class="roBox"><span class="cGh">gh</span> = '+row.gh.toFixed(4)+' J/kg　<span class="cHalf">½v²</span> = '+row.half.toFixed(4)+' J/kg　δ = <b>'+fmtD(row.delta)+'%</b></div>';
+  }
+  $('#roPanel').innerHTML=html;
+  // 刻度尺读数动画（估读 0.1 mm）
+  const h=(row&&!row.miss)?row.h:null;
+  $('#rulerBox').innerHTML='<div class="canvasWrap" style="padding:4px 8px">'+
+    '<svg viewBox="0 0 700 54" width="100%" height="54" aria-label="毫米刻度尺读数">'+
+    '<rect x="30" y="14" width="640" height="26" fill="#fff8e1" stroke="#b8860b"/>'+
+    Array.from({length:65},(_,i)=>'<line x1="'+(30+i*10)+'" y1="14" x2="'+(30+i*10)+'" y2="'+(i%5===0?24:19)+'" stroke="#b8860b"/>').join('')+
+    Array.from({length:13},(_,i)=>'<text x="'+(30+i*50)+'" y="52" font-size="9" text-anchor="middle" fill="#8d6e00">'+(i*10)+'</text>').join('')+
+    '<text x="680" y="52" font-size="9" fill="#8d6e00">mm</text>'+
+    (h!=null?'<line x1="'+(30+Math.min(640,h/0.001*0.6))+'" y1="6" x2="'+(30+Math.min(640,h/0.001*0.6))+'" y2="46" stroke="#1565c0" stroke-width="2"/>'+
+    '<text x="'+(30+Math.min(600,h/0.001*0.6))+'" y="10" font-size="10" fill="#1565c0">h读数：'+mm(h)+' mm（估读到0.1 mm，从起点一次量到目标点）</text>':'')+
+    '</svg></div>';
+}
+/* ---------- ③ 错误测速对照（红色警示·错误示范专用区之一） ---------- */
+function renderErrDemo(){
+  const p=$('#errDemoPanel'); if(!$('#errDemoToggle').checked){p.style.display='none';return;}
+  p.style.display='block';
+  const n=state.selN, row=state.tape.rows.find(r=>r.n===n);
+  if(!row||row.miss){p.innerHTML='<div class="errBox">当前点无法测速。</div>';return;}
+  const h=row.h, vOK=row.v;
+  // ---- 错误示范专用（带红色警示，不进入任何数据表/图象）----
+  const vW1=row.xn/TCALC;                 // 错误A：x_n/T
+  const vW2=Math.sqrt(2*G*h);             // 错误B：√(2gh)（循环论证）
+  const vW3=G*row.t;                      // 错误C：v=gt
+  const dev=v=>((v-vOK)/vOK*100);
+  p.innerHTML='<div class="warnCard"><h4>⚠ 错误测速对照（仅作警示示范，计算值不进入数据表与图象）</h4>'+
+    '<table style="width:100%"><tr><th>算法</th><th>v /(m/s)</th><th>与正确值偏差</th><th>错在哪</th></tr>'+
+    '<tr><td class="cGh">✔ v=(s(n+1)−s(n−1))/(2T)</td><td>'+fmtV(vOK)+'</td><td>—</td><td>中间时刻法，正确</td></tr>'+
+    '<tr><td class="cErr">✘ v=x(n)/T</td><td>'+fmtV(vW1)+'</td><td>'+fmtD(dev(vW1))+'%</td><td>只是第 n 间隔的平均速度，对应其中间时刻（比点 n 早 T/2），系统性偏小</td></tr>'+
+    '<tr><td class="cErr">✘ v=√(2gh)</td><td>'+fmtV(vW2)+'</td><td>'+fmtD(dev(vW2))+'%</td><td>循环论证：把待验证结论代入，δ 恒为 0 的假象</td></tr>'+
+    '<tr><td class="cErr">✘ v=g·t</td><td>'+fmtV(vW3)+'</td><td>'+fmtD(dev(vW3))+'%</td><td>默认了自由落体且 a=g；有阻力时 a<g，结果偏大</td></tr></table>'+
+    '<div style="margin-top:6px">在理想带（无阻力）上 x(n)/T 恒偏小约 aT/(2v)；√(2gh) 恒给出 δ=0；v=gt 在阻力带上给出 δ<0 的反常假象。'+
+    '<button class="danger" data-card="c27" style="margin-left:8px">打开警示卡</button></div></div>';
+  p.querySelectorAll('button[data-card]').forEach(b=>b.onclick=()=>openCard(b.dataset.card));
+}
+/* ---------- ① 正确 vs 错误对照（错误示范专用区之二） ---------- */
+function renderCmp(){
+  const n=Math.max(1,Math.min(23,parseInt($('#cmpN').value)||8));
+  $('#cmpN').value=n;
+  const row=state.tape.rows.find(r=>r.n===n);
+  const tb=$('#cmpTable tbody');
+  if(!row||row.miss){tb.innerHTML='<tr><td colspan="7">当前点无法测速，请换一个点。</td></tr>';$('#cmpNote').textContent='';return;}
+  const h=row.h, gh=row.gh;
+  // ---- 错误示范专用：以下三种"速度"仅用于警示对照 ----
+  const vE1=Math.sqrt(2*G*h);
+  const vE2=G*row.t;
+  const fit=linfit(state.tape.rows.filter(r=>!r.miss&&r.h>0.001).map(r=>[r.h,r.half]));
+  const vE3=(fit&&fit.slope>0)?Math.sqrt(2*fit.slope*h):null;
+  const line=(name,f,v,cls,concl)=>'<tr><td class="'+cls+'">'+name+'</td><td style="font-family:Consolas">'+f+'</td><td>'+fmtV(v)+'</td><td class="cGh">'+gh.toFixed(4)+'</td><td class="cHalf">'+(0.5*v*v).toFixed(4)+'</td><td>'+fmtD((gh-0.5*v*v)/gh*100)+'%</td><td>'+concl+'</td></tr>';
+  tb.innerHTML=
+    line('✔ 正确法（点距÷周期）','(s(n+1)−s(n−1))/(2T)',row.v,'cGh','独立测量，δ 反映真实运动')+
+    line('✘ 错误① √(2gh)','√(2·g·h)',vE1,'cErr','δ≡0：恒等式假象（循环论证）')+
+    line('✘ 错误② v=gt','g·t',vE2,'cErr',(0.5*vE2*vE2>gh)?'δ<0：默认 a=g，反常偏大':'默认 a=g，无效')+
+    (vE3!=null?line('✘ 错误③ 同带斜率 a','√(2·a·h)',vE3,'cErr','δ≡0：用实测 a 反代，循环'):'');
+  $('#cmpNote').innerHTML='当前纸带：f='+state.f+' Hz，'+(dragParams().c0||dragParams().c1?'阻力开启':'无阻力')+'。'+
+    '注意：在<b>标准合格纸带</b>上正确法 δ≈0，错误法也"δ=0"，看不出问题——但这恰恰说明错误法<b>无论数据如何都显示相等</b>；切到<b>阻力较大带</b>（上方按钮）后，正确法 δ≈3%，而错误法依旧"完美相等/反常"，假象立刻暴露。';
+}
+/* ---------- ④ 数据表 ---------- */
+function renderTable(){
+  const withM=state.massMode==='with', m=state.m;
+  $('#thDelta').innerHTML='δ = (gh−½v²)/gh';
+  $('#tapeNo').textContent='P'+state.tapeSeq;
+  let html='';
+  state.tape.rows.forEach(r=>{
+    const ghw=withM?m*r.gh:r.gh, hw=withM?m*r.half:r.half;
+    html+='<tr class="'+(r.miss?'rowMiss':(r.n===state.selN?'rowSel':''))+'">'+
+      '<td>'+r.n+'</td><td>'+fmt(r.t,3)+'</td><td>'+mm(r.h)+'</td>'+
+      '<td>'+(r.miss?'漏点':mm(r.xn))+'</td><td>'+(r.miss?'漏点':mm(r.xn1))+'</td>'+
+      '<td>'+(r.miss?'—':fmtV(r.v))+'</td>'+
+      '<td class="cGh">'+(r.miss?'—':ghw.toFixed(4))+'</td>'+
+      '<td class="cHalf">'+(r.miss?'—':hw.toFixed(4))+'</td>'+
+      '<td class="'+((r.delta!=null&&r.delta<0)?'negDelta':'')+'">'+(r.delta==null?'—':fmtD(r.delta)+'%')+'</td></tr>';
+  });
+  $('#dataTable tbody').innerHTML=html;
+  // A/B 下拉
+  const valid=state.tape.rows.filter(r=>!r.miss);
+  $('#selA').innerHTML=valid.map(r=>'<option value="'+r.n+'"'+(state.selA===r.n?' selected':'')+'>点'+r.n+'（h='+mm(r.h)+' mm）</option>').join('');
+  $('#selB').innerHTML=valid.map(r=>'<option value="'+r.n+'"'+(state.selB===r.n?' selected':'')+'>点'+r.n+'（h='+mm(r.h)+' mm）</option>').join('');
+  $('#mInput').disabled=!withM;
+}
+/* ---------- ④ 图象 ---------- */
+function chartSeries(){
+  const rows=state.tape.rows.filter(r=>!r.miss&&r.h>0.001);
+  const withM=state.massMode==='with', m=state.m, k=withM?m:1;
+  const type=state.chart;
+  const series=[];
+  if(type==='v2h'){
+    series.push({type:'scatter',pts:rows.map(r=>[r.h,r.half]),color:COL.pt,label:'½v²（实测）'});
+    const f=linfit(rows.map(r=>[r.h,r.half]));
+    if(f){ const hMax=Math.max(...rows.map(r=>r.h));
+      series.push({type:'line',pts:[[0,f.icpt],[hMax,f.slope*hMax+f.icpt]],color:COL.fit,label:'拟合线（斜率 a='+f.slope.toFixed(3)+'）'});}
+    if(state.showRef){ const hMax=Math.max(...rows.map(r=>r.h));
+      series.push({type:'line',pts:[[0,0],[hMax,G*hMax]],color:COL.ref,dash:true,label:'理想参考线（斜率 g=9.8）'});}
+  }else if(type==='energy'){
+    const hA=(state.refMode==='A')?(rows.find(r=>r.n===state.selA)||{h:0}).h:0;
+    series.push({type:'line',pts:rows.map(r=>[r.h,k*G*(hA-r.h)]),color:COL.gh,label:'E_p（含参考面）'});
+    series.push({type:'scatter',pts:rows.map(r=>[r.h,k*0.5*r.v*r.v]),color:COL.halfFill,label:'E_k=½mv²'});
+    series.push({type:'line',pts:rows.map(r=>[r.h,k*(0.5*r.v*r.v+G*(hA-r.h))]),color:COL.etot,label:'E_总=E_k+E_p（≈水平）'});
+  }else if(type==='vh'){
+    series.push({type:'scatter',pts:rows.map(r=>[r.h,r.v]),color:COL.pt,label:'v（实测）'});
+    series.push({type:'line',pts:rows.map(r=>[r.h,r.v]),color:'#90a4ae',thin:true,label:'连线示意'});
+  }else if(type==='dh'){
+    series.push({type:'scatter',pts:rows.map(r=>[r.h,r.delta]),color:COL.pt,label:'δ'});
+    series.push({type:'line',pts:rows.map(r=>[r.h,r.delta]),color:COL.fit,label:'δ 趋势'});
+  }
+  return series;
+}
+function drawChart(cv,o){
+  const dpr=window.devicePixelRatio||1;
+  const W=cv.clientWidth||600, H=cv.clientHeight||330;
+  cv.width=W*dpr; cv.height=H*dpr;
+  const ctx=cv.getContext('2d'); ctx.setTransform(dpr,0,0,dpr,0,0);
+  ctx.clearRect(0,0,W,H);
+  const pad={l:62,r:14,t:30,b:44};
+  let xmin=0,xmax=0,ymin=0,ymax=0,first=true;
+  o.series.forEach(s=>s.pts.forEach(p=>{
+    if(first){xmin=xmax=p[0];ymin=ymax=p[1];first=false;}
+    else{xmin=Math.min(xmin,p[0]);xmax=Math.max(xmax,p[0]);ymin=Math.min(ymin,p[1]);ymax=Math.max(ymax,p[1]);}
+  }));
+  if(first){ctx.fillStyle='#789';ctx.font='13px sans-serif';ctx.fillText('暂无数据',W/2,H/2);return;}
+  const sx=(xmax-xmin)||1, sy=(ymax-ymin)||1;
+  xmin-=sx*0.05;xmax+=sx*0.08;ymin-=sy*0.08;ymax+=sy*0.10;
+  if(o.forceZeroY){ymin=Math.min(0,ymin);}
+  const X=v=>pad.l+(v-xmin)/(xmax-xmin)*(W-pad.l-pad.r);
+  const Y=v=>H-pad.b-(v-ymin)/(ymax-ymin)*(H-pad.t-pad.b);
+  // 网格与刻度
+  ctx.strokeStyle='#e3e8ee';ctx.fillStyle='#5b6b7c';ctx.font='10.5px Consolas';ctx.lineWidth=1;
+  const nice=(a,b,n)=>{const raw=(b-a)/n,p=Math.pow(10,Math.floor(Math.log10(raw))),c=raw/p;const s=(c<1.5?1:c<3.5?2:c<7.5?5:10)*p;return s;};
+  const dx=nice(xmin,xmax,6), dy=nice(ymin,ymax,6);
+  ctx.textAlign='center';
+  for(let x=Math.ceil(xmin/dx)*dx;x<=xmax+1e-12;x+=dx){ctx.beginPath();ctx.moveTo(X(x),pad.t);ctx.lineTo(X(x),H-pad.b);ctx.stroke();ctx.fillText(Math.abs(x)<1e-6?0:Number(x.toPrecision(3)),X(x),H-pad.b+14);}
+  ctx.textAlign='right';
+  for(let y=Math.ceil(ymin/dy)*dy;y<=ymax+1e-12;y+=dy){ctx.beginPath();ctx.moveTo(pad.l,Y(y));ctx.lineTo(W-pad.r,Y(y));ctx.stroke();ctx.fillText(Math.abs(y)<1e-9?0:Number(y.toPrecision(3)),pad.l-6,Y(y)+3);}
+  // 轴
+  ctx.strokeStyle='#90a4ae';ctx.lineWidth=1.5;
+  ctx.beginPath();ctx.moveTo(pad.l,pad.t);ctx.lineTo(pad.l,H-pad.b);ctx.lineTo(W-pad.r,H-pad.b);ctx.stroke();
+  ctx.fillStyle='#33475e';ctx.font='12px sans-serif';
+  ctx.textAlign='center';ctx.fillText(o.xlabel,W/2,H-8);
+  ctx.save();ctx.translate(14,(H-pad.b+pad.t)/2);ctx.rotate(-Math.PI/2);ctx.fillText(o.ylabel,0,0);ctx.restore();
+  ctx.textAlign='left';ctx.font='bold 13px sans-serif';ctx.fillStyle='#123a6b';
+  ctx.fillText(o.title,pad.l,18);
+  // 系列
+  o.series.forEach(s=>{
+    ctx.strokeStyle=s.color;ctx.fillStyle=s.color;ctx.lineWidth=s.thin?1:2;
+    if(s.dash)ctx.setLineDash([7,5]);
+    if(s.type==='line'&&s.pts.length>1){
+      ctx.beginPath();s.pts.forEach((p,i)=>i?ctx.lineTo(X(p[0]),Y(p[1])):ctx.moveTo(X(p[0]),Y(p[1])));ctx.stroke();
+    }else if(s.type==='scatter'){
+      s.pts.forEach(p=>{ctx.beginPath();ctx.arc(X(p[0]),Y(p[1]),3.5,0,7);ctx.fill();});
+    }
+    ctx.setLineDash([]);
+  });
+  // 图例
+  ctx.font='11.5px sans-serif';let lx=pad.l+6;
+  o.series.forEach(s=>{
+    ctx.fillStyle=s.color;ctx.fillRect(lx,pad.t+4,12,4);ctx.fillStyle='#455a64';
+    ctx.textAlign='left';ctx.fillText(s.label,lx+16,pad.t+10);
+    lx+=ctx.measureText(s.label).width+42;
+  });
+}
+function renderChart(){
+  const cv=$('#chartCv'); if(!cv)return;
+  const withM=state.massMode==='with';
+  const uE=withM?'J':'J/kg';
+  const titles={v2h:['v²/2 – h 图（线性化）','h /m','v²/2 /('+uE+')'],
+    energy:['E_p、E_k、E_总 – h（'+(state.refMode==='A'?'参考面：A 点':'参考面：释放点 O')+'）','h /m','E /('+uE+')'],
+    vh:['v – h 图','h /m','v /(m/s)'],dh:['δ – h 图','h /m','δ /%']};
+  const t=titles[state.chart];
+  drawChart(cv,{title:t[0],xlabel:t[1],ylabel:t[2],series:chartSeries(),forceZeroY:state.chart==='dh'});
+  // 拟合统计
+  if(state.chart==='v2h'){
+    const rows=state.tape.rows.filter(r=>!r.miss&&r.h>0.001);
+    const f=linfit(rows.map(r=>[r.h,r.half]));
+    if(f){
+      const dev=(f.slope-G)/G*100;
+      $('#fitStats').innerHTML='最小二乘拟合：<b>斜率 a = '+f.slope.toFixed(3)+' m/s²</b>，截距 = '+f.icpt.toFixed(4)+'，R² = '+f.r2.toFixed(4)+
+        '。<span class="cRef">与 g 偏差 '+fmtD(dev)+'%</span>。斜率是<b>实际加速度 a</b>'+(dev<-0.3?'（因阻力略小于 g，这正是阻力存在的证据）':'（无阻力时应≈g）')+
+        '。<span class="cErr">⚠ 不得把斜率反代为 g 去验证守恒（禁令三）。</span>｜工具：由斜率评估 a 与 g 的偏差 = '+f.slope.toFixed(2)+' − 9.8 = '+(f.slope-G).toFixed(2)+' m/s²。';
+    }
+  }else if(state.chart==='dh'){
+    $('#fitStats').innerHTML='δ–h 图：'+(state.tape.rows.some(r=>!r.miss&&r.delta<0)?'<span class="cErr">存在 δ<0（反常偏大），请到⑤页诊断。</span>':'δ>0 且随 h 递增 = 阻力做负功的正常表现。');
+  }else{$('#fitStats').innerHTML='提示：E_p 取所选零势能参考面（参考面的选取只改变 E_p 与 E_总 的整体平移，不改变"E_总≈水平"的结论——势能属于重物—地球系统，具有参考面系统性）。';}
+}
+/* ---------- ④ 两点法 / 判定 / 记录 ---------- */
+function renderAB(){
+  const rows=state.tape.rows.filter(r=>!r.miss);
+  const A=rows.find(r=>r.n===state.selA), B=rows.find(r=>r.n===state.selB);
+  const box=(lab,val)=>'<div class="roBox"><b>'+lab+'</b> = '+val+'</div>';
+  if(!A||!B||A===B){$('#abPanel').innerHTML='<div class="errBox">请选择两个不同的有效点。</div>';return;}
+  if(B.h<=A.h){$('#abPanel').innerHTML='<div class="errBox">B 点应低于 A 点（h_B &gt; h_A），请重选。</div>';return;}
+  const dh=B.h-A.h, dv=0.5*(B.v*B.v-A.v*A.v), delta=(G*dh-dv)/(G*dh)*100;
+  $('#abPanel').innerHTML=
+    box('A','点'+A.n+'，h='+mm(A.h)+' mm，v='+fmtV(A.v)+' m/s')+
+    box('B','点'+B.n+'，h='+mm(B.h)+' mm，v='+fmtV(B.v)+' m/s')+
+    box('Δh',mm(dh)+' mm')+
+    box('g·Δh',(G*dh).toFixed(4)+' J/kg')+
+    box('½(v_B²−v_A²)',dv.toFixed(4)+' J/kg')+
+    '<div class="roBox">δ = <b class="'+(delta<0?'negDelta':'')+'">'+fmtD(delta)+'%</b>（'+(Math.abs(delta)<=1?'误差范围内相等，两点法验证成立':(delta<0?'偏大：查频率/读数/初速度':'偏大阻力所致，正常'))+'）</div>';
+}
+function renderJudge(){
+  const rows=state.tape.rows.filter(r=>!r.miss&&r.h>0.004&&r.delta!=null);
+  if(!rows.length){$('#judgeText').textContent='无有效数据。';return;}
+  const ds=rows.map(r=>r.delta);
+  const maxD=Math.max(...ds), minD=Math.min(...ds), avgD=ds.reduce((a,b)=>a+Math.abs(b),0)/ds.length;
+  let verdict;
+  if(minD<-0.2){
+    verdict='<div class="warnCard"><h4>⚠ 检测到 ½v² &gt; gh 的反常结果（δ 最小 '+fmtD(minD)+'%）</h4>机械能不会凭空增加。'+(state.f<FNOM?'当前电源频率为 '+state.f+' Hz——真实 T > 0.02 s，按 0.02 s 计算使 v 系统性偏大（见⑤页诊断）。':'请排查：电源频率、h 读数、点序、释放初速度（见⑤页诊断）。')+'</div>';
+  }else if(maxD<=1.2){
+    verdict='<div class="okCard"><h4>✔ 验证成立</h4>各点 δ 在 0～'+fmtD(maxD)+'%（平均 '+fmtD(avgD)+'%），在实验误差允许范围内 <b>mgh ≈ ½mv²</b>，机械能守恒定律得到验证。½v² 略小于 gh 是阻力做负功的正常表现。</div>';
+  }else{
+    verdict='<div class="warnCard"><h4>偏差偏大（δ 最大 '+fmtD(maxD)+'%）</h4>超出 1% 量级：检查是否开启了过大的阻力项、读数噪声，或点迹质量问题；正常规范操作下 δ 应在 1% 量级内。</div>';
+  }
+  $('#judgeText').innerHTML=verdict+'<p class="note">判定标准：在实验误差允许范围内相等即可（相对误差约 1% 量级内视为守恒），<b>绝不要求严格相等</b>；且 ½v² 略小于 gh 属正常。'+(state.massMode==='cancel'?'当前为"约去 m"模式（比较 gh 与 ½v²）。':'当前为"带 m"模式（m='+state.m+' kg）。')+'</p>';
+}
+function renderLog(){
+  $('#logTable tbody').innerHTML=state.log.map(r=>'<tr><td>'+r.tape+'</td><td>'+r.f+'</td><td>'+r.m+'</td><td>'+r.h+'</td><td>'+r.v+'</td><td>'+r.gh+'</td><td>'+r.half+'</td><td class="'+(r.delta<0?'negDelta':'')+'">'+r.delta+'</td><td>'+r.sw+'</td></tr>').join('')||'<tr><td colspan="9" class="note">暂无记录（在④页点"记入实验记录"）</td></tr>';
+}
+/* ---------- ⑤ 误差影响 / 诊断 ---------- */
+function metricsOf(o){
+  const sim=simulateRaw({f:o.f||FNOM,v0:o.v0||0,c0:o.c0||0,c1:o.c1||0,N:24});
+  const pts=measureTape(sim,{noise:o.noise||0,seed:o.seed||7,missN:null,ghostN:null});
+  const rows=buildRows(pts,0).filter(r=>!r.miss&&r.h>0.004);
+  const last=rows[rows.length-1];
+  const f=linfit(rows.map(r=>[r.h,r.half]));
+  return {delta:last?last.delta:null, slope:f?f.slope:null};
+}
+function renderImpact(){
+  const base=metricsOf({});
+  const items=[
+    ['空气阻力（c₁=0.05·v）',{c1:0.05},'δ 增大且随 h 递增；斜率略降 → ½v² 偏小（正常方向）'],
+    ['限位孔摩擦（c₀=0.12）',{c0:0.12},'δ 恒约 +1.2%；斜率≈9.68 → ½v² 偏小（正常方向）'],
+    ['限位孔倾斜（c₀=0.34）',{c0:0.34},'δ≈+3.5%，斜率≈9.46 → 摩擦急剧增大，应调竖直'],
+    ['电源频率 49 Hz',{f:49},'δ 变负（约 −4%），斜率>9.8 → v 偏大的反常（重点排查）'],
+    ['释放初速度 v₀=0.3 m/s',{v0:0.3},'δ 变负（含 ½v₀² 项）→ 反常偏大；第一二点>2 mm'],
+    ['读数噪声 σ=0.25 mm',{noise:0.00025,seed:7},'δ 随机起伏（正负均可能）→ 偶然误差，多次取平均']
+  ];
+  $('#impactTable tbody').innerHTML=
+    '<tr><td>（理想基线）</td><td>'+fmtD(base.delta)+'%</td><td>'+base.slope.toFixed(3)+'</td><td>δ≈0、斜率≈g</td></tr>'+
+    items.map(it=>{
+      const m=metricsOf(it[1]);
+      return '<tr><td>'+it[0]+'</td><td class="'+(m.delta<0?'negDelta':'')+'">'+fmtD(m.delta)+'%</td><td>'+m.slope.toFixed(3)+'</td><td>'+it[2]+'</td></tr>';
+    }).join('');
+}
+function renderCurX1(){
+  const pts=state.tape.pts;
+  const x1=pts[1].s-pts[0].s;
+  $('#curX1').innerHTML='<div class="roPanel">'+
+    '<div class="roBox">当前纸带 x₁ = <b>'+mm(x1)+' mm</b></div>'+
+    '<div class="roBox">判据 ½gT² ≈ <b>1.96 mm</b></div>'+
+    '<div class="roBox" style="'+(Math.abs(x1*1000-1.96)<0.6?'color:#2e7d32':'color:#c62828')+'">'+(Math.abs(x1*1000-1.96)<0.6?'✔ 接近 2 mm：可用"从静止式"验证':'✘ 偏离 2 mm：改用两点法 mgΔh=½m(v₂²−v₁²)')+'</div></div>';
+}
+/* ---------- ③ 候选纸带 ---------- */
+let candSel=null;
+function renderCandidates(){
+  const host=$('#candList');
+  TAPE_CANDIDATES.forEach(c=>{
+    let div=host.querySelector('[data-cand="'+c.id+'"]');
+    if(!div){
+      div=document.createElement('div');div.className='candItem';div.dataset.cand=c.id;
+      div.innerHTML='<label style="font-weight:600"><input type="radio" name="cand" value="'+c.id+'"> '+c.name+'</label><canvas height="70" aria-label="'+c.name+'点迹"></canvas><div class="note cx1"></div>';
+      host.appendChild(div);
+      div.querySelector('input').onchange=()=>{candSel=c.id;renderCandidates();};
+    }
+    div.classList.toggle('sel',candSel===c.id);
+    const cv=div.querySelector('canvas'), dpr=window.devicePixelRatio||1;
+    const W=cv.clientWidth||240,H=70;cv.width=W*dpr;cv.height=H*dpr;
+    const ctx=cv.getContext('2d');ctx.setTransform(dpr,0,0,dpr,0,0);ctx.clearRect(0,0,W,H);
+    const sim=simulateRaw(c.cfg), pts=measureTape(sim,c.cfg);
+    const x0=16,x1=W-12,sc=(x1-x0)/Math.max(pts[pts.length-1].s,0.001);
+    ctx.fillStyle='#faf6ef';ctx.strokeStyle=COL.tape;
+    ctx.fillRect(x0-8,20,x1-x0+16,28);ctx.strokeRect(x0-8,20,x1-x0+16,28);
+    pts.forEach((p,i)=>{
+      const x=x0+p.s*sc;
+      ctx.strokeStyle=p.valid?(p.blur?'#b9a98f':COL.tape):'#e0e0e0';
+      ctx.globalAlpha=p.valid?(p.blur?0.45:1):0.3;ctx.lineWidth=2;
+      ctx.beginPath();ctx.moveTo(x,26);ctx.lineTo(x,42);ctx.stroke();
+      if(p.ghost){ctx.strokeStyle='#c9a227';ctx.beginPath();ctx.moveTo(x+2,26);ctx.lineTo(x+2,42);ctx.stroke();}
+      ctx.globalAlpha=1;ctx.fillStyle='#789';ctx.font='9px Consolas';ctx.textAlign='center';
+      ctx.fillText(p.valid?i:'✗',x,60);
+    });
+    div.querySelector('.cx1').textContent='x₁ = '+mm(pts[1].s-pts[0].s)+' mm'+(c.cfg.blur?'（点迹模糊）':'')+(c.cfg.missN!=null?'（第'+c.cfg.missN+'点漏打）':'');
+  });
+}
+/* ---------- ② 装置 SVG 与动画 ---------- */
+const ap={powered:false,stable:false,released:false,t:0,animId:null,dots:0};
+function buildApparatus(){
+  const spark=state.timerType==='spark';
+  const V=spark?'220 V 交流':'4–6 V 低压交流';
+  const M=spark?'墨粉纸盘·放电打点（阻力小）':'复写纸·振针打点';
+  $('#apWrap').innerHTML=
+  '<svg id="apSvg" viewBox="0 0 540 560" width="100%" style="display:block" role="img" aria-label="实验装置侧视图">'+
+  '<defs><marker id="mA" markerWidth="7" markerHeight="7" refX="3.5" refY="3.5" orient="auto"><path d="M0 0 L7 3.5 L0 7 z"/></marker></defs>'+
+  '<!-- 铁架台 -->'+ '<rect x="36" y="524" width="210" height="14" rx="3" fill="#607d8b"/><rect x="86" y="60" width="10" height="470" fill="#78909c"/>'+
+  '<rect x="96" y="88" width="46" height="10" fill="#90a4ae"/>'+
+  '<!-- 计时器 -->'+ '<g id="apTimer"><rect x="140" y="62" width="150" height="54" rx="6" fill="'+(spark?'#fff3e0':'#e3f2fd')+'" stroke="'+(spark?'#ef6c00':'#1565c0')+'" stroke-width="2"/>'+
+  '<text x="215" y="82" text-anchor="middle" font-size="12" fill="#33475e" font-weight="bold">'+(spark?'电火花计时器':'电磁打点计时器')+'</text>'+
+  '<text x="215" y="98" text-anchor="middle" font-size="10" fill="#5b6b7c">'+V+'</text>'+
+  '<text x="215" y="111" text-anchor="middle" font-size="9" fill="#8d6e00">'+M+'</text></g>'+
+  '<!-- 限位孔（可倾斜） -->'+ '<g id="apHoles" transform="rotate(0 258 130)"><circle cx="258" cy="122" r="5" fill="none" stroke="#455a64" stroke-width="2.5"/><circle cx="258" cy="142" r="5" fill="none" stroke="#455a64" stroke-width="2.5"/><text x="272" y="127" font-size="9" fill="#455a64">限位孔（两孔共线竖直）</text></g>'+
+  '<!-- 电源 -->'+ '<g id="apPowerBox"><rect x="380" y="62" width="140" height="62" rx="6" fill="#eceff1" stroke="#546e7a" stroke-width="1.5"/>'+
+  '<text x="450" y="82" text-anchor="middle" font-size="11" fill="#33475e">交流电源</text>'+
+  '<text x="450" y="98" text-anchor="middle" font-size="10" fill="#33475e">f = '+state.f+' Hz　T = '+(1/state.f).toFixed(4)+' s</text>'+
+  '<circle id="apSw" cx="404" cy="112" r="6" fill="#c62828"/><text x="418" y="116" font-size="9" fill="#5b6b7c" id="apSwTxt">开关·未通电</text></g>'+
+  '<path d="M380 100 L290 90" stroke="#90a4ae" fill="none"/><path d="M380 112 L290 104" stroke="#90a4ae" fill="none"/>'+
+  '<!-- 手与纸带上端 -->'+ '<circle cx="258" cy="36" r="9" fill="#ffe0b2" stroke="#b8860b"/><text x="286" y="40" font-size="9.5" fill="#8d6e00">手提纸带上端（竖直释放）</text>'+
+  '<!-- 纸带 -->'+ '<rect id="apTape" x="252" y="40" width="12" height="130" fill="#faf6ef" stroke="'+COL.tape+'"/>'+
+  '<g id="apDots"></g>'+
+  '<!-- 重锤 -->'+ '<g id="apWeight"><rect x="240" y="0" width="36" height="34" rx="5" fill="#455a64"/><path d="M240 34 L276 34 L258 52 z" fill="#37474f"/><text x="258" y="22" text-anchor="middle" font-size="9" fill="#eceff1">m</text></g>'+
+  '<!-- 矢量 -->'+ '<g id="apVec"><line id="vecMg" x1="300" y1="20" x2="300" y2="58" stroke="#1565c0" stroke-width="3" marker-end="url(#mA)"/><text id="vecMgT" x="306" y="44" font-size="10" fill="#1565c0">mg</text>'+
+  '<line id="vecF" x1="216" y1="40" x2="216" y2="20" stroke="#8e24aa" stroke-width="2.5" marker-end="url(#mA)"/><text id="vecFT" x="196" y="30" font-size="10" fill="#8e24aa">f 阻力</text>'+
+  '<line id="vecV" x1="330" y1="6" x2="330" y2="40" stroke="#2e7d32" stroke-width="3" marker-end="url(#mA)"/><text id="vecVT" x="336" y="28" font-size="10" fill="#2e7d32">v</text></g>'+
+  '<!-- 刻度尺 -->'+ '<g id="apRuler"><rect x="390" y="150" width="20" height="360" fill="#fff8e1" stroke="#b8860b"/>'+
+  Array.from({length:11},(_,i)=>'<line x1="390" y1="'+(150+i*36)+'" x2="402" y2="'+(150+i*36)+'" stroke="#b8860b"/><text x="416" y="'+(154+i*36)+'" font-size="8.5" fill="#8d6e00">'+(i*10)+'cm</text>').join('')+
+  '<text x="400" y="524" font-size="9" fill="#8d6e00" text-anchor="middle">毫米刻度尺</text></g>'+
+  '<!-- 地面警示 -->'+ '<text x="60" y="516" font-size="9.5" fill="#c62828">⚠ 下落区清空 · 勿用手接重锤</text>'+
+  '</svg>'+
+  '<button class="hs" data-card="c51" style="top:22%;left:47%" aria-label="限位孔知识点">i</button>'+
+  '<button class="hs" data-card="c30" style="top:12%;left:28%" aria-label="计时器知识点">i</button>'+
+  '<button class="hs" data-card="c3" style="top:12%;left:88%" aria-label="电源频率知识点">i</button>';
+  $$('#apWrap .hs').forEach(b=>b.onclick=()=>openCard(b.dataset.card));
+  updateHoles();
+}
+function updateHoles(){
+  const g=$('#apHoles'); if(!g)return;
+  g.setAttribute('transform', state.holeVertical?'rotate(0 258 130)':'rotate(9 258 130)');
+  const t=g.querySelector('text');
+  t.textContent=state.holeVertical?'限位孔（两孔共线竖直）':'限位孔倾斜！摩擦增大 ⚠';
+  t.setAttribute('fill', state.holeVertical?'#455a64':'#c62828');
+}
+function apUpdateScene(){
+  const scale=340; // px/m（装置区）
+  const meta=state.tape?state.tape.meta:null;
+  const t=ap.t;
+  const sim=state.tape?state.tape.sim:null;
+  let s=0,v=0;
+  if(sim){
+    const Tr=sim.Tr, N=sim.raw.length-1;
+    const tt=Math.min(t,N*Tr);
+    const idx=Math.min(N,Math.floor(tt/Tr));
+    const frac=tt/Tr-idx;
+    s=sim.raw[idx]+(sim.raw[Math.min(N,idx+1)]-sim.raw[idx])*frac;
+    v=sim.vpts[idx]+(sim.vpts[Math.min(N,idx+1)]-sim.vpts[idx])*frac;
+  }
+  const y=168+s*scale;
+  const w=$('#apWeight'); if(w){w.setAttribute('transform','translate(0,'+Math.max(0,y-0)+')');}
+  const tape=$('#apTape'); if(tape){tape.setAttribute('height',Math.max(20,y-40));}
+  // 打点：已打印的点随纸带下移（点 n 位于距纸带顶端 s_n 处 → 屏幕 y = 40 + s(t) − ... 以释放时纸带顶端为 0）
+  const dots=$('#apDots');
+  if(dots&&sim){
+    const N=sim.raw.length-1, Tr=sim.Tr;
+    let h='';
+    for(let n=0;n<=N;n++){
+      if(t>=n*Tr-1e-9){
+        const dy=168+(s-sim.raw[n])*scale; // 点打印后随纸带下移
+        h+='<line x1="252" y1="'+dy+'" x2="264" y2="'+dy+'" stroke="'+COL.tape+'" stroke-width="'+($('#lyZoom').checked?3.5:2)+'"/>';
+      }
+    }
+    dots.innerHTML=h;
+  }
+  // 矢量
+  const showVec=$('#lyVec').checked;
+  $('#apVec').style.display=showVec?'':'none';
+  if(showVec){
+    const d=dragParams();
+    const fLen=Math.min(46,((d.c0+d.c1*v)/G)*180+ (d.c0+d.c1>0?8:0));
+    const vLen=Math.min(60,v*18);
+    $('#vecMg').setAttribute('y1',y+10);$('#vecMg').setAttribute('y2',y+52);
+    $('#vecMgT').setAttribute('y',y+40);
+    $('#vecF').setAttribute('y1',y-6);$('#vecF').setAttribute('y2',y-6-Math.max(0,fLen));
+    $('#vecFT').setAttribute('y',y-16-Math.max(0,fLen*0.5));
+    $('#vecV').setAttribute('y1',y-30);$('#vecV').setAttribute('y2',y-30+vLen);
+    $('#vecVT').setAttribute('y',y+6+vLen*0.4);
+    $('#vecF').style.display=(d.c0+d.c1>0)?'':'none';$('#vecFT').style.display=(d.c0+c1fix(d))>0?'':'none';
+  }
+  // 能量条
+  if($('#lyEbar').checked&&sim){
+    const gh=G*s, ek=0.5*v*v, tot=ek-gh;
+    const mx=Math.max(gh*1.15,0.1);
+    $('#apEnergy').innerHTML=
+      '<div class="ebarRow"><span class="lbl cGh">E_p 减少量 mgh</span><div class="ebarTrack"><div class="ebarFill" style="width:'+(Math.max(0,gh)/mx*100)+'%;background:'+COL.gh+'"></div></div><span class="ebarVal">'+gh.toFixed(2)+' J/kg</span></div>'+
+      '<div class="ebarRow"><span class="lbl cHalf">E_k 增加量 ½v²</span><div class="ebarTrack"><div class="ebarFill" style="width:'+(Math.max(0,ek)/mx*100)+'%;background:'+COL.halfFill+'"></div></div><span class="ebarVal">'+ek.toFixed(2)+' J/kg</span></div>'+
+      '<div class="ebarRow"><span class="lbl cEtot">E_总（相对释放点）</span><div class="ebarTrack"><div class="ebarFill" style="width:'+(Math.abs(tot)/mx*100)+'%;background:'+COL.etot+'"></div></div><span class="ebarVal">'+tot.toFixed(3)+' J/kg</span></div>';
+    $('#apReadout').textContent='t = '+t.toFixed(3)+' s　s = '+ (s*1000).toFixed(1)+' mm　v（真值，仅显示）= '+v.toFixed(3)+' m/s';
+  }else{
+    $('#apEnergy').innerHTML='';$('#apReadout').textContent=ap.released?('t = '+t.toFixed(3)+' s'):'';
+  }
+}
+function c1fix(d){return d.c1;}
+function apLoop(){
+  if(!ap.released)return;
+  const sim=state.tape.sim, N=sim.raw.length-1, Ttot=N*sim.Tr;
+  const speed=parseFloat($('#apSpeed').value);
+  let last=performance.now();
+  function step(now){
+    if(!ap.released)return;
+    const dt=Math.min(0.05,(now-last)/1000);last=now;
+    if(!REDUCED)ap.t+=dt*speed/Math.max(0.1,1)*1; // 慢动作系数
+    else ap.t=Ttot;
+    // 打点提示音
+    const dotsNow=Math.floor(Math.min(ap.t,Ttot)/sim.Tr);
+    if(dotsNow>ap.dots){ap.dots=dotsNow;beep();}
+    if(ap.t>=Ttot){
+      ap.t=Ttot;apUpdateScene();
+      $('#apStatus').innerHTML='状态：下落完成，纸带已生成（共 '+N+' 个间隔）——已同步到③④⑤页。<button class="primary" id="apGoTape">查看纸带 →</button>';
+      const b=$('#apGoTape'); if(b)b.onclick=()=>switchTab('tape');
+      ap.released=false;
+      return;
+    }
+    apUpdateScene();
+    ap.animId=requestAnimationFrame(step);
+  }
+  ap.animId=requestAnimationFrame(step);
+}
+function beep(){
+  if(!$('#lySound').checked)return;
+  try{
+    window.__AC=window.__AC||new (window.AudioContext||window.webkitAudioContext)();
+    const o=window.__AC.createOscillator(),g=window.__AC.createGain();
+    o.frequency.value=880;g.gain.value=0.05;o.connect(g);g.connect(window.__AC.destination);
+    o.start();o.stop(window.__AC.currentTime+0.03);
+  }catch(e){}
+}
+/* ---------- ⑥ 光电门 ---------- */
+function pgSim(dOverride){
+  const p=state.photo, d=dOverride!=null?dOverride:p.d;
+  const c=p.drag?0.15:0, dt=2e-5;
+  let t=0,v=p.v0,s=0;
+  const marks=[['g1s',p.h1-d],['g1e',p.h1],['g2s',p.h2-d],['g2e',p.h2]].sort((a,b)=>a[1]-b[1]);
+  const res={};let idx=0;
+  while(idx<marks.length&&t<4){
+    const a=G-c;
+    const vm=v+a*dt/2; v+=a*dt; s+=vm*dt; t+=dt;
+    while(idx<marks.length&&s>=marks[idx][1]){
+      const target=marks[idx][1], ss=s, vv=v;
+      const back=vm*dt;
+      const frac=Math.max(0,Math.min(1,(target-(ss-back))/back));
+      res[marks[idx][0]]={t:t-dt+frac*dt, v:vv-a*dt*(1-frac)};
+      idx++;
+    }
+  }
+  if(!res.g1s||!res.g1e||!res.g2s||!res.g2e)return null;
+  const dt1=res.g1e.t-res.g1s.t, dt2=res.g2e.t-res.g2s.t;
+  const v1=d/dt1, v2=d/dt2, dh=p.h2-p.h1;
+  const dv=0.5*(v2*v2-v1*v1);
+  return {dt1,dt2,v1,v2,v1t:res.g1e.v,v2t:res.g2e.v,dh,dv,delta:(G*dh-dv)/(G*dh)*100};
+}
+function renderPg(){
+  const p=state.photo;
+  $('#pgH1V').textContent=p.h1.toFixed(2)+' m';$('#pgH2V').textContent=p.h2.toFixed(2)+' m';
+  $('#pgV0V').textContent=p.v0.toFixed(2)+' m/s';
+  buildPgSvg();
+  const r=pgSim();
+  const box=(lab,val,cls)=>'<div class="'+(cls||'roBox')+'"><b>'+lab+'</b> = '+val+'</div>';
+  if(!r){$('#pgResults').innerHTML='<div class="errBox">参数无效：请保证 h₂>h₁ 且 h₁−d>0。</div>';$('#pgDevTable tbody').innerHTML='';return;}
+  $('#pgResults').innerHTML=
+    box('Δt₁',fmt(r.dt1*1000,2)+' ms')+box('Δt₂',fmt(r.dt2*1000,2)+' ms')+
+    box('v₁=d/Δt₁',fmtV(r.v1)+' m/s')+box('v₂=d/Δt₂',fmtV(r.v2)+' m/s')+
+    box('Δh',mm(r.dh)+' mm')+
+    box('g·Δh',(G*r.dh).toFixed(4)+' J/kg','roBox')+
+    box('½(v₂²−v₁²)',r.dv.toFixed(4)+' J/kg','roBox')+
+    '<div class="roBox">δ = <b class="'+(r.delta<0?'negDelta':'')+'">'+fmtD(r.delta)+'%</b>（'+(Math.abs(r.delta)<=1.5?'在误差范围内相等 ⇒ 守恒验证成立':'偏差来自阻力/挡光片宽度')+'）</div>'+
+    box('瞬时参考 v₁',fmtV(r.v1t)+' m/s','roBox')+box('瞬时参考 v₂',fmtV(r.v2t)+' m/s','roBox')+
+    '<div class="note" style="grid-column:1/-1">本方案<b>不需要初速为零</b>（v₀='+p.v0.toFixed(2)+' m/s 时依然成立），也不依赖打点周期；'+(p.drag?'阻力开启：δ≈+1.5%（½Δv²略小，正常）':'无阻力：δ≈0')+'。</div>';
+  // d 偏差表
+  let rows='';
+  [0.005,0.01,0.02,0.05].forEach(dd=>{
+    const rr=pgSim(dd);
+    if(rr){rows+='<tr><td>'+(dd*100).toFixed(1)+'</td><td>'+fmt(rr.dt1*1000,2)+'</td><td>'+fmtV(rr.v1)+'</td><td>'+fmtV(rr.v1t)+'</td><td class="'+((rr.v1-rr.v1t)/rr.v1t*100<-1?'cErr':'')+'">'+fmtD((rr.v1-rr.v1t)/rr.v1t*100)+'%</td></tr>';}
+  });
+  $('#pgDevTable tbody').innerHTML=rows;
+}
+function buildPgSvg(){
+  const p=state.photo;
+  const scale=330, x0=120, yTop=30, H=390;
+  const y=h=>yTop+h*scale;
+  $('#pgWrap').innerHTML='<svg id="pgSvg" viewBox="0 0 360 440" width="100%" role="img" aria-label="光电门装置图">'+
+   '<rect x="'+(x0-70)+'" y="20" width="10" height="400" fill="#90a4ae"/><rect x="'+(x0+56)+'" y="20" width="10" height="400" fill="#90a4ae"/>'+
+   '<text x="'+(x0-64)+'" y="436" font-size="9" fill="#5b6b7c">竖直导轨</text>'+
+   '<!-- 释放点 -->'+ '<line x1="'+(x0-40)+'" y1="'+y(0)+'" x2="'+(x0+70)+'" y2="'+y(0)+'" stroke="#b0bec5" stroke-dasharray="4 3"/><text x="'+(x0-38)+'" y="'+(y(0)-4)+'" font-size="9" fill="#789">释放点（v₀='+p.v0.toFixed(2)+' m/s）</text>'+
+   '<!-- 光电门 -->'+
+   '<g><rect x="'+(x0-26)+'" y="'+(y(p.h1)-4)+'" width="26" height="8" fill="#c62828" rx="2"/><text x="'+(x0-24)+'" y="'+(y(p.h1)-8)+'" font-size="9" fill="#c62828">门1 h₁='+(p.h1*100).toFixed(0)+'cm</text></g>'+
+   '<g><rect x="'+(x0-26)+'" y="'+(y(p.h2)-4)+'" width="26" height="8" fill="#1565c0" rx="2"/><text x="'+(x0-24)+'" y="'+(y(p.h2)-8)+'" font-size="9" fill="#1565c0">门2 h₂='+(p.h2*100).toFixed(0)+'cm</text></g>'+
+   '<line x1="'+(x0+40)+'" y1="'+y(p.h1)+'" x2="'+(x0+40)+'" y2="'+y(p.h2)+'" stroke="#00838f"/><text x="'+(x0+46)+'" y="'+((y(p.h1)+y(p.h2))/2+3)+'" font-size="10" fill="#00838f">Δh='+((p.h2-p.h1)*100).toFixed(0)+'cm</text>'+
+   '<!-- 挡光片+重锤（动画） -->'+
+   '<g id="pgBlock"><rect x="'+(x0-6)+'" y="0" width="12" height="'+(p.d*scale)+'" fill="#ffb300" stroke="#ef6c00"/><rect x="'+(x0-11)+'" y="'+(p.d*scale)+'" width="22" height="26" rx="4" fill="#455a64"/><text x="'+(x0+14)+'" y="'+(p.d*scale+17)+'" font-size="9" fill="#33475e">d='+(p.d*100).toFixed(1)+'cm</text></g>'+
+   '<text x="'+(x0+80)+'" y="60" font-size="10" fill="#5b6b7c">挡光片挡光计时：</text><text x="'+(x0+80)+'" y="76" font-size="10" fill="#5b6b7c">v = d/Δt</text>'+
+   '</svg>';
+}
+let pgAnimId=null;
+function pgAnimate(){
+  if(pgAnimId)cancelAnimationFrame(pgAnimId);
+  const p=state.photo;
+  const sim=pgSim(); if(!sim)return;
+  const g=$('#pgBlock'); if(!g)return;
+  const scale=330,yTop=30;
+  const d=p.d;
+  // 起始位置：挡光片顶边在释放点
+  let t0=null;
+  const dur=REDUCED?0:1600;
+  function fr(now){
+    if(t0===null)t0=now;
+    const q=dur?Math.min(1,(now-t0)/dur):1;
+    const lead=p.h1-d+((p.h2)- (p.h1-d))*q;   // 挡光片顶边位置（从门1前到门2）
+    g.setAttribute('transform','translate(0,'+(yTop+lead*scale)+')');
+    if(q<1)pgAnimId=requestAnimationFrame(fr);
+  }
+  pgAnimId=requestAnimationFrame(fr);
+}
+/* ---------- ⑦ 练习 ---------- */
+let quizOrder=[],quizAnswers={};
+function renderQuiz(){
+  const host=$('#quizBox');
+  quizOrder=state.quizTeacher?QUIZ.map((q,i)=>i).sort(()=>Math.random()-0.5):QUIZ.map((q,i)=>i);
+  quizAnswers={};
+  host.innerHTML=quizOrder.map((qi,pos)=>{
+    const q=QUIZ[qi];
+    return '<div class="qItem" data-qi="'+qi+'"><div class="qTitle">'+(pos+1)+'. '+q.q+'</div>'+
+      q.opts.map((o,oi)=>'<label class="qOpt" data-oi="'+oi+'"><input type="radio" name="q'+qi+'" value="'+oi+'"> '+String.fromCharCode(65+oi)+'. '+o+'</label>').join('')+
+      '<div class="qFb" id="qfb'+qi+'"></div></div>';
+  }).join('');
+  host.querySelectorAll('.qOpt input').forEach(inp=>{
+    inp.onchange=()=>{
+      const qi=parseInt(inp.closest('.qItem').dataset.qi);
+      quizAnswers[qi]=parseInt(inp.value);
+      if(!state.quizTeacher){
+        gradeQuestion(qi);
+      }
+    };
+  });
+  $('#btnQuizSubmit').style.display=state.quizTeacher?'':'none';
+  $('#quizScore').textContent='';
+}
+function gradeQuestion(qi,quiet){
+  const q=QUIZ[qi], item=$('#quizBox .qItem[data-qi="'+qi+'"]');
+  const sel=quizAnswers[qi];
+  if(sel==null)return;
+  item.classList.add('done');
+  item.querySelectorAll('.qOpt').forEach(l=>{
+    const oi=parseInt(l.dataset.oi);
+    l.classList.toggle('right',oi===q.ans);
+    if(oi===sel&&oi!==q.ans)l.classList.add('wrong');
+    l.querySelector('input').disabled=true;
+  });
+  const fb=$('#qfb'+qi);
+  fb.innerHTML=(sel===q.ans?'✔ 正确。':'✘ 不对。')+q.exp+
+    ' <button data-card="'+q.card+'">查看相关卡片 →</button>';
+  fb.querySelector('button').onclick=e=>openCard(e.target.dataset.card);
+}
+/* ---------- 卡片库 ---------- */
+let curCat='全部',curKw='',curCardId=null,curList=[];
+function renderDrawer(){
+  $('#cardCount').textContent=KNOWLEDGE_CARDS.length;
+  const chips=['全部'].concat(CATS);
+  $('#catChips').innerHTML=chips.map(c=>'<button class="'+(curCat===c?'cur':'')+'" data-cat="'+c+'">'+c+'</button>').join('');
+  $('#catChips').querySelectorAll('button').forEach(b=>b.onclick=()=>{curCat=b.dataset.cat;renderDrawer();});
+  const kw=curKw.trim();
+  curList=KNOWLEDGE_CARDS.filter(c=>(curCat==='全部'||c.cat===curCat)&&(!kw||(c.title+c.one+c.formula).includes(kw)));
+  $('#cardList').innerHTML=curList.map(c=>
+    '<button class="cardListItem" data-id="'+c.id+'"><span class="cl-cat" style="background:'+CATCOLOR[c.cat]+'">'+c.cat+'</span><b>'+c.title+'</b><div class="note">'+c.one+'</div></button>'
+  ).join('')||'<p class="note">无匹配卡片。</p>';
+  $('#cardList').querySelectorAll('.cardListItem').forEach(b=>b.onclick=()=>openCard(b.dataset.id));
+}
+let pinned=[];
+function openCard(id){
+  const c=KNOWLEDGE_CARDS.find(x=>x.id===id); if(!c)return;
+  curCardId=id;
+  $('#kcard').classList.remove('flipped');
+  $('#kfaceF').innerHTML='<span class="cl-cat" style="background:'+CATCOLOR[c.cat]+';color:#fff;border-radius:8px;padding:1px 8px;font-size:11px">'+c.cat+'</span>'+
+    '<h4>'+c.title+'</h4><div class="one">'+c.one+'</div>'+
+    '<div class="kformula">'+c.formula+'</div>'+
+    '<div class="kmini">'+mini(c.mini,c.cat)+'</div>'+
+    '<div class="guide">🔍 在本 Demo 中怎么看：'+c.guide+'</div>'+
+    (c.warn?'<div class="warn">⚠ 易错提醒：'+c.warn+'</div>':'');
+  $('#kfaceB').innerHTML='<h4>'+c.title+' · 推导/展开</h4><div class="one">'+(c.back||'（见正面）')+'</div>'+
+    '<div class="kformula">'+c.formula+'</div>';
+  $('#modalBg').classList.add('show');
+  $('#btnPin').textContent=pinned.includes(id)?'📌 已钉住（点击取消）':'📌 钉住';
+  $('#modalBg').setAttribute('aria-label','知识卡片：'+c.title);
+  $('#btnCloseC').focus();
+}
+function closeCard(){ $('#modalBg').classList.remove('show'); }
+function stepCard(dir){
+  if(!curList.length)return;
+  let i=curList.findIndex(c=>c.id===curCardId);
+  i=(i+dir+curList.length)%curList.length;
+  openCard(curList[i].id);
+}
+function renderPins(){
+  $('#pinStack').innerHTML=pinned.map(id=>{
+    const c=KNOWLEDGE_CARDS.find(x=>x.id===id);
+    return '<div class="pinnedCard" data-id="'+id+'">📌 <b>'+c.title+'</b><br><span class="note">'+c.one+'</span> <button data-un="'+id+'" aria-label="取消钉住">✕</button></div>';
+  }).join('');
+  $('#pinStack').querySelectorAll('.pinnedCard').forEach(d=>d.onclick=e=>{
+    if(e.target.dataset.un){pinned=pinned.filter(x=>x!==e.target.dataset.un);renderPins();if($('#btnPin'))$('#btnPin').textContent=pinned.includes(curCardId)?'📌 已钉住（点击取消）':'📌 钉住';return;}
+    openCard(d.dataset.id);
+  });
+}
+/* ---------- 引导 ---------- */
+let gStep=0;
+function renderGuide(){
+  const s=GUIDE_STEPS[gStep];
+  $('#gStep').textContent='教学引导 '+(gStep+1)+'/'+GUIDE_STEPS.length;
+  $('#gTitle').textContent=s.title;
+  $('#gText').textContent=s.text;
+  $('#gQ').textContent='问：'+s.q;
+  $('#gAns').dataset.open='0';$('#gAns').textContent='显示答案';
+  $('#guide').dataset.tab=s.tab;
+}
+/* ---------- 导出 ---------- */
+function downloadCsv(name,rows){
+  const blob=new Blob(['\ufeff'+rows.map(r=>r.map(x=>'"'+String(x).replace(/"/g,'""')+'"').join(',')).join('\n')],{type:'text/csv;charset=utf-8'});
+  const a=document.createElement('a');a.href=URL.createObjectURL(blob);a.download=name;a.click();
+  setTimeout(()=>URL.revokeObjectURL(a.href),1000);
+}
+
+/* =====================================================================
+   事件绑定与初始化
+   ===================================================================== */
+function bindEvents(){
+  // 标签页
+  $$('#tabNav button[data-tab]').forEach(b=>b.onclick=()=>switchTab(b.dataset.tab));
+  $('#drawerBtn').onclick=()=>{$('#drawer').classList.toggle('hidden');renderDrawer();};
+  // ① 对照
+  $('#btnLoadDrag').onclick=()=>{applyPreset(PRESETS.find(p=>p.id==='drag'));toast('已载入"阻力较大带"：观察错误方法给出的 δ=0 假象 vs 正确法的 δ≈3%');};
+  $('#btnLoadStd').onclick=()=>{applyPreset(PRESETS.find(p=>p.id==='std'));toast('已载入标准合格纸带');};
+  $('#cmpN').onchange=renderCmp;
+  // ② 装置
+  $$('input[name=timerType]').forEach(r=>r.onchange=()=>{state.timerType=r.value;buildApparatus();});
+  $('#apPower').onclick=()=>{
+    ap.powered=true;ap.stable=false;ap.dots=0;
+    $('#apSw').setAttribute('fill','#2e7d32');$('#apSwTxt').textContent='开关·已通电';
+    $('#apStatus').innerHTML='状态：已通电，打点稳定中……（约 1 s）';
+    setTimeout(()=>{if(ap.powered&&!ap.released){ap.stable=true;$('#apStatus').innerHTML='状态：打点已稳定 ✔ 现在可以释放重锤（纸带竖直、重锤靠近计时器）。';}},1000);
+  };
+  $('#apRelease').onclick=()=>{
+    if(!ap.powered){toast('⚠ 规范错误：应<b>先接通电源、待打点稳定后</b>再释放重锤！（否则第一点不清、判据失效）');return;}
+    if(!ap.stable){toast('请等待打点稳定（约 1 s）后再释放。');return;}
+    ap.released=true;ap.t=0;ap.dots=0;
+    genTape(); // 与③页同参数生成
+    apLoop();
+  };
+  $('#apStep').onclick=()=>{
+    if(!ap.powered){toast('请先接通电源。');return;}
+    if(!state.tape)genTape();
+    const sim=state.tape.sim;
+    ap.released=true;ap.powered=true;ap.stable=true;
+    ap.t=Math.min((ap.dots+1)*sim.Tr, (sim.raw.length-1)*sim.Tr);
+    ap.dots=Math.floor(ap.t/sim.Tr+1e-9);
+    apUpdateScene();
+    if(ap.t>=(sim.raw.length-1)*sim.Tr-1e-9)ap.released=false;
+  };
+  $('#apReset').onclick=()=>{
+    ap.powered=ap.stable=ap.released=false;ap.t=0;ap.dots=0;
+    if(ap.animId)cancelAnimationFrame(ap.animId);
+    $('#apSw').setAttribute('fill','#c62828');$('#apSwTxt').textContent='开关·未通电';
+    $('#apStatus').textContent='状态：电源未接通。规范顺序：先接通电源，待打点稳定后再释放。';
+    genTape();apUpdateScene();
+  };
+  $('#apSpeed').oninput=e=>$('#apSpeedV').textContent=parseFloat(e.target.value).toFixed(1)+'×';
+  $('#swHole').onchange=e=>{state.holeVertical=e.target.checked;updateHoles();if(ap.powered&&!ap.released)toast(state.holeVertical?'限位孔已调竖直。':'限位孔倾斜：摩擦增大（若重新生成纸带，δ 将明显偏大）。');};
+  ['#lyVec','#lyEbar','#lyZoom','#lySound'].forEach(id=>$(id).onchange=apUpdateScene);
+  // 操作清单
+  const ol=$('#opList');
+  CHECKLIST.forEach((it,i)=>{
+    const d=document.createElement('div');d.className='opItem';
+    d.innerHTML='<label style="font-weight:600"><input type="checkbox"> '+it[0]+' <button class="whyBtn" style="font-size:11px;padding:0 6px">为什么？</button></label><div class="why">'+it[1]+'</div>';
+    ol.appendChild(d);
+    d.querySelector('input').onchange=e=>d.classList.toggle('done',e.target.checked);
+    d.querySelector('.whyBtn').onclick=()=>d.classList.toggle('openWhy');
+  });
+  // ③ 纸带控制
+  $('#ctlF').onchange=e=>{state.f=parseInt(e.target.value);};
+  $('#ctlV0').oninput=e=>{state.v0=parseFloat(e.target.value);$('#ctlV0V').textContent=state.v0.toFixed(2)+' m/s';};
+  $('#swAir').onchange=e=>{state.air=e.target.checked;if(!state.air)state.bigDrag=false;};
+  $('#swFric').onchange=e=>{state.fric=e.target.checked;if(!state.fric)state.bigDrag=false;};
+  $('#swNoise').onchange=e=>state.noise=e.target.checked;
+  $('#swMiss').onchange=e=>state.miss=e.target.checked;
+  $('#swGhost').onchange=e=>state.ghost=e.target.checked;
+  $('#btnGen').onclick=()=>{genTape();toast('纸带已生成（编号 P'+state.tapeSeq+'）：f='+state.f+' Hz，'+(state.v0>0?'v₀='+state.v0.toFixed(2)+' m/s，':'静止释放，')+(dragParams().c0||dragParams().c1?'阻力开启':'无阻力'));};
+  // 预设
+  $('#presetBtns').innerHTML=PRESETS.map(p=>'<button data-pid="'+p.id+'" title="'+p.tip+'">'+p.name+'</button>').join(' ');
+  $$('#presetBtns button').forEach(b=>b.onclick=()=>applyPreset(PRESETS.find(p=>p.id===b.dataset.pid)));
+  // 选点模式
+  $$('.selMode').forEach(b=>b.onclick=()=>{
+    $$('.selMode').forEach(x=>x.classList.remove('on'));b.classList.add('on');
+    state.selMode=b.dataset.mode;$('#tapeCanvas').focus();
+  });
+  // 纸带画布交互（点击/拖动/键盘）
+  const cv=$('#tapeCanvas');
+  function pick(e){
+    const rect=cv.getBoundingClientRect();
+    const px=(e.clientX||((e.touches||[])[0]||{}).clientX||0)-rect.left;
+    const pts=state.tape.pts,N=pts.length-1;
+    const x0=56,W=rect.width,x1=W-36;
+    const sMax=Math.max(pts[N].s,0.02),sc=(x1-x0)/sMax;
+    let best=0,bd=1e9;
+    pts.forEach((p,i)=>{const d=Math.abs(x0+p.s*sc-px);if(d<bd){bd=d;best=i;}});
+    if(bd<30){
+      if(state.selMode==='A')state.selA=best;
+      else if(state.selMode==='B')state.selB=best;
+      else if(state.selMode==='O')state.refO=best;
+      else state.selN=best;
+      renderAll();
+    }
+  }
+  cv.addEventListener('mousedown',e=>{pick(e);const mv=ev=>pick(ev);const up=()=>{removeEventListener('mousemove',mv);removeEventListener('mouseup',up);};addEventListener('mousemove',mv);addEventListener('mouseup',up);});
+  cv.addEventListener('touchstart',e=>{pick(e);e.preventDefault();},{passive:false});
+  cv.addEventListener('keydown',e=>{
+    const d=(e.key==='ArrowRight')?1:(e.key==='ArrowLeft')?-1:0;
+    if(!d)return;e.preventDefault();
+    const pts=state.tape.pts;
+    if(state.selMode==='A')state.selA=Math.max(0,Math.min(pts.length-1,state.selA+d));
+    else if(state.selMode==='B')state.selB=Math.max(0,Math.min(pts.length-1,state.selB+d));
+    else if(state.selMode==='O')state.refO=Math.max(0,Math.min(pts.length-1,state.refO+d));
+    else state.selN=Math.max(1,Math.min(pts.length-2,state.selN+d));
+    renderAll();
+  });
+  $('#btnSweep').onclick=()=>{sweep={n:state.selN,t0:performance.now()};renderTapeCanvas();toast('测速动画：区间 [t(n−1), t(n+1)] 长 2T=0.04 s，点 n 是时间中点——平均速度 (s(n+1)−s(n−1))/(2T) 即点 n 的瞬时速度。');};
+  $('#errDemoToggle').onchange=renderErrDemo;
+  // 2mm 动画
+  $('#btnMmAnim').onclick=()=>{
+    const el=$('#mmAnim');const steps=['x₁ = ½·g·T²','= ½ × 9.8 m/s² × (0.02 s)²','= ½ × 9.8 × 0.0004 m','= 0.00196 m ≈ 1.96 mm ≈ 2 mm','✔ 适用条件：50 Hz · 从静止释放 · 打点与释放同步'];
+    el.innerHTML='';let i=0;
+    if(REDUCED){el.innerHTML=steps.join('<br>');return;}
+    const t=setInterval(()=>{el.innerHTML+=steps[i]+'<br>';i++;if(i>=steps.length)clearInterval(t);},450);
+  };
+  // 选带判定
+  $('#btnJudge').onclick=()=>{
+    if(!candSel){$('#candFb').innerHTML='<span class="cErr">请先选择一条纸带。</span>';return;}
+    const c=TAPE_CANDIDATES.find(x=>x.id===candSel);
+    $('#candFb').innerHTML=c.ok?'<span class="cGh">✔ 判定正确！</span> '+c.why:'<span class="cErr">✘ 判定不对。</span> '+c.why;
+  };
+  // ④
+  $$('input[name=massMode]').forEach(r=>r.onchange=()=>{state.massMode=r.value;renderTable();renderChart();renderAB();});
+  $('#mInput').oninput=e=>{state.m=parseFloat(e.target.value)||1;renderChart();};
+  $('#btnScan').onclick=()=>{genTape();toast('h 扫描完成：数据表与图象已用新纸带刷新。');};
+  $('#btnLog').onclick=()=>{
+    const row=state.tape.rows.find(r=>r.n===state.selN);
+    if(!row||row.miss){toast('当前点无法测速。');return;}
+    const sw=[state.air&&'空气阻力',state.fric&&'限位孔摩擦',state.bigDrag&&'阻力较大',state.noise&&'噪声',state.miss&&'漏点',state.ghost&&'重影',state.f!==50&&('f='+state.f)].filter(Boolean).join('+')||'无';
+    state.log.push({tape:'P'+state.tapeSeq,f:state.f,m:state.m,h:mm(row.h),v:fmtV(row.v),gh:(state.massMode==='with'?state.m*row.gh:row.gh).toFixed(4),half:(state.massMode==='with'?state.m*row.half:row.half).toFixed(4),delta:fmtD(row.delta),sw});
+    renderLog();
+  };
+  $('#chartSel').onchange=e=>{state.chart=e.target.value;renderChart();};
+  $('#chkRef').onchange=e=>{state.showRef=e.target.checked;renderChart();};
+  $('#refSel').onchange=e=>{state.refMode=e.target.value;renderChart();};
+  $('#selA').onchange=e=>{state.selA=parseInt(e.target.value);renderAB();renderChart();renderTapeCanvas();};
+  $('#selB').onchange=e=>{state.selB=parseInt(e.target.value);renderAB();renderChart();renderTapeCanvas();};
+  $('#btnExportChart').onclick=()=>{
+    const series=chartSeries();
+    const rows=[['h/m'].concat(series.map((s,i)=>'系列'+(i+1)+'('+s.label+')'))];
+    const n=Math.max(0,...series.map(s=>s.pts.length));
+    for(let i=0;i<n;i++){
+      const r=[series[0].pts[i]!=null?series[0].pts[i][0]:''];
+      series.forEach(s=>{r.push(s.pts[i]!=null?s.pts[i][1]:'');});
+      rows.push(r);
+    }
+    downloadCsv('模型46-图象数据.csv',rows);
+  };
+  $('#btnCsv').onclick=()=>{
+    downloadCsv('模型46-实验记录.csv',[['纸带','f/Hz','m/kg','h/mm','v/(m/s)','gh','½v²','δ/%','开关']].concat(state.log.map(r=>[r.tape,r.f,r.m,r.h,r.v,r.gh,r.half,r.delta,r.sw])));
+  };
+  $('#btnClearLog').onclick=()=>{state.log=[];renderLog();};
+  // ⑤ 诊断
+  $('#diagOpts').innerHTML=DIAG_OPTS.map(o=>'<label style="display:block;margin:3px 0"><input type="checkbox" value="'+o.id+'"> '+o.txt+'</label>').join('');
+  $('#diagLoad').onclick=()=>{
+    applyPreset(PRESETS.find(p=>p.id==='freq49'));
+    $('#diagState').innerHTML='已载入 49 Hz 反常带：到<a href="javascript:void(0)" id="goData">④页数据表</a>看 δ<0，再回来勾选原因。';
+    $('#goData').onclick=()=>switchTab('data');
+  };
+  $('#btnDiag').onclick=()=>{
+    const sel=$$('#diagOpts input:checked').map(i=>i.value);
+    if(!sel.length){$('#diagFb').innerHTML='<div class="errBox">请至少勾选一项。</div>';return;}
+    const html=DIAG_OPTS.filter(o=>sel.includes(o.id)).map(o=>'<div class="'+(o.ok?'okCard':'warnCard')+'" style="margin:4px 0;padding:6px 10px"><b>'+(o.ok?'✔':'✘')+'</b> '+o.why+'</div>').join('');
+    const nOk=DIAG_OPTS.filter(o=>o.ok&&sel.includes(o.id)).length;
+    const missed=DIAG_OPTS.filter(o=>o.ok&&!sel.includes(o.id));
+    $('#diagFb').innerHTML='<h3>诊断结果（选中 '+nOk+'/4 个可能原因）</h3>'+html+
+      (missed.length?'<div class="note">遗漏的可能原因：'+missed.map(o=>o.txt).join('；')+'</div>':'')+
+      '<div class="okCard"><b>排查顺序建议：</b>① 查电源频率（影响最大且最隐蔽，49 Hz 即可造成 +4%）→ ② 复核点序与 h 读数 → ③ 检查释放是否带初速度（看第一二点间距）→ ④ 复测确认。机械能不会凭空增加，反常一定来自测量环节。</div>';
+  };
+  // ⑥
+  $('#pgH1').oninput=e=>{state.photo.h1=parseFloat(e.target.value);renderPg();};
+  $('#pgH2').oninput=e=>{state.photo.h2=parseFloat(e.target.value);renderPg();};
+  $('#pgD').onchange=e=>{state.photo.d=parseFloat(e.target.value);renderPg();};
+  $('#pgV0').oninput=e=>{state.photo.v0=parseFloat(e.target.value);renderPg();};
+  $('#pgDrag').onchange=e=>{state.photo.drag=e.target.checked;renderPg();};
+  $('#btnPgRun').onclick=()=>{renderPg();pgAnimate();};
+  // ⑦
+  $('#quizTeacher').onchange=e=>{state.quizTeacher=e.target.checked;renderQuiz();};
+  $('#btnQuizSubmit').onclick=()=>{
+    let right=0,un=0;
+    quizOrder.forEach(qi=>{if(quizAnswers[qi]==null)un++;});
+    if(un){toast('还有 '+un+' 题未作答。');return;}
+    quizOrder.forEach(qi=>{if(quizAnswers[qi]===QUIZ[qi].ans)right++;gradeQuestion(qi,true);});
+    $('#quizScore').innerHTML='<b>成绩：'+right+' / '+QUIZ.length+'</b>（答错的题目已显示讲解与相关卡片入口）';
+  };
+  // 卡片
+  $('#cardSearch').oninput=e=>{curKw=e.target.value;renderDrawer();};
+  $('#btnFlip').onclick=()=>$('#kcard').classList.toggle('flipped');
+  $('#btnCloseC').onclick=closeCard;
+  $('#modalBg').onclick=e=>{if(e.target===e.currentTarget)closeCard();};
+  $('#btnPrevC').onclick=()=>stepCard(-1);
+  $('#btnNextC').onclick=()=>stepCard(1);
+  $('#btnPin').onclick=()=>{
+    if(pinned.includes(curCardId))pinned=pinned.filter(x=>x!==curCardId);
+    else pinned.push(curCardId);
+    renderPins();
+    $('#btnPin').textContent=pinned.includes(curCardId)?'📌 已钉住（点击取消）':'📌 钉住';
+  };
+  document.addEventListener('keydown',e=>{
+    if($('#modalBg').classList.contains('show')){
+      if(e.key==='Escape')closeCard();
+      else if(e.key==='ArrowLeft')stepCard(-1);
+      else if(e.key==='ArrowRight')stepCard(1);
+    }
+  });
+  // 热点（动态区域）
+  document.addEventListener('click',e=>{
+    const hs=e.target.closest('.hs[data-card]');
+    if(hs)openCard(hs.dataset.card);
+  });
+  // 引导
+  $('#gPrev').onclick=()=>{gStep=Math.max(0,gStep-1);renderGuide();};
+  $('#gNext').onclick=()=>{gStep=Math.min(GUIDE_STEPS.length-1,gStep+1);renderGuide();};
+  $('#gAns').onclick=e=>{
+    const s=GUIDE_STEPS[gStep];
+    const open=e.target.dataset.open==='1';
+    e.target.dataset.open=open?'0':'1';
+    e.target.textContent=open?'显示答案':'收起答案';
+    $('#gQ').textContent=open?('问：'+s.q):('问：'+s.q+'　答：'+s.a);
+  };
+  $('#gJump').onclick=()=>switchTab($('#guide').dataset.tab);
+  $('#gClose').onclick=()=>{$('#guide').classList.add('hidden');$('#gReopen').classList.remove('hidden');};
+  $('#gReopen').onclick=()=>{$('#guide').classList.remove('hidden');$('#gReopen').classList.add('hidden');};
+  // 窗口
+  let rsT=null;
+  window.addEventListener('resize',()=>{clearTimeout(rsT);rsT=setTimeout(()=>{renderAll();renderPg();},200);});
+}
+function applyPreset(p){
+  if(!p)return;
+  if(p.tab==='gate'){switchTab('gate');return;}
+  if(p.refA){state.refMode='A';state.chart='energy';$('#chartSel').value='energy';$('#refSel').value='A';switchTab('data');renderChart();toast('零势能参考面已切到 A 点：E_p 整体平移，E_总≈水平的结论不变（势能的参考面系统性）。');return;}
+  if(p.set){
+    Object.assign(state,p.set);
+    $('#ctlF').value=String(state.f);$('#ctlV0').value=state.v0;$('#ctlV0V').textContent=state.v0.toFixed(2)+' m/s';
+    $('#swAir').checked=state.air;$('#swFric').checked=state.fric;$('#swNoise').checked=state.noise;
+    $('#swMiss').checked=state.miss;$('#swGhost').checked=state.ghost;
+    genTape();
+  }
+}
+function init(){
+  buildApparatus();
+  bindEvents();
+  renderDrawer();
+  renderGuide();
+  renderQuiz();
+  genTape();               // 默认：标准合格纸带
+  renderPg();
+  renderImpact();
+  apUpdateScene();
+  toast('欢迎！按底部"教学引导"八步流程推进；⚠ 记住防循环三禁令：v=√(2gh)、v=gt、同带斜率 a 都不能用来求速度。');
+}
+document.addEventListener('DOMContentLoaded',init);
+</script>
+</body>
+</html>
