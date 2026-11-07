@@ -97,6 +97,7 @@ export interface CoursewareScene {
   expectedOutput: string;
   detail?: {
     learningContent?: string;
+    pageBlocks?: Array<{ key: string; label: string; value: string }>;
     teacherScript?: string[];
     studentSteps?: string[];
     questioning?: string[];
@@ -122,6 +123,11 @@ export interface CoursewareScene {
   };
   source: CoursewareSource;
   enabled: boolean;
+  continuation?: {
+    parentId: string;
+    pageNumber: number;
+    totalPages: number;
+  };
 }
 
 export interface CoursewareManifest {

@@ -3,6 +3,7 @@ from __future__ import annotations
 
 import html
 import json
+import copy
 import re
 import sys
 import uuid
@@ -186,6 +187,86 @@ def build_manifest(lesson_plan, model=None, questions=None):
     return manifest
 
 
+def _split_ppt_text(value, max_chars=90):
+    value = str(value or "")
+    if len(value) <= max_chars:
+        return [value] if value else []
+    chunks = []
+    while len(value) > max_chars:
+        end = max_chars
+        boundary = max((value.rfind(mark, 1, max_chars + 1) for mark in "。！？；，、\n"), default=-1)
+        if boundary >= max_chars // 2:
+            end = boundary + 1
+        chunks.append(value[:end])
+        value = value[end:]
+    if value:
+        chunks.append(value)
+    return chunks
+
+
+def paginate_manifest(manifest):
+    """Expand long scenes into matching interactive and PPT continuation pages."""
+    manifest = _chinese_copy(copy.deepcopy(manifest or {}))
+    scenes = manifest.get("scenes") or []
+    continuation_groups = {}
+    base_scenes = []
+    for scene in scenes:
+        continuation = scene.get("continuation")
+        if continuation:
+            continuation_groups.setdefault(continuation.get("parentId"), []).append(scene)
+        else:
+            base_scenes.append(scene)
+
+    expanded = []
+    for scene in base_scenes:
+        detail = scene.get("detail") or {}
+        if detail.get("pageBlocks"):
+            expanded.append(scene)
+            continuations = sorted(continuation_groups.get(scene.get("id"), []), key=lambda item: (item.get("continuation") or {}).get("pageNumber", 0))
+            for continuation in continuations:
+                continuation["enabled"] = scene.get("enabled", True)
+            expanded.extend(continuations)
+            continue
+
+        blocks = scene_content_blocks(scene)
+        if scene.get("type") == "gesture-quiz":
+            for number, question in enumerate(manifest.get("questions") or [], 1):
+                if question.get("enabled", True):
+                    options = "；".join(f"{index + 1}. {option}" for index, option in enumerate(question.get("options") or []))
+                    question_text = _cw_text(question.get("question"))
+                    value = question_text + ("\n" + options if options else "")
+                    blocks.append({"key": f"question-{number}", "label": f"第{number}题", "value": value})
+
+        chunks = []
+        max_chars = 48 if scene.get("model") else 90
+        needs_split = any(len(str(block.get("value") or "")) > max_chars for block in blocks)
+        for block in blocks:
+            for part_index, part in enumerate(_split_ppt_text(block.get("value"), max_chars), 1):
+                chunks.append({**block, "key": f"{block.get('key', 'content')}-{part_index}", "value": part})
+        pages = [chunks[index:index + 4] for index in range(0, len(chunks), 4)] or [[]]
+        if len(pages) == 1 and len(pages[0]) <= 4 and not needs_split:
+            expanded.append(scene)
+            continue
+
+        first = copy.deepcopy(scene)
+        first["detail"] = {**(first.get("detail") or {}), "pageBlocks": pages[0]}
+        expanded.append(first)
+        total_pages = len(pages)
+        for page_number, page_blocks in enumerate(pages[1:], 2):
+            continued = copy.deepcopy(scene)
+            continued["id"] = f"{scene.get('id', 'scene')}-cont-{page_number:02d}"
+            continued["title"] = f"{scene.get('title', '课堂内容')}（续 {page_number}）"
+            continued["claim"] = "继续学习本场内容，并结合证据完成任务。"
+            continued["studentAction"] = "阅读本页续接内容，完成对应学习任务。"
+            continued["model"] = None
+            continued["detail"]["pageBlocks"] = page_blocks
+            continued["continuation"] = {"parentId": scene.get("id"), "pageNumber": page_number, "totalPages": total_pages}
+            expanded.append(continued)
+
+    manifest["scenes"] = expanded
+    return manifest
+
+
 def quality(manifest):
     scenes = [scene for scene in manifest.get("scenes", []) if scene.get("enabled", True)]
     blocking, warnings = [], []
@@ -210,17 +291,22 @@ def quality(manifest):
 
 
 def regenerate_scene(manifest, scene_id):
+    if any(scene.get("id") == scene_id and scene.get("continuation") for scene in manifest.get("scenes", [])):
+        raise ValueError("续页由原场景自动分页生成，请编辑或重做原场景")
     lesson_context = manifest.get("lessonContext") or {"id": manifest.get("lessonId"), "title": manifest.get("title"), "references": manifest.get("references")}
     baseline = build_manifest(lesson_context, manifest.get("model"), manifest.get("questions"))
-    replacement = next((scene for scene in baseline["scenes"] if scene["id"] == scene_id), None)
-    if not replacement:
+    replacement_group = [scene for scene in baseline["scenes"] if scene.get("id") == scene_id or (scene.get("continuation") or {}).get("parentId") == scene_id]
+    if not replacement_group:
         raise ValueError("场景不存在")
     current = next((scene for scene in manifest.get("scenes", []) if scene.get("id") == scene_id), None)
     if current and current.get("source") == "teacher-edited":
         replacement["teacherCue"] = current.get("teacherCue", replacement["teacherCue"])
     replacement["source"] = "generated"
     manifest = dict(manifest)
-    manifest["scenes"] = [replacement if scene.get("id") == scene_id else scene for scene in manifest.get("scenes", [])]
+    scenes = manifest.get("scenes", [])
+    insert_at = next((index for index, scene in enumerate(scenes) if scene.get("id") == scene_id), len(scenes))
+    manifest["scenes"] = [scene for scene in scenes if scene.get("id") != scene_id and (scene.get("continuation") or {}).get("parentId") != scene_id]
+    manifest["scenes"][insert_at:insert_at] = replacement_group
     manifest["revision"] = int(manifest.get("revision") or 1) + 1
     manifest["quality"] = quality(manifest)
     return manifest
@@ -424,7 +510,7 @@ def _add_text(slide, value, x, y, w, h, size, color, bold=False, align=PP_ALIGN.
 
 
 def create_ppt(manifest):
-    manifest = _chinese_copy(manifest)
+    manifest = paginate_manifest(manifest)
     prs = Presentation()
     prs.slide_width, prs.slide_height = Inches(13.333333), Inches(7.5)
     bg, ink, cyan = "0A1013", "F5F0E7", "60E1C2"
@@ -441,47 +527,10 @@ def create_ppt(manifest):
     for scene in manifest["scenes"]:
         if not scene.get("enabled", True):
             continue
+        sections = scene_content_blocks(scene)
         detail = scene.get("detail") or {}
-        sections = [
-            ("核心结论", scene.get("claim", "")),
-            ("学习内容", detail.get("learningContent", "")),
-            ("本场任务", scene.get("studentAction", "")),
-            ("学习步骤", _cw_join(detail.get("studentSteps") or [], "；")),
-            ("预期产出", scene.get("expectedOutput", "")),
-            ("评价标准", _cw_join(detail.get("evaluationRubric") or [], "；")),
-        ]
-        if scene.get("type") == "gesture-quiz":
-            for number, question in enumerate(manifest.get("questions") or [], 1):
-                if question.get("enabled", True):
-                    sections.append((f"第{number}题", question.get("question", "") + "\n" +
-                                     "\n".join(f"{i + 1}. {option}" for i, option in enumerate(question.get("options") or []))))
-        # Web and PPT use the same ordered scene content contract.
-        sections = [(block["label"], block["value"]) for block in scene_content_blocks(scene)]
-        if scene.get("type") == "gesture-quiz":
-            for number, question in enumerate(manifest.get("questions") or [], 1):
-                if question.get("enabled", True):
-                    sections.append((f"第{number}题", question.get("question", "") + "\n" + "\n".join(f"{i + 1}. {option}" for i, option in enumerate(question.get("options") or []))))
-        # Keep one editable slide per enabled courseware scene.
-        sections = [(block["label"], block["value"]) for block in scene_content_blocks(scene)]
-        if scene.get("type") == "gesture-quiz":
-            question_text = []
-            for number, question in enumerate(manifest.get("questions") or [], 1):
-                if question.get("enabled", True):
-                    question_text.append(f"第{number}题：{question.get('question', '')}\n" + "；".join(f"{i + 1}. {option}" for i, option in enumerate(question.get("options") or [])))
-            if question_text:
-                sections = sections[:3] + [("练习题", "\n".join(question_text))]
-        blocks = []
-        seen = set()
-        for label, value in sections:
-            value = _ppt_static_copy(_chinese_copy(value))
-            if not value or value in seen:
-                continue
-            seen.add(value)
-            # Keep readable type by paginating long content instead of discarding it.
-            for offset in range(0, len(value), 260):
-                blocks.append((label if offset == 0 else label + "（续）", value[offset:offset + 260]))
-        blocks = [(label, _ppt_static_copy(_chinese_copy(value))) for label, value in sections if _ppt_static_copy(_chinese_copy(value))]
-        page = blocks or [("教学内容", scene.get("claim", ""))]
+        page = [(block["label"], _ppt_static_copy(_chinese_copy(block["value"]))) for block in sections if _ppt_static_copy(_chinese_copy(block["value"]))]
+        page = page or [("教学内容", scene.get("claim", ""))]
         for page_index in (0,):
             slide = prs.slides.add_slide(prs.slide_layouts[6])
             slide.background.fill.solid()
@@ -513,7 +562,7 @@ def create_ppt(manifest):
                 _add_text(slide, label, x, y, width, .35, 15, cyan, True)
                 _add_text(slide, text, x, y + .38, width, height, 16 if show_image else 18, ink)
             _add_text(slide, manifest["title"], .65, 7.0, 11.9, .25, 10, "8EA2A8")
-            notes = "\n".join(f"{label}：{value}" for label, value in sections)
+            notes = "\n".join(f"{block['label']}：{block['value']}" for block in sections)
             notes += "\n教师提示：" + str(scene.get("teacherCue", ""))
             notes += "\n教师过程：" + _cw_join(detail.get("teacherScript") or [], "；")
             notes += "\n补救措施：" + str(detail.get("remediation") or "")
@@ -681,12 +730,14 @@ def _cw_join(values, separator="；", fallback=""):
 def scene_content_blocks(scene):
     """Return the single ordered content contract shared by web and PPT output."""
     detail = scene.get("detail") or {}
+    if detail.get("pageBlocks"):
+        return detail["pageBlocks"]
     candidates = {
         "learningContent": ("学习内容", _cw_text(detail.get("learningContent"), scene.get("claim", ""))),
-        "studentSteps": ("学习步骤", _cw_join(detail.get("studentSteps"), "；", scene.get("studentAction", ""))),
-        "questioning": ("教师追问", _cw_join(detail.get("questioning"), "；", scene.get("teacherCue", ""))),
+        "studentSteps": ("学习步骤", _cw_join(detail.get("studentSteps") or [], "；", scene.get("studentAction", ""))),
+        "questioning": ("教师追问", _cw_join(detail.get("questioning") or [], "；", scene.get("teacherCue", ""))),
         "visibleOutput": ("预期产出", _cw_text(detail.get("visibleOutput"), scene.get("expectedOutput", ""))),
-        "evaluationRubric": ("评价标准", _cw_join(detail.get("evaluationRubric"), "；", scene.get("expectedOutput", ""))),
+        "evaluationRubric": ("评价标准", _cw_join(detail.get("evaluationRubric") or [], "；", scene.get("expectedOutput", ""))),
         "remediation": ("补救措施", _cw_text(detail.get("remediation"))),
     }
     preferred = {
@@ -870,16 +921,17 @@ def build_manifest(lesson_plan, model=None, questions=None):
     if preview:
         assets.append({"id": "model-preview", "type": "image", "url": preview, "altText": f"{title} structure preview", "sourceType": "generated-preview", "license": "teaching use"})
     manifest = {"version": 1, "lessonId": lesson_id, "title": title, "theme": "biomed-dark", "revision": 1, "status": "draft", "scenes": scenes, "model": model_config, "questions": supplied_questions, "assets": assets, "references": references, "lessonContext": plan}
+    manifest = paginate_manifest(manifest)
     manifest["quality"] = quality(manifest)
     manifest["status"] = "ready" if not manifest["quality"]["blocking"] else "draft"
     return manifest
 
 
 def quality(manifest):
-    scenes = [scene for scene in manifest.get("scenes", []) if scene.get("enabled", True)]
+    scenes = [scene for scene in manifest.get("scenes", []) if scene.get("enabled", True) and not scene.get("continuation")]
     blocking, warnings = [], []
-    if not 10 <= len(scenes) <= 16:
-        blocking.append("课件须包含 10 至 16 个启用场景。")
+    if len(scenes) < 10:
+        blocking.append("课件须包含至少 10 个基础教学场景。")
     if len({scene.get("layout") for scene in scenes}) < 6:
         blocking.append("课件须使用至少六种布局。")
     if len(manifest.get("questions") or []) != 5:

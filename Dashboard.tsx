@@ -19,8 +19,11 @@ import ModelDetailPanel, { type DetailPanelTab } from './components/ModelDetailP
 import IntegratedModelingStudio from './components/IntegratedModelingStudio';
 import IntegratedPrepStudio from './prep/IntegratedPrepStudio';
 import InteractiveCourseware from './components/InteractiveCourseware';
+import ClassroomLibrary from './components/ClassroomLibrary';
+import ClassroomToolButton from './components/ClassroomToolButton';
+import { listClassrooms, saveClassroom, type ClassroomRecord, type ClassroomPlan } from './services/classroomLibrary';
 import { buildTeachingPlan, getTeachingModelName, inferTeachingModel, buildKnowledgeExplanation, buildOrchestratorDecision, buildFollowUpQuestion, getAutonomousDisassemblyArgs } from './services/agentRuntime';
-import { Sparkles, Box, Atom, Globe, ChevronDown, ChevronLeft, ChevronRight, MessageSquare, Hand, ScanFace, Move3d, Maximize2, Minimize2, FlaskConical, Heart, Settings, ShieldCheck, X, ClipboardCheck, Loader2, LockKeyhole, Play, LogOut, Upload, FolderOpen, Trash2, Volume2, Info, PanelRightOpen, BookOpenCheck, Mic, Star } from 'lucide-react';
+import { Sparkles, Box, Atom, Globe, ChevronDown, ChevronLeft, ChevronRight, MessageSquare, Hand, ScanFace, Move3d, Maximize2, Minimize2, FlaskConical, Heart, Settings, ShieldCheck, X, ClipboardCheck, Loader2, LockKeyhole, Play, LogOut, Upload, FolderOpen, Trash2, Volume2, Info, PanelRightOpen, BookOpenCheck, Mic, Star, Download, RotateCcw } from 'lucide-react';
 import { ModelType } from './types';
 import type { AuthUser } from './Login';
 import { getLocalModel, listLocalModels, deleteLocalModel, hideStaticModel, listHiddenStaticModelIds, saveGeneratedModel, saveUploadedModel, type LocalModelSummary } from './services/localModelLibrary';
@@ -163,6 +166,7 @@ const SIDEBAR_TAB_STORAGE_PREFIX = 'classroom.sidebar-tab.v1';
 const APPLIED_LESSON_STORAGE_PREFIX = 'classroom.applied-lesson.v1';
 
 type AppliedLessonContext = {
+  lessonId?: string;
   modelUrl?: string;
   localModelId?: string;
   modelType?: ModelType;
@@ -178,6 +182,7 @@ const loadAppliedLessonContext = (userId: string | number): AppliedLessonContext
     if (!raw) return null;
     const parsed = JSON.parse(raw) as Partial<AppliedLessonContext>;
     return {
+      lessonId: typeof parsed.lessonId === 'string' ? parsed.lessonId : undefined,
       modelUrl: typeof parsed.modelUrl === 'string' ? parsed.modelUrl : undefined,
       localModelId: typeof parsed.localModelId === 'string' ? parsed.localModelId : undefined,
       modelType: parsed.modelType === 'gltf' || parsed.modelType === 'fbx' || parsed.modelType === 'glb' ? parsed.modelType : undefined,
@@ -400,8 +405,24 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
     }
   });
   const [localModels, setLocalModels] = useState<LocalModelSummary[]>([]);
+  const [classrooms, setClassrooms] = useState<ClassroomRecord[]>([]);
+  const [activeClassroomId, setActiveClassroomId] = useState<string | null>(null);
+  const activeClassroomIdRef = useRef<string | null>(null);
+  const classroomOpenRevision = useRef(0);
+  const [classroomError, setClassroomError] = useState('');
+  const refreshClassrooms = useCallback(async () => {
+    try { setClassrooms(await listClassrooms()); setClassroomError(''); }
+    catch (error) { setClassroomError(error instanceof Error ? error.message : '课堂记录加载失败'); }
+  }, [currentUser.id]);
+  useEffect(() => {
+    void refreshClassrooms();
+    const update = () => { void refreshClassrooms(); };
+    window.addEventListener('classroom-library-updated', update);
+    return () => window.removeEventListener('classroom-library-updated', update);
+  }, [refreshClassrooms]);
   const [hiddenStaticModelIds, setHiddenStaticModelIds] = useState<string[]>([]);
   const [activeLocalModelId, setActiveLocalModelId] = useState<string | null>(null);
+  const [resettableModelAvailable, setResettableModelAvailable] = useState(false);
   const [localLibraryError, setLocalLibraryError] = useState('');
   const [isSavingLocalModel, setIsSavingLocalModel] = useState(false);
   const [resourceTags, setResourceTags] = useState<ResourceTag[]>([]);
@@ -418,7 +439,7 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
       await hideStaticModel(model.id, currentUser.id);
       setHiddenStaticModelIds((current) => current.includes(model.id) ? current : [...current, model.id]);
       if (modelUrl === model.url) clearLocalModel();
-      setAiAnalysis('已从我的模型中移除');
+      setAiAnalysis('已从我的课堂中移除');
     } catch (err) {
       console.error(err);
       setLocalLibraryError('移除模型失败');
@@ -586,6 +607,7 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
     : null;
 
   const detailPanelVisible = detailPanelOpen
+    && (!activeClassroomId || Boolean(modelUrl))
     && !quizMode
     && !followUpQuestion
     && !isStageFullscreen
@@ -602,6 +624,7 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
   useEffect(() => {
     const restored = loadAppliedLessonContext(currentUser.id);
     if (!restored) return;
+    if (restored.lessonId) return;
     // Only restore the courseware when it still belongs to the restored model.
     const boundLocalId = restored.courseware?.model.localModelId;
     const boundUrl = restored.courseware?.model.modelUrl;
@@ -613,6 +636,13 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
     setClassWarmupQuestions(restored.warmupQuestions.filter((question) => question.enabled));
     if (restored.localModelId) void openLocalModel(restored.localModelId);
   }, [currentUser.id]);
+
+  useEffect(() => {
+    const id = loadAppliedLessonContext(currentUser.id)?.lessonId;
+    if (!id || activeClassroomIdRef.current || !classrooms.length) return;
+    const record = classrooms.find(item => item.id === id);
+    if (record) void openClassroom(record);
+  }, [classrooms, currentUser.id]);
 
   useEffect(() => {
     const mobileQuery = window.matchMedia('(max-width: 899px)');
@@ -1215,6 +1245,12 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
     });
   }, [modelUrl, activeContent, fileName, activeLocalModelId]);
 
+  const handleDisassemblyAvailabilityChange = useCallback((available: boolean, eventModelUrl: string, eventRevision: number) => {
+    if (!isCurrentModelLoadEvent(eventModelUrl, modelUrlRef.current, eventRevision, activeModelLoadRevisionRef.current)) return;
+    setResettableModelAvailable(available);
+    if (!available) setAiAnalysis('当前模型为单网格，无法进行真实拆解；可通过旋转、缩放和资料说明继续观察。');
+  }, []);
+
   const revokeObjectUrls = () => {
     objectUrlsRef.current.forEach((url) => URL.revokeObjectURL(url));
     objectUrlsRef.current = [];
@@ -1307,6 +1343,7 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
   };
 
   const showBioDigitalStage = (source: ModelActivitySource = 'ai') => {
+    leaveClassroom();
     const previousModel = activeContent === 'model' && modelUrl
       ? (fileName || modelUrl)
       : activeContent === 'biodigital'
@@ -1324,6 +1361,7 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
     }
     setActiveContent('biodigital');
     activeModelLoadRevisionRef.current += 1;
+    setResettableModelAvailable(false);
     loadedModelUrlRef.current = null;
     failedModelUrlRef.current = null;
     setActiveModelSeedKey(null);
@@ -1340,6 +1378,7 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
     loadedModelUrlRef.current = null;
     failedModelUrlRef.current = null;
     activeModelLoadRevisionRef.current += 1;
+    setResettableModelAvailable(false);
     revokeObjectUrls();
     setModelUrl(null);
     setModelType('glb');
@@ -1403,7 +1442,7 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
     try {
       setIsSavingLocalModel(true);
       setLocalLibraryError('');
-      setAiAnalysis(`正在保存到我的模型：${modelFile.name}`);
+      setAiAnalysis(`正在保存到我的课堂：${modelFile.name}`);
       const record = await saveUploadedModel({ ownerId: currentUser.id, files });
       const updatedModels = await listLocalModels(currentUser.id);
       setLocalModels(updatedModels);
@@ -1426,6 +1465,7 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
     seedKey?: string | null,
     forceReload = false,
   ) => {
+    leaveClassroom();
     const shouldReload = forceReload || failedModelUrlRef.current === url;
     if (source !== 'ai') {
       cancelPendingTeachingModelLoad(new DOMException('Interaction aborted', 'AbortError'));
@@ -1457,6 +1497,7 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
       setAiAnalysis(`正在演示: ${name}`);
       return;
     }
+    setResettableModelAvailable(false);
     pendingModelActivityRef.current = {
       modelUrl: url,
       ...(previousModel ? { fromModel: previousModel } : {}),
@@ -1491,7 +1532,10 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
     setAiAnalysis(`正在演示: ${name}`);
   };
 
-  const openLocalModel = async (modelId: string, options: { forceReload?: boolean; propagateError?: boolean } = {}) => {
+  const openLocalModel = async (modelId: string, options: { forceReload?: boolean; propagateError?: boolean; classroomId?: string; revision?: number } = {}) => {
+    if (!options.classroomId) leaveClassroom();
+    setResettableModelAvailable(false);
+    const requestRevision = options.revision ?? classroomOpenRevision.current;
     let readTimeout: ReturnType<typeof setTimeout> | undefined;
     try {
       setLocalLibraryError('');
@@ -1502,8 +1546,9 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
         }),
       ]);
       if (!record) throw new Error('这个模型已不在浏览器本地模型库中');
+      if (requestRevision !== classroomOpenRevision.current) return;
       if (!options.forceReload && activeContent === 'model' && activeLocalModelId === record.id && modelUrl) {
-        setAiAnalysis(`已从我的模型加载：${record.name}`);
+        setAiAnalysis(`已从我的课堂加载：${record.name}`);
         return { url: modelUrl, type: record.type, assetUrls: modelAssetUrls, fileName: record.name };
       }
 
@@ -1547,7 +1592,7 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
       setActiveModelSeedKey(null);
       // Courseware is bound to one lesson + one model. Opening a different
       // model must not silently re-point the existing courseware at it.
-      setClassCourseware((current) => {
+      if (!options.classroomId) setClassCourseware((current) => {
         if (!current) return current;
         // The courseware belongs to this lesson, but its model address has to
         // follow the freshly created local object URL of the same library model.
@@ -1565,9 +1610,10 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
         hasAutoOpenedCameraRef.current = true;
         setCameraActive(true);
       }
-      setAiAnalysis(`已从我的模型加载：${record.name}`);
+      setAiAnalysis(`已从我的课堂加载：${record.name}`);
       return { url, type: record.type, assetUrls: nextAssetUrls, fileName: record.name };
     } catch (loadError) {
+      if (requestRevision !== classroomOpenRevision.current) return;
       const message = loadError instanceof Error ? loadError.message : '本地模型读取失败';
       setLocalLibraryError(message);
       setAiAnalysis(message);
@@ -2893,7 +2939,7 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
       setExpandedCategories((current) => new Set(current).add(LOCAL_MODELS_CATEGORY_KEY));
       setIsSidebarCollapsed(false);
     } catch (error) {
-      const message = error instanceof Error ? error.message : '模型已进入课堂，但保存到我的模型失败';
+      const message = error instanceof Error ? error.message : '模型已进入课堂，但保存到我的课堂失败';
       setLocalLibraryError(message);
       setAiAnalysis(message);
     } finally {
@@ -2902,6 +2948,8 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
   };
 
   const useGeneratedModelInClassroom = (url: string, name = '生成的可拆分模型') => {
+    leaveClassroom();
+    setResettableModelAvailable(false);
     setActiveContent('model');
     setActiveLocalModelId(null);
     setModelUrl(url);
@@ -2917,83 +2965,93 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
     setExpandedCategories((current) => new Set(current).add(LOCAL_MODELS_CATEGORY_KEY));
     setIsSidebarCollapsed(false);
     void persistAppliedModelToLibrary(url, name);
-    setAiAnalysis('生成模型已加载到课堂，正在同步到“我的模型”。');
+    setAiAnalysis('生成模型已加载到课堂，正在同步到“我的课堂”。');
   };
 
   const applyLessonToClassroom = (lesson: unknown, lessonModelUrl?: string, warmupQuestions: WarmupQuestion[] = [], courseware?: CoursewareManifest, modelAsset?: ClassroomModelAsset) => {
-    const plan = lesson as { title?: string; objectives?: string[]; phases?: Array<{ name?: string }>; modelPlan?: { observationTasks?: string[] } };
-    const classroomQuestions = warmupQuestions.length > 0
-      ? warmupQuestions
-      : (courseware?.questions || []);
-    const classroomCourseware = courseware && lessonModelUrl
-      ? {
-          ...courseware,
-          model: { ...courseware.model, modelUrl: lessonModelUrl, ...(modelAsset?.localModelId ? { localModelId: modelAsset.localModelId } : {}), ...(modelAsset?.modelType ? { modelType: modelAsset.modelType } : {}), ...(modelAsset?.source ? { source: modelAsset.source } : {}), ...(modelAsset?.assetUrls ? { assetUrls: modelAsset.assetUrls } : {}) },
-          assets: courseware.assets.map((asset) => asset.type === 'model' ? { ...asset, url: lessonModelUrl } : asset),
+    const savedPlan = lesson as ClassroomPlan;
+    if (savedPlan.id) {
+      const recordPlan: ClassroomPlan = { ...savedPlan, warmupQuestions,
+        modelAsset: modelAsset ? { ...savedPlan.modelAsset, ...modelAsset } : savedPlan.modelAsset,
+        classroomData: { ...savedPlan.classroomData, courseware: courseware || savedPlan.classroomData?.courseware || null } };
+      void (async () => {
+        if (lessonModelUrl && !modelAsset?.localModelId && isPersistableGeneratedModelUrl(lessonModelUrl)) {
+          const local = await saveGeneratedModel({ id: generatedModelStorageKey(lessonModelUrl), ownerId: currentUser.id, name: recordPlan.title, url: lessonModelUrl });
+          recordPlan.modelAsset = { ...recordPlan.modelAsset, localModelId: local.id };
+          setLocalModels(await listLocalModels(currentUser.id));
         }
-      : courseware;
-    const enabledQuestions = classroomQuestions.filter((question) => question.enabled);
-    setClassWarmupQuestions(enabledQuestions);
-    setClassCourseware(classroomCourseware || null);
-    try {
-      const appliedContext: AppliedLessonContext = {
-        modelUrl: lessonModelUrl,
-        localModelId: modelAsset?.localModelId,
-        modelType: modelAsset?.modelType,
-        assetUrls: modelAsset?.assetUrls,
-        fileName: plan.title ? `${plan.title} · 课堂模型` : '课堂模型',
-        warmupQuestions: enabledQuestions,
-        courseware: classroomCourseware || null,
-      };
-      window.localStorage.setItem(`${APPLIED_LESSON_STORAGE_PREFIX}:${currentUser.id}`, JSON.stringify(appliedContext));
-    } catch (error) {
-      console.warn('[Classroom] Unable to persist applied lesson context:', error);
+        await saveClassroom(recordPlan);
+        await refreshClassrooms();
+        await openClassroom({ id: recordPlan.id, title: recordPlan.title, updatedAt: new Date().toISOString(), plan: recordPlan });
+      })().catch(error => setAiAnalysis(error instanceof Error ? error.message : '课堂保存失败'));
+      return;
     }
-    setQuizMode(false);
-    setQuizLaunchPending(false);
-    setQuizSubjectFilter(undefined);
-    setWrongBookOpen(false);
-    setShowSettings(false);
-    setDetailPanelOpen(false);
-    if (lessonModelUrl) {
-      setActiveContent('model');
-      setActiveLocalModelId(modelAsset?.localModelId || null);
-      setModelUrl(lessonModelUrl);
-      setModelType(modelAsset?.modelType || 'glb');
-      setFileName(modelAsset?.fileName || (plan.title ? `${plan.title} · 课堂模型` : '课堂模型'));
-      setModelAssetUrls(modelAsset?.assetUrls || {});
-      setModelLoadRevision((value) => value + 1);
-      hasAutoOpenedCameraRef.current = true;
-      if (!cameraActive) setHandTrackingStatus({ state: 'starting' });
-      setCameraActive(true);
-      setWorkspaceMode('classroom');
-      if (modelAsset?.localModelId) {
-        setSidebarTab('resource');
-        setExpandedCategories((current) => new Set(current).add(LOCAL_MODELS_CATEGORY_KEY));
-        setIsSidebarCollapsed(false);
-        void openLocalModel(modelAsset.localModelId);
-        setAiAnalysis(`已加载本课导入模型“${modelAsset.fileName || '本地模型'}”。`);
-      } else if (isPersistableGeneratedModelUrl(lessonModelUrl)) {
-        setSidebarTab('resource');
-        setExpandedCategories((current) => new Set(current).add(LOCAL_MODELS_CATEGORY_KEY));
-        setIsSidebarCollapsed(false);
-        void persistAppliedModelToLibrary(lessonModelUrl, plan.title ? `${plan.title} · 图片生成模型` : '图片生成模型');
-      } else {
-        setLocalLibraryError('本课模型已加载，但模型地址不是可保存的生成文件。请返回备课工作区重新应用当前生成模型。');
-      }
-    } else if (classroomCourseware) {
-      setActiveContent('interactive');
-      setCameraActive(false);
-      setWorkspaceMode('classroom');
-    } else {
-      clearLocalModel();
-      setActiveContent('model');
-      setCameraActive(false);
-      setWorkspaceMode('classroom');
-    }
-    const flow = (plan.phases || []).map((phase) => phase.name).filter(Boolean).join(' → ');
-    setAiAnalysis(classroomCourseware ? `已加载互动课件“${classroomCourseware.title}”，共 ${classroomCourseware.scenes.filter((scene) => scene.enabled).length} 个课堂场景。` : `已应用教案“${plan.title || '未命名课程'}”${flow ? `，课堂流程：${flow}` : ''}`);
+    setAiAnalysis('课堂缺少教案编号，请重新打开已保存的教案后应用。');
   };
+
+  function leaveClassroom() {
+    classroomOpenRevision.current += 1;
+    activeClassroomIdRef.current = null;
+    setActiveClassroomId(null);
+    setClassCourseware(null);
+    setClassWarmupQuestions([]);
+    try { window.localStorage.removeItem(`${APPLIED_LESSON_STORAGE_PREFIX}:${currentUser.id}`); } catch { /* optional selection */ }
+  }
+
+  async function openClassroom(record: ClassroomRecord, play = false) {
+    const revision = ++classroomOpenRevision.current;
+    activeClassroomIdRef.current = record.id;
+    setActiveClassroomId(record.id);
+    clearLocalModel();
+    setActiveContent('model'); setDetailPanelOpen(false); setCameraActive(false);
+    setQuizMode(false); setQuizLaunchPending(false); setWrongBookOpen(false); setShowSettings(false);
+    setClassWarmupQuestions([]);
+    setWorkspaceMode('classroom');
+    try {
+      const plan = record.plan;
+      const asset = plan.modelAsset;
+      let manifest = plan.classroomData?.courseware || null;
+      if (plan.classroomData?.courseware === undefined) {
+        const response = await fetch(`/api/courseware/${encodeURIComponent(record.id)}`, { credentials: 'include' });
+        if (response.ok) manifest = (await response.json()).manifest;
+        else if (response.status !== 404) throw new Error('本课堂课件读取失败，请重试');
+      }
+      if (revision !== classroomOpenRevision.current) return;
+      if (manifest?.lessonId !== record.id) manifest = null;
+      const localId = typeof asset?.localModelId === 'string' ? asset.localModelId : undefined;
+      let resolvedUrl: string | null = null;
+      if (localId) {
+        const loaded = await openLocalModel(localId, { classroomId: record.id, revision, forceReload: true });
+        if (revision !== classroomOpenRevision.current) return;
+        if (loaded) {
+          resolvedUrl = loaded.url;
+          if (manifest) manifest = { ...manifest, model: { ...manifest.model, modelUrl: loaded.url, localModelId: localId, modelType: loaded.type, assetUrls: loaded.assetUrls } };
+        }
+      } else {
+        resolvedUrl = [asset?.exportModelUrl, asset?.modelUrl, asset?.appearanceUrl, asset?.glbUrl]
+          .find((url): url is string => typeof url === 'string' && !!url && !url.startsWith('blob:') && !url.startsWith('data:')) || null;
+        if (resolvedUrl) {
+          setResettableModelAvailable(false);
+          setModelUrl(resolvedUrl); setModelType(asset?.modelType === 'fbx' || asset?.modelType === 'gltf' ? asset.modelType : 'glb');
+          setFileName(typeof asset?.fileName === 'string' ? asset.fileName : record.title);
+          if (manifest) manifest = { ...manifest, model: { ...manifest.model, modelUrl: resolvedUrl } };
+        }
+      }
+      if (revision !== classroomOpenRevision.current) return;
+      if (!resolvedUrl && manifest) manifest = { ...manifest, model: { ...manifest.model, modelUrl: '', localModelId: undefined, assetUrls: {}, parts: [] }, assets: manifest.assets.filter(asset => asset.type !== 'model') };
+      setClassCourseware(manifest);
+      setClassWarmupQuestions((plan.warmupQuestions || manifest?.questions || []).filter(question => question.enabled));
+      setDetailPanelOpen(false);
+      setActiveContent(play && manifest ? 'interactive' : 'model');
+      if (play && !manifest) setAiAnalysis('本课堂尚未生成课件，请先在智能备课中生成。');
+      else setAiAnalysis(`已打开课堂“${record.title}”`);
+      window.localStorage.setItem(`${APPLIED_LESSON_STORAGE_PREFIX}:${currentUser.id}`, JSON.stringify({ lessonId: record.id, warmupQuestions: [], courseware: null }));
+    } catch (error) {
+      if (revision !== classroomOpenRevision.current) return;
+      setDetailPanelOpen(false);
+      setAiAnalysis(error instanceof Error ? error.message : '课堂加载失败，请重试');
+    }
+  }
 
   return (
     <div className={`lab-shell flex h-screen flex-col overflow-hidden text-ink ${playIntro ? 'lab-intro' : ''} ${isStageAppFullscreen ? 'lab-shell-app-fullscreen' : ''}`}>
@@ -3771,10 +3829,10 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
       {/* 主体区域 */}
       <main className={`lab-workspace relative z-10 flex-1 overflow-hidden px-6 pb-6 ${workspaceMode === 'classroom' && isSidebarCollapsed ? 'is-sidebar-collapsed' : ''} ${workspaceMode === 'classroom' && detailPanelVisible ? 'has-detail-panel' : ''}`}>
         <div className={`workspace-panel ${workspaceMode === 'prep' ? 'is-active' : ''}`}>
-          <div className="lab-integrated-workspace prep-integrated-shell"><IntegratedPrepStudio onBack={() => setWorkspaceMode('classroom')} onApplyLesson={applyLessonToClassroom} userId={currentUser.id} /></div>
+          <div className="lab-integrated-workspace prep-integrated-shell"><IntegratedPrepStudio onBack={() => setWorkspaceMode('classroom')} onApplyLesson={applyLessonToClassroom} userId={currentUser.id} isAdmin={currentUser.role === 'admin'} /></div>
         </div>
         <div className={`workspace-panel ${workspaceMode === 'modeling' ? 'is-active' : ''}`}>
-          <div className="lab-integrated-workspace"><IntegratedModelingStudio onBack={() => setWorkspaceMode('classroom')} onUseModel={(url) => useGeneratedModelInClassroom(url)} /></div>
+          <div className="lab-integrated-workspace"><IntegratedModelingStudio onBack={() => setWorkspaceMode('classroom')} onUseModel={(url) => useGeneratedModelInClassroom(url)} isAdmin={currentUser.role === 'admin'} /></div>
         </div>
         <div className={`workspace-panel classroom-panel ${workspaceMode === 'classroom' ? 'is-active' : ''}`}>
         {/* 侧边栏 */}
@@ -3802,9 +3860,9 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
                     setExpandedCategories((current) => new Set(current).add(LOCAL_MODELS_CATEGORY_KEY));
                     setIsSidebarCollapsed(false);
                   }}
-                  className={`lab-icon-button ${activeLocalModelId ? 'is-active' : ''}`}
-                  aria-label="我的模型"
-                  title="我的模型"
+                  className={`lab-icon-button ${activeLocalModelId || activeClassroomId ? 'is-active' : ''}`}
+                  aria-label="我的课堂"
+                  title="我的课堂"
                 >
                   <FolderOpen size={19} />
                 </button>
@@ -3930,15 +3988,21 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
                     >
                       <div className="flex items-center gap-2.5">
                         <FolderOpen size={16} className="text-cyan" />
-                        <span>我的模型</span>
-                        {visibleStaticModels.length + localModels.length > 0 && (
-                          <span className="rounded-full bg-cyan-300/15 px-1.5 py-0.5 text-[9px] text-cyan">{visibleStaticModels.length + localModels.length}</span>
+                        <span>我的课堂</span>
+                        {visibleStaticModels.length + localModels.length + classrooms.length > 0 && (
+                          <span className="rounded-full bg-cyan-300/15 px-1.5 py-0.5 text-[9px] text-cyan">{visibleStaticModels.length + localModels.filter(model => !classrooms.some(record => record.plan.modelAsset?.localModelId === model.id)).length + classrooms.length}</span>
                         )}
                       </div>
                       <ChevronDown size={13} className={`text-cyan transition-transform duration-200 ${expandedCategories.has(LOCAL_MODELS_CATEGORY_KEY) ? 'rotate-180' : ''}`} />
                     </button>
                     {expandedCategories.has(LOCAL_MODELS_CATEGORY_KEY) && (
                       <div className="px-2 pb-2 space-y-0.5">
+                        {classroomError && <div role="alert" className="px-2 py-2 text-xs text-red-300">{classroomError}<button className="ml-2 underline" onClick={() => void refreshClassrooms()}>重试</button></div>}
+                        {classrooms.map(record => <button key={record.id} type="button" onClick={() => void openClassroom(record)} title={record.title}
+                          className={`w-full py-1.5 px-2.5 rounded-lg flex items-center text-left text-xs font-medium transition-colors ${activeClassroomId === record.id ? 'bg-cyan-300/20 text-cyan' : 'text-ink-soft hover:bg-cyan-300/10'}`}>
+                          <span className={`w-1.5 h-1.5 shrink-0 rounded-full mr-2 ${activeClassroomId === record.id ? 'bg-cyan-400' : 'bg-ink-soft/40'}`} />
+                          <span className="truncate">{record.title}</span>
+                        </button>)}
                         {visibleStaticModels.map((model) => (
                           <div key={model.id} className="relative group flex items-center w-full">
                             <button
@@ -3954,8 +4018,8 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
                               type="button"
                               onClick={(e) => void handleHideStaticModel(e, model)}
                               className="absolute right-2 z-10 rounded p-1 text-ink-soft opacity-0 transition-all hover:bg-cyan-300/15 hover:text-red-500 group-hover:opacity-100 group-focus-within:opacity-100"
-                              title="从我的模型中移除"
-                              aria-label={`从我的模型中移除：${model.name}`}
+                              title="从我的课堂中移除"
+                              aria-label={`从我的课堂中移除：${model.name}`}
                             >
                               <Trash2 size={12} />
                             </button>
@@ -3965,7 +4029,7 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
                           <div className="px-2.5 py-2 text-[11px] leading-relaxed text-red-300">{localLibraryError}</div>
                         ) : <>
                           {isSavingLocalModel && <div className="flex items-center gap-2 px-2.5 py-2 text-[11px] text-cyan"><Loader2 size={12} className="animate-spin" />正在保存本课生成模型…</div>}
-                          {localModels.map((model) => (
+                          {localModels.filter(model => !classrooms.some(record => record.plan.modelAsset?.localModelId === model.id)).map((model) => (
                           <div key={model.id} className="relative group flex items-center w-full">
                             <button
                               type="button"
@@ -3976,6 +4040,7 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
                               <span className={`w-1.5 h-1.5 shrink-0 rounded-full mr-2 ${activeLocalModelId === model.id ? 'bg-cyan-400 animate-pulse shadow-[0_0_8px_rgba(var(--theme-accent-rgb),0.65)]' : 'bg-ink-soft/40'}`}></span>
                               <span className="truncate">{model.name}</span>
                             </button>
+                            <span className="sr-only">暂无关联教案，暂无配套 PPT</span>
                             <button
                               type="button"
                               onClick={(e) => void handleDeleteLocalModel(e, model.id)}
@@ -3988,8 +4053,8 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
                           </div>
                           ))}
                         </>}
-                        {visibleStaticModels.length === 0 && localModels.length === 0 && !localLibraryError && !isSavingLocalModel && (
-                          <div className="px-2.5 py-2 text-[11px] leading-relaxed text-ink-soft">图生建模完成并应用到课堂后，会自动保存到这里。</div>
+                        {visibleStaticModels.length === 0 && localModels.length === 0 && classrooms.length === 0 && !localLibraryError && !isSavingLocalModel && (
+                          <div className="px-2.5 py-2 text-[11px] leading-relaxed text-ink-soft">智能备课保存后，教案、课件与本课模型会出现在这里。</div>
                         )}
                       </div>
                     )}
@@ -4032,27 +4097,37 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
                               const isActive = activeLocalModelId === null && modelUrl === model.url;
                               const modelProfile = getModelInfoProfile(model.seedKey || getModelSeedKeyByUrl(model.url));
                               return (
-                                <button
-                                  key={model.id}
-                                  type="button"
-                                  disabled={!model.url}
-                                  onClick={() => loadDemoModel(model.url, model.name, model.type, model.assets, 'resource', model.seedKey)}
-                                  title={model.size > 0 ? `${model.name} · ${(model.size / 1024 / 1024).toFixed(1)} MB` : model.name}
-                                  className={`group/model flex w-full items-center gap-2.5 rounded-xl border px-2 py-2 text-left text-xs font-medium transition-all ${isActive ? 'border-cyan/35 bg-cyan-300/10 text-cyan shadow-[0_0_20px_rgba(34,211,238,0.08)]' : 'border-transparent text-ink-soft hover:border-line/8 hover:bg-white/[0.045] hover:text-ink-soft'} disabled:cursor-not-allowed disabled:opacity-50`}
-                                >
-                                  <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-xl border border-line/8 bg-white/[0.045]">
-                                    {modelProfile ? (
-                                      <img src={modelProfile.illustration} alt="" className="h-full w-full object-cover transition duration-300 group-hover/model:scale-105" />
-                                    ) : (
-                                      <TagIcon size={16} className={isActive ? 'text-cyan' : 'text-slate-500'} />
-                                    )}
-                                  </span>
-                                  <span className="min-w-0 flex-1">
-                                    <span className="block truncate font-bold">{model.name}</span>
-                                    <span className="mt-0.5 block truncate text-[9px] font-semibold uppercase tracking-wider text-slate-500">{modelProfile?.subtitle || tag.name}</span>
-                                  </span>
-                                  <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${isActive ? 'animate-pulse bg-cyan-300 shadow-[0_0_8px_rgba(34,211,238,0.7)]' : 'bg-slate-700'}`} />
-                                </button>
+                                <div key={model.id} className={`group/model flex w-full items-center gap-1 rounded-xl border px-1.5 transition-all ${isActive ? 'border-cyan/35 bg-cyan-300/10 text-cyan shadow-[0_0_20px_rgba(34,211,238,0.08)]' : 'border-transparent text-ink-soft hover:border-line/8 hover:bg-white/[0.045]'}`}>
+                                  <button
+                                    type="button"
+                                    disabled={!model.url}
+                                    onClick={() => loadDemoModel(model.url, model.name, model.type, model.assets, 'resource', model.seedKey)}
+                                    title={model.size > 0 ? `${model.name} · ${(model.size / 1024 / 1024).toFixed(1)} MB` : model.name}
+                                    className="flex min-w-0 flex-1 items-center gap-2.5 py-1.5 text-left text-xs font-medium disabled:cursor-not-allowed disabled:opacity-50"
+                                  >
+                                    <span className="grid h-10 w-10 shrink-0 place-items-center overflow-hidden rounded-xl border border-line/8 bg-white/[0.045]">
+                                      {modelProfile ? (
+                                        <img src={modelProfile.illustration} alt="" className="h-full w-full object-cover transition duration-300 group-hover/model:scale-105" />
+                                      ) : (
+                                        <TagIcon size={16} className={isActive ? 'text-cyan' : 'text-slate-500'} />
+                                      )}
+                                    </span>
+                                    <span className="min-w-0 flex-1">
+                                      <span className="block truncate font-bold">{model.name}</span>
+                                      <span className="mt-0.5 block truncate text-[9px] font-semibold uppercase tracking-wider text-slate-500">{modelProfile?.subtitle || tag.name}</span>
+                                    </span>
+                                    <span className={`h-1.5 w-1.5 shrink-0 rounded-full ${isActive ? 'animate-pulse bg-cyan-300 shadow-[0_0_8px_rgba(34,211,238,0.7)]' : 'bg-slate-700'}`} />
+                                  </button>
+                                  {isActive && model.sourceKind === 'builtin' && resettableModelAvailable && canResetDisassembly() && <button
+                                    type="button"
+                                    onClick={resetDisassembly}
+                                    className="grid h-8 w-8 shrink-0 place-items-center rounded-lg text-ink-soft transition hover:bg-cyan-300/15 hover:text-cyan focus-visible:outline focus-visible:outline-2 focus-visible:outline-cyan"
+                                    title={`復位${model.name}`}
+                                    aria-label={`復位${model.name}拆解部件`}
+                                  >
+                                    <RotateCcw size={15} />
+                                  </button>}
+                                </div>
                               );
                             })}
                           </div>
@@ -4267,9 +4342,9 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
           <div className="lab-wire-cube lab-wire-cube-left" aria-hidden="true" />
           <div className="lab-wire-cube lab-wire-cube-right" aria-hidden="true" />
 
-          {activeContent === 'model' && modelUrl && !quizMode && (
+          {activeContent === 'model' && (modelUrl || activeClassroomId) && !quizMode && (
             <div className="lab-stage-tools" aria-label="模型工具">
-              <button
+              {modelUrl && <button
                 type="button"
                 onClick={() => {
                   setDetailPanelOpen(true);
@@ -4280,9 +4355,15 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
                 title="打开模型资料"
               >
                 {detailPanelVisible ? <Info size={18} /> : <PanelRightOpen size={18} />} <span>资料</span>
-              </button>
+              </button>}
 
-              {classCourseware && (
+              {activeClassroomId && <ClassroomLibrary records={classrooms} activeId={activeClassroomId} onOpen={openClassroom} onNotice={setAiAnalysis} onSaved={() => void refreshClassrooms()} />}
+              {!activeClassroomId && activeLocalModelId && <>
+                <ClassroomToolButton disabled hint="您尚未为本模型生成课件，请先在智能备课中生成课件，再打开使用。"><Play size={18} /><span>课件</span></ClassroomToolButton>
+                <ClassroomToolButton disabled hint="您尚未为本模型生成教案，请先在智能备课中生成并确认教案，再导出。"><Download size={18} /><span>导出教案</span></ClassroomToolButton>
+                <ClassroomToolButton disabled hint="您尚未为本模型生成配套课件，请先在智能备课中生成课件，再导出 PPT。"><Download size={18} /><span>导出 PPT</span></ClassroomToolButton>
+              </>}
+              {!activeClassroomId && classCourseware && (
                 <button
                   type="button"
                   onClick={() => {
@@ -4318,6 +4399,11 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
                 <ClipboardCheck className="relative z-10" size={18} /> <span className="relative z-10">答题</span>
                 {classWarmupQuestions.length > 0 && <span className="lab-stage-tool-count">{classWarmupQuestions.length}</span>}
               </button>}
+              {modelUrl && resettableModelAvailable && canResetDisassembly() && <ClassroomToolButton
+                disabled={false}
+                hint="将当前模型的拆解部件恢复到原位。"
+                onClick={resetDisassembly}
+              ><RotateCcw size={18} /><span>复位</span></ClassroomToolButton>}
               <button
                 type="button"
                 onClick={() => setWrongBookOpen(true)}
@@ -4339,7 +4425,7 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
             </div>
           )}
 
-          {!quizMode && !followUpQuestion && !detailPanelOpen && !isStageFullscreen && !isStageAppFullscreen && (
+          {modelUrl && !quizMode && !followUpQuestion && !detailPanelOpen && !isStageFullscreen && !isStageAppFullscreen && (
             <button
               type="button"
               onClick={() => {
@@ -4455,9 +4541,7 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
                       });
                     }
                   }}
-                  onDisassemblyAvailabilityChange={(available) => {
-                    if (!available) setAiAnalysis('当前模型为单网格，无法进行真实拆解；可通过旋转、缩放和资料说明继续观察。');
-                  }}
+                  onDisassemblyAvailabilityChange={(available) => handleDisassemblyAvailabilityChange(available, modelUrl, modelLoadRevision)}
                   onLoadError={modelViewerLoadErrorHandler}
                   onPartMoved={handlePartMoved}
                   quizMode={quizMode}
@@ -4495,6 +4579,8 @@ const App: React.FC<DashboardProps> = ({ playIntro = true, initialLocalModelId, 
                   </div>
                 )}
               </>
+            ) : activeClassroomId ? (
+              <div className="flex h-full items-center justify-center px-6 text-center text-sm text-ink-soft" role="status">本课堂尚未生成模型，暂时无法展示。</div>
             ) : (
               <div className="lab-welcome">
                 <div className={`lab-cube-card ${playIntro ? 'lab-cube-enter' : ''}`}>

@@ -12,7 +12,7 @@
     "test:resource": "node --test server/resourceLibrarySeeds.test.js",
     "test:memory": "node --test server/learningMemory.test.js",
     "test:feedback": "node --test server/feedback.test.js",
-    "test:prep": "node --experimental-strip-types --test services/courseware*.test.ts services/lesson*.test.ts",
+    "test:prep": "node --experimental-strip-types --test services/classroom*.test.ts services/courseware*.test.ts services/lesson*.test.ts",
     "lod:heart": "node scripts/generate-interactive-lod.mjs --input public/models/heart-optimized.glb --output public/models/heart-interactive-lod.glb --target-triangles 225000",
     "build": "vite build --configLoader runner",
     "preview": "vite preview --configLoader runner"

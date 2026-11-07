@@ -34,6 +34,7 @@ import {
   validateFeedbackAttachments,
 } from './feedback.js';
 import { attachVolcTtsWebSocketServer, createVolcTtsService } from './volcTts.js';
+import { createModelGenerationQuota, FREE_MODEL_GENERATION_LIMIT } from './modelGenerationQuota.js';
 
 dotenv.config();
 dotenv.config({ path: '.env.local', override: true });
@@ -182,6 +183,7 @@ if (!/^[a-zA-Z0-9_$-]+$/.test(dbConfig.database)) {
 }
 
 let pool;
+let modelGenerationQuota;
 
 app.use(cors({
   origin: (origin, callback) => {
@@ -431,8 +433,8 @@ function normalizeResourceIcon(value) {
 
 function normalizeResourceTagName(value) {
   const name = normalizeResourceName(value, '标签名称');
-  if (name === '我的模型') {
-    throw httpError(409, '“我的模型”是浏览器本地固定标签');
+  if (name === '我的模型' || name === '我的课堂') {
+    throw httpError(409, '“我的课堂”是固定标签');
   }
   return name;
 }
@@ -744,6 +746,16 @@ async function initializeUserModelStorage() {
     ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
   `);
   await pool.query(`
+    CREATE TABLE IF NOT EXISTS user_model_generation_quotas (
+      user_id BIGINT UNSIGNED NOT NULL,
+      total TINYINT UNSIGNED NOT NULL DEFAULT ${FREE_MODEL_GENERATION_LIMIT},
+      used TINYINT UNSIGNED NOT NULL DEFAULT 0,
+      updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+      PRIMARY KEY (user_id),
+      CONSTRAINT user_model_generation_quotas_user_fk FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
+    ) ENGINE=InnoDB DEFAULT CHARSET=utf8mb4 COLLATE=utf8mb4_unicode_ci
+  `);
+  await pool.query(`
     CREATE TABLE IF NOT EXISTS user_models (
       id CHAR(36) NOT NULL,
       user_id BIGINT UNSIGNED NOT NULL,
@@ -1005,6 +1017,7 @@ async function initializeDatabase() {
   await bootstrapConnection.end();
 
   pool = mysql.createPool(dbConfig);
+  modelGenerationQuota = createModelGenerationQuota(pool);
 
   await pool.query(`
     CREATE TABLE IF NOT EXISTS users (
@@ -1203,6 +1216,13 @@ function requestLongRunningModel(target, init) {
 
 async function proxyTeacherStudioRequest(req, res) {
   const targetPath = `/api${req.originalUrl.slice('/api/prep'.length)}`;
+  const isModelGeneration = req.method === 'POST' && /^\/api\/3d\/generate-(image|multiview-model)(?:\?|$)/.test(targetPath);
+  let reservedQuota = false;
+  if (isModelGeneration && req.user.role !== 'admin') {
+    const quota = await modelGenerationQuota.consume(req.user.id);
+    if (!quota) return res.status(403).json({ code: 'MODEL_QUOTA_EXHAUSTED', message: '免费生成次数已用完，请联系管理员', quota: await modelGenerationQuota.read(req.user.id) });
+    reservedQuota = true;
+  }
   const target = `${TEACHER_STUDIO_SERVICE_URL}${targetPath}`;
   const headers = {};
   for (const name of ['content-type', 'content-length', 'accept']) {
@@ -1233,6 +1253,10 @@ async function proxyTeacherStudioRequest(req, res) {
     return res.status(502).json({ error: `备课生成服务不可用：${error.message}` });
   }
 
+  if (reservedQuota && upstream.status >= 400 && upstream.status < 500) {
+    await modelGenerationQuota.refund(req.user.id);
+  }
+
   const contentType = upstream.headers.get('content-type') || 'application/octet-stream';
   res.status(upstream.status);
   res.set('Content-Type', contentType);
@@ -1248,11 +1272,32 @@ async function proxyTeacherStudioRequest(req, res) {
 
 app.use('/api/prep', requireAuth, proxyTeacherStudioRequest);
 
+app.get('/api/models/generation-quota', requireAuth, async (req, res) => {
+  if (req.user.role === 'admin') return res.json({ exempt: true, quota: null });
+  return res.json({ quota: await modelGenerationQuota.read(req.user.id) });
+});
+
+async function consumeQuotaInTransaction(connection, userId, res, isAdmin = false) {
+  if (isAdmin) return { exempt: true };
+  const quota = await modelGenerationQuota.consume(userId, connection);
+  if (quota) return quota;
+  await connection.rollback();
+  res.status(403).json({ code: 'MODEL_QUOTA_EXHAUSTED', message: '免费生成次数已用完，请联系管理员', quota: await modelGenerationQuota.read(userId) });
+  return null;
+}
+
 app.post('/api/models/jobs/single-image', requireAuth, async (req, res, next) => {
   try {
     const { files, options } = await parseUserModelUpload(req, ['image']);
     const id = randomUUID();
-    await pool.execute('INSERT INTO user_model_jobs (id, user_id, mode, status) VALUES (:id, :userId, "single", "queued")', { id, userId: req.user.id });
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
+      if (!await consumeQuotaInTransaction(connection, req.user.id, res, req.user.role === 'admin')) return;
+      await connection.execute('INSERT INTO user_model_jobs (id, user_id, mode, status) VALUES (:id, :userId, "single", "queued")', { id, userId: req.user.id });
+      await connection.commit();
+    } catch (error) { await connection.rollback(); throw error; }
+    finally { connection.release(); }
     void runUserModelJob({ id, userId: req.user.id, mode: 'single', files, options });
     return res.status(202).json({ job: { id, status: 'queued', mode: 'single' } });
   } catch (error) { return next(error); }
@@ -1262,7 +1307,14 @@ app.post('/api/models/jobs/multiview', requireAuth, async (req, res, next) => {
   try {
     const { files, options } = await parseUserModelUpload(req, ['front', 'left', 'right', 'back']);
     const id = randomUUID();
-    await pool.execute('INSERT INTO user_model_jobs (id, user_id, mode, status) VALUES (:id, :userId, "multiview", "queued")', { id, userId: req.user.id });
+    const connection = await pool.getConnection();
+    try {
+      await connection.beginTransaction();
+      if (!await consumeQuotaInTransaction(connection, req.user.id, res, req.user.role === 'admin')) return;
+      await connection.execute('INSERT INTO user_model_jobs (id, user_id, mode, status) VALUES (:id, :userId, "multiview", "queued")', { id, userId: req.user.id });
+      await connection.commit();
+    } catch (error) { await connection.rollback(); throw error; }
+    finally { connection.release(); }
     void runUserModelJob({ id, userId: req.user.id, mode: 'multiview', files, options });
     return res.status(202).json({ job: { id, status: 'queued', mode: 'multiview' } });
   } catch (error) { return next(error); }
@@ -1375,7 +1427,14 @@ app.post('/api/models/:id/reprocess', requireAuth, async (req, res) => {
     files[field] = { name: source.name, type: source.type, arrayBuffer: async () => (await import('node:fs/promises')).readFile(sourcePath) };
   }
   const id = randomUUID();
-  await pool.execute('INSERT INTO user_model_jobs (id, user_id, mode, status) VALUES (:id, :userId, :mode, "queued")', { id, userId: req.user.id, mode: rows[0].mode });
+  const connection = await pool.getConnection();
+  try {
+    await connection.beginTransaction();
+    if (!await consumeQuotaInTransaction(connection, req.user.id, res, req.user.role === 'admin')) return;
+    await connection.execute('INSERT INTO user_model_jobs (id, user_id, mode, status) VALUES (:id, :userId, :mode, "queued")', { id, userId: req.user.id, mode: rows[0].mode });
+    await connection.commit();
+  } catch (error) { await connection.rollback(); throw error; }
+  finally { connection.release(); }
   void runUserModelJob({ id, userId: req.user.id, mode: rows[0].mode, files, options: manifest.generationOptions || {} });
   return res.status(202).json({ job: { id, status: 'queued', mode: rows[0].mode } });
 });

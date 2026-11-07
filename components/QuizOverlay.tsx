@@ -19,6 +19,11 @@ interface QuizOverlayProps {
 
 type QuizPhase = 'intro' | 'reading' | 'answering' | 'result' | 'summary';
 
+// Some imported/generated questions already include an option marker such as
+// "B.". The card renders its own marker, so strip only that presentation
+// prefix while keeping the original option index unchanged for judging.
+const displayQuizOption = (option: string) => option.replace(/^\s*[A-DＡ-Ｄ](?:\s*[.、:：)）]|\s{1,})\s*/i, '').trim();
+
 // ─── Component ───────────────────────────────────────────
 const QuizOverlay: React.FC<QuizOverlayProps> = ({ controlRef, cameraActive, trackingStatus, onRetryGesture, onExit, subjectFilter, warmupQuestions, onComplete }) => {
   const [phase, setPhase] = useState<QuizPhase>('intro');
@@ -45,8 +50,10 @@ const QuizOverlay: React.FC<QuizOverlayProps> = ({ controlRef, cameraActive, tra
   const overlayRef = useRef<HTMLDivElement>(null);
   const restartBtnRef = useRef<HTMLButtonElement>(null);
   const exitBtnRef = useRef<HTMLButtonElement>(null);
+  const skipAdvanceBtnRef = useRef<HTMLButtonElement>(null);
   const restartProgressRef = useRef<HTMLDivElement>(null);
   const exitProgressRef = useRef<HTMLDivElement>(null);
+  const skipAdvanceProgressRef = useRef<HTMLSpanElement>(null);
   const pointerRef = useRef<HTMLDivElement>(null);
   const pointerSmoothRef = useRef({ x: 0, y: 0, initialized: false });
   const pointerStableRef = useRef({ x: 0, y: 0, initialized: false });
@@ -358,6 +365,75 @@ const QuizOverlay: React.FC<QuizOverlayProps> = ({ controlRef, cameraActive, tra
     return () => cancelAnimationFrame(animFrame);
   }, [phase, cameraActive]);
 
+  // ─── RESULT PHASE: hand hover on the next-question action ───
+  useEffect(() => {
+    if (phase !== 'result' || !cameraActive) return;
+    const HOVER_CONFIRM_MS = 1200;
+    let animFrame: number;
+    let hoverStart = 0;
+
+    const resetHover = () => {
+      hoverStart = 0;
+      if (skipAdvanceProgressRef.current) skipAdvanceProgressRef.current.style.width = '0%';
+    };
+
+    const checkHover = () => {
+      if (phaseRef.current !== 'result') return;
+      const handLm = controlRef.current.interactionHandLandmarks;
+      const overlayEl = overlayRef.current;
+      const button = skipAdvanceBtnRef.current;
+      if (!handLm || handLm.length <= 17 || !overlayEl || !button) {
+        if (pointerRef.current) pointerRef.current.style.opacity = '0';
+        resetHover();
+        animFrame = requestAnimationFrame(checkHover);
+        return;
+      }
+
+      const overlayRect = overlayEl.getBoundingClientRect();
+      const targetX = overlayRect.left + (1 - handLm[8].x) * overlayRect.width;
+      const targetY = overlayRect.top + handLm[8].y * overlayRect.height;
+      if (!pointerSmoothRef.current.initialized) {
+        pointerSmoothRef.current.x = targetX;
+        pointerSmoothRef.current.y = targetY;
+        pointerSmoothRef.current.initialized = true;
+      } else {
+        pointerSmoothRef.current.x = pointerSmoothRef.current.x * 0.85 + targetX * 0.15;
+        pointerSmoothRef.current.y = pointerSmoothRef.current.y * 0.85 + targetY * 0.15;
+      }
+      const screenX = pointerSmoothRef.current.x;
+      const screenY = pointerSmoothRef.current.y;
+      if (pointerRef.current) {
+        pointerRef.current.style.transform = `translate(${screenX - overlayRect.left}px, ${screenY - overlayRect.top}px)`;
+        pointerRef.current.style.opacity = '1';
+      }
+
+      const rect = button.getBoundingClientRect();
+      const margin = 14;
+      const hit = screenX >= rect.left - margin && screenX <= rect.right + margin
+        && screenY >= rect.top - margin && screenY <= rect.bottom + margin;
+      if (!hit) {
+        resetHover();
+      } else {
+        const now = performance.now();
+        if (!hoverStart) hoverStart = now;
+        const progress = Math.min((now - hoverStart) / HOVER_CONFIRM_MS, 1);
+        if (skipAdvanceProgressRef.current) skipAdvanceProgressRef.current.style.width = `${progress * 100}%`;
+        if (progress >= 1) {
+          button.click();
+          resetHover();
+        }
+      }
+
+      animFrame = requestAnimationFrame(checkHover);
+    };
+
+    animFrame = requestAnimationFrame(checkHover);
+    return () => {
+      cancelAnimationFrame(animFrame);
+      resetHover();
+    };
+  }, [phase, cameraActive, controlRef]);
+
   const checkHitOnOptions = (screenX: number, screenY: number, count: number): number | null => {
     const activeOption = hoverOptionRef.current;
     const strictHits: Array<{ index: number; distance: number }> = [];
@@ -454,6 +530,9 @@ const QuizOverlay: React.FC<QuizOverlayProps> = ({ controlRef, cameraActive, tra
         clearTimeout(timer);
       };
     } else {
+      // Show the written explanation as soon as a wrong answer is confirmed;
+      // speech may take several seconds and must not delay the visual feedback.
+      setShowExplanation(true);
       (async () => {
         // Keep the quiz moving if local synthesis or audio playback stalls.
         const safeSpeak = (text: string, maxWait: number) => Promise.race([
@@ -461,10 +540,9 @@ const QuizOverlay: React.FC<QuizOverlayProps> = ({ controlRef, cameraActive, tra
           new Promise<void>(r => setTimeout(r, maxWait))
         ]);
 
-        await safeSpeak(`很遗憾，正确答案是 ${String.fromCharCode(65 + currentQuestion.correctIndex)}：${currentQuestion.options[currentQuestion.correctIndex]}`, 4000);
+        await safeSpeak(`很遗憾，正确答案是 ${String.fromCharCode(65 + currentQuestion.correctIndex)}：${displayQuizOption(currentQuestion.options[currentQuestion.correctIndex])}`, 4000);
         if (cancelled) return;
         
-        setShowExplanation(true);
         await safeSpeak(currentQuestion.explanation, 10000);
         if (cancelled) return;
         
@@ -500,7 +578,7 @@ const QuizOverlay: React.FC<QuizOverlayProps> = ({ controlRef, cameraActive, tra
       return;
     }
     setXiaozhiExplainingId(q.id);
-    const text = `这道题「${q.question}」的正确答案是 ${String.fromCharCode(65 + q.correctIndex)}：${q.options[q.correctIndex]}。${q.explanation}`;
+    const text = `这道题「${q.question}」的正确答案是 ${String.fromCharCode(65 + q.correctIndex)}：${displayQuizOption(q.options[q.correctIndex])}。${q.explanation}`;
     speakXiaozhi(text, {
       onEnd: () => setXiaozhiExplainingId(null),
       onError: () => setXiaozhiExplainingId(null),
@@ -603,7 +681,7 @@ const QuizOverlay: React.FC<QuizOverlayProps> = ({ controlRef, cameraActive, tra
       {/* ─── READING / ANSWERING / RESULT ─── */}
       {(phase === 'reading' || phase === 'answering' || phase === 'result') && currentQuestion && (
         <div
-          className="quiz-game-container quiz-fade-in"
+          className={`quiz-game-container quiz-phase-${phase} quiz-fade-in`}
           onClick={phase === 'result' ? skipResult : undefined}
           title={phase === 'result' ? '点击屏幕任意处跳过播报' : undefined}
         >
@@ -681,7 +759,7 @@ const QuizOverlay: React.FC<QuizOverlayProps> = ({ controlRef, cameraActive, tra
                     )}
 
                     <div className="quiz-option-label">{String.fromCharCode(65 + idx)}</div>
-                    <div className="quiz-option-text">{option}</div>
+                    <div className="quiz-option-text">{displayQuizOption(option)}</div>
                   </div>
                 );
               })}
@@ -697,11 +775,13 @@ const QuizOverlay: React.FC<QuizOverlayProps> = ({ controlRef, cameraActive, tra
           {/* Skip / next button */}
           {phase === 'result' && (
             <button
+              ref={skipAdvanceBtnRef}
               type="button"
               onClick={(e) => { e.stopPropagation(); skipResult(); }}
               className="quiz-skip-advance-btn"
               title="跳过播报，进入下一题"
             >
+              <span ref={skipAdvanceProgressRef} className="quiz-skip-progress" aria-hidden="true" />
               <SkipForward size={15} />
               <span>跳过 · 下一题</span>
             </button>
@@ -783,11 +863,11 @@ const QuizOverlay: React.FC<QuizOverlayProps> = ({ controlRef, cameraActive, tra
                               <div className="mb-2 text-xs text-slate-300">
                                 <div><span className="text-rose-400 font-semibold">你的答案：</span>
                                   {userAns !== null && userAns !== undefined
-                                    ? `${String.fromCharCode(65 + userAns)}. ${q.options[userAns]}`
+                                    ? `${String.fromCharCode(65 + userAns)}. ${displayQuizOption(q.options[userAns])}`
                                     : '未作答'}
                                 </div>
                                 <div><span className="text-emerald-400 font-semibold">正确答案：</span>
-                                  {String.fromCharCode(65 + q.correctIndex)}. {q.options[q.correctIndex]}
+                                  {String.fromCharCode(65 + q.correctIndex)}. {displayQuizOption(q.options[q.correctIndex])}
                                 </div>
                               </div>
                               <div className="mb-3 rounded-lg border border-slate-700/40 bg-slate-800/60 p-2 text-xs text-slate-200 leading-relaxed">

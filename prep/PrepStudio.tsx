@@ -7,12 +7,15 @@ import {
 } from 'lucide-react'
 import type { WarmupQuestion } from '../services/quizData'
 import type { DragEvent } from 'react'
+import type { ReactNode } from 'react'
+import { durationByLessonCount, lessonCountByDuration, normalizeLessonSchedule } from '../services/lessonSchedule'
+import { k12GradesByStage, k12StageOptions, normalizeK12Stage, resolveK12TemplateStage, subjectsForK12Stage, textbookOptionsForK12Stage } from '../services/k12Template'
 import { prepareCoursewareViews, resolveExportModelUrl } from '../services/coursewareExport'
-import type { TeacherLessonDraft } from '../services/lessonWordExport'
+import { contentFingerprint, normalizeClassroomPlan, persistentClassroomPlan, type ClassroomData, type TeacherReview } from '../services/classroomLibrary'
 import type { CoursewareManifest } from '../types/courseware'
 import type { ClassroomModelAsset } from '../types/courseware'
 import type { DesignStep, LessonDesignWorkflow } from '../types/lessonDesign'
-import { getLocalModel, saveUploadedModel } from '../services/localModelLibrary'
+import { getLocalModel, saveUploadedModel, saveGeneratedModel } from '../services/localModelLibrary'
 import type { ModelType, ControlRefs } from '../types'
 import ModelViewer from '../components/ModelViewer'
 import CoursewareStoryboard from './CoursewareStoryboard'
@@ -44,12 +47,15 @@ type SlidePreview = SlidePlan & { index: number; sourceIndex?: number; previewSv
 type QualityReport = { score: number; blocking: { code: string; slide?: number; message: string }[]; warnings: { code: string; slide?: number; message: string }[]; slideCount: number; layouts: string[] }
 type AssetCandidate = { sourceType: string; localPath: string; sourceUrl: string; license: string; altText: string; cropMode: string; subjectTags: string[]; thumbnail?: string }
 type LessonPlan = {
+  classroomData?: ClassroomData
   id: string; createdAt: string; title: string; overview: string; objectives: string[]
   situation: string; keyPoints: string[]; difficulties: string[]; methods: string[]
   resources: string; assessment: string; homework: string; blackboard: string[]
-  phases: { time: number; name: string; teacher: string; student: string; check: string }[]
+  phases: { time: number; name: string; teacher: string; student: string; check: string; output?: string }[]
   slides: SlidePlan[]
   request: FormState
+  generation?: { engine: 'ollama' | 'builtin-template' | 'unavailable'; model?: string; message: string }
+  coreQuestion?: string; priorKnowledge?: string[]; misconceptions?: string[]; examPoints?: string[]; blackboardDesign?: string[]
   courseProfile?: { stage: string; field: string; courseName: string; courseType: string; semester: string; credits: string; courseHours: string }
   learningOutcomes?: string[]; prerequisites?: string[]; knowledgeMap?: string[]; casePrompt?: string; assessmentPlan?: string[]
   professionalOutcomes?: string[]; generalOutcomes?: string[]; contentAnalysis?: Record<string, string[]>; contentAnalysisDetail?: { type?: string; content?: string; worthLearning?: string; focus?: string; breakthrough?: string; evidence?: string; difficulty?: string }[]
@@ -59,6 +65,7 @@ type LessonPlan = {
   activities?: { name: string; level: string; type: string; duration: number; student?: string; learn?: string; result?: string; evaluation?: string; role?: string; studentAction?: string; learningContent?: string; visibleOutput?: string; teacherRole?: string; teacherProcess?: string; studentSteps?: string[]; questioning?: string[]; organizationDetail?: string; evidence?: string; remediationPlan?: string; designRationale?: string; teacherScript?: string[]; materials?: string[]; checkpoints?: { time: string; teacherCheck: string; studentEvidence: string }[]; evaluationRubric?: { criterion: string; fullMark: string; support: string }[]; commonErrors?: string[] }[]
   boardDesign?: string[]; abilityDifferentiation?: Record<string, string>; teachingPainPoints?: string[]; designRationale?: string[]; reflectionPrompts?: string[]
   designWorkflow?: LessonDesignWorkflow; alignmentMatrix?: Array<Record<string, unknown>>
+  templateStage?: '小学1-3年级' | '小学4-6年级' | '初中' | '高中'
   modelAsset?: Record<string, unknown>
   warmupQuestions?: WarmupQuestion[]
   references?: Reference[]; modelPlan?: BioModelPlan
@@ -70,6 +77,8 @@ type ModelMode = 'single' | 'multiview'
 type ModelViews = Partial<Record<'front' | 'left' | 'right' | 'back', File>>
 type ImageModelResult = { status: string; editable: boolean; message: string; glbUrl: string; modelUrl?: string; exportModelUrl?: string; localPreviewUrl?: string; remoteModelId?: string; fullGlbUrl?: string; appearanceUrl?: string; blendUrl: string; previewUrl: string; viewImageUrls?: { front?: string; left?: string; right?: string; back?: string }; parts: { name: string; partKey: string; source: string }[]; engine?: string; viewsUsed?: string[]; registration?: { status: string; confidence: number; silhouetteIoU?: Record<string, number> }; textureProjection?: { status: string; viewsUsed: number }; source?: 'imported' | 'generated'; localModelId?: string; modelType?: ModelType; assetUrls?: Record<string, string>; fileName?: string }
 type WarmupGeneration = { engine: 'ollama' | 'builtin-template'; model?: string; message: string; warnings?: string[] }
+type GenerationStatus = { kind: 'success' | 'error'; message: string }
+type ModelGenerationQuota = { total: number; used: number; remaining: number }
 
 const resolveAppearanceModelUrl = (asset: Record<string, unknown> | null | undefined) => {
   if (!asset) return ''
@@ -102,17 +111,25 @@ const undergraduateDefaults: Partial<FormState> = {
   designMode: 'quick', abilityLevel: '基础层',
 }
 
-const durationByLessonCount: Record<string, string> = { '1': '40', '2': '80', '3': '120' }
-const lessonCountByDuration: Record<string, string> = { '40': '1', '80': '2', '120': '3' }
+const stageOptions = [...k12StageOptions, '本科']
+const gradesByStage: Record<string, string[]> = k12GradesByStage
+const k12Defaults: Partial<FormState> = {
+  subject: '', field: '', courseName: '', grade: '', unitPosition: '',
+  pptTheme: '自动推荐', teachingRhythm: '互动型', highlightExam: '突出',
+}
 
 const defaultForm: FormState = { ...initialForm, ...undergraduateDefaults, duration: '40', grade: '' }
 
 const normalizeLoadedForm = (request: Partial<FormState>): FormState => {
-  const merged = { ...initialForm, ...undergraduateDefaults, ...request, stage: '本科', grade: '' }
-  const lessonCount = durationByLessonCount[request.lessonCount || '']
-    ? request.lessonCount as string
-    : lessonCountByDuration[String(request.duration || '')] || '1'
-  return { ...merged, lessonCount, duration: durationByLessonCount[lessonCount] }
+  const undergraduate = !request.stage || request.stage === '本科'
+  const stage = undergraduate ? '本科' : normalizeK12Stage(request.stage, request.grade)
+  const merged = { ...initialForm, ...(undergraduate ? undergraduateDefaults : k12Defaults), ...request, stage }
+  return {
+    ...merged,
+    ...normalizeLessonSchedule(request),
+    grade: undergraduate ? '' : gradesByStage[stage]?.includes(request.grade || '') ? request.grade! : '',
+    subject: undergraduate || subjectsForK12Stage(stage, merged.grade).includes(request.subject || '') ? merged.subject : '',
+  }
 }
 
 const splitLines = (value: string) => value.split('\n').map((x) => x.trim()).filter(Boolean)
@@ -123,12 +140,12 @@ const slideLayoutOptions = [
   ['answer-rail', '答案揭示'], ['exam-map', '考点地图'], ['observation-stage', '观察任务'],
   ['loop-summary', '课堂总结'], ['take-home', '作业任务'],
 ] as const
-const formToPayload = (form: FormState) => ({ ...form, duration: Number(form.duration) || 40, lessonCount: Number(form.lessonCount) || 1, objectives: splitLines(form.objectives), keyPoints: splitLines(form.keyPoints), difficulties: splitLines(form.difficulties), methods: splitLines(form.methods) })
+const formToPayload = (form: FormState) => { const schedule = normalizeLessonSchedule(form); return { ...form, templateStage: form.stage === '本科' ? undefined : resolveK12TemplateStage(form.stage, form.grade), duration: Number(schedule.duration), lessonCount: Number(schedule.lessonCount), objectives: splitLines(form.objectives), keyPoints: splitLines(form.keyPoints), difficulties: splitLines(form.difficulties), methods: splitLines(form.methods) } }
 const recordKey = 'teacher-studio.records.v1'
-const isUndergraduateRecord = (record: RecordItem) => record.plan?.request?.stage === '本科'
 const fiveStepTitles = ['专业能力目标与课程定位', '学习内容、重点难点与学情诊断', '问题链与教师教学行为', '教学活动、评价与通用能力', '教案定稿与对齐审核']
 
 function normalizePlanToFiveSteps(plan: LessonPlan): LessonPlan {
+  if (plan.request?.stage && plan.request.stage !== '本科') return plan
   const workflow = plan.designWorkflow
   if (!workflow || workflow.steps.length !== 7) return plan
   const byId = new Map(workflow.steps.map((step) => [step.id, step]))
@@ -167,9 +184,11 @@ type PrepStudioProps = {
   embedded?: boolean
   onApplyLesson?: (lesson: LessonPlan, modelUrl?: string, warmupQuestions?: WarmupQuestion[], courseware?: CoursewareManifest, modelAsset?: ClassroomModelAsset) => void
   userId?: number
+  isAdmin?: boolean
 }
 
-function PrepStudio({ onBack, embedded = false, onApplyLesson, userId = 0 }: PrepStudioProps) {
+function PrepStudio({ onBack, embedded = false, onApplyLesson, userId = 0, isAdmin = false }: PrepStudioProps) {
+  const unitPositionEdited = useRef(false)
   const [view, setView] = useState<'new' | 'records' | 'knowledge'>('new')
   const [form, setForm] = useState<FormState>(defaultForm)
   const [plan, setPlan] = useState<LessonPlan | null>(null)
@@ -177,6 +196,7 @@ function PrepStudio({ onBack, embedded = false, onApplyLesson, userId = 0 }: Pre
   const [autoSavedAt, setAutoSavedAt] = useState('')
   const [busy, setBusy] = useState<BusyState>(null)
   const [toast, setToast] = useState('')
+  const [generationStatus, setGenerationStatus] = useState<GenerationStatus | null>(null)
   const [query, setQuery] = useState('')
   const [modelFile, setModelFile] = useState<File | null>(null)
   const [modelUrl, setModelUrl] = useState('')
@@ -196,9 +216,21 @@ function PrepStudio({ onBack, embedded = false, onApplyLesson, userId = 0 }: Pre
   const importedObjectUrls = useRef<string[]>([])
   const importedFilesRef = useRef<File[]>([])
   const [threeDConfigured, setThreeDConfigured] = useState<boolean | null>(null)
+  const [modelGenerationQuota, setModelGenerationQuota] = useState<ModelGenerationQuota | null>(null)
   const [prepStep, setPrepStep] = useState<1 | 2 | 3>(1)
   const [showFullForm, setShowFullForm] = useState(false)
+  const refreshModelGenerationQuota = async () => {
+    try {
+      const response = await fetch('/api/models/generation-quota', { credentials: 'include' })
+      if (!response.ok) return
+      const data = await response.json()
+      if (data.quota && Number.isFinite(data.quota.remaining)) setModelGenerationQuota(data.quota)
+    } catch { /* The server remains authoritative when quota status is unavailable. */ }
+  }
   const updatePlan = (next: LessonPlan) => {
+    const { classroomData: _oldData, ...oldContent } = plan || {} as LessonPlan
+    const { classroomData: _newData, ...newContent } = next
+    if (contentFingerprint(oldContent) === contentFingerprint(newContent)) { setPlan(next); return }
     const preservedAsset = modelAsset || next.modelAsset || plan?.modelAsset || undefined
     const preservedUrl = resolveAppearanceModelUrl(preservedAsset)
     if (JSON.stringify(next.modelPlan) !== JSON.stringify(plan?.modelPlan)) setBioResult(null)
@@ -206,7 +238,8 @@ function PrepStudio({ onBack, embedded = false, onApplyLesson, userId = 0 }: Pre
     if (!modelUrl && preservedUrl) setModelUrl(preservedUrl)
     setPptArtifact(null)
     setArtifacts((current) => ({ ...current, pptx: 'pending' }))
-    setPlan({ ...next, modelAsset: preservedAsset })
+    setCoursewareManifest(null)
+    setPlan({ ...next, modelAsset: preservedAsset, classroomData: undefined })
   }
   const clearImportedObjectUrls = () => {
     importedObjectUrls.current.forEach((url) => URL.revokeObjectURL(url))
@@ -322,12 +355,16 @@ function PrepStudio({ onBack, embedded = false, onApplyLesson, userId = 0 }: Pre
         const response = await fetch('/api/lesson-plans', { credentials: 'include' })
         const data = await response.json()
         if (!response.ok) throw new Error(data.message || '教案记录读取失败')
-        if (!cancelled) setRecords((data.records || []).filter(isUndergraduateRecord).map((record: RecordItem) => ({ ...record, plan: normalizePlanToFiveSteps(record.plan) })))
-      } catch { if (!cancelled) setRecords(legacy.filter(isUndergraduateRecord).map((record) => ({ ...record, plan: normalizePlanToFiveSteps(record.plan) }))) }
+        if (!cancelled) setRecords((data.records || []).map((record: RecordItem) => ({ ...record, plan: normalizePlanToFiveSteps(record.plan) })))
+      } catch { if (!cancelled) setRecords(legacy.map((record) => ({ ...record, plan: normalizePlanToFiveSteps(record.plan) }))) }
     }
     void load()
     return () => { cancelled = true }
   }, [])
+  useEffect(() => {
+    if (isAdmin) setModelGenerationQuota(null)
+    else void refreshModelGenerationQuota()
+  }, [userId, isAdmin])
   useEffect(() => {
     let cancelled = false
     let retryTimer: number | undefined
@@ -363,19 +400,28 @@ function PrepStudio({ onBack, embedded = false, onApplyLesson, userId = 0 }: Pre
       document.body.classList.remove('prep-modal-open')
     }
   }, [modelModalOpen, modelRecommendationOpen])
-  const update = (key: keyof FormState, value: string) => setForm((current) => {
-    if (key === 'stage') return { ...current, stage: '本科', grade: '' }
+  const update = (key: keyof FormState, value: string) => {
+    if (key === 'unitPosition') unitPositionEdited.current = true
+    setForm((current) => {
+    if (key === 'stage') {
+      if (value === current.stage) return current
+      if (value === '本科') return { ...current, stage: value, grade: '', subject: current.field || initialForm.field, field: current.field || initialForm.field, courseName: current.courseName || initialForm.courseName, unitPosition: unitPositionEdited.current ? current.unitPosition : undergraduateDefaults.unitPosition!, duration: durationByLessonCount[current.lessonCount] || '40', pptTheme: undergraduateDefaults.pptTheme!, teachingRhythm: undergraduateDefaults.teachingRhythm!, highlightExam: undergraduateDefaults.highlightExam! }
+      const nextGrade = gradesByStage[value]?.includes(current.grade) ? current.grade : ''
+      return { ...current, ...(current.stage === '本科' ? k12Defaults : {}), ...normalizeLessonSchedule(current), stage: value, grade: nextGrade, subject: subjectsForK12Stage(value, nextGrade).includes(current.subject) ? current.subject : '', unitPosition: unitPositionEdited.current ? current.unitPosition : '' }
+    }
+    if (key === 'grade' && current.stage !== '本科') return { ...current, grade: value, subject: subjectsForK12Stage(current.stage, value).includes(current.subject) ? current.subject : '' }
     if (key === 'field') return { ...current, field: value, subject: value }
-    if (current.stage === '本科' && key === 'lessonCount' && durationByLessonCount[value]) {
+    if (key === 'lessonCount' && durationByLessonCount[value]) {
       return { ...current, lessonCount: value, duration: durationByLessonCount[value] }
     }
-    if (current.stage === '本科' && key === 'duration' && lessonCountByDuration[value]) {
+    if (key === 'duration' && lessonCountByDuration[value]) {
       return { ...current, duration: value, lessonCount: lessonCountByDuration[value] }
     }
     if (current.stage === '本科' && (key === 'objectives' || key === 'learningOutcomes')) return { ...current, objectives: value, learningOutcomes: value }
     return { ...current, [key]: value }
-  })
-  const sample = () => { setForm({ ...initialForm, ...undergraduateDefaults, duration: '40', grade: '' }); setPlan(null); setModelAsset(null); setModelUrl(''); setModelFile(null); setCoursewareManifest(null); setWorkbenchStage('lesson'); setShowFullForm(false); setModelRecommendationOpen(false); setModelModalOpen(false); setModelRecommendationShown(false); setModelRecommendationReason(null); setBioResult(null); setArtifacts({}); setPptArtifact(null); setToast('已载入本科心脏示例') }
+    })
+  }
+  const sample = () => { setForm({ ...initialForm, ...undergraduateDefaults, duration: '40', grade: '' }); setPlan(null); setGenerationStatus(null); setModelAsset(null); setModelUrl(''); setModelFile(null); setCoursewareManifest(null); setWorkbenchStage('lesson'); setShowFullForm(false); setModelRecommendationOpen(false); setModelModalOpen(false); setModelRecommendationShown(false); setModelRecommendationReason(null); setBioResult(null); setArtifacts({}); setPptArtifact(null); setToast('已载入本科心脏示例') }
   const selectMaterial = async (file: File | null) => {
     if (!file) return
     if (file.size > 15 * 1024 * 1024) { setToast('资料文件不能超过 15 MB'); return }
@@ -388,7 +434,8 @@ function PrepStudio({ onBack, embedded = false, onApplyLesson, userId = 0 }: Pre
     } catch (error) { setToast(error instanceof Error ? error.message : '资料解析失败') }
   }
   const generatePlan = async (skipModelReminder = false) => {
-    if (!form.subject.trim() || !form.topic.trim()) { setToast('请先填写专业名称和授课计划主题'); return }
+    if (form.stage !== '本科' && !gradesByStage[form.stage]?.includes(form.grade)) { setToast('请先选择本次授课的年级'); return }
+    if (!form.subject.trim() || !form.topic.trim()) { setToast(form.stage === '本科' ? '请先填写专业名称和授课计划主题' : '请先填写学科和课题名称'); return }
     const linkedModelAsset = modelAsset || plan?.modelAsset || null
     const hasModel = hasUsableModelAsset(linkedModelAsset, modelUrl)
     if (!skipModelReminder && !hasModel) {
@@ -397,21 +444,34 @@ function PrepStudio({ onBack, embedded = false, onApplyLesson, userId = 0 }: Pre
       return
     }
     setBusy('preview')
+    setGenerationStatus(null)
     try {
       const payload = formToPayload(form)
-      const response = await fetch('/api/prep/lesson-design/generate-draft', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ request: payload, mode: 'quick', model: modelAsset }) })
-      const data = await response.json(); if (!response.ok) throw new Error(data.error || '生成失败')
-      setPlan({ ...data.lessonPlan, request: { ...form }, modelAsset: modelAsset || undefined, warmupQuestions: warmupQuestions.length ? warmupQuestions : undefined }); setWarmupGeneration(null); setCoursewareManifest(null); setWorkbenchStage('output'); setShowFullForm(false); setModelRecommendationOpen(false); setModelModalOpen(false); setModelRecommendationShown(false); setModelRecommendationReason(null); setBioResult(null); setArtifacts({}); setPptArtifact(null); setToast(data.generation?.engine === 'ollama' ? 'AI已生成教案初稿，请审核、修改后确认' : 'AI 生成失败，已使用系统模板生成可编辑初稿')
-    } catch (error) { setToast(error instanceof Error ? error.message : '生成失败，请确认本地 API 已启动') } finally { setBusy(null) }
+      const undergraduate = form.stage === '本科'
+      const response = await fetch(undergraduate ? '/api/prep/lesson-design/generate-draft' : '/api/prep/lesson/preview', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(undergraduate ? { request: payload, mode: 'quick', model: modelAsset } : payload) })
+      const data = await response.json().catch(() => ({}))
+      if (!response.ok) {
+        const message = data.generation?.message || data.error || '生成失败'
+        if (!undergraduate) setGenerationStatus({ kind: 'error', message })
+        throw new Error(message)
+      }
+      const generation = data.generation || data.lessonPlan?.generation
+      const successMessage = 'AI 已生成教案初稿，可继续编辑'
+      if (!undergraduate) setGenerationStatus({ kind: 'success', message: successMessage })
+      setPlan({ ...data.lessonPlan, generation, request: { ...form }, modelAsset: modelAsset || undefined, warmupQuestions: warmupQuestions.length ? warmupQuestions : undefined }); setWarmupGeneration(null); setCoursewareManifest(null); setWorkbenchStage('output'); setShowFullForm(false); setModelRecommendationOpen(false); setModelModalOpen(false); setModelRecommendationShown(false); setModelRecommendationReason(null); setBioResult(null); setArtifacts({}); setPptArtifact(null); setToast(undergraduate && generation?.engine !== 'ollama' ? 'AI 生成未成功，请检查本地模型后重试' : successMessage)
+    } catch (error) { setToast(error instanceof Error ? error.message : '生成失败，请确认本地 API 已启动'); if (form.stage !== '本科') setShowFullForm(true) } finally { setBusy(null) }
   }
   const saveRecord = async () => {
     if (!plan) return
+    const normalized = normalizeClassroomPlan(plan)
+    if (normalized.classroomData?.contentKey !== plan.classroomData?.contentKey) { setPlan(normalized); return false }
     const item: RecordItem = { id: plan.id, title: plan.title, subject: plan.request.subject, grade: plan.request.grade, updatedAt: new Date().toISOString(), plan }
     const next = [item, ...records.filter((record) => record.id !== item.id)].slice(0, 30)
     try {
-      const response = await fetch('/api/lesson-plans', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ plan }) })
+      const response = await fetch('/api/lesson-plans', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ plan: persistentClassroomPlan(plan) }) })
       const data = await response.json().catch(() => ({})); if (!response.ok) throw new Error(data.message || '教案保存失败')
       setRecords(next); setAutoSavedAt(new Date().toISOString())
+      window.dispatchEvent(new Event('classroom-library-updated'))
       return true
     } catch (error) {
       setToast(error instanceof Error ? error.message : '教案保存失败')
@@ -424,6 +484,19 @@ function PrepStudio({ onBack, embedded = false, onApplyLesson, userId = 0 }: Pre
     const timer = window.setTimeout(() => { void saveRecord() }, 1500)
     return () => window.clearTimeout(timer)
   }, [plan])
+  useEffect(() => {
+    if (!plan || !coursewareManifest || coursewareManifest.lessonId !== plan.id) return
+    const fingerprint = contentFingerprint(coursewareManifest)
+    if (fingerprint === contentFingerprint(plan.classroomData?.courseware || null)) return
+    setPlan(current => {
+      if (current?.id !== plan.id) return current
+      const normalized = normalizeClassroomPlan(current)
+      return { ...normalized, classroomData: { ...normalized.classroomData, courseware: coursewareManifest, ppt: normalized.classroomData?.ppt?.fingerprint === fingerprint ? normalized.classroomData.ppt : null } }
+    })
+    void fetch(`/api/courseware/${encodeURIComponent(plan.id)}`, { method: 'PUT', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ manifest: coursewareManifest }) })
+      .then(response => { if (!response.ok) throw new Error('课件保存失败') })
+      .catch(error => setToast(error.message))
+  }, [coursewareManifest, plan?.id])
   const triggerDownload = (url: string, fileName: string) => { const link = document.createElement('a'); link.href = url; link.download = fileName; document.body.appendChild(link); link.click(); link.remove() }
   const isHeartCourseware = (currentPlan: LessonPlan) => {
     const request = (currentPlan.request || {}) as Partial<FormState>
@@ -452,9 +525,9 @@ function PrepStudio({ onBack, embedded = false, onApplyLesson, userId = 0 }: Pre
   }
   const requestPpt = async () => {
     if (!plan) throw new Error('还没有可生成的教案')
-    // Any course with a generated model must use the manifest exporter so PPT
-    // receives the same static model views as the interactive courseware.
-    if (coursewareManifest || modelUrl || modelAsset || plan.modelAsset || isHeartCourseware(plan)) {
+    // Every classroom keeps one manifest for playback and repeatable PPT export,
+    // including lessons that do not have a model.
+    {
       let exportAsset = (modelAsset || plan.modelAsset || {}) as Record<string, unknown>
       if (exportAsset.source === 'imported' && !resolveExportModelUrl(exportAsset)) {
         try {
@@ -478,17 +551,20 @@ function PrepStudio({ onBack, embedded = false, onApplyLesson, userId = 0 }: Pre
       }
       const response = await fetch('/api/prep/courseware/export-pptx', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ manifest }) })
       const data = await response.json(); if (!response.ok) throw new Error(data.error || '配套 PPT 生成失败')
+      const exportedManifest = (data.manifest || manifest) as CoursewareManifest
+      const sceneCount = exportedManifest.scenes.filter(scene => scene.enabled !== false).length
+      if (data.aligned !== true || data.sceneCount !== sceneCount || data.slideCount !== sceneCount) throw new Error('课件与 PPT 页数不一致，已停止下载')
       if (data.animation?.status !== 'animated' || data.animation?.verified !== true) throw new Error(data.animation?.message || 'PowerPoint 动画未通过逐页验收，已停止下载')
+      setCoursewareManifest(exportedManifest)
       setPptArtifact(data); setArtifacts((current) => ({ ...current, pptx: 'generated' }))
+      setPlan(current => {
+        if (current?.id !== plan.id) return current
+        const normalized = normalizeClassroomPlan(current)
+        return { ...normalized, classroomData: { ...normalized.classroomData, courseware: exportedManifest, ppt: { downloadUrl: data.downloadUrl, fileName: data.fileName, fingerprint: contentFingerprint(exportedManifest) } } }
+      })
       triggerDownload(data.downloadUrl, data.fileName)
       return data
     }
-    const response = await fetch('/api/prep/ppt/generate', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lessonPlan: plan }) })
-    const data = await response.json(); if (!response.ok) throw new Error(data.error || 'PPT 生成失败')
-    if (data.animation?.status !== 'animated' || data.animation?.verified !== true) throw new Error(data.animation?.message || 'PowerPoint 动画未通过逐页验收，已停止下载')
-    setPptArtifact(data); setArtifacts((current) => ({ ...current, pptx: 'generated' }))
-    triggerDownload(data.downloadUrl, data.fileName)
-    return data
   }
   const requestImageModel = async (mode: ModelMode, file: File | null, views: ModelViews, options: ModelOptions) => {
     const body = new FormData()
@@ -514,7 +590,7 @@ function PrepStudio({ onBack, embedded = false, onApplyLesson, userId = 0 }: Pre
     const response = await fetch(mode === 'single' ? '/api/prep/3d/generate-image' : '/api/prep/3d/generate-multiview-model', { method: 'POST', body })
     if (!response.ok) {
       let message = `3D 生成失败（${response.status}）`
-      try { const data = await response.json(); message = data.error || message } catch { const text = await response.text(); if (text) message = text }
+      try { const data = await response.json(); message = data.message || data.error || message } catch { const text = await response.text(); if (text) message = text }
       throw new Error(message)
     }
     const raw = await response.json()
@@ -591,7 +667,7 @@ function PrepStudio({ onBack, embedded = false, onApplyLesson, userId = 0 }: Pre
       setToast(message)
       throw error
     }
-    finally { setBusy(null) }
+    finally { setBusy(null); void refreshModelGenerationQuota() }
   }
   
   const generateWarmup = async (sourceModel = modelAsset) => {
@@ -656,13 +732,26 @@ function PrepStudio({ onBack, embedded = false, onApplyLesson, userId = 0 }: Pre
       fileName: typeof asset.fileName === 'string' ? asset.fileName : undefined,
       previewImageUrl: typeof asset.previewUrl === 'string' ? asset.previewUrl : undefined,
     } : undefined
-    onApplyLesson(plan, typeof appliedModelUrl === 'string' ? appliedModelUrl : undefined, classroomQuestions, manifest || undefined, classroomAsset)
+    if (classroomAsset && !classroomAsset.localModelId && classroomAsset.source === 'generated') {
+      try {
+        setBusy('courseware')
+        const record = await saveGeneratedModel({ id: `lesson:${plan.id}:${contentFingerprint(appliedModelUrl)}`, ownerId: userId, name: plan.title, url: classroomAsset.modelUrl })
+        classroomAsset.localModelId = record.id
+      } catch (error) { setToast(error instanceof Error ? error.message : '模型保存失败'); return }
+      finally { setBusy(null) }
+    }
+    const basePlan = normalizeClassroomPlan({ ...plan, modelAsset: classroomAsset ? { ...asset, ...classroomAsset } : plan.modelAsset, warmupQuestions: classroomQuestions })
+    const appliedPlan = { ...basePlan, classroomData: { ...basePlan.classroomData, courseware: manifest } }
+    setPlan(appliedPlan)
+    onApplyLesson(appliedPlan, typeof appliedModelUrl === 'string' ? appliedModelUrl : undefined, classroomQuestions, manifest || undefined, classroomAsset)
   }
   const openRecord = async (item: RecordItem) => {
-    const normalizedPlan = normalizePlanToFiveSteps(item.plan)
+    const normalizedPlan = normalizeClassroomPlan(normalizePlanToFiveSteps(item.plan))
     const restoredAsset = normalizedPlan.modelAsset || null
     const restoredForm = normalizeLoadedForm(normalizedPlan.request)
+    unitPositionEdited.current = Boolean(normalizedPlan.request.unitPosition)
     setForm(restoredForm)
+    setGenerationStatus(null)
     setModelAsset(restoredAsset)
     setModelUrl(resolveAppearanceModelUrl(restoredAsset))
     if (restoredAsset?.source === 'imported') {
@@ -672,7 +761,8 @@ function PrepStudio({ onBack, embedded = false, onApplyLesson, userId = 0 }: Pre
       } catch { setToast('备案已打开，但导入模型恢复失败') }
     }
     setBioResult(null)
-    setCoursewareManifest(null)
+    setCoursewareManifest(normalizedPlan.classroomData?.courseware || null)
+    setPptArtifact(normalizedPlan.classroomData?.ppt || null)
     setPlan({ ...normalizedPlan, request: restoredForm })
     setWorkbenchStage('output')
     setModelRecommendationOpen(false)
@@ -721,32 +811,46 @@ function PrepStudio({ onBack, embedded = false, onApplyLesson, userId = 0 }: Pre
         {workbenchStage === 'model' ? <div className="workspace-grid unified-model-workspace">
           <section className="form-panel model-course-context">
             <div className="panel-heading"><div><span className="section-kicker">COURSE CONTEXT</span><h2>本课建模任务</h2><p>先确定课程和观察对象，模型会直接进入后续教案、PPT 与练习题。</p></div></div>
-            <div className="form-block stage-first"><div className="block-title"><span>课程上下文</span><small>与后续教案共用</small></div><div className="field-grid two"><div className="field"><span>学段</span><div className="fixed-stage-value">本科</div></div></div><Field label="课程课题" value={form.topic} onChange={(v) => update('topic', v)} required /><div className="field-grid two"><Field label="专业方向" value={form.field} onChange={(v) => update('field', v)} /><Field label="课程名称" value={form.courseName} onChange={(v) => update('courseName', v)} /></div><SelectField label="课时" value={form.duration} options={['40','80','120']} optionLabels={{40:'40 分钟',80:'80 分钟',120:'120 分钟'}} onChange={(v) => update('duration', v)} /></div>
+            <div className="form-block stage-first"><div className="block-title"><span>课程上下文</span><small>与后续教案共用</small></div><SelectField label="学段" value={form.stage} options={stageOptions} onChange={v => update('stage', v)} /><Field label="课程课题" value={form.topic} onChange={v => update('topic', v)} required />{form.stage === '本科' ? <div className="field-grid two"><Field label="专业方向" value={form.field} onChange={v => update('field', v)} /><Field label="课程名称" value={form.courseName} onChange={v => update('courseName', v)} /></div> : <div className="field-grid two"><SelectField label="年级" value={form.grade} options={gradesByStage[form.stage] || []} onChange={v => update('grade', v)} /><Field label="学科" value={form.subject} onChange={v => update('subject', v)} required /></div>}{form.stage === '本科' ? <SelectField label="课时" value={form.duration} options={['40','80','120']} optionLabels={{40:'40 分钟',80:'80 分钟',120:'120 分钟'}} onChange={v => update('duration', v)} /> : <Field label="课时（分钟）" value={form.duration} onChange={v => update('duration', v)} />}</div>
             <div className="course-link-map"><strong>生成后的联动范围</strong><span>模型部件与观察角度</span><ArrowRight size={14} /><span>AI辅助教案活动</span><ArrowRight size={14} /><span>PPT 与 5 道练习题</span></div>
             {plan && <div className="linked-plan-notice"><Check size={15} /><div><strong>已关联教案：{plan.title}</strong><span>重新生成模型后，教师编辑内容不会被覆盖，只会标记待同步。</span></div></div>}
           </section>
-          <aside className="preview-column fused-model-column"><ModelPanel file={modelFile} setFile={setModelFile} modelUrl={modelUrl} options={modelOptions} setOptions={setModelOptions} configured={threeDConfigured} assetResult={activeModelAsset as ImageModelResult | null} onGenerate={(file, options, mode, views) => generate3d(file, options, mode, views)} onImport={importModel} busy={busy} disabled={false} onSkip={() => goToWorkbenchStage('lesson')} onCompleteAsset={() => goToWorkbenchStage('lesson')} /></aside>
+          <aside className="preview-column fused-model-column"><ModelPanel file={modelFile} setFile={setModelFile} modelUrl={modelUrl} options={modelOptions} setOptions={setModelOptions} configured={threeDConfigured} assetResult={activeModelAsset as ImageModelResult | null} quota={modelGenerationQuota} isAdmin={isAdmin} onGenerate={(file, options, mode, views) => generate3d(file, options, mode, views)} onImport={importModel} busy={busy} disabled={false} onSkip={() => goToWorkbenchStage('lesson')} onCompleteAsset={() => goToWorkbenchStage('lesson')} /></aside>
         </div> : <div className={`workspace-grid ${plan && !showFullForm && workbenchStage === 'output' ? 'has-plan' : 'is-input'}`}>
           <section className="form-panel">
             {plan && !showFullForm && <QuickSummary plan={plan} form={form} onEdit={() => setShowFullForm(true)} onStep={(step) => { setShowFullForm(true); setPrepStep(step) }} />}
             <div className="panel-heading"><div><span className="section-kicker">COURSE BLUEPRINT</span><h2>课程蓝图</h2><p>填写下面的信息，AI 生成的教案会更符合你的课程。</p></div><button className="ghost-btn" onClick={sample}><Sparkles size={15} />载入示例</button></div>
             <div className="ai-autofill-note" role="note"><Sparkles size={15} /><span><strong>填写提示</strong>教材内容、学生基础、前置知识、常见错误等类似信息可以不填；留空时，AI 会根据课程主题和已有信息自动补全。</span></div>
+            {generationStatus && <div className={`ai-generation-status ${generationStatus.kind === 'error' ? 'is-error' : 'is-success'}`} role={generationStatus.kind === 'error' ? 'alert' : 'status'}><span className="ai-generation-status-icon">{generationStatus.kind === 'error' ? <AlertTriangle size={15} /> : <Check size={15} />}</span><span>{generationStatus.message}</span></div>}
             <div className="prep-nav" aria-label="备课步骤">
-              {([[1, '课程信息', '课题与教材'], [2, '教材学情', '资料与基础'], [3, '教学侧重', '目标与考点']] as const).map(([step, title, note]) => <button key={step} className={prepStep === step ? 'prep-step active' : 'prep-step'} onClick={() => setPrepStep(step)}><span>{String(step).padStart(2, '0')}</span><div><strong>{title}</strong><small>{note}</small></div></button>)}
+              {(form.stage === '本科' ? [[1, '课程信息', '课题与教材'], [2, '教材学情', '资料与基础'], [3, '教学侧重', '目标与考点']] as const : [[1, '上什么课', '课程基本信息'], [2, '学生与教材', '按需补充'], [3, '我的教学要求', '按需补充']] as const).map(([step, title, note]) => <button key={step} className={prepStep === step ? 'prep-step active' : 'prep-step'} onClick={() => setPrepStep(step)}><span>{String(step).padStart(2, '0')}</span><div><strong>{title}</strong><small>{note}</small></div></button>)}
             </div>
-            {prepStep === 1 && <div className="form-stage">
+            {prepStep === 1 && <div className={`form-stage ${form.stage !== '本科' ? 'k12-stage' : ''}`}>
               <div className="form-block stage-first"><div className="block-title"><span>课程与教材</span><small>按授课计划填写本次课的基本信息</small></div>
-                <div className="field-grid three"><div className="field"><span>学段</span><div className="fixed-stage-value">本科</div></div><Field label="专业名称" value={form.field} onChange={(v) => update('field', v)} required /><Field label="课程名称" value={form.courseName} onChange={(v) => update('courseName', v)} required /></div>
+                <SelectField label="学段" value={form.stage} options={stageOptions} onChange={(v) => update('stage', v)} />
+                {form.stage === '本科' ? <>
+                <div className="field-grid two"><Field label="专业名称" value={form.field} onChange={(v) => update('field', v)} required /><Field label="课程名称" value={form.courseName} onChange={(v) => update('courseName', v)} required /></div>
                 <Field label="授课计划主题" value={form.topic} onChange={(v) => update('topic', v)} required />
                 <div className="field-grid three"><SelectField label="节数" value={form.lessonCount} options={['1','2','3']} optionLabels={{1: '1 节课', 2: '2 节课', 3: '3 节课'}} onChange={(v) => update('lessonCount', v)} /><SelectField label="总时长" value={form.duration} options={['40','80','120']} optionLabels={{40: '40 分钟', 80: '80 分钟', 120: '120 分钟'}} onChange={(v) => update('duration', v)} /><SelectField label="学生能力层次" value={form.abilityLevel} options={['基础层','进阶层']} onChange={(v) => update('abilityLevel', v)} /></div>
                 <TextArea label="学生已有基础" value={form.priorKnowledge || form.learningSituation} onChange={(v) => { update('priorKnowledge', v); update('learningSituation', v) }} rows={3} />
+                </> : <>
+                  <div className="field-grid two"><SelectField label="年级" value={form.grade} options={gradesByStage[form.stage] || []} placeholder="请选择年级" onChange={v => update('grade', v)} /><K12Subject stage={form.stage} grade={form.grade} value={form.subject} onChange={v => update('subject', v)} /></div>
+                  <Field label="课题名称" value={form.topic} onChange={v => update('topic', v)} required />
+                  <K12TextbookField form={form} update={update} />
+                  <LessonScheduleFields form={form} update={update} />
+                  <K12Supplement title="更多课程信息" initialOpen={Boolean(form.unitPosition || form.lessonType !== '新授课')}>
+                    <SelectField label="课型" value={form.lessonType} options={['新授课', '复习课', '练习课', '实验课', '综合活动课']} onChange={v => update('lessonType', v)} />
+                    <Field label="本课在单元中的作用" value={form.unitPosition} placeholder="如单元第一课、知识巩固课或单元总结课" onChange={v => update('unitPosition', v)} />
+                  </K12Supplement>
+                </>}
               </div>
             </div>}
-            {prepStep === 2 && <div className="form-stage">
+            {form.stage !== '本科' && prepStep !== 1 && <K12OptionalStage step={prepStep} form={form} update={update} onMaterial={selectMaterial} />}
+            {form.stage === '本科' && prepStep === 2 && <div className="form-stage">
               <div className="form-block stage-first"><div className="block-title"><span>教材资料</span><small>上传后提取内容，作为生成依据；不提供也可以</small></div><label className="material-upload"><UploadCloud size={19} /><div><strong>{form.materialName || '选择教材或备课资料'}</strong><span>支持 TXT、Markdown、DOCX、文本型 PDF，单文件不超过 15 MB</span></div><input type="file" accept=".txt,.md,.docx,.pdf" onChange={(event) => selectMaterial(event.target.files?.[0] || null)} /></label><div className="field-grid"><SelectField label="资料使用方式" value={form.materialPolicy} options={['严格依据教材','教材优先，允许补充','仅作为生成参考']} onChange={(v) => update('materialPolicy', v)} /><div className="field"><span>已识别资料</span><div className="material-filename">{form.materialName || '尚未上传'}</div></div></div><TextArea label="提取内容（可检查和修改）" value={form.materialText} onChange={(v) => update('materialText', v)} rows={6} /></div>
               <div className="form-block"><div className="block-title"><span>学生基础</span><small>决定讲解起点与支架；不填写时由 AI 推断</small></div><TextArea label="学情分析" value={form.learningSituation} onChange={(v) => update('learningSituation', v)} rows={3} /><div className="field-grid two"><TextArea label="前置知识" value={form.priorKnowledge} onChange={(v) => update('priorKnowledge', v)} rows={3} /><TextArea label="常见错误与认知障碍" value={form.misconceptions} onChange={(v) => update('misconceptions', v)} rows={3} /></div></div>
             </div>}
-            {prepStep === 3 && <div className="form-stage">
+            {form.stage === '本科' && prepStep === 3 && <div className="form-stage">
               <div className="form-block stage-first"><div className="block-title"><span>教学主线</span></div><TextArea label="本课核心问题" value={form.coreQuestion} onChange={(v) => update('coreQuestion', v)} rows={2} /><div className="field-grid two"><TextArea label="教学目标" value={form.objectives} onChange={(v) => update('objectives', v)} rows={4} /><TextArea label="教学重点" value={form.keyPoints} onChange={(v) => update('keyPoints', v)} rows={4} /></div><div className="field-grid two"><TextArea label="教学难点" value={form.difficulties} onChange={(v) => update('difficulties', v)} rows={3} /><TextArea label="课程考核目标" value={form.assessmentMethod} onChange={(v) => update('assessmentMethod', v)} rows={3} /></div></div>
               <div className="form-block"><div className="block-title"><span>课堂闭环</span><small>活动、评价与作业</small></div><div className="field-grid two"><TextArea label="教学方法" value={form.methods} onChange={(v) => update('methods', v)} rows={3} /><TextArea label="教学资源" value={form.resources} onChange={(v) => update('resources', v)} rows={3} /></div><div className="field-grid two"><TextArea label="课堂评价" value={form.assessment} onChange={(v) => update('assessment', v)} rows={3} /><TextArea label="课后作业" value={form.homework} onChange={(v) => update('homework', v)} rows={3} /></div></div>
             </div>}
@@ -754,54 +858,120 @@ function PrepStudio({ onBack, embedded = false, onApplyLesson, userId = 0 }: Pre
             <div className="form-footer"><span><Lightbulb size={15} />AI 生成 · 可继续编辑</span><div className="form-footer-actions">{plan && <button className="primary-btn" onClick={() => { setShowFullForm(false); setWorkbenchStage('output') }} disabled={busy === 'preview'}>{busy === 'preview' ? <LoaderCircle className="spin" size={17} /> : <ArrowLeft size={17} />}返回教案</button>}{plan && <button className="outline-btn" onClick={() => void generatePlan(true)} disabled={busy === 'preview'}>{busy === 'preview' ? <LoaderCircle className="spin" size={17} /> : <RefreshCw size={17} />}重新生成教案</button>}{!plan && <button className="primary-btn" onClick={() => void generatePlan()} disabled={busy === 'preview'}>{busy === 'preview' ? <LoaderCircle className="spin" size={17} /> : <WandSparkles size={17} />}生成教案 <ArrowRight size={16} /></button>}</div></div>
           </section>
           <aside className="preview-column">
-            {!plan ? <EmptyPreview form={form} /> : <Fragment key={plan.id}><LessonPreview plan={plan} onUpdate={updatePlan} onSave={saveRecord} onGenerate={generatePpt} onGenerate3d={generate3d} onRegenerate={() => void generatePlan()} busy={busy} modelFile={modelFile} setModelFile={setModelFile} modelUrl={modelUrl} threeDConfigured={threeDConfigured} bioResult={bioResult} modelAsset={activeModelAsset} artifacts={artifacts} pptArtifact={pptArtifact} warmupQuestions={warmupQuestions.length ? warmupQuestions : (plan.warmupQuestions || [])} warmupGeneration={warmupGeneration} onGenerateWarmup={() => generateWarmup()} onRegenerateWarmupQuestion={regenerateWarmupQuestion} onWarmupChange={setWarmupQuestions} modelOptions={modelOptions} setModelOptions={setModelOptions} onApplyLesson={applyToClassroom} onImport={importModel} coursewareManifest={coursewareManifest} onCoursewareChange={setCoursewareManifest} onNotice={setToast} onLessonApproved={() => { if (!modelRecommendationShown && !hasUsableModelAsset(modelAsset || plan.modelAsset || null, modelUrl)) { setModelRecommendationShown(true); setModelRecommendationReason('after-approval'); setModelRecommendationOpen(true) } }} /></Fragment>}
+            {!plan ? <EmptyPreview form={form} /> : <Fragment key={plan.id}><LessonPreview plan={plan} onUpdate={updatePlan} onSave={saveRecord} onGenerate={generatePpt} onGenerate3d={generate3d} onRegenerate={() => void generatePlan()} busy={busy} modelFile={modelFile} setModelFile={setModelFile} modelUrl={modelUrl} threeDConfigured={threeDConfigured} modelGenerationQuota={modelGenerationQuota} isAdmin={isAdmin} bioResult={bioResult} modelAsset={activeModelAsset} artifacts={artifacts} pptArtifact={pptArtifact} warmupQuestions={warmupQuestions.length ? warmupQuestions : (plan.warmupQuestions || [])} warmupGeneration={warmupGeneration} onGenerateWarmup={() => generateWarmup()} onRegenerateWarmupQuestion={regenerateWarmupQuestion} onWarmupChange={setWarmupQuestions} modelOptions={modelOptions} setModelOptions={setModelOptions} onApplyLesson={applyToClassroom} onImport={importModel} coursewareManifest={coursewareManifest} onCoursewareChange={setCoursewareManifest} onNotice={setToast} onLessonApproved={() => { if (!modelRecommendationShown && !hasUsableModelAsset(modelAsset || plan.modelAsset || null, modelUrl)) { setModelRecommendationShown(true); setModelRecommendationReason('after-approval'); setModelRecommendationOpen(true) } }} /></Fragment>}
           </aside>
         </div>}
       </>}
-      {view === 'records' && <RecordsView records={filteredRecords} query={query} setQuery={setQuery} onOpen={openRecord} onDelete={deleteRecord} onNew={() => { setView('new'); setPlan(null); setModelAsset(null); setModelUrl(''); setModelFile(null); setWorkbenchStage('lesson'); setModelRecommendationOpen(false); setModelModalOpen(false); setModelRecommendationShown(false); setModelRecommendationReason(null) }} />}
+      {view === 'records' && <RecordsView records={filteredRecords} query={query} setQuery={setQuery} onOpen={openRecord} onDelete={deleteRecord} onNew={() => { setView('new'); setPlan(null); setGenerationStatus(null); setModelAsset(null); setModelUrl(''); setModelFile(null); setWorkbenchStage('lesson'); setModelRecommendationOpen(false); setModelModalOpen(false); setModelRecommendationShown(false); setModelRecommendationReason(null) }} />}
       {view === 'knowledge' && <KnowledgeView />}
     </main>
     {toast && <div className="toast"><Check size={16} />{toast}<button onClick={() => setToast('')}><X size={15} /></button></div>}
     {modelRecommendationOpen && <div className="prep-modal-backdrop" role="presentation" onMouseDown={() => setModelRecommendationOpen(false)}><section className="prep-modal recommendation-modal" role="dialog" aria-modal="true" aria-labelledby="model-recommendation-title" onMouseDown={(event) => event.stopPropagation()}><button className="prep-modal-close" type="button" aria-label="关闭" onClick={() => setModelRecommendationOpen(false)}><X size={18} /></button><div className="recommendation-icon"><Box size={24} /></div><span className="section-kicker">TEACHING SUGGESTION</span><h2 id="model-recommendation-title">建议先添加 3D 教学模型</h2><p>{modelRecommendationReason === 'before-lesson' ? '当前还没有生成 3D 模型。添加模型可以让后续教案中的结构观察、教学活动和课堂课件更贴合实际模型。你也可以暂时跳过，直接生成教案。' : '当前教案已经完成审核。配合 3D 模型进行结构观察和课堂讲解，可以让教学内容更直观，增强学生对结构与功能关系的理解。'}</p><div className="prep-modal-actions"><button type="button" className="outline-btn" onClick={() => { const shouldContinue = modelRecommendationReason === 'before-lesson'; setModelRecommendationOpen(false); setModelRecommendationReason(null); if (shouldContinue) void generatePlan(true) }}>{modelRecommendationReason === 'before-lesson' ? '暂不建模，继续生成' : '暂不建模，继续教案'}</button><button type="button" className="primary-btn" onClick={() => { setModelRecommendationOpen(false); setModelModalOpen(true) }}><Box size={15} />开始建模</button></div></section></div>}
-    {modelModalOpen && <div className="prep-modal-backdrop" role="presentation" onMouseDown={() => setModelModalOpen(false)}><section className="prep-modal model-modal" role="dialog" aria-modal="true" aria-labelledby="model-modal-title" onMouseDown={(event) => event.stopPropagation()}><header className="prep-modal-header"><div><span className="section-kicker">3D ASSET</span><h2 id="model-modal-title">添加本课 3D 教学模型</h2><p>提交图片生成模型，或直接导入已有模型；模型会保存在当前课程中。</p></div><button className="prep-modal-close" type="button" aria-label="关闭建模窗口" onClick={() => setModelModalOpen(false)}><X size={18} /></button></header><div className="prep-modal-body"><ModelPanel file={modelFile} setFile={setModelFile} modelUrl={modelUrl} options={modelOptions} setOptions={setModelOptions} configured={threeDConfigured} assetResult={activeModelAsset as ImageModelResult | null} onGenerate={(file, options, mode, views) => generate3d(file, options, mode, views)} onImport={importModel} onCompleteAsset={modelRecommendationReason === 'before-lesson' ? () => { setModelModalOpen(false); setModelRecommendationReason(null); setToast('模型已生成，请点击“生成教案”继续'); } : undefined} busy={busy} disabled={false} /></div><footer className="prep-modal-footer"><span>{modelUrl ? '模型已连接到当前教案' : '可以稍后从课程资产区域再次打开'}</span><button type="button" className="outline-btn" onClick={() => setModelModalOpen(false)}>返回教案</button></footer></section></div>}
+    {modelModalOpen && <div className="prep-modal-backdrop" role="presentation" onMouseDown={() => { if (busy !== '3d') setModelModalOpen(false) }}><section className="prep-modal model-modal" role="dialog" aria-modal="true" aria-labelledby="model-modal-title" onMouseDown={(event) => event.stopPropagation()}><header className="prep-modal-header"><div><span className="section-kicker">3D ASSET</span><h2 id="model-modal-title">添加本课 3D 教学模型</h2><p>提交图片生成模型，或直接导入已有模型；模型会保存在当前课程中。</p></div><button className="prep-modal-close" type="button" aria-label="关闭建模窗口" onClick={() => { if (busy !== '3d') setModelModalOpen(false) }} disabled={busy === '3d'}><X size={18} /></button></header><div className="prep-modal-body"><ModelPanel file={modelFile} setFile={setModelFile} modelUrl={modelUrl} options={modelOptions} setOptions={setModelOptions} configured={threeDConfigured} assetResult={activeModelAsset as ImageModelResult | null} quota={modelGenerationQuota} isAdmin={isAdmin} onGenerate={(file, options, mode, views) => generate3d(file, options, mode, views)} onImport={importModel} onCompleteAsset={modelRecommendationReason === 'before-lesson' ? () => { setModelModalOpen(false); setModelRecommendationReason(null); setToast('模型已生成并完成预览，请点击“生成教案”继续'); } : undefined} busy={busy} disabled={false} /></div><footer className="prep-modal-footer"><span>{modelUrl ? '模型已连接到当前教案' : '可以稍后从课程资产区域再次打开'}</span><button type="button" className="outline-btn" onClick={() => { if (busy !== '3d') setModelModalOpen(false) }} disabled={busy === '3d'}>返回教案</button></footer></section></div>}
   </div>
 }
 
 const fieldPlaceholders: Record<string, string> = {
-  '课程课题': '例如：心脏血流与心脏结构',
-  '专业名称': '例如：生物医学工程',
-  '专业方向': '例如：生物医学工程',
-  '课程名称': '例如：人体解剖学与生理学',
-  '授课计划主题': '例如：心脏血流与心脏结构',
-  '学科': '例如：数学',
+  '课程课题': '请输入这节课要讲的主题',
+  '专业名称': '请输入学生所学的专业名称',
+  '专业方向': '请输入本课程所属的专业或方向',
+  '课程名称': '请输入本次授课所属的课程名称',
+  '授课计划主题': '请输入这节课要讲的主题',
+  '学科': '请输入本次授课的学科名称',
   '课题名称': '请输入本次授课的课题',
-  '教材版本': '例如：人教A版',
-  '册次 / 章节': '例如：第三章 函数的概念与性质',
-  '单元位置': '例如：单元核心概念课',
+  '教材版本': '请输入教材名称、出版社或版本',
+  '册次 / 章节': '请输入本课对应的册次、章节或页码',
+  '单元位置': '请说明本课在单元中的位置，如单元第一课或总结课',
   '课时（分钟）': '例如：40',
 }
 
 const textAreaPlaceholders: Record<string, string> = {
-  '学生已有基础': '例如：已了解血液循环的基本概念，能识别心房和心室，但对血流方向与瓣膜作用掌握不稳定。',
+  '学生已有基础': '请说明学生已经学过什么、会做什么，还有哪些地方不熟悉。',
   '提取内容（可检查和修改）': '上传教材或备课资料后，系统会在此提取文字，也可直接粘贴教学内容。',
-  '学情分析': '请描述学生的知识基础、认知特点、学习偏好及可能遇到的困难。',
-  '前置知识': '例如：已掌握血管类型、血液成分及体循环的基本路径。',
-  '常见错误与认知障碍': '例如：容易混淆动脉与静脉的判断标准，无法将瓣膜结构与单向血流联系起来。',
-  '本课核心问题': '例如：心脏如何通过结构配合保证血液按固定方向流动？',
-  '教学目标': '请填写学生本课结束后能够完成的可观察、可评价任务，建议分点填写。',
-  '教学重点': '请填写本课必须掌握的核心知识、技能或方法。',
-  '教学难点': '请填写学生最容易理解受阻或操作失误的内容。',
-  '课程考核目标': '例如：能根据结构图准确标注血流路径，并解释瓣膜的功能。',
-  '高频考点与典型题型': '请填写与本课相关的高频考点、命题方式和常见易错点。',
-  '教学方法': '例如：问题导向学习、结构观察、小组讨论与案例分析。',
-  '教学资源': '例如：教材结构图、3D 模型、血流动画和任务单。',
-  '课堂评价': '例如：通过标注任务、小组口头解释和出口练习检查目标达成情况。',
-  '课后作业': '例如：绘制心脏血流路径图，并用文字说明瓣膜与血流方向的关系。',
+  '学情分析': '请说明学生目前的学习情况、学习习惯，以及上这节课可能遇到的困难。',
+  '前置知识': '学这节课之前，学生需要先掌握哪些知识或方法？',
+  '常见错误与认知障碍': '学生在哪些地方容易弄混、做错或听不懂？',
+  '本课核心问题': '这节课最想带学生弄明白或解决的一个问题是什么？',
+  '教学目标': '上完这节课，希望学生知道什么、学会什么、能够做什么？可分点填写。',
+  '教学重点': '这节课最需要学生掌握的内容是什么？',
+  '教学难点': '这节课哪些内容学生最难理解或学会？',
+  '课程考核目标': '准备检查学生学会了什么？做到什么程度才算达到要求？',
+  '高频考点与典型题型': '请填写本课常考的内容、常见题型，以及学生容易出错的地方。',
+  '教学方法': '准备怎样教这节课？如讲解、提问、小组讨论或动手练习。',
+  '教学资源': '上课需要用到哪些材料或工具？如教材、图片、视频或练习单。',
+  '课堂评价': '怎样了解学生是否学会了？如课堂提问、随堂练习或展示学习成果。',
+  '课后作业': '课后让学生完成什么任务？请说明任务内容和完成要求。',
+}
+
+function LessonScheduleFields({ form, update }: { form: FormState; update: (key: keyof FormState, value: string) => void }) {
+  return <div className="field-grid two"><SelectField label="节数" value={form.lessonCount} options={['1', '2', '3']} optionLabels={{ 1: '1 节课', 2: '2 节课', 3: '3 节课' }} onChange={v => update('lessonCount', v)} /><SelectField label="总时长" value={form.duration} options={['40', '80', '120']} onChange={v => update('duration', v)} /></div>
+}
+
+function K12Subject({ stage, grade, value, onChange }: { stage: string; grade: string; value: string; onChange: (value: string) => void }) {
+  const subjects = subjectsForK12Stage(stage, grade)
+  return <div className="k12-subject"><SelectField label="学科" value={value} placeholder="请选择学科" options={subjects} onChange={onChange} /></div>
+}
+
+function K12Supplement({ title, initialOpen, children }: { title: string; initialOpen: boolean; children: ReactNode }) {
+  const [open, setOpen] = useState(initialOpen)
+  useEffect(() => { if (initialOpen) setOpen(true) }, [initialOpen])
+  return <details className="k12-supplement" open={open} onToggle={event => setOpen(event.currentTarget.open)}><summary><span>{title}</span><small>选填</small><ChevronDown size={15} /></summary><div className="k12-supplement-body">{children}</div></details>
+}
+
+function K12TextbookField({ form, update }: { form: FormState; update: (key: keyof FormState, value: string) => void }) {
+  const options = textbookOptionsForK12Stage(form.stage, form.subject)
+  const isHighSchool = normalizeK12Stage(form.stage) === '高中'
+  const legacyCustom = isHighSchool && Boolean(form.textbookVersion) && !options.includes(form.textbookVersion)
+  const [customSelected, setCustomSelected] = useState(legacyCustom)
+  useEffect(() => { if (legacyCustom) setCustomSelected(true) }, [legacyCustom])
+  if (!isHighSchool) return <Field label="教材版本" value={form.textbookVersion} onChange={v => update('textbookVersion', v)} />
+  return <div className="k12-textbook-fields">
+    <SelectField
+      label="教材册次 / 模块"
+      value={customSelected ? '__custom__' : form.textbookVersion}
+      placeholder="请选择教材册次 / 模块"
+      options={[...options, '__custom__']}
+      optionLabels={{ __custom__: '其他 / 自定义' }}
+      onChange={value => { const custom = value === '__custom__'; setCustomSelected(custom); update('textbookVersion', custom ? (customSelected ? form.textbookVersion : '') : value) }}
+    />
+    {customSelected && <Field label="自定义教材名称" value={form.textbookVersion} placeholder="例如：某出版社高中数学选择性必修" onChange={v => update('textbookVersion', v)} />}
+  </div>
+}
+
+function K12OptionalStage({ step, form, update, onMaterial }: { step: 2 | 3; form: FormState; update: (key: keyof FormState, value: string) => void; onMaterial: (file: File | null) => void }) {
+  if (step === 2) return <div className="form-stage k12-optional-stage">
+    <div className="form-block stage-first"><div className="block-title"><span>学生与教材</span><small>选填，留空也可生成</small></div>
+      <TextArea label="学生目前的学习情况" value={form.learningSituation} placeholder="学生已经会什么？哪些地方还不熟悉？" onChange={v => update('learningSituation', v)} rows={3} />
+      <label className="material-upload"><UploadCloud size={19} /><div><strong>{form.materialName || '上传教材或备课资料（选填）'}</strong><span>支持 TXT、Markdown、DOCX、文本型 PDF，单文件不超过 15 MB</span></div><input type="file" accept=".txt,.md,.docx,.pdf" onChange={event => onMaterial(event.target.files?.[0] || null)} /></label>
+      <K12Supplement title="补充教材信息" initialOpen={Boolean(form.textbookVersion || form.chapter || form.materialText || form.materialName || form.materialPolicy !== initialForm.materialPolicy)}>
+        <p className="field-hint">已在第一步选择教材册次或模块；这里补充具体单元、章节、页码或课文名称。</p>
+        <Field label="册次 / 章节" value={form.chapter} onChange={v => update('chapter', v)} />
+        <SelectField label="资料使用方式" value={form.materialPolicy} options={['严格依据教材', '教材优先，允许补充', '仅作为生成参考']} onChange={v => update('materialPolicy', v)} />
+        <TextArea label="提取内容（可检查和修改）" value={form.materialText} onChange={v => update('materialText', v)} rows={6} />
+      </K12Supplement>
+      <K12Supplement title="补充学生情况" initialOpen={Boolean(form.priorKnowledge || form.misconceptions)}>
+        <TextArea label="需要提前掌握的知识" value={form.priorKnowledge} placeholder="学这节课之前，学生需要先掌握什么？" onChange={v => update('priorKnowledge', v)} rows={3} />
+        <TextArea label="学生容易出错的地方" value={form.misconceptions} placeholder="哪些内容学生容易弄混、做错或听不懂？" onChange={v => update('misconceptions', v)} rows={3} />
+      </K12Supplement>
+    </div>
+  </div>
+  return <div className="form-stage k12-optional-stage"><div className="form-block stage-first"><div className="block-title"><span>我的教学要求</span><small>选填，留空也可生成</small></div>
+    <TextArea label="这节课希望学生学会什么？" value={form.objectives} placeholder="可以写希望学生了解的内容、学会的方法或能完成的任务。" onChange={v => update('objectives', v)} rows={3} />
+    <K12Supplement title="补充教学重点" initialOpen={Boolean(form.coreQuestion || form.keyPoints || form.difficulties || form.examPoints)}>
+      <TextArea label="本课要解决的问题" value={form.coreQuestion} placeholder="这节课最想带学生弄明白或解决什么问题？" onChange={v => update('coreQuestion', v)} rows={2} />
+      <div className="field-grid two"><TextArea label="教学重点" value={form.keyPoints} onChange={v => update('keyPoints', v)} rows={3} /><TextArea label="教学难点" value={form.difficulties} onChange={v => update('difficulties', v)} rows={3} /></div>
+      <TextArea label="常考内容" value={form.examPoints} placeholder="请填写本课常考的内容或常见题型。" onChange={v => update('examPoints', v)} rows={3} />
+    </K12Supplement>
+    <K12Supplement title="补充课堂安排" initialOpen={Boolean(form.methods || form.resources || form.assessment || form.homework)}>
+      <div className="field-grid two"><TextArea label="教学方法" value={form.methods} onChange={v => update('methods', v)} rows={3} /><TextArea label="教学资源" value={form.resources} onChange={v => update('resources', v)} rows={3} /></div>
+      <div className="field-grid two"><TextArea label="课堂评价" value={form.assessment} onChange={v => update('assessment', v)} rows={3} /><TextArea label="课后作业" value={form.homework} onChange={v => update('homework', v)} rows={3} /></div>
+    </K12Supplement>
+  </div></div>
 }
 
 function Field({ label, value, onChange, required, placeholder }: { label: string; value: string; onChange: (value: string) => void; required?: boolean; placeholder?: string }) { if (label.includes('班级规模')) return null; return <label className="field"><span>{label}{required && <b>*</b>}</span><input value={value} placeholder={placeholder || fieldPlaceholders[label]} onChange={(e) => onChange(e.target.value)} /></label> }
 function TextArea({ label, value, onChange, rows, required, placeholder }: { label: string; value: string; onChange: (value: string) => void; rows: number; required?: boolean; placeholder?: string }) { return <label className="field"><span>{label}{required && <b>*</b>}</span><textarea rows={rows} value={value} placeholder={placeholder || textAreaPlaceholders[label]} onChange={(e) => onChange(e.target.value)} /></label> }
-function SelectField({ label, value, options, optionLabels, onChange }: { label: string; value: string; options: string[]; optionLabels?: Record<string, string>; onChange: (value: string) => void }) { const isDuration = label.includes('课时') || label.includes('总时长'); return <label className="field"><span>{label}</span><div className="select-wrap"><select value={value} onChange={(e) => onChange(e.target.value)}>{options.map((option) => <option value={option} key={option}>{isDuration ? `${option} 分钟` : optionLabels?.[option] || option}</option>)}</select><ChevronDown size={15} /></div></label> }
+function SelectField({ label, value, options, optionLabels, onChange, placeholder }: { label: string; value: string; options: string[]; optionLabels?: Record<string, string>; onChange: (value: string) => void; placeholder?: string }) { const isDuration = label.includes('课时') || label.includes('总时长'); return <label className="field"><span>{label}</span><div className="select-wrap"><select value={value} onChange={(e) => onChange(e.target.value)}>{placeholder && <option value="">{placeholder}</option>}{options.map((option) => <option value={option} key={option}>{isDuration ? `${option} 分钟` : optionLabels?.[option] || option}</option>)}</select><ChevronDown size={15} /></div></label> }
 
 function WorkbenchFlow({ stage, hasPlan, onChange }: { stage: WorkbenchStage; hasPlan: boolean; onChange: (stage: WorkbenchStage) => void }) {
   const steps: Array<{ id: WorkbenchStage; number: string; title: string; note: string; ready: boolean }> = [
@@ -856,11 +1026,12 @@ function SlideGallery({ draft, previews, quality, selected, setSelected, editing
   </div>
 }
 
-function LessonPreview({ plan, onUpdate, onSave, onGenerate, onGenerate3d, onRegenerate, busy, modelFile, setModelFile, modelUrl, threeDConfigured, bioResult, modelAsset, artifacts, pptArtifact, warmupQuestions, warmupGeneration, onGenerateWarmup, onRegenerateWarmupQuestion, onWarmupChange, modelOptions, setModelOptions, onApplyLesson, onImport, coursewareManifest, onCoursewareChange, onNotice, onLessonApproved }: { plan: LessonPlan; onUpdate: (plan: LessonPlan) => void; onSave: () => void; onGenerate: () => void; onGenerate3d: (file: File | null, options: ModelOptions, mode?: ModelMode, views?: ModelViews) => Promise<ImageModelResult | BioResult | undefined>; onRegenerate: () => void; busy: BusyState; modelFile: File | null; setModelFile: (file: File | null) => void; modelUrl: string; threeDConfigured: boolean | null; bioResult: BioResult | null; modelAsset: Record<string, unknown> | null; artifacts: ArtifactState; pptArtifact: { downloadUrl: string; fileName: string } | null; warmupQuestions: WarmupQuestion[]; warmupGeneration: WarmupGeneration | null; onGenerateWarmup: () => void; onRegenerateWarmupQuestion: (index: number) => void; onWarmupChange: (questions: WarmupQuestion[]) => void; modelOptions: ModelOptions; setModelOptions: (options: ModelOptions) => void; onApplyLesson: () => void; onImport?: (files: File[]) => Promise<ImageModelResult>; coursewareManifest: CoursewareManifest | null; onCoursewareChange: (manifest: CoursewareManifest) => void; onNotice: (message: string) => void; onLessonApproved: () => void }) {
+function LessonPreview({ plan, onUpdate, onSave, onGenerate, onGenerate3d, onRegenerate, busy, modelFile, setModelFile, modelUrl, threeDConfigured, modelGenerationQuota, isAdmin, bioResult, modelAsset, artifacts, pptArtifact, warmupQuestions, warmupGeneration, onGenerateWarmup, onRegenerateWarmupQuestion, onWarmupChange, modelOptions, setModelOptions, onApplyLesson, onImport, coursewareManifest, onCoursewareChange, onNotice, onLessonApproved }: { plan: LessonPlan; onUpdate: (plan: LessonPlan) => void; onSave: () => void; onGenerate: () => void; onGenerate3d: (file: File | null, options: ModelOptions, mode?: ModelMode, views?: ModelViews) => Promise<ImageModelResult | BioResult | undefined>; onRegenerate: () => void; busy: BusyState; modelFile: File | null; setModelFile: (file: File | null) => void; modelUrl: string; threeDConfigured: boolean | null; modelGenerationQuota: ModelGenerationQuota | null; isAdmin: boolean; bioResult: BioResult | null; modelAsset: Record<string, unknown> | null; artifacts: ArtifactState; pptArtifact: { downloadUrl: string; fileName: string } | null; warmupQuestions: WarmupQuestion[]; warmupGeneration: WarmupGeneration | null; onGenerateWarmup: () => void; onRegenerateWarmupQuestion: (index: number) => void; onWarmupChange: (questions: WarmupQuestion[]) => void; modelOptions: ModelOptions; setModelOptions: (options: ModelOptions) => void; onApplyLesson: () => void; onImport?: (files: File[]) => Promise<ImageModelResult>; coursewareManifest: CoursewareManifest | null; onCoursewareChange: (manifest: CoursewareManifest) => void; onNotice: (message: string) => void; onLessonApproved: () => void }) {
   const [editing, setEditing] = useState(false)
   const [activeTab, setActiveTab] = useState<'lesson' | 'export' | 'courseware' | 'slides' | 'materials' | 'model' | 'warmup'>('lesson')
   const [draft, setDraft] = useState(plan)
-  const [teacherLessonDraft, setTeacherLessonDraft] = useState<{ draft: TeacherLessonDraft; quality: { valid: boolean; blocking: string[]; checks?: string[] } } | null>(null)
+  const teacherLessonDraft = plan.classroomData?.review || null
+  const setTeacherLessonDraft = (review: TeacherReview | null) => onUpdate({ ...plan, classroomData: { ...plan.classroomData, review } })
   const [slidePreviews, setSlidePreviews] = useState<SlidePreview[]>([])
   const [quality, setQuality] = useState<QualityReport | null>(null)
   const [selectedSlide, setSelectedSlide] = useState(0)
@@ -868,7 +1039,6 @@ function LessonPreview({ plan, onUpdate, onSave, onGenerate, onGenerate3d, onReg
   const [isPreviewExpanded, setIsPreviewExpanded] = useState(false)
   const designReady = !draft.designWorkflow || draft.designWorkflow.status === 'approved'
   useEffect(() => setDraft(plan), [plan])
-  useEffect(() => setTeacherLessonDraft(null), [plan.id, plan.designWorkflow])
   useEffect(() => {
     let cancelled = false
     fetch('/api/prep/ppt/preview', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lessonPlan: draft }) })
@@ -930,14 +1100,14 @@ function LessonPreview({ plan, onUpdate, onSave, onGenerate, onGenerate3d, onReg
         {draft.designWorkflow ? <UndergraduateDesignWorkflow plan={draft as unknown as Record<string, unknown> & { request: Record<string, unknown>; designWorkflow?: LessonDesignWorkflow }} onChange={(next) => { const lesson = next as unknown as LessonPlan; setDraft(lesson); onUpdate(lesson) }} onNotice={onNotice} onComplete={() => { if (!hasUsableModelAsset(modelAsset, modelUrl)) onLessonApproved(); else setActiveTab('export') }} /> : draft.professionalOutcomes && <UndergraduateDesignPreview plan={draft} />}
         <ReferenceList references={draft.references || []} />
       </>}
-      {activeTab === 'lesson' && (editing ? <div className="edit-preview"><InlineEdit label="课程概览" value={draft.overview} onChange={(value) => change('overview', value)} rows={3} /><InlineEdit label="课程目标（每行一条）" value={draft.objectives.join('\n')} onChange={(value) => change('objectives', splitLines(value))} rows={4} /><InlineEdit label="教学重点（每行一条）" value={draft.keyPoints.join('\n')} onChange={(value) => change('keyPoints', splitLines(value))} rows={3} /><InlineEdit label="教学难点（每行一条）" value={draft.difficulties.join('\n')} onChange={(value) => change('difficulties', splitLines(value))} rows={3} /><InlineEdit label="课后作业" value={draft.homework} onChange={(value) => change('homework', value)} rows={3} /></div> : <><PreviewSection title="课程目标" items={draft.objectives} /><PreviewSection title="学情分析" items={[draft.situation]} /><PreviewSection title="重点与难点" items={[...draft.keyPoints.map((x) => `重点：${x}`), ...draft.difficulties.map((x) => `难点：${x}`)]} /><div className="preview-section"><div className="section-title"><span>教学流程</span><small>{draft.phases.reduce((sum, phase) => sum + phase.time, 0)} 分钟</small></div><div className="timeline">{draft.phases.map((phase) => <div className="timeline-row" key={phase.name}><div className="time-badge">{phase.time}<small>MIN</small></div><div className="timeline-copy"><strong>{phase.name}</strong><p><b>教师</b>{phase.teacher}</p><p><b>学生</b>{phase.student}</p><span><Check size={12} />{phase.check}</span></div></div>)}</div></div><PreviewSection title="板书设计" items={draft.blackboard} /><PreviewSection title="作业设计" items={[draft.homework]} /></>)}
+      {activeTab === 'lesson' && (editing ? <div className="edit-preview"><InlineEdit label="课程概览" value={draft.overview} onChange={(value) => change('overview', value)} rows={3} /><InlineEdit label="课程目标（每行一条）" value={draft.objectives.join('\n')} onChange={(value) => change('objectives', splitLines(value))} rows={4} /><InlineEdit label="教学重点（每行一条）" value={draft.keyPoints.join('\n')} onChange={(value) => change('keyPoints', splitLines(value))} rows={3} /><InlineEdit label="教学难点（每行一条）" value={draft.difficulties.join('\n')} onChange={(value) => change('difficulties', splitLines(value))} rows={3} /><InlineEdit label="课后作业" value={draft.homework} onChange={(value) => change('homework', value)} rows={3} /></div> : <><PreviewSection title="课程目标" items={draft.objectives} /><PreviewSection title="学情分析" items={[draft.situation]} /><PreviewSection title="重点与难点" items={[...draft.keyPoints.map((x) => `重点：${x}`), ...draft.difficulties.map((x) => `难点：${x}`)]} /><div className="preview-section"><div className="section-title"><span>教学流程</span><small>{draft.phases.reduce((sum, phase) => sum + phase.time, 0)} 分钟</small></div><div className="timeline">{draft.phases.map((phase) => <div className="timeline-row" key={phase.name}><div className="time-badge">{phase.time}<small>MIN</small></div><div className="timeline-copy"><strong>{phase.name}</strong><p><b>教师活动</b>{phase.teacher}</p><p><b>学生活动</b>{phase.student}</p>{phase.output && <p><b>学生完成的成果</b>{phase.output}</p>}<span><Check size={12} />检查与评价：{phase.check}</span></div></div>)}</div></div><PreviewSection title="板书设计" items={draft.blackboard} /><PreviewSection title="作业设计" items={[draft.homework]} /></>)}
       {activeTab === 'slides' && <SlideGallery draft={draft} previews={slidePreviews} quality={quality} selected={selectedSlide} setSelected={setSelectedSlide} editing={editing} changeSlide={changeSlide} moveSlide={moveSlide} duplicateSlide={duplicateSlide} deleteSlide={deleteSlide} regenerateSlide={regenerateSlide} slideBusy={slideBusy} />}
       {activeTab === 'courseware' && <CoursewareStoryboard lessonPlan={draft as unknown as Record<string, unknown>} model={modelAsset} questions={warmupQuestions} manifest={coursewareManifest} onChange={onCoursewareChange} onNotice={onNotice} />}
-      {activeTab === 'materials' && <div className="material-preview"><PreviewSection title="教材依据" items={[draft.request.textbookVersion, draft.request.chapter, draft.request.materialName ? `已使用：${draft.request.materialName}` : '未上传教材资料，依据教师填写内容生成', draft.request.materialPolicy].filter(Boolean)} /><PreviewSection title="课堂知识线索" items={[draft.request.priorKnowledge, draft.request.coreQuestion, ...splitLines(draft.request.examPoints || '')].filter(Boolean)} /><div className="preview-section"><div className="section-title"><span>资料摘录</span></div><p className="material-excerpt">{draft.request.materialText?.slice(0, 1000) || '暂无资料摘录。可返回“教材学情”步骤上传或粘贴内容。'}</p></div></div>}
-      {activeTab === 'model' && <ModelPanel file={modelFile} setFile={setModelFile} modelUrl={modelUrl} options={modelOptions} setOptions={setModelOptions} configured={threeDConfigured} assetResult={modelAsset as ImageModelResult | null} onGenerate={(file, options, mode, views) => onGenerate3d(file, options, mode, views)} onImport={onImport} busy={busy} disabled={editing} />}
+      {activeTab === 'materials' && <div className="material-preview"><PreviewSection title="教材依据" items={[draft.request.textbookVersion ? `教材册次 / 模块：${draft.request.textbookVersion}` : '', draft.request.chapter ? `章节：${draft.request.chapter}` : '', draft.request.materialName ? `已使用：${draft.request.materialName}` : '未上传教材资料，依据教师填写内容生成', draft.request.materialPolicy].filter(Boolean)} /><PreviewSection title="课堂知识线索" items={[draft.request.priorKnowledge, draft.request.coreQuestion, ...splitLines(draft.request.examPoints || '')].filter(Boolean)} /><div className="preview-section"><div className="section-title"><span>资料摘录</span></div><p className="material-excerpt">{draft.request.materialText?.slice(0, 1000) || '暂无资料摘录。可返回“教材学情”步骤上传或粘贴内容。'}</p></div></div>}
+      {activeTab === 'model' && <ModelPanel file={modelFile} setFile={setModelFile} modelUrl={modelUrl} options={modelOptions} setOptions={setModelOptions} configured={threeDConfigured} assetResult={modelAsset as ImageModelResult | null} quota={modelGenerationQuota} isAdmin={isAdmin} onGenerate={(file, options, mode, views) => onGenerate3d(file, options, mode, views)} onImport={onImport} busy={busy} disabled={editing} />}
       {activeTab === 'warmup' && <WarmupEditor questions={warmupQuestions} generation={warmupGeneration} onChange={(questions) => { setDraft({ ...draft, warmupQuestions: questions }); onUpdate({ ...draft, warmupQuestions: questions }); onWarmupChange(questions); }} onRegenerate={onRegenerateWarmupQuestion} busy={busy === 'warmup'} />}
     </div>
-    <div className="preview-foot"><span><FileText size={14} />{draft.designWorkflow?.generation.engine === 'ollama' ? 'AI 生成' : 'AI 生成失败，模板回退'} · 可继续修改</span><span>更新于 {draft.createdAt.replace('T', ' ')}</span></div>
+    <div className="preview-foot"><span><FileText size={14} />{draft.generation?.engine === 'ollama' ? 'AI 已生成教案初稿，可继续编辑' : draft.generation?.engine === 'unavailable' ? 'AI 未连接' : draft.designWorkflow ? 'AI 辅助个性化调优' : '教案内容'} · 可继续修改</span><span>更新于 {draft.createdAt.replace('T', ' ')}</span></div>
   </div>
 }
 
@@ -1040,7 +1210,7 @@ function BioModelPanel({ plan, onUpdate, result, onGenerate, busy }: { plan: Les
   </section>
 }
 
-function ModelPanel({ file, setFile, modelUrl, options, setOptions, configured, assetResult, onGenerate, onImport, busy, disabled, onSkip, onCompleteAsset }: { file: File | null; setFile: (file: File | null) => void; modelUrl: string; options: ModelOptions; setOptions: (options: ModelOptions) => void; configured: boolean | null; assetResult?: ImageModelResult | null; onGenerate: (file: File | null, options: ModelOptions, mode: ModelMode, views: ModelViews) => Promise<ImageModelResult | BioResult | undefined>; onImport?: (files: File[]) => Promise<ImageModelResult>; busy: BusyState; disabled: boolean; onSkip?: () => void; onCompleteAsset?: () => void }) {
+function ModelPanel({ file, setFile, modelUrl, options, setOptions, configured, assetResult, quota, isAdmin = false, onGenerate, onImport, busy, disabled, onSkip, onCompleteAsset }: { file: File | null; setFile: (file: File | null) => void; modelUrl: string; options: ModelOptions; setOptions: (options: ModelOptions) => void; configured: boolean | null; assetResult?: ImageModelResult | null; quota?: ModelGenerationQuota | null; isAdmin?: boolean; onGenerate: (file: File | null, options: ModelOptions, mode: ModelMode, views: ModelViews) => Promise<ImageModelResult | BioResult | undefined>; onImport?: (files: File[]) => Promise<ImageModelResult>; busy: BusyState; disabled: boolean; onSkip?: () => void; onCompleteAsset?: () => void }) {
   const [mode, setMode] = useState<ModelMode>('single')
   const [views, setViews] = useState<ModelViews>({})
   const [dragTarget, setDragTarget] = useState<string | null>(null)
@@ -1104,7 +1274,6 @@ function ModelPanel({ file, setFile, modelUrl, options, setOptions, configured, 
       const generated = await onGenerate(file, options, mode, views)
       if (generated && 'parts' in generated) {
         setResult(generated as ImageModelResult)
-        if (generated.status === 'generated') onCompleteAsset?.()
       }
     } catch (error) {
       const message = error instanceof Error ? error.message : '3D 生成失败'
@@ -1143,7 +1312,8 @@ function ModelPanel({ file, setFile, modelUrl, options, setOptions, configured, 
     {mode === 'single' ? <label className={`upload-box ${dragTarget === 'single' ? 'dragging' : ''}`} {...dragProps('single')}><UploadCloud size={18} /><span>{file ? file.name : '提交一张 PNG、JPG 或 WebP 图片'}</span><small>{file ? `${Math.ceil(file.size / 1024)} KB · 已就绪` : '点击选择，或直接拖入图片'}</small><input type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => chooseImage(event.target.files?.[0], 'single')} /></label> : <div className="multiview-grid">{viewKeys.map((key) => <label className={`${views[key] ? 'view-upload ready' : 'view-upload'} ${dragTarget === key ? 'dragging' : ''}`} key={key} {...dragProps(key)}><UploadCloud size={15} /><strong>{viewLabels[key]}</strong><small>{views[key]?.name || '点击选择或拖入图片'}</small><input type="file" accept="image/png,image/jpeg,image/webp" onChange={(event) => chooseImage(event.target.files?.[0], key)} /></label>)}</div>}
     {mode === 'multiview' && <p className="model-hint">提交正面、左侧、右侧和背面四张图片。</p>}
     <div className="model-controls"><label className="field"><span>拆解方式</span><select value={options.separationMode} onChange={(event) => update('separationMode', event.target.value)}><option value="anatomical">心脏医学语义拆解</option><option value="geometric">普通几何拆件</option></select></label><label className="field"><span>贴图分辨率</span><select value={options.textureResolution} onChange={(event) => update('textureResolution', event.target.value)}><option>512</option><option>768</option><option>1024</option><option>1536</option><option>2048</option></select></label><label className="field"><span>前景占比</span><input type="number" min="0.5" max="1" step="0.05" value={options.foregroundRatio} onChange={(event) => update('foregroundRatio', event.target.value)} /></label><label className="field"><span>目标顶点数</span><input type="number" step="1" value={options.vertexCount} onChange={(event) => update('vertexCount', event.target.value)} /></label><label className="model-check"><input type="checkbox" checked={options.removeBackground} onChange={(event) => update('removeBackground', event.target.checked)} />自动移除背景</label></div>
-    <div className="model-actions"><button className="primary-btn model-generate" onClick={submit} disabled={busy !== null || importing || disabled || (mode === 'single' ? !file : viewKeys.some((key) => !views[key]))}>{busy === '3d' ? <LoaderCircle className="spin" size={15} /> : <ArrowRight size={15} />}{busy === '3d' ? '正在生成模型' : mode === 'single' ? '下一步：生成单图模型' : '下一步：生成四视角模型'}</button>{onSkip && <button type="button" className="outline-btn" onClick={onSkip} disabled={busy !== null || importing}>跳过建模，直接设计教案</button>}</div>
+    {!isAdmin && <div className={`model-quota-notice${quota?.remaining === 0 ? ' exhausted' : ''}`} aria-live="polite"><AlertTriangle size={19} aria-hidden="true" /><span><strong>{quota?.remaining === 0 ? '免费生成次数已用完' : '免费模型生成额度'}</strong><small>{quota?.remaining === 0 ? '请联系管理员' : '单图、四视图和重新处理各计 1 次'}</small></span>{quota ? <b className="model-quota-count">{quota.remaining}<i>/{quota.total} 次</i></b> : <b className="model-quota-count">3<i> 次</i></b>}</div>}
+    <div className="model-actions"><button className="primary-btn model-generate" onClick={submit} disabled={busy !== null || importing || disabled || (!isAdmin && quota?.remaining === 0) || (mode === 'single' ? !file : viewKeys.some((key) => !views[key]))}>{busy === '3d' ? <LoaderCircle className="spin" size={15} /> : <ArrowRight size={15} />}{busy === '3d' ? '正在生成模型' : mode === 'single' ? '下一步：生成单图模型' : '下一步：生成四视角模型'}</button>{onSkip && <button type="button" className="outline-btn" onClick={onSkip} disabled={busy !== null || importing}>跳过建模，直接设计教案</button>}</div>
     {generationError && <div className="model-warning model-generation-error"><AlertTriangle size={15} /><span>{generationError}</span></div>}
     {previewModelUrl ? (<><div className="model-result">{result?.source === 'imported' ? <ImportedModelPreview url={previewModelUrl} modelType={result.modelType || 'glb'} assetUrls={result.assetUrls} /> : <model-viewer src={previewModelUrl} camera-controls auto-rotate shadow-intensity="1" exposure="1" environment-image="neutral" />}<div className="image-model-downloads"><a className="model-download" href={result?.fullGlbUrl || modelUrl} download="lesson-model.glb"><Download size={15} />下载模型</a>{result?.blendUrl && <a className="model-download" href={result.blendUrl} download><Download size={15} />Blender 工程</a>}{result?.previewUrl && <a className="model-download" href={result.previewUrl} download><Download size={15} />预览图</a>}</div></div>{result && <div className="part-summary"><strong>{result.source === 'imported' ? '已导入模型' : '生成模型完整外观'}</strong><small>{result.source === 'imported' ? `${result.fileName || '本地模型'} · ${result.modelType?.toUpperCase() || '模型'} · 不含语义部件` : `${result.engine || '来源未知'} · ${result.viewsUsed?.length || 1}/4 视图已使用`}</small><div><span>{result.source === 'imported' ? '按外观模型用于观察，不自动生成拆解部件。' : '保留生成模型原始外观，不附加模板结构。'}</span></div></div>}{result?.status === 'needs_review' && <div className="model-warning"><AlertTriangle size={15} />四视图配准置信度偏低，请检查预览或重新上传；当前不会自动进入教案。</div>}{onCompleteAsset && result?.status === 'generated' && <button type="button" className="primary-btn" onClick={onCompleteAsset}><ArrowRight size={15} />完成建模，进入教案设计</button>}</>) : isDualLayerAnatomy ? <div className="model-warning"><AlertTriangle size={15} />当前记录缺少可用外观文件，请重新导入或提交图片生成。</div> : <div className="model-empty"><Box size={22} /><span>{busy === '3d' ? '正在生成模型…' : importing ? '正在导入模型…' : '导入或生成后将在这里预览模型'}</span></div>}
     {singleModelWarningOpen && <div className="prep-modal-backdrop single-model-warning-backdrop" role="presentation" onMouseDown={(event) => { event.stopPropagation(); setSingleModelWarningOpen(false) }}>
@@ -1174,7 +1344,7 @@ function ImportedModelPreview({ url, modelType, assetUrls }: { url: string; mode
 function PreviewSection({ title, items }: { title: string; items: string[] }) { return <div className="preview-section"><div className="section-title"><span>{title}</span></div><ul className="preview-list">{items.map((item) => <li key={item}><i />{item}</li>)}</ul></div> }
 function InlineEdit({ label, value, onChange, rows }: { label: string; value: string; onChange: (value: string) => void; rows: number }) { return <label className="inline-edit"><span>{label}</span><textarea rows={rows} value={value} onChange={(e) => onChange(e.target.value)} /></label> }
 
-function RecordsView({ records, query, setQuery, onOpen, onDelete, onNew }: { records: RecordItem[]; query: string; setQuery: (v: string) => void; onOpen: (item: RecordItem) => void; onDelete: (id: string) => void; onNew: () => void }) { return <section className="records-view"><div className="records-head"><div><span className="section-kicker">ARCHIVE / LOCAL</span><h2>本科备案记录</h2><p>已保存的本科教案草稿和生成记录。</p></div><button className="primary-btn" onClick={onNew}><Plus size={17} />新建教案</button></div><div className="record-toolbar"><div className="search-box"><Search size={16} /><input placeholder="搜索课题、专业或课程" value={query} onChange={(e) => setQuery(e.target.value)} /></div><span>{records.length} 条记录</span></div><div className="record-list">{records.length ? records.map((record) => <div className="record-row" key={record.id}><div className="record-icon"><FileText size={18} /></div><div className="record-main"><strong>{record.title}</strong><span>{record.subject} · {new Date(record.updatedAt).toLocaleString('zh-CN')}</span></div><span className="record-tag">已备案</span><button className="icon-btn" title="打开" onClick={() => onOpen(record)}><FolderOpen size={16} /></button><button className="icon-btn danger" title="删除" onClick={() => onDelete(record.id)}><Trash2 size={16} /></button></div>) : <div className="no-records"><History size={28} /><h3>还没有本科备案记录</h3><p>教案会自动保存，生成后可在这里继续编辑。</p></div>}</div></section> }
+function RecordsView({ records, query, setQuery, onOpen, onDelete, onNew }: { records: RecordItem[]; query: string; setQuery: (v: string) => void; onOpen: (item: RecordItem) => void; onDelete: (id: string) => void; onNew: () => void }) { return <section className="records-view"><div className="records-head"><div><span className="section-kicker">ARCHIVE / LOCAL</span><h2>教案备案记录</h2><p>已保存的各学段教案草稿和生成记录。</p></div><button className="primary-btn" onClick={onNew}><Plus size={17} />新建教案</button></div><div className="record-toolbar"><div className="search-box"><Search size={16} /><input placeholder="搜索课题、学科、专业或课程" value={query} onChange={(e) => setQuery(e.target.value)} /></div><span>{records.length} 条记录</span></div><div className="record-list">{records.length ? records.map((record) => <div className="record-row" key={record.id}><div className="record-icon"><FileText size={18} /></div><div className="record-main"><strong>{record.title}</strong><span>{record.subject} · {new Date(record.updatedAt).toLocaleString('zh-CN')}</span></div><span className="record-tag">已备案</span><button className="icon-btn" title="打开" onClick={() => onOpen(record)}><FolderOpen size={16} /></button><button className="icon-btn danger" title="删除" onClick={() => onDelete(record.id)}><Trash2 size={16} /></button></div>) : <div className="no-records"><History size={28} /><h3>还没有教案备案记录</h3><p>教案会自动保存，生成后可在这里继续编辑。</p></div>}</div></section> }
 function KnowledgeView() { return <section className="knowledge-view"><div className="knowledge-hero"><div className="knowledge-symbol"><BookOpen size={27} /></div><span className="section-kicker">KNOWLEDGE BASE / COMING SOON</span><h2>让教案更懂你的课堂</h2><p>后续可以添加教材笔记、教研资料和校本资源，生成时优先引用你自己的内容。</p><div className="future-grid"><div><UploadCloud size={19} /><strong>添加资料</strong><span>Word、PDF、图片与课堂笔记</span></div><div><Layers3 size={19} /><strong>建立分类</strong><span>按专业、课程、章节和标签整理</span></div><div><Sparkles size={19} /><strong>精准生成</strong><span>减少泛化内容，保留校本表达</span></div></div></div></section> }
 
 export default PrepStudio

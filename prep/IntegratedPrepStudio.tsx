@@ -8,7 +8,7 @@ import type { ClassroomModelAsset } from '../types/courseware';
 import prepStyles from './prep-styles.css?inline';
 import biomedStyles from './prep-biomed.css?inline';
 
-export default function IntegratedPrepStudio({ onBack, onApplyLesson, userId }: { onBack: () => void; onApplyLesson: (lesson: unknown, modelUrl?: string, warmupQuestions?: WarmupQuestion[], courseware?: CoursewareManifest, modelAsset?: ClassroomModelAsset) => void; userId: number }) {
+export default function IntegratedPrepStudio({ onBack, onApplyLesson, userId, isAdmin }: { onBack: () => void; onApplyLesson: (lesson: unknown, modelUrl?: string, warmupQuestions?: WarmupQuestion[], courseware?: CoursewareManifest, modelAsset?: ClassroomModelAsset) => void; userId: number; isAdmin: boolean }) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const [shadowRoot, setShadowRoot] = useState<ShadowRoot | null>(null);
 
@@ -26,5 +26,5 @@ export default function IntegratedPrepStudio({ onBack, onApplyLesson, userId }: 
     setShadowRoot(root);
   }, []);
 
-  return <div ref={hostRef} className="integrated-prep-host h-full min-h-0">{shadowRoot ? createPortal(<PrepStudio onBack={onBack} embedded onApplyLesson={onApplyLesson} userId={userId} />, shadowRoot) : null}</div>;
+  return <div ref={hostRef} className="integrated-prep-host h-full min-h-0">{shadowRoot ? createPortal(<PrepStudio onBack={onBack} embedded onApplyLesson={onApplyLesson} userId={userId} isAdmin={isAdmin} />, shadowRoot) : null}</div>;
 }

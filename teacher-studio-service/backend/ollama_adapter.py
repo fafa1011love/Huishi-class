@@ -1,14 +1,29 @@
-"""Local Ollama adapter for structured undergraduate lesson generation."""
+"""Local Ollama adapter for structured lesson generation."""
 from __future__ import annotations
 
 import json
 import os
+from pathlib import Path
 from urllib.error import URLError
 from urllib.request import Request, urlopen
 
 
-DEFAULT_BASE_URL = os.environ.get("OLLAMA_BASE_URL", "http://127.0.0.1:11434").rstrip("/")
-DEFAULT_MODEL = os.environ.get("OLLAMA_MODEL", "qwen3:4b")
+def _env(name, fallback=""):
+    if name in os.environ:
+        return os.environ[name].strip()
+    root = Path(__file__).resolve().parents[1]
+    for path in (root / ".env", root.parent / ".env.local", root.parent / ".env"):
+        if not path.is_file():
+            continue
+        for line in path.read_text(encoding="utf-8-sig").splitlines():
+            key, separator, value = line.strip().partition("=")
+            if separator and key.strip() == name:
+                return value.strip().strip("\"'")
+    return fallback
+
+
+DEFAULT_BASE_URL = _env("OLLAMA_BASE_URL", "http://127.0.0.1:11434").rstrip("/")
+DEFAULT_MODEL = _env("OLLAMA_MODEL", "qwen3:4b")
 
 
 def _request(path, payload=None, timeout=3):
@@ -45,7 +60,7 @@ def status():
         }
 
 
-def generate_json(system_prompt, user_prompt, validator=None, timeout=120, format_schema=None):
+def generate_json(system_prompt, user_prompt, validator=None, timeout=120, format_schema=None, error_meta=None):
     last_error = None
     prompt = user_prompt
     for attempt in range(3):
@@ -76,13 +91,187 @@ def generate_json(system_prompt, user_prompt, validator=None, timeout=120, forma
                 error = validator(result)
                 if error:
                     last_error = error
+                    if error_meta is not None:
+                        error_meta["kind"] = "validation"
                     prompt = user_prompt + f"\n上次输出未通过校验：{error}。只返回修正后的 JSON。"
                     continue
             return result, None
+        except json.JSONDecodeError as exc:
+            last_error = str(exc)
+            if error_meta is not None:
+                error_meta["kind"] = "invalid-output"
+            prompt = user_prompt + f"\n上次输出不是合法 JSON：{last_error}。只返回合法 JSON。"
         except (ValueError, KeyError, URLError, TimeoutError, OSError) as exc:
             last_error = str(exc)
+            if error_meta is not None:
+                error_meta["kind"] = "connection"
             prompt = user_prompt + f"\n上次输出失败：{last_error}。只返回合法 JSON。"
     return None, last_error or "本地模型未返回有效 JSON"
+
+
+def generate_k12_lesson_content(request, scaffold):
+    """Generate the teacher-readable K12 content inside a fixed five-phase scaffold."""
+    current = status()
+    if not current["available"]:
+        message = "AI 当前未连接，请检查本地模型后重试"
+        if current.get("serviceReachable") and current.get("model"):
+            message = f"AI 当前未连接，请先安装 {current['model']} 后重试"
+        return None, {"engine": "unavailable", "model": DEFAULT_MODEL, "message": message, "detail": current.get("message", "")}
+
+    request = request or {}
+    subject_profile = scaffold.get("subjectProfile") or {}
+    phase_names = list(scaffold.get("phase_names") or [])
+    source_text = str(request.get("materialText") or "").strip()[:8000]
+    textbook_context = {
+        "textbookVersion": request.get("textbookVersion") or "",
+        "chapter": request.get("chapter") or "",
+        "materialName": request.get("materialName") or "",
+        "materialPolicy": request.get("materialPolicy") or "",
+        "materialText": source_text,
+    }
+    teacher_fields = {
+        key: request.get(key)
+        for key in (
+            "learningSituation", "priorKnowledge", "misconceptions", "coreQuestion", "objectives",
+            "keyPoints", "difficulties", "methods", "resources", "assessment", "homework", "examPoints",
+        )
+        if request.get(key)
+    }
+    prompt = {
+        "task": "生成一份面向普通教师、可以直接拿去上课的 K12 教案内容",
+        "course": {
+            "stage": request.get("stage"),
+            "templateStage": scaffold.get("templateStage"),
+            "grade": request.get("grade"),
+            "subject": request.get("subject"),
+            "topic": request.get("topic"),
+            "lessonType": request.get("lessonType") or "新授课",
+            "duration": request.get("duration") or 40,
+        },
+        "textbookContext": textbook_context,
+        "teachingTemplate": {
+            "phaseNames": phase_names,
+            "stageFocus": scaffold.get("focus"),
+            "studentStyle": scaffold.get("student_style"),
+            "subjectFocus": subject_profile.get("focus"),
+            "learningEvidence": subject_profile.get("evidence"),
+            "methodHint": subject_profile.get("method_hint"),
+            "resourceHint": subject_profile.get("resource_hint"),
+        },
+        "teacherInputs": teacher_fields,
+        "sourceMaterial": source_text,
+        "rules": [
+            "课题、学段、年级、学科和课时必须与输入完全一致，不得改名或另起课题。",
+            "教师已经填写的内容是优先依据，只能在其基础上具体化，不能用无关内容替换。",
+            "每个教学环节必须写清教师要做什么、学生要做什么、检查什么、学生留下什么产出。",
+            "内容要写成可以执行的课堂动作，避免理解核心概念、完成迁移应用、根据实际情况补充等空泛或占位表达。",
+            "只使用与课题、学科和年级相符的知识，不凭空添加教材没有提供的具体事实。",
+            "填写教材册次或模块时，教学内容、重点、流程和作业优先限定在该教材范围内。",
+            "填写具体章节时，五个教学环节必须围绕该章节组织，不混用其他册次内容。",
+            "教师上传或粘贴的教材内容优先于通用教材知识；教材信息为空时才根据课题、学科、年级和教师要求组织内容。",
+            "不得因为教材标注为选修就擅自添加课题或资料中没有出现的知识。",
+            "只返回简体中文 JSON，不要 Markdown，不要解释生成过程。",
+        ],
+        "output": {
+            "overview": "80到160字的课程概览，说明本课学什么、怎么学、用什么证据判断学会了",
+            "coreQuestion": "一个围绕本课课题、学生可以通过课堂活动回答的核心问题",
+            "objectives": ["2到4条可观察、可检查的学习目标"],
+            "situation": "结合年级和学科说明学生已有基础、可能困难以及本课教学起点",
+            "priorKnowledge": ["2到3条本课需要的前置知识或经验"],
+            "keyPoints": ["2到4条具体教学重点"],
+            "difficulties": ["1到3条具体教学难点和突破方向"],
+            "misconceptions": ["2到3条学生可能出现的具体错误或混淆"],
+            "examPoints": ["1到3条适合本课检测或迁移的内容"],
+            "methods": "具体说明本课采用的教学方法和组织方式",
+            "resources": "具体说明教材、课件、材料、器材或学习单",
+            "assessment": "说明如何通过课堂表现、任务产出或练习判断学生是否学会",
+            "homework": "与本课目标对应、可以提交或检查的课后任务",
+            "blackboard": ["3到6条与课题、重点和方法对应的板书内容"],
+            "phaseContent": [
+                {
+                    "teacher": "教师活动：具体到出示什么、提问什么、如何组织和如何反馈",
+                    "student": "学生活动：具体到观察、朗读、计算、实验、讨论、表达或练习动作",
+                    "check": "评价检查：教师用什么问题、标准或证据判断学习情况",
+                    "visibleOutput": "学生在本环节留下的可见产出",
+                }
+                for _ in phase_names
+            ],
+        },
+    }
+
+    required = (
+        "overview", "coreQuestion", "objectives", "situation", "priorKnowledge", "keyPoints",
+        "difficulties", "misconceptions", "examPoints", "methods", "resources", "assessment",
+        "homework", "blackboard", "phaseContent",
+    )
+    list_fields = ("objectives", "priorKnowledge", "keyPoints", "difficulties", "misconceptions", "examPoints", "blackboard")
+    banned_phrases = ("待填写", "根据实际情况补充", "理解核心概念", "完成迁移应用", "相关已有知识")
+
+    validation_meta = {}
+
+    def validate(value):
+        if not isinstance(value, dict):
+            return "顶层必须是 JSON 对象"
+        if any(key not in value for key in required):
+            return "缺少必需字段"
+        text_fields = ("overview", "coreQuestion", "situation", "methods", "resources", "assessment", "homework")
+        if any(not isinstance(value.get(key), str) or not value[key].strip() for key in text_fields):
+            return "课程概览、核心问题和课堂安排字段不能为空"
+        for key in list_fields:
+            items = value.get(key)
+            if not isinstance(items, list) or not items or any(not str(item).strip() for item in items):
+                return f"{key} 必须是非空文本数组"
+        if len(value["phaseContent"]) != len(phase_names):
+            return f"phaseContent 必须包含 {len(phase_names)} 个环节"
+        phase_keys = ("teacher", "student", "check", "visibleOutput")
+        for item in value["phaseContent"]:
+            if not isinstance(item, dict) or any(not str(item.get(key) or "").strip() for key in phase_keys):
+                return "教学环节必须完整包含教师活动、学生活动、评价检查和学生产出"
+        text = json.dumps(value, ensure_ascii=False)
+        if any(phrase in text for phrase in banned_phrases):
+            return "内容仍包含空泛或占位表达，请结合课题改写"
+        topic = str(request.get("topic") or "").strip()
+        if len(topic) >= 2:
+            terms = [topic[index:index + 2] for index in range(len(topic) - 1) if topic[index:index + 2].strip()]
+            if terms and not any(term in text for term in terms):
+                return f"生成内容与课题“{topic}”不相关"
+        return None
+
+    text_fields = ("overview", "coreQuestion", "situation", "methods", "resources", "assessment", "homework")
+    schema = {
+        "type": "object",
+        "properties": {
+            **{key: {"type": "string"} for key in text_fields},
+            **{key: {"type": "array", "items": {"type": "string"}, "minItems": 1} for key in list_fields},
+            "phaseContent": {
+                "type": "array", "minItems": len(phase_names), "maxItems": len(phase_names),
+                "items": {
+                    "type": "object",
+                    "properties": {key: {"type": "string"} for key in ("teacher", "student", "check", "visibleOutput")},
+                    "required": ["teacher", "student", "check", "visibleOutput"],
+                    "additionalProperties": False,
+                },
+            },
+        },
+        "required": [*text_fields, *list_fields, "phaseContent"],
+        "additionalProperties": False,
+    }
+    result, error = generate_json(
+        "你是经验丰富的 K12 一线教师和教案设计师。严格按照给定学段、学科和五段课堂结构生成可执行教案。" \
+        "不要生成空泛的教学套话，不要把其他学科或其他年级的内容套进来。只返回符合 JSON Schema 的 JSON。",
+        json.dumps(prompt, ensure_ascii=False),
+        validator=validate,
+        timeout=180,
+        format_schema=schema,
+        error_meta=validation_meta,
+    )
+    if result is None:
+        if validation_meta.get("kind") in {"validation", "invalid-output"}:
+            message = "AI 已响应，但内容未通过检查，请重试"
+        else:
+            message = "AI 当前未连接，请检查本地模型后重试"
+        return None, {"engine": "unavailable", "model": DEFAULT_MODEL, "message": message, "detail": error or ""}
+    return result, {"engine": "ollama", "model": DEFAULT_MODEL, "message": f"已使用 {DEFAULT_MODEL} 生成 K12 教案内容"}
 
 
 def generate_lesson_content(request, scaffold, duration, activity_count):

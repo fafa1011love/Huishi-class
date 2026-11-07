@@ -44,6 +44,7 @@ import ollama_adapter
 import partfield_adapter
 import triposr_local
 import teaching_benchmarks
+import k12_templates
 from express_model import obj_archive_to_glb
 
 
@@ -838,6 +839,27 @@ def clean_lines(values, fallback):
     return result or [fallback]
 
 
+class K12GenerationError(RuntimeError):
+    def __init__(self, message, generation):
+        super().__init__(message)
+        self.generation = generation
+
+
+def _k12_lines(request, generated, key, fallback):
+    teacher_value = request.get(key)
+    if teacher_value:
+        return clean_lines(teacher_value, fallback)
+    return clean_lines((generated or {}).get(key), fallback)
+
+
+def generate_k12_lesson(request):
+    scaffold = k12_templates.template_profile(request)
+    generated, generation = ollama_adapter.generate_k12_lesson_content(request, scaffold)
+    if not generated:
+        raise K12GenerationError(generation.get("message", "AI 当前未连接，请检查本地模型后重试"), generation)
+    return build_lesson(request, generated, generation)
+
+
 def parse_material(body, content_type):
     message = BytesParser(policy=default).parsebytes(
         f"Content-Type: {content_type}\r\nMIME-Version: 1.0\r\n\r\n".encode() + body
@@ -884,9 +906,10 @@ def visual_profile(request):
         return {"stage": "本科", "subject": "生物医学", "density": "balanced", "theme": "医学高对比", "visualLanguage": "器官标注、结构功能关系、机制箭头、病例证据链", "assetQueries": [], "benchmark": benchmark}
     subject = str(request.get("subject") or "").strip()
     stage = str(request.get("stage") or request.get("grade") or "").strip()
-    if stage.startswith("小学") or "一" in stage or "二" in stage or "三" in stage or "四" in stage or "五" in stage or "六" in stage:
+    template_stage = k12_templates.resolve_template_stage(request)
+    if template_stage == "小学1-3年级":
         density = "light"
-    elif stage.startswith("高中") or "高" in stage:
+    elif template_stage == "高中":
         density = "dense"
     else:
         density = "balanced"
@@ -895,40 +918,57 @@ def visual_profile(request):
         "物理": {"visualLanguage": "受力图、电路图、实验步骤、变量关系", "assetQueries": ["physics force diagram", "school physics experiment"]},
         "化学": {"visualLanguage": "实验装置、反应过程、粒子示意、条件与结论", "assetQueries": ["chemistry laboratory equipment", "molecule structure diagram"]},
         "生物": {"visualLanguage": "结构标注、过程循环、对比图、实验观察", "assetQueries": ["biology cell diagram", "biology classroom microscope"]},
+        "生物学": {"visualLanguage": "结构标注、过程循环、对比图、实验观察", "assetQueries": ["biology cell diagram", "biology classroom microscope"]},
+        "语文": {"visualLanguage": "文本证据、关键词圈画、朗读示范、表达任务", "assetQueries": ["Chinese reading classroom", "text annotation worksheet"]},
+        "英语": {"visualLanguage": "情境对话、句型支架、角色表达、听读输入", "assetQueries": ["English classroom dialogue", "language learning flashcards"]},
+        "历史": {"visualLanguage": "时间轴、历史地图、史料摘录、因果关系", "assetQueries": ["history timeline classroom", "historical map lesson"]},
+        "地理": {"visualLanguage": "地图图层、区域对比、统计图表、真实案例", "assetQueries": ["geography map lesson", "regional geography chart"]},
+        "政治": {"visualLanguage": "生活案例、观点对照、依据标注、情境判断", "assetQueries": ["civics classroom discussion", "social studies case"]},
+        "道德与法治": {"visualLanguage": "生活案例、观点对照、依据标注、情境判断", "assetQueries": ["civics classroom discussion", "social studies case"]},
+        "思想政治": {"visualLanguage": "生活案例、观点对照、依据标注、情境判断", "assetQueries": ["civics classroom discussion", "social studies case"]},
+        "体育与健康": {"visualLanguage": "动作分解、要领标注、练习反馈、课堂挑战", "assetQueries": ["physical education class", "sports movement instruction"]},
     }
     selected = rules.get(subject, {"visualLanguage": "问题链、流程图、对比卡片、课堂任务区域", "assetQueries": [f"{subject} classroom", f"{subject} learning diagram"]})
     theme = request.get("pptTheme") or "自动推荐"
     if theme == "自动推荐":
         theme = "考试复习" if "复习" in str(request.get("lessonType") or "") else "课堂故事化"
-    return {"stage": stage, "subject": subject, "density": density, "theme": theme, **selected, "benchmark": benchmark}
+    return {"stage": stage, "templateStage": template_stage, "subject": subject, "density": density, "theme": theme, **selected, "benchmark": benchmark}
 
 
-def build_lesson(request):
+def build_lesson(request, generated=None, generation=None):
     if request.get("stage") == "本科":
         return lesson_design.generate_draft(request, request.get("designMode") or "quick", request.get("modelAsset"))["lessonPlan"]
+    template = k12_templates.template_profile(request)
+    template_stage = template["templateStage"]
+    generated = generated or {}
     subject = request.get("subject") or "未设置学科"
     grade = request.get("grade") or request.get("stage") or "未设置年级"
     topic = request.get("topic") or "待确定课题"
     duration = max(20, min(120, int(request.get("duration") or 40)))
-    objectives = clean_lines(request.get("objectives"), "理解本节课的核心概念并完成迁移应用")
-    key_points = clean_lines(request.get("keyPoints"), "建立概念、方法与实际问题之间的联系")
-    difficulties = clean_lines(request.get("difficulties"), "把抽象知识转化为可操作的解题或探究步骤")
-    methods = clean_lines(request.get("methods"), "问题驱动、合作探究、即时评价")
-    situation = request.get("learningSituation") or "学生已有相关基础，需要通过真实问题建立新旧知识连接。"
-    resources = request.get("resources") or "教材、课件、板书、课堂练习"
-    assessment = request.get("assessment") or "观察参与度、口头表达、课堂练习和出口条"
-    homework = request.get("homework") or "完成基础练习，并用一句话写下本节课最重要的结论。"
+    subject_profile = template.get("subjectProfile") or {}
+    objectives = _k12_lines(request, generated, "objectives", f"能够围绕“{topic}”完成一次具体表达、操作或判断。")
+    key_points = _k12_lines(request, generated, "keyPoints", f"围绕“{topic}”建立核心认识并说明依据。")
+    difficulties = _k12_lines(request, generated, "difficulties", f"把对“{topic}”的理解转化为可执行的解题、探究或表达步骤。")
+    methods = request.get("methods") or generated.get("methods") or subject_profile.get("method_hint") or "问题导入、观察分析、合作交流、迁移练习"
+    situation = request.get("learningSituation") or generated.get("situation") or "学生已有与本课相关的知识或生活经验，需要通过课堂任务建立新旧知识连接。"
+    resources = request.get("resources") or generated.get("resources") or subject_profile.get("resource_hint") or "教材、课件、板书、课堂练习"
+    assessment = request.get("assessment") or generated.get("assessment") or "根据课堂表现、任务产出和练习结果判断学生是否达到目标。"
+    homework = request.get("homework") or generated.get("homework") or f"完成与“{topic}”相关的基础练习，并用一句话写下本课最重要的结论。"
     lesson_type = request.get("lessonType") or "新授课"
 
-    question = request.get("coreQuestion") or f"如何理解并运用{topic}？"
-    prior = request.get("priorKnowledge") or "相关已有知识"
-    errors = clean_lines(request.get("misconceptions"), "辨析常见误解")
-    exam = clean_lines(request.get("examPoints"), "结合课堂目标设计检测题")
+    question = request.get("coreQuestion") or generated.get("coreQuestion") or f"怎样通过{subject_profile.get('evidence', '课堂任务证据')}回答“{topic}”？"
+    prior = request.get("priorKnowledge") or (generated.get("priorKnowledge") or ["与本课相关的已有知识和生活经验"])[0]
+    errors = _k12_lines(request, generated, "misconceptions", f"把“{topic}”中的关键条件、方法或结论混淆。")
+    exam = _k12_lines(request, generated, "examPoints", f"用一个新情境检验学生对“{topic}”的理解和应用。")
     material = (request.get("materialText") or "").strip()
     source = re.sub(r"\s+", " ", material[:400]).strip()
     rhythm = request.get("teachingRhythm") or "互动型"
     length = request.get("pptLength") or "标准"
     use_3d = request.get("use3d") != "不使用"
+    overview = str(generated.get("overview") or "").strip() or (
+        f"{grade}{subject}{lesson_type}，{duration} 分钟。核心问题：{question}。"
+        + (f" 依据上传资料 {request.get('materialName') or '教师粘贴内容'}。" if source else " 依据教师填写内容。")
+    )
     times = [0.12, 0.22, 0.25, 0.27]
     allocations = [max(2, round(duration * part)) for part in times]
     allocations.append(duration - sum(allocations))
@@ -936,13 +976,24 @@ def build_lesson(request):
         allocations[3] -= 2 - allocations[-1]
         allocations[-1] = 2
 
-    phases = [
-        {"time": allocations[0], "name": "问题导入", "teacher": f"呈现核心问题：{question}；唤醒前置知识：{prior}。", "student": "提出初步判断，并说明已有依据。", "check": "记录至少一种初始想法"},
-        {"time": allocations[1], "name": "观察与建构", "teacher": f"围绕{key_points[0]}组织观察、比较和归纳；引导学生回到资料核对。", "student": "比较实例，尝试用自己的语言概括规律。", "check": f"用一个例子解释：{key_points[0]}"},
-        {"time": allocations[2], "name": "推理与示范", "teacher": f"示范从条件到结论的路径，重点突破：{difficulties[0]}。", "student": "独立完成关键一步，再与同伴互相解释。", "check": "能指出推理依据与适用条件"},
-        {"time": allocations[3], "name": "辨析与迁移", "teacher": f"针对误区“{errors[0]}”组织反例讨论，再用题型“{exam[0]}”检查迁移。", "student": "先独立判断再交流，修正错误理由。", "check": "能说出错误在哪里及如何修正"},
-        {"time": allocations[4], "name": "回扣与评价", "teacher": f"回到“{question}”，以出口条收集学习证据。", "student": "回答核心问题并写下仍未解决的疑问。", "check": assessment},
+    phase_content = generated.get("phaseContent") if isinstance(generated.get("phaseContent"), list) else []
+    default_phase_content = [
+        {"teacher": f"围绕“{question}”创设情境并说明本课任务；{template['focus']}", "student": template["student_style"], "check": "记录或说出一种初步想法", "visibleOutput": "学生的初步判断或问题记录"},
+        {"teacher": f"组织学生观察、阅读或操作材料，围绕“{key_points[0]}”提供提示，并引导回到教材或资料核对。", "student": "比较材料，完成观察或阅读记录，并用自己的话概括发现。", "check": f"用一个例子说明：{key_points[0]}", "visibleOutput": "观察记录、关键词标注或规律概括"},
+        {"teacher": f"示范从条件到结论的思考路径，重点突破“{difficulties[0]}”，及时追问依据和方法。", "student": "独立完成关键一步，再与同伴交流并修订答案。", "check": "能指出结论所依据的条件或证据", "visibleOutput": "一份完整的解题、探究或表达步骤"},
+        {"teacher": f"针对“{errors[0]}”组织辨析或变式任务，再用“{exam[0]}”检查学生是否能够迁移。", "student": "先独立判断，再说明理由、比较不同方法并修正错误。", "check": "能说出错误在哪里以及如何修正", "visibleOutput": "修订后的答案和理由说明"},
+        {"teacher": f"回到“{question}”，整理本课方法和结论，用课堂评价收集学习证据。", "student": "回答核心问题，提交本课产出，并写下仍未解决的问题。", "check": assessment, "visibleOutput": "出口条、口头总结或课堂练习结果"},
     ]
+    phases = []
+    for index, name in enumerate(template["phase_names"]):
+        content = phase_content[index] if index < len(phase_content) else default_phase_content[index]
+        phases.append({
+            "time": allocations[index], "name": name,
+            "teacher": str(content.get("teacher") or default_phase_content[index]["teacher"]).strip(),
+            "student": str(content.get("student") or default_phase_content[index]["student"]).strip(),
+            "check": str(content.get("check") or default_phase_content[index]["check"]).strip(),
+            "output": str(content.get("visibleOutput") or default_phase_content[index]["visibleOutput"]).strip(),
+        })
     profile = visual_profile(request)
     benchmark = profile["benchmark"]
     experience = benchmark["experience"]
@@ -967,7 +1018,7 @@ def build_lesson(request):
 
     slides = [page("封面", topic, [f"{grade} · {subject} · {lesson_type}"], question, "核心问题作为视觉主角"),
               page("问题", "从一个问题开始", [question, f"你已经知道：{prior}"], "提出驱动全课的疑问", "大号问题与观察区域", "先独立猜想，再交流理由"),
-              page("探索", "观察与发现", [key_points[0], f"尝试用已有知识解释：{prior}"], "从现象走向规律", "对比区与连接线", "说出相同与不同"),
+              page("探索", "观察与发现", [key_points[0], f"尝试用{subject_profile.get('evidence', '课堂证据')}解释：{prior}"], "从现象走向规律", "对比区与连接线", "说出相同与不同"),
               page("互动", experience["title"], experience["actions"], "让学生通过可见动作产生学习证据", "控制区、主画布与实时反馈", experience["feedback"], layout_override=experience["mode"]),
               page("概念", "建立核心认识", key_points, "明确概念与适用范围", "层级关系图"),
               page("方法", "怎样一步步解决", [difficulties[0], *objectives[:2]], "示范解决路径", "三步推理路线", "先补出缺失的一步"),
@@ -981,19 +1032,20 @@ def build_lesson(request):
         slides.append(page("揭示", "回看解题依据", [f"依据：{key_points[0]}", f"检查：{difficulties[0]}"], "练习后揭示思路", "逐项核对", "对照自己的过程修订"))
     if request.get("highlightExam") != "不突出" and exam[0] != "结合课堂目标设计检测题":
         slides.append(page("考点", "教师提供的考点", exam[:3], "聚焦教师填写的典型题型", "重点标记"))
-    if use_3d and request.get("subject") in ("数学", "物理", "化学", "生物", "地理", "科学", "美术"):
+    if use_3d and request.get("subject") in ("数学", "物理", "化学", "生物", "生物学", "地理"):
         slides.append(page("观察", "换个视角观察", [f"观察任务：{question}", "准备模型后，比较不同角度下哪些特征不变"], "预留 3D 观察任务；模型需单独生成", "模型展示占位", "旋转模型并记录发现"))
     if rhythm == "练习型":
         slides.append(page("检测", "再试一个变化", [exam[-1], "解释与上一题的异同"], "加强迁移检测", "对比练习", "独立说明理由"))
     slides.append(page("总结", "回到最初的问题", [question, objectives[0], assessment], "形成性评价", "问题回环", "出口条回答"))
     if length != "精简":
         slides.append(page("作业", "带着问题继续", [homework], "巩固与延伸", "任务清单"))
+    blackboard = clean_lines(generated.get("blackboard"), "条件 → 方法 → 结论") if generated.get("blackboard") else [topic, key_points[0], "条件 → 方法 → 结论"]
     return {
         "id": uuid.uuid4().hex,
         "createdAt": now_iso(),
         "request": request,
         "title": topic,
-        "overview": f"{grade}{subject}{lesson_type}，{duration} 分钟。核心问题：{question}。" + (f" 依据上传资料 {request.get('materialName') or '教师粘贴内容'}。" if source else " 依据教师填写内容。"),
+        "overview": overview,
         "objectives": objectives,
         "situation": situation,
         "keyPoints": key_points,
@@ -1003,11 +1055,34 @@ def build_lesson(request):
         "assessment": assessment,
         "homework": homework,
         "phases": phases,
-        "blackboard": [topic, key_points[0], "条件 → 方法 → 结论"],
+        "blackboard": blackboard,
+        "blackboardDesign": blackboard,
+        "coreQuestion": question,
+        "priorKnowledge": _k12_lines(request, generated, "priorKnowledge", prior),
+        "misconceptions": errors,
+        "examPoints": exam,
         "slides": slides,
         "visualProfile": profile,
-        "generationStandard": benchmark,
+        "templateStage": template_stage,
+        "generation": generation,
+        "generationStandard": {
+            **benchmark, "templateStage": template_stage, "templateLabel": template["label"],
+            "subjectProfile": subject_profile,
+            "textbookContext": {
+                "textbookVersion": request.get("textbookVersion", ""),
+                "chapter": request.get("chapter", ""),
+                "materialName": request.get("materialName", ""),
+                "materialPolicy": request.get("materialPolicy", ""),
+            },
+            "requiredEvidence": ["教师活动", "学生活动", "评价检查", "学生可见产出", "板书设计", "课后作业"],
+        },
     }
+
+
+def build_or_generate_lesson(request):
+    if request.get("stage") == "本科":
+        return build_lesson(request)
+    return generate_k12_lesson(request)
 
 
 def color(value):
@@ -1579,15 +1654,16 @@ class Handler(BaseHTTPRequestHandler):
             elif request_path == "/api/courseware/prepare-views":
                 self.send_json(courseware.prepare_model_views(payload.get('manifest') or {}, bool(payload.get('checkOnly'))))
             elif request_path == "/api/courseware/export-pptx":
-                manifest = payload.get("manifest") or {}
+                manifest = courseware.paginate_manifest(payload.get("manifest") or {})
                 quality = courseware.quality(manifest)
                 if quality["blocking"]:
                     self.send_json({"error": "互动课件质检发现阻断问题", "quality": quality}, 400)
                     return
                 output, animation = courseware.create_ppt(manifest)
-                self.send_json({"fileName": output.name, "downloadUrl": f"/api/courseware/download/{output.name}", "quality": quality, "animation": animation, "sceneCount": animation.get("sceneCount"), "slideCount": animation.get("slideCount"), "aligned": animation.get("aligned", False), "modelViewCount": animation.get("modelViewCount", 0), "warnings": animation.get("warnings", [])})
+                self.send_json({"fileName": output.name, "downloadUrl": f"/api/courseware/download/{output.name}", "manifest": manifest, "quality": quality, "animation": animation, "sceneCount": animation.get("sceneCount"), "slideCount": animation.get("slideCount"), "aligned": animation.get("aligned", False), "modelViewCount": animation.get("modelViewCount", 0), "warnings": animation.get("warnings", [])})
             elif request_path == "/api/lesson/preview":
-                self.send_json({"lessonPlan": build_lesson(payload)})
+                plan = build_or_generate_lesson(payload)
+                self.send_json({"lessonPlan": plan, "generation": plan.get("generation")})
             elif request_path == "/api/biomed/model/generate":
                 self.send_json({"error": "内置生物医学模型生成已停用，上传图片建模必须使用混元 3D"}, 410)
             elif request_path == "/api/course/generate-bundle":
@@ -1602,11 +1678,11 @@ class Handler(BaseHTTPRequestHandler):
                 animation = add_verified_ppt_animations(output, plan)
                 raise RuntimeError("整套生成接口不再自动调用内置模型；请在当前课程中上传图片并使用 混元 3D 建模")
             elif request_path == "/api/ppt/preview":
-                plan = payload.get("lessonPlan") or build_lesson(payload)
+                plan = payload.get("lessonPlan") or build_or_generate_lesson(payload)
                 slides = expanded_slides(plan)
                 self.send_json({"slides": [{**slide, "index": index, "previewSvg": render_preview_svg(slide, index, plan)} for index, slide in enumerate(slides, 1)], "quality": quality_check(plan), "visualProfile": plan.get("visualProfile") or visual_profile(plan.get("request") or {})})
             elif request_path == "/api/ppt/regenerate-slide":
-                plan = payload.get("lessonPlan") or build_lesson(payload)
+                plan = payload.get("lessonPlan") or build_or_generate_lesson(payload)
                 index = int(payload.get("slideIndex", -1))
                 slides = plan.get("slides") or []
                 if index < 0 or index >= len(slides):
@@ -1641,7 +1717,7 @@ class Handler(BaseHTTPRequestHandler):
             elif request_path == "/api/assets/cache":
                 self.send_json({"asset": cache_asset(payload.get("url", ""), payload.get("metadata"))})
             elif request_path == "/api/ppt/generate":
-                plan = payload.get("lessonPlan") or build_lesson(payload)
+                plan = payload.get("lessonPlan") or build_or_generate_lesson(payload)
                 quality = quality_check(plan)
                 if quality["blocking"]:
                     self.send_json({"error": "课件质检发现阻断问题", "quality": quality}, 400)
@@ -1651,6 +1727,9 @@ class Handler(BaseHTTPRequestHandler):
                 self.send_json({"fileName": output.name, "downloadUrl": f"/api/ppt/download/{output.name}", "quality": quality, "animation": animation})
             else:
                 self.send_json({"error": "Not found"}, 404)
+        except K12GenerationError as exc:
+            print(f"[teacher-studio] K12 AI generation rejected: {exc}", flush=True)
+            self.send_json({"error": str(exc), "code": "ai-unavailable", "generation": exc.generation}, 503)
         except (ValueError, KeyError, zipfile.BadZipFile) as exc:
             print(f"[teacher-studio] request rejected: {exc}", flush=True)
             self.send_json({"error": str(exc)}, 400)

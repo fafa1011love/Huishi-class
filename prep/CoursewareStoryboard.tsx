@@ -4,6 +4,7 @@ import type { WarmupQuestion } from '../services/quizData'
 import { prepareCoursewareViews } from '../services/coursewareExport'
 import type { CoursewareManifest, CoursewareScene, CoursewareLayout, CoursewareMotion } from '../types/courseware'
 import { localizeCourseware, sceneLabels } from '../services/coursewareChinese'
+import { getCoursewareContentBlocks } from '../services/coursewareSceneContent'
 
 type Props = {
   lessonPlan: Record<string, unknown>
@@ -32,24 +33,16 @@ function download(url: string, fileName: string) {
 function ScenePreview({ scene, manifest, mobile }: { scene: CoursewareScene; manifest: CoursewareManifest; mobile: boolean }) {
   scene = localizeCourseware(scene)
   const hasModel = Boolean(scene.model)
-  const detail = scene.detail || {}
-  const detailList = (items?: string[]) => items?.filter(Boolean).join('；') || '未补充'
+  const pageContent = getCoursewareContentBlocks(scene)
   return <div className={`courseware-live-preview ${mobile ? 'is-mobile' : ''} layout-${scene.layout}`}>
-    <div className="courseware-scene-number">{scene.id.replace('scene-', '')} / {manifest.scenes.filter((item) => item.enabled).length}</div>
+    <div className="courseware-scene-number">{scene.id.replace('scene-', '')} / {manifest.scenes.filter((item) => item.enabled !== false).length}</div>
     <div className="courseware-scene-copy">
       <span className="section-kicker">互动课件 · {sceneLabels[scene.type]}</span>
       <h2>{scene.title}</h2>
       <p>{scene.claim}</p>
       <div className="courseware-task"><strong>学生操作</strong><span>{scene.studentAction}</span></div>
     </div>
-    <div className="courseware-detail-grid">
-      <div><small>学习内容</small><span>{detail.learningContent || scene.claim}</span></div>
-      <div><small>教师过程</small><span>{detailList(detail.teacherScript)}</span></div>
-      <div><small>学生步骤</small><span>{detailList(detail.studentSteps)}</span></div>
-      <div><small>教师追问</small><span>{detailList(detail.questioning)}</span></div>
-      <div><small>评价标准</small><span>{detailList(detail.evaluationRubric)}</span></div>
-      <div><small>未达标补救</small><span>{detail.remediation || '根据评价结果补充示范和练习。'}</span></div>
-    </div>
+    <div className="courseware-detail-grid">{pageContent.map((block) => <div key={block.key}><small>{block.label}</small><span>{block.value}</span></div>)}</div>
     {hasModel && <div className="courseware-model-preview">
       <model-viewer src={manifest.model.modelUrl} camera-controls auto-rotate={scene.motion.preset === 'flow' || undefined} shadow-intensity="1" exposure="1" environment-image="neutral" />
       <div className="courseware-part-strip">{scene.model?.partKeys.slice(0, 4).map((key) => <span key={key}>{manifest.model.parts.find((part) => part.partKey === key)?.partLabel || key}</span>)}</div>
@@ -65,7 +58,7 @@ export default function CoursewareStoryboard({ lessonPlan, model, questions, man
   const [busy, setBusy] = useState<'generate' | 'save' | 'scene' | 'zip' | 'pptx' | null>(null)
   const baseline = useRef<CoursewareManifest | null>(null)
   const selected = manifest?.scenes.find((scene) => scene.id === selectedId) || manifest?.scenes[0]
-  const enabledCount = manifest?.scenes.filter((scene) => scene.enabled).length || 0
+  const enabledCount = manifest?.scenes.filter((scene) => scene.enabled !== false).length || 0
   const quality = manifest?.quality
 
   useEffect(() => {
@@ -78,24 +71,46 @@ export default function CoursewareStoryboard({ lessonPlan, model, questions, man
       const response = await fetch('/api/prep/courseware/generate', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ lessonPlan, model, questions }) })
       const data = await response.json(); if (!response.ok) throw new Error(data.error || '互动课件生成失败')
       baseline.current = structuredClone(data.manifest)
-      onChange(localizeCourseware(data.manifest)); setSelectedId(data.manifest.scenes[0]?.id || 'scene-01'); onNotice(`已生成 ${data.manifest.scenes.length} 个场景，可逐场景编辑`)
+      onChange(localizeCourseware(data.manifest)); setSelectedId(data.manifest.scenes[0]?.id || 'scene-01'); onNotice(`已生成 ${data.manifest.scenes.filter((scene: CoursewareScene) => scene.enabled !== false).length} 页，可逐页编辑`)
     } catch (error) { onNotice(error instanceof Error ? error.message : '互动课件生成失败') }
     finally { setBusy(null) }
   }
 
   const updateScene = (patch: Partial<CoursewareScene>) => {
     if (!manifest || !selected) return
-    const scenes = manifest.scenes.map((scene) => scene.id === selected.id ? { ...scene, ...patch, source: 'teacher-edited' as const } : scene)
+    if (selected.continuation) return
+    const contentChanged = ['title', 'claim', 'teacherCue', 'studentAction', 'expectedOutput', 'detail'].some((key) => key in patch)
+    const scenes = manifest.scenes.flatMap((scene) => {
+      if (contentChanged && scene.continuation?.parentId === selected.id) return []
+      if ('enabled' in patch && scene.continuation?.parentId === selected.id) return [{ ...scene, enabled: Boolean(patch.enabled) }]
+      if (scene.id !== selected.id) return [scene]
+      const updated = { ...scene, ...patch, source: 'teacher-edited' as const }
+      if (contentChanged && updated.detail?.pageBlocks) {
+        updated.detail = { ...updated.detail }
+        delete updated.detail.pageBlocks
+      }
+      return [updated]
+    })
     onChange({ ...manifest, scenes, revision: manifest.revision + 1, status: 'draft' })
   }
 
   const move = (offset: number) => {
     if (!manifest || !selected) return
-    const index = manifest.scenes.findIndex((scene) => scene.id === selected.id)
+    const groups: CoursewareScene[][] = []
+    for (const scene of manifest.scenes) {
+      const parentId = scene.continuation?.parentId
+      if (parentId) {
+        const group = groups.find((items) => items[0]?.id === parentId)
+        if (group) group.push(scene)
+        else groups.push([scene])
+      } else groups.push([scene])
+    }
+    const parentId = selected.continuation?.parentId || selected.id
+    const index = groups.findIndex((group) => group[0]?.id === parentId)
     const next = index + offset
-    if (next < 0 || next >= manifest.scenes.length) return
-    const scenes = [...manifest.scenes]; [scenes[index], scenes[next]] = [scenes[next], scenes[index]]
-    onChange({ ...manifest, scenes, revision: manifest.revision + 1, status: 'draft' })
+    if (index < 0 || next < 0 || next >= groups.length) return
+    ;[groups[index], groups[next]] = [groups[next], groups[index]]
+    onChange({ ...manifest, scenes: groups.flat(), revision: manifest.revision + 1, status: 'draft' })
   }
 
   const save = async () => {
@@ -111,6 +126,7 @@ export default function CoursewareStoryboard({ lessonPlan, model, questions, man
 
   const regenerate = async () => {
     if (!manifest || !selected) return
+    if (selected.continuation) return
     setBusy('scene')
     try {
       const response = await fetch('/api/prep/courseware/regenerate-scene', { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ manifest, sceneId: selected.id }) })
@@ -128,8 +144,14 @@ export default function CoursewareStoryboard({ lessonPlan, model, questions, man
       if (type === 'pptx') onChange(prepared)
       const response = await fetch(`/api/prep/courseware/export-${type}`, { method: 'POST', credentials: 'include', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ manifest: prepared }) })
       const data = await response.json(); if (!response.ok) throw new Error(data.error || '导出失败')
+      if (type === 'pptx' && data.manifest) {
+        const exportedManifest = data.manifest as CoursewareManifest
+        const pageCount = exportedManifest.scenes.filter((scene) => scene.enabled !== false).length
+        if (data.aligned !== true || data.sceneCount !== pageCount || data.slideCount !== pageCount) throw new Error('互动课件与 PPT 页数不一致，已停止下载')
+        onChange(exportedManifest)
+      }
       download(data.downloadUrl, data.fileName)
-      onNotice(type === 'zip' ? '离线课件 ZIP 已生成' : `配套 PPTX 已生成 · ${data.animation?.message || '静态课件'}`)
+      onNotice(type === 'zip' ? '离线课件 ZIP 已生成' : `已导出 ${data.slideCount} 页 PPT · ${data.animation?.message || '静态课件'}`)
     } catch (error) { onNotice(error instanceof Error ? error.message : '导出失败') }
     finally { setBusy(null) }
   }
@@ -139,7 +161,10 @@ export default function CoursewareStoryboard({ lessonPlan, model, questions, man
     onChange(structuredClone(baseline.current)); onNotice('已恢复本次生成的系统版本')
   }
 
-  const editForm = useMemo(() => selected ? <div className="courseware-scene-editor">
+  const editForm = useMemo(() => selected ? selected.continuation ? <div className="courseware-scene-editor">
+    <div className="section-title"><span>自动续页</span><small>{selected.continuation.pageNumber} / {selected.continuation.totalPages}</small></div>
+    <p>续页内容由原场景自动分页生成。编辑或重做原场景后，续页会随内容重新排布。</p>
+  </div> : <div className="courseware-scene-editor">
     <div className="section-title"><span>场景内容</span><small>{selected.source === 'teacher-edited' ? '教师已编辑' : '系统生成'}</small></div>
     <label className="inline-edit"><span>标题</span><input value={selected.title} onChange={(event) => updateScene({ title: event.target.value })} /></label>
     <label className="inline-edit"><span>核心结论</span><textarea rows={2} value={selected.claim} onChange={(event) => updateScene({ claim: event.target.value })} /></label>
@@ -167,12 +192,12 @@ export default function CoursewareStoryboard({ lessonPlan, model, questions, man
 
   return <section className="courseware-storyboard">
     <div className="courseware-toolbar">
-      <div><span className="section-kicker">课件故事板 · 第 {manifest.revision} 版</span><strong>{manifest.title}</strong><small>{enabledCount} 场景 · {quality?.layoutCount || 0} 种布局 · 质检 {quality?.score || 0}</small></div>
+      <div><span className="section-kicker">课件故事板 · 第 {manifest.revision} 版</span><strong>{manifest.title}</strong><small>{enabledCount} 页 · {quality?.layoutCount || 0} 种布局 · 质检 {quality?.score || 0}</small></div>
       <div className="courseware-toolbar-actions"><button className="icon-btn" title="桌面预览" aria-pressed={!mobile} onClick={() => setMobile(false)}><Monitor size={16} /></button><button className="icon-btn" title="移动端预览" aria-pressed={mobile} onClick={() => setMobile(true)}><Smartphone size={16} /></button><button className="outline-btn" onClick={restore}><RotateCcw size={15} />恢复系统版</button><button className="outline-btn" onClick={save} disabled={busy !== null}>{busy === 'save' ? <LoaderCircle className="spin" size={15} /> : <Save size={15} />}保存</button><button className="outline-btn" onClick={() => exportArtifact('pptx')} disabled={busy !== null}><Download size={15} />配套演示文稿</button><button className="primary-btn compact" onClick={() => exportArtifact('zip')} disabled={busy !== null}><Download size={15} />离线课件</button></div>
     </div>
     <div className="courseware-editor-grid">
-      <aside className="courseware-scene-rail">{manifest.scenes.map((scene, index) => <button key={scene.id} className={`${scene.id === selected?.id ? 'active' : ''} ${scene.enabled ? '' : 'disabled'}`} onClick={() => setSelectedId(scene.id)}><em>{String(index + 1).padStart(2, '0')}</em><span>{localizeCourseware(scene.title)}</span><small>{layouts.find(([key]) => key === scene.layout)?.[1] || '教学布局'}</small></button>)}</aside>
-      <div className="courseware-canvas-column">{selected && <ScenePreview scene={selected} manifest={manifest} mobile={mobile} />}<div className="courseware-preview-actions"><button className="outline-btn" onClick={() => move(-1)}><ArrowUp size={14} />前移</button><button className="outline-btn" onClick={() => move(1)}><ArrowDown size={14} />后移</button><button className="outline-btn" onClick={() => updateScene({ enabled: !selected?.enabled })}><Eye size={14} />{selected?.enabled ? '停用场景' : '启用场景'}</button><button className="outline-btn" onClick={regenerate} disabled={busy !== null}>{busy === 'scene' ? <LoaderCircle className="spin" size={14} /> : <RefreshCw size={14} />}重做本场景</button><button className="outline-btn" onClick={() => onNotice('课堂运行时会按当前场景顺序播放')}><Play size={14} />课堂预览</button></div></div>
+      <aside className="courseware-scene-rail">{manifest.scenes.map((scene, index) => <button key={scene.id} className={`${scene.id === selected?.id ? 'active' : ''} ${scene.enabled === false ? 'disabled' : ''}`} onClick={() => setSelectedId(scene.id)}><em>{String(index + 1).padStart(2, '0')}</em><span>{localizeCourseware(scene.title)}</span><small>{layouts.find(([key]) => key === scene.layout)?.[1] || '教学布局'}</small></button>)}</aside>
+      <div className="courseware-canvas-column">{selected && <ScenePreview scene={selected} manifest={manifest} mobile={mobile} />}<div className="courseware-preview-actions"><button className="outline-btn" onClick={() => move(-1)} disabled={Boolean(selected?.continuation)}><ArrowUp size={14} />前移</button><button className="outline-btn" onClick={() => move(1)} disabled={Boolean(selected?.continuation)}><ArrowDown size={14} />后移</button><button className="outline-btn" onClick={() => updateScene({ enabled: !selected?.enabled })} disabled={Boolean(selected?.continuation)}><Eye size={14} />{selected?.enabled ? '停用场景' : '启用场景'}</button><button className="outline-btn" onClick={regenerate} disabled={busy !== null || Boolean(selected?.continuation)}>{busy === 'scene' ? <LoaderCircle className="spin" size={14} /> : <RefreshCw size={14} />}重做本场景</button><button className="outline-btn" onClick={() => onNotice('课堂运行时会按当前场景顺序播放')}><Play size={14} />课堂预览</button></div></div>
       {editForm}
     </div>
   </section>

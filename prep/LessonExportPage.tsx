@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { ArrowLeft, Check, Download, LoaderCircle, RefreshCw, Sparkles } from 'lucide-react'
 import {
   buildLessonWord,
@@ -12,9 +12,10 @@ import {
 } from '../services/lessonWordExport'
 import './lesson-export.css'
 
-type TeacherLessonReview = {
+export type TeacherLessonReview = {
   draft: TeacherLessonDraft
   quality: { valid: boolean; blocking: string[]; checks?: string[] }
+  confirmed?: boolean
 }
 
 export default function LessonExportPage({
@@ -31,8 +32,10 @@ export default function LessonExportPage({
   const [error, setError] = useState('')
   const [retry, setRetry] = useState(0)
   const [editingDraft, setEditingDraft] = useState(false)
-  const [teacherConfirmed, setTeacherConfirmed] = useState(false)
+  const teacherConfirmed = review?.confirmed === true
   const isUndergraduate = Boolean(plan.designWorkflow)
+  const onReviewChangeRef = useRef(onReviewChange)
+  onReviewChangeRef.current = onReviewChange
 
   useEffect(() => {
     if (!isUndergraduate || review) return
@@ -49,19 +52,18 @@ export default function LessonExportPage({
         const data = await response.json()
         if (!response.ok) throw new Error(data.error || 'AI 教案成稿失败')
         if (!data.draft || data.quality?.valid !== true) throw new Error(data.error || data.quality?.blocking?.[0] || 'AI 教案未通过内容检查')
-        if (!cancelled) onReviewChange({ draft: data.draft, quality: data.quality })
+        if (!cancelled) onReviewChangeRef.current({ draft: data.draft, quality: data.quality })
       })
       .catch(reason => { if (!cancelled) setError(reason instanceof Error ? reason.message : 'AI 教案成稿失败，请重试') })
       .finally(() => { if (!cancelled) setBusy(false) })
     return () => { cancelled = true }
-  }, [isUndergraduate, plan, review, retry, onReviewChange])
+  }, [isUndergraduate, plan, review, retry])
 
   const updateDraft = (patch: Partial<TeacherLessonDraft>) => {
     if (!review) return
     const draft = { ...review.draft, ...patch }
     const quality = validateTeacherLessonDraft(draft)
-    onReviewChange({ ...review, draft, quality })
-    setTeacherConfirmed(false)
+    onReviewChange({ ...review, draft, quality, confirmed: false })
   }
   const download = async () => {
     if (isUndergraduate && (!review || !review.quality.valid || !teacherConfirmed || editingDraft)) return
@@ -93,7 +95,7 @@ export default function LessonExportPage({
         <button className="outline-btn" onClick={onBack}><ArrowLeft size={15} />返回教案</button>
         {isUndergraduate && review && <button className="outline-btn" onClick={() => setEditingDraft(value => !value)} disabled={busy}>{editingDraft ? <Check size={15} /> : <Sparkles size={15} />}{editingDraft ? '完成修改' : '编辑成稿'}</button>}
         {isUndergraduate
-          ? <button className="primary-btn" disabled={!review?.quality.valid || busy || editingDraft || editing} onClick={() => { if (teacherConfirmed) void download(); else setTeacherConfirmed(true) }}>{busy ? <LoaderCircle className="spin" size={15} /> : teacherConfirmed ? <Download size={15} /> : <Check size={15} />}{busy ? '正在生成' : teacherConfirmed ? '导出 Word' : '确认审核'}</button>
+          ? <button className="primary-btn" disabled={!review?.quality.valid || busy || editingDraft || editing} onClick={() => { if (teacherConfirmed) void download(); else if (review) onReviewChange({ ...review, confirmed: true }) }}>{busy ? <LoaderCircle className="spin" size={15} /> : teacherConfirmed ? <Download size={15} /> : <Check size={15} />}{busy ? '正在生成' : teacherConfirmed ? '导出 Word' : '确认审核'}</button>
           : <button className="primary-btn" disabled={!legacyReady || busy} onClick={() => void download()}>{busy ? <LoaderCircle className="spin" size={15} /> : <Download size={15} />}{busy ? '正在导出' : '导出 Word'}</button>}
       </div>
     </header>

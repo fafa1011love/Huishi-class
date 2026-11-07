@@ -10,6 +10,12 @@ export type LessonExportSection = { title: string; lines: string[] }
 export type TeacherLessonDraft = {
   title: string
   courseName: string
+  subject?: string
+  stage?: string
+  grade?: string
+  textbookVersion?: string
+  chapter?: string
+  lessonType?: string
   duration: number
   overview: string
   objectives: string[]
@@ -53,7 +59,28 @@ const labels: Record<string, string> = {
   structure: '教案结构', professionalOutcomes: '专业能力目标', generalOutcomes: '通用能力目标', keyPoints: '教学重点', difficulties: '教学难点', breakthroughMethods: '突破方法', learningPreparation: '学习准备', blackboardDesign: '板书设计', differentiation: '能力分层', references: '参考资料', homeworkDetail: '作业详情',
   title: '标题', author: '作者', year: '年份', sourceType: '来源类型', sourceUrl: '来源链接', license: '使用许可', usedIn: '使用环节', teacher: '教师活动', student: '学生活动', check: '评价检查',
 }
+labels.output = '学生完成的成果'
 const hidden = new Set(['candidateGroups', 'selectedGroupId', 'hookOptions', 'systemData', 'generationBasis'])
+
+function k12ProcessLines(value: unknown): string[] {
+  if (!Array.isArray(value)) return contentLines(value)
+  return value.flatMap((phase, index) => {
+    if (!phase || typeof phase !== 'object') return contentLines(phase, `第${index + 1}个环节：`)
+    const item = phase as Record<string, unknown>
+    const name = String(item.name || `第${index + 1}个环节`).trim()
+    const time = item.time == null || item.time === '' ? '' : `（${item.time}分钟）`
+    const lines = [
+      `${name}${time}`,
+      item.teacher ? `教师活动：${item.teacher}` : '',
+      item.student ? `学生活动：${item.student}` : '',
+      item.check ? `检查与评价：${item.check}` : '',
+      item.output || item.visibleOutput || item.studentOutput
+        ? `学生完成的成果：${item.output || item.visibleOutput || item.studentOutput}`
+        : '',
+    ]
+    return lines.filter(Boolean).map(String)
+  })
+}
 
 // Read only teaching content; engine metadata and unselected objective candidates are excluded.
 export function contentLines(value: unknown, prefix = ''): string[] {
@@ -73,7 +100,7 @@ export function lessonExportSections(plan: ExportLesson): LessonExportSection[] 
   const sections: LessonExportSection[] = []
   const add = (title: string, value: unknown) => { const lines = contentLines(value); if (lines.length) sections.push({ title, lines }) }
   const request = plan.request as Record<string, unknown>
-  add('课程信息', [request.courseName || request.subject, request.stage, request.grade || request.semester, `${workflow?.duration || request.duration || ''} 分钟`, workflow?.abilityLevel, plan.overview].filter(Boolean))
+  add('课程信息', [request.courseName || request.subject, request.stage, request.grade || request.semester, request.textbookVersion ? `教材册次 / 模块：${request.textbookVersion}` : '', request.chapter ? `章节：${request.chapter}` : '', `${workflow?.duration || request.duration || ''} 分钟`, workflow?.abilityLevel, plan.overview].filter(Boolean))
   if (workflow) {
     for (const step of workflow.steps) {
       if (step.id === 'objectives') add(`${step.number} ${step.title}`, { coursePosition: step.data.coursePosition, professionalOutcomes: workflow.selectedObjectives })
@@ -93,7 +120,7 @@ export function lessonExportSections(plan: ExportLesson): LessonExportSection[] 
     add('教学进程', workflow.phases)
     add('目标对齐矩阵', workflow.alignmentMatrix)
   } else {
-    for (const [title, value] of Object.entries({ '教学目标': data.objectives, '学情分析': data.situation, '教学重点': data.keyPoints, '教学难点': data.difficulties, '教学方法': data.methods, '教学资源': data.resources, '教学进程': data.phases, '教学评价': data.assessment, '板书设计': data.blackboard, '课后作业': data.homework })) add(title, value)
+    for (const [title, value] of Object.entries({ '教学目标': data.objectives, '学情分析': data.situation, '教学重点': data.keyPoints, '教学难点': data.difficulties, '教学方法': data.methods, '教学资源': data.resources, '教学进程': k12ProcessLines(data.phases), '教学评价': data.assessment, '板书设计': data.blackboard, '课后作业': data.homework })) add(title, value)
   }
   add('参考资料', data.finalLesson?.references || data.references)
   return sections
@@ -104,92 +131,270 @@ export function canExportLesson(plan: ExportLesson) {
   return !w || (w.status === 'approved' && !w.qualityPending && !w.quality?.blocking?.length && !w.staleSteps.length && w.steps.every(step => step.approved && step.status !== 'stale'))
 }
 
-export async function buildLessonWord(plan: ExportLesson): Promise<Blob> {
-  if (!canExportLesson(plan)) throw new Error('请先重新校验并确认整套教案')
-  const { Document, Packer, Paragraph, TextRun, Header, Footer, AlignmentType, HeadingLevel, PageNumber } = await import('docx')
-  const paragraph = (text: string) => new Paragraph({ children: [new TextRun(text)], spacing: { after: 100, line: 360 } })
-  const document = new Document({
-    creator: '数智课堂', title: plan.title, description: '数智课堂教学设计',
-    styles: { default: { document: { run: { font: { ascii: 'Times New Roman', eastAsia: '宋体', hAnsi: 'Times New Roman' }, size: 24, color: '000000' } } }, paragraphStyles: [
-      { id: 'Title', name: 'Title', basedOn: 'Normal', run: { font: '黑体', size: 36, bold: true }, paragraph: { alignment: AlignmentType.CENTER, spacing: { after: 320 }, keepNext: true } },
-      { id: 'Heading1', name: 'Heading 1', basedOn: 'Normal', run: { font: '黑体', size: 28, bold: true }, paragraph: { spacing: { before: 280, after: 160 }, keepNext: true } },
-    ] },
-    sections: [{
-      properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 1440, bottom: 1440, left: 1440, right: 1440 } } },
-      headers: { default: new Header({ children: [new Paragraph({ text: '数智课堂 · 教学设计', alignment: AlignmentType.RIGHT })] }) },
-      footers: { default: new Footer({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ children: ['第 ', PageNumber.CURRENT, ' 页'] })] })] }) },
-      children: [new Paragraph({ text: `${plan.title} 教案`, heading: HeadingLevel.TITLE }), ...lessonExportSections(plan).flatMap(section => [new Paragraph({ text: section.title, heading: HeadingLevel.HEADING_1 }), ...section.lines.map(paragraph)])],
-    }],
-  })
-  return Packer.toBlob(document)
+type UnifiedLessonPhase = {
+  name: string
+  minutes: number
+  teacher: string
+  student: string
+  question: string
+  check: string
+  output?: string
 }
 
-export async function buildTeacherLessonWord(draft: TeacherLessonDraft): Promise<Blob> {
-  const review = validateTeacherLessonDraft(draft)
-  if (!review.valid) throw new Error(review.blocking[0])
+type UnifiedLessonContent = {
+  title: string
+  subject: string
+  stageGrade: string
+  textbook: string
+  duration: number
+  lessonType: string
+  scope: string
+  overview: string
+  objectives: string[]
+  keyPoints: string[]
+  difficulties: string[]
+  teacherPreparation: string[]
+  studentPreparation: string[]
+  phases: UnifiedLessonPhase[]
+  homework: string[]
+  blackboard: string[]
+  references: string[]
+}
+
+const exportLines = (value: unknown): string[] => {
+  if (Array.isArray(value)) return value.flatMap(item => exportLines(item))
+  if (value == null) return []
+  return String(value).split(/\r?\n/).map(item => item.trim()).filter(Boolean)
+}
+
+function k12UnifiedContent(plan: ExportLesson): UnifiedLessonContent {
+  const data = plan as ExportLesson & Record<string, any>
+  const request = plan.request as Record<string, any>
+  const phases = Array.isArray(data.phases) ? data.phases : []
+  const duration = Number(request.duration || phases.reduce((sum: number, item: any) => sum + Number(item?.time || 0), 0) || 40)
+  return {
+    title: plan.title,
+    subject: String(request.subject || request.courseName || ''),
+    stageGrade: [request.stage, request.grade].filter(Boolean).join(' · '),
+    textbook: String(request.textbookVersion || ''),
+    duration,
+    lessonType: String(request.lessonType || '新授课'),
+    scope: String(request.chapter || request.topic || ''),
+    overview: String(plan.overview || ''),
+    objectives: exportLines(data.objectives),
+    keyPoints: exportLines(data.keyPoints),
+    difficulties: exportLines(data.difficulties),
+    teacherPreparation: exportLines(data.resources),
+    studentPreparation: exportLines(data.priorKnowledge || request.learningSituation),
+    phases: phases.map((phase: any, index: number) => ({
+      name: String(phase?.name || `第${index + 1}个环节`),
+      minutes: Number(phase?.time || 0),
+      teacher: String(phase?.teacher || ''),
+      student: String(phase?.student || ''),
+      question: String(phase?.question || request.coreQuestion || ''),
+      check: String(phase?.check || ''),
+      output: String(phase?.output || phase?.visibleOutput || phase?.studentOutput || ''),
+    })),
+    homework: exportLines(data.homework),
+    blackboard: exportLines(data.blackboard || data.blackboardDesign),
+    references: exportLines(data.references),
+  }
+}
+
+function undergraduateUnifiedContent(draft: TeacherLessonDraft): UnifiedLessonContent {
+  return {
+    title: draft.title,
+    subject: draft.subject || draft.courseName,
+    stageGrade: [draft.stage || '本科', draft.grade].filter(Boolean).join(' · '),
+    textbook: draft.textbookVersion || '',
+    duration: draft.duration,
+    lessonType: draft.lessonType || '新授课',
+    scope: draft.chapter || draft.title,
+    overview: draft.overview,
+    objectives: draft.objectives,
+    keyPoints: draft.keyPoints,
+    difficulties: draft.difficulties,
+    teacherPreparation: draft.teacherPreparation,
+    studentPreparation: draft.studentPreparation,
+    phases: draft.process.map(item => ({ name: item.name, minutes: item.minutes, teacher: item.teacherActivity, student: item.studentActivity, question: item.question, check: item.check, output: '' })),
+    homework: draft.homework,
+    blackboard: draft.blackboardDesign,
+    references: draft.references,
+  }
+}
+
+function readableValue(value: unknown): string {
+  if (value == null || value === '') return ''
+  if (Array.isArray(value)) return value.map(item => readableValue(item)).filter(Boolean).join('；')
+  if (typeof value === 'object') return Object.values(value as Record<string, unknown>).map(item => readableValue(item)).filter(Boolean).join('；')
+  return String(value).trim()
+}
+
+function workflowActivityItems(workflow: LessonDesignWorkflow): Array<Record<string, any>> {
+  const items: Array<Record<string, any>> = []
+  for (const step of workflow.steps || []) {
+    const data = step.data || {}
+    const candidates = [data.activities, data.activity, data.teaching, data]
+    for (const candidate of candidates) {
+      const values = candidate && typeof candidate === 'object'
+        ? ((candidate as Record<string, unknown>).activities || (candidate as Record<string, unknown>).items || candidate)
+        : []
+      if (!Array.isArray(values)) continue
+      for (const item of values) if (item && typeof item === 'object' && (
+        'studentAction' in item || 'teacherScript' in item || 'visibleOutput' in item || 'evaluation' in item
+      )) items.push(item as Record<string, any>)
+    }
+  }
+  return items
+}
+
+function undergraduateWorkflowUnifiedContent(plan: ExportLesson): UnifiedLessonContent {
+  const data = plan as ExportLesson & Record<string, any>
+  const workflow = plan.designWorkflow!
+  const request = plan.request as Record<string, any>
+  const final = data.finalLesson || {}
+  const activities = workflowActivityItems(workflow)
+  const workflowPhases = Array.isArray(workflow.phases) ? workflow.phases : []
+  const phaseSource = workflowPhases.length ? workflowPhases : activities
+  const phases = phaseSource.map((phase: any, index: number) => {
+    const activity = activities[index] || {}
+    const evaluation = activity.evaluation
+    const rubric = activity.evaluationRubric
+    return {
+      name: String(phase?.name || activity.name || `教学环节${index + 1}`),
+      minutes: Number(phase?.time || phase?.minutes || activity.duration || 0),
+      teacher: readableValue(phase?.teacher || phase?.teacherActivity || activity.teacherProcess || activity.teacherRole || activity.teacherScript),
+      student: readableValue(phase?.student || phase?.studentActivity || activity.studentAction || activity.studentSteps),
+      question: readableValue(phase?.question || phase?.questioning || activity.questioning || activity.teacherPrompts),
+      check: [
+        readableValue(phase?.check || phase?.evaluation || activity.evidence),
+        readableValue(typeof evaluation === 'object' ? evaluation?.standard : evaluation),
+        readableValue(rubric),
+        readableValue(activity.remediation || activity.remediationPlan),
+      ].filter(Boolean).join('；'),
+      output: readableValue(phase?.output || phase?.visibleOutput || activity.visibleOutput || activity.studentOutput),
+    }
+  })
+  if (activities.length > phaseSource.length) {
+    phases.push(...activities.slice(phaseSource.length).map((activity, offset) => ({
+      name: String(activity.name || `教学活动${phaseSource.length + offset + 1}`),
+      minutes: Number(activity.duration || 0),
+      teacher: readableValue(activity.teacherProcess || activity.teacherRole || activity.teacherScript),
+      student: readableValue(activity.studentAction || activity.studentSteps),
+      question: readableValue(activity.questioning || activity.teacherPrompts),
+      check: [
+        readableValue(activity.evidence),
+        readableValue(typeof activity.evaluation === 'object' ? activity.evaluation?.standard : activity.evaluation),
+        readableValue(activity.evaluationRubric),
+        readableValue(activity.remediation || activity.remediationPlan),
+      ].filter(Boolean).join('；'),
+      output: readableValue(activity.visibleOutput || activity.studentOutput),
+    })))
+  }
+  const duration = Number(workflow.duration || request.duration || phases.reduce((sum, item) => sum + item.minutes, 0) || 40)
+  return {
+    title: plan.title,
+    subject: String(request.subject || request.courseName || ''),
+    stageGrade: [request.stage || '本科', request.grade].filter(Boolean).join(' · '),
+    textbook: String(request.textbookVersion || ''),
+    duration,
+    lessonType: String(request.lessonType || '新授课'),
+    scope: String(request.chapter || request.topic || plan.title || ''),
+    overview: String(plan.overview || final.overview || ''),
+    objectives: (workflow.selectedObjectives || []).map(item => String(item.text || '')).filter(Boolean),
+    keyPoints: exportLines(final.keyPoints || data.keyPoints || request.keyPoints),
+    difficulties: exportLines(final.difficulties || data.difficulties || request.difficulties),
+    teacherPreparation: exportLines(final.teacherPreparation || final.learningPreparation || data.prerequisites),
+    studentPreparation: exportLines(final.studentPreparation || data.studentPreparation),
+    phases,
+    homework: exportLines(final.homeworkDetail || final.homework || data.homework),
+    blackboard: exportLines(final.blackboardDesign || data.boardDesign || data.blackboard),
+    references: exportLines(final.references || data.references),
+  }
+}
+
+async function buildUnifiedLessonWord(content: UnifiedLessonContent, description: string): Promise<Blob> {
   const {
     Document, Packer, Paragraph, TextRun, Header, Footer, Table, TableRow, TableCell,
     AlignmentType, HeadingLevel, PageNumber, WidthType, BorderStyle, VerticalAlign,
   } = await import('docx')
   const font = { ascii: 'Times New Roman', eastAsia: '宋体', hAnsi: 'Times New Roman' }
-  const body = (text: string) => new Paragraph({ children: [new TextRun({ text, font })], spacing: { after: 100, line: 360 } })
-  const heading = (text: string) => new Paragraph({ text, heading: HeadingLevel.HEADING_1, keepNext: true })
-  const bullet = (items: string[]) => items.map(item => new Paragraph({
-    children: [new TextRun({ text: item, font })],
-    bullet: { level: 0 },
-    spacing: { after: 90, line: 340 },
-  }))
+  const body = (text: string) => new Paragraph({ children: [new TextRun({ text, font, size: 21 })], spacing: { after: 100, line: 300 } })
+  const heading = (text: string) => new Paragraph({ text, heading: HeadingLevel.HEADING_1, keepNext: true, spacing: { before: 180, after: 100 } })
+  const bullet = (items: string[]) => items.map(item => new Paragraph({ children: [new TextRun({ text: item, font, size: 21 })], bullet: { level: 0 }, spacing: { after: 60, line: 300 } }))
   const borders = {
-    top: { style: BorderStyle.SINGLE, size: 4, color: 'D4DEE4' },
-    bottom: { style: BorderStyle.SINGLE, size: 4, color: 'D4DEE4' },
-    left: { style: BorderStyle.SINGLE, size: 4, color: 'D4DEE4' },
-    right: { style: BorderStyle.SINGLE, size: 4, color: 'D4DEE4' },
-    insideHorizontal: { style: BorderStyle.SINGLE, size: 4, color: 'D4DEE4' },
-    insideVertical: { style: BorderStyle.SINGLE, size: 4, color: 'D4DEE4' },
+    top: { style: BorderStyle.SINGLE, size: 4, color: 'D9D9D9' }, bottom: { style: BorderStyle.SINGLE, size: 4, color: 'D9D9D9' },
+    left: { style: BorderStyle.SINGLE, size: 4, color: 'D9D9D9' }, right: { style: BorderStyle.SINGLE, size: 4, color: 'D9D9D9' },
+    insideHorizontal: { style: BorderStyle.SINGLE, size: 4, color: 'D9D9D9' }, insideVertical: { style: BorderStyle.SINGLE, size: 4, color: 'D9D9D9' },
   }
   const cell = (text: string, width: number, header = false) => new TableCell({
-    width: { size: width, type: WidthType.DXA },
-    margins: { top: 100, bottom: 100, left: 110, right: 110 },
+    width: { size: width, type: WidthType.DXA }, margins: { top: 100, bottom: 100, left: 110, right: 110 },
     verticalAlign: VerticalAlign.CENTER,
-    ...(header ? { shading: { fill: 'EAF1F4' } } : {}),
-    children: [new Paragraph({ children: [new TextRun({ text, font, bold: header, size: 20 })], spacing: { after: 0, line: 300 } })],
+    ...(header ? { shading: { fill: '2F5D73' } } : {}),
+    children: [new Paragraph({ children: [new TextRun({ text, font, bold: header, size: header ? 20 : 21, color: header ? 'FFFFFF' : '000000' })], spacing: { after: 0, line: 280 } })],
+  })
+  const infoRows = [
+    ['学科', content.subject, '学段年级', content.stageGrade],
+    ['教材册次 / 模块', content.textbook, '本课时长', content.duration ? `${content.duration} 分钟` : ''],
+    ['课题类型', content.lessonType, '内容范围', content.scope],
+  ].filter(row => Boolean(row[1] || row[3]))
+  const infoTable = new Table({
+    width: { size: 100, type: WidthType.PERCENTAGE }, columnWidths: [1700, 2600, 1700, 2600], borders,
+    rows: [
+      new TableRow({ tableHeader: true, children: [cell('课程信息', 1700, true), cell('内容', 2600, true), cell('课程信息', 1700, true), cell('内容', 2600, true)] }),
+      ...infoRows.map(row => new TableRow({ children: [cell(row[0], 1700), cell(row[1], 2600), cell(row[2], 1700), cell(row[3], 2600)] })),
+    ],
   })
   const processRows = [
-    new TableRow({ tableHeader: true, children: [cell('教学环节与时间', 1550, true), cell('教师活动', 3650, true), cell('学生活动', 3100, true), cell('提问与检查', 1650, true)] }),
-    ...draft.process.map(item => new TableRow({ children: [
-      cell(`${item.name}\n${item.minutes}分钟`, 1550),
-      cell(item.teacherActivity, 3650),
-      cell(item.studentActivity, 3100),
-      cell(`提问：${item.question}\n检查：${item.check}`, 1650),
+    new TableRow({ tableHeader: true, children: [cell('教学环节与时间', 1450, true), cell('教师活动', 2600, true), cell('学生活动', 2600, true), cell('提问与检查', 2400, true)] }),
+    ...content.phases.map(phase => new TableRow({ children: [
+      cell(`${phase.name}\n${phase.minutes ? `${phase.minutes}分钟` : ''}`, 1450),
+      cell(phase.teacher, 2600),
+      cell(phase.student, 2600),
+      cell([phase.question ? `提问：${phase.question}` : '', phase.check ? `检查：${phase.check}` : '', phase.output ? `学生完成的成果：${phase.output}` : ''].filter(Boolean).join('\n'), 2400),
     ] })),
   ]
+  const processTable = new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, columnWidths: [1450, 2600, 2600, 2400], rows: processRows, borders })
+  const children = [
+    new Paragraph({ text: `${content.title} 教案`, heading: HeadingLevel.TITLE }),
+    new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: `${content.subject || content.stageGrade}    本课时长：${content.duration}分钟`, font, size: 21, color: '52636C' })], spacing: { after: 180 } }),
+    infoTable,
+    heading('课程概览'), body(content.overview),
+    heading('教学目标'), ...bullet(content.objectives),
+    heading('教学重点'), ...bullet(content.keyPoints),
+    heading('教学难点'), ...bullet(content.difficulties),
+    ...(content.teacherPreparation.length || content.studentPreparation.length ? [heading('课前准备'), ...(content.teacherPreparation.length ? [body(`教师：${content.teacherPreparation.join('；')}`)] : []), ...(content.studentPreparation.length ? [body(`学生：${content.studentPreparation.join('；')}`)] : [])] : []),
+    heading('教学过程'), processTable,
+    heading('课后作业'), ...bullet(content.homework),
+    heading('板书设计'), ...bullet(content.blackboard),
+    ...(content.references.length ? [heading('参考资料'), ...bullet(content.references)] : []),
+  ]
   const document = new Document({
-    creator: '数智课堂', title: draft.title, description: '教师审核后的课堂教案',
-    styles: { default: { document: { run: { font, size: 24, color: '171717' } } }, paragraphStyles: [
-      { id: 'Title', name: 'Title', basedOn: 'Normal', run: { font: '黑体', size: 34, bold: true }, paragraph: { alignment: AlignmentType.CENTER, spacing: { after: 180 }, keepNext: true } },
-      { id: 'Heading1', name: 'Heading 1', basedOn: 'Normal', run: { font: '黑体', size: 26, bold: true }, paragraph: { spacing: { before: 280, after: 140 }, keepNext: true } },
+    creator: '数智课堂', title: content.title, description,
+    styles: { default: { document: { run: { font, size: 21, color: '000000' } } }, paragraphStyles: [
+      { id: 'Title', name: 'Title', basedOn: 'Normal', run: { font: '黑体', size: 36, bold: true }, paragraph: { alignment: AlignmentType.CENTER, spacing: { after: 160 }, keepNext: true } },
+      { id: 'Heading1', name: 'Heading 1', basedOn: 'Normal', run: { font: '黑体', size: 26, bold: true }, paragraph: { spacing: { before: 180, after: 100 }, keepNext: true } },
     ] },
     sections: [{
       properties: { page: { size: { width: 11906, height: 16838 }, margin: { top: 1275, bottom: 1275, left: 1134, right: 1134 } } },
-      headers: { default: new Header({ children: [new Paragraph({ text: draft.courseName, alignment: AlignmentType.RIGHT })] }) },
+      headers: { default: new Header({ children: [new Paragraph({ text: '数智课堂 · 教学设计', alignment: AlignmentType.RIGHT })] }) },
       footers: { default: new Footer({ children: [new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ children: ['第 ', PageNumber.CURRENT, ' 页'], font })] })] }) },
-      children: [
-        new Paragraph({ text: draft.title, heading: HeadingLevel.TITLE }),
-        new Paragraph({ alignment: AlignmentType.CENTER, children: [new TextRun({ text: `${draft.courseName}    本课时长：${draft.duration}分钟`, font, size: 21, color: '52636C' })], spacing: { after: 260 } }),
-        body(draft.overview),
-        heading('教学目标'), ...bullet(draft.objectives),
-        heading('教学重点'), ...bullet(draft.keyPoints),
-        heading('教学难点'), ...bullet(draft.difficulties),
-        heading('课前准备'), body(`教师：${draft.teacherPreparation.join('；')}`), body(`学生：${draft.studentPreparation.join('；')}`),
-        heading('教学过程'),
-        new Table({ width: { size: 100, type: WidthType.PERCENTAGE }, columnWidths: [1550, 3650, 3100, 1650], rows: processRows, borders }),
-        heading('课后作业'), ...bullet(draft.homework),
-        heading('板书设计'), ...bullet(draft.blackboardDesign),
-        ...(draft.references.length ? [heading('参考资料'), ...bullet(draft.references)] : []),
-      ],
+      children,
     }],
   })
   return Packer.toBlob(document)
+}
+
+export async function buildLessonWord(plan: ExportLesson): Promise<Blob> {
+  if (!canExportLesson(plan)) throw new Error('请先重新校验并确认整套教案')
+  const content = plan.designWorkflow ? undergraduateWorkflowUnifiedContent(plan) : k12UnifiedContent(plan)
+  return buildUnifiedLessonWord(content, '数智课堂教学设计')
+}
+
+export async function buildTeacherLessonWord(draft: TeacherLessonDraft): Promise<Blob> {
+  const review = validateTeacherLessonDraft(draft)
+  if (!review.valid) throw new Error(review.blocking[0])
+  return buildUnifiedLessonWord(undergraduateUnifiedContent(draft), '教师审核后的课堂教案')
 }
 
 export function lessonWordFilename(title: string) {

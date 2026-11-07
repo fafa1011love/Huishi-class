@@ -141,7 +141,7 @@ const flowSteps = [
 ] as const
 
 export default function InteractiveCourseware({ manifest, controlRef, onExit, onStartQuiz, quizAvailable = true, navigationRef }: Props) {
-  const scenes = useMemo(() => localizeCourseware(manifest.scenes.filter((scene) => scene.enabled)), [manifest.scenes])
+  const scenes = useMemo(() => localizeCourseware(manifest.scenes.filter((scene) => scene.enabled !== false)), [manifest.scenes])
   const [index, setIndex] = useState(0)
   const [hidden, setHidden] = useState<Set<string>>(new Set())
   const [isolated, setIsolated] = useState<string | null>(null)
@@ -177,14 +177,14 @@ export default function InteractiveCourseware({ manifest, controlRef, onExit, on
   const contentBlocks = getCoursewareContentBlocks(scene)
   return <div className="courseware-runtime" ref={stageRef}>
     <div className={`courseware-runtime-stage ${scene.model ? 'has-model' : 'no-model'}`}>
-      {scene.model ? <ModelStage manifest={manifest} scene={scene} hidden={hidden} isolated={isolated} selected={selected || (scene.type === 'blood-flow' ? currentFlow[1] : null)} explosion={explosion} controlRef={controlRef} onSelect={selectPart} /> : <div className={`courseware-graphic courseware-graphic-${scene.layout}`}><span>{sceneLabels[scene.type]}</span><strong>{scene.expectedOutput}</strong><div className="courseware-graphic-blocks">{contentBlocks.map((block) => <section key={block.key}><b>{block.label}</b><p>{block.value}</p></section>)}</div></div>}
+      {scene.model && manifest.model.modelUrl ? <ModelStage manifest={manifest} scene={scene} hidden={hidden} isolated={isolated} selected={selected || (scene.type === 'blood-flow' ? currentFlow[1] : null)} explosion={explosion} controlRef={controlRef} onSelect={selectPart} /> : <div className={`courseware-graphic courseware-graphic-${scene.layout}`}><span>{scene.model ? '本课堂尚未生成模型，暂时无法展示。' : sceneLabels[scene.type]}</span><strong>{scene.expectedOutput}</strong><div className="courseware-graphic-blocks">{contentBlocks.map((block) => <section key={block.key}><b>{block.label}</b><p>{block.value}</p></section>)}</div></div>}
       <AnimatePresence mode="wait"><motion.div key={scene.id} className="courseware-runtime-copy" initial={reducedMotion ? false : { opacity: 0, y: 18 }} animate={{ opacity: 1, y: 0 }} exit={reducedMotion ? undefined : { opacity: 0, y: -14 }} transition={{ duration: reducedMotion ? 0 : Math.min(600, Math.max(250, scene.motion.durationMs)) / 1000 }}>
         <span className="courseware-runtime-kicker">{String(index + 1).padStart(2, '0')} / {String(scenes.length).padStart(2, '0')} · {sceneLabels[scene.type]}</span>
         <h2>{scene.title}</h2><p>{scene.claim}</p>
         <div className="courseware-runtime-task"><strong>本场任务</strong><span>{scene.studentAction}</span></div>
       </motion.div></AnimatePresence>
       {scene.type === 'blood-flow' && <div className="courseware-blood-flow"><button onClick={() => setFlowStep((step) => (step + 1) % flowSteps.length)}><Play size={15} />下一段血流</button><div>{flowSteps.map(([label,, kind], step) => <span key={label} className={`${kind} ${step <= flowStep ? 'active' : ''}`}>{label}</span>)}</div></div>}
-      {scene.type === 'gesture-quiz' && quizAvailable && <div className="courseware-quiz-launch"><button type="button" onClick={onStartQuiz}><ClipboardCheck size={16} />开始练习</button></div>}
+      {scene.type === 'gesture-quiz' && !scene.continuation && quizAvailable && <div className="courseware-quiz-launch"><button type="button" onClick={onStartQuiz}><ClipboardCheck size={16} />开始练习</button></div>}
     </div>
 
     <div className="courseware-runtime-ui">

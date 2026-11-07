@@ -1,4 +1,10 @@
 .lesson-export-page { width: 100%; min-width: 0; color: #182a31; }
+.classroom-review .lesson-export-buttons button, .classroom-review .lesson-export-error button, .classroom-review .lesson-export-toolbar > button {
+  display: inline-flex; align-items: center; justify-content: center; gap: 6px;
+  padding: 9px 13px; border: 1px solid #b9cecd; border-radius: 8px; background: #f0f7f6; color: #205e59; font-size: 13px;
+}
+.classroom-review .lesson-export-buttons button:disabled { opacity: .5; cursor: not-allowed; }
+.classroom-review .lesson-export-buttons button:focus-visible { outline: 2px solid #207e76; outline-offset: 2px; }
 .lesson-export-toolbar { display: flex; align-items: center; justify-content: space-between; flex-wrap: wrap; gap: 16px; padding: 18px 0; border-bottom: 1px solid #d7e1e2; }
 .lesson-export-toolbar h3 { margin: 0 0 5px; color: #152d34; font-size: 20px; }
 .lesson-export-toolbar span { color: #617477; font-size: 13px; }

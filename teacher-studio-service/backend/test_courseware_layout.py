@@ -97,6 +97,14 @@ class CoursewareLayoutTest(unittest.TestCase):
             'homework': '提交结构图和机制解释。',
         }
         manifest = courseware.build_manifest(plan)
+        self.assertGreater(len(manifest['scenes']), 16)
+        self.assertFalse(manifest['quality']['blocking'])
+        self.assertTrue(any(scene.get('continuation') for scene in manifest['scenes']))
+        repaginated = courseware.paginate_manifest(manifest)
+        self.assertEqual([scene['id'] for scene in repaginated['scenes']], [scene['id'] for scene in manifest['scenes']])
+        original_long_text = '心房接收血液，心室推动血液进入循环。' * 80
+        split_values = [block['value'] for scene in manifest['scenes'] if scene['id'] == 'scene-01' or (scene.get('continuation') or {}).get('parentId') == 'scene-01' for block in courseware.scene_content_blocks(scene) if block['key'].startswith('learningContent-')]
+        self.assertEqual(''.join(split_values), original_long_text)
         for scene in manifest['scenes']:
             for field in ('title', 'claim', 'teacherCue', 'studentAction', 'expectedOutput'):
                 self.assertFalse(re.search(r'[A-Za-z]{3,}', scene[field]), (scene['id'], field))

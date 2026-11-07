@@ -12,6 +12,7 @@ const asText = (value: unknown) => Array.isArray(value)
 
 export function getCoursewareContentBlocks(scene: CoursewareScene): CoursewareContentBlock[] {
   const detail = scene.detail || {}
+  if (detail.pageBlocks?.length) return detail.pageBlocks
   const candidates: CoursewareContentBlock[] = [
     { key: 'learningContent', label: '学习内容', value: asText(detail.learningContent) || scene.claim },
     { key: 'studentSteps', label: '学习步骤', value: asText(detail.studentSteps) || scene.studentAction },

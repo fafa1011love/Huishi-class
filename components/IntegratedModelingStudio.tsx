@@ -6,6 +6,7 @@ import {
   Box,
   CheckCircle2,
   ChevronUp,
+  AlertTriangle,
   Download,
   Eye,
   EyeOff,
@@ -79,6 +80,7 @@ type EngineStatus = {
   singleImage?: { available: boolean };
   multiview?: { available: boolean };
 };
+type ModelGenerationQuota = { total: number; used: number; remaining: number };
 type Options = {
   textureResolution: string;
   foregroundRatio: string;
@@ -191,7 +193,7 @@ function Preview({ url, hidden, exploded, showGrid, selected, previewMode }: { u
   );
 }
 
-export default function IntegratedModelingStudio({ onBack: _onBack, onUseModel }: { onBack: () => void; onUseModel?: (url: string) => void }) {
+export default function IntegratedModelingStudio({ onBack: _onBack, onUseModel, isAdmin = false }: { onBack: () => void; onUseModel?: (url: string) => void; isAdmin?: boolean }) {
   const [mode, setMode] = useState<Mode>('single');
   const [separationMode, setSeparationMode] = useState<SeparationMode>('anatomical');
   const [previewMode, setPreviewMode] = useState<PreviewMode>('appearance');
@@ -210,6 +212,16 @@ export default function IntegratedModelingStudio({ onBack: _onBack, onUseModel }
   const [logsOpen, setLogsOpen] = useState(false);
   const [logs, setLogs] = useState<string[]>(['建模工作区已就绪']);
   const [dragTarget, setDragTarget] = useState<string | null>(null);
+  const [quota, setQuota] = useState<ModelGenerationQuota | null>(null);
+
+  const refreshQuota = async () => {
+    try {
+      const response = await fetch('/api/models/generation-quota', { credentials: 'include' });
+      if (!response.ok) return;
+      const data = await response.json();
+      if (data.quota && Number.isFinite(data.quota.remaining)) setQuota(data.quota);
+    } catch { /* The server remains authoritative when quota status is unavailable. */ }
+  };
 
   useEffect(() => {
     fetch('/api/prep/3d/status', { credentials: 'include' })
@@ -220,6 +232,10 @@ export default function IntegratedModelingStudio({ onBack: _onBack, onUseModel }
       })
       .catch(() => setLogs((items) => [...items, '服务检查失败']));
   }, []);
+  useEffect(() => {
+    if (isAdmin) setQuota(null);
+    else void refreshQuota();
+  }, [isAdmin]);
 
   const choose = (file: File | undefined, key: ViewKey | 'single') => {
     if (!file) return;
@@ -282,6 +298,7 @@ export default function IntegratedModelingStudio({ onBack: _onBack, onUseModel }
       const data = await response.json().catch(() => ({}));
       if (!response.ok) throw new Error(data.message || data.error || `生成失败：${response.status}`);
       if (!data.job?.id) throw new Error('服务未返回建模任务编号');
+      void refreshQuota();
       setLogs((items) => [...items, `任务编号：${data.job.id}`, '正在生成原始 GLB']);
 
       let finished: Result | null = null;
@@ -318,6 +335,7 @@ export default function IntegratedModelingStudio({ onBack: _onBack, onUseModel }
       setLogs((items) => [...items, `失败：${message}`]);
     } finally {
       setBusy(false);
+      void refreshQuota();
     }
   };
 
@@ -421,7 +439,8 @@ export default function IntegratedModelingStudio({ onBack: _onBack, onUseModel }
 
           {mode === 'multiview' && <p className="modeling-local-note">使用混元 3D 3.1 四视角输入：正面、左侧、右侧和背面。模型支持更多视角时，本页面仍只提交这四张。</p>}
           {error && <div className="modeling-error">{error}</div>}
-          <button type="button" className="modeling-generate" disabled={busy || !ready} onClick={() => void submit()}>{busy ? <Loader2 className="spin" size={17} /> : <Box size={17} />}{busy ? stage : '开始生成'}</button>
+          {!isAdmin && <div className={`modeling-quota${quota?.remaining === 0 ? ' exhausted' : ''}`} aria-live="polite"><AlertTriangle size={19} aria-hidden="true" /><span><strong>{quota?.remaining === 0 ? '免费生成次数已用完' : '免费模型生成额度'}</strong><small>{quota?.remaining === 0 ? '请联系管理员' : '单图、四视图和重新处理各计 1 次'}</small></span>{quota ? <b className="modeling-quota-count">{quota.remaining}<i>/{quota.total} 次</i></b> : <b className="modeling-quota-count">3<i> 次</i></b>}</div>}
+          <button type="button" className="modeling-generate" disabled={busy || !ready || (!isAdmin && quota?.remaining === 0)} onClick={() => void submit()}>{busy ? <Loader2 className="spin" size={17} /> : <Box size={17} />}{busy ? stage : '开始生成'}</button>
         </section>
       </aside>
 
